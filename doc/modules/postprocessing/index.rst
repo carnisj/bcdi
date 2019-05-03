@@ -12,7 +12,6 @@
 
 API Reference
 -------------
-TODO.
 
 .. automodule:: bcdi.postprocessing.postprocessing_utils
    :members:

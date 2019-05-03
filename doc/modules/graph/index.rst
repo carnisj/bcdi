@@ -12,7 +12,6 @@
 
 API Reference
 -------------
-TODO.
 
 .. automodule:: bcdi.graph.graph_utils
    :members:
