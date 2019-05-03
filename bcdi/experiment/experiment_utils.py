@@ -9,7 +9,6 @@ import numpy as np
 import bcdi.graph.graph_utils as gu
 from scipy.interpolate import RegularGridInterpolator
 import gc
-import os
 
 
 class SetupPostprocessing(object):
