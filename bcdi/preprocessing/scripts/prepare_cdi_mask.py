@@ -44,7 +44,7 @@ root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\HC3207\\"
 sample_name = "SN"  # "S"
 comment = '_'  # string, should start with "_"
 ###########################
-flag_interact = False  # True to interact with plots, False to close it automatically
+flag_interact = True  # True to interact with plots, False to close it automatically
 ###########################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
 #  It will be overridden by 'fix_bragg' if not empty

@@ -5,7 +5,7 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 import sys
-sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+# sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
