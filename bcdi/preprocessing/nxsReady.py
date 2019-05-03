@@ -4,14 +4,12 @@
 # Code from Andrea Resta @ Soleil Synchrotron
 # Modified 02052019 by Jerome Carnis @ CNRS IM2NP: removed unused functions
 import tables
-import os
 import numpy
 import pickle
 
-module_path = os.path.abspath('..')
 print('importing nxsReady')
-print("'alias_dict.txt' expected in:", module_path)
-alias_dict = pickle.load(open(module_path + '\\alias_dict.txt', 'rb'))
+print("'alias_dict.txt' path expected in 'specfile_name' parameter")
+print("You can copy it from /Lib/site-packages/bcdi/preprocessing/")
 
 
 class PrefParameters:
@@ -23,14 +21,15 @@ class PrefParameters:
 
 class DataSet:
     """
-    Dataset read the file and store it in an object, from this object we can
-     retrieve the data to use it:
+    Dataset read the file and store it in an object, from this object we can retrieve the data to use it:
      MyFileObject=nxsRead.DataSet(path/filename, filename)
     """
     # define a classe to enter .nxs fiel-related parameters
     # the long name is the pathename 
     # short name should be the filenmane
-    def __init__(self, longname, shortname, datafilter=None, pref=None, scan='FLY'):
+    # alias_dict: the alias dictionnary, which should be located in the root directory of the experiment
+    def __init__(self, longname, shortname, alias_dict, datafilter=None, pref=None, scan='FLY'):
+        alias_dict = pickle.load(open(alias_dict, 'rb'))
         if pref is None:
             pref = PrefParameters()
         self.shortname = shortname

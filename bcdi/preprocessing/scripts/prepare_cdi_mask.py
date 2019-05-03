@@ -17,7 +17,7 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import gc
-# sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
@@ -39,9 +39,9 @@ DOCUMENTATION TO BE IMPROVED, SEE EXPLANATIONS IN SCRIPT
 
 """
 
-scans = [1067]  # list or array of scan numbers    np.arange(173, 185+1, 3)
-root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\HC3207\\"
-sample_name = "SN"  # "S"
+scans = [285]  # list or array of scan numbers    np.arange(173, 185+1, 3)
+root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\test\\"
+sample_name = "S"  # "S"
 comment = '_'  # string, should start with "_"
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
@@ -79,29 +79,30 @@ save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'ID01'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
+beamline = 'SIXS'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
 header_cristal = 'test'  # prefix of the first entry in .nxs file for CRISTAL
 headerline_p10 = 57  # nb of header lines in .fio file before data
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'align2'  # .spec for ID01 and SIXS, .fio for P10, not used for CRISTAL
+specfile_name = root_folder + 'alias_dict.txt'
+# .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS: name of the spec file including '.spec'
+# template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically root_folder + 'alias_dict.txt'
 # template for P10: sample_name + '_%05d'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 430  # horizontal pixel number of the Bragg peak
-roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207
-# roi_detector = []
+# roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207
+roi_detector = []
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'
-flatfield_file = root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'align_eiger2M_%05d.edf.gz'
+flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
+template_imagefile = 'align.spec_ascan_mu_%05d.nxs'
 # ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-# SIXS: specfile_name + '_ascan_mu_%05d.nxs'
+# SIXS: 'align.spec_ascan_mu_%05d.nxs'
 # Cristal: 'S%d.nxs'
 # P10: '_data_%06d.h5'
 ################################################################################

@@ -414,7 +414,7 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
     :param detector: the detector object: Class experiment_utils.Detector()
     :param scan_number: the scan number to load
     :param root_folder: the root directory of the experiment, where is the specfile/.fio file
-    :param filename: the file name to load
+    :param filename: the file name to load, or the path of 'alias_dict.txt' for SIXS
     :return: logfile
     """
     if setup.beamline == 'CRISTAL':  # no specfile, load directly the dataset
@@ -428,8 +428,9 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
     elif setup.beamline == 'SIXS':  # no specfile, load directly the dataset
         import bcdi.preprocessing.nxsReady as nxsReady
 
-        logfile = nxsReady.DataSet(detector.datadir + detector.template_imagefile % scan_number,
-                                   detector.template_imagefile % scan_number, scan="SBS")
+        logfile = nxsReady.DataSet(longname=detector.datadir + detector.template_imagefile % scan_number,
+                                   shortname=detector.template_imagefile % scan_number, alias_dict=filename,
+                                   scan="SBS")
 
     elif setup.beamline == 'ID01':  # load spec file
         from silx.io.specfile import SpecFile
