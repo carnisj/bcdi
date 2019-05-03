@@ -4,4 +4,5 @@ recursive-include doc *.rst
 include doc/conf.py
 include doc/make.bat
 include doc/Makefile
+include bcdi/preprocessing/alias_dict.txt
 include bcdi/data/S978_LLKf000.460_LLK000.508.cxi
