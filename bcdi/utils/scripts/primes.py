@@ -1,0 +1,117 @@
+# -*- coding: utf-8 -*-
+""""
+Check smaller or higher prime of a number
+"""
+import numpy as np
+my_nb = 350
+
+
+def primes(n):
+    """ Returns the prime decomposition of n as a list
+    """
+    v = [1]
+    assert (n > 0)
+    i = 2
+    while i * i <= n:
+        while n % i == 0:
+            v.append(i)
+            n //= i
+        i += 1
+    if n > 1:
+        v.append(n)
+    return v
+
+
+def try_smaller_primes(n, maxprime=13, required_dividers=(4,)):
+    """
+    Check if the largest prime divider is <=maxprime, and optionally includes some dividers.
+
+    Args:
+        n: the integer number for which the prime decomposition will be checked
+        maxprime: the maximum acceptable prime number. This defaults to the largest integer accepted by the clFFT
+        library for OpenCL GPU FFT.
+        required_dividers: list of required dividers in the prime decomposition. If None, this check is skipped.
+    Returns:
+        True if the conditions are met.
+    """
+    p = primes(n)
+    if max(p) > maxprime:
+        return False
+    if required_dividers is not None:
+        for k in required_dividers:
+            if n % k != 0:
+                return False
+    return True
+
+
+def smaller_primes(n, maxprime=13, required_dividers=(4,)):
+    """ Find the closest integer <=n (or list/array of integers), for which the largest prime divider is <=maxprime,
+    and has to include some dividers.
+    The default values for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU FFT.
+
+    Args:
+        n: the integer number
+        maxprime: the largest prime factor acceptable
+        required_dividers: a list of required dividers for the returned integer.
+    Returns:
+        the integer (or list/array of integers) fulfilling the requirements
+    """
+    if (type(n) is list) or (type(n) is tuple) or (type(n) is np.ndarray):
+        vn = []
+        for i in n:
+            assert (i > 1 and maxprime <= i)
+            while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
+                i = i - 1
+                if i == 0:
+                    return 0
+            vn.append(i)
+        if type(n) is np.ndarray:
+            return np.array(vn)
+        return vn
+    else:
+        assert (n > 1 and maxprime <= n)
+        while try_smaller_primes(n, maxprime=maxprime, required_dividers=required_dividers) is False:
+            n = n - 1
+            if n == 0:
+                return 0
+        return n
+
+
+def higher_primes(n, maxprime=13, required_dividers=(4,)):
+    """ Find the closest integer >=n (or list/array of integers), for which the largest prime divider is <=maxprime,
+    and has to include some dividers.
+    The default values for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU FFT.
+
+    Args:
+        n: the integer number
+        maxprime: the largest prime factor acceptable
+        required_dividers: a list of required dividers for the returned integer.
+    Returns:
+        the integer (or list/array of integers) fulfilling the requirements
+    """
+    if (type(n) is list) or (type(n) is tuple) or (type(n) is np.ndarray):
+        vn = []
+        for i in n:
+            limit = i
+            assert (i > 1 and maxprime <= i)
+            while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
+                i = i + 1
+                if i == limit:
+                    return limit
+            vn.append(i)
+        if type(n) is np.ndarray:
+            return np.array(vn)
+        return vn
+    else:
+        limit = n
+        assert (n > 1 and maxprime <= n)
+        while try_smaller_primes(n, maxprime=maxprime, required_dividers=required_dividers) is False:
+            n = n + 1
+            if n == limit:
+                return limit
+        return n
+
+
+nb_low = smaller_primes(my_nb, maxprime=7, required_dividers=(2,))
+nb_high = higher_primes(my_nb, maxprime=7, required_dividers=(2,))
+print("Smaller prime=", str(nb_low), "  Higher prime=", str(nb_high))

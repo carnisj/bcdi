@@ -1,0 +1,7 @@
+include *.rst
+include *.txt
+recursive-include doc *.rst
+include doc/conf.py
+include doc/make.bat
+include doc/Makefile
+include bcdi/data/S978_LLKf000.460_LLK000.508.cxi
