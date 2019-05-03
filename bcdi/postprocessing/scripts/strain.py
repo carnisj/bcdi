@@ -5,7 +5,7 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 import sys
-# sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
@@ -156,7 +156,7 @@ if extension == '.h5':
 if len(original_size) != 0:
     print("Original FFT window size: ", original_size)
     print("Padding back to original FFT size")
-    obj = pu.crop_pad(obj=obj, output_shape=original_size)
+    obj = pu.crop_pad(array=obj, output_shape=original_size)
 else:
     original_size = obj.shape
 nz, ny, nx = obj.shape
@@ -284,7 +284,7 @@ for ii in sorted_obj:
         # obj = np.roll(obj, (0, -1, 0), axis=(0, 1, 2))
 
     if len(original_size) != 0:
-        obj = pu.crop_pad(obj=obj, output_shape=original_size)
+        obj = pu.crop_pad(array=obj, output_shape=original_size)
 
     # use only the range of interest
     sz, sy, sx = obj.shape
@@ -639,9 +639,9 @@ if xrayutils_ortho == 0:
     print("Angle with y in zy plane", np.arctan(q[0]/q[1])*180/np.pi, "deg")
     print("Angle with y in xy plane", np.arctan(-q[2]/q[1])*180/np.pi, "deg")
     print("Angle with z in xz plane", 180+np.arctan(q[2]/q[0])*180/np.pi, "deg")
-    amp = pu.rotate_crystal(obj=amp, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
+    amp = pu.rotate_crystal(array=amp, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
                             reference_axis=myaxis, debugging=1)
-    phase = pu.rotate_crystal(obj=phase, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
+    phase = pu.rotate_crystal(array=phase, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
                               reference_axis=myaxis, debugging=0)
 
 ############################################################
@@ -667,11 +667,11 @@ if xrayutils_ortho == 0:
         else:
             ref_axis_inplane = "z"
             myaxis_inplane = np.array([0, 0, 1])  # must be in [x, y, z] order
-        amp = pu.rotate_crystal(obj=amp, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
+        amp = pu.rotate_crystal(array=amp, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
                                 reference_axis=myaxis_inplane, debugging=1)
-        phase = pu.rotate_crystal(obj=phase, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
+        phase = pu.rotate_crystal(array=phase, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
                                   reference_axis=myaxis_inplane, debugging=0)
-        strain = pu.rotate_crystal(obj=strain, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
+        strain = pu.rotate_crystal(array=strain, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
                                    reference_axis=myaxis_inplane, debugging=0)
 
     if align_crystal == 1:
@@ -679,11 +679,11 @@ if xrayutils_ortho == 0:
     else:
         comment = comment + '_lab-frame'
         print('Rotating back the crystal in laboratory frame')
-        amp = pu.rotate_crystal(obj=amp, axis_to_align=myaxis,
+        amp = pu.rotate_crystal(array=amp, axis_to_align=myaxis,
                                 reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=1)
-        phase = pu.rotate_crystal(obj=phase, axis_to_align=myaxis,
+        phase = pu.rotate_crystal(array=phase, axis_to_align=myaxis,
                                   reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q))
-        strain = pu.rotate_crystal(obj=strain, axis_to_align=myaxis,
+        strain = pu.rotate_crystal(array=strain, axis_to_align=myaxis,
                                    reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q))
 
     print('Voxel size: ', str('{:.2f}'.format(voxel_size)), "nm")
@@ -694,9 +694,9 @@ if xrayutils_ortho == 0:
 if not output_size:  # output_size not defined, default to actual size
     pass
 else:
-    amp = pu.crop_pad(obj=amp, output_shape=output_size)
-    phase = pu.crop_pad(obj=phase, output_shape=output_size)
-    strain = pu.crop_pad(obj=strain, output_shape=output_size)
+    amp = pu.crop_pad(array=amp, output_shape=output_size)
+    phase = pu.crop_pad(array=phase, output_shape=output_size)
+    strain = pu.crop_pad(array=strain, output_shape=output_size)
 numz, numy, numx = amp.shape
 print("Final data shape:", numz, numy, numx)
 
