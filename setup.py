@@ -57,7 +57,7 @@ setup(name='bcdi', version='0.0.1',
                'bcdi/utils/scripts/readdata_P10.py',
                ],
       # metadata
-      author="carnisj",
+      author="Jerome Carnis",
       author_email="jerome.carnis@esrf.fr",
       description="BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data",
       license="CeCILL-B",

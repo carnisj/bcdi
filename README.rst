@@ -38,17 +38,29 @@ BCDI can be used as a python library with the following main modules:
 5) :mod:`bcdi.postprocessing`: all methods for post-processing the complex output of a phasing algorithm.
 
 6) :mod:`bcdi.preprocessing`: all methods for pre-processing the diffraction intensity.
-   TODO
 
 7) :mod:`bcdi.simulation`: calculation of the diffraction intensity based on FFT or kinematical sum. 
    It can include a displacement field, noise, detector gaps etc...
    TODO
 
+Acknowledgment and third party packages
+=======================================
+
+This distribution makes use of the following packages:
+
+* xrayutilities: (c) Dominik Kriegner, Eugen Wintersberger. See: Journal of Applied Crystallography 2013, Volume 46, 1162-1170
+
+* nxsReady: (c) Andrea Resta @ SOLEIL SIXS
+
+* some functions of PyNX about decomposition into prime numbers: (c) Vincent Favre-Nicolin. See: http://ftp.esrf.fr/pub/scisoft/PyNX/ and J. Appl. Cryst. 2016, Volume 49(2016), 1842-1848.
+
+* numpy, scipy, matplotlib, vtk, h5py, hdf5plugin, fabio, silx
+
 Download
 ========
 
 BCDI is available from:
- * pip
+ * pip: pip install bcdi
  * https://github.com/carnisj
 
 Changelog
