@@ -48,13 +48,11 @@ Acknowledgment and third party packages
 
 We would like to acknowledge the following packages:
 
-* xrayutilities: (c) Dominik Kriegner, Eugen Wintersberger.
-See: Journal of Applied Crystallography 2013, Volume 46, 1162-1170
+* xrayutilities: (c) Dominik Kriegner, Eugen Wintersberger. See: Journal of Applied Crystallography 2013, Volume 46, 1162-1170
 
 * nxsReady: (c) Andrea Resta @ SOLEIL SIXS
 
-* We adapted some functions of PyNX about decomposition into prime numbers: (c) Vincent Favre-Nicolin.
-See: http://ftp.esrf.fr/pub/scisoft/PyNX/ and J. Appl. Cryst. 2016, Volume 49(2016), 1842-1848.
+* We adapted some functions of PyNX about decomposition into prime numbers: (c) Vincent Favre-Nicolin. See: http://ftp.esrf.fr/pub/scisoft/PyNX/ and J. Appl. Cryst. 2016, Volume 49(2016), 1842-1848.
 
 The following third-party packages are required: 
 
