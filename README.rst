@@ -46,15 +46,33 @@ BCDI can be used as a python library with the following main modules:
 Acknowledgment and third party packages
 =======================================
 
-This distribution makes use of the following packages:
+We would like to acknowledge the following packages:
 
-* xrayutilities: (c) Dominik Kriegner, Eugen Wintersberger. See: Journal of Applied Crystallography 2013, Volume 46, 1162-1170
+* xrayutilities: (c) Dominik Kriegner, Eugen Wintersberger.
+See: Journal of Applied Crystallography 2013, Volume 46, 1162-1170
 
 * nxsReady: (c) Andrea Resta @ SOLEIL SIXS
 
-* some functions of PyNX about decomposition into prime numbers: (c) Vincent Favre-Nicolin. See: http://ftp.esrf.fr/pub/scisoft/PyNX/ and J. Appl. Cryst. 2016, Volume 49(2016), 1842-1848.
+* We adapted some functions of PyNX about decomposition into prime numbers: (c) Vincent Favre-Nicolin.
+See: http://ftp.esrf.fr/pub/scisoft/PyNX/ and J. Appl. Cryst. 2016, Volume 49(2016), 1842-1848.
 
-* numpy, scipy, matplotlib, vtk, h5py, hdf5plugin, fabio, silx
+The following third-party packages are required: 
+
+* numpy
+
+* scipy
+
+* matplotlib
+
+* vtk
+
+* h5py
+
+* hdf5plugin
+
+* fabio
+
+* silx
 
 Download
 ========
