@@ -1126,6 +1126,62 @@ def rotate_crystal(array, axis_to_align, reference_axis, width_z=np.nan, width_y
     return new_array
 
 
+def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method='variance/mean'):
+    """
+    Sort out reconstructions based on the metric 'sort_method'.
+
+    :param file_path: path of the reconstructions to sort out
+    :param data_range: data will be cropped or padded to this range
+    :param amplitude_threshold: threshold used to define a support from the amplitude
+    :param sort_method: method for sorting the reconstructions: 'variance/mean', 'mean_amplitude', 'variance' or
+    'volume'
+    :return: a list of sorted indices in 'file_path', from the best object to the worst.
+    """
+
+    nbfiles = len(file_path)
+    zrange, yrange, xrange = data_range
+
+    quality_array = np.ones((nbfiles, 4))  # 1/mean_amp, variance(amp), variance(amp)/mean_amp, 1/volume
+    for ii in range(nbfiles):
+        obj, _ = load_reconstruction(file_path[ii])
+        print('Opening ', file_path[ii])
+
+        # use the range of interest defined above
+        obj = crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
+        obj = abs(obj) / abs(obj).max()
+
+        temp_support = np.zeros(obj.shape)
+        temp_support[obj > amplitude_threshold] = 1  # only for plotting
+        quality_array[ii, 0] = 1 / obj[obj > amplitude_threshold].mean()     # 1/mean(amp)
+        quality_array[ii, 1] = np.var(obj[obj > amplitude_threshold])        # var(amp)
+        quality_array[ii, 2] = quality_array[ii, 0] * quality_array[ii, 1]   # var(amp)/mean(amp) index of dispersion
+        quality_array[ii, 3] = 1 / temp_support.sum()                        # 1/volume(support)
+        del temp_support
+        gc.collect()
+
+        # order reconstructions by minimizing the quality factor
+    if sort_method is 'mean_amplitude':    # sort by quality_array[:, 0] first
+        sorted_obj = np.lexsort((quality_array[:, 3], quality_array[:, 2], quality_array[:, 1], quality_array[:, 0]))
+
+    elif sort_method is 'variance':        # sort by quality_array[:, 1] first
+        sorted_obj = np.lexsort((quality_array[:, 0], quality_array[:, 3], quality_array[:, 2], quality_array[:, 1]))
+
+    elif sort_method is 'variance/mean':   # sort by quality_array[:, 2] first
+        sorted_obj = np.lexsort((quality_array[:, 1], quality_array[:, 0], quality_array[:, 3], quality_array[:, 2]))
+
+    elif sort_method is 'volume':          # sort by quality_array[:, 3] first
+        sorted_obj = np.lexsort((quality_array[:, 2], quality_array[:, 1], quality_array[:, 0], quality_array[:, 3]))
+
+    else:  # default case, use the index of dispersion
+        sorted_obj = np.lexsort((quality_array[:, 1], quality_array[:, 0], quality_array[:, 3], quality_array[:, 2]))
+
+    print('quality_array')
+    print(quality_array)
+    print("sorted list", sorted_obj)
+
+    return sorted_obj
+
+
 def wrap(phase):
     """
     Wrap the phase in [-pi pi] interval.
