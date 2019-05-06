@@ -74,8 +74,8 @@ The following third-party packages are required:
 
 * silx
 
-Download
-========
+Download & Installation
+=======================
 
 BCDI is available from:
  * pip: pip install bcdi

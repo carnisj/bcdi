@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#       authors:
+#         Jerome Carnis, jerome.carnis@esrf.fr
+
+helptext = """
 xrutils_polarplot.py
 Stereographic projection of diffraction pattern, based on ESRF/ID01 geometry
 Before interpolation lower z pixel is higher qz

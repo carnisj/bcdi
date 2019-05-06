@@ -16,9 +16,8 @@ import bcdi.preprocessing.preprocessing_utils as pru
 
 helptext = """
 Align diffraction patterns using the center of mass or dft registration and subpixel shift. 
-and calculate their correlation.
 
-Average it if the correlation coefficient is larger than a threshold.
+Average it if their correlation coefficient is larger than a threshold.
 
 The first scan in the list serves as reference.
 """

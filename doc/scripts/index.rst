@@ -31,3 +31,12 @@ Preprocessing
    :start-after: helptext
    :end-before: """
    :language: rst
+
+`concatenate_scans.py`:
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/concatenate_scans.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
