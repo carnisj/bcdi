@@ -4,18 +4,19 @@
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
-import sys
-# sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
-import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
-import bcdi.postprocessing.postprocessing_utils as pu
 import os
 import tkinter as tk
 from tkinter import filedialog
 import gc
+import sys
+sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+import bcdi.graph.graph_utils as gu
+import bcdi.experiment.experiment_utils as exp
+import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 strain.py: calculate the strain component from experimental geometry
@@ -56,7 +57,7 @@ correlation_threshold = 0.90
 original_size = (100, 400, 512)  # size of the FFT array used for phasing, when the result has been croped (.cxi)
 # leave it to () otherwise
 output_size = (120, 120, 120)  # original_size  # (z, y, x) Fix the size of the output array, leave it as () otherwise
-keep_size = 0  # 1 to keep the initial array size for orthogonalization (slower)
+keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
 fix_voxel = 3.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no averaging
 
@@ -161,50 +162,17 @@ else:
     original_size = obj.shape
 nz, ny, nx = obj.shape
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
+
 ################################################
 # define range for orthogonalization and plotting - speed up calculations
 ################################################
-support = np.zeros((nz, ny, nx))
-support[abs(obj) > 0.15 * abs(obj).max()] = 1
-del obj
-z, y, x = np.meshgrid(np.arange(0, nz, 1), np.arange(0, ny, 1), np.arange(0, nx, 1),
-                      indexing='ij')
-z = z * support
-# min_z = int(np.min(z[np.nonzero(z)]))
-min_z = min(int(np.min(z[np.nonzero(z)])), nz-int(np.max(z[np.nonzero(z)])))
-del z
-y = y * support
-# min_y = int(np.min(y[np.nonzero(y)]))
-min_y = min(int(np.min(y[np.nonzero(y)])), ny-int(np.max(y[np.nonzero(y)])))
-del y
-x = x * support
-# min_x = int(np.min(x[np.nonzero(x)]))
-min_x = min(int(np.min(x[np.nonzero(x)])), nx-int(np.max(x[np.nonzero(x)])))
-del x
+zrange, yrange, xrange =\
+    pu.find_datarange(array=obj, plot_margin=plot_width, amplitude_threshold=0.1, keep_size=keep_size)
 
-zrange = (nz // 2 - min_z) + plot_width[0]
-yrange = (ny // 2 - min_y) + plot_width[1]
-xrange = (nx // 2 - min_x) + plot_width[2]
-flag_pad_z = 0
-flag_pad_y = 0
-flag_pad_x = 0
-if zrange * 2 > nz:
-    zrange = nz // 2
-    flag_pad_z = 1
-if yrange * 2 > ny:
-    yrange = ny // 2
-    flag_pad_y = 1
-if xrange * 2 > nx:
-    xrange = nx // 2
-    flag_pad_x = 1
-if keep_size == 1:
-    zrange = nz // 2
-    yrange = ny // 2
-    xrange = nx // 2
 numz = zrange * 2
 numy = yrange * 2
 numx = xrange * 2
-print("Data size after crop: (", numz, ',', numy, ',', numx, ')')
+print("Data shape used for orthogonalization and plotting: (", numz, ',', numy, ',', numx, ')')
 
 ################################################
 # find the best reconstruction from the list, based on mean amplitude and variance
@@ -216,8 +184,9 @@ if nbfiles > 1:
         obj, _ = pu.load_reconstruction(file_path[ii])
         print('Opening ', file_path[ii])
 
-        if len(original_size) != 0:
-            obj = pu.crop_pad(obj=obj, output_shape=original_size)
+        # use the range of interest defined above
+        obj = pu.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
+
         # centering of array
         if centering == 0:
             obj = pu.center_max(obj)
@@ -227,13 +196,7 @@ if nbfiles > 1:
         elif centering == 2:
             obj = pu.center_max(obj)
             obj = pu.center_com(obj)
-            # use only the range of interest
-        sz, sy, sx = obj.shape
-        if sz < numz or sy < numy or sx < numx:
-            print("Did you forget to fill the input parameter 'original_size'?")
-            sys.exit("array size not compatible")
-        obj = obj[sz // 2 - zrange:sz // 2 + zrange, sy // 2 - yrange:sy // 2 + yrange,
-                  sx // 2 - xrange:sx // 2 + xrange]
+
         obj_amp = abs(obj) / abs(obj).max()
         temp_support = np.zeros(obj_amp.shape)
         temp_support[obj_amp > threshold_plot] = 1  # only for plotting
@@ -265,7 +228,6 @@ if nbfiles > 1:
     print("sorted list", sorted_obj)
 else:
     sorted_obj = [0]
-print('\n')
 
 ################################################
 # load reconstructions and average it
@@ -283,42 +245,22 @@ for ii in sorted_obj:
         # you can use the line below if there is a roll of one pixel
         # obj = np.roll(obj, (0, -1, 0), axis=(0, 1, 2))
 
-    if len(original_size) != 0:
-        obj = pu.crop_pad(array=obj, output_shape=original_size)
+    # use the range of interest defined above
+    obj = pu.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
 
-    # use only the range of interest
-    sz, sy, sx = obj.shape
-    if sz < numz or sy < numy or sx < numx:
-        print("Did you forget to fill the input parameter 'original_size'?")
-        sys.exit("array size not compatible")
-    obj = obj[sz // 2 - zrange:sz // 2 + zrange, sy // 2 - yrange:sy // 2 + yrange, sx // 2 - xrange:sx // 2 + xrange]
     # align with average reconstruction
-    if avg_obj.sum() == 0:
+    if avg_obj.sum() == 0:  # the fist array loaded will serve as reference object
+        ref_obj = obj
         avg_obj = obj
-    if nbfiles > 1:
+    else:
         avg_obj, flag_avg = pu.align_obj(avg_obj=avg_obj, ref_obj=ref_obj, obj=obj, support_threshold=0.25,
                                          correlation_threshold=0.90, aligning_option='dft')
         avg_counter = avg_counter + flag_avg
+
 avg_obj = avg_obj / avg_counter
 print('Average performed over ', avg_counter, 'reconstructions\n')
 del obj, ref_obj
 gc.collect()
-
-##############################################
-#  check if padding is needed instead of cropping
-##############################################
-if keep_size == 0:
-    if flag_pad_z == 1:
-        zrange = (nz // 2 - min_z)*2 + plot_width[0]
-    if flag_pad_y == 1:
-        yrange = (ny // 2 - min_y)*2 + plot_width[1]
-    if flag_pad_x == 1:
-        xrange = (nx // 2 - min_x)*2 + plot_width[2]
-    avg_obj = pu.crop_pad(avg_obj, [2*zrange, 2*yrange, 2*xrange], debugging=0)
-    numz = zrange * 2
-    numy = yrange * 2
-    numx = xrange * 2
-    print("Data size after pad: (", numz, ',', numy, ',', numx, ')')
 
 ###################################
 # phase ramp removal
@@ -442,6 +384,7 @@ if save_raw:
 ##############################################
 #  orthogonalize data
 ##############################################
+print('\nShape before orthogonalization', avg_obj.shape)
 if xrayutils_ortho == 0:
     if correct_refraction == 1 or correct_absorption == 1:
         bulk = pu.find_bulk(amp=abs(avg_obj), support_threshold=threshold_refraction, method='threshold')
