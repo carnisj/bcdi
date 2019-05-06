@@ -493,6 +493,47 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=np.nan, width_
     return mybulk
 
 
+def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False):
+    """
+    Find the meaningful range of the data, in order to reduce the memory consumption when manipulating the object. The
+    range can be larger than the initial data size, which then will need to be padded.
+
+    :param array: the complex 3D reconstruction
+    :param plot_margin: user-defined margin to add to the minimum range of the data
+    :param amplitude_threshold: threshold used to define a support from the amplitude
+    :param keep_size: set to True in order to keep the dataset full size
+    :return:
+     - zrange: half size of the data range to use in the first axis (Z)
+     - yrange: half size of the data range to use in the second axis (Y)
+     - xrange: half size of the data range to use in the third axis (X)
+    """
+    nbz, nby, nbx = array.shape
+
+    if keep_size:
+        return nbz // 2, nby // 2, nbx // 2
+
+    else:
+        support = np.zeros((nbz, nby, nbx))
+        support[abs(array) > amplitude_threshold * abs(array).max()] = 1
+
+        z, y, x = np.meshgrid(np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1),
+                              indexing='ij')
+        z = z * support
+        min_z = min(int(np.min(z[np.nonzero(z)])), nbz - int(np.max(z[np.nonzero(z)])))
+
+        y = y * support
+        min_y = min(int(np.min(y[np.nonzero(y)])), nby - int(np.max(y[np.nonzero(y)])))
+
+        x = x * support
+        min_x = min(int(np.min(x[np.nonzero(x)])), nbx - int(np.max(x[np.nonzero(x)])))
+
+        zrange = (nbz // 2 - min_z) + plot_margin[0]
+        yrange = (nby // 2 - min_y) + plot_margin[1]
+        xrange = (nbx // 2 - min_x) + plot_margin[2]
+
+        return zrange, yrange, xrange
+
+
 def get_opticalpath(support, direction, xrayutils_orthogonal, width_z=np.nan, width_y=np.nan, width_x=np.nan,
                     k=np.zeros(3), debugging=False):
     """
