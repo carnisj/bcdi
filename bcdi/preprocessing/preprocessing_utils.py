@@ -85,14 +85,19 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param centering: centering option, 'max' or 'com'. It will be overridden if the kwarg 'fix_bragg' is provided.
     :param fft_option:
-     - 'crop_symmetric_ZYX': crop the array for FFT requirements, Bragg peak centered
-     - 'crop_asymmetric_ZYX': crop the array for FFT requirements without centering the Brag peak
-     - 'pad_symmetric_Z_crop_YX': crop detector images, pad the rocking angle based on 'pad_size', Bragg peak centered
-     - 'pad_asymmetric_Z_crop_YX': crop detector images, pad the rocking angle without centering the Brag peak
-     - 'pad_symmetric_Z': keep detector size and pad/center the rocking angle based on 'pad_size', Bragg peak centered
-     - 'pad_asymmetric_Z': keep detector size and pad the rocking angle without centering the Brag peak
-     - 'pad_symmetric_ZYX': pad all dimensions based on 'pad_size', Brag peak centered
-     - 'pad_asymmetric_ZYX': pad all dimensions based on 'pad_size' without centering the Brag peak
+     - 'crop_sym_ZYX': crop the array for FFT requirements, Bragg peak centered
+     - 'crop_asym_ZYX': crop the array for FFT requirements without centering the Brag peak
+     - 'pad_sym_Z_crop_sym_YX': crop detector images (Bragg peak centered) and pad the rocking angle based on
+       'pad_size' (Bragg peak centered)
+     - 'pad_sym_Z_crop_asym_YX': pad rocking angle based on 'pad_size' (Bragg peak centered) and crop detector
+       (Bragg peak non-centered)
+     - 'pad_asym_Z_crop_sym_YX': crop detector images (Bragg peak centered), pad the rocking angle
+       without centering the Brag peak
+     - 'pad_asym_Z_crop_asym_YX': pad rocking angle and crop detector without centering the Bragg peak
+     - 'pad_sym_Z': keep detector size and pad/center the rocking angle based on 'pad_size', Bragg peak centered
+     - 'pad_asym_Z': keep detector size and pad the rocking angle without centering the Brag peak
+     - 'pad_sym_ZYX': pad all dimensions based on 'pad_size', Brag peak centered
+     - 'pad_asym_ZYX': pad all dimensions based on 'pad_size' without centering the Brag peak
      - 'do_nothing': keep the full dataset or crop it to the size defined by fix_size
     :param kwargs:
      - 'fix_bragg' = user-defined position in pixels of the Bragg peak [z_bragg, y_bragg, x_bragg]
@@ -179,7 +184,7 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
         fft_option = 'do_nothing'
 
     # Crop/pad data to fulfill FFT size and user requirements
-    if fft_option == 'crop_symmetric_ZYX':
+    if fft_option == 'crop_sym_ZYX':
         # crop rocking angle and detector, Bragg peak centered
         nz1, ny1, nx1 = smaller_primes((max_nz, max_ny, max_nx), maxprime=7, required_dividers=(2,))
         pad_width = np.zeros(6, dtype=int)
@@ -198,7 +203,7 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
             qy = qy[ix0 - nx1//2:ix0 + nx1//2]
             qz = qz[iy0 - ny1//2:iy0 + ny1//2]
 
-    elif fft_option == 'crop_asymmetric_ZYX':
+    elif fft_option == 'crop_asym_ZYX':
         # crop rocking angle and detector without centering the Bragg peak
         nz1, ny1, nx1 = smaller_primes((nbz, nby, nbx), maxprime=7, required_dividers=(2,))
         pad_width = np.zeros(6, dtype=int)
@@ -219,8 +224,8 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
             qy = qy[nbx//2 - nx1//2:nbx//2 + nx1//2]
             qz = qz[nby//2 - ny1//2:nby//2 + ny1//2]
 
-    elif fft_option == 'pad_symmetric_Z_crop_YX':
-        # pad rocking angle based on 'pad_size', Bragg peak centered , crop detector
+    elif fft_option == 'pad_sym_Z_crop_sym_YX':
+        # pad rocking angle based on 'pad_size' (Bragg peak centered) and crop detector (Bragg peak centered)
         if len(pad_size) != 3:
             raise ValueError('pad_size should be a list of three elements')
         if pad_size[0] != higher_primes(pad_size[0], maxprime=7, required_dividers=(2,)):
@@ -247,8 +252,36 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
             qy = qy[ix0 - nx1 // 2:ix0 + nx1 // 2]
             qz = qz[iy0 - ny1 // 2:iy0 + ny1 // 2]
 
-    elif fft_option == 'pad_asymmetric_Z_crop_YX':
-        # pad rocking angle without centering the Bragg peak, crop detector
+    elif fft_option == 'pad_sym_Z_crop_asym_YX':
+        # pad rocking angle based on 'pad_size' (Bragg peak centered) and crop detector (Bragg peak non-centered)
+        if len(pad_size) != 3:
+            raise ValueError('pad_size should be a list of three elements')
+        if pad_size[0] != higher_primes(pad_size[0], maxprime=7, required_dividers=(2,)):
+            raise ValueError(pad_size[0], 'does not meet FFT requirements')
+        ny1, nx1 = smaller_primes((max_ny, max_nx), maxprime=7, required_dividers=(2,))
+
+        data = data[:, nby//2 - ny1//2:nby//2 + ny1//2, nbx//2 - nx1//2:nbx//2 + nx1//2]
+        mask = mask[:, nby//2 - ny1//2:nby//2 + ny1//2, nbx//2 - nx1//2:nbx//2 + nx1//2]
+        pad_width = np.array([int(min(pad_size[0]/2-iz0, pad_size[0]-nbz)),
+                              int(min(pad_size[0]/2-nbz + iz0, pad_size[0]-nbz)),
+                              0, 0, 0, 0], dtype=int)
+        data = zero_pad(data, padding_width=pad_width, mask_flag=False)
+        mask = zero_pad(mask, padding_width=pad_width, mask_flag=True)  # mask padded pixels
+        print("FFT box (qx, qz, qy): ", data.shape)
+
+        temp_frames = -1 * np.ones(data.shape[0])
+        temp_frames[pad_width[0]:pad_width[0] + nbz] = frames_logical
+        frames_logical = temp_frames
+
+        if len(q_values) != 0:
+            dqx = qx[1] - qx[0]
+            qx0 = qx[0] - pad_width[0] * dqx
+            qx = qx0 + np.arange(pad_size[0])*dqx
+            qy = qy[nbx//2 - nx1//2:nbx//2 + nx1//2]
+            qz = qz[nby//2 - ny1//2:nby//2 + ny1//2]
+
+    elif fft_option == 'pad_asym_Z_crop_sym_YX':
+        # pad rocking angle without centering the Bragg peak and crop detector (Bragg peak centered)
         ny1, nx1 = smaller_primes((max_ny, max_nx), maxprime=7, required_dividers=(2,))
         nz1 = higher_primes(nbz, maxprime=7, required_dividers=(2,))
 
@@ -271,8 +304,32 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
             qy = qy[ix0 - nx1 // 2:ix0 + nx1 // 2]
             qz = qz[iy0 - ny1 // 2:iy0 + ny1 // 2]
 
-    elif fft_option == 'pad_symmetric_Z':
-        # pad rocking angle based on 'pad_size', Bragg peak centered, keep detector size
+    elif fft_option == 'pad_asym_Z_crop_asym_YX':
+        # pad rocking angle and crop detector without centering the Bragg peak
+        ny1, nx1 = smaller_primes((nby, nbx), maxprime=7, required_dividers=(2,))
+        nz1 = higher_primes(nbz, maxprime=7, required_dividers=(2,))
+
+        data = data[:, nby//2 - ny1//2:nby//2 + ny1//2, nbx//2 - nx1//2:nbx//2 + nx1//2]
+        mask = mask[:, nby//2 - ny1//2:nby//2 + ny1//2, nbx//2 - nx1//2:nbx//2 + nx1//2]
+        pad_width = np.array([int((nz1 - nbz + ((nz1 - nbz) % 2)) / 2), int((nz1 - nbz + 1) / 2 - ((nz1 - nbz) % 2)),
+                              0, 0, 0, 0], dtype=int)
+        data = zero_pad(data, padding_width=pad_width, mask_flag=False)
+        mask = zero_pad(mask, padding_width=pad_width, mask_flag=True)  # mask padded pixels
+        print("FFT box (qx, qz, qy): ", data.shape)
+
+        temp_frames = -1 * np.ones(data.shape[0])
+        temp_frames[pad_width[0]:pad_width[0] + nbz] = frames_logical
+        frames_logical = temp_frames
+
+        if len(q_values) != 0:
+            dqx = qx[1] - qx[0]
+            qx0 = qx[0] - pad_width[0] * dqx
+            qx = qx0 + np.arange(nz1)*dqx
+            qy = qy[nbx//2 - nx1//2:nbx//2 + nx1//2]
+            qz = qz[nby//2 - ny1//2:nby//2 + ny1//2]
+
+    elif fft_option == 'pad_sym_Z':
+        # pad rocking angle based on 'pad_size'(Bragg peak centered) and keep detector size
         if len(pad_size) != 3:
             raise ValueError('pad_size should be a list of three elements')
         if pad_size[0] != higher_primes(pad_size[0], maxprime=7, required_dividers=(2,)):
@@ -294,7 +351,7 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(pad_size[0])*dqx
 
-    elif fft_option == 'pad_asymmetric_Z':
+    elif fft_option == 'pad_asym_Z':
         # pad rocking angle without centering the Bragg peak, keep detector size
         nz1 = higher_primes(nbz, maxprime=7, required_dividers=(2,))
 
@@ -313,8 +370,8 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(nz1)*dqx
 
-    elif fft_option == 'pad_symmetric_ZYX':
-        # pad both dimensions based on 'pad_size', Bragg peak centered
+    elif fft_option == 'pad_sym_ZYX':
+        # pad both dimensions based on 'pad_size' (Bragg peak centered)
         if len(pad_size) != 3:
             raise ValueError('pad_size should be a list of 3 integers')
         if pad_size[0] != higher_primes(pad_size[0], maxprime=7, required_dividers=(2,)):
@@ -347,7 +404,7 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
             qy = qy0 + np.arange(pad_size[2]) * dqy
             qz = qz0 + np.arange(pad_size[1]) * dqz
 
-    elif fft_option == 'pad_asymmetric_ZYX':
+    elif fft_option == 'pad_asym_ZYX':
         # pad both dimensions without centering the Bragg peak
         nz1, ny1, nx1 = [higher_primes(nbz, maxprime=7, required_dividers=(2,)),
                          higher_primes(nby, maxprime=7, required_dividers=(2,)),
@@ -903,7 +960,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, headerlines):
         columns = line.split()
         if columns[0] == '!':
             raise ValueError("Wrong value for the parameter 'headerlines'")
-        monitor[line_counter] = columns[7]  # ipetra  # TODO detect automatically the index for ipetra
+        monitor[line_counter] = columns[6]  # ipetra  # TODO detect automatically the index for ipetra
         line_counter += 1
     fio.close()
 
