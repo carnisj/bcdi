@@ -1134,7 +1134,7 @@ def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method=
     :param data_range: data will be cropped or padded to this range
     :param amplitude_threshold: threshold used to define a support from the amplitude
     :param sort_method: method for sorting the reconstructions: 'variance/mean', 'mean_amplitude', 'variance' or
-    'volume'
+     'volume'
     :return: a list of sorted indices in 'file_path', from the best object to the worst.
     """
 
