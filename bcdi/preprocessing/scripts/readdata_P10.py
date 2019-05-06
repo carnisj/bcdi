@@ -16,7 +16,7 @@ Open a rocking curve data at PETRAIII P10 beamline and plot the stack along firs
 Usefull to localize the Bragg peak for ROI determination.
 """
 
-scan = 164
+scan = 173
 sample_name = "dewet5_"  # "S"
 specdir = "C:/Users/carnis/Work Folders/Documents/data/P10_2018/"
 save_mask = False  # set to True to save the mask

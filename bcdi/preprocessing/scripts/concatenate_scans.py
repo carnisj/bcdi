@@ -17,12 +17,12 @@ import bcdi.preprocessing.preprocessing_utils as pru
 helptext = """
 Align diffraction patterns using the center of mass or dft registration and subpixel shift. 
 
-Average it if their correlation coefficient is larger than a threshold.
+Average the scans if their correlation coefficient is larger than a threshold.
 
 The first scan in the list serves as reference.
 """
 
-scan_list = np.arange(282, 294+1, 3)  # list or array of scan numbers
+scan_list = np.arange(164, 185+1, 3)  # list or array of scan numbers
 sample_name = 'dewet5_'
 comment = '_norm_180_512_480.npz'  # the end of the filename template after 'pynx'
 homedir = "C:/Users/carnis/Work Folders/Documents/data/P10_2018/data/"
