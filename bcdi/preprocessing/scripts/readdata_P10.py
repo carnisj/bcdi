@@ -5,17 +5,16 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
-helptext = """
-Open a rocking curve data at PETRAIII P10 beamline and plot the stack along first axis.
-"""
-
 import hdf5plugin  # for lz4 filter
 import h5py
 import numpy as np
-import matplotlib
-matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import os
+
+helptext = """
+Open a rocking curve data at PETRAIII P10 beamline and plot the stack along first axis.
+Usefull to localize the Bragg peak for ROI determination.
+"""
 
 scan = 164
 sample_name = "dewet5_"  # "S"
@@ -45,7 +44,6 @@ print("Max at (y, x): ", y0, x0, ' Max = ', int(data[y0, x0]))
 
 plt.figure()
 plt.imshow(np.log10(data), vmin=0)
-plt.title('sum(data)')
+plt.title('sum(data) along the the rocking curve')
 plt.colorbar()
-
 plt.show()
