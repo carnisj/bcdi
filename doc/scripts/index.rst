@@ -24,14 +24,6 @@ Postprocessing
 Preprocessing
 -------------
 
-`prepare_cdi_mask.py`:
-^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/preprocessing/scripts/prepare_cdi_mask.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
 `concatenate_scans.py`:
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -40,3 +32,18 @@ Preprocessing
    :end-before: """
    :language: rst
 
+`prepare_cdi_mask.py`:
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/prepare_cdi_mask.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+`readdata_P10.py`:
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/readdata_P10.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
