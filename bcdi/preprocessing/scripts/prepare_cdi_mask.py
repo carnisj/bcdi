@@ -17,7 +17,7 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import gc
-# sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
@@ -39,9 +39,9 @@ DOCUMENTATION TO BE IMPROVED, SEE EXPLANATIONS IN SCRIPT
 
 """
 
-scans = [285]  # list or array of scan numbers    np.arange(173, 185+1, 3)
-root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\test\\"
-sample_name = "S"  # "S"
+scans = [164]  # list or array of scan numbers
+root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\P10_2018\\"
+sample_name = "dewet5"  # "S"
 comment = '_'  # string, should start with "_"
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
@@ -54,11 +54,11 @@ fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
 fix_size = []  # [0, 400, 68, 516, 0, 400]  # crop the array to predefined size, leave it to [] otherwise
 # [zstart, zstop, ystart, ystop, xstart, xstop]
 ###########################
-center_fft = 'pad_asymmetric_Z_crop_YX'
-# 'crop_symmetric_ZYX','crop_asymmetric_ZYX','pad_asymmetric_Z_crop_YX', 'pad_symmetric_Z_crop_YX',
-# 'pad_symmetric_Z', 'pad_asymmetric_Z', 'pad_symmetric_ZYX','pad_asymmetric_ZYX' or 'do_nothing'
-pad_size = []  # size after padding, e.g. [256, 512, 512]
-# used in 'pad_symmetric_Z_crop_YX', 'pad_symmetric_Z', 'pad_symmetric_ZYX'
+center_fft = 'pad_asym_Z_crop_asym_YX'
+# 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
+# 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'do_nothing'
+pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
+# used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'
 ###########################
 normalize_flux = True  # will normalize the intensity by the default monitor
 # exp1 or mon2 monitor on ID01, imon1 for SIXS, ipetra fro P10
@@ -79,12 +79,12 @@ save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'SIXS'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
+beamline = 'P10'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
 header_cristal = 'test'  # prefix of the first entry in .nxs file for CRISTAL
-headerline_p10 = 57  # nb of header lines in .fio file before data
+headerline_p10 = 56  # nb of header lines in .fio file before data
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = root_folder + 'alias_dict.txt'
+specfile_name = sample_name + '_%05d'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically root_folder + 'alias_dict.txt'
@@ -92,21 +92,21 @@ specfile_name = root_folder + 'alias_dict.txt'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 430  # horizontal pixel number of the Bragg peak
+detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+x_bragg = 1278  # horizontal pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207
-roi_detector = []
+roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'align.spec_ascan_mu_%05d.nxs'
+template_imagefile = '_data_%06d.h5'
 # ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # SIXS: 'align.spec_ascan_mu_%05d.nxs'
 # Cristal: 'S%d.nxs'
 # P10: '_data_%06d.h5'
 ################################################################################
-# define paramteres below if you want to orthogonalize the data before phasing #
+# define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
 sdd = 1.25873  # sample to detector distance in m, not important if you use raw data
 energy = 8500  # x-ray energy in eV, not important if you use raw data
@@ -320,12 +320,20 @@ for scan_nb in range(len(scans)):
     ########################
     # crop/pad/center data #
     ########################
+    plt.figure()
+    plt.imshow(np.log10(data.sum(axis=0)))
+    plt.pause(0.1)
+
     nz, ny, nx = np.shape(data)
     print('Data size:', nz, ny, nx)
 
     data, mask, pad_width, q_vector, frames_logical = \
         pru.center_fft(data=data, mask=mask, frames_logical=frames_logical, centering=centering, fft_option=center_fft,
                        pad_size=pad_size, fix_bragg=fix_bragg, fix_size=fix_size, q_values=q_values)
+
+    plt.figure()
+    plt.imshow(np.log10(data.sum(axis=0)))
+    plt.pause(0.1)
 
     starting_frame = [pad_width[0], pad_width[2], pad_width[4]]  # no need to check padded frames
     print('Pad width:', pad_width)
