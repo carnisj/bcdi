@@ -7,12 +7,72 @@
 
 import numpy as np
 import bcdi.graph.graph_utils as gu
+from bcdi.utils import image_registration as reg
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 from scipy.ndimage.measurements import center_of_mass
+from scipy.interpolate import RegularGridInterpolator
 import xrayutilities as xu
 import fabio
 import os
+
+
+def align_diffpattern(reference_data, data, mask, method='registration'):
+    """
+    Align two diffraction patterns based on the shift of the center of mass or based on dft registration.
+
+    :param reference_data: the first 3D diffraction intensity array which will serve as a reference.
+    :param data: the 3D diffraction intensity array to align.
+    :param mask: the 3D mask corresponding to data
+    :param method: 'center_of_mass' or 'registration'. For 'registration', see: Opt. Lett. 33, 156-158 (2008).
+    :return:
+     - the shifted data
+     - the shifted mask
+    """
+    if reference_data.ndim != 3:
+        raise ValueError('Expect 3D arrays as input')
+    nbz, nby, nbx = reference_data.shape
+    if reference_data.shape != data:
+        raise ValueError('reference_data and data do not have the same shape')
+
+    if method is 'center_of_mass':
+        ref_piz, ref_piy, ref_pix = center_of_mass(reference_data)
+        piz, piy, pix = center_of_mass(data)
+        offset_z = ref_piz - piz
+        offset_y = ref_piy - piy
+        offset_x = ref_pix - pix
+        print('x shift', str('{:.2f}'.format(offset_x)),  ', y shift',
+              str('{:.2f}'.format(offset_y)),  ', z shift', str('{:.2f}'.format(offset_z)))
+        # re-sample data on a new grid based on COM shift of support
+        old_z = np.arange(-nbz // 2, nbz // 2)
+        old_y = np.arange(-nby // 2, nby // 2)
+        old_x = np.arange(-nbx // 2, nbx // 2)
+        myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing='ij')
+        new_z = myz + offset_z
+        new_y = myy + offset_y
+        new_x = myx + offset_x
+        del myx, myy, myz
+        rgi = RegularGridInterpolator((old_z, old_y, old_x), data, method='linear', bounds_error=False,
+                                      fill_value=0)
+        data = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                   new_x.reshape((1, new_z.size)))).transpose())
+        data = data.reshape((nbz, nby, nbx)).astype(reference_data.dtype)
+        rgi = RegularGridInterpolator((old_z, old_y, old_x), mask, method='linear', bounds_error=False,
+                                      fill_value=0)
+        mask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                   new_x.reshape((1, new_z.size)))).transpose())
+        mask = mask.reshape((nbz, nby, nbx)).astype(data.dtype)
+        mask = np.rint(mask)  # mask is integer 0 or 1
+
+    elif method is 'registration':
+        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=100)
+        print('x shift', shiftx, ', y shift', shifty, ', z shift', shiftz)
+        data = abs(reg.subpixel_shift(data, shiftz, shifty, shiftx))  # data is a real number (intensity)
+        mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
+    else:
+        raise ValueError("Incorrect value for parameter ''")
+
+    return data, mask
 
 
 def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asymmetric_ZYX', **kwargs):
