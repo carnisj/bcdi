@@ -81,7 +81,6 @@ save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 beamline = 'P10'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
 header_cristal = 'test'  # prefix of the first entry in .nxs file for CRISTAL
-headerline_p10 = 56  # nb of header lines in .fio file before data
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = sample_name + '_%05d'
@@ -302,12 +301,12 @@ for scan_nb in range(len(scans)):
             q_values, data, _, mask, _, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, header_cristal=header_cristal,
-                            follow_bragg=follow_bragg, headerline_p10=headerline_p10)
+                            follow_bragg=follow_bragg)
         else:
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, header_cristal=header_cristal,
-                            follow_bragg=follow_bragg, headerline_p10=headerline_p10)
+                            follow_bragg=follow_bragg)
 
             np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
             if save_to_mat:
