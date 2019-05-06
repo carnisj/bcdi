@@ -51,7 +51,7 @@ reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the 
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
 reference_temperature = None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
 
-sort_by = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
+sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 
 original_size = (100, 400, 512)  # size of the FFT array used for phasing, when the result has been croped (.cxi)
@@ -109,7 +109,7 @@ tick_direction = 'inout'  # 'out', 'in', 'inout'
 tick_length = 3  # 10  # in plots
 tick_width = 1  # 2  # in plots
 
-centering = 2  # 0 Max only, 1 COM only, 2 Max then COM
+centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 align_crystal = 1  # if 1 rotates the crystal to align it along q, 0 otherwise
 ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
@@ -163,9 +163,9 @@ else:
 nz, ny, nx = obj.shape
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
 
-################################################
-# define range for orthogonalization and plotting - speed up calculations
-################################################
+###########################################################################
+# define range for orthogonalization and plotting - speed up calculations #
+###########################################################################
 zrange, yrange, xrange =\
     pu.find_datarange(array=obj, plot_margin=plot_width, amplitude_threshold=0.1, keep_size=keep_size)
 
@@ -174,74 +174,30 @@ numy = yrange * 2
 numx = xrange * 2
 print("Data shape used for orthogonalization and plotting: (", numz, ',', numy, ',', numx, ')')
 
-################################################
-# find the best reconstruction from the list, based on mean amplitude and variance
-################################################
+####################################################################################
+# find the best reconstruction from the list, based on mean amplitude and variance #
+####################################################################################
 if nbfiles > 1:
-    print('Trying to find the best reconstruction')
-    quality_array = np.ones((nbfiles, 4))  # 1/mean_amp, variance(amp), variance(amp)/mean_amp, 1/volume
-    for ii in range(nbfiles):
-        obj, _ = pu.load_reconstruction(file_path[ii])
-        print('Opening ', file_path[ii])
-
-        # use the range of interest defined above
-        obj = pu.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
-
-        # centering of array
-        if centering == 0:
-            obj = pu.center_max(obj)
-            # shift based on max value, required if it spans across the edge of the array before COM
-        elif centering == 1:
-            obj = pu.center_com(obj)
-        elif centering == 2:
-            obj = pu.center_max(obj)
-            obj = pu.center_com(obj)
-
-        obj_amp = abs(obj) / abs(obj).max()
-        temp_support = np.zeros(obj_amp.shape)
-        temp_support[obj_amp > threshold_plot] = 1  # only for plotting
-        quality_array[ii, 0] = 1 / obj_amp[obj_amp > threshold_plot].mean()  # 1/mean(amp)
-        quality_array[ii, 1] = np.var(obj_amp[obj_amp > threshold_plot])     # var(amp)
-        quality_array[ii, 2] = quality_array[ii, 0] * quality_array[ii, 1]   # var(amp)/mean(amp) index of dispersion
-        quality_array[ii, 3] = 1 / temp_support.sum()                        # 1/volume(support)
-        del temp_support
-        gc.collect()
-
-        # order reconstructions by minimizing the quality factor
-    if sort_by is 'mean_amplitude':    # sort by quality_array[:, 0] first
-        sorted_obj = np.lexsort((quality_array[:, 3], quality_array[:, 2], quality_array[:, 1], quality_array[:, 0]))
-        print('sorting by mean_amplitude')
-    elif sort_by is 'variance':        # sort by quality_array[:, 1] first
-        sorted_obj = np.lexsort((quality_array[:, 0], quality_array[:, 3], quality_array[:, 2], quality_array[:, 1]))
-        print('sorting by variance')
-    elif sort_by is 'variance/mean':   # sort by quality_array[:, 2] first
-        sorted_obj = np.lexsort((quality_array[:, 1], quality_array[:, 0], quality_array[:, 3], quality_array[:, 2]))
-        print('sorting by index of dispersion')
-    elif sort_by is 'volume':          # sort by quality_array[:, 3] first
-        sorted_obj = np.lexsort((quality_array[:, 2], quality_array[:, 1], quality_array[:, 0], quality_array[:, 3]))
-        print('sorting by volume')
-    else:  # default
-        sorted_obj = np.lexsort((quality_array[:, 3], quality_array[:, 2], quality_array[:, 1], quality_array[:, 0]))
-        print('sorting by mean_amplitude')
-    print('\nquality_array')
-    print(quality_array)
-    print("sorted list", sorted_obj)
+    print('\nTrying to find the best reconstruction')
+    print('Sorting by ', sort_method)
+    sorted_obj = pu.sort_reconstruction(file_path=file_path, amplitude_threshold=threshold_plot,
+                                        data_range=(zrange, yrange, xrange), sort_method='sort_method')
 else:
     sorted_obj = [0]
 
-################################################
-# load reconstructions and average it
-################################################
+#######################################
+# load reconstructions and average it #
+#######################################
 avg_obj = np.zeros((numz, numy, numx))
 ref_obj = np.zeros((numz, numy, numx))
 avg_counter = 1
-print('Averaging using', nbfiles, 'candidate reconstructions')
+print('\nAveraging using', nbfiles, 'candidate reconstructions')
 for ii in sorted_obj:
     obj, extension = pu.load_reconstruction(file_path[ii])
-    print('Opening ', file_path[ii])
+    print('\nOpening ', file_path[ii])
 
     if extension == '.h5':
-        centering = -1  # do not center, data is already cropped just on support for mode decomposition
+        centering_method = 'do_nothing'  # do not center, data is already cropped just on support for mode decomposition
         # you can use the line below if there is a roll of one pixel
         # obj = np.roll(obj, (0, -1, 0), axis=(0, 1, 2))
 
@@ -250,6 +206,7 @@ for ii in sorted_obj:
 
     # align with average reconstruction
     if avg_obj.sum() == 0:  # the fist array loaded will serve as reference object
+        print('This reconstruction will serve as reference object.')
         ref_obj = obj
         avg_obj = obj
     else:
@@ -258,22 +215,22 @@ for ii in sorted_obj:
         avg_counter = avg_counter + flag_avg
 
 avg_obj = avg_obj / avg_counter
-print('Average performed over ', avg_counter, 'reconstructions\n')
+print('\nAverage performed over ', avg_counter, 'reconstructions\n')
 del obj, ref_obj
 gc.collect()
 
-###################################
-# phase ramp removal
-###################################
+#############################################
+# phase ramp removal before phase filtering #
+#############################################
 amp, phase, rampz, rampy, rampx = pu.remove_ramp(amp=abs(avg_obj), phase=np.angle(avg_obj), initial_shape=original_size,
                                                  method=phase_ramp_removal, amplitude_threshold=threshold_plot,
                                                  gradient_threshold=threshold_gradient)
 del avg_obj
 gc.collect()
 
-############################################################
-# phase offset removal (at COM value)
-############################################################
+#######################################
+# phase offset removal (at COM value) #
+#######################################
 if debug == 1:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         invert_yaxis=False, plot_colorbar=True, title='Phase after ramp removal')
@@ -303,9 +260,9 @@ if debug == 1:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         invert_yaxis=False, plot_colorbar=True, title='Phase after mean removal')
 
-############################################################
-# average the phase over a window or apodize to reduce noise in strain plots
-############################################################
+##############################################################################
+# average the phase over a window or apodize to reduce noise in strain plots #
+##############################################################################
 if hwidth != 0:
     bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method=isosurface_method)
     # the phase should be averaged only in the support defined by the isosurface
@@ -325,30 +282,36 @@ if apodize_flag:
                             sigma=np.array([0.3, 0.3, 0.3]), mu=np.array([0.0, 0.0, 0.0]))
     comment = comment + '_apodize'
 
+####################################################################################################################
+# save the phase with the ramp for PRTF calculations, otherwise the object will be misaligned with the measurement #
+####################################################################################################################
 np.savez_compressed(datadir + 'S' + str(scan) + '_avg_obj_prtf' + comment, obj=amp * np.exp(1j * phase))
 
-phase = phase - gridz * rampz - gridy * rampy - gridx * rampx  # remove again phase ramp before orthogonalization
+####################################################
+# remove again phase ramp before orthogonalization #
+####################################################
+phase = phase - gridz * rampz - gridy * rampy - gridx * rampx
 
 avg_obj = amp * np.exp(1j * phase)
 
 del amp, phase, gridz, gridy, gridx, rampz, rampy, rampx
 gc.collect()
 
-###########################################################
-# centering of array
-###########################################################
-if centering == 0:
+######################
+# centering of array #
+######################
+if centering_method is 'max':
     avg_obj = pu.center_max(avg_obj)
     # shift based on max value, required if it spans across the edge of the array before COM
-elif centering == 1:
+elif centering_method is 'com':
     avg_obj = pu.center_com(avg_obj)
-elif centering == 2:
+elif centering_method is 'max_com':
     avg_obj = pu.center_max(avg_obj)
     avg_obj = pu.center_com(avg_obj)
 
-##############################################
-#  plot amp & phase, save support & vtk
-##############################################
+#########################################
+#  plot amp & phase, save support & vti #
+#########################################
 if True:
     phase = np.angle(avg_obj)
 
@@ -381,9 +344,9 @@ if save_raw:
                    voxel_size=(voxel_z, voxel_y, voxel_x), tuple_array=(abs(avg_obj), np.angle(avg_obj)),
                    tuple_fieldnames=('amp', 'phase'), amplitude_threshold=0.01)
 
-##############################################
-#  orthogonalize data
-##############################################
+#######################
+#  orthogonalize data #
+#######################
 print('\nShape before orthogonalization', avg_obj.shape)
 if xrayutils_ortho == 0:
     if correct_refraction == 1 or correct_absorption == 1:
@@ -432,9 +395,9 @@ else:  # data already orthogonalized using xrayutilities, # TODO: DEBUG THIS PAR
 del avg_obj
 gc.collect()
 
-# #################################################
-# calculate q, kin , kout from angles and energy
-# #################################################
+##################################################
+# calculate q, kin , kout from angles and energy #
+##################################################
 kin = 2*np.pi/setup.wavelength * np.array([1, 0, 0])  # z downstream, y vertical, x outboard
 kout = setup.exit_wavevector()
 
@@ -459,9 +422,9 @@ if xrayutils_ortho == 1:
         # path_in = refraction_corr(amp, "in", threshold_refraction, 1, kin)  # data in crystal basis, will be slow
         # path_out = refraction_corr(amp, "out", threshold_refraction, 1, kout)  # data in crystal basis, will be slow
 
-###########################################################
-# centering of array
-###########################################################
+######################
+# centering of array #
+######################
 obj_ortho = pu.center_com(obj_ortho)
 amp = abs(obj_ortho)
 phase = np.angle(obj_ortho)
@@ -476,15 +439,15 @@ if debug == 1:
                         sum_frames=False, invert_yaxis=True, plot_colorbar=True,
                         title='Phase before refraction correction')
 
-###########################################################
-# invert phase: -1*phase = displacement * q
-###########################################################
+#############################################
+# invert phase: -1*phase = displacement * q #
+#############################################
 if invert_phase == 1:
     phase = -1 * phase
 
-############################################################
-# refraction and absorption correction
-############################################################
+########################################
+# refraction and absorption correction #
+########################################
 if xrayutils_ortho == 0:  # otherwise it is already calculated for xrayutilities above
     if correct_refraction == 1 or correct_absorption == 1:
         bulk = pu.find_bulk(amp=amp, support_threshold=threshold_refraction, method='threshold')
@@ -527,9 +490,9 @@ if xrayutils_ortho == 0:  # otherwise it is already calculated for xrayutilities
         del optical_path
         gc.collect()
 
-############################################################
-# phase ramp and offset removal (mean value)
-############################################################
+##############################################
+# phase ramp and offset removal (mean value) #
+##############################################
 amp, phase, _, _, _ = pu.remove_ramp(amp=amp, phase=phase, initial_shape=original_size, method=phase_ramp_removal,
                                      amplitude_threshold=threshold_plot, gradient_threshold=threshold_gradient)
 
@@ -545,9 +508,9 @@ if True:
                         sum_frames=False, invert_yaxis=True, plot_colorbar=True,
                         title='Orthogonal phase after mean removal')
 
-# ###########################################################
-# save to VTK before rotations
-# ###########################################################
+################################
+# save to VTK before rotations #
+################################
 if save_labframe:
     if invert_phase == 1:
         np.savez_compressed(datadir + 'S' + str(scan) + "_amp" + phase_fieldname + comment + '_LAB',
@@ -563,9 +526,9 @@ if save_labframe:
                    voxel_size=(voxel_size, voxel_size, voxel_size), tuple_array=(amp, phase),
                    tuple_fieldnames=('amp', phase_fieldname), amplitude_threshold=0.01)
     
-###########################################################
-# put back the crystal in its frame, by aligning q onto the reference axis
-###########################################################
+############################################################################
+# put back the crystal in its frame, by aligning q onto the reference axis #
+############################################################################
 if xrayutils_ortho == 0:
     if ref_axis_outplane == "x":
         myaxis = np.array([1, 0, 0])  # must be in [x, y, z] order
@@ -587,9 +550,9 @@ if xrayutils_ortho == 0:
     phase = pu.rotate_crystal(array=phase, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
                               reference_axis=myaxis, debugging=0)
 
-############################################################
-# calculate the strain depending on which axis q is aligned on
-############################################################
+################################################################
+# calculate the strain depending on which axis q is aligned on #
+################################################################
 strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxel_size,
                        reference_axis=ref_axis_outplane)
 
@@ -597,9 +560,9 @@ strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxe
 # gradz, grady, gradx = np.gradient(planar_dist/(2*np.pi)*phase, voxel_size)  # planar_dist, voxel_size in nm
 # strain = q[0]*gradz + q[1]*grady + q[2]*gradx  # q is normalized
 
-#############################################################
-# rotates the crystal inplane for easier slicing of the result
-#############################################################
+################################################################
+# rotates the crystal inplane for easier slicing of the result #
+################################################################
 if xrayutils_ortho == 0:
     if align_inplane == 1:
         align_crystal = 1
@@ -631,9 +594,9 @@ if xrayutils_ortho == 0:
 
     print('Voxel size: ', str('{:.2f}'.format(voxel_size)), "nm")
 
-###########################################################
-# pad array to fit the output_size parameter
-###########################################################
+##############################################
+# pad array to fit the output_size parameter #
+##############################################
 if not output_size:  # output_size not defined, default to actual size
     pass
 else:
@@ -643,9 +606,9 @@ else:
 numz, numy, numx = amp.shape
 print("Final data shape:", numz, numy, numx)
 
-############################################################
-# save result to vtk (result in the laboratory frame or rotated result in the crystal frame)
-############################################################
+##############################################################################################
+# save result to vtk (result in the laboratory frame or rotated result in the crystal frame) #
+##############################################################################################
 bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method=isosurface_method)
 if save:
     if invert_phase == 1:
@@ -661,9 +624,9 @@ if save:
                    voxel_size=(voxel_size, voxel_size, voxel_size), tuple_array=(amp, bulk, phase, strain),
                    tuple_fieldnames=('amp', 'bulk', phase_fieldname, 'strain'), amplitude_threshold=0.01)
 
-#############################################
-# plot phase & strain
-#############################################
+#######################
+# plot phase & strain #
+#######################
 amp = amp / amp.max()
 volume = bulk.sum()*voxel_size**3  # in nm3
 strain[bulk == 0] = -2*strain_range
@@ -690,7 +653,7 @@ fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
 fig.text(0.60, 0.40, "Voxel size=" + str('{:.2f}'.format(voxel_size)) + "nm", size=20)
 fig.text(0.60, 0.35, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
 fig.text(0.60, 0.30, "Volume=" + str(int(volume)) + "nm3", size=20)
-fig.text(0.60, 0.25, "Sorted by " + sort_by, size=20)
+fig.text(0.60, 0.25, "Sorted by " + sort_method, size=20)
 fig.text(0.60, 0.20, 'correlation threshold=' + str(correlation_threshold), size=20)
 fig.text(0.60, 0.15, "Average over " + str(avg_counter) + " reconstruction(s)", size=20)
 fig.text(0.60, 0.10, "Planar distance=" + str('{:.5f}'.format(planar_dist)) + "nm", size=20)
