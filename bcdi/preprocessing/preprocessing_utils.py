@@ -572,7 +572,6 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
-     - headerline_p10: number of header lines before scanned motor position in .fio file (only for P10 dataset)
      - header_cristal: string, header of data path in CRISTAL .nxs files
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -583,23 +582,15 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
     for k in kwargs.keys():
         if k in ['follow_bragg']:
             follow_bragg = kwargs['follow_bragg']
-        elif k in ['headerline_p10']:
-            headerline_p10 = kwargs['headerline_p10']
         elif k in ['header_cristal']:
             header_cristal = kwargs['header_cristal']
         else:
-            raise Exception("unknown keyword argument given: allowed is 'follow_bragg' and 'headerline_p10'")
+            raise Exception("unknown keyword argument given: allowed is 'follow_bragg'")
     if setup.rocking_angle == 'energy':
         try:
             follow_bragg
         except NameError:
             raise TypeError("Parameter 'follow_bragg' not provided, defaulting to False")
-
-    if setup.beamline == 'P10':
-        try:
-            headerline_p10
-        except NameError:
-            raise TypeError("Parameter 'headerline_p10' not provided")
 
     if setup.beamline == 'CRISTAL':
         try:
@@ -626,7 +617,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
     elif setup.beamline == 'P10':
         rawdata, rawmask, monitor, frames_logical = \
             load_p10_data(logfile=logfile, detector=detector, flatfield=flatfield,
-                          hotpixels=hotpixels, headerlines=headerline_p10)
+                          hotpixels=hotpixels)
     else:
         raise ValueError("Incorrect value for parameter 'beamline'")
 
@@ -661,8 +652,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
                                                      setup=setup, hxrd=hxrd)
         elif setup.beamline == 'P10':
             qx, qz, qy, frames_logical = regrid_p10(frames_logical=frames_logical, logfile=logfile,
-                                                    detector=detector, setup=setup, hxrd=hxrd,
-                                                    headerlines=headerline_p10)
+                                                    detector=detector, setup=setup, hxrd=hxrd)
         else:
             raise ValueError("Incorrect value for parameter 'beamline'")
 
@@ -674,7 +664,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
         # convert data to rectangular grid in reciprocal space
         gridder(qx, qz, qy, rawdata)
 
-        q_values = (gridder.xaxis, gridder.yaxis, gridder.zaxis)
+        q_values = [gridder.xaxis, gridder.yaxis, gridder.zaxis]
 
         return q_values, rawdata, gridder.data, rawmask, mask, frames_logical, monitor
 
@@ -900,7 +890,7 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels):
     return data, mask3d, monitor, frames_logical
 
 
-def load_p10_data(logfile, detector, flatfield, hotpixels, headerlines):
+def load_p10_data(logfile, detector, flatfield, hotpixels):
     """
     Load P10 data, apply filters and concatenate it for phasing.
 
@@ -908,7 +898,6 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, headerlines):
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
-    :param headerlines: number of header lines before scanned motor position in .fio file (only for P10 dataset)
     :return:
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
@@ -949,21 +938,22 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, headerlines):
 
     frames_logical = np.ones(nb_img)
     fio = open(logfile, 'r')
-    monitor = np.zeros(nb_img)
-    for ii in range(headerlines):  # header
-        fio.readline()
 
-    line_counter = 0
-    for ii in range(nb_img):
-        line = fio.readline()
-        line = line.strip()
-        columns = line.split()
-        if columns[0] == '!':
-            raise ValueError("Wrong value for the parameter 'headerlines'")
-        monitor[line_counter] = columns[6]  # ipetra  # TODO detect automatically the index for ipetra
-        line_counter += 1
+    monitor = []
+    fio_lines = fio.readlines()
+    for line in fio_lines:
+        this_line = line.strip()
+        words = this_line.split()
+        if 'Col' in words and 'ipetra' in words:  # template = ' Col 6 ipetra DOUBLE\n'
+            index_monitor = int(words[1])-1  # python index starts at 0
+        try:
+            float(words[0])  # if this does not fail, we are reading data
+            monitor.append(float(words[index_monitor]))
+        except ValueError:  # first word is not a number, skip this line
+            continue
+
     fio.close()
-
+    monitor = np.asarray(monitor, dtype=float)
     return data, mask3d, monitor, frames_logical
 
 
@@ -1337,7 +1327,7 @@ def regrid_id01(follow_bragg, frames_logical, logfile, scan_number, detector, se
     return qx, qz, qy, frames_logical
 
 
-def regrid_p10(frames_logical, logfile, detector, setup, hxrd, headerlines):
+def regrid_p10(frames_logical, logfile, detector, setup, hxrd):
     """
     Load SIXS motor positions and calculate q positions for orthogonalization.
 
@@ -1347,31 +1337,54 @@ def regrid_p10(frames_logical, logfile, detector, setup, hxrd, headerlines):
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
-    :param headerlines: number of header lines before scanned motor position in .fio file (only for P10 dataset)
     :return:
      - qx, qz, qy components for the dataset
      - updated frames_logical
     """
-    # TODO: find motors in specfile
-    om = []
     fio = open(logfile, 'r')
-    for index in range(headerlines):  # header
-        fio.readline()
-    for index, myline in enumerate(fio, 0):
-        myline = myline.strip()
-        mycolumns = myline.split()
-        if mycolumns[0] == '!':
-            break
-        om.append(mycolumns[0])
-    om = np.asarray(om, dtype=float)
+
+    om = []
+    fio_lines = fio.readlines()
+    for line in fio_lines:
+        this_line = line.strip()
+        words = this_line.split()
+
+        if 'Col' in words and 'om' in words:  # om is scanned, template = ' Col 0 om DOUBLE\n'
+            index_om = int(words[1]) - 1  # python index starts at 0
+        if 'om' in words and '=' in words and setup.rocking_angle == "inplane":  # om is a positioner
+            om = float(words[2])
+
+        if 'Col' in words and 'phi' in words:  # phi is scanned, template = ' Col 0 om DOUBLE\n'
+            index_phi = int(words[1]) - 1  # python index starts at 0
+        if 'phi' in words and '=' in words and setup.rocking_angle == "outofplane":  # phi is a positioner
+            phi = float(words[2])
+
+        if 'chi' in words and '=' in words:  # template for positioners: 'chi = 90.0\n'
+            chi = float(words[2])
+        if 'del' in words and '=' in words:  # template for positioners: 'del = 30.05\n'
+            delta = float(words[2])
+        if 'gam' in words and '=' in words:  # template for positioners: 'gam = 4.05\n'
+            gamma = float(words[2])
+        if 'mu' in words and '=' in words:  # template for positioners: 'mu = 0.0\n'
+            mu = float(words[2])
+
+        try:
+            float(words[0])  # if this does not fail, we are reading data
+            if setup.rocking_angle == "outofplane":
+                om.append(float(words[index_om]))
+            elif setup.rocking_angle == "inplane":
+                phi.append(float(words[index_phi]))
+        except ValueError:  # first word is not a number, skip this line
+            continue
+
+    if setup.rocking_angle == "outofplane":
+        om = np.asarray(om, dtype=float)
+    elif setup.rocking_angle == "inplane":
+        phi = np.asarray(phi, dtype=float)
 
     fio.close()
 
-    # qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
-
-    qx = []
-    qz = []
-    qy = []
+    qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     return qx, qz, qy, frames_logical
 
