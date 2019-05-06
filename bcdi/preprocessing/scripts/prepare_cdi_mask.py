@@ -107,13 +107,13 @@ template_imagefile = '_data_%06d.h5'
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-sdd = 1.25873  # sample to detector distance in m, not important if you use raw data
-energy = 8500  # x-ray energy in eV, not important if you use raw data
+sdd = 1.8  # sample to detector distance in m, not important if you use raw data
+energy = 10300  # x-ray energy in eV, not important if you use raw data
 grazing_angle = 0  # incident angle of diffractometer at SIXS or incident angle below phi for in-plane rocking curves
 beam_direction = [1, 0, 0]  # beam along x
 sample_inplane = [1, 0, 0]  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = [0, 0, 1]  # surface normal of the sample at 0 angles
-offset_inplane = 3.0069  # outer detector angle offset, not important if you use raw data
+offset_inplane = 0  # outer detector angle offset, not important if you use raw data
 cch1 = 71.61  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
 cch2 = 1656.65  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
 detrot = -0.897  # detrot parameter from xrayutilities 2D detector calibration
@@ -191,8 +191,8 @@ setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=r
 #############################################
 qconv, offsets = pru.init_qconversion(setup)
 detector.offsets = offsets
-cch1 = 71.61 - detector.roi[0]  # take into account the roi if the image is cropped
-cch2 = 1656.65 - detector.roi[2]  # take into account the roi if the image is cropped
+cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
+cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
 hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x downstream, y outboard, z vertical
 # first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
 hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
@@ -213,10 +213,6 @@ if len(scans) > 1:
 if rocking_angle == "energy":
     use_rawdata = False  # you need to interpolate the data in QxQyQz for energy scans
     print("Energy scan implemented only for ID01")
-
-if not use_rawdata and setup.beamline == 'P10':
-    print('Orthogonalization not yet implemented for P10')
-    sys.exit()
 
 for scan_nb in range(len(scans)):
     plt.ion()
@@ -249,10 +245,6 @@ for scan_nb in range(len(scans)):
     if not use_rawdata:
         print('Output will be orthogonalized by xrayutilities')
         plot_title = ['QzQx', 'QyQx', 'QyQz']
-        if beamline == 'P10':
-            print('Gridder not yet implemented for P10')
-            print('Switch to raw data instead of orthogonal data')
-            use_rawdata = True
     else:
         print('Output will be non orthogonal, in the detector frame')
         plot_title = ['YZ', 'XZ', 'XY']
@@ -306,7 +298,7 @@ for scan_nb in range(len(scans)):
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, header_cristal=header_cristal,
-                            follow_bragg=follow_bragg)
+                            follow_bragg=follow_bragg, orthogonalize=True)
 
             np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
             if save_to_mat:
