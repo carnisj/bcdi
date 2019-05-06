@@ -19,8 +19,12 @@ Usefull to localize the Bragg peak for ROI determination.
 scan = 164
 sample_name = "dewet5_"  # "S"
 specdir = "C:/Users/carnis/Work Folders/Documents/data/P10_2018/"
-homedir = specdir + sample_name + str('{:05d}'.format(scan)) + "/"  # specdir + "S" + str(scan) + '/'
-datadir = homedir + "e4m/"  # "data/"
+save_mask = False  # set to True to save the mask
+##################################
+# end of user-defined parameters #
+##################################
+homedir = specdir + sample_name + str('{:05d}'.format(scan)) + "/"
+datadir = homedir + "e4m/"
 ccdfiletmp = os.path.join(datadir, sample_name + str('{:05d}'.format(scan)) + "_data_%06d.h5")
 
 h5file = h5py.File(ccdfiletmp % 1, 'r')
@@ -33,7 +37,10 @@ mask[1064:1103, :] = 1
 mask[1614:1654, :] = 1
 mask[np.log10(data) > 8] = 1  # look for hot pixels
 data[mask == 1] = 0
-# np.savez_compressed(datadir+'hotpixels.npz', mask=mask)
+
+if save_mask:
+    np.savez_compressed(datadir+'hotpixels.npz', mask=mask)
+
 plt.figure()
 plt.imshow(mask)
 plt.title('mask')
@@ -42,8 +49,9 @@ plt.colorbar()
 y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
 print("Max at (y, x): ", y0, x0, ' Max = ', int(data[y0, x0]))
 
-plt.figure()
+fig = plt.figure()
 plt.imshow(np.log10(data), vmin=0)
-plt.title('sum(data) along the the rocking curve')
+plt.title('data.sum(axis=0)\nMax at (y, x): (' + str(y0) + ',' + str(x0) + ')   Max = ' + str(int(data[y0, x0])))
 plt.colorbar()
+plt.savefig(homedir + 'sum_S' + str(scan) + '.png')
 plt.show()
