@@ -54,7 +54,7 @@ fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
 fix_size = []  # [0, 400, 68, 516, 0, 400]  # crop the array to predefined size, leave it to [] otherwise
 # [zstart, zstop, ystart, ystop, xstart, xstop]
 ###########################
-center_fft = 'pad_asym_Z_crop_asym_YX'
+center_fft = 'crop_asym_ZYX'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'do_nothing'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
@@ -93,7 +93,7 @@ specfile_name = sample_name + '_%05d'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1278  # horizontal pixel number of the Bragg peak
+x_bragg = 1282  # horizontal pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207
 roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
@@ -320,9 +320,9 @@ for scan_nb in range(len(scans)):
     ########################
     # crop/pad/center data #
     ########################
-    plt.figure()
-    plt.imshow(np.log10(data.sum(axis=0)))
-    plt.pause(0.1)
+    # plt.figure()
+    # plt.imshow(np.log10(data.sum(axis=0)))
+    # plt.pause(0.1)
 
     nz, ny, nx = np.shape(data)
     print('Data size:', nz, ny, nx)
@@ -331,9 +331,9 @@ for scan_nb in range(len(scans)):
         pru.center_fft(data=data, mask=mask, frames_logical=frames_logical, centering=centering, fft_option=center_fft,
                        pad_size=pad_size, fix_bragg=fix_bragg, fix_size=fix_size, q_values=q_values)
 
-    plt.figure()
-    plt.imshow(np.log10(data.sum(axis=0)))
-    plt.pause(0.1)
+    # plt.figure()
+    # plt.imshow(np.log10(data.sum(axis=0)))
+    # plt.pause(0.1)
 
     starting_frame = [pad_width[0], pad_width[2], pad_width[4]]  # no need to check padded frames
     print('Pad width:', pad_width)
@@ -411,6 +411,7 @@ for scan_nb in range(len(scans)):
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
+        fig_mask.set_facecolor('0.6')
         plt.show()
         del dim, fig_mask
 
@@ -423,6 +424,7 @@ for scan_nb in range(len(scans)):
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
+        fig_mask.set_facecolor('0.6')
         plt.show()
         del dim, fig_mask
 
@@ -435,6 +437,7 @@ for scan_nb in range(len(scans)):
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
+        fig_mask.set_facecolor('0.6')
         plt.show()
 
         del dim, width, fig_mask, original_data, flag_aliens
@@ -484,6 +487,7 @@ for scan_nb in range(len(scans)):
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
+        fig_mask.set_facecolor('0.6')
         plt.show()
         data = np.copy(original_data)
 
@@ -510,6 +514,7 @@ for scan_nb in range(len(scans)):
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
+        fig_mask.set_facecolor('0.6')
         plt.show()
         data = np.copy(original_data)
 
@@ -536,6 +541,7 @@ for scan_nb in range(len(scans)):
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
+        fig_mask.set_facecolor('0.6')
         plt.show()
 
         for idx in range(nx):
