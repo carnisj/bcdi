@@ -24,22 +24,20 @@ import bcdi.preprocessing.preprocessing_utils as pru
 
 
 helptext = """
-prepare_cdi_mask.py
-Prepare experimental data for CDI phasing
-Output: data and mask as numpy .npz arrays for phasing
+Prepare experimental data for CDI phasing: crop/pad, center, mask, normalize and filter the data.
+
+Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS and PETRAIII P10.
+
+Output: data and mask as numpy .npz or Matlab .mat 3D arrays for phasing
 
 File structure should be (e.g. scan 1):
 specfile, hotpixels file and flatfield file in:    /rootdir/
 data in:                                           /rootdir/S1/data/
 
-
-output files will be saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
-
-DOCUMENTATION TO BE IMPROVED, SEE EXPLANATIONS IN SCRIPT
-
+output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [164]  # list or array of scan numbers
+scans = [185]  # list or array of scan numbers
 root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\P10_2018\\"
 sample_name = "dewet5"  # "S"  #
 comment = '_'  # string, should start with "_"
@@ -92,7 +90,7 @@ specfile_name = sample_name + '_%05d'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1282  # horizontal pixel number of the Bragg peak
+x_bragg = 1282  # horizontal pixel number of the Bragg peak  # 1282 P10 2018 (if smaller presence of gap)
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207
 roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = []
