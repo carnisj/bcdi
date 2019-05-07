@@ -41,8 +41,8 @@ def align_diffpattern(reference_data, data, mask, method='registration'):
         offset_z = ref_piz - piz
         offset_y = ref_piy - piy
         offset_x = ref_pix - pix
-        print('x shift', str('{:.2f}'.format(offset_x)),  ', y shift',
-              str('{:.2f}'.format(offset_y)),  ', z shift', str('{:.2f}'.format(offset_z)))
+        print('z shift', str('{:.2f}'.format(offset_z)),  ', y shift',
+              str('{:.2f}'.format(offset_y)),  ', x shift', str('{:.2f}'.format(offset_x)))
         # re-sample data on a new grid based on COM shift of support
         old_z = np.arange(-nbz // 2, nbz // 2)
         old_y = np.arange(-nby // 2, nby // 2)
@@ -66,7 +66,7 @@ def align_diffpattern(reference_data, data, mask, method='registration'):
 
     elif method is 'registration':
         shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=100)
-        print('x shift', shiftx, ', y shift', shifty, ', z shift', shiftz)
+        print('z shift', shiftz, ', y shift', shifty, ', x shift', shiftx)
         data = abs(reg.subpixel_shift(data, shiftz, shifty, shiftx))  # data is a real number (intensity)
         mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
     else:
