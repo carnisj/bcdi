@@ -41,7 +41,7 @@ DOCUMENTATION TO BE IMPROVED, SEE EXPLANATIONS IN SCRIPT
 
 scans = [164]  # list or array of scan numbers
 root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\P10_2018\\"
-sample_name = "dewet5"  # "S"
+sample_name = "dewet5"  # "S"  #
 comment = '_'  # string, should start with "_"
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
@@ -80,7 +80,6 @@ save_to_mat = False  # set to 1 to save also in .mat format
 # define beamline related parameters #
 ######################################
 beamline = 'P10'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
-header_cristal = 'test'  # prefix of the first entry in .nxs file for CRISTAL
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = sample_name + '_%05d'
@@ -95,9 +94,10 @@ detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 1282  # horizontal pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207
 roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
+# roi_detector = []
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
-hotpixels_file = ''  # root_folder + 'hotpixels.npz'
+hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
 template_imagefile = '_data_%06d.h5'
 # ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
@@ -292,13 +292,13 @@ for scan_nb in range(len(scans)):
         if use_rawdata:
             q_values, data, _, mask, _, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
-                            flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, header_cristal=header_cristal,
-                            follow_bragg=follow_bragg)
+                            flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=follow_bragg,
+                            orthogonalize=False)
         else:
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
-                            flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, header_cristal=header_cristal,
-                            follow_bragg=follow_bragg, orthogonalize=True)
+                            flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
+                            orthogonalize=True)
 
             np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
             if save_to_mat:
