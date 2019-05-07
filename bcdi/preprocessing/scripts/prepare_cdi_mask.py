@@ -45,6 +45,7 @@ sample_name = "dewet5"  # "S"  #
 comment = '_'  # string, should start with "_"
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
+background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ###########################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
 #  It will be overridden by 'fix_bragg' if not empty
@@ -402,7 +403,7 @@ for scan_nb in range(len(scans)):
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
-        fig_mask.set_facecolor('0.6')
+        fig_mask.set_facecolor(background_plot)
         plt.show()
         del dim, fig_mask
 
@@ -415,7 +416,7 @@ for scan_nb in range(len(scans)):
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
-        fig_mask.set_facecolor('0.6')
+        fig_mask.set_facecolor(background_plot)
         plt.show()
         del dim, fig_mask
 
@@ -428,7 +429,7 @@ for scan_nb in range(len(scans)):
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
-        fig_mask.set_facecolor('0.6')
+        fig_mask.set_facecolor(background_plot)
         plt.show()
 
         del dim, width, fig_mask, original_data, flag_aliens
@@ -478,7 +479,7 @@ for scan_nb in range(len(scans)):
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
-        fig_mask.set_facecolor('0.6')
+        fig_mask.set_facecolor(background_plot)
         plt.show()
         data = np.copy(original_data)
 
@@ -505,7 +506,7 @@ for scan_nb in range(len(scans)):
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
-        fig_mask.set_facecolor('0.6')
+        fig_mask.set_facecolor(background_plot)
         plt.show()
         data = np.copy(original_data)
 
@@ -532,7 +533,7 @@ for scan_nb in range(len(scans)):
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
-        fig_mask.set_facecolor('0.6')
+        fig_mask.set_facecolor(background_plot)
         plt.show()
 
         for idx in range(nx):
