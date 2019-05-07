@@ -32,7 +32,7 @@ def align_diffpattern(reference_data, data, mask, method='registration'):
     if reference_data.ndim != 3:
         raise ValueError('Expect 3D arrays as input')
     nbz, nby, nbx = reference_data.shape
-    if reference_data.shape != data:
+    if reference_data.shape != data.shape:
         raise ValueError('reference_data and data do not have the same shape')
 
     if method is 'center_of_mass':
