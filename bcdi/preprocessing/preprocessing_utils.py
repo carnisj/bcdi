@@ -572,7 +572,6 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
-     - header_cristal: string, header of data path in CRISTAL .nxs files
     :return:
      - the 3D data array in the detector frame and the 3D mask array
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
@@ -582,8 +581,6 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
     for k in kwargs.keys():
         if k in ['follow_bragg']:
             follow_bragg = kwargs['follow_bragg']
-        elif k in ['header_cristal']:
-            header_cristal = kwargs['header_cristal']
         else:
             raise Exception("unknown keyword argument given: allowed is 'follow_bragg'")
     if setup.rocking_angle == 'energy':
@@ -591,12 +588,6 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
             follow_bragg
         except NameError:
             raise TypeError("Parameter 'follow_bragg' not provided, defaulting to False")
-
-    if setup.beamline == 'CRISTAL':
-        try:
-            header_cristal
-        except NameError:
-            raise TypeError("Parameter 'header_cristal' not provided")
 
     if flatfield is None:
         flatfield = np.ones((detector.nb_pixel_y, detector.nb_pixel_x))
@@ -609,8 +600,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
                            hotpixels=hotpixels)
     elif setup.beamline == 'CRISTAL':
         rawdata, rawmask, monitor, frames_logical = \
-            load_cristal_data(logfile=logfile, header=header_cristal, scan_number=scan_number, detector=detector,
-                              flatfield=flatfield, hotpixels=hotpixels)
+            load_cristal_data(logfile=logfile, detector=detector, flatfield=flatfield, hotpixels=hotpixels)
     elif setup.beamline == 'SIXS':
         rawdata, rawmask, monitor, frames_logical = \
             load_sixs_data(logfile=logfile, detector=detector, flatfield=flatfield, hotpixels=hotpixels)
@@ -645,7 +635,6 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
 
         elif setup.beamline == 'CRISTAL':
             qx, qz, qy, frames_logical = regrid_cristal(frames_logical=frames_logical, logfile=logfile,
-                                                        header=header_cristal, scan_number=scan_number,
                                                         detector=detector, setup=setup, hxrd=hxrd)
         elif setup.beamline == 'SIXS':
             qx, qz, qy, frames_logical = regrid_sixs(frames_logical=frames_logical, logfile=logfile, detector=detector,
@@ -745,13 +734,12 @@ def init_qconversion(setup):
     return qconv, offsets
 
 
-def load_cristal_data(logfile, header, scan_number, detector, flatfield, hotpixels):
+def load_cristal_data(logfile, detector, flatfield, hotpixels):
     """
-    Load ID01 data, apply filters and concatenate it for phasing.
+    Load CRISTAL data, apply filters and concatenate it for phasing. The address of dataset and monitor in the h5 file
+     may have to be modified.
 
     :param logfile: h5py File object of CRISTAL .nxs scan file
-    :param header: string, header of data path in CRISTAL .nxs files
-    :param scan_number: the scan number to load
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
@@ -762,7 +750,8 @@ def load_cristal_data(logfile, header, scan_number, detector, flatfield, hotpixe
     """
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
-    tmp_data = logfile[header + '_' + str('{:04d}'.format(scan_number))]['scan_data']['data_06'][:]
+    group_key = list(logfile.keys())[0]
+    tmp_data = logfile['/' + group_key + '/scan_data/data_06'][:]
 
     nb_img = tmp_data.shape[0]
     data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
@@ -786,7 +775,7 @@ def load_cristal_data(logfile, header, scan_number, detector, flatfield, hotpixe
 
     frames_logical = np.ones(nb_img)
 
-    monitor = logfile[header + '_' + str('{:04d}'.format(scan_number))]['scan_data']['data_04'][:]
+    monitor = logfile['/' + group_key + '/scan_data/data_04'][:]
 
     return data, mask3d, monitor, frames_logical
 
@@ -1229,15 +1218,13 @@ def primes(number):
     return list_primes
 
 
-def regrid_cristal(frames_logical, logfile, header, scan_number, detector, setup, hxrd):
+def regrid_cristal(frames_logical, logfile, detector, setup, hxrd):
     """
     Load CRISTAL motor positions and calculate q positions for orthogonalization.
 
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param logfile: Silx SpecFile object containing the information about the scan and image numbers
-    :param header: string, header of data path in CRISTAL .nxs files
-    :param scan_number: the scan number to load
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
@@ -1248,17 +1235,13 @@ def regrid_cristal(frames_logical, logfile, header, scan_number, detector, setup
     if setup.rocking_angle != 'outofplane':
         raise ValueError('Only out of plane rocking curve implemented for CRISTAL')
 
-    mgomega = logfile[header +
-                      '_' + str('{:04d}'.format(scan_number))]['scan_data']['actuator_1_1'][:] / 1e6
+    group_key = list(logfile.keys())[0]
 
-    delta = logfile[header +
-                    '_' + str('{:04d}'.format(scan_number))]['CRISTAL']['Diffractometer']['I06-C-C07-EX-DIF-DELTA'][
-        'position'][:]
+    mgomega = logfile['/' + group_key + '/scan_data/actuator_1_1'][:] / 1e6  # mgomega is scanned
 
-    gamma = \
-        logfile[header +
-                '_' +
-                str('{:04d}'.format(scan_number))]['CRISTAL']['Diffractometer']['I06-C-C07-EX-DIF-GAMMA']['position'][:]
+    delta = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-DELTA/position'][:]
+
+    gamma = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-GAMMA/position'][:]
 
     qx, qy, qz = hxrd.Ang2Q.area(mgomega, gamma, delta, en=setup.energy, delta=detector.offsets)
 
@@ -1329,7 +1312,7 @@ def regrid_id01(follow_bragg, frames_logical, logfile, scan_number, detector, se
 
 def regrid_p10(frames_logical, logfile, detector, setup, hxrd):
     """
-    Load SIXS motor positions and calculate q positions for orthogonalization.
+    Load P10 motor positions and calculate q positions for orthogonalization.
 
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
@@ -1354,7 +1337,7 @@ def regrid_p10(frames_logical, logfile, detector, setup, hxrd):
         if 'om' in words and '=' in words and setup.rocking_angle == "inplane":  # om is a positioner
             om = float(words[2])
 
-        if 'Col' in words and 'phi' in words:  # phi is scanned, template = ' Col 0 om DOUBLE\n'
+        if 'Col' in words and 'phi' in words:  # phi is scanned, template = ' Col 0 phi DOUBLE\n'
             index_phi = int(words[1]) - 1  # python index starts at 0
         if 'phi' in words and '=' in words and setup.rocking_angle == "outofplane":  # phi is a positioner
             phi = float(words[2])
