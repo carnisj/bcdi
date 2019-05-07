@@ -1,3 +1,6 @@
+
+* Removed cumbersome argument header_cristal in prepare_mask_cdi.py.
+
 Version 0.0.2
 -------------
 

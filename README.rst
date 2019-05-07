@@ -99,6 +99,10 @@ License
 The BCDI library is distributed with a CeCILL-B license (an open-source license similar to the FreeBSD one).
 See http://www.cecill.info/licences/Licence_CeCILL-B_V1-en.html
 
+Documentation
+=============
+
+The documentation is available at: https://bcdi.readthedocs.io/en/latest/
 
 BCDI.facet_recognition: automatic facet detection in BCDI 3D reconstructions
 ============================================================================
