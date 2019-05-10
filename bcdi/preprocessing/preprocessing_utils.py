@@ -501,7 +501,7 @@ def check_pixels(data, mask, debugging=False):
                           tuple_title=('mean(data) before masking', '1/var(data) before masking'),
                           reciprocal_space=True)
     # calculate the mean and 1/variance for a single photon event along the rocking curve
-    min_count = 1.0  # pixels with only 1 photon count along the rocking curve.
+    min_count = 0.99  # pixels with only 1 photon count along the rocking curve.
 
     mean_threshold = min_count / nbz
     var_threshold = ((nbz - 1) * mean_threshold ** 2 + (min_count - mean_threshold) ** 2) * 1 / nbz
@@ -929,7 +929,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels):
         data[idx, :, :] = ccdraw
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=False)
+    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=True)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
     data[np.isnan(data)] = 0
