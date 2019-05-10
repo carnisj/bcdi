@@ -65,7 +65,7 @@ def align_diffpattern(reference_data, data, mask, method='registration'):
         mask = np.rint(mask)  # mask is integer 0 or 1
 
     elif method is 'registration':
-        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=100)
+        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=10)
         print('z shift', shiftz, ', y shift', shifty, ', x shift', shiftx)
         data = abs(reg.subpixel_shift(data, shiftz, shifty, shiftx))  # data is a real number (intensity)
         mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
@@ -506,8 +506,17 @@ def check_pixels(data, mask, debugging=False):
     mean_threshold = min_count / nbz
     var_threshold = ((nbz - 1) * mean_threshold ** 2 + (min_count - mean_threshold) ** 2) * 1 / nbz
 
+    temp_mask = np.zeros((nby, nbx))
+    temp_mask[vardata == np.inf] = 1  # this includes hotpixels but also zero intensity pixels
+    #  along the whole rocking curve
+    temp_mask[data.mean(axis=0) == 0] = 0  # remove zero intensity pixels from the mask
+
+    vardata[vardata == np.inf] = 0
     indices_badpixels = np.nonzero(vardata > 1 / var_threshold)
     mask[indices_badpixels] = 1  # mask is 2D
+    mask[np.nonzero(temp_mask)] = 1  # update mask
+
+    indices_badpixels = np.nonzero(mask)  # update indices
     for index in range(nbz):
         tempdata = data[index, :, :]
         tempdata[indices_badpixels] = 0  # numpy array is mutable hence data will be modified  # TODO: check that
