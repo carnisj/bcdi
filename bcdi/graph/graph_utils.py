@@ -87,15 +87,12 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
         for idx in range(nb_subplots-1):
             ylabel.append('')
 
-    if nb_subplots < 7:
-        nb_raws = 2
-    else:
-        nb_raws = 3
+    nb_raws = nb_subplots // 2
 
     nb_columns = nb_subplots // nb_raws + nb_subplots % nb_raws
 
     plt.ion()
-
+    plt.figure()
     for idx in range(nb_subplots):
 
         axis = plt.subplot(nb_raws, nb_columns, idx+1)
@@ -123,9 +120,15 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
         elif nb_dim == 1:
 
             if np.isnan(vmin):
-                vmin = array[~np.isnan(array)].min()
+                tmp_array = np.copy(array)
+                tmp_array[np.isnan(array)] = np.inf
+                tmp_array[np.isinf(tmp_array)] = np.inf  # set -inf to +inf to find the min
+                vmin = tmp_array.min()
             if np.isnan(vmax):
-                vmax = array[~np.isnan(array)].max()
+                tmp_array = np.copy(array)
+                tmp_array[np.isnan(array)] = -1 * np.inf
+                tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
+                vmax = tmp_array.max()
 
             axis.plot(array)
             axis.set_title(title)
@@ -194,17 +197,30 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
 
         if scale == 'linear':
             if np.isnan(vmin):
-                vmin = array[~np.isnan(array)].min()
+                tmp_array = np.copy(array)
+                tmp_array[np.isnan(array)] = np.inf
+                tmp_array[np.isinf(tmp_array)] = np.inf  # set -inf to +inf to find the min
+                vmin = tmp_array.min()
             if np.isnan(vmax):
-                vmax = array[~np.isnan(array)].max()
+                tmp_array = np.copy(array)
+                tmp_array[np.isnan(array)] = -1 * np.inf
+                tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
+                vmax = tmp_array.max()
+
             plot = axis.imshow(array, vmin=vmin, vmax=vmax, cmap=cmap)
         elif scale == 'log':
             if np.isnan(vmin):
-                vmin = np.log10(abs(array[~np.isnan(array)]).min())
+                tmp_array = np.copy(array)
+                tmp_array[np.isnan(array)] = np.inf
+                tmp_array[np.isinf(tmp_array)] = np.inf  # set -inf to +inf to find the min
+                vmin = np.log10(abs(tmp_array).min())
                 if np.isinf(vmin):
                     vmin = 0
             if np.isnan(vmax):
-                vmax = np.log10(abs(array[~np.isnan(array)]).max())
+                tmp_array = np.copy(array)
+                tmp_array[np.isnan(array)] = -1 * np.inf
+                tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
+                vmax = np.log10(abs(tmp_array).max())
             plot = axis.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax, cmap=cmap)
         else:
             raise ValueError('Wrong value for scale')
@@ -446,17 +462,29 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=np.nan, width_h=np.
 
     if scale == 'linear':
         if np.isnan(vmin):
-            vmin = array[~np.isnan(array)].min()
+            tmp_array = np.copy(array)
+            tmp_array[np.isnan(array)] = np.inf
+            tmp_array[np.isinf(tmp_array)] = np.inf  # set -inf to +inf to find the min
+            vmin = tmp_array.min()
         if np.isnan(vmax):
-            vmax = array[~np.isnan(array)].max()
+            tmp_array = np.copy(array)
+            tmp_array[np.isnan(array)] = -1 * np.inf
+            tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
+            vmax = tmp_array.max()
         plot = axis.imshow(array, vmin=vmin, vmax=vmax, cmap=cmap)
     elif scale == 'log':
         if np.isnan(vmin):
-            vmin = np.log10(abs(array[~np.isnan(array)]).min())
+            tmp_array = np.copy(array)
+            tmp_array[np.isnan(array)] = np.inf
+            tmp_array[np.isinf(tmp_array)] = np.inf  # set -inf to +inf to find the min
+            vmin = np.log10(abs(tmp_array).min())
             if np.isinf(vmin):
                 vmin = 0
         if np.isnan(vmax):
-            vmax = np.log10(abs(array[~np.isnan(array)]).max())
+            tmp_array = np.copy(array)
+            tmp_array[np.isnan(array)] = -1 * np.inf
+            tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
+            vmax = np.log10(abs(tmp_array).max())
         plot = axis.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax, cmap=cmap)
     else:
         raise ValueError('Wrong value for scale')
