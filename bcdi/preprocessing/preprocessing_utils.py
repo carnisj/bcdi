@@ -567,7 +567,8 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
     return logfile
 
 
-def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogonalize=False, hxrd=None, **kwargs):
+def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogonalize=False, hxrd=None,
+            debugging=False, **kwargs):
     """
     Load the data, apply filters and concatenate it for phasing.
 
@@ -579,6 +580,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
     :param hotpixels: the 2D hotpixels array
     :param orthogonalize: if True will interpolate the data and the mask on an orthogonal grid using xrayutilities
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
+    :param debugging: set to True to see plots
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
     :return:
@@ -606,17 +608,19 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
     if setup.beamline == 'ID01':
         rawdata, rawmask, monitor, frames_logical = \
             load_id01_data(logfile=logfile, scan_number=scan_number, detector=detector, flatfield=flatfield,
-                           hotpixels=hotpixels)
+                           hotpixels=hotpixels, debugging=debugging)
     elif setup.beamline == 'CRISTAL':
         rawdata, rawmask, monitor, frames_logical = \
-            load_cristal_data(logfile=logfile, detector=detector, flatfield=flatfield, hotpixels=hotpixels)
+            load_cristal_data(logfile=logfile, detector=detector, flatfield=flatfield, hotpixels=hotpixels,
+                              debugging=debugging)
     elif setup.beamline == 'SIXS':
         rawdata, rawmask, monitor, frames_logical = \
-            load_sixs_data(logfile=logfile, detector=detector, flatfield=flatfield, hotpixels=hotpixels)
+            load_sixs_data(logfile=logfile, detector=detector, flatfield=flatfield, hotpixels=hotpixels,
+                           debugging=debugging)
     elif setup.beamline == 'P10':
         rawdata, rawmask, monitor, frames_logical = \
             load_p10_data(logfile=logfile, detector=detector, flatfield=flatfield,
-                          hotpixels=hotpixels)
+                          hotpixels=hotpixels, debugging=debugging)
     else:
         raise ValueError("Incorrect value for parameter 'beamline'")
 
@@ -743,7 +747,7 @@ def init_qconversion(setup):
     return qconv, offsets
 
 
-def load_cristal_data(logfile, detector, flatfield, hotpixels):
+def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
     """
     Load CRISTAL data, apply filters and concatenate it for phasing. The address of dataset and monitor in the h5 file
      may have to be modified.
@@ -752,6 +756,7 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels):
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
+    :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
      - a logical array of length = initial frames number. A frame used will be set to True, a frame unused to False.
@@ -777,7 +782,7 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels):
         data[idx, :, :] = ccdraw
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=False)
+    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
     data[np.isnan(data)] = 0
@@ -828,7 +833,7 @@ def load_hotpixels(hotpixels_file):
     return hotpixels
 
 
-def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels):
+def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, debugging=False):
     """
     Load ID01 data, apply filters and concatenate it for phasing.
 
@@ -837,6 +842,7 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels):
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
+    :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
@@ -878,7 +884,7 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels):
         data[idx, :, :] = ccdraw
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=False)
+    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
     data[np.isnan(data)] = 0
@@ -888,7 +894,7 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels):
     return data, mask3d, monitor, frames_logical
 
 
-def load_p10_data(logfile, detector, flatfield, hotpixels):
+def load_p10_data(logfile, detector, flatfield, hotpixels, debugging=False):
     """
     Load P10 data, apply filters and concatenate it for phasing.
 
@@ -896,6 +902,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels):
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
+    :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
@@ -929,7 +936,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels):
         data[idx, :, :] = ccdraw
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=True)
+    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
     data[np.isnan(data)] = 0
@@ -955,7 +962,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels):
     return data, mask3d, monitor, frames_logical
 
 
-def load_sixs_data(logfile, detector, flatfield, hotpixels):
+def load_sixs_data(logfile, detector, flatfield, hotpixels, debugging=False):
     """
     Load SIXS data, apply filters and concatenate it for phasing.
 
@@ -963,6 +970,7 @@ def load_sixs_data(logfile, detector, flatfield, hotpixels):
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
+    :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
@@ -991,7 +999,7 @@ def load_sixs_data(logfile, detector, flatfield, hotpixels):
         data[idx, :, :] = ccdraw
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=False)
+    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
     data[np.isnan(data)] = 0
