@@ -37,10 +37,11 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [185]  # list or array of scan numbers
+scans = [285]  # list or array of scan numbers
 root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\P10_2018\\"
-sample_name = "dewet5"  # "S"  #
+sample_name = "dewet5"  # "SN"  #
 comment = '_'  # string, should start with "_"
+debug = False  # set to True to see plots
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
@@ -90,8 +91,8 @@ specfile_name = sample_name + '_%05d'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1282  # horizontal pixel number of the Bragg peak  # 1282 P10 2018 (if smaller presence of gap)
-# roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207
+x_bragg = 1389  # horizontal pixel number of the Bragg peak
+# roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = []
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
@@ -292,12 +293,12 @@ for scan_nb in range(len(scans)):
             q_values, data, _, mask, _, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=follow_bragg,
-                            orthogonalize=False)
+                            debugging=debug, orthogonalize=False)
         else:
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
-                            orthogonalize=True)
+                            debugging=debug, orthogonalize=True)
 
             np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
             if save_to_mat:
@@ -550,7 +551,7 @@ for scan_nb in range(len(scans)):
     if normalize_flux:
         data, monitor, monitor_title = pru.normalize_dataset(array=data, raw_monitor=monitor,
                                                              frames_logical=frames_logical,
-                                                             norm_to_min=True, debugging=False)
+                                                             norm_to_min=True, debugging=debug)
         plt.ion()
         fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
                                 tuple_sum_axis=(0, 1), tuple_width_v=(np.nan, np.nan),
@@ -575,7 +576,7 @@ for scan_nb in range(len(scans)):
         for idx in range(pad_width[0], nz-pad_width[1]):  # filter only frames whith data (not padded)
             data[idx, :, :], numb_pix, mask[idx, :, :] = \
                 pru.mean_filter(data=data[idx, :, :], nb_neighbours=medfilt_order, mask=mask[idx, :, :],
-                                interpolate=flag_medianfilter, debugging=False)
+                                interpolate=flag_medianfilter, debugging=debug)
             nb_pix = nb_pix + numb_pix
             print("Processed image nb: ", idx)
         if flag_medianfilter == 'mask_isolated':
