@@ -443,7 +443,7 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=np.nan, width_
     else:
         mysupport[abs(amp) < 0.01 * abs(amp).max()] = 0
         mykernel = np.ones((9, 9, 9))
-        mycoordination_matrix = calc_coordination(mysupport, kernel=mykernel, debugging=0)
+        mycoordination_matrix = calc_coordination(mysupport, kernel=mykernel, debugging=False)
         outer = np.copy(mycoordination_matrix)
         outer[np.nonzero(outer)] = 1
         if mykernel.shape == np.ones((3, 3, 3)).shape:
