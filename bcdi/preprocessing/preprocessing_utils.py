@@ -38,19 +38,23 @@ def align_diffpattern(reference_data, data, mask, method='registration'):
     if method is 'center_of_mass':
         ref_piz, ref_piy, ref_pix = center_of_mass(reference_data)
         piz, piy, pix = center_of_mass(data)
-        offset_z = ref_piz - piz
-        offset_y = ref_piy - piy
-        offset_x = ref_pix - pix
-        print('z shift', str('{:.2f}'.format(offset_z)),  ', y shift',
-              str('{:.2f}'.format(offset_y)),  ', x shift', str('{:.2f}'.format(offset_x)))
+        shiftz = ref_piz - piz
+        shifty = ref_piy - piy
+        shiftx = ref_pix - pix
+        print('z shift', str('{:.2f}'.format(shiftz)),  ', y shift',
+              str('{:.2f}'.format(shifty)),  ', x shift', str('{:.2f}'.format(shiftx)))
+
+        if (shiftz == 0) and (shifty == 0) and (shiftx == 0):
+            return data, mask
+
         # re-sample data on a new grid based on COM shift of support
         old_z = np.arange(-nbz // 2, nbz // 2)
         old_y = np.arange(-nby // 2, nby // 2)
         old_x = np.arange(-nbx // 2, nbx // 2)
         myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing='ij')
-        new_z = myz + offset_z
-        new_y = myy + offset_y
-        new_x = myx + offset_x
+        new_z = myz + shiftz
+        new_y = myy + shifty
+        new_x = myx + shiftx
         del myx, myy, myz
         rgi = RegularGridInterpolator((old_z, old_y, old_x), data, method='linear', bounds_error=False,
                                       fill_value=0)
@@ -67,6 +71,10 @@ def align_diffpattern(reference_data, data, mask, method='registration'):
     elif method is 'registration':
         shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=10)
         print('z shift', shiftz, ', y shift', shifty, ', x shift', shiftx)
+
+        if (shiftz == 0) and (shifty == 0) and (shiftx == 0):
+            return data, mask
+
         data = abs(reg.subpixel_shift(data, shiftz, shifty, shiftx))  # data is a real number (intensity)
         mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
     else:
