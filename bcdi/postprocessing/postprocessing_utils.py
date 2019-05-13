@@ -1135,7 +1135,7 @@ def rotate_vector(vector, axis_to_align, reference_axis):
     :param vector: the vector to be rotated  x y z
     :param axis_to_align: the axis of myobj (vector q) x y z
     :param reference_axis: will align axis_to_align onto this  x y z
-    :return: rotated vector z y x
+    :return: rotated vector in CXI convention z y x
     """
     if vector.ndim != 1:
         raise ValueError('vector should be a 1D array')
