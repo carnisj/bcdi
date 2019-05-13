@@ -519,7 +519,7 @@ def check_pixels(data, mask, debugging=False):
     indices_badpixels = np.nonzero(mask)  # update indices
     for index in range(nbz):
         tempdata = data[index, :, :]
-        tempdata[indices_badpixels] = 0  # numpy array is mutable hence data will be modified  # TODO: check that
+        tempdata[indices_badpixels] = 0  # numpy array is mutable hence data will be modified
 
     if debugging:
         meandata = data.mean(axis=0)
@@ -1452,7 +1452,7 @@ def remove_hotpixels(data, mask, hotpixels):
         for idx in range(data.shape[0]):
             temp_data = data[idx, :, :]
             temp_mask = mask[idx, :, :]
-            temp_data[hotpixels == 1] = 0  # numpy array is mutable hence data will be modified  # TODO: check that
+            temp_data[hotpixels == 1] = 0  # numpy array is mutable hence data will be modified
             temp_mask[hotpixels == 1] = 1  # numpy array is mutable hence mask will be modified
     elif data.ndim == 2:  # 2D array
         if data.shape != hotpixels.shape:
