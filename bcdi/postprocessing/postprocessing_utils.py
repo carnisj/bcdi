@@ -534,19 +534,18 @@ def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False)
         return zrange, yrange, xrange
 
 
-def get_opticalpath(support, direction, xrayutils_orthogonal, width_z=np.nan, width_y=np.nan, width_x=np.nan,
+def get_opticalpath(support, direction, width_z=np.nan, width_y=np.nan, width_x=np.nan,
                     k=np.zeros(3), debugging=False):
     """
-    Calculate the optical path for refraction/absorption corrections in the crystal.
+    Calculate the optical path for refraction/absorption corrections in the crystal. 'k' should be in the same basis
+    (crystal or laboratory frame) as the data. For xrayutilities, the data is orthogonalized in crystal frame.
 
     :param support: 3D array, support used for defining the object
     :param direction: "in" or "out" , incident or diffracted wave
-    :param xrayutils_orthogonal: set to True if the data was already orthogonalized before phasing, False otherwise
-    :type xrayutils_orthogonal: bool
     :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
     :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
     :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param k: vector for the incident or diffracted wave depending on direction (xrayutilities case)
+    :param k: vector for the incident or diffracted wave depending on direction (xrayutils_orthogonal=True case)
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: the optical path, of the same shape as mysupport
@@ -558,64 +557,65 @@ def get_opticalpath(support, direction, xrayutils_orthogonal, width_z=np.nan, wi
     path = np.zeros((nbz, nby, nbx))
     if debugging:
         gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x, vmin=0, vmax=1,
-                            sum_frames=True, invert_yaxis=True, title='Support for optical path')
+                            sum_frames=False, invert_yaxis=True, title='Support for optical path')
 
-    # find limits of the centered crystal
-    myz, _, _ = np.meshgrid(np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1),
-                            indexing='ij')
-    myz = myz * support
-    min_myz = int(np.min(myz[np.nonzero(myz)]))
-    max_myz = int(np.max(myz[np.nonzero(myz)])+1)  # include last index
-    del myz
-    print("Refraction correction (start_z, stop_z):(", min_myz, ',', max_myz, ')')
+    indices_support = np.nonzero(support)
+    min_z = indices_support[0].min()
+    max_z = indices_support[0].max() + 1  # last point not included in range()
+    min_y = indices_support[1].min()
+    max_y = indices_support[1].max() + 1  # last point not included in range()
+    min_x = indices_support[2].min()
+    max_x = indices_support[2].max() + 1  # last point not included in range()
+    print("Support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):(",
+          min_z, ',', max_z, ',', min_y, ',', max_y, ',', min_x, ',', max_x, ')')
+
     if direction == "in":
-        if not xrayutils_orthogonal:
-            for idz in range(min_myz, max_myz, 1):
-                path[idz, :, :] = support[0:idz, :, :].sum(axis=0)
-        if xrayutils_orthogonal:  # case when data was already orthogonalized in crystal frame before phasing
-            # k_norm = k / np.linalg.norm(k)
-            pass
-            # TODO: implement the same as direction out to calculate the path_in
+        k_norm = -1 * k / np.linalg.norm(k)  # we will work with -k_in
+        if (k_norm == np.array([-1, 0, 0])).all():  # data orthogonalized in laboratory frame, k_in along axis 0
+            for idz in range(min_z, max_z, 1):
+                path[idz, :, :] = support[0:idz+1, :, :].sum(axis=0)  # include also the pixel
+            path = np.multiply(path, support)
+
+        else:  # data orthogonalized in crystal frame (xrayutilities), k_in is not along any array axis
+            for idz in range(min_z, max_z, 1):
+                for idy in range(min_y, max_y, 1):
+                    for idx in range(min_x, max_x, 1):
+                        if support[idz, idy, idx] == 1:
+                            stop_flag = False
+                            counter = 1
+                            pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
+                            while not stop_flag:
+                                pixel = pixel + k_norm  # add unitary translation in -k_in direction
+                                coords = np.rint(pixel)
+                                stop_flag = True
+                                if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and\
+                                        (min_x <= coords[2] <= max_x):
+                                    counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
+                                    stop_flag = False
+                            path[idz, idy, idx] = counter
+                        else:  # point outside of the support, optical path = 0
+                            path[idz, idy, idx] = 0
+
     if direction == "out":
-        if not xrayutils_orthogonal:
-            for idz in range(min_myz, max_myz, 1):
-                path[idz, :, :] = support[idz:nbz, :, :].sum(axis=0)
-        if xrayutils_orthogonal:  # case when data was already orthogonalized in crystal frame before phasing
-            # TODO: check this, probably wrong, object is in crystal frame after xrayutilities
-            k_norm = k / np.linalg.norm(k)
-            for idz in range(min_myz, max_myz, 1):
-                myy, myx = np.meshgrid(np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing='ij')
-                myy = myy * support[idz, :, :]
-                try:
-                    min_myy = int(np.min(myy[np.nonzero(myy)]))
-                    max_myy = int(np.max(myy[np.nonzero(myy)]) + 1)
-                except BaseException as e:
-                    print(str(e))
-                    continue
-                del myy
-                myx = myx * support[idz, :, :]
-                try:
-                    min_myx = int(np.min(myx[np.nonzero(myx)]))
-                    max_myx = int(np.max(myx[np.nonzero(myx)]) + 1)
-                except BaseException as e:
-                    print(str(e))
-                    continue
-                del myx
-                for idy in range(min_myy, max_myy, 1):
-                    for idx in range(min_myx, max_myx, 1):
+        k_norm = k / np.linalg.norm(k)
+        for idz in range(min_z, max_z, 1):
+            for idy in range(min_y, max_y, 1):
+                for idx in range(min_x, max_x, 1):
+                    if support[idz, idy, idx] == 1:
                         stop_flag = False
                         counter = 1
-                        new_pixel = np.array([idz, idy, idx])
+                        pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
                         while not stop_flag:
-                            new_pixel = new_pixel + counter * k_norm
-                            coords = np.rint(new_pixel)
+                            pixel = pixel + k_norm  # add unitary translation in k_out direction
+                            coords = np.rint(pixel)
                             stop_flag = True
-                            if (coords[0] in range(nbz)) and (coords[1] in range(nby)) and (coords[2] in range(nbx)):
-                                path[idz, idy, idx] = path[idz, idy, idx] + \
-                                                          support[int(coords[0]), int(coords[1]), int(coords[2])]
-                                counter = counter + 1
+                            if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and \
+                                    (min_x <= coords[2] <= max_x):
+                                counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
                                 stop_flag = False
-    path = path * support
+                        path[idz, idy, idx] = counter
+                    else:  # point outside of the support, optical path = 0
+                        path[idz, idy, idx] = 0
 
     if debugging:
         gu.multislices_plot(path, width_z=width_z, width_y=width_y, width_x=width_x,
