@@ -390,12 +390,34 @@ gc.collect()
 ##################################################
 # calculate q, kin , kout from angles and energy #
 ##################################################
+if ref_axis_outplane == "x":
+    myaxis = np.array([1, 0, 0])  # must be in [x, y, z] order
+elif ref_axis_outplane == "y":
+    myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
+elif ref_axis_outplane == "z":
+    myaxis = np.array([0, 0, 1])  # must be in [x, y, z] order
+else:
+    ref_axis_outplane = "y"
+    myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
+
 kin = 2*np.pi/setup.wavelength * np.array([1, 0, 0])  # in laboratory frame z downstream, y vertical, x outboard
 kout = setup.exit_wavevector()  # in laboratory frame z downstream, y vertical, x outboard
 
 q = kout - kin
 Qnorm = np.linalg.norm(q)
 q = q / Qnorm
+angle = pu.plane_angle(ref_plane=np.array([q[2], q[1], q[0]]), plane=myaxis)
+print("Angle between q and", ref_axis_outplane, "=", angle, "deg")
+print("Angle with y in zy plane", np.arctan(q[0]/q[1])*180/np.pi, "deg")
+print("Angle with y in xy plane", np.arctan(-q[2]/q[1])*180/np.pi, "deg")
+print("Angle with z in xz plane", 180+np.arctan(q[2]/q[0])*180/np.pi, "deg")
+
+if xrayutils_ortho:  # transform kin and kout back into the crystal frame (xrayutilities output in crystal frame)
+    kin = pu.rotate_vector(vector=np.array([kin[2], kin[1], kin[0]]), axis_to_align=myaxis,
+                           reference_axis=np.array([q[2], q[1], q[0]]))
+    kout = pu.rotate_vector(vector=np.array([kout[2], kout[1], kout[0]]), axis_to_align=myaxis,
+                            reference_axis=np.array([q[2], q[1], q[0]]))
+
 Qnorm = Qnorm * 1e-10  # switch to angstroms
 planar_dist = 2*np.pi/Qnorm  # Qnorm should be in angstroms
 print("Wavevector transfer [z, y, x]:", q*Qnorm)
@@ -435,28 +457,17 @@ if invert_phase == 1:
 ########################################
 if correct_refraction == 1 or correct_absorption == 1:
     bulk = pu.find_bulk(amp=amp, support_threshold=threshold_refraction, method='threshold')
-    if xrayutils_ortho:  # data in crystal frame
 
-        # TODO: recalculate k_in and k_out in the crystal frame (xrayutilities orthogonalizes in crystal frame)
-        path_in = pu.get_opticalpath(support=bulk, direction="in", xrayutils_orthogonal=True, k=kin,
-                                     debugging=False)
-    else:  # data in laboratory frame
-        # calculate the optical path of the incoming wavevector: it is aligned with the orthogonalized axis 0
-        path_in = pu.get_opticalpath(support=bulk, direction="in", xrayutils_orthogonal=True, k=kin,
-                                     debugging=True)
+    # calculate the optical path of the incoming wavevector: it may be aligned with orthogonalized axis 0
+    path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=True)
 
     # calculate the optical path of the outgoing wavevector: it is not aligned with any orthogonalized axis
-    path_out = pu.get_opticalpath(support=bulk, direction="out", k=kout, debugging=False)
+    path_out = pu.get_opticalpath(support=bulk, direction="out", k=kout, debugging=True)
 
     del bulk
     gc.collect()
 
-    if debug:
-        gu.multislices_plot(path_out, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                            sum_frames=False, invert_yaxis=True, plot_colorbar=True,
-                            title='Optical path_out')
-
-    optical_path = voxel_size * (path_in + path_out)  # in nm, in the laboratory frame  # TODO use correct lengths
+    optical_path = voxel_size * (path_in + path_out)  # in nm, in the laboratory frame
     del path_in, path_out
     gc.collect()
 
@@ -519,21 +530,7 @@ if save_labframe:
 # put back the crystal in its frame, by aligning q onto the reference axis #
 ############################################################################
 if not xrayutils_ortho:
-    if ref_axis_outplane == "x":
-        myaxis = np.array([1, 0, 0])  # must be in [x, y, z] order
-    elif ref_axis_outplane == "y":
-        myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
-    elif ref_axis_outplane == "z":
-        myaxis = np.array([0, 0, 1])  # must be in [x, y, z] order
-    else:
-        ref_axis_outplane = "y"
-        myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
     print('Aligning Q along ', ref_axis_outplane, ":", myaxis)
-    angle = pu.plane_angle(ref_plane=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), plane=myaxis)
-    print("Angle between q and", ref_axis_outplane, "=", angle, "deg")
-    print("Angle with y in zy plane", np.arctan(q[0]/q[1])*180/np.pi, "deg")
-    print("Angle with y in xy plane", np.arctan(-q[2]/q[1])*180/np.pi, "deg")
-    print("Angle with z in xz plane", 180+np.arctan(q[2]/q[0])*180/np.pi, "deg")
     amp = pu.rotate_crystal(array=amp, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
                             reference_axis=myaxis, debugging=True)
     phase = pu.rotate_crystal(array=phase, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
