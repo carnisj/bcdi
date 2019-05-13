@@ -534,18 +534,18 @@ def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False)
         return zrange, yrange, xrange
 
 
-def get_opticalpath(support, direction, width_z=np.nan, width_y=np.nan, width_x=np.nan,
-                    k=np.zeros(3), debugging=False):
+def get_opticalpath(support, direction, k, width_z=np.nan, width_y=np.nan, width_x=np.nan,
+                    debugging=False):
     """
     Calculate the optical path for refraction/absorption corrections in the crystal. 'k' should be in the same basis
     (crystal or laboratory frame) as the data. For xrayutilities, the data is orthogonalized in crystal frame.
 
     :param support: 3D array, support used for defining the object
     :param direction: "in" or "out" , incident or diffracted wave
+    :param k: vector for the incident or diffracted wave depending on direction (xrayutils_orthogonal=True case)
     :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
     :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
     :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param k: vector for the incident or diffracted wave depending on direction (xrayutils_orthogonal=True case)
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: the optical path, of the same shape as mysupport
@@ -1124,6 +1124,36 @@ def rotate_crystal(array, axis_to_align, reference_axis, width_z=np.nan, width_y
         gu.multislices_plot(new_array, width_z=width_z, width_y=width_y, width_x=width_x,
                             invert_yaxis=True, title='After rotating')
     return new_array
+
+
+def rotate_vector(vector, axis_to_align, reference_axis):
+    """
+    Calculate vector components in the basis where axis_to_align and reference_axis are aligned.
+    axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
+    (CXI convention).
+
+    :param vector: the vector to be rotated  x y z
+    :param axis_to_align: the axis of myobj (vector q) x y z
+    :param reference_axis: will align axis_to_align onto this  x y z
+    :return: rotated vector z y x
+    """
+    if vector.ndim != 1:
+        raise ValueError('vector should be a 1D array')
+    else:
+        if len(vector) != 3:
+            raise ValueError('vector should have 3 elements')
+
+    v = np.cross(axis_to_align, reference_axis)
+    skew_sym_matrix = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    my_rotation_matrix = np.identity(3) +\
+        skew_sym_matrix + np.dot(skew_sym_matrix, skew_sym_matrix) / (1+np.dot(axis_to_align, reference_axis))
+    transfer_matrix = my_rotation_matrix.transpose()
+
+    new_x = transfer_matrix[0, 0] * vector[0] + transfer_matrix[0, 1] * vector[1] + transfer_matrix[0, 2] * vector[2]
+    new_y = transfer_matrix[1, 0] * vector[0] + transfer_matrix[1, 1] * vector[1] + transfer_matrix[1, 2] * vector[2]
+    new_z = transfer_matrix[2, 0] * vector[0] + transfer_matrix[2, 1] * vector[1] + transfer_matrix[2, 2] * vector[2]
+
+    return np.array([new_z, new_y, new_x])
 
 
 def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method='variance/mean'):
