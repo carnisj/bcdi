@@ -91,18 +91,20 @@ dispersion = 4.1184E-05  # delta
 absorption = 3.4298E-06  # beta
 # Pt:  2.3486E-06 @ 9994eV, 3.4298E-06 @ 8994keV, 5.2245E-06 @ 7994keV, 4.1969E-06 @ 8500eV
 threshold_refraction = 0.025  # threshold used to calculate the optical path
+# the threshold for refraction/absorption corrections should be low, to correct for an object larger than the real one,
+# otherwise it messes up the phase
 #########################
 simu_flag = 0  # set to 1 if it is simulation, the parameter invert_phase will be set to 0 and pi added to the phase
 invert_phase = 1  # should be 1 for the displacement to have the right sign (FFT convention), 0 only for simulations
 phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling'
 threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use for ramp removal
-xrayutils_ortho = 0  # 1 if the data is already orthogonalized
+xrayutils_ortho = False  # True if the data is already orthogonalized
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
 save_support = False  # True to save the non-orthogonal support for later phase retrieval
 save_labframe = False  # True to save the data in the laboratory frame (before rotations), used for PRTF calculation
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 apodize_flag = False  # True to multiply the diffraction pattern by a 3D gaussian
-debug = 0  # 1 to show all plots for debugging
+debug = False  # set to True to show all plots for debugging
 
 tick_spacing = 50  # for plots, in nm
 tick_direction = 'inout'  # 'out', 'in', 'inout'
@@ -231,7 +233,7 @@ gc.collect()
 #######################################
 # phase offset removal (at COM value) #
 #######################################
-if debug == 1:
+if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         invert_yaxis=False, plot_colorbar=True, title='Phase after ramp removal')
 
@@ -246,7 +248,7 @@ phase = phase - phase[int(zcom), int(ycom), int(xcom)]
 
 phase = pu.wrap(phase)
 
-if debug == 1:
+if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         invert_yaxis=False, plot_colorbar=True, title='Phase after offset removal')
 
@@ -256,7 +258,7 @@ del support, zcom, ycom, xcom
 gc.collect()
 
 phase = pu.wrap(phase)
-if debug == 1:
+if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         invert_yaxis=False, plot_colorbar=True, title='Phase after mean removal')
 
@@ -348,17 +350,7 @@ if save_raw:
 #  orthogonalize data #
 #######################
 print('\nShape before orthogonalization', avg_obj.shape)
-if xrayutils_ortho == 0:
-    if correct_refraction == 1 or correct_absorption == 1:
-        bulk = pu.find_bulk(amp=abs(avg_obj), support_threshold=threshold_refraction, method='threshold')
-        # the threshold use for refraction/absorption corrections should be low
-        # (to correct for an object larger than the real one), otherwise it messes up the phase
-
-        # calculate the optical path of the exit wavevector while the data is in the detector frame
-        path_out = pu.get_opticalpath(support=bulk, direction="out", xrayutils_orthogonal=xrayutils_ortho)
-        del bulk
-        gc.collect()
-
+if not xrayutils_ortho:
     obj_ortho, voxel_size = setup.orthogonalize(obj=avg_obj, initial_shape=original_size, voxel_size=fix_voxel)
     print("VTK spacing :", str('{:.2f}'.format(voxel_size)), "nm")
     if True:
@@ -369,7 +361,7 @@ if xrayutils_ortho == 0:
                             sum_frames=False, invert_yaxis=True, plot_colorbar=True,
                             title='Phase after orthogonalization')
 
-else:  # data already orthogonalized using xrayutilities, # TODO: DEBUG THIS PART, never checked it
+else:  # data already orthogonalized using xrayutilities, will be in crystal frame
     obj_ortho = avg_obj
     try:
         print("Select the file containing QxQzQy")
@@ -398,8 +390,8 @@ gc.collect()
 ##################################################
 # calculate q, kin , kout from angles and energy #
 ##################################################
-kin = 2*np.pi/setup.wavelength * np.array([1, 0, 0])  # z downstream, y vertical, x outboard
-kout = setup.exit_wavevector()
+kin = 2*np.pi/setup.wavelength * np.array([1, 0, 0])  # in laboratory frame z downstream, y vertical, x outboard
+kout = setup.exit_wavevector()  # in laboratory frame z downstream, y vertical, x outboard
 
 q = kout - kin
 Qnorm = np.linalg.norm(q)
@@ -415,13 +407,6 @@ if get_temperature:
                                        temperature_ref=reference_temperature, use_q=0, material="Pt")
 planar_dist = planar_dist / 10  # switch to nm
 
-if xrayutils_ortho == 1:
-    if correct_refraction == 1 or correct_absorption == 1:
-        print('Refraction/absorption correction not yet implemented for orthogonal data')
-        # TODO: implement this, at the moment is it wrong
-        # path_in = refraction_corr(amp, "in", threshold_refraction, 1, kin)  # data in crystal basis, will be slow
-        # path_out = refraction_corr(amp, "out", threshold_refraction, 1, kout)  # data in crystal basis, will be slow
-
 ######################
 # centering of array #
 ######################
@@ -431,7 +416,7 @@ phase = np.angle(obj_ortho)
 del obj_ortho
 gc.collect()
 
-if debug == 1:
+if debug:
     gu.multislices_plot(amp, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
                         sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=0, vmax=amp.max(),
                         title='Amp before absorption correction')
@@ -448,47 +433,51 @@ if invert_phase == 1:
 ########################################
 # refraction and absorption correction #
 ########################################
-if xrayutils_ortho == 0:  # otherwise it is already calculated for xrayutilities above
-    if correct_refraction == 1 or correct_absorption == 1:
-        bulk = pu.find_bulk(amp=amp, support_threshold=threshold_refraction, method='threshold')
-        # the threshold use for refraction/absorption corrections should be low
-        # (to correct for an object larger than the real one), otherwise it messes up the phase
+if correct_refraction == 1 or correct_absorption == 1:
+    bulk = pu.find_bulk(amp=amp, support_threshold=threshold_refraction, method='threshold')
+    if xrayutils_ortho:  # data in crystal frame
 
-        # calculate the optical path of the incoming wavevector since it is aligned with the orthogonalized axis 0
-        path_in = pu.get_opticalpath(support=bulk, direction="in", xrayutils_orthogonal=xrayutils_ortho)
-        del bulk
-        gc.collect()
+        # TODO: recalculate k_in and k_out in the crystal frame (xrayutilities orthogonalizes in crystal frame)
+        path_in = pu.get_opticalpath(support=bulk, direction="in", xrayutils_orthogonal=True, k=kin,
+                                     debugging=False)
+    else:  # data in laboratory frame
+        # calculate the optical path of the incoming wavevector: it is aligned with the orthogonalized axis 0
+        path_in = pu.get_opticalpath(support=bulk, direction="in", xrayutils_orthogonal=True, k=kin,
+                                     debugging=True)
 
-        # orthogonalize the path_out calculated in the detector frame
-        path_out, _ = setup.orthogonalize(obj=path_out, initial_shape=original_size, voxel_size=fix_voxel)
+    # calculate the optical path of the outgoing wavevector: it is not aligned with any orthogonalized axis
+    path_out = pu.get_opticalpath(support=bulk, direction="out", k=kout, debugging=False)
 
-        if debug == 1:
-            gu.multislices_plot(path_out, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                                sum_frames=False, invert_yaxis=True, plot_colorbar=True,
-                                title='Optical path_out')
+    del bulk
+    gc.collect()
 
-        optical_path = voxel_size * (path_in + path_out)  # in nm
-        del path_in, path_out
-        gc.collect()
+    if debug:
+        gu.multislices_plot(path_out, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
+                            sum_frames=False, invert_yaxis=True, plot_colorbar=True,
+                            title='Optical path_out')
 
-        if correct_refraction == 1:
-            phase_correction = 2 * np.pi / (1e9 * setup.wavelength) * dispersion * optical_path
-            phase = phase + phase_correction
+    optical_path = voxel_size * (path_in + path_out)  # in nm, in the laboratory frame  # TODO use correct lengths
+    del path_in, path_out
+    gc.collect()
 
-            gu.multislices_plot(phase_correction, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                                sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=0, vmax=np.pi/2,
-                                title='Refraction correction')
+    if correct_refraction == 1:
+        phase_correction = 2 * np.pi / (1e9 * setup.wavelength) * dispersion * optical_path
+        phase = phase + phase_correction
 
-        if correct_absorption == 1:
-            amp_correction = np.exp(2 * np.pi / (1e9 * setup.wavelength) * absorption * optical_path)
-            amp = amp * amp_correction
+        gu.multislices_plot(phase_correction, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
+                            sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=0, vmax=np.pi/2,
+                            title='Refraction correction')
 
-            gu.multislices_plot(amp_correction, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                                sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=1, vmax=1.1,
-                                title='Absorption correction')
+    if correct_absorption == 1:
+        amp_correction = np.exp(2 * np.pi / (1e9 * setup.wavelength) * absorption * optical_path)
+        amp = amp * amp_correction
 
-        del optical_path
-        gc.collect()
+        gu.multislices_plot(amp_correction, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
+                            sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=1, vmax=1.1,
+                            title='Absorption correction')
+
+    del optical_path
+    gc.collect()
 
 ##############################################
 # phase ramp and offset removal (mean value) #
@@ -529,7 +518,7 @@ if save_labframe:
 ############################################################################
 # put back the crystal in its frame, by aligning q onto the reference axis #
 ############################################################################
-if xrayutils_ortho == 0:
+if not xrayutils_ortho:
     if ref_axis_outplane == "x":
         myaxis = np.array([1, 0, 0])  # must be in [x, y, z] order
     elif ref_axis_outplane == "y":
@@ -546,9 +535,9 @@ if xrayutils_ortho == 0:
     print("Angle with y in xy plane", np.arctan(-q[2]/q[1])*180/np.pi, "deg")
     print("Angle with z in xz plane", 180+np.arctan(q[2]/q[0])*180/np.pi, "deg")
     amp = pu.rotate_crystal(array=amp, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
-                            reference_axis=myaxis, debugging=1)
+                            reference_axis=myaxis, debugging=True)
     phase = pu.rotate_crystal(array=phase, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
-                              reference_axis=myaxis, debugging=0)
+                              reference_axis=myaxis, debugging=False)
 
 ################################################################
 # calculate the strain depending on which axis q is aligned on #
@@ -563,7 +552,7 @@ strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxe
 ################################################################
 # rotates the crystal inplane for easier slicing of the result #
 ################################################################
-if xrayutils_ortho == 0:
+if not xrayutils_ortho:
     if align_inplane == 1:
         align_crystal = 1
         if ref_axis_inplane == "x":
@@ -574,11 +563,11 @@ if xrayutils_ortho == 0:
             ref_axis_inplane = "z"
             myaxis_inplane = np.array([0, 0, 1])  # must be in [x, y, z] order
         amp = pu.rotate_crystal(array=amp, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
-                                reference_axis=myaxis_inplane, debugging=1)
+                                reference_axis=myaxis_inplane, debugging=True)
         phase = pu.rotate_crystal(array=phase, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
-                                  reference_axis=myaxis_inplane, debugging=0)
+                                  reference_axis=myaxis_inplane, debugging=False)
         strain = pu.rotate_crystal(array=strain, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
-                                   reference_axis=myaxis_inplane, debugging=0)
+                                   reference_axis=myaxis_inplane, debugging=False)
 
     if align_crystal == 1:
         comment = comment + '_crystal-frame'
@@ -586,11 +575,11 @@ if xrayutils_ortho == 0:
         comment = comment + '_lab-frame'
         print('Rotating back the crystal in laboratory frame')
         amp = pu.rotate_crystal(array=amp, axis_to_align=myaxis,
-                                reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=1)
+                                reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=True)
         phase = pu.rotate_crystal(array=phase, axis_to_align=myaxis,
-                                  reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q))
+                                  reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False)
         strain = pu.rotate_crystal(array=strain, axis_to_align=myaxis,
-                                   reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q))
+                                   reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False)
 
     print('Voxel size: ', str('{:.2f}'.format(voxel_size)), "nm")
 
