@@ -26,7 +26,7 @@ Average the scans if their correlation coefficient is larger than a threshold.
 The first scan in the list serves as reference.
 """
 
-scan_list = np.arange(256, 268+1, 3)  # list or array of scan numbers
+scan_list = np.arange(239, 251+1, 3)  # list or array of scan numbers
 sample_name = 'dewet5_'
 comment = '__norm_160_512_480.npz'  # the end of the filename template after 'pynx'
 homedir = "C:/Users/carnis/Work Folders/Documents/data/P10_2018/"
@@ -64,10 +64,13 @@ for idx in range(nb_scan):
         gu.multislices_plot(mask, sum_frames=True, invert_yaxis=False, scale='linear', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Mask before shift', vmin=0,
                             reciprocal_space=True)
-
+    ##################
+    # align datasets #
+    ##################
     data, mask = pru.align_diffpattern(reference_data=refdata, data=data, mask=mask, method=method,
-                                       combining_method='rgi')
+                                       combining_method=combining_method)
     data[data < 0.5] = 0  # remove interpolated noisy pixels
+
     if debug:
         gu.multislices_plot(data, sum_frames=True, invert_yaxis=False, scale='log', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Data after shift', vmin=0,
