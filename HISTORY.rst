@@ -1,5 +1,17 @@
+Version 0.0.3
+-------------
 
 * Removed cumbersome argument header_cristal in prepare_mask_cdi.py.
+
+* Implement optical path calculation when the data is in crystal frame.
+
+* Correct bugs in preprocessing_utils.center_fft().
+
+* Correct bugs and check consistency in postprocessing_utils.get_opticalpath().
+
+* Add dataset combining option in preprocessing_utils.align_diffpattern().
+
+* Checked TODOs in preprocessing_utils
 
 Version 0.0.2
 -------------
