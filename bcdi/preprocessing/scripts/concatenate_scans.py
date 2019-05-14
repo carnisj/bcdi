@@ -22,12 +22,13 @@ Average the scans if their correlation coefficient is larger than a threshold.
 The first scan in the list serves as reference.
 """
 
-scan_list = np.arange(164, 185+1, 3)  # list or array of scan numbers
+scan_list = np.arange(256, 268+1, 3)  # list or array of scan numbers
 sample_name = 'dewet5_'
-comment = '_norm_180_512_480.npz'  # the end of the filename template after 'pynx'
-homedir = "C:/Users/carnis/Work Folders/Documents/data/P10_2018/data/"
-method = 'center_of_mass'  # 'center_of_mass' or 'registration',
-correlation_threshold = 0.8
+comment = '__norm_160_512_480.npz'  # the end of the filename template after 'pynx'
+homedir = "C:/Users/carnis/Work Folders/Documents/data/P10_2018/"
+method = 'center_of_mass'  # method to find the offset, 'center_of_mass' or 'registration'
+combining_method = 'rgi'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
+correlation_threshold = 0.5
 debug = False  # True or False
 plt.ion()
 ##################################
@@ -60,8 +61,9 @@ for idx in range(nb_scan):
                             title='S' + str(scan_list[idx]) + '\n Mask before shift', vmin=0,
                             reciprocal_space=True)
 
-    data, mask = pru.align_diffpattern(reference_data=refdata, data=data, mask=mask, method=method)
-
+    data, mask = pru.align_diffpattern(reference_data=refdata, data=data, mask=mask, method=method,
+                                       combining_method='rgi')
+    data[data < 0.5] = 0  # remove interpolated noisy pixels
     if debug:
         gu.multislices_plot(data, sum_frames=True, invert_yaxis=False, scale='log', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Data after shift', vmin=0,
@@ -83,13 +85,13 @@ for idx in range(nb_scan):
         print('Scan ', scan_list[idx], ', correlation below threshold, skip concatenation')
 
 summask[np.nonzero(summask)] = 1  # mask should be 0 or 1
-sumdata = np.rint(sumdata / len(scanlist))  # back to count in photons
+sumdata = sumdata / len(scanlist)
 
 savedir = homedir + sample_name + 'sum_S' + str(scanlist[0]) + '_to_S' + str(scanlist[-1])+'/'
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 np.savez_compressed(savedir+'pynx_S'+str(scanlist[0]) + '_to_S' + str(scanlist[-1])+'.npz', obj=sumdata)
 np.savez_compressed(savedir+'maskpynx_S'+str(scanlist[0]) + '_to_S' + str(scanlist[-1])+'.npz', obj=summask)
-print('Sum of ', len(corr_coeff), 'scans')
+print('Sum of ', len(scanlist), 'scans')
 
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, invert_yaxis=False, scale='log', plot_colorbar=True,
                                 title='sum(intensity)', vmin=0, reciprocal_space=True)
