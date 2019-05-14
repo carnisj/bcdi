@@ -15,7 +15,11 @@ import bcdi.graph.graph_utils as gu
 import bcdi.preprocessing.preprocessing_utils as pru
 
 helptext = """
-Align diffraction patterns using the center of mass or dft registration and subpixel shift. 
+Align diffraction patterns using the center of mass or dft registration 
+
+and regular grid interpolator or subpixel shift. There are many artefacts
+ 
+when using subpixel shift in reciprocal space.
 
 Average the scans if their correlation coefficient is larger than a threshold.
 
