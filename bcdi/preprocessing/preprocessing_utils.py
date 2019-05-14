@@ -17,7 +17,7 @@ import fabio
 import os
 
 
-def align_diffpattern(reference_data, data, mask, method='registration'):
+def align_diffpattern(reference_data, data, mask, method='registration', combining_method='rgi'):
     """
     Align two diffraction patterns based on the shift of the center of mass or based on dft registration.
 
@@ -25,6 +25,7 @@ def align_diffpattern(reference_data, data, mask, method='registration'):
     :param data: the 3D diffraction intensity array to align.
     :param mask: the 3D mask corresponding to data
     :param method: 'center_of_mass' or 'registration'. For 'registration', see: Opt. Lett. 33, 156-158 (2008).
+    :param combining_method: 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
     :return:
      - the shifted data
      - the shifted mask
@@ -35,18 +36,23 @@ def align_diffpattern(reference_data, data, mask, method='registration'):
     if reference_data.shape != data.shape:
         raise ValueError('reference_data and data do not have the same shape')
 
-    if method is 'center_of_mass':
-        ref_piz, ref_piy, ref_pix = center_of_mass(reference_data)
-        piz, piy, pix = center_of_mass(data)
+    if method is 'registration':
+        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=10)
+    elif method is 'center_of_mass':
+        ref_piz, ref_piy, ref_pix = center_of_mass(abs(reference_data))
+        piz, piy, pix = center_of_mass(abs(data))
         shiftz = ref_piz - piz
         shifty = ref_piy - piy
         shiftx = ref_pix - pix
-        print('z shift', str('{:.2f}'.format(shiftz)),  ', y shift',
-              str('{:.2f}'.format(shifty)),  ', x shift', str('{:.2f}'.format(shiftx)))
+    else:
+        raise ValueError("Incorrect value for parameter 'method'")
 
-        if (shiftz == 0) and (shifty == 0) and (shiftx == 0):
-            return data, mask
-
+    print('z shift', str('{:.2f}'.format(shiftz)), ', y shift',
+          str('{:.2f}'.format(shifty)), ', x shift', str('{:.2f}'.format(shiftx)))
+    if (shiftz == 0) and (shifty == 0) and (shiftx == 0):
+        return data, mask
+    
+    if combining_method is 'rgi':
         # re-sample data on a new grid based on COM shift of support
         old_z = np.arange(-nbz // 2, nbz // 2)
         old_y = np.arange(-nby // 2, nby // 2)
@@ -68,17 +74,16 @@ def align_diffpattern(reference_data, data, mask, method='registration'):
         mask = mask.reshape((nbz, nby, nbx)).astype(data.dtype)
         mask = np.rint(mask)  # mask is integer 0 or 1
 
-    elif method is 'registration':
+    elif combining_method is 'registration':
         shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=10)
         print('z shift', shiftz, ', y shift', shifty, ', x shift', shiftx)
 
         if (shiftz == 0) and (shifty == 0) and (shiftx == 0):
             return data, mask
-
         data = abs(reg.subpixel_shift(data, shiftz, shifty, shiftx))  # data is a real number (intensity)
         mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
     else:
-        raise ValueError("Incorrect value for parameter ''")
+        raise ValueError("Incorrect value for parameter 'combining_method'")
 
     return data, mask
 
