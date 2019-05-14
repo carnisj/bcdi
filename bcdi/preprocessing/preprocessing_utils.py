@@ -51,7 +51,7 @@ def align_diffpattern(reference_data, data, mask, method='registration', combini
           str('{:.2f}'.format(shifty)), ', x shift', str('{:.2f}'.format(shiftx)))
     if (shiftz == 0) and (shifty == 0) and (shiftx == 0):
         return data, mask
-    
+
     if combining_method is 'rgi':
         # re-sample data on a new grid based on COM shift of support
         old_z = np.arange(-nbz // 2, nbz // 2)
