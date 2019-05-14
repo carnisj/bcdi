@@ -16,11 +16,11 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 
-setup(name='bcdi', version='0.0.2',
+setup(name='bcdi', version='0.0.3',
       packages=find_packages(),
       include_package_data=True,
       # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},  # the file needs to be in a package
-      # data_files=[('bcdi/data', ['bcdi/data/S978_LLKf000.460_LLK000.508.cxi'])], # data files will be installed not good
+      # data_files=[('bcdi/data', ['bcdi/data/S978_LLKf000.460.cxi'])], # data files will be installed not good
       # outtside of the package, which is not ideal
       scripts=['bcdi/facet_recognition/scripts/crystal_shape.py',
                'bcdi/graph/scripts/make_movie.py',
@@ -72,6 +72,8 @@ setup(name='bcdi', version='0.0.2',
                         5. Simulation of diffraction intensity (including noise, detector gaps, displacement...).\n\
                         6. Making figures for publication using templates.\n\n",
       url='https://github.com/carnisj/bcdi',
+      project_urls={
+          'Documentation': 'https://bcdi.readthedocs.io/en/latest/'},
       classifiers=[
           # How mature is this project? Common values are
           #   3 - Alpha
