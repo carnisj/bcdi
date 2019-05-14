@@ -53,7 +53,7 @@ def align_diffpattern(reference_data, data, mask, method='registration', combini
         return data, mask
 
     if combining_method is 'rgi':
-        # re-sample data on a new grid based on COM shift of support
+        # re-sample data on a new grid based on the shift
         old_z = np.arange(-nbz // 2, nbz // 2)
         old_y = np.arange(-nby // 2, nby // 2)
         old_x = np.arange(-nbx // 2, nbx // 2)
@@ -74,12 +74,7 @@ def align_diffpattern(reference_data, data, mask, method='registration', combini
         mask = mask.reshape((nbz, nby, nbx)).astype(data.dtype)
         mask = np.rint(mask)  # mask is integer 0 or 1
 
-    elif combining_method is 'registration':
-        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=10)
-        print('z shift', shiftz, ', y shift', shifty, ', x shift', shiftx)
-
-        if (shiftz == 0) and (shifty == 0) and (shiftx == 0):
-            return data, mask
+    elif combining_method is 'subpixel':
         data = abs(reg.subpixel_shift(data, shiftz, shifty, shiftx))  # data is a real number (intensity)
         mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
     else:
