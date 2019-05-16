@@ -443,7 +443,7 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
     elif fft_option == 'do_nothing':
         # keep the full dataset or use 'fix_size' parameter
         pad_width = np.zeros(6, dtype=int)  # do nothing or crop the data, starting_frame should be 0
-        if len(fix_size) == 3:
+        if len(fix_size) == 6:
             # size of output array defined
             nbz, nby, nbx = np.shape(data)
             z_pan = fix_size[1] - fix_size[0]
