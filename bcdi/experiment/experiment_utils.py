@@ -45,7 +45,8 @@ class SetupPostprocessing(object):
 
     def exit_wavevector(self):
         """
-        Calculate the exit wavevector kout depending on the setup parameters.
+        Calculate the exit wavevector kout depending on the setup parameters, in laboratory frame (z downstream,
+         y vertical, x outboard).
 
         :return: kout vector
         """
