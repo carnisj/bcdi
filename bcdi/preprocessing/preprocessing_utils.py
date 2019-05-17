@@ -1159,7 +1159,7 @@ def mean_filter(data, nb_neighbours, mask, interpolate=False, debugging=False):
     return data, nb_pixels, mask
 
 
-def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=True, debugging=False):
+def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, debugging=False):
     """
     Normalize array using the monitor values.
 
@@ -1167,7 +1167,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=True, debu
     :param raw_monitor: the monitor values
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param norm_to_min: normalize to min(monitor), which does not multiply the noise
+    :param norm_to_min: normalize to min(monitor) instead of max(monitor)
     :type norm_to_min: bool
     :param debugging: set to True to see plots
     :type debugging: bool
