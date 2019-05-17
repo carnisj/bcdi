@@ -9,6 +9,7 @@ import hdf5plugin  # for P10, should be imported before h5py or PyTables
 import xrayutilities as xu
 import numpy as np
 import matplotlib.pyplot as plt
+plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
 import pathlib
 import os
 import scipy.signal  # for medfilt2d
@@ -37,7 +38,7 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [285]  # list or array of scan numbers
+scans = [351]  # list or array of scan numbers
 root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\P10_2018\\"
 sample_name = "dewet5"  # "SN"  #
 comment = '_'  # string, should start with "_"
@@ -51,7 +52,7 @@ centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better u
 fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
 # It is useful if hotpixels or intense aliens. Leave it [] otherwise.
 ###########################
-fix_size = []  # [0, 400, 68, 516, 0, 400]  # crop the array to predefined size, leave it to [] otherwise
+fix_size = []  # crop the array to predefined size, leave it to [] otherwise
 # [zstart, zstop, ystart, ystop, xstart, xstop]
 ###########################
 center_fft = 'crop_asym_ZYX'
@@ -91,7 +92,7 @@ specfile_name = sample_name + '_%05d'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1389  # horizontal pixel number of the Bragg peak
+x_bragg = 1396  # horizontal pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = []
@@ -551,7 +552,7 @@ for scan_nb in range(len(scans)):
     if normalize_flux:
         data, monitor, monitor_title = pru.normalize_dataset(array=data, raw_monitor=monitor,
                                                              frames_logical=frames_logical,
-                                                             norm_to_min=True, debugging=debug)
+                                                             norm_to_min=False, debugging=debug)
         plt.ion()
         fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
                                 tuple_sum_axis=(0, 1), tuple_width_v=(np.nan, np.nan),
