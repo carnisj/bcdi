@@ -534,6 +534,24 @@ def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False)
         return zrange, yrange, xrange
 
 
+def flip_reconstruction(obj, debugging=False):
+    """
+    Calculate the conjugate object which giving the same diffracted intensity.
+
+    :param obj: 2D or 3D reconstructed complex object
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :return: the flipped complex object
+    """
+    flipped_obj = ifftn(ifftshift(np.conj(fftshift(fftn(obj)))))
+    if debugging:
+        gu.multislices_plot(abs(obj), vmin=0, sum_frames=False, invert_yaxis=True, plot_colorbar=True,
+                            title='Initial object')
+        gu.multislices_plot(abs(flipped_obj), vmin=0, sum_frames=False, invert_yaxis=True, plot_colorbar=True,
+                            title='Flipped object')
+    return flipped_obj
+
+
 def get_opticalpath(support, direction, k, width_z=np.nan, width_y=np.nan, width_x=np.nan,
                     debugging=False):
     """
