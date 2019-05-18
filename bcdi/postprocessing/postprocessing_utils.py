@@ -536,7 +536,7 @@ def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False)
 
 def flip_reconstruction(obj, debugging=False):
     """
-    Calculate the conjugate object which giving the same diffracted intensity.
+    Calculate the conjugate object  giving the same diffracted intensity as 'obj'.
 
     :param obj: 2D or 3D reconstructed complex object
     :param debugging: set to True to see plots
