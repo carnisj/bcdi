@@ -538,11 +538,14 @@ def flip_reconstruction(obj, debugging=False):
     """
     Calculate the conjugate object  giving the same diffracted intensity as 'obj'.
 
-    :param obj: 2D or 3D reconstructed complex object
+    :param obj: 3D reconstructed complex object
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: the flipped complex object
     """
+    if obj.ndim != 3:
+        raise ValueError('obj should be a 3D array')
+    
     flipped_obj = ifftn(ifftshift(np.conj(fftshift(fftn(obj)))))
     if debugging:
         gu.multislices_plot(abs(obj), vmin=0, sum_frames=False, invert_yaxis=True, plot_colorbar=True,
