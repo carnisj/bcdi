@@ -55,6 +55,7 @@ sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mea
 correlation_threshold = 0.90
 
 original_size = (100, 400, 512)  # size of the FFT array used for phasing, when the result has been croped (.cxi)
+
 # leave it to () otherwise
 output_size = (120, 120, 120)  # original_size  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
@@ -78,7 +79,7 @@ beamline = "ID01"  # 'SIXS' or '34ID' or 'ID01' or 'P10' or 'CRISTAL'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
 sdd = 0.86180  # sample to detector distance in m
-pixel_size = 55e-6  # detector pixel size in m
+pixel_size = 55e-6  # detector pixel size in m,              ###  including pixels binning factor!  ###
 energy = 8994  # x-ray energy in eV, 6eV offset at ID01
 outofplane_angle = 35.1041  # detector delta ID01, delta SIXS, gamma 34ID
 inplane_angle = 3.5487  # detector nu ID01, gamma SIXS, tth 34ID
