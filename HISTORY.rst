@@ -1,3 +1,10 @@
+
+* Feat: implement postprocessing_utils.flip_reconstruction() to calculate the conjugate object giving the same diffracted intensity.
+
+* Switch the backend to Qt4Agg or Qt5Agg in prepare_cdi_mask.py to avoid Tk bug with interactive interface.
+
+* Correct bug in preprocessing_utils.center_fft() when 'fix_size' is not empty.
+
 Version 0.0.3
 -------------
 
