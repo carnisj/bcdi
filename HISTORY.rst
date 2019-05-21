@@ -1,3 +1,4 @@
+* Converted bcdi/publication/scripts/paper_figure_strain.py
 
 * Feat: implement postprocessing_utils.flip_reconstruction() to calculate the conjugate object giving the same diffracted intensity.
 
