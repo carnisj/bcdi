@@ -17,39 +17,45 @@ sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-Template for making figure for paper
-Open an amp_dist_strain.npz file and save individual figures
+Template for making 2D slices figures for a publication about BCDI.
+
+Open an amp_dist_strain.npz file and save individual figures.
+
+In the reconstruction file, the following fieldnames are expected: 'amp', 'bulk', 'phase' for simulated data or 'disp' 
+for experimental data, 'strain'.
+
+It is necessary to know the voxel size of the reconstruction in order to put ticks at the correct position.
 """
 
 
 scan = 978  # spec scan number
 datadir = "C:/Users/carnis/Work Folders/Documents/data/HC3207/SN"+str(scan)+"/pynxraw/"
 savedir = "C:/Users/carnis/Work Folders/Documents/data/HC3207/SN"+str(scan) + "/figures/"
-voxel_size = 3  # in nm
+comment = '_modes'   # should start with _
 simulated_data = False
-grey_background = True  # set the background to grey in phase and strain plots
+
+voxel_size = 3  # in nm
 tick_spacing = 50  # for plots, in nm
 field_of_view = 400  # in nm, can be larger than the total width (the array will be padded)
+
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
+
 strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
-save_YZ = 0  # 1 to save the strain in YZ plane
-save_XZ = 1  # 1 to save the strain in XZ plane
-save_XY = 1  # 1 to save the strain in XY plane
-comment = '_modes'   # should start with _
-flag_strain = 1  # 1 to plot and save the strain, 0 otherwise
-flag_phase = 1  # 1 to plot and save the phase, 0 otherwise
-flag_amp = 1  # 1 to plot and save the amplitude, 0 otherwise
-histogram_Yaxis = 'linear'  # 'log' or 'linear'
-flag_support = 1  # 1 to plot and save the support, 0 otherwise
-flag_linecut = 0  # 1 to plot and save a linecut of the phase, 0 otherwise
+grey_background = True  # True to set the background to grey in phase and strain plots
 
-if flag_phase == 1:
-    comment = comment + "_phaserange_" + str('{:.2f}'.format(phase_range))
-if flag_strain == 1:
-    comment = comment + "_strainrange_" + str(strain_range)
+save_YZ = 0  # True to save the strain in YZ plane
+save_XZ = True  # True to save the strain in XZ plane
+save_XY = True  # True to save the strain in XY plane
+
+flag_strain = True  # True to plot and save the strain
+flag_phase = True  # True to plot and save the phase
+flag_amp = True  # True to plot and save the amplitude
+amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
+flag_support = True  # True to plot and save the support
+flag_linecut = False  # True to plot and save a linecut of the phase
 ##########################
 # end of user parameters #
 ##########################
@@ -93,10 +99,16 @@ amp = amp / amp.max()  # normalize amplitude
 amp[amp < 0.01] = 0
 support = np.zeros(amp.shape)
 support[np.nonzero(amp)] = 1
+
 if simulated_data:
     phase = npzfile['phase']
 else:
     phase = npzfile['displacement']
+
+if flag_phase:
+    comment = comment + "_phaserange_" + str('{:.2f}'.format(phase_range))
+if flag_strain:
+    comment = comment + "_strainrange_" + str(strain_range)
 
 numz, numy, numx = amp.shape
 print("Initial data size: (", numz, ',', numy, ',', numx, ')')
@@ -142,7 +154,7 @@ if flag_support:
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
-    if save_YZ == 1:
+    if save_YZ:
         fig.savefig(savedir + 'support_YZ' + comment + '.png', bbox_inches="tight")
 
     fig, ax1 = plt.subplots(1, 1)
@@ -153,7 +165,7 @@ if flag_support:
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
-    if save_XZ == 1:
+    if save_XZ:
         fig.savefig(savedir + 'support_XZ' + comment + '.png', bbox_inches="tight")
 
     fig, ax2 = plt.subplots(1, 1)
@@ -166,7 +178,7 @@ if flag_support:
     ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
 
-    if save_XY == 1:
+    if save_XY:
         fig.savefig(savedir + 'support_XY' + comment + '.png', bbox_inches="tight")
 
 #############
@@ -182,7 +194,7 @@ if flag_amp:
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
-    if save_YZ == 1:
+    if save_YZ:
         fig.savefig(savedir + 'amp_YZ' + comment + '.png', bbox_inches="tight")
 
     fig, ax1 = plt.subplots(1, 1)
@@ -193,7 +205,7 @@ if flag_amp:
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
-    if save_XZ == 1:
+    if save_XZ:
         fig.savefig(savedir + 'amp_XZ' + comment + '.png', bbox_inches="tight")
 
     fig, ax2 = plt.subplots(1, 1)
@@ -206,7 +218,7 @@ if flag_amp:
     ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
 
-    if save_XY == 1:
+    if save_XY:
         fig.savefig(savedir + 'amp_XY' + comment + '.png', bbox_inches="tight")
     plt.colorbar(plt2, ax=ax2)
     fig.savefig(savedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
@@ -216,7 +228,7 @@ if flag_amp:
     plt.hist(amp[amp > min_amp].flatten(), bins=250)
     plt.xlim(left=0.05)
     plt.ylim(bottom=1)
-    if histogram_Yaxis == 'log':
+    if amp_histogram_Yaxis == 'log':
         ax.set_yscale('log')
         plt.ylim(top=100000)
     ax.tick_params(labelbottom='off', labelleft='off', direction='out', length=tick_length, width=tick_width)
@@ -231,7 +243,7 @@ if flag_amp:
 ##########
 # Strain #
 ##########
-if flag_strain == 1:
+if flag_strain:
     if grey_background:
         strain_copy = np.copy(strain)
         strain_copy[bulk == 0] = np.nan
@@ -244,7 +256,7 @@ if flag_strain == 1:
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
-    if save_YZ == 1:
+    if save_YZ:
         fig.savefig(savedir + 'strain_YZ' + comment + '.png', bbox_inches="tight")
 
     fig, ax1 = plt.subplots(1, 1)
@@ -254,7 +266,7 @@ if flag_strain == 1:
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
-    if save_XZ == 1:
+    if save_XZ:
         fig.savefig(savedir + 'strain_XZ' + comment + '.png', bbox_inches="tight")
 
     fig, ax2 = plt.subplots(1, 1)
@@ -266,7 +278,7 @@ if flag_strain == 1:
     ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
 
-    if save_XY == 1:
+    if save_XY:
         fig.savefig(savedir + 'strain_XY' + comment + '.png', bbox_inches="tight")
     plt.colorbar(plt2, ax=ax2)
     fig.savefig(savedir + 'strain_XY' + comment + '_colorbar.png', bbox_inches="tight")
@@ -274,7 +286,7 @@ if flag_strain == 1:
 #########
 # Phase #
 #########
-if flag_phase == 1:
+if flag_phase:
     if grey_background:
         phase_copy = np.copy(phase)
         phase_copy[bulk == 0] = np.nan
@@ -286,7 +298,7 @@ if flag_phase == 1:
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
-    if save_YZ == 1:
+    if save_YZ:
         fig.savefig(savedir + 'phase_YZ' + comment + '.png', bbox_inches="tight")
 
     fig, ax1 = plt.subplots(1, 1)
@@ -296,7 +308,7 @@ if flag_phase == 1:
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
-    if save_XZ == 1:
+    if save_XZ:
         fig.savefig(savedir + 'phase_XZ' + comment + '.png', bbox_inches="tight")
 
     fig, ax2 = plt.subplots(1, 1)
@@ -308,7 +320,7 @@ if flag_phase == 1:
     ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                     length=tick_length, width=tick_width)
 
-    if save_XY == 1:
+    if save_XY:
         fig.savefig(savedir + 'phase_XY' + comment + '.png', bbox_inches="tight")
     plt.colorbar(plt2, ax=ax2)
     fig.savefig(savedir + 'phase_XY' + comment + '_colorbar.png', bbox_inches="tight")
@@ -316,7 +328,7 @@ if flag_phase == 1:
     ###################
     # example of a line cut on the phase, can also load more data for the lineplot for comparison
     ##################
-    if flag_linecut == 1:
+    if flag_linecut:
         file_path = filedialog.askopenfilename(initialdir=datadir, title="Select avg7 file",
                                                filetypes=[("NPZ", "*.npz")])
         # npzfile = np.load(file_path)
