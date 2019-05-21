@@ -47,3 +47,14 @@ Preprocessing
    :start-after: helptext
    :end-before: """
    :language: rst
+
+Publication
+-----------
+
+`paper_figure_strain.py`:
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/publication/scripts/paper_figure_strain.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
