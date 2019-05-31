@@ -540,6 +540,26 @@ def check_pixels(data, mask, debugging=False):
     return data, mask
 
 
+def count_frames_p10(logfile):
+    """
+    Count the number of images in a scan from PETRAIII P10 beamline
+    :param logfile:  path of the . fio file containing the information about the scan
+    :return: nb_frames number of frames in the scan
+    """
+    nb_frames = 0
+    fio = open(logfile, 'r')
+    for line in fio.readlines():
+        this_line = line.strip()
+        words = this_line.split()
+        try:
+            float(words[0])  # if this does not fail, we are reading data
+            nb_frames = nb_frames + 1
+        except ValueError:  # first word is not a number, skip this line
+            continue
+    fio.close()
+    return nb_frames
+
+
 def create_logfile(setup, detector, scan_number, root_folder, filename):
     """
     Create the logfile used in gridmap().
