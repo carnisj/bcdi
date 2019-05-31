@@ -88,10 +88,11 @@ def find_bragg(data, peak_method):
     Find the Bragg peak position in data based on the centering method.
 
     :param data: 2D or 3D array. If complex, Bragg peak position is calculated for abs(array)
-    :param peak_method: 'max'or 'com', maximum intensity or center of mass
+    :param peak_method: 'max', 'com' or 'maxcom'. For 'maxcom', it uses method 'max' for the first axis and 'com'
+     for the other axes.
     :return: the centered data
     """
-    if peak_method != 'max' and peak_method != 'com':
+    if peak_method != 'max' and peak_method != 'com' and peak_method != 'maxcom':
         raise ValueError('Incorrect value for "centering_method" parameter')
 
     if data.ndim == 2:
@@ -106,11 +107,16 @@ def find_bragg(data, peak_method):
         if peak_method == 'max':
             z0, y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
             print("Max at (z, y, x): ", z0, y0, x0, ' Max = ', int(data[z0, y0, x0]))
-        else:  # 'com'
+        elif peak_method == 'com':
             z0, y0, x0 = center_of_mass(data)
             print("Center of mass at (z, y, x): ", z0, y0, x0, ' COM = ', int(data[int(z0), int(y0), int(x0)]))
+        else:
+            z0, _, _ = np.unravel_index(abs(data).argmax(), data.shape)
+            y0, x0 = center_of_mass(data[z0, :, :])
+            print("MaxCom at (z, y, x): ", z0, y0, x0, ' Max = ', int(data[z0, y0, x0]))
     else:
         raise ValueError('Data should be 2D or 3D')
+
     return z0, y0, x0
 
 
