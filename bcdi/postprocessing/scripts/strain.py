@@ -55,8 +55,10 @@ sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mea
 correlation_threshold = 0.90
 
 original_size = (100, 400, 512)  # size of the FFT array used for phasing, when the result has been croped (.cxi)
-
 # leave it to () otherwise
+binning = (2, 2, 2)  # binning factor during phasing
+
+
 output_size = (120, 120, 120)  # original_size  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
 fix_voxel = 3.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
@@ -137,6 +139,12 @@ else:
 ####################################
 # define the experimental geometry #
 ####################################
+pixel_size = pixel_size * binning[1]
+tilt_angle = tilt_angle * binning[0]
+if binning[1] != binning[2]:
+    print('Binning size different for each detector direction - not yet implemented')
+    sys.exit()
+
 setup = exp.SetupPostprocessing(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle,
                                 inplane_angle=inplane_angle, tilt_angle=tilt_angle, rocking_angle=rocking_angle,
                                 grazing_angle=grazing_angle, distance=sdd, pixel_x=pixel_size, pixel_y=pixel_size)
