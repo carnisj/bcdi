@@ -1392,23 +1392,16 @@ def regrid_id01(follow_bragg, frames_logical, logfile, scan_number, detector, se
     return qx, qz, qy, frames_logical
 
 
-def regrid_p10(frames_logical, logfile, detector, setup, hxrd):
-    """
-    Load P10 motor positions and calculate q positions for orthogonalization.
+def motor_positions_p10(logfile, setup):
 
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param logfile: Silx SpecFile object containing the information about the scan and image numbers
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
-    :return:
-     - qx, qz, qy components for the dataset
-     - updated frames_logical
-    """
     fio = open(logfile, 'r')
+    if setup.rocking_angle == "outofplane":
+        om = []
+    elif setup.rocking_angle == "inplane":
+        phi = []
+    else:
+        raise ValueError('Wrong value for "rocking_angle" parameter')
 
-    om = []
     fio_lines = fio.readlines()
     for line in fio_lines:
         this_line = line.strip()
@@ -1437,17 +1430,35 @@ def regrid_p10(frames_logical, logfile, detector, setup, hxrd):
             float(words[0])  # if this does not fail, we are reading data
             if setup.rocking_angle == "outofplane":
                 om.append(float(words[index_om]))
-            elif setup.rocking_angle == "inplane":
+            else:  # phi
                 phi.append(float(words[index_phi]))
         except ValueError:  # first word is not a number, skip this line
             continue
 
     if setup.rocking_angle == "outofplane":
         om = np.asarray(om, dtype=float)
-    elif setup.rocking_angle == "inplane":
+    else:  # phi
         phi = np.asarray(phi, dtype=float)
 
     fio.close()
+    return om, phi, chi, mu, gamma, delta
+
+
+def regrid_p10(frames_logical, logfile, detector, setup, hxrd):
+    """
+    Load P10 motor positions and calculate q positions for orthogonalization.
+
+    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param logfile: Silx SpecFile object containing the information about the scan and image numbers
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
+    :return:
+     - qx, qz, qy components for the dataset
+     - updated frames_logical
+    """
+    om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile, setup)
 
     qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
