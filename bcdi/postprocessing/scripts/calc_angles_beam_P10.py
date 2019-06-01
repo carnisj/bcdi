@@ -33,7 +33,6 @@ peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 ######################################
 beamline = 'P10'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = sample_name + '_%05d'
 #############################################################
 # define detector related parameters and region of interest #
@@ -94,13 +93,10 @@ hotpix_array = pru.load_hotpixels(hotpixels_file)
 logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan,
                              root_folder=root_folder, filename=specfile_name)
 
-nb_frames = pru.count_frames_p10(logfile)
-
-
 if filtered_data == 0:
     _, data, _, mask, _, frames_logical, monitor = \
         pru.gridmap(logfile=logfile, scan_number=scan, detector=detector, setup=setup,
-                    flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=follow_bragg,
+                    flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=False,
                     debugging=False, orthogonalize=False)
 else:
     root = tk.Tk()
@@ -111,13 +107,7 @@ else:
     data = data[roi_detector[0]:roi_detector[1], roi_detector[2]:roi_detector[3]]
 
 nz, ny, nx = data.shape
-
-if nz != nb_frames:
-    print('The loaded data has not the same shape as the raw data')
-    sys.exit()
-
 print("Shape of dataset: ", nz, ny, nx)
-
 
 ##############################
 # find motors values in .fio #
@@ -128,6 +118,11 @@ elif rocking_angle == 'inplane':  # phi rocking curve
     _, tilt, _, _, inplane, outofplane = pru.motor_positions_p10(logfile, rocking_angle)
 else:
     print('Wrong value for "rocking_angle" parameter')
+    sys.exit()
+
+nb_frames = len(tilt)
+if nz != nb_frames:
+    print('The loaded data has not the same shape as the raw data')
     sys.exit()
 
 #######################
