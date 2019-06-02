@@ -540,26 +540,6 @@ def check_pixels(data, mask, debugging=False):
     return data, mask
 
 
-def count_frames_p10(logfile):
-    """
-    Count the number of images in a scan from PETRAIII P10 beamline
-    :param logfile:  path of the . fio file containing the information about the scan
-    :return: nb_frames number of frames in the scan
-    """
-    nb_frames = 0
-    fio = open(logfile, 'r')
-    for line in fio.readlines():
-        this_line = line.strip()
-        words = this_line.split()
-        try:
-            float(words[0])  # if this does not fail, we are reading data
-            nb_frames = nb_frames + 1
-        except ValueError:  # first word is not a number, skip this line
-            continue
-    fio.close()
-    return nb_frames
-
-
 def create_logfile(setup, detector, scan_number, root_folder, filename):
     """
     Create the logfile used in gridmap().
@@ -1216,6 +1196,118 @@ def mean_filter(data, nb_neighbours, mask, interpolate=False, debugging=False):
     return data, nb_pixels, mask
 
 
+def motor_positions_cristal(logfile, setup):
+    """
+    Load the scan data and extract motor positions.
+
+    :param logfile: h5py File object of CRISTAL .nxs scan file
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :return: (mgomega, gamma, delta) motor positions
+    """
+    if setup.rocking_angle != 'outofplane':
+        raise ValueError('Only out of plane rocking curve implemented for CRISTAL')
+
+    group_key = list(logfile.keys())[0]
+
+    mgomega = logfile['/' + group_key + '/scan_data/actuator_1_1'][:] / 1e6  # mgomega is scanned
+
+    delta = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-DELTA/position'][:]
+
+    gamma = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-GAMMA/position'][:]
+
+    return mgomega, gamma, delta
+
+
+def motor_positions_p10(logfile, setup):
+    """
+    Load the .fio file from the scan and extract motor positions.
+
+    :param logfile: path of the . fio file containing the information about the scan
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :return: (om, phi, chi, mu, gamma, delta) motor positions
+    """
+
+    fio = open(logfile, 'r')
+    if setup.rocking_angle == "outofplane":
+        om = []
+    elif setup.rocking_angle == "inplane":
+        phi = []
+    else:
+        raise ValueError('Wrong value for "rocking_angle" parameter')
+
+    fio_lines = fio.readlines()
+    for line in fio_lines:
+        this_line = line.strip()
+        words = this_line.split()
+
+        if 'Col' in words and 'om' in words:  # om is scanned, template = ' Col 0 om DOUBLE\n'
+            index_om = int(words[1]) - 1  # python index starts at 0
+        if 'om' in words and '=' in words and setup.rocking_angle == "inplane":  # om is a positioner
+            om = float(words[2])
+
+        if 'Col' in words and 'phi' in words:  # phi is scanned, template = ' Col 0 phi DOUBLE\n'
+            index_phi = int(words[1]) - 1  # python index starts at 0
+        if 'phi' in words and '=' in words and setup.rocking_angle == "outofplane":  # phi is a positioner
+            phi = float(words[2])
+
+        if 'chi' in words and '=' in words:  # template for positioners: 'chi = 90.0\n'
+            chi = float(words[2])
+        if 'del' in words and '=' in words:  # template for positioners: 'del = 30.05\n'
+            delta = float(words[2])
+        if 'gam' in words and '=' in words:  # template for positioners: 'gam = 4.05\n'
+            gamma = float(words[2])
+        if 'mu' in words and '=' in words:  # template for positioners: 'mu = 0.0\n'
+            mu = float(words[2])
+
+        try:
+            float(words[0])  # if this does not fail, we are reading data
+            if setup.rocking_angle == "outofplane":
+                om.append(float(words[index_om]))
+            else:  # phi
+                phi.append(float(words[index_phi]))
+        except ValueError:  # first word is not a number, skip this line
+            continue
+
+    if setup.rocking_angle == "outofplane":
+        om = np.asarray(om, dtype=float)
+    else:  # phi
+        phi = np.asarray(phi, dtype=float)
+
+    fio.close()
+    return om, phi, chi, mu, gamma, delta
+
+
+def motor_positions_sixs(logfile, frames_logical):
+    """
+    Load the scan data and extract motor positions.
+
+    :param logfile: nxsReady Dataset object of SIXS .nxs scan file
+    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :return: (mgomega, gamma, delta) motor positions
+    """
+    temp_delta = logfile.delta[:]
+    temp_gamma = logfile.gamma[:]
+    temp_mu = logfile.mu[:]
+
+    delta = np.zeros((frames_logical != 0).sum())
+    gamma = np.zeros((frames_logical != 0).sum())
+    mu = np.zeros((frames_logical != 0).sum())
+
+    nb_overlap = 0
+    for idx in range(len(frames_logical)):
+        if frames_logical[idx]:
+            delta[idx - nb_overlap] = temp_delta[idx]
+            gamma[idx - nb_overlap] = temp_gamma[idx]
+            mu[idx - nb_overlap] = temp_mu[idx]
+        else:
+            nb_overlap = nb_overlap + 1
+
+    delta = delta.mean()  # not scanned
+    gamma = gamma.mean()  # not scanned
+    return mu, gamma, delta
+
+
 def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, debugging=False):
     """
     Normalize array using the monitor values.
@@ -1306,7 +1398,7 @@ def regrid_cristal(frames_logical, logfile, detector, setup, hxrd):
 
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param logfile: Silx SpecFile object containing the information about the scan and image numbers
+    :param logfile: h5py File object of CRISTAL .nxs scan file
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
@@ -1314,16 +1406,7 @@ def regrid_cristal(frames_logical, logfile, detector, setup, hxrd):
      - qx, qz, qy components for the dataset
      - updated frames_logical
     """
-    if setup.rocking_angle != 'outofplane':
-        raise ValueError('Only out of plane rocking curve implemented for CRISTAL')
-
-    group_key = list(logfile.keys())[0]
-
-    mgomega = logfile['/' + group_key + '/scan_data/actuator_1_1'][:] / 1e6  # mgomega is scanned
-
-    delta = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-DELTA/position'][:]
-
-    gamma = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-GAMMA/position'][:]
+    mgomega, gamma, delta = motor_positions_cristal(logfile, setup)
 
     qx, qy, qz = hxrd.Ang2Q.area(mgomega, gamma, delta, en=setup.energy, delta=detector.offsets)
 
@@ -1392,65 +1475,13 @@ def regrid_id01(follow_bragg, frames_logical, logfile, scan_number, detector, se
     return qx, qz, qy, frames_logical
 
 
-def motor_positions_p10(logfile, setup):
-
-    fio = open(logfile, 'r')
-    if setup.rocking_angle == "outofplane":
-        om = []
-    elif setup.rocking_angle == "inplane":
-        phi = []
-    else:
-        raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    fio_lines = fio.readlines()
-    for line in fio_lines:
-        this_line = line.strip()
-        words = this_line.split()
-
-        if 'Col' in words and 'om' in words:  # om is scanned, template = ' Col 0 om DOUBLE\n'
-            index_om = int(words[1]) - 1  # python index starts at 0
-        if 'om' in words and '=' in words and setup.rocking_angle == "inplane":  # om is a positioner
-            om = float(words[2])
-
-        if 'Col' in words and 'phi' in words:  # phi is scanned, template = ' Col 0 phi DOUBLE\n'
-            index_phi = int(words[1]) - 1  # python index starts at 0
-        if 'phi' in words and '=' in words and setup.rocking_angle == "outofplane":  # phi is a positioner
-            phi = float(words[2])
-
-        if 'chi' in words and '=' in words:  # template for positioners: 'chi = 90.0\n'
-            chi = float(words[2])
-        if 'del' in words and '=' in words:  # template for positioners: 'del = 30.05\n'
-            delta = float(words[2])
-        if 'gam' in words and '=' in words:  # template for positioners: 'gam = 4.05\n'
-            gamma = float(words[2])
-        if 'mu' in words and '=' in words:  # template for positioners: 'mu = 0.0\n'
-            mu = float(words[2])
-
-        try:
-            float(words[0])  # if this does not fail, we are reading data
-            if setup.rocking_angle == "outofplane":
-                om.append(float(words[index_om]))
-            else:  # phi
-                phi.append(float(words[index_phi]))
-        except ValueError:  # first word is not a number, skip this line
-            continue
-
-    if setup.rocking_angle == "outofplane":
-        om = np.asarray(om, dtype=float)
-    else:  # phi
-        phi = np.asarray(phi, dtype=float)
-
-    fio.close()
-    return om, phi, chi, mu, gamma, delta
-
-
 def regrid_p10(frames_logical, logfile, detector, setup, hxrd):
     """
     Load P10 motor positions and calculate q positions for orthogonalization.
 
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param logfile: Silx SpecFile object containing the information about the scan and image numbers
+    :param logfile: path of the . fio file containing the information about the scan
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
@@ -1471,7 +1502,7 @@ def regrid_sixs(frames_logical, logfile, detector, setup, hxrd):
 
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param logfile: Silx SpecFile object containing the information about the scan and image numbers
+    :param logfile: nxsReady Dataset object of SIXS .nxs scan file
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
@@ -1479,25 +1510,7 @@ def regrid_sixs(frames_logical, logfile, detector, setup, hxrd):
      - qx, qz, qy components for the dataset
      - updated frames_logical
     """
-    temp_delta = logfile.delta[:]
-    temp_gamma = logfile.gamma[:]
-    temp_mu = logfile.mu[:]
-
-    delta = np.zeros((frames_logical != 0).sum())
-    gamma = np.zeros((frames_logical != 0).sum())
-    mu = np.zeros((frames_logical != 0).sum())
-
-    nb_overlap = 0
-    for idx in range(len(frames_logical)):
-        if frames_logical[idx]:
-            delta[idx - nb_overlap] = temp_delta[idx]
-            gamma[idx - nb_overlap] = temp_gamma[idx]
-            mu[idx - nb_overlap] = temp_mu[idx]
-        else:
-            nb_overlap = nb_overlap + 1
-
-    delta = delta.mean()  # not scanned
-    gamma = gamma.mean()  # not scanned
+    mu, gamma, delta = motor_positions_sixs(logfile, frames_logical)
 
     qx, qy, qz = hxrd.Ang2Q.area(setup.grazing_angle, mu, setup.grazing_angle, gamma, delta, en=setup.energy,
                                  delta=detector.offsets)
