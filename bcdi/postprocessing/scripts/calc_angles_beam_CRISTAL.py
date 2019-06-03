@@ -11,7 +11,7 @@ from scipy.interpolate import interp1d
 import tkinter as tk
 from tkinter import filedialog
 import sys
-sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+#sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.experiment.experiment_utils as exp
@@ -22,8 +22,8 @@ Calculate delta and gamma angles from the direct beam and Bragg peak positions, 
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected gamma, delta of Bragg peak
 """
-scan = 107
-root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\cristal_anomal\\"
+scan = 271
+root_folder = "C:/Data/cristal_2018_anomal/data/"
 sample_name = "S"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
@@ -37,12 +37,12 @@ rocking_angle = "outofplane"  # "outofplane" or "inplane"
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1409  # horizontal pixel number of the Bragg peak
+# x_bragg = 1409  # horizontal pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 roi_detector = []
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
-hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
+hotpixels_file = root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
 template_imagefile = 'S%d.nxs'
 ###################################
@@ -51,12 +51,12 @@ template_imagefile = 'S%d.nxs'
 reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to Pt 3.9236/norm(reflection)
 reference_temperature = None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
-directbeam_x = 50.40  # x horizontal,  cch2 in xrayutilities
-directbeam_y = 451.02  # y vertical,  cch1 in xrayutilities
-direct_inplane = -0.124  # outer angle in xrayutilities
-direct_outofplane = -0.052
-sdd = 0.9207  # sample to detector distance in m
-energy = 7994  # in eV, offset of 6eV at ID01
+directbeam_x = 455.83  # x horizontal,  cch2 in xrayutilities
+directbeam_y = 31.47  # y vertical,  cch1 in xrayutilities
+direct_inplane = -0.4994  # outer angle in xrayutilities
+direct_outofplane = -0.2511
+sdd = 1.4359  # sample to detector distance in m
+energy = 8300  # in eV, offset of 6eV at ID01
 ##########################################################
 # end of user parameters
 ##########################################################
@@ -101,7 +101,7 @@ else:
     file_path = filedialog.askopenfilename(initialdir=homedir + "pynxraw/",
                                            title="Select 3D data", filetypes=[("NPZ", "*.npz")])
     data = np.load(file_path)['data']
-    data = data[roi_detector[0]:roi_detector[1], roi_detector[2]:roi_detector[3]]
+    data = data[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
 
 nz, ny, nx = data.shape
 print("Shape of dataset: ", nz, ny, nx)
@@ -110,6 +110,8 @@ print("Shape of dataset: ", nz, ny, nx)
 # find motors values in .fio #
 ##############################
 tilt, inplane, outofplane = pru.motor_positions_cristal(logfile, setup)
+inplane = inplane[0]
+outofplane = outofplane[0]
 
 nb_frames = len(tilt)
 if nz != nb_frames:
@@ -120,11 +122,12 @@ if nz != nb_frames:
 # Find the Bragg peak #
 #######################
 z0, y0, x0 = pru.find_bragg(data, peak_method=peak_method)
+z0 = np.rint(z0).astype(int)
+y0 = np.rint(y0).astype(int)
+x0 = np.rint(x0).astype(int)
 
-print("Bragg peak at (z, y, x): ", np.rint(z0).astype(int), np.rint(y0).astype(int), np.rint(x0).astype(int))
-print("Bragg peak (full detector) at (z, y, x): ", np.rint(z0).astype(int), np.rint(y0+roi_detector[0]).astype(int),
-      np.rint(x0+roi_detector[2]).astype(int))
-
+print("Bragg peak at (z, y, x): ", z0, y0, x0)
+print("Bragg peak (full detector) at (z, y, x): ", z0, y0+detector.roi[0], x0+detector.roi[2])
 
 ######################################################
 # calculate rocking curve and fit it to get the FWHM #
@@ -165,11 +168,11 @@ plt.pause(0.1)
 ##############################
 # Calculate corrected angles #
 ##############################
-bragg_x = roi_detector[2] + x0  # convert it in full detector pixel
-bragg_y = roi_detector[0] + y0  # convert it in full detector pixel
+bragg_x = detector.roi[2] + x0  # convert it in full detector pixel
+bragg_y = detector.roi[0] + y0  # convert it in full detector pixel
 
-x_direct_0 = directbeam_x + direct_inplane*np.pi/180*sdd/detector.pixel_size  # gamma is anticlockwise
-y_direct_0 = directbeam_y - direct_outofplane*np.pi/180*sdd/detector.pixel_size   # delta is clockwise
+x_direct_0 = directbeam_x + direct_inplane*np.pi/180*sdd/detector.pixelsize  # gamma is anticlockwise
+y_direct_0 = directbeam_y - direct_outofplane*np.pi/180*sdd/detector.pixelsize   # delta is clockwise
 
 print("\nDirect beam at (gam=", str(direct_inplane), "del=", str(direct_outofplane),
       ") = (X, Y): ", directbeam_x, directbeam_y)
@@ -177,15 +180,15 @@ print("Direct beam at (gam= 0, del= 0) = (X, Y): ", str('{:.2f}'.format(x_direct
 print("Bragg peak at (gam=", str(inplane), "del=", str(outofplane), ") = (X, Y): ",
       str('{:.2f}'.format(bragg_x)), str('{:.2f}'.format(bragg_y)))
 
-bragg_inplane = inplane + detector.pixel_size*(bragg_x-x_direct_0)/sdd*180/np.pi  # gamma is anticlockwise
-bragg_outofplane = outofplane - detector.pixel_size*(bragg_y-y_direct_0)/sdd*180/np.pi
+bragg_inplane = inplane + detector.pixelsize*(bragg_x-x_direct_0)/sdd*180/np.pi  # gamma is anticlockwise
+bragg_outofplane = outofplane - detector.pixelsize*(bragg_y-y_direct_0)/sdd*180/np.pi
 
 print("\nBragg angles before correction = (gam, del): ", str('{:.4f}'.format(inplane)),
       str('{:.4f}'.format(outofplane)))
 print("Bragg angles after correction = (gam, del): ", str('{:.4f}'.format(bragg_inplane)),
       str('{:.4f}'.format(bragg_outofplane)))
 
-d_rocking_angle = rocking_angle[1] - rocking_angle[0]
+d_rocking_angle = tilt[1] - tilt[0]
 
 print("\nRocking step=", str('{:.4f}'.format(d_rocking_angle)), 'deg')
 
@@ -208,8 +211,8 @@ temperature = pu.bragg_temperature(spacing=dist_plane, reflection=reflection, sp
 # calculate voxel sizes #
 #########################
 dz_realspace = wavelength / 10 / (nz * d_rocking_angle * np.pi / 180)  # in nm
-dy_realspace = wavelength / 10 * sdd / (ny * detector.pixel_size)  # in nm
-dx_realspace = wavelength / 10 * sdd / (nx * detector.pixel_size)  # in nm
+dy_realspace = wavelength / 10 * sdd / (ny * detector.pixelsize)  # in nm
+dx_realspace = wavelength / 10 * sdd / (nx * detector.pixelsize)  # in nm
 print('Real space voxel size (z, y, x): ', str('{:.2f}'.format(dz_realspace)), 'nm',
       str('{:.2f}'.format(dy_realspace)), 'nm', str('{:.2f}'.format(dx_realspace)), 'nm')
 
