@@ -1,3 +1,6 @@
+Version 0.0.4
+-------------
+
 * Implement motor_positions_p10(), motor_positions_cristal() in preprocessing/preprocessing_utils.py
 
 * Implement motor_positions_sixs() and motor_positions_id01() in preprocessing/preprocessing_utils.py
