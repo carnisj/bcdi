@@ -1218,6 +1218,62 @@ def motor_positions_cristal(logfile, setup):
     return mgomega, gamma, delta
 
 
+def motor_positions_id01(follow_bragg, frames_logical, logfile, scan_number, setup):
+    """
+    Load the scan data and extract motor positions.
+
+    :param follow_bragg: True when for energy scans the detector was also scanned to follow the Bragg peak
+    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param logfile: Silx SpecFile object containing the information about the scan and image numbers
+    :param scan_number: the scan number to load
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :return: (eta, chi, phi, nu, delta, energy) motor positions
+    """
+    motor_names = logfile[str(scan_number) + '.1'].motor_names  # positioners
+    motor_positions = logfile[str(scan_number) + '.1'].motor_positions  # positioners
+    labels = logfile[str(scan_number) + '.1'].labels  # motor scanned
+    labels_data = logfile[str(scan_number) + '.1'].data  # motor scanned
+
+    energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
+
+    if follow_bragg:
+        delta = list(labels_data[labels.index('del'), :])  # scanned
+    else:
+        delta = motor_positions[motor_names.index('del')]  # positioner
+    nu = motor_positions[motor_names.index('nu')]  # positioner
+    chi = 0
+
+    if setup.rocking_angle == "outofplane":
+        eta = labels_data[labels.index('eta'), :]
+        phi = motor_positions[motor_names.index('phi')]
+    elif setup.rocking_angle == "inplane":
+        phi = labels_data[labels.index('phi'), :]
+        eta = motor_positions[motor_names.index('eta')]
+    elif setup.rocking_angle == "energy":
+        raw_energy = list(labels_data[labels.index('energy'), :])  # in kev, scanned
+        phi = motor_positions[motor_names.index('phi')]  # positioner
+        eta = motor_positions[motor_names.index('eta')]  # positioner
+        if follow_bragg == 1:
+            delta = list(labels_data[labels.index('del'), :])  # scanned
+
+        nb_overlap = 0
+        energy = raw_energy[:]
+        for idx in range(len(raw_energy) - 1):
+            if raw_energy[idx + 1] == raw_energy[idx]:  # duplicate energy when undulator gap is changed
+                frames_logical[idx + 1] = 0
+                energy.pop(idx - nb_overlap)
+                if follow_bragg == 1:
+                    delta.pop(idx - nb_overlap)
+                nb_overlap = nb_overlap + 1
+        energy = np.array(energy) * 1000.0 - 6  # switch to eV, 6 eV of difference at ID01
+
+    else:
+        raise ValueError('Invalid rocking angle ', setup.rocking_angle, 'for ID01')
+
+    return eta, chi, phi, nu, delta, energy, frames_logical
+
+
 def motor_positions_p10(logfile, setup):
     """
     Load the .fio file from the scan and extract motor positions.
@@ -1284,7 +1340,7 @@ def motor_positions_sixs(logfile, frames_logical):
     :param logfile: nxsReady Dataset object of SIXS .nxs scan file
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :return: (mgomega, gamma, delta) motor positions
+    :return: (mgomega, gamma, delta) motor positions and updated frames_logical
     """
     temp_delta = logfile.delta[:]
     temp_gamma = logfile.gamma[:]
@@ -1305,7 +1361,7 @@ def motor_positions_sixs(logfile, frames_logical):
 
     delta = delta.mean()  # not scanned
     gamma = gamma.mean()  # not scanned
-    return mu, gamma, delta
+    return mu, gamma, delta, frames_logical
 
 
 def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, debugging=False):
@@ -1429,46 +1485,8 @@ def regrid_id01(follow_bragg, frames_logical, logfile, scan_number, detector, se
      - qx, qz, qy components for the dataset
      - updated frames_logical
     """
-    motor_names = logfile[str(scan_number) + '.1'].motor_names  # positioners
-    motor_positions = logfile[str(scan_number) + '.1'].motor_positions  # positioners
-    labels = logfile[str(scan_number) + '.1'].labels  # motor scanned
-    labels_data = logfile[str(scan_number) + '.1'].data  # motor scanned
-
-    energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
-
-    if follow_bragg:
-        delta = list(labels_data[labels.index('del'), :])  # scanned
-    else:
-        delta = motor_positions[motor_names.index('del')]  # positioner
-    nu = motor_positions[motor_names.index('nu')]  # positioner
-    chi = 0
-
-    if setup.rocking_angle == "outofplane":
-        eta = labels_data[labels.index('eta'), :]
-        phi = motor_positions[motor_names.index('phi')]
-    elif setup.rocking_angle == "inplane":
-        phi = labels_data[labels.index('phi'), :]
-        eta = motor_positions[motor_names.index('eta')]
-    elif setup.rocking_angle == "energy":
-        raw_energy = list(labels_data[labels.index('energy'), :])  # in kev, scanned
-        phi = motor_positions[motor_names.index('phi')]  # positioner
-        eta = motor_positions[motor_names.index('eta')]  # positioner
-        if follow_bragg == 1:
-            delta = list(labels_data[labels.index('del'), :])  # scanned
-
-        nb_overlap = 0
-        energy = raw_energy[:]
-        for idx in range(len(raw_energy) - 1):
-            if raw_energy[idx + 1] == raw_energy[idx]:  # duplicate energy when undulator gap is changed
-                frames_logical[idx + 1] = 0
-                energy.pop(idx - nb_overlap)
-                if follow_bragg == 1:
-                    delta.pop(idx - nb_overlap)
-                nb_overlap = nb_overlap + 1
-        energy = np.array(energy) * 1000.0 - 6  # switch to eV, 6 eV of difference at ID01
-
-    else:
-        raise ValueError('Invalid rocking angle ', setup.rocking_angle, 'for ID01')
+    eta, chi, phi, nu, delta, energy, frames_logical =\
+        motor_positions_id01(follow_bragg, frames_logical, logfile, scan_number, setup)
 
     qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
 
@@ -1510,7 +1528,7 @@ def regrid_sixs(frames_logical, logfile, detector, setup, hxrd):
      - qx, qz, qy components for the dataset
      - updated frames_logical
     """
-    mu, gamma, delta = motor_positions_sixs(logfile, frames_logical)
+    mu, gamma, delta, frames_logical = motor_positions_sixs(logfile, frames_logical)
 
     qx, qy, qz = hxrd.Ang2Q.area(setup.grazing_angle, mu, setup.grazing_angle, gamma, delta, en=setup.energy,
                                  delta=detector.offsets)
