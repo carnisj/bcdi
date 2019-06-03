@@ -20,7 +20,7 @@ Postprocessing
    :language: rst
 
 `calc_angles_beam_ID01.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/postprocessing/scripts/calc_angles_beam_ID01.py
    :start-after: helptext
@@ -36,7 +36,7 @@ Postprocessing
    :language: rst
 
 `calc_angles_beam_SIXS.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/postprocessing/scripts/calc_angles_beam_SIXS.py
    :start-after: helptext
@@ -44,7 +44,7 @@ Postprocessing
    :language: rst
 
 `calc_angles_beam_CRISTAL.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/postprocessing/scripts/calc_angles_beam_CRISTAL.py
    :start-after: helptext
