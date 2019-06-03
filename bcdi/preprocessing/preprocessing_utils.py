@@ -994,7 +994,8 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, debugging=False):
     for line in fio_lines:
         this_line = line.strip()
         words = this_line.split()
-        if 'Col' in words and 'ipetra' in words:  # template = ' Col 6 ipetra DOUBLE\n'
+        if 'Col' in words and ('ipetra' in words or 'curpetra' in words):
+            # template = ' Col 6 ipetra DOUBLE\n' (2018) or ' Col 6 curpetra DOUBLE\n' (2019)
             index_monitor = int(words[1])-1  # python index starts at 0
         try:
             float(words[0])  # if this does not fail, we are reading data
