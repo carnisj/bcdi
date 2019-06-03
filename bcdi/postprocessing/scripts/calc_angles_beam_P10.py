@@ -74,8 +74,11 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 ####################
 setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd)
 
-homedir = root_folder + sample_name + str(scan) + '/'
-detector.datadir = homedir + "data/"
+specfile_name = specfile_name % scan
+homedir = root_folder + specfile_name + '/'
+detector.datadir = homedir + 'e4m/'
+template_imagefile = specfile_name + template_imagefile
+detector.template_imagefile = template_imagefile
 
 print('\nScan', scan)
 print('Setup: ', setup.beamline)
