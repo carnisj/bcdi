@@ -16,7 +16,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 
-setup(name='bcdi', version='0.0.3',
+setup(name='bcdi', version='0.0.4',
       packages=find_packages(),
       include_package_data=True,
       # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},  # the file needs to be in a package
@@ -34,6 +34,8 @@ setup(name='bcdi', version='0.0.3',
                'bcdi/postprocessing/scripts/strain_mean_var_rms.py',
                'bcdi/postprocessing/scripts/calc_angles_beam_CRISTAL.py',
                'bcdi/postprocessing/scripts/calc_angles_beam_ID01.py',
+               'bcdi/postprocessing/scripts/calc_angles_beam_P10.py',
+               'bcdi/postprocessing/scripts/calc_angles_beam_SIXS.py',
                'bcdi/preprocessing/scripts/concatenate_scans.py',
                'bcdi/preprocessing/scripts/prepare_cdi_mask.py',
                'bcdi/preprocessing/scripts/readdata_P10.py',
