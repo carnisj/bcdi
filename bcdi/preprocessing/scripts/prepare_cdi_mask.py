@@ -38,7 +38,7 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [351]  # list or array of scan numbers
+scans = [566]  # list or array of scan numbers
 root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\P10_2018\\"
 sample_name = "dewet5"  # "SN"  #
 comment = '_'  # string, should start with "_"
@@ -52,7 +52,7 @@ centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better u
 fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
 # It is useful if hotpixels or intense aliens. Leave it [] otherwise.
 ###########################
-fix_size = []  # crop the array to predefined size, leave it to [] otherwise
+fix_size = []  # [10, 170, 0, 512, 0, 480]  # crop the array to predefined size, leave it to [] otherwise
 # [zstart, zstop, ystart, ystop, xstart, xstop]
 ###########################
 center_fft = 'crop_asym_ZYX'
@@ -92,7 +92,7 @@ specfile_name = sample_name + '_%05d'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1396  # horizontal pixel number of the Bragg peak
+x_bragg = 1409  # horizontal pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = []
@@ -111,7 +111,7 @@ template_imagefile = '_data_%06d.h5'
 sdd = 1.8  # sample to detector distance in m, not important if you use raw data
 energy = 10300  # x-ray energy in eV, not important if you use raw data
 grazing_angle = 0  # incident angle of diffractometer at SIXS or incident angle below phi for in-plane rocking curves
-beam_direction = [1, 0, 0]  # beam along x
+beam_direction = [1, 0, 0]  # beam along z
 sample_inplane = [1, 0, 0]  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = [0, 0, 1]  # surface normal of the sample at 0 angles
 offset_inplane = 0  # outer detector angle offset, not important if you use raw data
