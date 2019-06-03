@@ -605,7 +605,7 @@ def find_bragg(data, peak_method):
         else:
             z0, _, _ = np.unravel_index(abs(data).argmax(), data.shape)
             y0, x0 = center_of_mass(data[z0, :, :])
-            print("MaxCom at (z, y, x): ", z0, y0, x0, ' Max = ', int(data[z0, y0, x0]))
+            print("MaxCom at (z, y, x): ", z0, y0, x0, ' Max = ', int(data[int(data[int(z0), int(y0), int(x0)])]))
     else:
         raise ValueError('Data should be 2D or 3D')
 
