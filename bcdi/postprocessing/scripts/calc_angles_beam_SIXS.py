@@ -19,7 +19,7 @@ import bcdi.experiment.experiment_utils as exp
 helptext = """
 Calculate delta and gamma angles from the direct beam and Bragg peak positions, based on SOLEIL SIXS geometry.
 
-Input: direct beam and Bragg peak position, sample to detector distance
+Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected gamma, delta of Bragg peak
 """
 scan = 107
