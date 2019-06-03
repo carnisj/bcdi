@@ -19,6 +19,38 @@ Postprocessing
    :end-before: """
    :language: rst
 
+`calc_angles_beam_ID01.py`:
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/calc_angles_beam_ID01.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+`calc_angles_beam_P10.py`:
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/calc_angles_beam_P10.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+`calc_angles_beam_SIXS.py`:
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/calc_angles_beam_SIXS.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+`calc_angles_beam_CRISTAL.py`:
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/calc_angles_beam_CRISTAL.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 .. _preprocess:
 
 Preprocessing
@@ -41,7 +73,7 @@ Preprocessing
    :language: rst
 
 `readdata_P10.py`:
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/preprocessing/scripts/readdata_P10.py
    :start-after: helptext
