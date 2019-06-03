@@ -1,8 +1,14 @@
-* Implement motor_positions_p10(), find_bragg() and count_frames_p10() in preprocessing/preprocessing_utils.py
+* Implement motor_positions_p10(), motor_positions_cristal() in preprocessing/preprocessing_utils.py
+
+* Implement motor_positions_sixs() and motor_positions_id01() in preprocessing/preprocessing_utils.py
+
+* Implement find_bragg() in preprocessing/preprocessing_utils.py
 
 * New parameter 'binning' in postprocessing/strain.py to account for binning during phasing.
 
-* Converted postprocessing/scripts/calc_angles_beam_P10.py
+* Converted postprocessing/scripts/calc_angles_beam_P10.py and postprocessing/scripts/calc_angles_beam_CRISTAL.py
+
+* Converted postprocessing/scripts/calc_angles_beam_SIXS.py and postprocessing/scripts/calc_angles_beam_ID01.py
 
 * Converted publication/scripts/paper_figure_strain.py
 
