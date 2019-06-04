@@ -43,6 +43,31 @@ class SetupPostprocessing(object):
         self.pixel_x = pixel_x  # in meters
         self.pixel_y = pixel_y  # in meters
 
+    def rotation_direction(self):
+        """
+        Define a coefficient +/- 1 depending on the detector rotation direction.
+
+        :return: a coefficient  which is 1 for anticlockwise rotation or -1 for clockwise rotation.
+        """
+        if self.beamline == 'SIXS':
+            # gamma is anti-clockwise
+            coeff_inplane = 1
+        elif self.beamline == 'ID01':
+            # nu is clockwise
+            coeff_inplane = -1
+        elif self.beamline == '34ID':
+            coeff_inplane = 1
+            # gamma is anti-clockwise
+        elif self.beamline == 'P10':
+            coeff_inplane = 1
+            # gamma is anti-clockwise
+        elif self.beamline == 'CRISTAL':
+            coeff_inplane = 1
+            # gamma is anti-clockwise
+        else:
+            raise ValueError('setup parameter: ', self.beamline, 'not defined')
+        return coeff_inplane
+
     def exit_wavevector(self):
         """
         Calculate the exit wavevector kout depending on the setup parameters, in laboratory frame (z downstream,
