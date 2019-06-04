@@ -33,6 +33,44 @@ my_cmap = LinearSegmentedColormap('my_colormap', cdict, 256)
 my_cmap.set_bad(color='0.7')
 
 
+class Colormap(object):
+    """
+    Class to define a colormap.
+    """
+    def __init__(self, bad_color='0.7', colormap='default'):
+        """
+        Initialize parameters of the experiment.
+
+        :param colormap: a colormap string. Available choices at the moment: 'default'
+        :param bad_color: a string which defines the grey level for nan pixels. example: '0.7'
+        """
+        if colormap == 'default':
+            color_dict = {'red':  ((0.0, 1.0, 1.0),
+                                   (0.11, 0.0, 0.0),
+                                   (0.36, 0.0, 0.0),
+                                   (0.62, 1.0, 1.0),
+                                   (0.87, 1.0, 1.0),
+                                   (1.0, 0.0, 0.0)),
+                          'green': ((0.0, 1.0, 1.0),
+                                    (0.11, 0.0, 0.0),
+                                    (0.36, 1.0, 1.0),
+                                    (0.62, 1.0, 1.0),
+                                    (0.87, 0.0, 0.0),
+                                    (1.0, 0.0, 0.0)),
+                          'blue': ((0.0, 1.0, 1.0),
+                                   (0.11, 1.0, 1.0),
+                                   (0.36, 1.0, 1.0),
+                                   (0.62, 0.0, 0.0),
+                                   (0.87, 0.0, 0.0),
+                                   (1.0, 0.0, 0.0))}
+        else:
+            raise ValueError('Only available colormaps: "default"')
+        self.cdict = color_dict
+        self.bad_color = bad_color
+        self.cmap = LinearSegmentedColormap('my_colormap', color_dict, 256)
+        self.cmap.set_bad(color='bad_color')
+
+
 def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v, tuple_width_h, tuple_colorbar,
                    tuple_vmin, tuple_vmax, tuple_title, tuple_scale, cmap=my_cmap, tick_direction='inout',
                    tick_width=1, tick_length=3, pixel_spacing=np.nan, reciprocal_space=False, **kwargs):
