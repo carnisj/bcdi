@@ -68,7 +68,7 @@ class Colormap(object):
         self.cdict = color_dict
         self.bad_color = bad_color
         self.cmap = LinearSegmentedColormap('my_colormap', color_dict, 256)
-        self.cmap.set_bad(color='bad_color')
+        self.cmap.set_bad(color=bad_color)
 
 
 def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v, tuple_width_h, tuple_colorbar,
@@ -78,17 +78,17 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
     Subplots of a 1D, 2D or 3D datasets using user-defined parameters.
 
     :param tuple_array: 2D or 3D array of real numbers
-    :param tuple_sum_frames: tuple of boolean values. If True, will sum the data along sum_axis
-    :param tuple_sum_axis: tuple of axis along which to sum
-    :param tuple_width_v: tuple of user-defined zoom vertical width, should be smaller than the actual data size.
-     Set it to np.nan if you do not need it.
-    :param tuple_width_h: tuple of user-defined zoom horizontal width, should be smaller than the actual data size.
-     Set it to np.nan if you do not need it.
-    :param tuple_colorbar: tuple of boolean values. Set it to True in order to plot the colorbar
-    :param tuple_vmin: tuple of lower boundaries for the colorbar, set to np.nan if you do not need it
-    :param tuple_vmax: tuple of higher boundaries for the colorbar, set to np.nan if you do not need it
-    :param tuple_title: tuple of strings, set to '' if you do not need it
-    :param tuple_scale:  tuple of strings with value 'linear' or 'log'
+    :param tuple_sum_frames: boolean or tuple of boolean values. If True, will sum the data along sum_axis
+    :param tuple_sum_axis: tuple of axis along which to sum or to take the middle slice
+    :param tuple_width_v: int or tuple of user-defined zoom vertical width, should be smaller than the actual data
+     size. Set it to np.nan if you do not need it.
+    :param tuple_width_h: int or tuple of user-defined zoom horizontal width, should be smaller than the actual data
+     size. Set it to np.nan if you do not need it.
+    :param tuple_colorbar: boolean or tuple of boolean values. Set it to True in order to plot the colorbar
+    :param tuple_vmin: float or tuple of lower boundaries for the colorbar, set to np.nan if you do not need it
+    :param tuple_vmax: float or tuple of higher boundaries for the colorbar, set to np.nan if you do not need it
+    :param tuple_title: string or tuple of strings, set to '' if you do not need it
+    :param tuple_scale:  string ot tuple of strings with value 'linear' or 'log'
     :param cmap: colormap to be used
     :param tick_direction: 'out', 'in', 'inout'
     :param tick_width: width of tickes in plots
@@ -99,9 +99,28 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
     :return:  the figure instance
     """
     if type(tuple_array) is not tuple:
-        raise TypeError('Expected a tuple of dataset')
+        raise TypeError('Expected "tuple_array" to be a tuple')
+    if type(tuple_sum_axis) is not tuple:
+        raise TypeError('Expected "tuple_sum_axis" to be a tuple')
 
     nb_subplots = len(tuple_array)
+
+    if type(tuple_sum_frames) is not tuple:
+        tuple_sum_frames = (tuple_sum_frames,) * nb_subplots
+    if type(tuple_width_v) is not tuple:
+        tuple_width_v = (tuple_width_v,) * nb_subplots
+    if type(tuple_width_h) is not tuple:
+        tuple_width_h = (tuple_width_h,) * nb_subplots
+    if type(tuple_colorbar) is not tuple:
+        tuple_colorbar = (tuple_colorbar,) * nb_subplots
+    if type(tuple_vmin) is not tuple:
+        tuple_vmin = (tuple_vmin,) * nb_subplots
+    if type(tuple_vmax) is not tuple:
+        tuple_vmax = (tuple_vmax,) * nb_subplots
+    if type(tuple_title) is not tuple:
+        tuple_title = (tuple_title,) * nb_subplots
+    if type(tuple_scale) is not tuple:
+        tuple_scale = (tuple_scale,) * nb_subplots
 
     for k in kwargs.keys():
         if k in ['xlabel']:
@@ -125,9 +144,9 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
         for idx in range(nb_subplots-1):
             ylabel.append('')
 
-    nb_raws = nb_subplots // 2
+    nb_columns = nb_subplots // 2
 
-    nb_columns = nb_subplots // nb_raws + nb_subplots % nb_raws
+    nb_raws = nb_subplots // nb_columns + nb_subplots % nb_columns
 
     plt.ion()
     plt.figure()
