@@ -424,7 +424,7 @@ class Detector(object):
     """
     Class to handle the configuration of the detector used for data acquisition.
     """
-    def __init__(self, name, datadir='', template_imagefile='', roi=[]):
+    def __init__(self, name, datadir='', template_imagefile='', roi=()):
         """
         Initialize parameters of the detector.
 
