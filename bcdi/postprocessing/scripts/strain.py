@@ -83,6 +83,7 @@ rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for e
 sdd = 0.86180  # sample to detector distance in m
 pixel_size = 55e-6  # detector pixel size in m,              ###  including pixels binning factor!  ###
 energy = 8994  # x-ray energy in eV, 6eV offset at ID01
+beam_direction = np.array([1, 0, 0])  # beam along z
 outofplane_angle = 35.1041  # detector delta ID01, delta SIXS, gamma 34ID
 inplane_angle = 3.5487  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
@@ -119,7 +120,7 @@ align_crystal = 1  # if 1 rotates the crystal to align it along q, 0 otherwise
 ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-align_inplane = 1  # if 1 rotates afterwards the crystal inplane to align it along z for easier slicing, 0 otherwise
+align_inplane = 0  # if 1 rotates afterwards the crystal inplane to align it along z for easier slicing, 0 otherwise
 ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
 inplane_normal = np.array([1, 0, -0.08])  # facet normal to align with ref_axis_inplane (y should be 0)
 #########################################################
@@ -409,7 +410,7 @@ else:
     ref_axis_outplane = "y"
     myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
 
-kin = 2*np.pi/setup.wavelength * np.array([1, 0, 0])  # in laboratory frame z downstream, y vertical, x outboard
+kin = 2*np.pi/setup.wavelength * beam_direction  # in laboratory frame z downstream, y vertical, x outboard
 kout = setup.exit_wavevector()  # in laboratory frame z downstream, y vertical, x outboard
 
 q = kout - kin
