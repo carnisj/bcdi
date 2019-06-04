@@ -22,7 +22,7 @@ Postprocessing
 `correct_angles_detector.py`:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/postprocessing/scripts/calc_angles_beam_CRISTAL.py
+.. literalinclude:: ../../bcdi/postprocessing/scripts/correct_angles_detector.py
    :start-after: helptext
    :end-before: """
    :language: rst
