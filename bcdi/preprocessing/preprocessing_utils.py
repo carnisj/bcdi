@@ -1207,41 +1207,47 @@ def motor_values(follow_bragg, frames_logical, logfile, scan_number, setup):
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param scan_number: the scan number to load
     :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: (rocking angular step, inplane detector angle, outofplane detector angle) corrected values
+    :return: (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
+     corrected values
     """
     if setup.beamline == 'ID01':
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
             tilt, _, _, inplane, outofplane, _, _ = \
                 motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
+            grazing = 0
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            _, _, tilt, inplane, outofplane, _, _ = \
+            grazing, _, tilt, inplane, outofplane, _, _ = \
                 motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
     elif setup.beamline == 'SIXS':
         if setup.rocking_angle == 'inplane':  # mu rocking curve
-            tilt, inplane, outofplane, _ = motor_positions_sixs(logfile, frames_logical)
+            grazing, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile, frames_logical)
         else:
             raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
 
     elif setup.beamline == 'CRISTAL':
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             tilt, inplane, outofplane = motor_positions_cristal(logfile, setup)
+            grazing = 0
+            inplane = inplane[0]
+            outofplane = outofplane[0]
         else:
             raise ValueError('Inplane rocking curve not implemented for CRISTAL')
 
     elif setup.beamline == 'P10':
         if setup.rocking_angle == 'outofplane':  # om rocking curve
             tilt, _, _, _, inplane, outofplane = motor_positions_p10(logfile, setup)
+            grazing = 0
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            _, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile, setup)
+            grazing, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile, setup)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
     else:
         raise ValueError('Wrong value for "beamline" parameter: bealine not supported')
 
-    return tilt, inplane, outofplane
+    return tilt, grazing, inplane, outofplane
 
 
 def motor_positions_cristal(logfile, setup):
@@ -1388,11 +1394,12 @@ def motor_positions_sixs(logfile, frames_logical):
     :param logfile: nxsReady Dataset object of SIXS .nxs scan file
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :return: (mgomega, gamma, delta) motor positions and updated frames_logical
+    :return: (beta, mgomega, gamma, delta) motor positions and updated frames_logical
     """
     temp_delta = logfile.delta[:]
     temp_gamma = logfile.gamma[:]
     temp_mu = logfile.mu[:]
+    beta = logfile.beta[0]
 
     delta = np.zeros((frames_logical != 0).sum())
     gamma = np.zeros((frames_logical != 0).sum())
@@ -1409,7 +1416,7 @@ def motor_positions_sixs(logfile, frames_logical):
 
     delta = delta.mean()  # not scanned
     gamma = gamma.mean()  # not scanned
-    return mu, gamma, delta, frames_logical
+    return beta, mu, gamma, delta, frames_logical
 
 
 def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, debugging=False):
