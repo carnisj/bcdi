@@ -196,8 +196,9 @@ plt.pause(0.1)
 bragg_x = detector.roi[2] + x0  # convert it in full detector pixel
 bragg_y = detector.roi[0] + y0  # convert it in full detector pixel
 
-x_direct_0 = directbeam_x + direct_inplane*np.pi/180*sdd/detector.pixelsize  # gamma is anticlockwise
-y_direct_0 = directbeam_y - direct_outofplane*np.pi/180*sdd/detector.pixelsize   # delta is clockwise
+x_direct_0 = directbeam_x + setup_post.rotation_direction() *\
+             (direct_inplane*np.pi/180*sdd/detector.pixelsize)  # rotation_direction is +1 or -1
+y_direct_0 = directbeam_y - direct_outofplane*np.pi/180*sdd/detector.pixelsize   # outofplane is always clockwise
 
 print("\nDirect beam at (gam=", str(direct_inplane), "del=", str(direct_outofplane),
       ") = (X, Y): ", directbeam_x, directbeam_y)
@@ -205,15 +206,18 @@ print("Direct beam at (gam= 0, del= 0) = (X, Y): ", str('{:.2f}'.format(x_direct
 print("Bragg peak at (gam=", str(inplane), "del=", str(outofplane), ") = (X, Y): ",
       str('{:.2f}'.format(bragg_x)), str('{:.2f}'.format(bragg_y)))
 
-bragg_inplane = inplane + detector.pixelsize*(bragg_x-x_direct_0)/sdd*180/np.pi  # gamma is anticlockwise
-bragg_outofplane = outofplane - detector.pixelsize*(bragg_y-y_direct_0)/sdd*180/np.pi
+bragg_inplane = inplane + setup_post.rotation_direction() *\
+                (detector.pixelsize*(bragg_x-x_direct_0)/sdd*180/np.pi)  # rotation_direction is +1 or -1
+bragg_outofplane = outofplane - detector.pixelsize*(bragg_y-y_direct_0)/sdd*180/np.pi   # outofplane is always clockwise
 
 print("\nBragg angles before correction = (gam, del): ", str('{:.4f}'.format(inplane)),
       str('{:.4f}'.format(outofplane)))
-print("Bragg angles after correction = (gam, del): ", str('{:.4f}'.format(bragg_inplane)),
+print("\nBragg angles after correction = (gam, del): ", str('{:.4f}'.format(bragg_inplane)),
       str('{:.4f}'.format(bragg_outofplane)))
 
 d_rocking_angle = tilt[1] - tilt[0]
+
+print("\nGrazing angle=", str('{:.4f}'.format(grazing)), 'deg')
 
 print("\nRocking step=", str('{:.4f}'.format(d_rocking_angle)), 'deg')
 
