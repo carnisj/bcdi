@@ -605,7 +605,7 @@ def find_bragg(data, peak_method):
         else:
             z0, _, _ = np.unravel_index(abs(data).argmax(), data.shape)
             y0, x0 = center_of_mass(data[z0, :, :])
-            print("MaxCom at (z, y, x): ", z0, y0, x0, ' Max = ', int(data[int(data[int(z0), int(y0), int(x0)])]))
+            print("MaxCom at (z, y, x): ", z0, y0, x0, ' Max = ', int(data[int(z0), int(y0), int(x0)]))
     else:
         raise ValueError('Data should be 2D or 3D')
 
@@ -1197,7 +1197,7 @@ def mean_filter(data, nb_neighbours, mask, interpolate=False, debugging=False):
     return data, nb_pixels, mask
 
 
-def motor_values(follow_bragg, frames_logical, logfile, scan_number, setup):
+def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False):
     """
     Load the scan data and extract motor positions.
 
