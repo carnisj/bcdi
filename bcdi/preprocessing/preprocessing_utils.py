@@ -1517,22 +1517,29 @@ def regrid(frames_logical, logfile, scan_number, detector, setup, hxrd, follow_b
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
             nb_steps = len(eta)
             tilt_angle = eta[1] - eta[0]
+
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
                 pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
                 eta = np.concatenate((eta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
                                       eta,
                                       eta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                eta = eta[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
 
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
             nb_steps = len(phi)
             tilt_angle = phi[1] - phi[0]
+
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
                 pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
                 phi = np.concatenate((phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
                                       phi,
                                       phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                phi = phi[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
         qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
@@ -1542,12 +1549,16 @@ def regrid(frames_logical, logfile, scan_number, detector, setup, hxrd, follow_b
         if setup.rocking_angle == 'inplane':  # mu rocking curve
             nb_steps = len(mu)
             tilt_angle = mu[1] - mu[0]
+
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
                 pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
                 mu = np.concatenate((mu[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
                                      mu,
                                      mu[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                mu = mu[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
         else:
             raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
 
@@ -1559,12 +1570,16 @@ def regrid(frames_logical, logfile, scan_number, detector, setup, hxrd, follow_b
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             nb_steps = len(mgomega)
             tilt_angle = mgomega[1] - mgomega[0]
+
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
                 pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
                 mgomega = np.concatenate((mgomega[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
                                           mgomega,
                                           mgomega[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                mgomega = mgomega[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
         else:
             raise ValueError('Inplane rocking curve not implemented for CRISTAL')
 
@@ -1575,21 +1590,29 @@ def regrid(frames_logical, logfile, scan_number, detector, setup, hxrd, follow_b
         if setup.rocking_angle == 'outofplane':  # om rocking curve
             nb_steps = len(om)
             tilt_angle = om[1] - om[0]
+
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
                 pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
                 om = np.concatenate((om[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
                                      om,
                                      om[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                om = om[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
             nb_steps = len(phi)
             tilt_angle = phi[1] - phi[0]
+
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
                 pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
                 phi = np.concatenate((phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
                                       phi,
                                       phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                phi = phi[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
