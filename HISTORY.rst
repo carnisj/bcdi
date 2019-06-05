@@ -14,9 +14,9 @@
 
 * Refactor: merge all postprocessing/scripts/calc_angles_beam_*.py in postprocessing/scripts/correct_angles_detector.py
 
-* Implement motor_values() in preprocessing/preprocessing_utils.py
+* Feature: Implement motor_values() and load_data() in preprocessing/preprocessing_utils.py
 
-* Implement SetupPostprocessing.rotation_direction() in experiment/experiment_utils.py
+* Feature: Implement SetupPostprocessing.rotation_direction() in experiment/experiment_utils.py
 
 * Feature: add other counter name 'curpetra' for beam intensity monitor at P10
 
