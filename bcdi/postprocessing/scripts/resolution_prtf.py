@@ -37,15 +37,13 @@ Bealine supported: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
 scan = 2191
 root_folder = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/"
 sample_name = "S"  # "SN"  #
-comment = "_test"  # should start with _
+comment = "_testt"  # should start with _
 ############################
 # beamline parameters #
 ############################
 beamline = 'ID01'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-outofplane_angle = 35.3440  # detector out-of-plane angle
-inplane_angle = -0.9265  # detector inplane angle
 grazing_angle = 0  # in degrees, incident angle for inplane rocking curves
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 specfile_name = 'alignment'
