@@ -1506,6 +1506,7 @@ def regrid(frames_logical, logfile, scan_number, detector, setup, hxrd, follow_b
      - qx, qz, qy components for the dataset
      - updated frames_logical
     """
+    nb_frames = len(frames_logical)
     if follow_bragg and setup.beamline != 'ID01':
         raise ValueError('Energy scan implemented only for ID01 beamline')
 
@@ -1513,21 +1514,84 @@ def regrid(frames_logical, logfile, scan_number, detector, setup, hxrd, follow_b
         eta, chi, phi, nu, delta, energy, frames_logical = \
             motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
 
+        if setup.rocking_angle == 'outofplane':  # eta rocking curve
+            nb_steps = len(eta)
+            tilt_angle = eta[1] - eta[0]
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                eta = np.concatenate((eta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                      eta,
+                                      eta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            nb_steps = len(phi)
+            tilt_angle = phi[1] - phi[0]
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                phi = np.concatenate((phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                      phi,
+                                      phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
         qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == 'SIXS':
         beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile, frames_logical)
+        if setup.rocking_angle == 'inplane':  # mu rocking curve
+            nb_steps = len(mu)
+            tilt_angle = mu[1] - mu[0]
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                mu = np.concatenate((mu[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                     mu,
+                                     mu[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+        else:
+            raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
 
         qx, qy, qz = hxrd.Ang2Q.area(setup.grazing_angle, mu, setup.grazing_angle, gamma, delta, en=setup.energy,
                                      delta=detector.offsets)
 
     elif setup.beamline == 'CRISTAL':
         mgomega, gamma, delta = motor_positions_cristal(logfile, setup)
+        if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
+            nb_steps = len(mgomega)
+            tilt_angle = mgomega[1] - mgomega[0]
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                mgomega = np.concatenate((mgomega[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                          mgomega,
+                                          mgomega[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+        else:
+            raise ValueError('Inplane rocking curve not implemented for CRISTAL')
 
         qx, qy, qz = hxrd.Ang2Q.area(mgomega, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'P10':
         om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile, setup)
+        if setup.rocking_angle == 'outofplane':  # om rocking curve
+            nb_steps = len(om)
+            tilt_angle = om[1] - om[0]
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                om = np.concatenate((om[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                     om,
+                                     om[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            nb_steps = len(phi)
+            tilt_angle = phi[1] - phi[0]
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                phi = np.concatenate((phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                      phi,
+                                      phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
 
         qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
