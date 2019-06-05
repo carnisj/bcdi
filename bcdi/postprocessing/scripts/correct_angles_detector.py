@@ -226,7 +226,7 @@ print("\nRocking step=", str('{:.4f}'.format(d_rocking_angle)), 'deg')
 ####################################
 kin = 2*np.pi/setup_post.wavelength * np.asarray(beam_direction)  # in lab frame z downstream, y vertical, x outboard
 kout = setup_post.exit_wavevector()  # in lab.frame z downstream, y vertical, x outboard
-q = (kout - kin) / 1e10 # convert from 1/m to 1/angstrom
+q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
 Qnorm = np.linalg.norm(q)
 dist_plane = 2 * np.pi / Qnorm
 print("\nWavevector transfer of Bragg peak: ", q, str('{:.4f}'.format(Qnorm)))
