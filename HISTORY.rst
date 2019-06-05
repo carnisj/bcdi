@@ -1,3 +1,5 @@
+* Refactor: modify preprocessing/scripts/readdata_P10.py to support several beamlines and name it 'read_data.py'
+
 * Feature: implement suuport for multiple beamlines in postprocessing/script/resolution_prtf.py
 
 * Refactor: merge all preprocessing/preprocessing_utils.regrid_*.py in preprocessing/preprocessing_utils.regrid()

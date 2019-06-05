@@ -56,10 +56,10 @@ Preprocessing
    :end-before: """
    :language: rst
 
-`readdata_P10.py`:
-^^^^^^^^^^^^^^^^^^
+`read_data.py`:
+^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/readdata_P10.py
+.. literalinclude:: ../../bcdi/preprocessing/scripts/read_data.py
    :start-after: helptext
    :end-before: """
    :language: rst
