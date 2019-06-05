@@ -38,13 +38,13 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [566]  # list or array of scan numbers
-root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\P10_2018\\"
-sample_name = "dewet5"  # "SN"  #
-comment = '_'  # string, should start with "_"
+scans = [1351]  # list or array of scan numbers
+root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\P10_2019\\"
+sample_name = "align_02"  # "SN"  #
+comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 ###########################
-flag_interact = True  # True to interact with plots, False to close it automatically
+flag_interact = False  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ###########################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
@@ -66,7 +66,7 @@ normalize_flux = True  # will normalize the intensity by the default monitor
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
-flag_medianfilter = 'interp_isolated'
+flag_medianfilter = 'skip'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -92,7 +92,7 @@ specfile_name = sample_name + '_%05d'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1409  # horizontal pixel number of the Bragg peak
+x_bragg = 1495  # horizontal pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = []
@@ -111,9 +111,9 @@ template_imagefile = '_data_%06d.h5'
 sdd = 1.8  # sample to detector distance in m, not important if you use raw data
 energy = 10300  # x-ray energy in eV, not important if you use raw data
 grazing_angle = 0  # incident angle of diffractometer at SIXS or incident angle below phi for in-plane rocking curves
-beam_direction = [1, 0, 0]  # beam along z
-sample_inplane = [1, 0, 0]  # sample inplane reference direction along the beam at 0 angles
-sample_outofplane = [0, 0, 1]  # surface normal of the sample at 0 angles
+beam_direction = (1, 0, 0)  # beam along z
+sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
+sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 offset_inplane = 0  # outer detector angle offset, not important if you use raw data
 cch1 = 71.61  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
 cch2 = 1656.65  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
@@ -192,10 +192,10 @@ setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=r
 #############################################
 qconv, offsets = pru.init_qconversion(setup)
 detector.offsets = offsets
-cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
-cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
 hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x downstream, y outboard, z vertical
 # first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
+cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
+cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
 hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
                      Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize,
                      pwidth2=detector.pixelsize, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
