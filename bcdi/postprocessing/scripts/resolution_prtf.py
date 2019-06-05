@@ -26,14 +26,12 @@ Calculate the resolution of a CDI reconstruction using the phase retrieval trans
 Can load several reconstructions (given that the 3D array shape and the voxel size are identical) and calculate
 the PRTF of the ensemble.
 
-The measured diffraction pattern and reconstructions can be either in the detector frame
-or already orthogonalized (_LAB.npz, before rotations).
+The measured diffraction pattern and reconstructions should be in the detector frame before phase ramp removal.
 
 For the laboratory frame, the CXI convention is used: z downstream, y vertical, x outboard
 For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 
-created on 18/02/2019
-@author: Carnis Jerome @ IM2NP / ESRF ID01
+Bealine supported: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
 """
 
 scan = 2191
