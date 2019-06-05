@@ -22,16 +22,17 @@ import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-Calculate the resolution of a CDI reconstruction using the phase retrieval transfer function (PRTF)
-Can load several reconstructions (given that the 3D array shape and the voxel size are identical) and calculate
-the PRTF of the ensemble.
+Calculate the resolution of a CDI reconstruction using the phase retrieval transfer function (PRTF).
+Can load several reconstructions (given that the 3D array shape and the voxel size are identical) 
+and calculate the PRTF of the ensemble.
 
-The measured diffraction pattern and reconstructions should be in the detector frame before phase ramp removal.
+The measured diffraction pattern and reconstructions should be in the detector frame, before
+phase ramp removal and centering.
 
 For the laboratory frame, the CXI convention is used: z downstream, y vertical, x outboard
 For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 
-Bealine supported: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
+Supported beamline: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
 """
 
 scan = 2191
