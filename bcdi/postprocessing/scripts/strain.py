@@ -99,7 +99,8 @@ threshold_refraction = 0.025  # threshold used to calculate the optical path
 # otherwise it messes up the phase
 #########################
 simu_flag = 0  # set to 1 if it is simulation, the parameter invert_phase will be set to 0 and pi added to the phase
-invert_phase = 1  # should be 1 for the displacement to have the right sign (FFT convention), 0 only for simulations
+invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
+flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling'
 threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use for ramp removal
 xrayutils_ortho = False  # True if the data is already orthogonalized
@@ -125,10 +126,10 @@ ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
 inplane_normal = np.array([1, 0, -0.08])  # facet normal to align with ref_axis_inplane (y should be 0)
 #########################################################
 if simu_flag == 1:
-    invert_phase = 0
+    invert_phase = False
     correct_absorption = 0
     correct_refraction = 0
-if invert_phase == 1:
+if invert_phase:
     phase_fieldname = 'disp'
 else:
     phase_fieldname = 'phase'
@@ -207,6 +208,9 @@ print('\nAveraging using', nbfiles, 'candidate reconstructions')
 for ii in sorted_obj:
     obj, extension = pu.load_reconstruction(file_path[ii])
     print('\nOpening ', file_path[ii])
+
+    if flip_reconstruction:
+        obj = pu.flip_reconstruction(obj, debugging=True)
 
     if extension == '.h5':
         centering_method = 'do_nothing'  # do not center, data is already cropped just on support for mode decomposition
@@ -459,7 +463,7 @@ if debug:
 #############################################
 # invert phase: -1*phase = displacement * q #
 #############################################
-if invert_phase == 1:
+if invert_phase:
     phase = -1 * phase
 
 ########################################
@@ -522,7 +526,7 @@ if True:
 # save to VTK before rotations #
 ################################
 if save_labframe:
-    if invert_phase == 1:
+    if invert_phase:
         np.savez_compressed(datadir + 'S' + str(scan) + "_amp" + phase_fieldname + comment + '_LAB',
                             amp=amp, displacement=phase)
     else:
@@ -607,7 +611,7 @@ print("Final data shape:", numz, numy, numx)
 ##############################################################################################
 bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method=isosurface_method)
 if save:
-    if invert_phase == 1:
+    if invert_phase:
         np.savez_compressed(datadir + 'S' + str(scan) + "_amp" + phase_fieldname + "strain" + comment,
                             amp=amp, displacement=phase, bulk=bulk, strain=strain)
     else:
