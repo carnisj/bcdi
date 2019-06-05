@@ -1,3 +1,15 @@
+* Feature: implement suuport for multiple beamlines in postprocessing/script/resolution_prtf.py
+
+* Refactor: merge all preprocessing/preprocessing_utils.regrid_*.py in preprocessing/preprocessing_utils.regrid()
+
+* Converted postprocessing/scripts/resolution_prtf.py
+
+* Refactor: add the possibility of giving a single element instead of the full tuple in graph/graph_utils.combined_plots()
+
+* Converted postprocessing/scripts/resolution_prtf.py
+
+* Feature: create a Colormap() class in graph/graph_utils.py
+
 * Refactor: merge all postprocessing/scripts/calc_angles_beam_*.py in postprocessing/scripts/correct_angles_detector.py
 
 * Implement motor_values() in preprocessing/preprocessing_utils.py
