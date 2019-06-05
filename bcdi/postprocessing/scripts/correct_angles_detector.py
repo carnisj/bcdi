@@ -19,7 +19,9 @@ import bcdi.experiment.experiment_utils as exp
 helptext = """
 Calculate exact inplane and out-of-plane detector angles from the direct beam and Bragg peak positions,
 based on the beamline geometry.
-The following beamlines are supported: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
+
+Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
+
 For Pt samples it gives also an estimation of the temperature based on the thermal expansion.
 
 Input: direct beam and Bragg peak position, sample to detector distance, energy
