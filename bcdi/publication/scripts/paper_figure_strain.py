@@ -119,11 +119,11 @@ print("Initial data size: (", numz, ',', numy, ',', numx, ')')
 pixel_spacing = tick_spacing / voxel_size
 pixel_FOV = int(np.rint((field_of_view / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 new_shape = [max(numz, 2*pixel_FOV), max(numy, 2*pixel_FOV), max(numx, 2*pixel_FOV)]
-support = pu.crop_pad(myobj=support, myshape=new_shape, debugging=False)
-strain = pu.crop_pad(myobj=strain, myshape=new_shape, debugging=False)
-phase = pu.crop_pad(myobj=phase, myshape=new_shape, debugging=False)
-amp = pu.crop_pad(myobj=amp, myshape=new_shape, debugging=False)
-bulk = pu.crop_pad(myobj=bulk, myshape=new_shape, debugging=False)
+support = pu.crop_pad(array=support, output_shape=new_shape, debugging=False)
+strain = pu.crop_pad(array=strain, output_shape=new_shape, debugging=False)
+phase = pu.crop_pad(array=phase, output_shape=new_shape, debugging=False)
+amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
+bulk = pu.crop_pad(array=bulk, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
 print("Cropped/padded data size: (", numz, ',', numy, ',', numx, ')')
 
