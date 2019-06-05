@@ -673,11 +673,11 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
         return [], rawdata, [], rawmask, [], frames_logical, monitor
     else:
         nbz, nby, nbx = rawdata.shape
-        if setup.beamline == 'ID01':
-            qx, qz, qy, frames_logical = \
-                regrid_id01(follow_bragg=follow_bragg, frames_logical=frames_logical, logfile=logfile,
-                            scan_number=scan_number, detector=detector, setup=setup, hxrd=hxrd)
+        qx, qz, qy, frames_logical = \
+            regrid(frames_logical=frames_logical, logfile=logfile, scan_number=scan_number, detector=detector,
+                   setup=setup, hxrd=hxrd, follow_bragg=follow_bragg)
 
+        if setup.beamline == 'ID01':
             # below is specific to ID01 energy scans where frames are duplicated for undulator gap change
             if setup.rocking_angle == 'energy':  # frames need to be removed
                 tempdata = np.zeros(((frames_logical != 0).sum(), nby, nbx))
@@ -691,19 +691,6 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
                 rawdata = tempdata
                 rawmask = rawmask[0:rawdata.shape[0], :, :]  # truncate the mask to have the correct size
 
-        elif setup.beamline == 'CRISTAL':
-            qx, qz, qy, frames_logical = regrid_cristal(frames_logical=frames_logical, logfile=logfile,
-                                                        detector=detector, setup=setup, hxrd=hxrd)
-        elif setup.beamline == 'SIXS':
-            qx, qz, qy, frames_logical = regrid_sixs(frames_logical=frames_logical, logfile=logfile, detector=detector,
-                                                     setup=setup, hxrd=hxrd)
-        elif setup.beamline == 'P10':
-            qx, qz, qy, frames_logical = regrid_p10(frames_logical=frames_logical, logfile=logfile,
-                                                    detector=detector, setup=setup, hxrd=hxrd)
-        else:
-            raise ValueError("Incorrect value for parameter 'beamline'")
-
-        nbz, nby, nbx = rawdata.shape
         gridder = xu.Gridder3D(nbz, nby, nbx)
         # convert mask to rectangular grid in reciprocal space
         gridder(qx, qz, qy, rawmask)
@@ -1399,7 +1386,7 @@ def motor_positions_sixs(logfile, frames_logical):
     temp_delta = logfile.delta[:]
     temp_gamma = logfile.gamma[:]
     temp_mu = logfile.mu[:]
-    beta = logfile.beta[0]
+    beta = logfile.beta[0]  # TODO: check that this is correct
 
     delta = np.zeros((frames_logical != 0).sum())
     gamma = np.zeros((frames_logical != 0).sum())
@@ -1503,90 +1490,49 @@ def primes(number):
     return list_primes
 
 
-def regrid_cristal(frames_logical, logfile, detector, setup, hxrd):
+def regrid(frames_logical, logfile, scan_number, detector, setup, hxrd, follow_bragg=False):
     """
-    Load CRISTAL motor positions and calculate q positions for orthogonalization.
+    Load beamline motor positions and calculate q positions for orthogonalization.
 
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param logfile: h5py File object of CRISTAL .nxs scan file
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
-    :return:
-     - qx, qz, qy components for the dataset
-     - updated frames_logical
-    """
-    mgomega, gamma, delta = motor_positions_cristal(logfile, setup)
-
-    qx, qy, qz = hxrd.Ang2Q.area(mgomega, gamma, delta, en=setup.energy, delta=detector.offsets)
-
-    return qx, qz, qy, frames_logical
-
-
-def regrid_id01(follow_bragg, frames_logical, logfile, scan_number, detector, setup, hxrd):
-    """
-    Load ID01 motor positions and calculate q positions for orthogonalization.
-
-    :param follow_bragg: True when for energy scans the detector was also scanned to follow the Bragg peak
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param logfile: Silx SpecFile object containing the information about the scan and image numbers
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param scan_number: the scan number to load
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
+    :param follow_bragg: True when in energy scans the detector was also scanned to follow the Bragg peak
     :return:
      - qx, qz, qy components for the dataset
      - updated frames_logical
     """
-    eta, chi, phi, nu, delta, energy, frames_logical =\
-        motor_positions_id01(follow_bragg, frames_logical, logfile, scan_number, setup)
+    if follow_bragg and setup.beamline != 'ID01':
+        raise ValueError('Energy scan implemented only for ID01 beamline')
 
-    qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
+    if setup.beamline == 'ID01':
+        eta, chi, phi, nu, delta, energy, frames_logical = \
+            motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
 
-    return qx, qz, qy, frames_logical
+        qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
 
+    elif setup.beamline == 'SIXS':
+        beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile, frames_logical)
 
-def regrid_p10(frames_logical, logfile, detector, setup, hxrd):
-    """
-    Load P10 motor positions and calculate q positions for orthogonalization.
+        qx, qy, qz = hxrd.Ang2Q.area(setup.grazing_angle, mu, setup.grazing_angle, gamma, delta, en=setup.energy,
+                                     delta=detector.offsets)
 
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param logfile: path of the . fio file containing the information about the scan
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
-    :return:
-     - qx, qz, qy components for the dataset
-     - updated frames_logical
-    """
-    om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile, setup)
+    elif setup.beamline == 'CRISTAL':
+        mgomega, gamma, delta = motor_positions_cristal(logfile, setup)
 
-    qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
+        qx, qy, qz = hxrd.Ang2Q.area(mgomega, gamma, delta, en=setup.energy, delta=detector.offsets)
 
-    return qx, qz, qy, frames_logical
+    elif setup.beamline == 'P10':
+        om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile, setup)
 
+        qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
-def regrid_sixs(frames_logical, logfile, detector, setup, hxrd):
-    """
-    Load SIXS motor positions and calculate q positions for orthogonalization.
-
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param logfile: nxsReady Dataset object of SIXS .nxs scan file
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
-    :return:
-     - qx, qz, qy components for the dataset
-     - updated frames_logical
-    """
-    mu, gamma, delta, frames_logical = motor_positions_sixs(logfile, frames_logical)
-
-    qx, qy, qz = hxrd.Ang2Q.area(setup.grazing_angle, mu, setup.grazing_angle, gamma, delta, en=setup.energy,
-                                 delta=detector.offsets)
+    else:
+        raise ValueError('Wrong value for "beamline" parameter: bealine not supported')
 
     return qx, qz, qy, frames_logical
 
