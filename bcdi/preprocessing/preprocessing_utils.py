@@ -540,33 +540,33 @@ def check_pixels(data, mask, debugging=False):
     return data, mask
 
 
-def create_logfile(setup, detector, scan_number, root_folder, filename):
+def create_logfile(beamline, detector, scan_number, root_folder, filename):
     """
     Create the logfile used in gridmap().
 
-    :param setup: the experimental setup: Class SetupPreproc
+    :param beamline: 'ID01' or 'SIXS' or 'CRISTAL' or 'P10'
     :param detector: the detector object: Class experiment_utils.Detector()
     :param scan_number: the scan number to load
     :param root_folder: the root directory of the experiment, where is the specfile/.fio file
     :param filename: the file name to load, or the path of 'alias_dict.txt' for SIXS
     :return: logfile
     """
-    if setup.beamline == 'CRISTAL':  # no specfile, load directly the dataset
+    if beamline == 'CRISTAL':  # no specfile, load directly the dataset
         import h5py
         ccdfiletmp = os.path.join(detector.datadir + detector.template_imagefile % scan_number)
         logfile = h5py.File(ccdfiletmp, 'r')
 
-    elif setup.beamline == 'P10':  # load .fio file
+    elif beamline == 'P10':  # load .fio file
         logfile = root_folder + filename + '\\' + filename + '.fio'
 
-    elif setup.beamline == 'SIXS':  # no specfile, load directly the dataset
+    elif beamline == 'SIXS':  # no specfile, load directly the dataset
         import bcdi.preprocessing.nxsReady as nxsReady
 
         logfile = nxsReady.DataSet(longname=detector.datadir + detector.template_imagefile % scan_number,
                                    shortname=detector.template_imagefile % scan_number, alias_dict=filename,
                                    scan="SBS")
 
-    elif setup.beamline == 'ID01':  # load spec file
+    elif beamline == 'ID01':  # load spec file
         from silx.io.specfile import SpecFile
         logfile = SpecFile(root_folder + filename + '.spec')
     else:
@@ -822,6 +822,41 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
     frames_logical = np.ones(nb_img)
 
     monitor = logfile['/' + group_key + '/scan_data/data_04'][:]
+
+    return data, mask3d, monitor, frames_logical
+
+
+def load_data(logfile, scan_number, detector, beamline, flatfield, hotpixels, debugging=False):
+    """
+    Load ID01 data, apply filters and concatenate it for phasing.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param beamline: 'ID01' or 'SIXS' or 'CRISTAL' or 'P10'
+    :param flatfield: the 2D flatfield array
+    :param hotpixels: the 2D hotpixels array
+    :param debugging: set to True to see plots
+    :return:
+     - the 3D data array in the detector frame and the 3D mask array
+     - the monitor values for normalization
+     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    """
+    if beamline == 'ID01':
+        data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
+                                                               debugging=debugging)
+    elif beamline == 'SIXS':
+        data, mask3d, monitor, frames_logical = load_sixs_data(logfile, detector, flatfield, hotpixels,
+                                                               debugging=debugging)
+    elif beamline == 'CRISTAL':
+        data, mask3d, monitor, frames_logical = load_cristal_data(logfile, detector, flatfield, hotpixels,
+                                                                  debugging=debugging)
+    elif beamline == 'P10':
+        data, mask3d, monitor, frames_logical = load_p10_data(logfile, detector, flatfield, hotpixels,
+                                                              debugging=debugging)
+    else:
+        raise ValueError('Wrong value for "rocking_angle" parameter')
 
     return data, mask3d, monitor, frames_logical
 
