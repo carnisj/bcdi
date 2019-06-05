@@ -108,7 +108,7 @@ print('Scan type: ', setup_pre.rocking_angle)
 flatfield = pru.load_flatfield(flatfield_file)
 hotpix_array = pru.load_hotpixels(hotpixels_file)
 
-logfile = pru.create_logfile(setup=setup_pre, detector=detector, scan_number=scan,
+logfile = pru.create_logfile(beamline=setup_pre.beamline, detector=detector, scan_number=scan,
                              root_folder=root_folder, filename='')
 
 if filtered_data == 0:

@@ -287,7 +287,7 @@ for scan_nb in range(len(scans)):
         flatfield = pru.load_flatfield(flatfield_file)
         hotpix_array = pru.load_hotpixels(hotpixels_file)
 
-        logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
+        logfile = pru.create_logfile(beamline=setup.beamline, detector=detector, scan_number=scans[scan_nb],
                                      root_folder=root_folder, filename=specfile_name)
 
         if use_rawdata:
