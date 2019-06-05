@@ -27,6 +27,14 @@ Postprocessing
    :end-before: """
    :language: rst
 
+`resolution_prtf.py`:
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/resolution_prtf.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 .. _preprocess:
 
 Preprocessing
