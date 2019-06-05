@@ -35,24 +35,32 @@ For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 Supported beamline: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
 """
 
-scan = 2191
-root_folder = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/"
+scan = 271
+root_folder = "C:/Users/carnis/Work Folders/Documents/data/CRISTAL/"
 sample_name = "S"  # "SN"  #
-comment = "_testt"  # should start with _
+comment = "_test"  # should start with _
 ############################
 # beamline parameters #
 ############################
-beamline = 'ID01'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
+beamline = 'CRISTAL'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 grazing_angle = 0  # in degrees, incident angle for inplane rocking curves
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-specfile_name = 'alignment'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically root_folder + 'alias_dict.txt'
 # template for P10: sample_name + '_%05d'
 # template for CRISTAL: ''
+#############################################################
+# define detector related parameters and region of interest #
+#############################################################
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+template_imagefile = 'S%d.nxs'
+# ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+# SIXS: 'align.spec_ascan_mu_%05d.nxs'
+# Cristal: 'S%d.nxs'
+# P10: '_data_%06d.h5'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
@@ -64,7 +72,7 @@ sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 ###########
 # options #
 ###########
-modes = False  # set to True when the solution is the first mode - then the intensity needs to be normalized
+modes = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = True  # True to show more plots
 save = True  # True to save the prtf figure
 ##########################
@@ -74,7 +82,7 @@ save = True  # True to save the prtf figure
 #################################################
 # Initialize paths, detector, setup and logfile #
 #################################################
-detector = exp.Detector(name=detector)
+detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile)
 
 
 setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
@@ -82,17 +90,18 @@ setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=r
                                sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
                                offset_inplane=0)  # no need to worry about offsets, work relatively to the Bragg peak
 
-
-logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
-                             filename=specfile_name)
-
 if setup.beamline != 'P10':
     homedir = root_folder + sample_name + str(scan) + '/'
+    detector.datadir = homedir + "data/"
 else:
     specfile_name = specfile_name % scan
     homedir = root_folder + specfile_name + '/'
+    detector.datadir = homedir + 'e4m/'
+    template_imagefile = specfile_name + template_imagefile
+    detector.template_imagefile = template_imagefile
 
-detector.datadir = homedir + "pynxraw/"
+logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
+                             filename=specfile_name)
 
 #############################################
 # Initialize geometry for orthogonalization #
