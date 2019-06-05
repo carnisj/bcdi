@@ -6,16 +6,12 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
 import numpy as np
-from numpy.fft import fftn, fftshift, ifftn, ifftshift
+from numpy.fft import fftn, fftshift
 from matplotlib import pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
 from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
-from scipy.interpolate import RegularGridInterpolator
-import h5py
 import xrayutilities as xu
-from silx.io.specfile import SpecFile
 from scipy.interpolate import interp1d
 import gc
 import sys
@@ -41,20 +37,25 @@ created on 18/02/2019
 """
 
 scan = 2191
-datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
-savedir = datadir
+root_folder = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/"
+sample_name = "S"  # "SN"  #
 comment = "_test"  # should start with _
-
 ############################
 # beamline parameters #
 ############################
 beamline = 'ID01'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-outofplane_angle = 35.344  # detector out-of-plane angle
+follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
+outofplane_angle = 35.3440  # detector out-of-plane angle
 inplane_angle = -0.9265  # detector inplane angle
 grazing_angle = 0  # in degrees, incident angle for inplane rocking curves
-tilt_angle = 0.01015  # angular step size for the rocking angle
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+specfile_name = 'alignment'
+# .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
+# template for ID01: name of the spec file without '.spec'
+# template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically root_folder + 'alias_dict.txt'
+# template for P10: sample_name + '_%05d'
+# template for CRISTAL: ''
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
@@ -63,40 +64,46 @@ energy = 9000 - 6   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-
-if beamline == 'ID01':
-    offsets = (0, 0, 0, 0, 0)  # eta chi phi nu del
-    qconv = xu.experiment.QConversion(['y-', 'x+', 'z-'], ['z-', 'y-'], r_i=beam_direction)  # for ID01
-    # 2S+2D goniometer (ID01 goniometer, sample: eta, chi, phi      detector: nu,del
-    # the vector beam_direction is giving the direction of the primary beam
-    # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
-    hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x downstream, y outboard, z vertical
-    # first two arguments in HXDD are the inplane reference direction along the beam and surface normal of the sample
-
 ###########
 # options #
 ###########
 modes = False  # set to True when the solution is the first mode - then the intensity needs to be normalized
-simulation = False  # True is this is simulated data, will not load the specfile
-if simulation:
-    tilt_bragg = 17.1177  # value of the tilt angle at Bragg peak (eta at ID01), only needed for simulations
 debug = True  # True to show more plots
 save = True  # True to save the prtf figure
 ##########################
 # end of user parameters #
 ##########################
 
-#######################
-# Initialize detector #
-#######################
+#################################################
+# Initialize paths, detector, setup and logfile #
+#################################################
 detector = exp.Detector(name=detector)
 
-####################
-# Initialize setup #
-####################
+
 setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                                grazing_angle=grazing_angle, beam_direction=beam_direction,
-                               sample_inplane=sample_inplane, sample_outofplane=sample_outofplane)
+                               sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
+                               offset_inplane=0)  # no need to worry about offsets, work relatively to the Bragg peak
+
+
+logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
+                             filename=specfile_name)
+
+if setup.beamline != 'P10':
+    homedir = root_folder + sample_name + str(scan) + '/'
+else:
+    specfile_name = specfile_name % scan
+    homedir = root_folder + specfile_name + '/'
+
+detector.datadir = homedir + "pynxraw/"
+
+#############################################
+# Initialize geometry for orthogonalization #
+#############################################
+qconv, offsets = pru.init_qconversion(setup)
+detector.offsets = offsets
+hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x downstream, y outboard, z vertical
+# first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
 
 ###################
 # define colormap #
@@ -110,7 +117,7 @@ my_cmap = colormap.cmap
 plt.ion()
 root = tk.Tk()
 root.withdraw()
-file_path = filedialog.askopenfilename(initialdir=datadir, title="Select diffraction pattern",
+file_path = filedialog.askopenfilename(initialdir=detector.datadir, title="Select diffraction pattern",
                                        filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
 diff_pattern = npzfile['data']
@@ -118,20 +125,16 @@ diff_pattern = diff_pattern.astype(float)
 
 
 numz, numy, numx = diff_pattern.shape
-print('Measured data shape =', numz, numy, numx)
+print('Measured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
 
-max_fft = np.sqrt(diff_pattern).max()
-print('Max(measured amplitude)=', max_fft)
-
-file_path = filedialog.askopenfilename(initialdir=datadir, title="Select mask", filetypes=[("NPZ", "*.npz")])
+file_path = filedialog.askopenfilename(initialdir=detector.datadir, title="Select mask", filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
 mask = npzfile['mask']
 diff_pattern[np.nonzero(mask)] = 0
 
 z0, y0, x0 = center_of_mass(diff_pattern)
-print("COM of measured pattern after masking: ", z0, y0, x0)
 z0, y0, x0 = [int(z0), int(y0), int(x0)]
-print('Number of unmasked photons =', diff_pattern.sum())
+print("COM of measured pattern after masking: ", z0, y0, x0, ' Number of unmasked photons =', diff_pattern.sum())
 
 plt.figure()
 plt.imshow(np.log10(np.sqrt(diff_pattern).sum(axis=0)), cmap=my_cmap, vmin=0, vmax=3.5)
@@ -146,37 +149,21 @@ hxrd.Ang2Q.init_area('z-', 'y+', cch1=int(y0), cch2=int(x0), Nch1=numy, Nch2=num
                      pwidth2=detector.pixelsize, distance=setup.distance)
 # first two arguments in init_area are the direction of the detector
 
-if simulation:  # need to give the value of eta angle at the Bragg peak
-    eta = tilt_bragg + tilt_angle * (np.arange(0, numz, 1) - int(z0))
-else:  # find the value of the incident angle at the Bragg peak in the log file
-    file_path = filedialog.askopenfilename(initialdir=datadir, title="Select spec file", filetypes=[("SPEC", "*.spec")])
-    spec_file = SpecFile(file_path)
-    labels = spec_file[str(scan) + '.1'].labels  # motor scanned
-    labels_data = spec_file[str(scan) + '.1'].data  # motor scanned
-    eta = labels_data[labels.index('eta'), :]
-    if eta.size < numz:  # data has been padded, we suppose it is centered in z dimension
-        pad_low = int((numz - eta.size + ((numz - eta.size) % 2)) / 2)
-        pad_high = int((numz - eta.size + 1) / 2 - ((numz - eta.size) % 2))
-        eta = np.concatenate((eta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                              eta,
-                              eta[-1] + np.arange(1, pad_high+1, 1) * tilt_angle), axis=0)
-
-
-myqx, myqy, myqz = hxrd.Ang2Q.area(eta, 0, 0, inplane_angle, outofplane_angle, delta=(0, 0, 0, 0, 0))
+qx, qz, qy, _ = pru.regrid(frames_logical=np.ones(numz), logfile=logfile, scan_number=scan, detector=detector,
+                           setup=setup, hxrd=hxrd, follow_bragg=follow_bragg)
 
 if debug:
-    gu.combined_plots(tuple_array=(myqz, myqy, myqx), tuple_sum_frames=False, tuple_sum_axis=(0, 1, 2),
+    gu.combined_plots(tuple_array=(qz, qy, qx), tuple_sum_frames=False, tuple_sum_axis=(0, 1, 2),
                       tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=True, tuple_vmin=np.nan,
                       tuple_vmax=np.nan, tuple_title=('qz', 'qy', 'qx'), tuple_scale='linear')
 
-qxCOM = myqx[z0, y0, x0]
-qyCOM = myqy[z0, y0, x0]
-qzCOM = myqz[z0, y0, x0]
+qxCOM = qx[z0, y0, x0]
+qyCOM = qy[z0, y0, x0]
+qzCOM = qz[z0, y0, x0]
 print('COM[qx, qy, qz] = ', qxCOM, qyCOM, qzCOM)
-distances_q = np.sqrt((myqx - qxCOM)**2 + (myqy - qyCOM)**2 + (myqz - qzCOM)**2)  # if reconstructions are centered
+distances_q = np.sqrt((qx - qxCOM)**2 + (qy - qyCOM)**2 + (qz - qzCOM)**2)  # if reconstructions are centered
 #  and of the same shape q values will be identical
-
-del myqx, myqy, myqz
+del qx, qy, qz
 gc.collect()
 
 if debug:
@@ -187,7 +174,7 @@ if debug:
 #############################
 # load reconstructed object #
 #############################
-file_path = filedialog.askopenfilename(initialdir=datadir,  title="Select reconstructions (prtf)",
+file_path = filedialog.askopenfilename(initialdir=detector.datadir,  title="Select reconstructions (prtf)",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
                                                   ("CXI", "*.cxi"), ("HDF5", "*.h5")])
 
@@ -203,39 +190,37 @@ if obj.shape != diff_pattern.shape:
     obj = pu.crop_pad(array=obj, output_shape=diff_pattern.shape, debugging=False)
 
 # calculate the retrieved diffraction amplitude
-my_fft = fftshift(fftn(obj)) / (np.sqrt(numz)*np.sqrt(numy)*np.sqrt(numx))  # complex amplitude
+phased_fft = fftshift(fftn(obj)) / (np.sqrt(numz)*np.sqrt(numy)*np.sqrt(numx))  # complex amplitude
 del obj
 gc.collect()
-print('Max(retrieved amplitude) =', abs(my_fft).max())
 
 if modes:  # if this is the first mode, intensity should be normalized to the measured diffraction pattern
-    max_fft = np.sqrt(diff_pattern).max()
-    my_fft = my_fft * max_fft / abs(my_fft).max()
-    print('Max(retrieved amplitude) after modes normalization =', abs(my_fft).max())  # needed for modes
+    phased_fft = phased_fft * np.sqrt(diff_pattern).max() / abs(phased_fft).max()
+    print('Max(retrieved amplitude) after modes normalization =', abs(phased_fft).max())  # needed for modes
 
 plt.figure()
-plt.imshow(np.log10(abs(my_fft).sum(axis=0)), cmap=my_cmap, vmin=0, vmax=3.5)
+plt.imshow(np.log10(abs(phased_fft).sum(axis=0)), cmap=my_cmap, vmin=0, vmax=3.5)
 plt.title('abs(retrieved amplitude).sum(axis=0)')
 plt.colorbar()
 plt.pause(0.1)
 
-my_fft[np.nonzero(mask)] = 0  # do not take mask voxels into account
-print('Max(retrieved amplitude) =', abs(my_fft).max())
-print('COM of the retrieved diffraction pattern after masking: ', center_of_mass(abs(my_fft)))
+phased_fft[np.nonzero(mask)] = 0  # do not take mask voxels into account
+print('Max(retrieved amplitude) =', abs(phased_fft).max())
+print('COM of the retrieved diffraction pattern after masking: ', center_of_mass(abs(phased_fft)))
 del mask
 gc.collect()
 
-gu.combined_plots(tuple_array=(diff_pattern, diff_pattern, diff_pattern, my_fft, my_fft, my_fft),
+gu.combined_plots(tuple_array=(diff_pattern, diff_pattern, diff_pattern, phased_fft, phased_fft, phased_fft),
                   tuple_sum_frames=False, tuple_sum_axis=(0, 1, 2, 0, 1, 2), tuple_width_v=np.nan, tuple_width_h=np.nan,
                   tuple_colorbar=False, tuple_vmin=(np.nan, np.nan, np.nan, -1, -1, -1), tuple_vmax=np.nan,
-                  tuple_title=('diff_pattern', 'diff_pattern', 'diff_pattern', 'my_fft', 'my_fft', 'my_fft'),
+                  tuple_title=('measurement', 'measurement', 'measurement', 'phased_fft', 'phased_fft', 'phased_fft'),
                   tuple_scale='log')
 
 #########################
 # calculate the 3D PRTF #
 #########################
 diff_pattern[diff_pattern == 0] = np.nan  # discard zero valued pixels
-prtf_matrix = abs(my_fft) / np.sqrt(diff_pattern)
+prtf_matrix = abs(phased_fft) / np.sqrt(diff_pattern)
 
 gu.multislices_plot(prtf_matrix, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
                     title='prtf_matrix', scale='linear', invert_yaxis=False, vmin=0, vmax=1.1,
@@ -300,6 +285,6 @@ fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
 fig.text(0.15, 0.20, "q at PRTF=1/e: " + str('{:.5f}'.format(q_resolution)) + '(1/nm)', size=14)
 fig.text(0.15, 0.15, "resolution d= " + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm', size=14)
 if save:
-    plt.savefig(savedir + 'S' + str(scan) + '_prtf' + comment + '.png')
+    plt.savefig(detector.datadir + 'S' + str(scan) + '_prtf' + comment + '.png')
 plt.ioff()
 plt.show()
