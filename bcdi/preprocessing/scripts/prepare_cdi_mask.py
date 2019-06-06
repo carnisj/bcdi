@@ -242,6 +242,8 @@ for scan_nb in range(len(scans)):
     print('Pixel Size: ', detector.pixelsize)
     print('Specfile: ', specfile_name)
     print('Scan type: ', setup.rocking_angle)
+    print('Sample to detector distance: ', setup.sdd)
+    print('Energy:', setup.energy)
 
     if not use_rawdata:
         print('Output will be orthogonalized by xrayutilities')

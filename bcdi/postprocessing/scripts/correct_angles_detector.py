@@ -85,7 +85,7 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 ####################
 # Initialize setup #
 ####################
-setup_pre = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+setup_pre = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, distance=sdd, energy=energy,
                                    beam_direction=beam_direction)
 
 if setup_pre.beamline != 'P10':
@@ -103,7 +103,8 @@ print('Setup: ', setup_pre.beamline)
 print('Detector: ', detector.name)
 print('Pixel Size: ', detector.pixelsize)
 print('Scan type: ', setup_pre.rocking_angle)
-
+print('Sample to detector distance: ', setup_pre.sdd)
+print('Energy:', setup_pre.energy)
 ##############
 # load files #
 ##############

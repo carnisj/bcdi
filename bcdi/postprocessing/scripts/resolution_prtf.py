@@ -85,10 +85,18 @@ save = True  # True to save the prtf figure
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile)
 
 
-setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, distance=sdd, energy=energy,
                                grazing_angle=grazing_angle, beam_direction=beam_direction,
                                sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
                                offset_inplane=0)  # no need to worry about offsets, work relatively to the Bragg peak
+
+print('\nScan', scan)
+print('Setup: ', setup.beamline)
+print('Detector: ', detector.name)
+print('Pixel Size: ', detector.pixelsize)
+print('Scan type: ', setup.rocking_angle)
+print('Sample to detector distance: ', setup.sdd)
+print('Energy:', setup.energy)
 
 if setup.beamline != 'P10':
     homedir = root_folder + sample_name + str(scan) + '/'
@@ -131,7 +139,7 @@ diff_pattern = diff_pattern.astype(float)
 
 
 numz, numy, numx = diff_pattern.shape
-print('Measured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
+print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
 
 file_path = filedialog.askopenfilename(initialdir=detector.datadir, title="Select mask", filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
