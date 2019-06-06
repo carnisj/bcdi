@@ -101,10 +101,10 @@ else:
 print('\nScan', scan)
 print('Setup: ', setup_pre.beamline)
 print('Detector: ', detector.name)
-print('Pixel Size: ', detector.pixelsize)
+print('Pixel Size: ', detector.pixelsize, 'm')
 print('Scan type: ', setup_pre.rocking_angle)
-print('Sample to detector distance: ', setup_pre.sdd)
-print('Energy:', setup_pre.energy)
+print('Sample to detector distance: ', setup_pre.distance, 'm')
+print('Energy:', setup_pre.energy, 'ev')
 ##############
 # load files #
 ##############

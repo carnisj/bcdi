@@ -93,10 +93,10 @@ setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, d
 print('\nScan', scan)
 print('Setup: ', setup.beamline)
 print('Detector: ', detector.name)
-print('Pixel Size: ', detector.pixelsize)
+print('Pixel Size: ', detector.pixelsize, 'm')
 print('Scan type: ', setup.rocking_angle)
-print('Sample to detector distance: ', setup.sdd)
-print('Energy:', setup.energy)
+print('Sample to detector distance: ', setup.distance, 'm')
+print('Energy:', setup.energy, 'ev')
 
 if setup.beamline != 'P10':
     homedir = root_folder + sample_name + str(scan) + '/'

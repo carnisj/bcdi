@@ -44,7 +44,7 @@ sample_name = "align_02"  # "SN"  #
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 ###########################
-flag_interact = False  # True to interact with plots, False to close it automatically
+flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ###########################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
@@ -239,11 +239,11 @@ for scan_nb in range(len(scans)):
     print('\nScan', scans[scan_nb])
     print('Setup: ', setup.beamline)
     print('Detector: ', detector.name)
-    print('Pixel Size: ', detector.pixelsize)
+    print('Pixel Size: ', detector.pixelsize, 'm')
     print('Specfile: ', specfile_name)
     print('Scan type: ', setup.rocking_angle)
-    print('Sample to detector distance: ', setup.sdd)
-    print('Energy:', setup.energy)
+    print('Sample to detector distance: ', setup.distance, 'm')
+    print('Energy:', setup.energy, 'ev')
 
     if not use_rawdata:
         print('Output will be orthogonalized by xrayutilities')
