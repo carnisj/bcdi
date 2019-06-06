@@ -43,14 +43,16 @@ comment = "_test"  # should start with _
 ############################
 # beamline parameters #
 ############################
-beamline = 'CRISTAL'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
+beamline = 'CRISTAL'  # name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 grazing_angle = 0  # in degrees, incident angle for inplane rocking curves
 specfile_name = ''
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
+# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically root_folder + 'alias_dict.txt'
+# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically root_folder + 'alias_dict.txt'
+# template for SIXS_2019: ''
 # template for P10: sample_name + '_%05d'
 # template for CRISTAL: ''
 #############################################################
@@ -59,14 +61,15 @@ specfile_name = ''
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 template_imagefile = 'S%d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-# template for SIXS: 'align.spec_ascan_mu_%05d.nxs'
+# template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+# template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_data_%06d.h5'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
-sdd = 0.50678  # sample to detector distance in m
-energy = 9000 - 6   # x-ray energy in eV, 6eV offset at ID01
+sdd = 1.20773  # sample to detector distance in m
+energy = 8500   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
@@ -164,6 +167,7 @@ hxrd.Ang2Q.init_area('z-', 'y+', cch1=int(y0), cch2=int(x0), Nch1=numy, Nch2=num
                      pwidth2=detector.pixelsize, distance=setup.distance)
 # first two arguments in init_area are the direction of the detector
 
+# TODO: replace numz in frames_logical by the raw data size, because the data could be padded?
 qx, qz, qy, _ = pru.regrid(frames_logical=np.ones(numz), logfile=logfile, scan_number=scan, detector=detector,
                            setup=setup, hxrd=hxrd, follow_bragg=follow_bragg)
 

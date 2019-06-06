@@ -23,19 +23,21 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 271
-root_folder = "C:/Users/carnis/Work Folders/Documents/data/CRISTAL/"
+scan = 2191
+root_folder = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/"
 sample_name = "S"  # "S"
 save_mask = False  # set to True to save the mask
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'CRISTAL'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = ''
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
+specfile_name = 'alignment'
+# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
+# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
+# template for SIXS_2019: ''
 # template for P10: sample_name + '_%05d'
 # template for CRISTAL: ''
 #############################################################
@@ -46,9 +48,10 @@ bragg_position = []  # Bragg peak position [vertical, horizontal], leave it as [
 peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = 'S%d.nxs'
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-# template for SIXS: 'align.spec_ascan_mu_%05d.nxs'
+# template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+# template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_data_%06d.h5'
 ##################################

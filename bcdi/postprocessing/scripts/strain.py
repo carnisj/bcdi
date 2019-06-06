@@ -42,9 +42,9 @@ DOCUMENTATION TO BE IMPROVED, SEE EXPLANATIONS IN SCRIPT
 
 """
 
-scan = 978  # spec scan number
+scan = 556  # spec scan number
 
-datadir = 'C:\\Users\\carnis\\Work Folders\\Documents\\data\\HC3207\\SN978\\test\\'
+datadir = 'C:/Users/carnis/Work Folders/Documents/data/SIXS/S' + str(scan) + '/pynxraw/'
 
 get_temperature = False
 reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
@@ -54,17 +54,17 @@ reference_temperature = None  # used to calibrate the thermal expansion, if None
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 
-original_size = (100, 400, 512)  # size of the FFT array used for phasing, when the result has been croped (.cxi)
+original_size = (240, 500, 256)  # size of the FFT array used for phasing, when the result has been croped (.cxi)
 # leave it to () otherwise
-binning = (2, 2, 2)  # binning factor during phasing
+binning = (1, 1, 1)  # binning factor during phasing
 
 
 output_size = (120, 120, 120)  # original_size  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
-fix_voxel = 3.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
+fix_voxel = np.nan  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no averaging
 
-isosurface_strain = 0.45  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.20  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 
 comment = "_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
@@ -73,23 +73,24 @@ strain_range = 0.001  # for plots
 phase_range = np.pi  # for plots
 phase_offset = 0   # manual offset to add to the phase, should be 0 normally
 
-plot_width = (60, 60, 60)  # (z, y, x) margin outside the support in each direction, can be negative
+plot_width = (20, 20, 20)  # (z, y, x) margin outside the support in each direction, can be negative
 # useful to avoid cutting the object during the orthogonalization
 
 # define setup below
-beamline = "ID01"  # 'SIXS' or '34ID' or 'ID01' or 'P10' or 'CRISTAL'
-rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
+beamline = "SIXS_2018"  # name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+rocking_angle = "inplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 0.86180  # sample to detector distance in m
+sdd = 1.20773  # sample to detector distance in m
 pixel_size = 55e-6  # detector pixel size in m,              ###  including pixels binning factor!  ###
-energy = 8994  # x-ray energy in eV, 6eV offset at ID01
+energy = 8500  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # beam along z
-outofplane_angle = 35.1041  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 3.5487  # detector nu ID01, gamma SIXS, tth 34ID
-grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.010  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
-correct_refraction = 1  # 1 for correcting the phase shift due to refraction, 0 otherwise
-correct_absorption = 1  # 1 for correcting the amplitude for absorption, 0 otherwise
+outofplane_angle = 11.9278  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = -35.6218  # detector nu ID01, gamma SIXS, tth 34ID
+grazing_angle = 2  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
+tilt_angle = 0.004  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+correct_refraction = 0  # 1 for correcting the phase shift due to refraction, 0 otherwise
+correct_absorption = 0  # 1 for correcting the amplitude for absorption, 0 otherwise
 dispersion = 4.1184E-05  # delta
 # Pt:  3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994keV, 5.2647E-05 @ 7994keV, 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
 absorption = 3.4298E-06  # beta

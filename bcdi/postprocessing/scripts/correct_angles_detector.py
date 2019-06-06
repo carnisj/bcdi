@@ -28,8 +28,8 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 556
-root_folder = "C:/Users/carnis/Work Folders/Documents/data/SIXS/"
+scan = 2191
+root_folder = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/"
 sample_name = "S"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
@@ -37,9 +37,10 @@ peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'SIXS'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
-rocking_angle = "inplane"  # "outofplane" or "inplane"
-specfile_name = root_folder + 'alias_dict.txt'
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+rocking_angle = "outofplane"  # "outofplane" or "inplane"
+specfile_name = 'alignment'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -55,10 +56,11 @@ roi_detector = []
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
-flatfield_file = root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = 'align.spec_ascan_mu_%05d.nxs'
+flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-# template for SIXS: 'align.spec_ascan_mu_%05d.nxs'
+# template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+# template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_data_%06d.h5'
 ###################################
@@ -72,8 +74,8 @@ directbeam_x = 50.40  # x horizontal,  cch2 in xrayutilities
 directbeam_y = 451.02  # y vertical,  cch1 in xrayutilities
 direct_inplane = -0.124  # outer angle in xrayutilities
 direct_outofplane = -0.052
-sdd = 1.8  # sample to detector distance in m
-energy = 8000  # in eV, offset of 6eV at ID01
+sdd = 0.50678  # sample to detector distance in m
+energy = 9000  # in eV, offset of 6eV at ID01
 ##########################################################
 # end of user parameters
 ##########################################################

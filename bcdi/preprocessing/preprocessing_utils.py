@@ -559,12 +559,16 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
     elif beamline == 'P10':  # load .fio file
         logfile = root_folder + filename + '\\' + filename + '.fio'
 
-    elif beamline == 'SIXS':  # no specfile, load directly the dataset
+    elif beamline == 'SIXS_2018':  # no specfile, load directly the dataset
         import bcdi.preprocessing.nxsReady as nxsReady
 
         logfile = nxsReady.DataSet(longname=detector.datadir + detector.template_imagefile % scan_number,
                                    shortname=detector.template_imagefile % scan_number, alias_dict=filename,
                                    scan="SBS")
+    elif beamline == 'SIXS_2019':  # no specfile, load directly the dataset
+        import bcdi.preprocessing.ReadNxs3 as ReadNxs3
+
+        logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number)
 
     elif beamline == 'ID01':  # load spec file
         from silx.io.specfile import SpecFile
@@ -733,7 +737,7 @@ def init_qconversion(setup):
         # 2S+2D goniometer (ID01 goniometer, sample: eta, phi      detector: nu,del
         # the vector beam_direction is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
-    elif beamline == 'SIXS':
+    elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
         offsets = (0, 0, 0, offset_inplane, 0)  # beta, mu, beta, gamma del
         qconv = xu.experiment.QConversion(['y-', 'z+'], ['y-', 'z+', 'y-'], r_i=beam_direction)  # for SIXS
         # 2S+3D goniometer (SIXS goniometer, sample: beta, mu     detector: beta, gamma, del
@@ -812,7 +816,7 @@ def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixel
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param scan_number: the scan number to load
     :param detector: the detector object: Class experiment_utils.Detector()
-    :param beamline: 'ID01' or 'SIXS' or 'CRISTAL' or 'P10'
+    :param beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL'
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param debugging: set to True to see plots
@@ -830,7 +834,7 @@ def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixel
     if beamline == 'ID01':
         data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
                                                                debugging=debugging)
-    elif beamline == 'SIXS':
+    elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
         data, mask3d, monitor, frames_logical = load_sixs_data(logfile, detector, flatfield, hotpixels,
                                                                debugging=debugging)
     elif beamline == 'CRISTAL':
@@ -848,18 +852,17 @@ def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixel
 
     newdata = np.zeros((nb_frames, nby, nbx))
     newmask = np.zeros((nb_frames, nby, nbx))
-    newmonitor = np.zeros(nb_frames)
+    # do not process the monitor here, it is done in normalize_dataset()
 
     nb_overlap = 0
     for idx in range(len(frames_logical)):
         if frames_logical[idx]:
             newdata[idx - nb_overlap, :, :] = data[idx, :, :]
             newmask[idx - nb_overlap, :, :] = mask3d[idx, :, :]
-            newmonitor[idx - nb_overlap] = monitor[idx]
         else:
             nb_overlap = nb_overlap + 1
 
-    return newdata, newmask, newmonitor, frames_logical
+    return newdata, newmask, monitor, frames_logical
 
 
 def load_flatfield(flatfield_file):
@@ -1356,21 +1359,27 @@ def motor_positions_p10(logfile, setup):
     return om, phi, chi, mu, gamma, delta
 
 
-def motor_positions_sixs(logfile, frames_logical):
+def motor_positions_sixs(logfile, frames_logical, setup):
     """
     Load the scan data and extract motor positions.
 
     :param logfile: nxsReady Dataset object of SIXS .nxs scan file
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param setup: the experimental setup: Class SetupPreprocessing()
     :return: (beta, mgomega, gamma, delta) motor positions and updated frames_logical
     """
     delta = logfile.delta[0]  # not scanned
     gamma = logfile.gamma[0]  # not scanned
-    beta = logfile.basepitch[0]  # not scanned
+    if setup.beamline == 'SIXS_2018':
+        beta = logfile.basepitch[0]  # not scanned
+    elif setup.beamline == 'SIXS_2019':  # data recorder changed after 11/03/2019
+        beta = logfile.beta[0]  # not scanned
+    else:
+        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
     temp_mu = logfile.mu[:]
 
-    mu = np.zeros((frames_logical != 0).sum())
+    mu = np.zeros((frames_logical != 0).sum())  # first frame is duplicated for SIXS_2018
     nb_overlap = 0
     for idx in range(len(frames_logical)):
         if frames_logical[idx]:
@@ -1405,9 +1414,9 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-    elif setup.beamline == 'SIXS':
+    elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
         if setup.rocking_angle == 'inplane':  # mu rocking curve
-            grazing, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile, frames_logical)
+            grazing, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile, frames_logical, setup)
         else:
             raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
 
@@ -1429,7 +1438,7 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
     else:
-        raise ValueError('Wrong value for "beamline" parameter: bealine not supported')
+        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
 
     return tilt, grazing, inplane, outofplane
 
@@ -1572,8 +1581,8 @@ def regrid(frames_logical, logfile, scan_number, detector, setup, hxrd, follow_b
             raise ValueError('Wrong value for "rocking_angle" parameter')
         qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
 
-    elif setup.beamline == 'SIXS':
-        beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile, frames_logical)
+    elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
+        beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile, frames_logical, setup)
         if setup.rocking_angle == 'inplane':  # mu rocking curve
             nb_steps = len(mu)
             tilt_angle = mu[1] - mu[0]
@@ -1647,7 +1656,7 @@ def regrid(frames_logical, logfile, scan_number, detector, setup, hxrd, follow_b
         qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     else:
-        raise ValueError('Wrong value for "beamline" parameter: bealine not supported')
+        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
 
     return qx, qz, qy, frames_logical
 

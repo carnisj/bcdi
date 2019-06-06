@@ -20,7 +20,7 @@ class SetupPostprocessing(object):
         """
         Initialize parameters of the experiment.
 
-        :param beamline: name of the beamline: 'ID01'or 'SIXS' or '34ID' or 'P10' or 'CRISTAL'
+        :param beamline: name of the beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL'
         :param energy: X-ray energy in eV
         :param outofplane_angle: out of plane angle of the detector in degrees
         :param inplane_angle: inplane angle of the detector in degrees
@@ -49,7 +49,7 @@ class SetupPostprocessing(object):
 
         :return: a coefficient  which is 1 for anticlockwise rotation or -1 for clockwise rotation.
         """
-        if self.beamline == 'SIXS':
+        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
             # gamma is anti-clockwise
             coeff_inplane = 1
         elif self.beamline == 'ID01':
@@ -75,7 +75,7 @@ class SetupPostprocessing(object):
 
         :return: kout vector
         """
-        if self.beamline == 'SIXS':
+        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
             # gamma is anti-clockwise
             kout = 2 * np.pi / self.wavelength * np.array(
                 [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
@@ -335,7 +335,7 @@ class SetupPostprocessing(object):
                     [tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
                      0,
                      tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-        if self.beamline == 'SIXS':
+        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
             print('using SIXS geometry')
             if self.rocking_angle == "inplane" and mygrazing_angle != 0:
                 print('rocking angle is mu, with beta non zero')
@@ -398,7 +398,7 @@ class SetupPreprocessing(object):
         """
         Initialize parameters of the experiment.
 
-        :param beamline: name of the beamline: 'ID01'or 'SIXS' or '34ID' or 'P10' or 'CRISTAL'
+        :param beamline: name of the beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL'
         :param rocking_angle: angle which is tilted during the scan. 'outofplane', 'inplane', or 'energy'
         :param distance: sample to detector distance in meters, default=1m
         :param energy: X-ray energy in eV, default=8000eV
@@ -432,8 +432,8 @@ class Detector(object):
         :param datadir: directory where the data is saved
         :param template_imagefile: template for the name of image files
          - ID01: 'data_mpx4_%05d.edf.gz'
-         - SIXS: spec_name + '_ascan_mu_%05d.nxs'
-         - Cristal: 'S' + str(scan) + '.nxs'
+         - SIXS: 'spare_ascan_mu_%05d.nxs'
+         - Cristal: 'S%d.nxs'
          - P10: sample_name + str('{:05d}'.format(scans[scan_nb])) + '_data_%06d.h5'
         :param roi: region of interest in the detector, use [] to use the full detector
         """

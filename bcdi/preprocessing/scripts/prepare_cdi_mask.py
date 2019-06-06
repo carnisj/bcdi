@@ -38,9 +38,9 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [1351]  # list or array of scan numbers
-root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\P10_2019\\"
-sample_name = "align_02"  # "SN"  #
+scans = [556]  # list or array of scan numbers
+root_folder = "C:/Users/carnis/Work Folders/Documents/data/SIXS/"
+sample_name = "S"  # "SN"  #
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 ###########################
@@ -80,29 +80,33 @@ save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'P10'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
-rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
+beamline = 'SIXS_2018'  # name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = sample_name + '_%05d'
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
+specfile_name = root_folder + 'alias_dict.txt'
+# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically root_folder + 'alias_dict.txt'
+# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically root_folder + 'alias_dict.txt'
+# template for SIXS_2019: ''
 # template for P10: sample_name + '_%05d'
+# template for CRISTAL: ''
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 1495  # horizontal pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
-# roi_detector = []
+# roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
+roi_detector = []
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = '_data_%06d.h5'
+template_imagefile = 'align.spec_ascan_mu_%05d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-# template for SIXS: 'align.spec_ascan_mu_%05d.nxs'
+# template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+# template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_data_%06d.h5'
 ################################################################################
