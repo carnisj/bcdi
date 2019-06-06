@@ -1527,22 +1527,26 @@ def primes(number):
     return list_primes
 
 
-def regrid(frames_logical, logfile, scan_number, detector, setup, hxrd, follow_bragg=False):
+def regrid(logfile, scan_number, detector, setup, hxrd, frames_logical=None, follow_bragg=False):
     """
     Load beamline motor positions and calculate q positions for orthogonalization.
 
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param scan_number: the scan number to load
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
+    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param follow_bragg: True when in energy scans the detector was also scanned to follow the Bragg peak
     :return:
      - qx, qz, qy components for the dataset
      - updated frames_logical
     """
+    if frames_logical is None:  # need to find the raw data length
+        _, _, _, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
+                                            beamline=setup.beamline)
+
     nb_frames = len(frames_logical)
     if follow_bragg and setup.beamline != 'ID01':
         raise ValueError('Energy scan implemented only for ID01 beamline')
