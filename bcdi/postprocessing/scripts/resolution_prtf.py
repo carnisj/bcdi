@@ -36,22 +36,22 @@ For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 Supported beamline: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
 """
 
-scan = 271
-root_folder = "C:/Users/carnis/Work Folders/Documents/data/CRISTAL/"
+scan = 556
+root_folder = "C:/Users/carnis/Work Folders/Documents/data/SIXS/"
 sample_name = "S"  # "SN"  #
 comment = "_test"  # should start with _
 ############################
 # beamline parameters #
 ############################
-beamline = 'CRISTAL'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'SIXS_2018'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
-rocking_angle = "outofplane"  # "outofplane" or "inplane"
+rocking_angle = "inplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 grazing_angle = 0  # in degrees, incident angle for inplane rocking curves
-specfile_name = ''
+specfile_name = root_folder + 'alias_dict.txt'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically root_folder + 'alias_dict.txt'
+# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
 # template for SIXS_2019: ''
 # template for P10: sample_name + '_%05d'
 # template for CRISTAL: ''
@@ -59,7 +59,7 @@ specfile_name = ''
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-template_imagefile = 'S%d.nxs'
+template_imagefile = 'align.spec_ascan_mu_%05d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -167,8 +167,7 @@ hxrd.Ang2Q.init_area('z-', 'y+', cch1=int(y0), cch2=int(x0), Nch1=numy, Nch2=num
                      pwidth2=detector.pixelsize, distance=setup.distance)
 # first two arguments in init_area are the direction of the detector
 
-# TODO: replace numz in frames_logical by the raw data size, because the data could be padded?
-qx, qz, qy, _ = pru.regrid(frames_logical=np.ones(numz), logfile=logfile, scan_number=scan, detector=detector,
+qx, qz, qy, _ = pru.regrid(logfile=logfile, scan_number=scan, detector=detector,
                            setup=setup, hxrd=hxrd, follow_bragg=follow_bragg)
 
 if debug:
