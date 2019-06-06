@@ -5,6 +5,7 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
+import hdf5plugin  # for P10, should be imported before h5py or PyTables
 import numpy as np
 from numpy.fft import fftn, fftshift
 from matplotlib import pyplot as plt
