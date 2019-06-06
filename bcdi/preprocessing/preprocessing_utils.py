@@ -612,7 +612,7 @@ def find_bragg(data, peak_method):
     return z0, y0, x0
 
 
-def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogonalize=False, hxrd=None,
+def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False, hxrd=None,
             debugging=False, **kwargs):
     """
     Load the data, apply filters and concatenate it for phasing.
@@ -622,7 +622,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array
+    :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param orthogonalize: if True will interpolate the data and the mask on an orthogonal grid using xrayutilities
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
     :param debugging: set to True to see plots
@@ -645,30 +645,9 @@ def gridmap(logfile, scan_number, detector, setup, flatfield, hotpixels, orthogo
         except NameError:
             raise TypeError("Parameter 'follow_bragg' not provided, defaulting to False")
 
-    if flatfield is None:
-        flatfield = np.ones((detector.nb_pixel_y, detector.nb_pixel_x))
-    if hotpixels is None:
-        hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
-    if setup.beamline == 'ID01':
-        rawdata, rawmask, monitor, frames_logical = \
-            load_id01_data(logfile=logfile, scan_number=scan_number, detector=detector, flatfield=flatfield,
-                           hotpixels=hotpixels, debugging=debugging)
-    elif setup.beamline == 'CRISTAL':
-        rawdata, rawmask, monitor, frames_logical = \
-            load_cristal_data(logfile=logfile, detector=detector, flatfield=flatfield, hotpixels=hotpixels,
-                              debugging=debugging)
-    elif setup.beamline == 'SIXS':
-        rawdata, rawmask, monitor, frames_logical = \
-            load_sixs_data(logfile=logfile, detector=detector, flatfield=flatfield, hotpixels=hotpixels,
-                           debugging=debugging)
-    elif setup.beamline == 'P10':
-        rawdata, rawmask, monitor, frames_logical = \
-            load_p10_data(logfile=logfile, detector=detector, flatfield=flatfield,
-                          hotpixels=hotpixels, debugging=debugging)
-    else:
-        raise ValueError("Incorrect value for parameter 'beamline'")
-
+    rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
+                                                          beamline=setup.beamline, flatfield=flatfield,
+                                                          hotpixels=hotpixels, debugging=debugging)
     if not orthogonalize:
         return [], rawdata, [], rawmask, [], frames_logical, monitor
     else:
@@ -826,7 +805,7 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
     return data, mask3d, monitor, frames_logical
 
 
-def load_data(logfile, scan_number, detector, beamline, flatfield, hotpixels, debugging=False):
+def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixels=None, debugging=False):
     """
     Load ID01 data, apply filters and concatenate it for phasing.
 
@@ -835,7 +814,7 @@ def load_data(logfile, scan_number, detector, beamline, flatfield, hotpixels, de
     :param detector: the detector object: Class experiment_utils.Detector()
     :param beamline: 'ID01' or 'SIXS' or 'CRISTAL' or 'P10'
     :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array
+    :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -843,6 +822,11 @@ def load_data(logfile, scan_number, detector, beamline, flatfield, hotpixels, de
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     """
+    if flatfield is None:
+        flatfield = np.ones((detector.nb_pixel_y, detector.nb_pixel_x))
+    if hotpixels is None:
+        hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+
     if beamline == 'ID01':
         data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
                                                                debugging=debugging)
@@ -1659,18 +1643,21 @@ def regrid(frames_logical, logfile, scan_number, detector, setup, hxrd, follow_b
     return qx, qz, qy, frames_logical
 
 
-def remove_hotpixels(data, mask, hotpixels):
+def remove_hotpixels(data, mask, hotpixels=None):
     """
     Remove hot pixels from CCD frames and update the mask
 
     :param data: 2D or 3D array
-    :param hotpixels: 2D array of hotpixels
+    :param hotpixels: 2D array of hotpixels. 1 for a hotpixel, 0 for normal pixels.
     :param mask: array of the same shape as data
     :return: the data without hotpixels and the updated mask
     """
+    if hotpixels is None:
+        hotpixels = np.zeros(data.shape)
     if hotpixels.ndim == 3:  # 3D array
         print('Hotpixels is a 3D array, summing along the first axis')
         hotpixels = hotpixels.sum(axis=0)
+        hotpixels[np.nonzero(hotpixels)] = 1  # hotpixels should be a binary array
 
     if data.shape != mask.shape:
         raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
