@@ -295,8 +295,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
             plt.colorbar(plot, ax=axis)
         plt.tight_layout()
 
-        plt.pause(0.5)
-        plt.ioff()
+    plt.pause(0.5)
+    plt.ioff()
 
     return plt.gcf()
 
