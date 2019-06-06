@@ -101,10 +101,10 @@ photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
 template_imagefile = '_data_%06d.h5'
-# ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-# SIXS: 'align.spec_ascan_mu_%05d.nxs'
-# Cristal: 'S%d.nxs'
-# P10: '_data_%06d.h5'
+# template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+# template for SIXS: 'align.spec_ascan_mu_%05d.nxs'
+# template for Cristal: 'S%d.nxs'
+# template for P10: '_data_%06d.h5'
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################

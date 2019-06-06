@@ -37,6 +37,7 @@ specfile_name = ''
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
 # template for P10: sample_name + '_%05d'
+# template for CRISTAL: ''
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
@@ -46,10 +47,10 @@ peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
 template_imagefile = 'S%d.nxs'
-# ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-# SIXS: 'align.spec_ascan_mu_%05d.nxs'
-# Cristal: 'S%d.nxs'
-# P10: '_data_%06d.h5'
+# template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+# template for SIXS: 'align.spec_ascan_mu_%05d.nxs'
+# template for Cristal: 'S%d.nxs'
+# template for P10: '_data_%06d.h5'
 ##################################
 # end of user-defined parameters #
 ##################################

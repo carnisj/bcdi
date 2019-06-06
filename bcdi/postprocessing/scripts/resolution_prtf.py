@@ -58,10 +58,10 @@ specfile_name = ''
 #############################################################
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 template_imagefile = 'S%d.nxs'
-# ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-# SIXS: 'align.spec_ascan_mu_%05d.nxs'
-# Cristal: 'S%d.nxs'
-# P10: '_data_%06d.h5'
+# template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+# template for SIXS: 'align.spec_ascan_mu_%05d.nxs'
+# template for Cristal: 'S%d.nxs'
+# template for P10: '_data_%06d.h5'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
