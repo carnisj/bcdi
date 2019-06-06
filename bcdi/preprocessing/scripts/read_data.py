@@ -23,29 +23,29 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 1351
-root_folder = "C:/Users/carnis/Work Folders/Documents/data/P10_2019/"
-sample_name = "align_02"  # "S"
+scan = 271
+root_folder = "C:/Users/carnis/Work Folders/Documents/data/CRISTAL/"
+sample_name = "S"  # "S"
 save_mask = False  # set to True to save the mask
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'P10'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
+beamline = 'CRISTAL'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = sample_name + '_%05d'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically root_folder + 'alias_dict.txt'
+# template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
 # template for P10: sample_name + '_%05d'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 bragg_position = []  # Bragg peak position [vertical, horizontal], leave it as [] if there is a single peak
 peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
-flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = '_data_%06d.h5'
+flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
+template_imagefile = 'S%d.nxs'
 # ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # SIXS: 'align.spec_ascan_mu_%05d.nxs'
 # Cristal: 'S%d.nxs'
@@ -77,8 +77,9 @@ hotpix_array = pru.load_hotpixels(hotpixels_file)
 logfile = pru.create_logfile(beamline=beamline, detector=detector, scan_number=scan, root_folder=root_folder,
                              filename=specfile_name)
 
-data, mask, monitor, _ = pru.load_data(logfile=logfile, scan_number=scan, detector=detector, beamline=beamline,
-                                       flatfield=flatfield, hotpixels=hotpix_array, debugging=False)
+data, mask, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number=scan, detector=detector,
+                                                    beamline=beamline, flatfield=flatfield, hotpixels=hotpix_array,
+                                                    debugging=False)
 
 numz, numy, numx = data.shape
 print('Data shape: ', numz, numy, numx)
@@ -87,7 +88,7 @@ print('Data shape: ', numz, numy, numx)
 # calculate rocking curve and fit it to get the FWHM #
 ######################################################
 if data.ndim == 3:
-    tilt, _, _, _ = pru.motor_values(frames_logical=np.ones(numz), logfile=logfile, scan_number=scan, setup=setup,
+    tilt, _, _, _ = pru.motor_values(frames_logical=frames_logical, logfile=logfile, scan_number=scan, setup=setup,
                                      follow_bragg=False)
     rocking_curve = np.zeros(numz)
 
@@ -103,8 +104,8 @@ if data.ndim == 3:
     print("Bragg peak (full detector) at (z, y, x): ", z0, y0, x0)
 
     for idx in range(numz):
-        rocking_curve[idx] = data[idx, bragg_position[0] - 20:bragg_position[0] + 20,
-                                  bragg_position[1] - 20:bragg_position[1] + 20].sum()
+        rocking_curve[idx] = data[idx, bragg_position[0] - 50:bragg_position[0] + 50,
+                                  bragg_position[1] - 50:bragg_position[1] + 50].sum()
     plot_title = "Rocking curve for a ROI centered on (y, x): " + str(bragg_position[0]) + ',' + str(bragg_position[1])
 
     z0 = np.unravel_index(rocking_curve.argmax(), rocking_curve.shape)[0]
