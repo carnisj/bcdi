@@ -1034,9 +1034,8 @@ def load_sixs_data(logfile, detector, flatfield, hotpixels, debugging=False):
     data = logfile.mfilm[:]
     monitor = logfile.imon1[:]
 
-    data = data[1:, :, :]  # first frame is duplicated
-    monitor = monitor[1:]  # first frame is duplicated
     frames_logical = np.ones(data.shape[0])
+    frames_logical[0] = 0  # first frame is duplicated
 
     nb_img = data.shape[0]
     for idx in range(nb_img):
@@ -1349,26 +1348,19 @@ def motor_positions_sixs(logfile, frames_logical):
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :return: (beta, mgomega, gamma, delta) motor positions and updated frames_logical
     """
-    temp_delta = logfile.delta[:]
-    temp_gamma = logfile.gamma[:]
+    delta = logfile.delta[0]  # not scanned
+    gamma = logfile.gamma[0]  # not scanned
+    beta = logfile.basepitch[0]  # not scanned
     temp_mu = logfile.mu[:]
-    beta = logfile.basepitch[0]
 
-    delta = np.zeros((frames_logical != 0).sum())
-    gamma = np.zeros((frames_logical != 0).sum())
     mu = np.zeros((frames_logical != 0).sum())
-
     nb_overlap = 0
     for idx in range(len(frames_logical)):
         if frames_logical[idx]:
-            delta[idx - nb_overlap] = temp_delta[idx]
-            gamma[idx - nb_overlap] = temp_gamma[idx]
             mu[idx - nb_overlap] = temp_mu[idx]
         else:
             nb_overlap = nb_overlap + 1
 
-    delta = delta.mean()  # not scanned
-    gamma = gamma.mean()  # not scanned
     return beta, mu, gamma, delta, frames_logical
 
 
