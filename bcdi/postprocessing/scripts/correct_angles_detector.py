@@ -27,8 +27,8 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 107
-root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\SIXS\\"
+scan = 556
+root_folder = "C:/Users/carnis/Work Folders/Documents/data/SIXS/"
 sample_name = "S"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
@@ -37,7 +37,7 @@ peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 # define beamline related parameters #
 ######################################
 beamline = 'SIXS'  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
-rocking_angle = "outofplane"  # "outofplane" or "inplane"
+rocking_angle = "inplane"  # "outofplane" or "inplane"
 specfile_name = root_folder + 'alias_dict.txt'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
@@ -53,7 +53,7 @@ roi_detector = []
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
-flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
+flatfield_file = root_folder + "flatfield_8.5kev.npz"  #
 template_imagefile = 'align.spec_ascan_mu_%05d.nxs'
 # ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # SIXS: 'align.spec_ascan_mu_%05d.nxs'
@@ -112,7 +112,7 @@ flatfield = pru.load_flatfield(flatfield_file)
 hotpix_array = pru.load_hotpixels(hotpixels_file)
 
 logfile = pru.create_logfile(beamline=setup_pre.beamline, detector=detector, scan_number=scan,
-                             root_folder=root_folder, filename='')
+                             root_folder=root_folder, filename=specfile_name)
 
 if filtered_data == 0:
     _, data, _, mask, _, frames_logical, monitor = \
@@ -127,8 +127,8 @@ else:
     data = np.load(file_path)['data']
     data = data[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
     frames_logical = np.ones(data.shape[0])  # use all frames from the filtered data
-nz, ny, nx = data.shape
-print("Shape of dataset: ", nz, ny, nx)
+numz, numy, numx = data.shape
+print("Shape of dataset: ", numz, numy, numx)
 
 ##############################
 # find motors values in .fio #
@@ -142,9 +142,13 @@ setup_post = exp.SetupPostprocessing(beamline=setup_pre.beamline, energy=setup_p
                                      pixel_y=detector.pixelsize)
 
 nb_frames = len(tilt)
-if nz != nb_frames:
-    print('The loaded data has not the same shape as the raw data')
-    sys.exit()
+if numz != nb_frames:
+    if setup_pre.beamline == 'SIXS' and numz == nb_frames + 1 and frames_logical[0] == 0:
+        # first frame is duplicated and has been removed, there is no error
+        pass
+    else:
+        print('The loaded data has not the same shape as the raw data')
+        sys.exit()
 
 #######################
 # Find the Bragg peak #
@@ -160,20 +164,20 @@ print("Bragg peak (full detector) at (z, y, x): ", z0, y0+detector.roi[0], x0+de
 ######################################################
 # calculate rocking curve and fit it to get the FWHM #
 ######################################################
-rocking_curve = np.zeros(nz)
+rocking_curve = np.zeros(nb_frames)
 if filtered_data == 0:  # take a small ROI to avoid parasitic peaks
-    for idx in range(nz):
+    for idx in range(nb_frames):
         rocking_curve[idx] = data[idx, y0 - 20:y0 + 20, x0 - 20:x0 + 20].sum()
     plot_title = "Rocking curve for a 40x40 pixels ROI"
 else:  # take the whole detector
-    for idx in range(nz):
+    for idx in range(nb_frames):
         rocking_curve[idx] = data[idx, :, :].sum()
-    plot_title = "Rocking curve (full detector"
+    plot_title = "Rocking curve (full detector)"
 z0 = np.unravel_index(rocking_curve.argmax(), rocking_curve.shape)[0]
 
 
 interpolation = interp1d(tilt, rocking_curve, kind='cubic')
-interp_points = 5*nz
+interp_points = 5*nb_frames
 interp_tilt = np.linspace(tilt.min(), tilt.max(), interp_points)
 interp_curve = interpolation(interp_tilt)
 interp_fwhm = len(np.argwhere(interp_curve >= interp_curve.max()/2)) * \
@@ -240,9 +244,9 @@ temperature = pu.bragg_temperature(spacing=dist_plane, reflection=reflection, sp
 #########################
 # calculate voxel sizes #
 #########################
-dz_realspace = setup_post.wavelength * 1e9 / (nz * d_rocking_angle * np.pi / 180)  # in nm
-dy_realspace = setup_post.wavelength * 1e9 * sdd / (ny * detector.pixelsize)  # in nm
-dx_realspace = setup_post.wavelength * 1e9 * sdd / (nx * detector.pixelsize)  # in nm
+dz_realspace = setup_post.wavelength * 1e9 / (nb_frames * d_rocking_angle * np.pi / 180)  # in nm
+dy_realspace = setup_post.wavelength * 1e9 * sdd / (numy * detector.pixelsize)  # in nm
+dx_realspace = setup_post.wavelength * 1e9 * sdd / (numx * detector.pixelsize)  # in nm
 print('Real space voxel size (z, y, x): ', str('{:.2f}'.format(dz_realspace)), 'nm',
       str('{:.2f}'.format(dy_realspace)), 'nm', str('{:.2f}'.format(dx_realspace)), 'nm')
 
