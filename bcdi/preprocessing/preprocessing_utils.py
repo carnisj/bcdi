@@ -1203,59 +1203,6 @@ def mean_filter(data, nb_neighbours, mask, interpolate=False, debugging=False):
     return data, nb_pixels, mask
 
 
-def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False):
-    """
-    Load the scan data and extract motor positions.
-
-    :param follow_bragg: True when for energy scans the detector was also scanned to follow the Bragg peak
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param scan_number: the scan number to load
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
-     corrected values
-    """
-    if setup.beamline == 'ID01':
-        if setup.rocking_angle == 'outofplane':  # eta rocking curve
-            tilt, _, _, inplane, outofplane, _, _ = \
-                motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
-            grazing = 0
-        elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing, _, tilt, inplane, outofplane, _, _ = \
-                motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    elif setup.beamline == 'SIXS':
-        if setup.rocking_angle == 'inplane':  # mu rocking curve
-            grazing, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile, frames_logical)
-        else:
-            raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
-
-    elif setup.beamline == 'CRISTAL':
-        if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
-            tilt, inplane, outofplane = motor_positions_cristal(logfile, setup)
-            grazing = 0
-            inplane = inplane[0]
-            outofplane = outofplane[0]
-        else:
-            raise ValueError('Inplane rocking curve not implemented for CRISTAL')
-
-    elif setup.beamline == 'P10':
-        if setup.rocking_angle == 'outofplane':  # om rocking curve
-            tilt, _, _, _, inplane, outofplane = motor_positions_p10(logfile, setup)
-            grazing = 0
-        elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile, setup)
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-    else:
-        raise ValueError('Wrong value for "beamline" parameter: bealine not supported')
-
-    return tilt, grazing, inplane, outofplane
-
-
 def motor_positions_cristal(logfile, setup):
     """
     Load the scan data and extract motor positions.
@@ -1423,6 +1370,59 @@ def motor_positions_sixs(logfile, frames_logical):
     delta = delta.mean()  # not scanned
     gamma = gamma.mean()  # not scanned
     return beta, mu, gamma, delta, frames_logical
+
+
+def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False):
+    """
+    Load the scan data and extract motor positions.
+
+    :param follow_bragg: True when for energy scans the detector was also scanned to follow the Bragg peak
+    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :return: (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
+     corrected values
+    """
+    if setup.beamline == 'ID01':
+        if setup.rocking_angle == 'outofplane':  # eta rocking curve
+            tilt, _, _, inplane, outofplane, _, _ = \
+                motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
+            grazing = 0
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            grazing, _, tilt, inplane, outofplane, _, _ = \
+                motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+    elif setup.beamline == 'SIXS':
+        if setup.rocking_angle == 'inplane':  # mu rocking curve
+            grazing, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile, frames_logical)
+        else:
+            raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
+
+    elif setup.beamline == 'CRISTAL':
+        if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
+            tilt, inplane, outofplane = motor_positions_cristal(logfile, setup)
+            grazing = 0
+            inplane = inplane[0]
+            outofplane = outofplane[0]
+        else:
+            raise ValueError('Inplane rocking curve not implemented for CRISTAL')
+
+    elif setup.beamline == 'P10':
+        if setup.rocking_angle == 'outofplane':  # om rocking curve
+            tilt, _, _, _, inplane, outofplane = motor_positions_p10(logfile, setup)
+            grazing = 0
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            grazing, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile, setup)
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+    else:
+        raise ValueError('Wrong value for "beamline" parameter: bealine not supported')
+
+    return tilt, grazing, inplane, outofplane
 
 
 def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, debugging=False):
