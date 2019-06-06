@@ -25,9 +25,8 @@ Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
 scan = 1351
-root_folder = "C:\\Users\\carnis\\Work Folders\\Documents\\data\\P10_2019\\"
-sample_name = "align_02_"  # "S"
-specdir = "C:/Users/carnis/Work Folders/Documents/data/P10_2019/"
+root_folder = "C:/Users/carnis/Work Folders/Documents/data/P10_2019/"
+sample_name = "align_02"  # "S"
 save_mask = False  # set to True to save the mask
 ######################################
 # define beamline related parameters #
@@ -84,12 +83,16 @@ data, mask, monitor, _ = pru.load_data(logfile=logfile, scan_number=scan, detect
 
 print(data.shape)
 
+if data.ndim == 3:
+    data = data.sum(axis=0)  # concatenate along the axis of the rocking curve
+
 if save_mask:
     np.savez_compressed(detector.datadir+'hotpixels.npz', mask=mask)
 
-gu.combined_plots(tuple_array=(mask, monitor), tuple_sum_frames=False, tuple_sum_axis=(0, 0),
-                  tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=True, tuple_vmin=np.nan,
-                  tuple_vmax=np.nan, tuple_title=('mask', 'monitor'), tuple_scale='linear')
+gu.combined_plots(tuple_array=(monitor, mask), tuple_sum_frames=False, tuple_sum_axis=(0, 0),
+                  tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=(True, False), tuple_vmin=np.nan,
+                  tuple_vmax=np.nan, tuple_title=('monitor', 'mask'), tuple_scale='linear',
+                  ylabel=('Counts (a.u.)', ''))
 
 y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
 print("Max at (y, x): ", y0, x0, ' Max = ', int(data[y0, x0]))
