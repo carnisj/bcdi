@@ -842,7 +842,24 @@ def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixel
     else:
         raise ValueError('Wrong value for "rocking_angle" parameter')
 
-    return data, mask3d, monitor, frames_logical
+    # remove indices where frames_logical=0
+    nbz, nby, nbx = data.shape
+    nb_frames = (frames_logical != 0).sum()
+
+    newdata = np.zeros((nb_frames, nby, nbx))
+    newmask = np.zeros((nb_frames, nby, nbx))
+    newmonitor = np.zeros(nb_frames)
+
+    nb_overlap = 0
+    for idx in range(len(frames_logical)):
+        if frames_logical[idx]:
+            newdata[idx - nb_overlap, :, :] = data[idx, :, :]
+            newmask[idx - nb_overlap, :, :] = mask3d[idx, :, :]
+            newmonitor[idx - nb_overlap] = monitor[idx]
+        else:
+            nb_overlap = nb_overlap + 1
+
+    return newdata, newmask, newmonitor, frames_logical
 
 
 def load_flatfield(flatfield_file):
