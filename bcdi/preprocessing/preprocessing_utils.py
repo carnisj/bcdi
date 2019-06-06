@@ -1405,7 +1405,7 @@ def motor_positions_sixs(logfile, frames_logical):
     temp_delta = logfile.delta[:]
     temp_gamma = logfile.gamma[:]
     temp_mu = logfile.mu[:]
-    beta = logfile.beta[0]  # TODO: check that this is correct
+    beta = logfile.basepitch[0]
 
     delta = np.zeros((frames_logical != 0).sum())
     gamma = np.zeros((frames_logical != 0).sum())
