@@ -657,8 +657,8 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
     else:
         nbz, nby, nbx = rawdata.shape
         qx, qz, qy, frames_logical = \
-            regrid(frames_logical=frames_logical, logfile=logfile, scan_number=scan_number, detector=detector,
-                   setup=setup, hxrd=hxrd, follow_bragg=follow_bragg)
+            regrid(logfile=logfile, nb_frames=rawdata.shape[0], scan_number=scan_number, detector=detector,
+                   setup=setup, hxrd=hxrd, frames_logical=frames_logical, follow_bragg=follow_bragg)
 
         if setup.beamline == 'ID01':
             # below is specific to ID01 energy scans where frames are duplicated for undulator gap change
@@ -1527,11 +1527,13 @@ def primes(number):
     return list_primes
 
 
-def regrid(logfile, scan_number, detector, setup, hxrd, frames_logical=None, follow_bragg=False):
+def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logical=None, follow_bragg=False):
     """
     Load beamline motor positions and calculate q positions for orthogonalization.
 
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param nb_frames: length of axis 0 in the 3D dataset. If the data was cropped or padded, it may be different
+     from the length of frames_logical.
     :param scan_number: the scan number to load
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
@@ -1543,11 +1545,10 @@ def regrid(logfile, scan_number, detector, setup, hxrd, frames_logical=None, fol
      - qx, qz, qy components for the dataset
      - updated frames_logical
     """
-    if frames_logical is None:  # need to find the raw data length
+    if frames_logical is None:  # retrieve the raw data length, then len(frames_logical) may be different from nb_frames
         _, _, _, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                             beamline=setup.beamline)
 
-    nb_frames = len(frames_logical)
     if follow_bragg and setup.beamline != 'ID01':
         raise ValueError('Energy scan implemented only for ID01 beamline')
 

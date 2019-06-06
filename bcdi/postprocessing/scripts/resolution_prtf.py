@@ -76,7 +76,7 @@ sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 ###########
 # options #
 ###########
-modes = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
+modes = False  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = True  # True to show more plots
 save = True  # True to save the prtf figure
 ##########################
@@ -167,7 +167,7 @@ hxrd.Ang2Q.init_area('z-', 'y+', cch1=int(y0), cch2=int(x0), Nch1=numy, Nch2=num
                      pwidth2=detector.pixelsize, distance=setup.distance)
 # first two arguments in init_area are the direction of the detector
 
-qx, qz, qy, _ = pru.regrid(logfile=logfile, scan_number=scan, detector=detector,
+qx, qz, qy, _ = pru.regrid(logfile=logfile, nb_frames=numz, scan_number=scan, detector=detector,
                            setup=setup, hxrd=hxrd, follow_bragg=follow_bragg)
 
 if debug:
