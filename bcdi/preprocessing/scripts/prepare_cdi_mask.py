@@ -61,8 +61,7 @@ center_fft = 'crop_asym_ZYX'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
 # used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'
 ###########################
-normalize_flux = True  # will normalize the intensity by the default monitor
-# exp1 or mon2 monitor on ID01, imon1 for SIXS, ipetra fro P10
+normalize_flux = True  # will normalize the intensity by the default monitor.
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
