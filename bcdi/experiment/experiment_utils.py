@@ -393,7 +393,7 @@ class SetupPreprocessing(object):
     """
     Class to handle the experimental geometry for preprocessing.
     """
-    def __init__(self, beamline, rocking_angle, distance=1, energy=8000, grazing_angle=0, beam_direction=(1, 0, 0),
+    def __init__(self, beamline, rocking_angle, distance=1, energy=8000, beam_direction=(1, 0, 0),
                  sample_inplane=(1, 0, 0), sample_outofplane=(0, 0, 1), offset_inplane=0):
         """
         Initialize parameters of the experiment.
@@ -402,7 +402,6 @@ class SetupPreprocessing(object):
         :param rocking_angle: angle which is tilted during the scan. 'outofplane', 'inplane', or 'energy'
         :param distance: sample to detector distance in meters, default=1m
         :param energy: X-ray energy in eV, default=8000eV
-        :param grazing_angle: grazing angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
         :param beam_direction: x-ray beam direction
         :param sample_inplane: sample inplane reference direction along the beam at 0 angles
         :param sample_outofplane: surface normal of the sample at 0 angles
@@ -412,7 +411,6 @@ class SetupPreprocessing(object):
         self.energy = energy  # in eV
         self.wavelength = 12.398 * 1e-7 / energy  # in m
         self.rocking_angle = rocking_angle  # string
-        self.grazing_angle = grazing_angle  # string
         self.distance = distance  # in meters
         self.beam_direction = beam_direction  # tuple vector
         self.sample_inplane = sample_inplane  # tuple vector

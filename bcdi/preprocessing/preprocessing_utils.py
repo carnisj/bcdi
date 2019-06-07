@@ -1604,8 +1604,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         else:
             raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
 
-        qx, qy, qz = hxrd.Ang2Q.area(setup.grazing_angle, mu, setup.grazing_angle, gamma, delta, en=setup.energy,
-                                     delta=detector.offsets)
+        qx, qy, qz = hxrd.Ang2Q.area(beta, mu, beta, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'CRISTAL':
         mgomega, gamma, delta = motor_positions_cristal(logfile, setup)

@@ -114,7 +114,6 @@ template_imagefile = 'align.spec_ascan_mu_%05d.nxs'
 ################################################################################
 sdd = 1.8  # sample to detector distance in m, not important if you use raw data
 energy = 10300  # x-ray energy in eV, not important if you use raw data
-grazing_angle = 0  # incident angle of diffractometer at SIXS or incident angle below phi for in-plane rocking curves
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
@@ -187,9 +186,8 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 # Initialize setup #
 ####################
 setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
-                               grazing_angle=grazing_angle, beam_direction=beam_direction,
-                               sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
-                               offset_inplane=offset_inplane)
+                               beam_direction=beam_direction, sample_inplane=sample_inplane,
+                               sample_outofplane=sample_outofplane, offset_inplane=offset_inplane)
 
 #############################################
 # Initialize geometry for orthogonalization #

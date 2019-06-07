@@ -47,7 +47,6 @@ beamline = 'SIXS_2018'  # name of the beamline, used for data loading and normal
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "inplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-grazing_angle = 0  # in degrees, incident angle for inplane rocking curves
 specfile_name = root_folder + 'alias_dict.txt'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
@@ -90,8 +89,8 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 
 
 setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, distance=sdd, energy=energy,
-                               grazing_angle=grazing_angle, beam_direction=beam_direction,
-                               sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
+                               beam_direction=beam_direction, sample_inplane=sample_inplane,
+                               sample_outofplane=sample_outofplane,
                                offset_inplane=0)  # no need to worry about offsets, work relatively to the Bragg peak
 
 print('\nScan', scan)
