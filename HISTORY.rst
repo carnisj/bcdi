@@ -1,6 +1,11 @@
+Version 0.0.5
+-------------
+
+* Feature: implement support for SIXS data measured after the 11/03/2019 with the new data recorder.
+
 * Refactor: modify preprocessing/scripts/readdata_P10.py to support several beamlines and rename it 'read_data.py'
 
-* Feature: implement suuport for multiple beamlines in postprocessing/script/resolution_prtf.py
+* Feature: implement support for multiple beamlines in postprocessing/script/resolution_prtf.py
 
 * Refactor: merge all preprocessing/preprocessing_utils.regrid_*.py in preprocessing/preprocessing_utils.regrid()
 

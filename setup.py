@@ -16,11 +16,11 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 
-setup(name='bcdi', version='0.0.4',
+setup(name='bcdi', version='0.0.5',
       packages=find_packages(),
       include_package_data=True,
       # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},  # the file needs to be in a package
-      # data_files=[('bcdi/data', ['bcdi/data/S978_LLKf000.460.cxi'])], # data files will be installed not good
+      # data_files=[('bcdi/data', ['bcdi/data/S978_LLKf000.460.cxi'])], # data files will be installed
       # outtside of the package, which is not ideal
       scripts=['bcdi/facet_recognition/scripts/crystal_shape.py',
                'bcdi/graph/scripts/make_movie.py',
