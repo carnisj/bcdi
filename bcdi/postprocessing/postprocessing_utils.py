@@ -247,8 +247,7 @@ def bin_data(array, binning, debugging=False):
     if array.ndim == 2:
         nby, nbx = array.shape
         newarray = np.zeros((nby//binning[0], nbx//binning[1]), dtype=array.dtype)
-        print('Initial array shape =', array.shape)
-        print('Binned array shape =', newarray.shape)
+        print('Initial array shape =', array.shape, 'Binned array shape =', newarray.shape)
         for idy in range(newarray.shape[0]):  # bin the vertical axis
             for idx in range(newarray.shape[1]):  # bin the horizontal axis
                 newarray[idy, idx] = array[idy*binning[0]:(idy+1)*binning[0], idx*binning[1]:(idx+1)*binning[1]].sum()
