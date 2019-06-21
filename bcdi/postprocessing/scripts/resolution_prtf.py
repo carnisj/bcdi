@@ -72,7 +72,9 @@ energy = 8310   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-binning = (1, 2, 2)  # binning factor during phasing: rocking curve axis, detector vertical and horizontal axis
+binning = (1, 1, 1)  # binning factor during phasing: rocking curve axis, detector vertical and horizontal axis
+# TODO: considering binning is probably not necessary: if the data is binned, the resolution does not change because
+# TODO: the pixel size is multiplied. If we pad the phased object we find back the initial resolution?
 rawdata_binned = False  # set to True if the raw data and the mask loaded are already binned.
 # If False, the raw data and the mask will be binned using 'binning' parameter
 ###########
