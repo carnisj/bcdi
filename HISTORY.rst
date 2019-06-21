@@ -1,3 +1,7 @@
+* Feature: in postprocessing/scripts/resolution_prtf.py, allow for binning the detector plane
+
+* Bug: in postprocessing/scripts/strain.py, correct the original array size taking into account the binning factor
+
 * Feature: implement postprocessing_utils.bin_data()
 
 Version 0.0.5
