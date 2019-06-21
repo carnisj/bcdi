@@ -1,3 +1,5 @@
+* Feature: implement postprocessing_utils.bin_data()
+
 Version 0.0.5
 -------------
 
