@@ -36,18 +36,18 @@ For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 Supported beamline: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
 """
 
-scan = 556
-root_folder = "C:/Users/carnis/Work Folders/Documents/data/SIXS/"
+scan = 528
+root_folder = "C:/Users/carnis/Work Folders/Documents/data/CRISTAL/"
 sample_name = "S"  # "SN"  #
 comment = "_test"  # should start with _
 ############################
 # beamline parameters #
 ############################
-beamline = 'SIXS_2018'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'CRISTAL'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
-rocking_angle = "inplane"  # "outofplane" or "inplane"
+rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = root_folder + 'alias_dict.txt'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -58,7 +58,7 @@ specfile_name = root_folder + 'alias_dict.txt'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-template_imagefile = 'align.spec_ascan_mu_%05d.nxs'
+template_imagefile = 'S%d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -67,26 +67,31 @@ template_imagefile = 'align.spec_ascan_mu_%05d.nxs'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
-sdd = 1.20773  # sample to detector distance in m
-energy = 8500   # x-ray energy in eV, 6eV offset at ID01
+sdd = 1.4359  # sample to detector distance in m
+energy = 8310   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
+binning = (1, 2, 2)  # binning factor during phasing: rocking curve axis, detector vertical and horizontal axis
+rawdata_binned = False  # set to True if the raw data and the mask loaded are already binned.
+# If False, the raw data and the mask will be binned using 'binning' parameter
 ###########
 # options #
 ###########
-modes = False  # set to True when the solution is the first mode - then the intensity needs to be normalized
+modes = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = True  # True to show more plots
 save = True  # True to save the prtf figure
 ##########################
 # end of user parameters #
 ##########################
-
+# TODO: add the option for binning the rocking angle
+if binning[0] != 1:
+    print('PRTF not yet implemented for rocking angle binning')
+    sys.exit()
 #################################################
 # Initialize paths, detector, setup and logfile #
 #################################################
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile)
-
 
 setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, distance=sdd, energy=energy,
                                beam_direction=beam_direction, sample_inplane=sample_inplane,
@@ -140,13 +145,18 @@ npzfile = np.load(file_path)
 diff_pattern = npzfile['data']
 diff_pattern = diff_pattern.astype(float)
 
-
-numz, numy, numx = diff_pattern.shape
-print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
-
 file_path = filedialog.askopenfilename(initialdir=detector.datadir, title="Select mask", filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
 mask = npzfile['mask']
+
+if not rawdata_binned:
+    if binning[1] != 1 or binning[2] != 1:
+        diff_pattern = pu.bin_data(array=diff_pattern, binning=binning, debugging=True)
+        mask = pu.bin_data(array=mask, binning=binning, debugging=True)
+        mask[np.nonzero(mask)] = 1
+
+numz, numy, numx = diff_pattern.shape
+print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
 diff_pattern[np.nonzero(mask)] = 0
 
 z0, y0, x0 = center_of_mass(diff_pattern)
@@ -162,8 +172,10 @@ plt.pause(0.1)
 ################################################
 # calculate the q matrix respective to the COM #
 ################################################
-hxrd.Ang2Q.init_area('z-', 'y+', cch1=int(y0), cch2=int(x0), Nch1=numy, Nch2=numx, pwidth1=detector.pixelsize,
-                     pwidth2=detector.pixelsize, distance=setup.distance)
+hxrd.Ang2Q.init_area('z-', 'y+', cch1=int(y0), cch2=int(x0), Nch1=numy, Nch2=numx,
+                     pwidth1=detector.pixelsize * binning[1],
+                     pwidth2=detector.pixelsize * binning[2],
+                     distance=setup.distance)
 # first two arguments in init_area are the direction of the detector
 
 qx, qz, qy, _ = pru.regrid(logfile=logfile, nb_frames=numz, scan_number=scan, detector=detector,
@@ -203,7 +215,7 @@ if extension == '.h5':
 
 # check if the shape is the same as the measured diffraction pattern
 if obj.shape != diff_pattern.shape:
-    print('Reconstructed object shape different from the experimental diffraction pattern: crop/pad')
+    print('Reconstructed object shape = ', obj.shape, 'different from the experimental diffraction pattern: crop/pad')
     obj = pu.crop_pad(array=obj, output_shape=diff_pattern.shape, debugging=False)
 
 # calculate the retrieved diffraction amplitude
