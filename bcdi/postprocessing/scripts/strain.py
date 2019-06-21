@@ -54,17 +54,16 @@ reference_temperature = None  # used to calibrate the thermal expansion, if None
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 
-original_size = (240, 500, 256)  # size of the FFT array used for phasing, when the result has been croped (.cxi)
-# leave it to () otherwise
+original_size = [240, 500, 256]  # size of the FFT array before binning. It will be modify to take into account binning
+# during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor during phasing
-
 
 output_size = (120, 120, 120)  # original_size  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
 fix_voxel = np.nan  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no averaging
 
-isosurface_strain = 0.20  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.30  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 
 comment = "_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
@@ -73,7 +72,7 @@ strain_range = 0.001  # for plots
 phase_range = np.pi  # for plots
 phase_offset = 0   # manual offset to add to the phase, should be 0 normally
 
-plot_width = (20, 20, 20)  # (z, y, x) margin outside the support in each direction, can be negative
+plot_width = (40, 40, 40)  # (z, y, x) margin outside the support in each direction, can be negative
 # useful to avoid cutting the object during the orthogonalization
 
 # define setup below
@@ -144,6 +143,9 @@ else:
 ####################################
 pixel_size = pixel_size * binning[1]
 tilt_angle = tilt_angle * binning[0]
+original_size = tuple([original_size[index] // binning[index] for index in range(len(binning))])
+
+
 if binning[1] != binning[2]:
     print('Binning size different for each detector direction - not yet implemented')
     sys.exit()
