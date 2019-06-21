@@ -16,7 +16,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 
-setup(name='bcdi', version='0.0.5',
+setup(name='bcdi', version='0.0.6',
       packages=find_packages(),
       include_package_data=True,
       # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},  # the file needs to be in a package
@@ -33,6 +33,7 @@ setup(name='bcdi', version='0.0.5',
                'bcdi/postprocessing/scripts/resolution_prtf.py',
                'bcdi/postprocessing/scripts/strain_mean_var_rms.py',
                'bcdi/postprocessing/scripts/correct_angles_detector.py',
+               'bcdi/postprocessing/scripts/extract_bulk_surface.py',
                'bcdi/preprocessing/scripts/concatenate_scans.py',
                'bcdi/preprocessing/scripts/prepare_cdi_mask.py',
                'bcdi/preprocessing/scripts/read_data.py',
