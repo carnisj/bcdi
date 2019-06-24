@@ -26,7 +26,7 @@ Average the scans if their correlation coefficient is larger than a threshold.
 The first scan in the list serves as reference.
 """
 
-scan_list = np.arange(239, 251+1, 3)  # list or array of scan numbers
+scan_list = [411, 414, 417, 421]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
 sample_name = 'dewet5_'
 comment = '__norm_160_512_480.npz'  # the end of the filename template after 'pynx'
 homedir = "C:/Users/carnis/Work Folders/Documents/data/P10_2018/"

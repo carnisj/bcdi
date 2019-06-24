@@ -23,17 +23,18 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 2191
-root_folder = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/"
-sample_name = "S"  # "S"
+scan = 1406
+root_folder = "H:/data/P10_2019/raw/"
+sample_name = "align_02"  # "S"
 save_mask = False  # set to True to save the mask
+fit_rockingcurve = False  # set to True if you want a fit of the rocking curve
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = 'alignment'
+specfile_name = sample_name + '_%05d'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -43,12 +44,12 @@ specfile_name = 'alignment'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 bragg_position = []  # Bragg peak position [vertical, horizontal], leave it as [] if there is a single peak
 peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+template_imagefile = '_data_%06d.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -91,7 +92,7 @@ print('Data shape: ', numz, numy, numx)
 ######################################################
 # calculate rocking curve and fit it to get the FWHM #
 ######################################################
-if data.ndim == 3:
+if data.ndim == 3 and fit_rockingcurve:
     tilt, _, _, _ = pru.motor_values(frames_logical=frames_logical, logfile=logfile, scan_number=scan, setup=setup,
                                      follow_bragg=False)
     rocking_curve = np.zeros(numz)
@@ -135,11 +136,12 @@ if data.ndim == 3:
     ax0.legend(('data', 'interpolation'))
     plt.pause(0.1)
 
-    data = data.sum(axis=0)  # concatenate along the axis of the rocking curve
-
 ############################################
 # plot mask, monitor and concatenated data #
 ############################################
+data = data[11, :, :]  # select the first frame e.g. for detector mesh scan
+# data = data.sum(axis=0)  # concatenate along the axis of the rocking curve
+
 if save_mask:
     np.savez_compressed(detector.datadir+'hotpixels.npz', mask=mask)
 
