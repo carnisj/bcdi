@@ -265,9 +265,9 @@ class SetupPostprocessing(object):
             if self.rocking_angle == "outofplane":
                 print('rocking angle is omega')
                 # rocking omega angle clockwise around x at mu=0 (phi does not matter, above eta)
-                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([-pixel_x * np.cos(inplane),
                                                                        0,
-                                                                       -pixel_x * np.sin(inplane)])
+                                                                       pixel_x * np.sin(inplane)])
                 mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
                                                                        -pixel_y * np.cos(outofplane),
                                                                        pixel_y * np.cos(inplane) * np.sin(outofplane)])
@@ -278,9 +278,9 @@ class SetupPostprocessing(object):
             elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
                 print('rocking angle is mu')
                 # rocking mu angle anti-clockwise around y, mu below all other sample rotations
-                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([-pixel_x * np.cos(inplane),
                                                                        0,
-                                                                       -pixel_x * np.sin(inplane)])
+                                                                       pixel_x * np.sin(inplane)])
                 mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
                                                                        -pixel_y * np.cos(outofplane),
                                                                        pixel_y * np.cos(inplane) * np.sin(outofplane)])
