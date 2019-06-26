@@ -835,7 +835,7 @@ def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixel
         data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
                                                                debugging=debugging)
     elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
-        data, mask3d, monitor, frames_logical = load_sixs_data(logfile, detector, flatfield, hotpixels,
+        data, mask3d, monitor, frames_logical = load_sixs_data(logfile, beamline, detector, flatfield, hotpixels,
                                                                debugging=debugging)
     elif beamline == 'CRISTAL':
         data, mask3d, monitor, frames_logical = load_cristal_data(logfile, detector, flatfield, hotpixels,
@@ -1034,11 +1034,12 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, debugging=False):
     return data, mask3d, monitor, frames_logical
 
 
-def load_sixs_data(logfile, detector, flatfield, hotpixels, debugging=False):
+def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=False):
     """
     Load SIXS data, apply filters and concatenate it for phasing.
 
     :param logfile: nxsReady Dataset object of SIXS .nxs scan file
+    :param beamline: 'SIXS_2018' or 'SIXS_2019'
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
@@ -1051,7 +1052,13 @@ def load_sixs_data(logfile, detector, flatfield, hotpixels, debugging=False):
     """
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
-    data = logfile.mfilm[:]
+    if beamline == 'SIXS_2018':
+        data = logfile.mfilm[:]
+    else:
+        try:
+            data = logfile.mpx_image[:]
+        except:
+            data = logfile.maxpix[:]
     monitor = logfile.imon1[:]
 
     frames_logical = np.ones(data.shape[0])
