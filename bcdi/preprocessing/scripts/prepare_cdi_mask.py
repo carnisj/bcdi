@@ -18,7 +18,7 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import gc
-sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
@@ -38,8 +38,8 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [556]  # list or array of scan numbers
-root_folder = "C:/Users/carnis/Work Folders/Documents/data/SIXS/"
+scans = [263]  # list or array of scan numbers
+root_folder = "C:/Users/Jerome/Documents/data/SIXS/"
 sample_name = "S"  # "SN"  #
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -55,7 +55,7 @@ fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
 fix_size = []  # [10, 170, 0, 512, 0, 480]  # crop the array to predefined size, leave it to [] otherwise
 # [zstart, zstop, ystart, ystop, xstart, xstop]
 ###########################
-center_fft = 'crop_asym_ZYX'
+center_fft = 'do_nothing'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'do_nothing'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
@@ -79,14 +79,14 @@ save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'SIXS_2018'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'SIXS_2019'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = root_folder + 'alias_dict.txt'
+specfile_name = root_folder + 'alias_dict_2019.txt'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically root_folder + 'alias_dict.txt'
+# template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
 # template for SIXS_2019: ''
 # template for P10: sample_name + '_%05d'
 # template for CRISTAL: ''
@@ -97,12 +97,12 @@ detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 1495  # horizontal pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
-roi_detector = []
+roi_detector = []  # [0, 256, 0, 256]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'align.spec_ascan_mu_%05d.nxs'
+template_imagefile = 'align_ascan_mu_%05d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
