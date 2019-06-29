@@ -568,7 +568,8 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
     elif beamline == 'SIXS_2019':  # no specfile, load directly the dataset
         import bcdi.preprocessing.ReadNxs3 as ReadNxs3
 
-        logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number)
+        logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number,
+                                   alias_dict=filename)
 
     elif beamline == 'ID01':  # load spec file
         from silx.io.specfile import SpecFile
@@ -1054,17 +1055,19 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
 
     if beamline == 'SIXS_2018':
         data = logfile.mfilm[:]
+        monitor = logfile.imon1[:]
     else:
-        try:
+        try:  # continuous mode
             data = logfile.mpx_image[:]
-        except:
+        except AttributeError:  # SBS mode
             data = logfile.maxpix[:]
-    monitor = logfile.imon1[:]
+        monitor = logfile.imon0[:]
 
     frames_logical = np.ones(data.shape[0])
     frames_logical[0] = 0  # first frame is duplicated
 
     nb_img = data.shape[0]
+    newdata = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
     for idx in range(nb_img):
         ccdraw = data[idx, :, :]
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
@@ -1074,14 +1077,14 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
             raise ValueError('Detector ', detector.name, 'not supported for SIXS')
         ccdraw = flatfield * ccdraw
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
-        data[idx, :, :] = ccdraw
+        newdata[idx, :, :] = ccdraw
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
+    newdata, mask_2d = check_pixels(data=newdata, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-    mask3d[np.isnan(data)] = 1
-    data[np.isnan(data)] = 0
-    return data, mask3d, monitor, frames_logical
+    mask3d[np.isnan(newdata)] = 1
+    newdata[np.isnan(newdata)] = 0
+    return newdata, mask3d, monitor, frames_logical
 
 
 def mask_eiger(data, mask):
