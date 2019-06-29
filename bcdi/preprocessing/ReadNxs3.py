@@ -21,12 +21,13 @@ class DataSet(object):
     Meant to be used on the data produced after the 11/03/2019 data of the
     upgrade of the datarecorder
     """
-    def __init__(self, filename, directory=''):
+    def __init__(self, filename, directory='', alias_dict=''):
         """
         Initialize parameters of the Dataset.
 
         :param filename: /path/filename or just filename  of the data
         :param directory: (optional) path of the data
+        :param alias_dict: (optional) path of the file alias_dict.txt
         """
         
         self.directory = directory 
@@ -35,7 +36,7 @@ class DataSet(object):
         aliases = []  # used for SBS imported with alias_dict file
         
         try:
-            self._alias_dict = pickle.load(open('/home/andrea/MyPy3/alias_dict.txt', 'rb'))
+            self._alias_dict = pickle.load(open(alias_dict, 'rb'))
         except FileNotFoundError:
             print('NO ALIAS')
             self._alias_dict = None
