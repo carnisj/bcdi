@@ -460,7 +460,9 @@ class Detector(object):
 
         if len(roi) == 0:
             self.roi = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+            self.roiUser = False
         elif len(roi) == 4:
             self.roi = roi
+            self.roiUser = True
         else:
             raise ValueError("Incorrect value for parameter 'roi'")
