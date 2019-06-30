@@ -569,7 +569,7 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
     elif beamline == 'SIXS_2019':  # no specfile, load directly the dataset
         import bcdi.preprocessing.ReadNxs3 as ReadNxs3
 
-        logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number)
+        logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number,alias_dict=filename)
 
     elif beamline == 'ID01':  # load spec file
         from silx.io.specfile import SpecFile
