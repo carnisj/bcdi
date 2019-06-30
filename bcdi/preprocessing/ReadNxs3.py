@@ -38,7 +38,7 @@ class DataSet(object):
         try:
             self._alias_dict = pickle.load(open(alias_dict, 'rb'))
         except FileNotFoundError:
-            print('NO ALIAS')
+            print('NO ALIAS: %s'%alias_dict)
             self._alias_dict = None
             
         def is_empty(any_structure):

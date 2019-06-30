@@ -5,7 +5,7 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
-import hdf5plugin  # for P10, should be imported before h5py or PyTables
+#import hdf5plugin  # for P10, should be imported before h5py or PyTables
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
@@ -23,18 +23,18 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 1406
-root_folder = "H:/data/P10_2019/raw/"
-sample_name = "align_02"  # "S"
+scan = 140
+root_folder = '/nfs/ruche-sixs/sixs-soleil/com-sixs/2019/Run3/20181680_Richard/'
+sample_name = ""  # "S"
 save_mask = False  # set to True to save the mask
 fit_rockingcurve = False  # set to True if you want a fit of the rocking curve
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'SIXS_2019'  # name of the beamlis[scan_nb]ne, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
-rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = sample_name + '_%05d'
+rocking_angle = "inplane"  # "outofplane" or "inplane"
+specfile_name = root_folder + 'analysis/alias_dict.txt'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -44,12 +44,12 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 bragg_position = []  # Bragg peak position [vertical, horizontal], leave it as [] if there is a single peak
-peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
+peak_method = 'max'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = '_data_%06d.h5'
+template_imagefile = 'align_ascan_y_%05d.nxs'#'align_ascan_mu_%05d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -66,15 +66,18 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 
 setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle)
 
-if beamline != 'P10':
-    homedir = root_folder + sample_name + str(scan) + '/'
-    detector.datadir = homedir + "data/"
-else:
+if setup.beamline == 'P10':
     specfile_name = specfile_name % scan
     homedir = root_folder + specfile_name + '/'
     detector.datadir = homedir + 'e4m/'
     template_imagefile = specfile_name + template_imagefile
     detector.template_imagefile = template_imagefile
+elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
+    homedir = root_folder 
+    detector.datadir = homedir + "align/"
+else:
+    homedir = root_folder + sample_name + str(scan) + '/'
+    detector.datadir = homedir + "data/"
 
 flatfield = pru.load_flatfield(flatfield_file)
 hotpix_array = pru.load_hotpixels(hotpixels_file)
@@ -139,8 +142,8 @@ if data.ndim == 3 and fit_rockingcurve:
 ############################################
 # plot mask, monitor and concatenated data #
 ############################################
-data = data[11, :, :]  # select the first frame e.g. for detector mesh scan
-# data = data.sum(axis=0)  # concatenate along the axis of the rocking curve
+#data = data[data.shape[0]//2, :, :]  # select the first frame e.g. for detector mesh scan
+data = data.sum(axis=0)  # concatenate along the axis of the rocking curve
 
 if save_mask:
     np.savez_compressed(detector.datadir+'hotpixels.npz', mask=mask)

@@ -568,8 +568,7 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
     elif beamline == 'SIXS_2019':  # no specfile, load directly the dataset
         import bcdi.preprocessing.ReadNxs3 as ReadNxs3
 
-        logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number,
-                                   alias_dict=filename)
+        logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number,alias_dict=filename)
 
     elif beamline == 'ID01':  # load spec file
         from silx.io.specfile import SpecFile
@@ -616,6 +615,60 @@ def find_bragg(data, peak_method):
 
     return z0, y0, x0
 
+def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixels=None, debugging=False):
+    """
+    Load ID01 data, apply filters and concatenate it for phasing.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL'
+    :param flatfield: the 2D flatfield array
+    :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
+    :param debugging: set to True to see plots
+    :return:
+     - the 3D data array in the detector frame and the 3D mask array
+     - the monitor values for normalization
+     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    """
+    if flatfield is None:
+        flatfield = np.ones((detector.nb_pixel_y, detector.nb_pixel_x))
+    if hotpixels is None:
+        hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+
+    if beamline == 'ID01':
+        data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
+                                                               debugging=debugging)
+    elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
+        data, mask3d, monitor, frames_logical = load_sixs_data(logfile, beamline, detector, flatfield, hotpixels,
+                                                               debugging=debugging)
+    elif beamline == 'CRISTAL':
+        data, mask3d, monitor, frames_logical = load_cristal_data(logfile, detector, flatfield, hotpixels,
+                                                                  debugging=debugging)
+    elif beamline == 'P10':
+        data, mask3d, monitor, frames_logical = load_p10_data(logfile, detector, flatfield, hotpixels,
+                                                              debugging=debugging)
+    else:
+        raise ValueError('Wrong value for "rocking_angle" parameter')
+
+    # remove indices where frames_logical=0
+    nbz, nby, nbx = data.shape
+    nb_frames = (frames_logical != 0).sum()
+
+    newdata = np.zeros((nb_frames, nby, nbx))
+    newmask = np.zeros((nb_frames, nby, nbx))
+    # do not process the monitor here, it is done in normalize_dataset()
+
+    nb_overlap = 0
+    for idx in range(len(frames_logical)):
+        if frames_logical[idx]:
+            newdata[idx - nb_overlap, :, :] = data[idx, :, :]
+            newmask[idx - nb_overlap, :, :] = mask3d[idx, :, :]
+        else:
+            nb_overlap = nb_overlap + 1
+
+    return newdata, newmask, monitor, frames_logical
 
 def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False, hxrd=None,
             debugging=False, **kwargs):
@@ -810,62 +863,6 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
     return data, mask3d, monitor, frames_logical
 
 
-def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixels=None, debugging=False):
-    """
-    Load ID01 data, apply filters and concatenate it for phasing.
-
-    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL'
-    :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
-    :param debugging: set to True to see plots
-    :return:
-     - the 3D data array in the detector frame and the 3D mask array
-     - the monitor values for normalization
-     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    """
-    if flatfield is None:
-        flatfield = np.ones((detector.nb_pixel_y, detector.nb_pixel_x))
-    if hotpixels is None:
-        hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
-    if beamline == 'ID01':
-        data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
-                                                               debugging=debugging)
-    elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
-        data, mask3d, monitor, frames_logical = load_sixs_data(logfile, beamline, detector, flatfield, hotpixels,
-                                                               debugging=debugging)
-    elif beamline == 'CRISTAL':
-        data, mask3d, monitor, frames_logical = load_cristal_data(logfile, detector, flatfield, hotpixels,
-                                                                  debugging=debugging)
-    elif beamline == 'P10':
-        data, mask3d, monitor, frames_logical = load_p10_data(logfile, detector, flatfield, hotpixels,
-                                                              debugging=debugging)
-    else:
-        raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    # remove indices where frames_logical=0
-    nbz, nby, nbx = data.shape
-    nb_frames = (frames_logical != 0).sum()
-
-    newdata = np.zeros((nb_frames, nby, nbx))
-    newmask = np.zeros((nb_frames, nby, nbx))
-    # do not process the monitor here, it is done in normalize_dataset()
-
-    nb_overlap = 0
-    for idx in range(len(frames_logical)):
-        if frames_logical[idx]:
-            newdata[idx - nb_overlap, :, :] = data[idx, :, :]
-            newmask[idx - nb_overlap, :, :] = mask3d[idx, :, :]
-        else:
-            nb_overlap = nb_overlap + 1
-
-    return newdata, newmask, monitor, frames_logical
-
-
 def load_flatfield(flatfield_file):
     """
     Load a flatfield file.
@@ -1040,7 +1037,7 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
     Load SIXS data, apply filters and concatenate it for phasing.
 
     :param logfile: nxsReady Dataset object of SIXS .nxs scan file
-    :param beamline: 'SIXS_2018' or 'SIXS_2019'
+    :param beamline: SIXS_2019 or SIXS_2018
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
@@ -1057,17 +1054,17 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
         data = logfile.mfilm[:]
         monitor = logfile.imon1[:]
     else:
-        try:  # continuous mode
+        try:
             data = logfile.mpx_image[:]
-        except AttributeError:  # SBS mode
+        except:
             data = logfile.maxpix[:]
-        monitor = logfile.imon0[:]
+            monitor = logfile.imon0[:]
+
 
     frames_logical = np.ones(data.shape[0])
     frames_logical[0] = 0  # first frame is duplicated
 
     nb_img = data.shape[0]
-    newdata = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
     for idx in range(nb_img):
         ccdraw = data[idx, :, :]
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
@@ -1077,14 +1074,14 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
             raise ValueError('Detector ', detector.name, 'not supported for SIXS')
         ccdraw = flatfield * ccdraw
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
-        newdata[idx, :, :] = ccdraw
+        data[idx, :, :] = ccdraw
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
-    newdata, mask_2d = check_pixels(data=newdata, mask=mask_2d, debugging=debugging)
+    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-    mask3d[np.isnan(newdata)] = 1
-    newdata[np.isnan(newdata)] = 0
-    return newdata, mask3d, monitor, frames_logical
+    mask3d[np.isnan(data)] = 1
+    data[np.isnan(data)] = 0
+    return data, mask3d, monitor, frames_logical
 
 
 def mask_eiger(data, mask):
