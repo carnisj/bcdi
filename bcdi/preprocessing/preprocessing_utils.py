@@ -15,6 +15,7 @@ from scipy.interpolate import RegularGridInterpolator
 import xrayutilities as xu
 import fabio
 import os
+import pdb
 
 
 def align_diffpattern(reference_data, data, mask, method='registration', combining_method='rgi'):
@@ -568,7 +569,7 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
     elif beamline == 'SIXS_2019':  # no specfile, load directly the dataset
         import bcdi.preprocessing.ReadNxs3 as ReadNxs3
 
-        logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number,alias_dict=filename)
+        logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number)
 
     elif beamline == 'ID01':  # load spec file
         from silx.io.specfile import SpecFile
@@ -702,10 +703,10 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
             follow_bragg
         except NameError:
             raise TypeError("Parameter 'follow_bragg' not provided, defaulting to False")
-
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           beamline=setup.beamline, flatfield=flatfield,
                                                           hotpixels=hotpixels, debugging=debugging)
+    
     if not orthogonalize:
         return [], rawdata, [], rawmask, [], frames_logical, monitor
     else:
@@ -1048,7 +1049,6 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     """
-    mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
     if beamline == 'SIXS_2018':
         data = logfile.mfilm[:]
@@ -1059,10 +1059,23 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
         except:
             data = logfile.maxpix[:]
             monitor = logfile.imon0[:]
-
+    
+    if detector.roiUser:
+        # apply roi
+        slice0 = slice(detector.roi[0],detector.roi[1],1)
+        slice1 = slice(detector.roi[2],detector.roi[3],1)
+        
+        data = data[:,slice0,slice1]
+        hotpixels = hotpixels[slice0,slice1]
+        flatfield = flatfield[slice0,slice1]
+        mask_2d = np.zeros_like(data[0,:,:])
+        
+    else: 
+        mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x)) 
+        # load data as usual
 
     frames_logical = np.ones(data.shape[0])
-    frames_logical[0] = 0  # first frame is duplicated
+    #frames_logical[0] = 0  # first frame is duplicated
 
     nb_img = data.shape[0]
     for idx in range(nb_img):
@@ -1073,10 +1086,10 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
         else:
             raise ValueError('Detector ', detector.name, 'not supported for SIXS')
         ccdraw = flatfield * ccdraw
-        ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        #ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
         data[idx, :, :] = ccdraw
 
-    mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    #mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
@@ -1476,6 +1489,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, deb
 
     # crop/pad monitor depending on frames_logical array
     monitor = np.zeros((frames_logical != 0).sum())
+    print(frames_logical,frames_logical.shape)
     nb_overlap = 0
     nb_padded = 0
     for idx in range(len(frames_logical)):
@@ -1489,7 +1503,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, deb
             monitor[idx - nb_overlap] = raw_monitor[idx-nb_padded]
         else:
             nb_overlap = nb_overlap + 1
-
+    print(monitor.shape,monitor)
     if nb_padded != 0:
         print('Monitor value set to 1 for ', nb_padded, ' frames padded')
 
