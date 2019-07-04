@@ -22,6 +22,7 @@ import collections
 from functools import partial
 from matplotlib.colors import LogNorm
 import h5py as h5
+import scipy.ndimage
 
 class maskMaker(object):
 	"""
@@ -43,6 +44,8 @@ class maskMaker(object):
 		self.set_hotpix(hotpix)
 		self.set_aliens(aliens)
 		self.set_detector(detector)
+		# print('here6',self.hotpix.shape,self.hotpix.sum()/self.hotpix.shape[0],self.hotpix.max())
+
 	
 	def set_data2mask(self,data2mask):
 		self.data2mask = data2mask 
@@ -60,6 +63,7 @@ class maskMaker(object):
 		
 	def set_hotpix(self,hotpix):
 		# hotpixel should be 2D array or list of points
+		
 		if isinstance(hotpix,collections.Sequence):
 			self.hotpix = np.zeros(self.d2ms)
 			# take sequence x,y,z indices
@@ -78,7 +82,9 @@ class maskMaker(object):
 				self.hotpix = np.copy(tmp)
 			else: #dims equal
 				self.hotpix = hotpix
+
 		else:
+			print('here')
 			self.hotpix = np.zeros(self.d2ms)
 		
 	def set_aliens(self,aliens):
@@ -109,9 +115,9 @@ class maskMaker(object):
 					self.detector[p[0],p[1]] = 1
 				
 		elif isinstance(detector,np.ndarray):
-			self.hotpix = detector
+			self.detector = detector
 		else:
-			self.hotpix = np.zeros(self.d2ms)
+			self.detector = np.zeros(self.d2ms)
 	
 	def set_mask(self,mask):
 		if mask is not None:
@@ -175,14 +181,15 @@ class maskInteraction(maskMaker):
 		self.max_cbar = max_cbar
 		self.startIdx = np.zeros(len(self.d2ms))
 		self.currentIdx = np.zeros(len(self.d2ms))
-		self.vmin = 0
-		self.vmax = max_cbar 
+		self.vmin = 0.1
+		self.vmax = 5
 		self.width=5
 		self.idx=0
 		self.fig_title = ''
 		self.flag_hotpix = flag_hotpix
 		self.flag_aliens = flag_aliens
-		self.flag_add = True	
+		self.flag_add = True
+		self.flag_pressed = False	
 		self.flag_mask_zero_event = mask_zero_event	
 		self.init_fig2mask(flag_interact=flag_interact, 
 								flag_aliens=flag_aliens, 
@@ -210,6 +217,9 @@ class maskInteraction(maskMaker):
 					data = np.sum(self.tmpdata, axis=self.dim)
 					self.mask = np.zeros_like(data) #
 					self.mask = self.get_hotpix()[0,:,:]
+					#plt.figure()
+					#plt.imshow(self.mask)
+					#plt.show()
 					
 					if self.flag_mask_zero_event:
 						self.mask+=self.mask_zero_event()
@@ -234,12 +244,21 @@ class maskInteraction(maskMaker):
 
 	def spawn_figure(self,data,press_key,on_click,background_plot='0.5',):
 		self.idx=0
-		self.fig_mask = plt.figure()
+		self.fig_mask = plt.figure('maskMaker 1.0')
 		#data[self.mask==1] = 0
-		plt.imshow(data,norm=LogNorm())#, vmin = self.vmin, vmax = self.vmax)
+		self.vmax = data.max()
+		plt.imshow(data,norm=LogNorm(vmin = self.vmin, vmax = self.vmax))#, vmin = self.vmin, vmax = self.vmax)
 		self.update_fig_title()
+		ax=plt.gca()
+		self.refax_xlim = ax.get_xlim()
+		self.refax_ylim = ax.get_ylim()
+		self.ax_xlim = self.refax_xlim
+		self.ax_ylim = self.refax_ylim
 		plt.connect('key_press_event', press_key)
 		plt.connect('button_press_event', on_click) # modifies mask and updates figure
+		plt.connect('motion_notify_event', self.on_motion)
+		plt.connect('button_release_event', self.on_release)
+		plt.connect('scroll_event',self.zoom_fun)
 		plt.title(self.fig_title)
 		self.fig_mask.set_facecolor(background_plot)
 		plt.show()
@@ -279,7 +298,10 @@ class maskInteraction(maskMaker):
 		self.plotdata[self.tmpmask==1] = 0
 				
 		plt.title(self.fig_title)
-		plt.imshow(self.plotdata,norm=LogNorm())#, self.vmin, self.vmax)
+		plt.imshow(self.plotdata,norm=LogNorm(vmin = self.vmin, vmax = self.vmax))#, self.vmin, self.vmax)
+		ax = plt.gca()
+		ax.set_xlim( self.ax_xlim )
+		ax.set_ylim( self.ax_ylim )
 		plt.draw()
 		
 	def on_click(self,event):
@@ -290,6 +312,7 @@ class maskInteraction(maskMaker):
 		:param event: mouse click event
 		:return: updated list of vertices which defines a polygon to be masked
 		"""
+		self.flag_pressed = True
 		if not event.inaxes:
 			return
 		if not self.flag_pause:
@@ -299,6 +322,25 @@ class maskInteraction(maskMaker):
 			self.xyflag.append(self.flag_add)
 			self.modify_mask(flag_add = self.flag_add, pos=[_y, _x], width = self.width)
 		return		
+		
+	def on_release(self, event):
+		'''When mouse is on plot and button is released, do nothing'''
+		self.flag_pressed = False
+
+	def on_motion(self, event):
+		'''If the mouse is on plot and if the mouse button is pressed, modify mask'''
+		if self.flag_pressed:
+			# redraw the rect
+			if not event.inaxes:
+				return
+			if not self.flag_pause:
+				_x, _y = int(np.rint(event.xdata)), int(np.rint(event.ydata))
+				if not self.xy[-1] == [_x, _y]:
+					self.xy.append([_x, _y])
+					self.xywidth.append(self.width)
+					self.xyflag.append(self.flag_add)
+					self.modify_mask(flag_add = self.flag_add, pos=[_y, _x], width = self.width)
+			return	            
 	
 	def modify_mask(self, flag_add = True, pos = [0,0], width = 0):
 		a2m_min = np.array(pos) - int(width/2)
@@ -355,6 +397,14 @@ class maskInteraction(maskMaker):
 		elif self.dim==2:
 			self.mask[:,:,self.idx] = 0		
 		self.update_fig2mask()		
+
+	def add_threshold_pixels(self,flag_lowthresh = True):
+		if flag_lowthresh:
+			self.mask[self.data<threshold] = 1
+		elif not flag_lowthresh:
+			self.mask[self.data>threshold] = 1
+		else:
+			print('threshold not applied')
 		
 		
 	def update_fig_title(self, title = None):
@@ -370,7 +420,7 @@ class maskInteraction(maskMaker):
 		:return: updated data, mask and controls
 		"""
 		key = event.key
-		title =  "x to pause/resume masking for pan/zoom \n"
+		title =  "scroll to zoom, hold mouse to multimask \n"
 		title += "m mask ; b unmask ; n undo; q quit ; \n"
 		title += "up larger ; down smaller ; right darker ; left brighter"
 		
@@ -393,14 +443,14 @@ class maskInteraction(maskMaker):
 			print('width: ', self.width)
 			
 		elif key == 'right':
-			self.vmax += 1
+			self.vmax *=1.5
 			print('vmax: ', self.vmax)
-			self.update_fig2mask()			
+			self.update_fig2mask()
 
 		elif key == 'left':
-			self.vmax -= 1
-			if self.vmax < 1:
-				self.vmax = 1
+			self.vmax *=0.5
+			if self.vmax < self.vmin:
+				self.vmax = self.vmin+0.1
 			print('vmax: ', self.vmax)
 			self.update_fig2mask()
 						
@@ -420,15 +470,7 @@ class maskInteraction(maskMaker):
 			self.xy = self.xy[:-1]
 			self.xywidth = self.xywidth[:-1]
 			self.xyflag = self.xyflag[:-1]
-
-		elif key == 'x':
-			if not self.flag_pause:
-				self.flag_pause = True
-				print('pause for pan/zoom')
-			else:
-				self.flag_pause = False
-				print('resume masking')
-
+		
 		elif key == 'w':
 			self.save2filedialog()
 
@@ -445,7 +487,7 @@ class maskInteraction(maskMaker):
 		:return: updated data, mask and controls
 		"""
 		key = event.key
-		title = " Frame: %i/%i \n"
+		title = " Frame: %i/%i scroll to zoom, hold mouse to multimask \n"
 		title += "m mask ; b unmask ; q quit ; u next frame ; z previous frame\n"
 		title += "j load last mask ; k restart current mask " #right darker ; left brighter"
 		self.update_fig_title(title)
@@ -487,17 +529,20 @@ class maskInteraction(maskMaker):
 			self.load_previous_idx_mask()
 
 		elif key == 'k':
-			self.zero_current_idx()
+			self.zero_current_idx()		
+		
+		elif key == 't':
+			self.add_threshold_pixels()
 			
 		elif key == 'right':
-			self.vmax += 1
+			self.vmax *=1.5
 			print('vmax: ', self.vmax)
 			self.update_fig2mask()
 
 		elif key == 'left':
-			self.vmax -= 1
-			if self.vmax < 1:
-				self.vmax = 1
+			self.vmax *=0.5
+			if self.vmax < self.vmin:
+				self.vmax = self.vmin+0.1
 			print('vmax: ', self.vmax)
 			self.update_fig2mask()
 			
@@ -518,20 +563,36 @@ class maskInteraction(maskMaker):
 			self.xywidth = self.xywidth[:-1]
 			self.xyflag = self.xyflag[:-1]
 
-		elif key == 'x':
-			if not self.flag_pause:
-				self.flag_pause = True
-				print('pause for pan/zoom')
-			else:
-				self.flag_pause = False
-				print('resume masking')
-
 		elif key == 'w':
 			self.save2filedialog()
 
 		elif key == 'q':
 			plt.close(self.fig_mask)
-								
+
+	def zoom_fun(self, event):
+		# get the current x and y limits
+		base_scale=.95
+		ax=plt.gca()
+		xdata = event.xdata # get event x location
+		ydata = event.ydata # get event y location
+
+		if event.button == 'down':
+			# deal with zoom in
+			scale_factor = 1/base_scale
+			self.ax_xlim = [xdata-10,xdata+10]
+			self.ax_ylim = [ydata-10,ydata+10]
+
+		elif event.button == 'up':
+			# deal with zoom out
+			self.ax_xlim = self.refax_xlim
+			self.ax_ylim = self.refax_ylim			
+
+		else:
+			# deal with something that should never happen
+			scale_factor = 1
+			#print(event.button)
+
+		self.update_fig2mask() # force re-draw								
 			
 	def save2filedialog(self):
 		#		root = tk.Tk()
@@ -585,26 +646,142 @@ class maskInteraction(maskMaker):
 		self.e1.delete(0, tk.END)
 		self.e2.delete(0, tk.END)
 		
+
+def find_outlier_pixels(data,tolerance=3,worry_about_edges=True):
+    #This function finds the hot or dead pixels in a 2D dataset. 
+    #tolerance is the number of standard deviations used to cutoff the hot pixels
+    #If you want to ignore the edges and greatly speed up the code, then set
+    #worry_about_edges to False.
+    #
+    #The function returns a list of hot pixels and also an image with with hot pixels removed
+
+    from scipy.ndimage import median_filter
+    blurred = median_filter(data, size=2)
+    difference = data - blurred
+    threshold = 10*np.std(difference)
+
+    #find the hot pixels, but ignore the edges
+    hot_pixels = np.nonzero((np.abs(difference[1:-1,1:-1])>threshold) )
+    hot_pixels = np.array(hot_pixels) + 1 #because we ignored the first row and first column
+
+    fixed_image = np.copy(data) #This is the image with the hot pixels removed
+    for y,x in zip(hot_pixels[0],hot_pixels[1]):
+        fixed_image[y,x]=blurred[y,x]
+
+    if worry_about_edges == True:
+        height,width = np.shape(data)
+
+        ###Now get the pixels on the edges (but not the corners)###
+
+        #left and right sides
+        for index in range(1,height-1):
+            #left side:
+            med  = np.median(data[index-1:index+2,0:2])
+            diff = np.abs(data[index,0] - med)
+            if diff>threshold: 
+                hot_pixels = np.hstack(( hot_pixels, [[index],[0]]  ))
+                fixed_image[index,0] = med
+
+            #right side:
+            med  = np.median(data[index-1:index+2,-2:])
+            diff = np.abs(data[index,-1] - med)
+            if diff>threshold: 
+                hot_pixels = np.hstack(( hot_pixels, [[index],[width-1]]  ))
+                fixed_image[index,-1] = med
+
+        #Then the top and bottom
+        for index in range(1,width-1):
+            #bottom:
+            med  = np.median(data[0:2,index-1:index+2])
+            diff = np.abs(data[0,index] - med)
+            if diff>threshold: 
+                hot_pixels = np.hstack(( hot_pixels, [[0],[index]]  ))
+                fixed_image[0,index] = med
+
+            #top:
+            med  = np.median(data[-2:,index-1:index+2])
+            diff = np.abs(data[-1,index] - med)
+            if diff>threshold: 
+                hot_pixels = np.hstack(( hot_pixels, [[height-1],[index]]  ))
+                fixed_image[-1,index] = med
+
+        ###Then the corners###
+
+        #bottom left
+        med  = np.median(data[0:2,0:2])
+        diff = np.abs(data[0,0] - med)
+        if diff>threshold: 
+            hot_pixels = np.hstack(( hot_pixels, [[0],[0]]  ))
+            fixed_image[0,0] = med
+
+        #bottom right
+        med  = np.median(data[0:2,-2:])
+        diff = np.abs(data[0,-1] - med)
+        if diff>threshold: 
+            hot_pixels = np.hstack(( hot_pixels, [[0],[width-1]]  ))
+            fixed_image[0,-1] = med
+
+        #top left
+        med  = np.median(data[-2:,0:2])
+        diff = np.abs(data[-1,0] - med)
+        if diff>threshold: 
+            hot_pixels = np.hstack(( hot_pixels, [[height-1],[0]]  ))
+            fixed_image[-1,0] = med
+
+        #top right
+        med  = np.median(data[-2:,-2:])
+        diff = np.abs(data[-1,-1] - med)
+        if diff>threshold: 
+            hot_pixels = np.hstack(( hot_pixels, [[height-1],[width-1]]  ))
+            fixed_image[-1,-1] = med
+
+    return hot_pixels,fixed_image
+
 			
-datapath = '/data/id01/inhouse/otherlightsources/2019_sixs/results/S263/pynxraw/S263_pynx_norm_128_252_224.npz'
-data = np.load(datapath)['data']
+#datapath = '/data/id01/inhouse/otherlightsources/2019_sixs/results/S263/pynxraw/S263_pynx_norm_128_252_224.npz'
+#data = np.load(datapath)['data']
+
+datapath = '/data/id01/inhouse/otherlightsources/2019_sixs/Pt/Pt_ascan_mu_01301.nxs'
+
+with h5.File(datapath,'r') as h5f:
+	#data=h5f['/com/scan_data/mpx_image'][()]
+	data=h5f['/com/scan_data/data_02'][()]
+	
+datapath = '/data/id01/inhouse/otherlightsources/2019_sixs/analysis/mpx4_mask.h5'
+d1=data.sum(axis=0)
+#print(d1.shape)
+#hot_pixels,fixed_image = find_outlier_pixels(d1)
+#plt.imshow(hot_pixels)
+#plt.show()
+#sys.exit()
+
+with h5.File(datapath,'r') as h5f:
+	mask=h5f['mask'][()]
+	
+print(mask.sum())
+	
+hotpix = mask
+mask[d1>3E5] = 1 
+hotpix = np.copy(mask)
 mask = np.zeros_like(data)
-hotpix = np.zeros_like(data)
 
+print(data.shape,hotpix.shape)
 maskMaker = maskMaker(data,mask=mask,hotpix=hotpix)
-maskInteraction = maskInteraction(data,mask=mask,hotpix=hotpix)
 
+maskInteraction = maskInteraction(data,mask=mask,hotpix=hotpix,flag_aliens=True, mask_zero_event = False)
 
 """
 # save the data 
-outpath = 'some_path.h5'
+outpath = '20190704_hotpixels.h5'
 with h5.File(outpath,'a') as h5f:
 	h5f['mask'] = maskInteraction.get_mask()
 	h5f['data'] = maskInteraction.get_data2mask()
+	h5f['hotpix'] = maskInteraction.get_data2mask()
 """
 	
 # TODO:
-# median filter pixels
+# median filter pixels - not relate to mask - do not do this
 # add nexus formatting for deadpixel values in mask array
 # save to file dialog doesnt work	
+# kill pixels above a threshold	- open image with slider to define threshold, plus OK button? TO BE FINISHED
 
