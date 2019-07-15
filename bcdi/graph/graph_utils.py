@@ -753,6 +753,35 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
 
 
+def plot_3dmesh(vertices, faces, data_shape):
+    """
+
+    :param vertices:
+    :param faces:
+    :param data_shape: tuple corresponding to the 3d data shape
+    :return: figure and axes
+    """
+    from mpl_toolkits.mplot3d import Axes3D
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
+    plt.ion()
+    myfig = plt.figure(figsize=(10, 10))
+    myax = Axes3D(myfig)
+    mymesh = Poly3DCollection(vertices[faces])
+    mymesh.set_edgecolor('k')
+    myax.add_collection3d(mymesh)
+    myax.set_xlim(0, data_shape[0])
+    myax.set_xlabel('Z')
+    myax.set_ylim(0, data_shape[1])
+    myax.set_ylabel('Y')
+    myax.set_zlim(0, data_shape[2])
+    myax.set_zlabel('X')
+    plt.title('Mesh - z axis flipped because of CXI convention')
+    plt.pause(0.1)
+    plt.ioff()
+    return myfig, myax
+
+
 def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 0, 0), amplitude_threshold=0.01):
     """
     Save arrays defined by their name in a single vti file.
