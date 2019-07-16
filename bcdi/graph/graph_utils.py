@@ -777,7 +777,8 @@ def plot_3dmesh(vertices, faces, data_shape):
     ax0.set_zlim(0, data_shape[2])
     ax0.set_zlabel('X')
     plt.title('Mesh - z axis flipped because of CXI convention')
-    plt.pause(0.1)
+
+    plt.pause(0.5)
     plt.ioff()
     return fig, ax0
 
