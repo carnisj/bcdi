@@ -759,27 +759,27 @@ def plot_3dmesh(vertices, faces, data_shape):
     :param vertices:
     :param faces:
     :param data_shape: tuple corresponding to the 3d data shape
-    :return: figure and axes
+    :return: figure and axe instances
     """
     from mpl_toolkits.mplot3d import Axes3D
     from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
     plt.ion()
-    myfig = plt.figure(figsize=(10, 10))
-    myax = Axes3D(myfig)
+    fig = plt.figure(figsize=(10, 10))
+    ax0 = Axes3D(fig)
     mymesh = Poly3DCollection(vertices[faces])
     mymesh.set_edgecolor('k')
-    myax.add_collection3d(mymesh)
-    myax.set_xlim(0, data_shape[0])
-    myax.set_xlabel('Z')
-    myax.set_ylim(0, data_shape[1])
-    myax.set_ylabel('Y')
-    myax.set_zlim(0, data_shape[2])
-    myax.set_zlabel('X')
+    ax0.add_collection3d(mymesh)
+    ax0.set_xlim(0, data_shape[0])
+    ax0.set_xlabel('Z')
+    ax0.set_ylim(0, data_shape[1])
+    ax0.set_ylabel('Y')
+    ax0.set_zlim(0, data_shape[2])
+    ax0.set_zlabel('X')
     plt.title('Mesh - z axis flipped because of CXI convention')
     plt.pause(0.1)
     plt.ioff()
-    return myfig, myax
+    return fig, ax0
 
 
 def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 0, 0), amplitude_threshold=0.01):
@@ -796,20 +796,26 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     """
     import vtk
     from vtk.util import numpy_support
+
+    if type(tuple_fieldnames) is tuple:
+        nb_fieldnames = len(tuple_fieldnames)
+    elif type(tuple_fieldnames) is str:
+        nb_fieldnames = 1
+
     if type(tuple_array) is tuple:
         nb_arrays = len(tuple_array)
-        nb_fieldnames = len(tuple_fieldnames)
         nb_dim = tuple_array[0].ndim
         if nb_dim != 3:  # wrong array dimension
             raise ValueError('save_to_vti() needs a 3D array')
         nbz, nby, nbx = tuple_array[0].shape
-    else:  # a single numpy.ndarray
+    elif type(tuple_array) is np.ndarray:
         nb_arrays = 1
-        nb_fieldnames = 1
         nb_dim = tuple_array.ndim
         if nb_dim != 3:  # wrong array dimension
             raise ValueError('save_to_vti() needs a 3D array')
         nbz, nby, nbx = tuple_array.shape
+    else:
+        raise TypeError('Invalid input for tuple_array')
 
     if nb_arrays != nb_fieldnames:
         print('Different number of arrays and field names')
