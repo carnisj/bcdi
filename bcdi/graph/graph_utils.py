@@ -801,6 +801,8 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
         nb_fieldnames = len(tuple_fieldnames)
     elif type(tuple_fieldnames) is str:
         nb_fieldnames = 1
+    else:
+        raise TypeError('Invalid input for tuple_fieldnames')
 
     if type(tuple_array) is tuple:
         nb_arrays = len(tuple_array)
