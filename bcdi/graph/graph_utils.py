@@ -829,7 +829,7 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     image_data.SetExtent(0, nbz - 1, 0, nby - 1, 0, nbx - 1)
 
     try:
-        amp_index = tuple_fieldnames.index('amp')
+        amp_index = tuple_fieldnames.index('amp')  # look for the substring 'amp'
         if nb_arrays > 1:
             amp_array = tuple_array[amp_index]
         else:
