@@ -62,12 +62,13 @@ def distance_threshold(myfit, myindices, mythreshold, myshape):
     return myplane, no_points
 
 
-def equiproj_splatt_segment(mynormals, mycolor, cmap=default_cmap, bw_method=0.03, min_distance=10,
+def equiproj_splatt_segment(mynormals, mycolor, weights, cmap=default_cmap, bw_method=0.03, min_distance=10,
                             background_threshold=-0.35, debugging=0):
     """
 
     :param mynormals: normals array
     :param mycolor: intensity array
+    :param weights: weights used in the gaussian kernel density estimation
     :param cmap: colormap used for plotting
     :param bw_method: bw_method of gaussian_kde
     :param min_distance: min_distance of corner_peaks()
@@ -331,7 +332,7 @@ def grow_facet(fit, plane, label, debugging=1):
     temp_plane[myindices[0].min():myindices[0].max() + 1, myindices[1].min():myindices[1].max() + 1,
                myindices[2].min(): myindices[2].max() + 1] = mycoord
     new_indices = np.nonzero(temp_plane)
-    temp_plane, no_points = distance_threshold(fit, new_indices, 0.25, temp_plane.shape)
+    temp_plane, no_points = distance_threshold(fit, new_indices, 0.5, temp_plane.shape)
 
     new_indices = np.nonzero(temp_plane)
     plane[new_indices[0], new_indices[1], new_indices[2]] = 1
@@ -566,10 +567,10 @@ def taubin_smooth(myfaces, myvertices, cmap=default_cmap, iterations=10, lamda=0
     """
     taubinsmooth: performs a back and forward Laplacian smoothing "without shrinking" of a triangulated mesh,
     as described by Gabriel Taubin (ICCV '95)
-    :param myfaces: ndarray of m*3 faces
-    :param myvertices: ndarray of n*3 vertices
+    :param myfaces: m*3 ndarray of m faces defined by 3 indices of vertices
+    :param myvertices: n*3 ndarray of n vertices defined by 3 positions
     :param cmap: colormap used for plotting
-    :param iterations: number of iterations for smoothing (default 10)
+    :param iterations: number of iterations for smoothing (default 30)
     :param lamda: smoothing variable 0 < lambda < mu < 1 (default 0.5)
     :param mu: smoothing variable 0 < lambda < mu < 1 (default 0.53)
     :param debugging: show plots for debugging
@@ -616,6 +617,7 @@ def taubin_smooth(myfaces, myvertices, cmap=default_cmap, iterations=10, lamda=0
     # and v2-v0 in each triangle
     # TODO: check direction of normals by dot product with the gradient of the support
     mynormals = np.cross(tris[::, 1] - tris[::, 0], tris[::, 2] - tris[::, 0])
+    areas = np.array([1/2 * np.linalg.norm(normal) for normal in mynormals])
     normals_length = np.sqrt(mynormals[:, 0]**2 + mynormals[:, 1]**2 + mynormals[:, 2]**2)
     mynormals = -1 * mynormals / normals_length[:, np.newaxis]   # flip and normalize normals
     # n is now an array of normalized normals, one per triangle.
@@ -644,7 +646,7 @@ def taubin_smooth(myfaces, myvertices, cmap=default_cmap, iterations=10, lamda=0
     err_normals = np.argwhere(np.isnan(mynormals[:, 0]))
     mynormals[err_normals, :] = mynormals[err_normals-1, :]
     plt.ioff()
-    return new_vertices, mynormals, mycolor, err_normals
+    return new_vertices, mynormals, areas, mycolor, err_normals
 
 
 def save_planes_vti(filename, voxel_size, tuple_array, tuple_fieldnames, plane_labels, planes, origin=(0, 0, 0),
