@@ -10,7 +10,7 @@ import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 import matplotlib.pyplot as plt
 import sys
-sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 from bcdi.utils import image_registration as reg
 from scipy.ndimage.measurements import center_of_mass
@@ -113,9 +113,64 @@ def align_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thresho
     return avg_obj, avg_flag
 
 
-def apodize(amp, phase, initial_shape, sigma=np.array([0.3, 0.3, 0.3]), mu=np.array([0.0, 0.0, 0.0]), debugging=False):
+def apodize(amp, phase, initial_shape, window, debugging=False, **kwargs):
     """
-    Apodize the complex array based on a 3D Gaussian window of the same shape.
+    Apodize the complex array based on the window of the same shape.
+    :param amp: 3D array, amplitude before apodization
+    :param phase: 3D array, phase before apodization
+    :param initial_shape: shape of the FFT used for phasing
+    :param window: window filtering function, 'gaussian' or 'tukey'
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :param kwargs:
+     - if 'gaussian': sigma and mu of the 3d gaussian, tuples of 3 floats
+     - if 'tukey': alpha (shape parameter) of the 3d Tukey window, tuple of 3 floats
+    :return: filtered amplitude, phase of the same shape as myamp
+    """
+    if amp.ndim != 3 or phase.ndim != 3:
+        raise ValueError('amp and phase should be 3D arrays')
+    if amp.shape != phase.shape:
+        raise ValueError('amp and phase must have the same shape\n'
+                         'amp is ', amp.shape, ' while phase is ', phase.shape)
+
+    for k in kwargs.keys():
+        if k in ['sigma']:
+            sigma = kwargs['sigma']
+        elif k in ['mu']:
+            mu = kwargs['mu']
+        elif k in ['alpha']:
+            alpha = kwargs['alpha']
+        else:
+            raise Exception("unknown keyword argument given: allowed is"
+                            "'fix_bragg', 'fix_size', 'pad_size' and 'q_values'")
+    try:
+        sigma
+    except NameError:  # sigma not declared
+        sigma = np.array([0.3, 0.3, 0.3])
+    try:
+        mu
+    except NameError:  # mu not declared
+        mu = np.array([0.0, 0.0, 0.0])
+    try:
+        alpha
+    except NameError:  # alpha not declared
+        alpha = np.array([0.5, 0.5, 0.5])
+
+    if window == 'gaussian':
+        filtered_amp, filtered_phase = apodize_gaussian(amp=amp, phase=phase, initial_shape=initial_shape,
+                                                        sigma=sigma, mu=mu, debugging=debugging)
+    elif window == 'tukey':
+        filtered_amp, filtered_phase = apodize_tukey(amp=amp, phase=phase, initial_shape=initial_shape,
+                                                     alpha=alpha, debugging=debugging)
+    else:
+        raise ValueError('Invalid window name')
+    return filtered_amp, filtered_phase
+
+
+def apodize_gaussian(amp, phase, initial_shape, sigma=np.array([0.3, 0.3, 0.3]), mu=np.array([0.0, 0.0, 0.0]),
+                     debugging=False):
+    """
+    Apodize the complex array based on a 3d Gaussian window of the same shape.
 
     :param amp: 3D array, amplitude before apodization
     :param phase: 3D array, phase before apodization
@@ -124,14 +179,8 @@ def apodize(amp, phase, initial_shape, sigma=np.array([0.3, 0.3, 0.3]), mu=np.ar
     :param mu: mu of the gaussian
     :param debugging: set to True to see plots
     :type debugging: bool
-    :return: normalized amplitude, phase of the same shape as myamp
+    :return: filtered amplitude, phase of the same shape as myamp
     """
-    if amp.ndim != 3 or phase.ndim != 3:
-        raise ValueError('amp and phase should be 3D arrays')
-    if amp.shape != phase.shape:
-        raise ValueError('amp and phase must have the same shape\n'
-                         'amp is ', amp.shape, ' while phase is ', phase.shape)
-
     nb_z, nb_y, nb_x = amp.shape
     nbz, nby, nbx = initial_shape
     myobj = crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx))
@@ -173,6 +222,58 @@ def apodize(amp, phase, initial_shape, sigma=np.array([0.3, 0.3, 0.3]), mu=np.ar
     if debugging:
         plt.figure()
         plt.imshow(abs(myobj[nbz // 2, :, :]))
+        plt.pause(0.1)
+    myobj = crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
+    return abs(myobj), np.angle(myobj)
+
+
+def apodize_tukey(amp, phase, initial_shape, alpha=np.array([0.5, 0.5, 0.5]), debugging=False):
+    """
+    Apodize the complex array based on a 3d Tukey window of the same shape.
+
+    :param amp: 3D array, amplitude before apodization
+    :param phase: 3D array, phase before apodization
+    :param initial_shape: shape of the FFT used for phasing
+    :param alpha: shape parameter of the 3d Tukey window, tuple of 3 floats
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :return: filtered amplitude, phase of the same shape as myamp
+    """
+    nb_z, nb_y, nb_x = amp.shape
+    myobj = crop_pad(amp * np.exp(1j * phase), initial_shape)
+    del amp, phase
+    gc.collect()
+    if debugging:
+        plt.figure()
+        plt.imshow(abs(myobj[initial_shape[0] // 2, :, :]))
+        plt.pause(0.1)
+    my_fft = fftshift(fftn(myobj))
+    del myobj
+    gc.collect()
+    fftmax = abs(my_fft).max()
+    print('Max FFT=', fftmax)
+    if debugging:
+        plt.figure()
+        plt.imshow(np.log10(abs(my_fft[initial_shape[0] // 2, :, :])))
+        plt.pause(0.1)
+
+    window = tukey_window(initial_shape, alpha=alpha)
+
+    my_fft = np.multiply(my_fft, window)
+    del window
+    gc.collect()
+    my_fft = my_fft * fftmax / abs(my_fft).max()
+    print('Max apodized FFT after normalization =', abs(my_fft).max())
+    if debugging:
+        plt.figure()
+        plt.imshow(np.log10(abs(my_fft[initial_shape[0] // 2, :, :])))
+        plt.pause(0.1)
+    myobj = ifftn(ifftshift(my_fft))
+    del my_fft
+    gc.collect()
+    if debugging:
+        plt.figure()
+        plt.imshow(abs(myobj[initial_shape[0] // 2, :, :]))
         plt.pause(0.1)
     myobj = crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
     return abs(myobj), np.angle(myobj)
@@ -1275,6 +1376,27 @@ def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method=
     return sorted_obj
 
 
+def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
+    """
+
+    :param shape: tuple, shape of the 3d window
+    :param alpha: shape parameter of the Tukey window, tuple or ndarray of 3 values
+    :return: the 3d Tukey window
+    """
+    from scipy.signal.windows import tukey
+    nbz, nby, nbx = shape
+    array_z = tukey(nbz, alpha[0])
+    array_y = tukey(nby, alpha[1])
+    array_x = tukey(nbx, alpha[2])
+    tukey2 = np.ones((nbz, nby))
+    tukey3 = np.ones((nbz, nby, nbx))
+    for idz in range(nbz):
+        tukey2[idz, :] = array_z[idz] * array_y
+        for idy in range(nby):
+            tukey3[idz, idy] = tukey2[idz, idy] * array_x
+    return tukey3
+
+
 def wrap(phase):
     """
     Wrap the phase in [-pi pi] interval.
@@ -1287,7 +1409,49 @@ def wrap(phase):
 
 
 # if __name__ == "__main__":
-#     datadir = 'C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S2191/pynxraw/'
-#     data = np.load(datadir + 'S2191_pynx_270_432_400.npz')['data']
-#     newdata = bin_data(data, (2, 1, 2), True)
+#     # datadir = 'C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S2191/pynxraw/'
+#     # data = np.load(datadir + 'S2191_pynx_270_432_400.npz')['data']
+#     # newdata = bin_data(data, (2, 1, 2), True)
+#
+#     nbz, nby, nbx = (200, 200, 200)
+#     w = tukey_window((nbz, nby, nbx))
+#     plt.figure()
+#     plt.subplot(1, 3, 1)
+#     plt.imshow(w[nbz//2, :, :])
+#     plt.title('middle z')
+#     plt.colorbar()
+#     plt.subplot(1, 3, 2)
+#     plt.imshow(w[0, :, :])
+#     plt.title('first z')
+#     plt.colorbar()
+#     plt.subplot(1, 3, 3)
+#     plt.imshow(w[1, :, :])
+#     plt.title('second z')
+#     plt.colorbar()
+#     plt.figure()
+#     plt.subplot(1, 3, 1)
+#     plt.imshow(w[:, nby//2, :])
+#     plt.colorbar()
+#     plt.title('middle y')
+#     plt.subplot(1, 3, 2)
+#     plt.imshow(w[:, 0, :])
+#     plt.title('first y')
+#     plt.colorbar()
+#     plt.subplot(1, 3, 3)
+#     plt.imshow(w[:, 1, :])
+#     plt.title('second y')
+#     plt.colorbar()
+#     plt.figure()
+#     plt.subplot(1, 3, 1)
+#     plt.imshow(w[:, :, nbx//2])
+#     plt.title('middle x')
+#     plt.colorbar()
+#     plt.subplot(1, 3, 2)
+#     plt.imshow(w[:, :, 0])
+#     plt.title('first x')
+#     plt.colorbar()
+#     plt.subplot(1, 3, 3)
+#     plt.imshow(w[:, :, 1])
+#     plt.title('second x')
+#     plt.colorbar()
 #     plt.show()
