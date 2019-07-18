@@ -112,7 +112,8 @@ BCDI.facet_recognition: automatic facet detection in BCDI 3D reconstructions
 Description
 -----------
 
-TO DO
+This module provides tools for facet detection and statistics on facet strain. After meshing the object, facets are found
+using a guassian kernel density estimation of mesh triangles normals, followed by watershed segmentation.
 
 .. bcdi.facet_recognition end
 
