@@ -6,7 +6,20 @@
 Scripts Reference
 =================
 
-.. _postprocess:
+.. _facet:
+
+Facet recognition
+-----------------
+
+`facet_strain.py`:
+^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/facet_recognition/scripts/facet_strain.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+   
+.. _facet:
 
 Postprocessing
 --------------
