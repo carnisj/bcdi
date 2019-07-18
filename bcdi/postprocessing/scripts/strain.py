@@ -297,7 +297,7 @@ phase = phase + gridz * rampz + gridy * rampy + gridx * rampx  # put back the ph
 # pattern will be shifted and the prtf messed up
 
 if apodize_flag:
-    amp, phase = pu.apodize(amp=amp, phase=phase, initial_shape=original_size,
+    amp, phase = pu.apodize(amp=amp, phase=phase, initial_shape=original_size, window='tukey',
                             sigma=np.array([0.3, 0.3, 0.3]), mu=np.array([0.0, 0.0, 0.0]))
     comment = comment + '_apodize'
 
