@@ -753,12 +753,13 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
 
 
-def plot_3dmesh(vertices, faces, data_shape):
+def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped because of CXI convention'):
     """
 
-    :param vertices:
-    :param faces:
+    :param vertices: n*3 ndarray of n vertices defined by 3 positions
+    :param faces: m*3 ndarray of m faces defined by 3 indices of vertices
     :param data_shape: tuple corresponding to the 3d data shape
+    :param title: title for the plot
     :return: figure and axe instances
     """
     from mpl_toolkits.mplot3d import Axes3D
@@ -776,7 +777,7 @@ def plot_3dmesh(vertices, faces, data_shape):
     ax0.set_ylabel('Y')
     ax0.set_zlim(0, data_shape[2])
     ax0.set_zlabel('X')
-    plt.title('Mesh - z axis flipped because of CXI convention')
+    plt.title(title)
 
     plt.pause(0.5)
     plt.ioff()
