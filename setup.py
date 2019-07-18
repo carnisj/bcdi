@@ -22,7 +22,7 @@ setup(name='bcdi', version='0.0.6',
       # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},  # the file needs to be in a package
       # data_files=[('bcdi/data', ['bcdi/data/S978_LLKf000.460.cxi'])], # data files will be installed
       # outtside of the package, which is not ideal
-      scripts=['bcdi/facet_recognition/scripts/crystal_shape.py',
+      scripts=['bcdi/facet_recognition/scripts/facet_strain.py',
                'bcdi/graph/scripts/make_movie.py',
                'bcdi/graph/scripts/merge3D_qspace.py',
                'bcdi/graph/scripts/xrutils_Qplot_3Dmayavi.py',
@@ -58,7 +58,7 @@ setup(name='bcdi', version='0.0.6',
                ],
       # metadata
       author="Jerome Carnis",
-      author_email="jerome.carnis@esrf.fr",
+      author_email="carnis_jerome@yahoo.fr",
       description="BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data",
       license="CeCILL-B",
       keywords="BCDI Bragg coherent X-rays diffraction imaging",
