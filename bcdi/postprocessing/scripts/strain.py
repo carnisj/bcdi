@@ -107,6 +107,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations), used for PRTF calculation
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 apodize_flag = False  # True to multiply the diffraction pattern by a 3D gaussian
+apodize_window = 'tukey'  # 'gaussian' or 'tukey'
 debug = False  # set to True to show all plots for debugging
 
 tick_spacing = 50  # for plots, in nm
@@ -295,7 +296,7 @@ phase = phase + gridz * rampz + gridy * rampy + gridx * rampx  # put back the ph
 # pattern will be shifted and the prtf messed up
 
 if apodize_flag:
-    amp, phase = pu.apodize(amp=amp, phase=phase, initial_shape=original_size, window='tukey',
+    amp, phase = pu.apodize(amp=amp, phase=phase, initial_shape=original_size, window=apodize_window,
                             sigma=np.array([0.3, 0.3, 0.3]), mu=np.array([0.0, 0.0, 0.0]))
     comment = comment + '_apodize'
 
