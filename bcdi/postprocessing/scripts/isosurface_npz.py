@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
-# Calculate an ideal isosurface for the scan depending on amplitude histogram
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
 import numpy as np
 from matplotlib import pyplot as plt
 import tkinter as tk
@@ -7,13 +13,17 @@ from tkinter import filedialog
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import interp1d
 
+helptext = """
+Help to define the isosurface for the reconstructed scan depending on amplitude histogram.
+"""
+
 save = 1  # 1 to save the histogram, 0 otherwise
 plot = 0  # 1 to plot the summed amplitude, 0 otherwise
-scan = 978
+# scan = 978
 polyfit = 0  # fir with polynomial instead of spline
 histogram_Yaxis = 'linear'  # 'log' or 'linear'
-comment = ''
-datadir = 'C:/users/CARNIS/Work Folders/Documents/data/HC3207/SN'+str(scan)+'/pynxraw/'  # no_apodization"  # apodize_during_phasing # apodize_postprocessing
+comment = '1'
+datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop600/'  # 'C:/users/CARNIS/Work Folders/Documents/data/HC3207/SN'+str(scan)+'/pynxraw/'
 ################################################################################
 
 
@@ -167,9 +177,10 @@ fig, ax = plt.subplots(1, 1)
 plt.plot(bin_axis, hist, 'o', newbin_axis, newhist, '-')
 if histogram_Yaxis == 'log':
     ax.set_yscale('log')
-plt.title('S'+str(scan)+', <amp>='+str('{:.2f}'.format(mean_amp))+', std='+str('{:.2f}'.format(std_amp))+comment)
+# plt.title('S'+str(scan)+', <amp>='+str('{:.2f}'.format(mean_amp))+', std='+str('{:.2f}'.format(std_amp))+comment)
+plt.title('<amp>='+str('{:.2f}'.format(mean_amp))+', std='+str('{:.2f}'.format(std_amp))+comment)
 if save == 1:
-    plt.savefig(datadir + 'S' + str(scan) + '_isosurface' + comment + '.png')
+    plt.savefig(datadir + 'amp_histogram_' + comment + '.png')
 plt.ioff()
 plt.show()
 

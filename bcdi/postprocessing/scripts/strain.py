@@ -2,8 +2,9 @@
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
 #       authors:
-#         Jerome Carnis, jerome.carnis@esrf.fr
+#         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -13,7 +14,7 @@ import tkinter as tk
 from tkinter import filedialog
 import gc
 import sys
-sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -37,15 +38,12 @@ and the second the column (horizontal axis).
 
 Therefore the data structure is data[qx, qz, qy] for reciprocal space, 
 or data[z, y, x] for real space
-
-DOCUMENTATION TO BE IMPROVED, SEE EXPLANATIONS IN SCRIPT
-
 """
 
-scan = 556  # spec scan number
+scan = 2227  # spec scan number
 
 # datadir = 'C:/Users/carnis/Work Folders/Documents/data/SIXS/S' + str(scan) + '/pynxraw/'
-datadir = 'C:/Users/carnis/Work Folders/Documents/data/P10_2018/dewet5_sum_S356_to_S372/'
+datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop100/apod_post_tukey/'
 get_temperature = False
 reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
@@ -54,21 +52,21 @@ reference_temperature = None  # used to calibrate the thermal expansion, if None
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 
-original_size = [180, 512, 480]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [100, 100, 100]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-binning = (1, 2, 2)  # binning factor during phasing
+binning = (1, 1, 1)  # binning factor during phasing
 
-output_size = (120, 120, 120)  # original_size  # (z, y, x) Fix the size of the output array, leave it as () otherwise
+output_size = original_size  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
-fix_voxel = np.nan  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
+fix_voxel = 12.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no averaging
 
-isosurface_strain = 0.25  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.6  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 
-comment = "_356to372_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = "_1" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 threshold_plot = isosurface_strain  # suppor4t threshold for plots (max amplitude of 1)
-strain_range = 0.001  # for plots
+strain_range = 0.0002  # for plots
 phase_range = np.pi  # for plots
 phase_offset = 0   # manual offset to add to the phase, should be 0 normally
 
@@ -76,18 +74,18 @@ plot_width = (40, 40, 40)  # (z, y, x) margin outside the support in each direct
 # useful to avoid cutting the object during the orthogonalization
 
 # define setup below
-beamline = "P10"  # name of the beamline, used for data loading and normalization by monitor
+beamline = "ID01"  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 1.839  # sample to detector distance in m
-pixel_size = 75e-6  # detector pixel size in m
-energy = 10300  # x-ray energy in eV, 6eV offset at ID01
+sdd = 0.50678  # sample to detector distance in m
+pixel_size = 55e-6  # detector pixel size in m
+energy = 8994  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # beam along z
-outofplane_angle = 30.5105  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 8.4811  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 35.3240  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = -1.6029  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.01015  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = 0  # 1 for correcting the phase shift due to refraction, 0 otherwise
 correct_absorption = 0  # 1 for correcting the amplitude for absorption, 0 otherwise
 dispersion = 4.1184E-05  # delta
@@ -98,8 +96,8 @@ threshold_refraction = 0.025  # threshold used to calculate the optical path
 # the threshold for refraction/absorption corrections should be low, to correct for an object larger than the real one,
 # otherwise it messes up the phase
 #########################
-simu_flag = 0  # set to 1 if it is simulation, the parameter invert_phase will be set to 0 and pi added to the phase
-invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
+simu_flag = 1  # set to 1 if it is simulation, the parameter invert_phase will be set to 0 and pi added to the phase
+invert_phase = False  # True for the displacement to have the right sign (FFT convention), False only for simulations
 flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling'
 threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use for ramp removal
