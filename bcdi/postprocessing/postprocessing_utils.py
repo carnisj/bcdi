@@ -114,14 +114,14 @@ def align_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thresho
     return avg_obj, avg_flag
 
 
-def apodize(amp, phase, initial_shape, window, debugging=False, **kwargs):
+def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     """
     Apodize the complex array based on the window of the same shape.
 
     :param amp: 3D array, amplitude before apodization
     :param phase: 3D array, phase before apodization
     :param initial_shape: shape of the FFT used for phasing
-    :param window: window filtering function, 'gaussian' or 'tukey'
+    :param window_type: window filtering function, 'gaussian' or 'tukey' or 'blackman'
     :param debugging: set to True to see plots
     :type debugging: bool
     :param kwargs:
@@ -161,33 +161,6 @@ def apodize(amp, phase, initial_shape, window, debugging=False, **kwargs):
     except NameError:  # alpha not declared
         alpha = np.array([0.5, 0.5, 0.5])
 
-    if window == 'gaussian':
-        print('Apodization using a 3d Gaussian window')
-        filtered_amp, filtered_phase = apodize_gaussian(amp=amp, phase=phase, initial_shape=initial_shape,
-                                                        sigma=sigma, mu=mu, debugging=debugging)
-    elif window == 'tukey':
-        print('Apodization using a 3d Tukey window')
-        filtered_amp, filtered_phase = apodize_tukey(amp=amp, phase=phase, initial_shape=initial_shape,
-                                                     alpha=alpha, debugging=debugging)
-    else:
-        raise ValueError('Invalid window name')
-    return filtered_amp, filtered_phase
-
-
-def apodize_gaussian(amp, phase, initial_shape, sigma=np.array([0.3, 0.3, 0.3]), mu=np.array([0.0, 0.0, 0.0]),
-                     debugging=False):
-    """
-    Apodize the complex array based on a 3d Gaussian window of the same shape.
-
-    :param amp: 3D array, amplitude before apodization
-    :param phase: 3D array, phase before apodization
-    :param initial_shape: shape of the FFT used for phasing
-    :param sigma: sigma of the gaussian
-    :param mu: mu of the gaussian
-    :param debugging: set to True to see plots
-    :type debugging: bool
-    :return: filtered amplitude, phase of the same shape as myamp
-    """
     nb_z, nb_y, nb_x = amp.shape
     nbz, nby, nbx = initial_shape
     myobj = crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx))
@@ -208,13 +181,28 @@ def apodize_gaussian(amp, phase, initial_shape, sigma=np.array([0.3, 0.3, 0.3]),
         plt.colorbar()
         plt.pause(0.1)
 
-    grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby), np.linspace(-1, 1, nbx),
-                                         indexing='ij')
-    covariance = np.diag(sigma ** 2)
-    window = multivariate_normal.pdf(np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]), mean=mu, cov=covariance)
-    del grid_z, grid_y, grid_x
-    gc.collect()
-    window = window.reshape((nbz, nby, nbx))
+    if window_type == 'gaussian':
+        print('Apodization using a 3d Gaussian window')
+        grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby), np.linspace(-1, 1, nbx),
+                                             indexing='ij')
+        covariance = np.diag(sigma ** 2)
+        window = multivariate_normal.pdf(np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]), mean=mu,
+                                         cov=covariance)
+        del grid_z, grid_y, grid_x
+        gc.collect()
+        window = window.reshape((nbz, nby, nbx))
+
+    elif window_type == 'tukey':
+        print('Apodization using a 3d Tukey window')
+        window = tukey_window(initial_shape, alpha=alpha)
+
+    elif window_type == 'blackman':
+        print('Apodization using a 3d Blackman window')
+        window = blackman_window(initial_shape)
+
+    else:
+        raise ValueError('Invalid window type')
+
     my_fft = np.multiply(my_fft, window)
     del window
     gc.collect()
@@ -236,58 +224,24 @@ def apodize_gaussian(amp, phase, initial_shape, sigma=np.array([0.3, 0.3, 0.3]),
     return abs(myobj), np.angle(myobj)
 
 
-def apodize_tukey(amp, phase, initial_shape, alpha=np.array([0.5, 0.5, 0.5]), debugging=False):
+def blackman_window(shape):
     """
-    Apodize the complex array based on a 3d Tukey window of the same shape.
+    Create a 3d Blackman window based on shape.
 
-    :param amp: 3D array, amplitude before apodization
-    :param phase: 3D array, phase before apodization
-    :param initial_shape: shape of the FFT used for phasing
-    :param alpha: shape parameter of the 3d Tukey window, tuple of 3 floats
-    :param debugging: set to True to see plots
-    :type debugging: bool
-    :return: filtered amplitude, phase of the same shape as myamp
+    :param shape: tuple, shape of the 3d window
+    :return: the 3d Blackman window
     """
-    nb_z, nb_y, nb_x = amp.shape
-    myobj = crop_pad(amp * np.exp(1j * phase), initial_shape)
-    del amp, phase
-    gc.collect()
-    if debugging:
-        plt.figure()
-        plt.imshow(abs(myobj[initial_shape[0] // 2, :, :]))
-        plt.pause(0.1)
-    my_fft = fftshift(fftn(myobj))
-    del myobj
-    gc.collect()
-    fftmax = abs(my_fft).max()
-    print('Max FFT=', fftmax)
-    if debugging:
-        plt.figure()
-        plt.imshow(np.log10(abs(my_fft[initial_shape[0] // 2, :, :])), vmin=0, vmax=np.log10(fftmax))
-        plt.colorbar()
-        plt.pause(0.1)
-
-    window = tukey_window(initial_shape, alpha=alpha)
-
-    my_fft = np.multiply(my_fft, window)
-    del window
-    gc.collect()
-    my_fft = my_fft * fftmax / abs(my_fft).max()
-    print('Max apodized FFT after normalization =', abs(my_fft).max())
-    if debugging:
-        plt.figure()
-        plt.imshow(np.log10(abs(my_fft[initial_shape[0] // 2, :, :])), vmin=0, vmax=np.log10(fftmax))
-        plt.colorbar()
-        plt.pause(0.1)
-    myobj = ifftn(ifftshift(my_fft))
-    del my_fft
-    gc.collect()
-    if debugging:
-        plt.figure()
-        plt.imshow(abs(myobj[initial_shape[0] // 2, :, :]))
-        plt.pause(0.1)
-    myobj = crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
-    return abs(myobj), np.angle(myobj)
+    nbz, nby, nbx = shape
+    array_z = np.blackman(nbz)
+    array_y = np.blackman(nby)
+    array_x = np.blackman(nbx)
+    blackman2 = np.ones((nbz, nby))
+    blackman3 = np.ones((nbz, nby, nbx))
+    for idz in range(nbz):
+        blackman2[idz, :] = array_z[idz] * array_y
+        for idy in range(nby):
+            blackman3[idz, idy] = blackman2[idz, idy] * array_x
+    return blackman3
 
 
 def bragg_temperature(spacing, reflection, spacing_ref=None, temperature_ref=None, use_q=False, material=None):
@@ -1389,6 +1343,7 @@ def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method=
 
 def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
     """
+    Create a 3d Tukey window based on shape and the shape parameter alpha.
 
     :param shape: tuple, shape of the 3d window
     :param alpha: shape parameter of the Tukey window, tuple or ndarray of 3 values
@@ -1425,7 +1380,7 @@ def wrap(phase):
 # #     # newdata = bin_data(data, (2, 1, 2), True)
 # #
 #     nbz, nby, nbx = (200, 200, 200)
-#     w = tukey_window((nbz, nby, nbx), alpha=np.array([0.6, 0.6, 0.6]))
+#     w = blackman_window((nbz, nby, nbx))
 #     plt.figure()
 #     plt.subplot(1, 3, 1)
 #     plt.imshow(w[nbz//2, :, :])

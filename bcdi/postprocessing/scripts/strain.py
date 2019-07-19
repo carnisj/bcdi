@@ -64,7 +64,7 @@ hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no aver
 isosurface_strain = 0.68  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 
-comment = "_1_gaussian" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = "_1" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 threshold_plot = isosurface_strain  # suppor4t threshold for plots (max amplitude of 1)
 strain_range = 0.0002  # for plots
 phase_range = np.pi  # for plots
@@ -109,10 +109,10 @@ save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
 #########################
 apodize_flag = True  # True to multiply the diffraction pattern by a filtering window
-apodize_window = 'gaussian'  # filtering window, 'gaussian' or 'tukey'
+apodize_window = 'blackman'  # filtering window, 'gaussian' or 'tukey' or 'blackman'
 mu = np.array([0.0, 0.0, 0.0])  # mu of the gaussian window
 sigma = np.array([0.30, 0.30, 0.30])  # sigma of the gaussian window
-alpha = np.array([0.50, 0.50, 0.50])  # shape parameter of the tukey window
+alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
 #########################
 tick_spacing = 50  # for plots, in nm
 tick_direction = 'inout'  # 'out', 'in', 'inout'
@@ -300,9 +300,9 @@ phase = phase + gridz * rampz + gridy * rampy + gridx * rampx  # put back the ph
 # pattern will be shifted and the prtf messed up
 
 if apodize_flag:
-    amp, phase = pu.apodize(amp=amp, phase=phase, initial_shape=original_size, window=apodize_window,
+    amp, phase = pu.apodize(amp=amp, phase=phase, initial_shape=original_size, window_type=apodize_window,
                             sigma=sigma, mu=mu, alpha=alpha, debugging=True)
-    comment = comment + '_apodize'
+    comment = comment + '_apodize_' + apodize_window
 
 ####################################################################################################################
 # save the phase with the ramp for PRTF calculations, otherwise the object will be misaligned with the measurement #
