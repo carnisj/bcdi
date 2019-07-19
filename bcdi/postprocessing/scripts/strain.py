@@ -104,7 +104,7 @@ threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use fo
 xrayutils_ortho = False  # True if the data is already orthogonalized
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
 save_support = False  # True to save the non-orthogonal support for later phase retrieval
-save_labframe = False  # True to save the data in the laboratory frame (before rotations), used for PRTF calculation
+save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
 #########################
