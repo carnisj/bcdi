@@ -204,7 +204,8 @@ def apodize_gaussian(amp, phase, initial_shape, sigma=np.array([0.3, 0.3, 0.3]),
     print('Max FFT=', fftmax)
     if debugging:
         plt.figure()
-        plt.imshow(np.log10(abs(my_fft[nbz // 2, :, :])))
+        plt.imshow(np.log10(abs(my_fft[nbz // 2, :, :])), vmin=0, vmax=np.log10(fftmax))
+        plt.colorbar()
         plt.pause(0.1)
 
     grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby), np.linspace(-1, 1, nbx),
@@ -221,7 +222,8 @@ def apodize_gaussian(amp, phase, initial_shape, sigma=np.array([0.3, 0.3, 0.3]),
     print('Max apodized FFT after normalization =', abs(my_fft).max())
     if debugging:
         plt.figure()
-        plt.imshow(np.log10(abs(my_fft[nbz // 2, :, :])))
+        plt.imshow(np.log10(abs(my_fft[nbz // 2, :, :])), vmin=0, vmax=np.log10(fftmax))
+        plt.colorbar()
         plt.pause(0.1)
     myobj = ifftn(ifftshift(my_fft))
     del my_fft
@@ -261,7 +263,8 @@ def apodize_tukey(amp, phase, initial_shape, alpha=np.array([0.5, 0.5, 0.5]), de
     print('Max FFT=', fftmax)
     if debugging:
         plt.figure()
-        plt.imshow(np.log10(abs(my_fft[initial_shape[0] // 2, :, :])))
+        plt.imshow(np.log10(abs(my_fft[initial_shape[0] // 2, :, :])), vmin=0, vmax=np.log10(fftmax))
+        plt.colorbar()
         plt.pause(0.1)
 
     window = tukey_window(initial_shape, alpha=alpha)
@@ -273,7 +276,8 @@ def apodize_tukey(amp, phase, initial_shape, alpha=np.array([0.5, 0.5, 0.5]), de
     print('Max apodized FFT after normalization =', abs(my_fft).max())
     if debugging:
         plt.figure()
-        plt.imshow(np.log10(abs(my_fft[initial_shape[0] // 2, :, :])))
+        plt.imshow(np.log10(abs(my_fft[initial_shape[0] // 2, :, :])), vmin=0, vmax=np.log10(fftmax))
+        plt.colorbar()
         plt.pause(0.1)
     myobj = ifftn(ifftshift(my_fft))
     del my_fft
@@ -1416,12 +1420,12 @@ def wrap(phase):
 
 
 # if __name__ == "__main__":
-#     # datadir = 'C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S2191/pynxraw/'
-#     # data = np.load(datadir + 'S2191_pynx_270_432_400.npz')['data']
-#     # newdata = bin_data(data, (2, 1, 2), True)
-#
+# #     # datadir = 'C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S2191/pynxraw/'
+# #     # data = np.load(datadir + 'S2191_pynx_270_432_400.npz')['data']
+# #     # newdata = bin_data(data, (2, 1, 2), True)
+# #
 #     nbz, nby, nbx = (200, 200, 200)
-#     w = tukey_window((nbz, nby, nbx))
+#     w = tukey_window((nbz, nby, nbx), alpha=np.array([0.6, 0.6, 0.6]))
 #     plt.figure()
 #     plt.subplot(1, 3, 1)
 #     plt.imshow(w[nbz//2, :, :])
