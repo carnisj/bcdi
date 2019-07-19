@@ -15,6 +15,10 @@ import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 
+helptext = """
+Apodization applied directly on reciprocal space data, using a 3d Gaussian or a 3d Tukey window. 
+"""
+
 scan = 2227
 datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/crop400phase/new/apodize_during_phasing/"
 comment = 'diff_apodize'
