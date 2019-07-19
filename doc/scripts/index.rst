@@ -53,6 +53,14 @@ Postprocessing
 Preprocessing
 -------------
 
+`apodize.py`:
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/apodize.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+   
 `concatenate_scans.py`:
 ^^^^^^^^^^^^^^^^^^^^^^^
 
