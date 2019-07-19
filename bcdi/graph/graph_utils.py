@@ -290,7 +290,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
         if not np.isnan(pixel_spacing):
             axis.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
             axis.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-            axis.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+            axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                              length=tick_length, width=tick_width)
         if plot_colorbar:
             plt.colorbar(plot, ax=axis)
@@ -552,7 +552,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=np.nan, width_h=np.
     if not np.isnan(pixel_spacing):
         axis.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         axis.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-        axis.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+        axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                          length=tick_length, width=tick_width)
     if plot_colorbar:
         plt.colorbar(plot, ax=axis)
@@ -665,7 +665,7 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
         if not np.isnan(pixel_spacing):
             ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
             ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-            ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+            ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                             length=tick_length, width=tick_width)
 
         # axis 1
@@ -703,7 +703,7 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
         if not np.isnan(pixel_spacing):
             ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
             ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-            ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+            ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                             length=tick_length, width=tick_width)
 
         # axis 2
@@ -743,7 +743,7 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
         if not np.isnan(pixel_spacing):
             ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
             ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-            ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+            ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                             length=tick_length, width=tick_width)
 
         # axis 3
@@ -885,3 +885,21 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     writer.SetInputData(image_data)
     writer.Write()
     return
+
+
+if __name__ == "__main__":
+    datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop300/test/'
+    strain = np.load(datadir +
+                     'S2227_ampphasestrain_1_gaussianthreshold_iso_0.68_avg1_apodize_crystal-frame.npz')['strain']
+    voxel_size = 4.0
+    tick_spacing = 50  # for plots, in nm
+    pixel_spacing = tick_spacing / voxel_size
+    tick_direction = 'inout'  # 'out', 'in', 'inout'
+    tick_length = 3  # 10  # in plots
+    tick_width = 1  # 2  # in plots
+    multislices_plot(strain, sum_frames=False, invert_yaxis=True, title='Orthogonal strain',
+                     vmin=-0.0002, vmax=0.0002, tick_direction=tick_direction,
+                     tick_width=tick_width, tick_length=tick_length, plot_colorbar=True,
+                     pixel_spacing=pixel_spacing)
+    plt.ioff()
+    plt.show()
