@@ -43,7 +43,7 @@ or data[z, y, x] for real space
 scan = 2227  # spec scan number
 
 # datadir = 'C:/Users/carnis/Work Folders/Documents/data/SIXS/S' + str(scan) + '/pynxraw/'
-datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop100/apod_post_tukey/'
+datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop300/test/'
 get_temperature = False
 reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
@@ -52,16 +52,16 @@ reference_temperature = None  # used to calibrate the thermal expansion, if None
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 
-original_size = [100, 100, 100]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [300, 300, 300]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor during phasing
 
 output_size = original_size  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
-fix_voxel = 12.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
+fix_voxel = 4.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no averaging
 
-isosurface_strain = 0.6  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.68  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 
 comment = "_1" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
@@ -106,15 +106,20 @@ save_raw = False  # True to save the amp-phase.vti before orthogonalization
 save_support = False  # True to save the non-orthogonal support for later phase retrieval
 save_labframe = False  # True to save the data in the laboratory frame (before rotations), used for PRTF calculation
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
-apodize_flag = False  # True to multiply the diffraction pattern by a filtering window
-apodize_window = 'tukey'  # filtering window, 'gaussian' or 'tukey'
 debug = False  # set to True to show all plots for debugging
-
+#########################
+apodize_flag = True  # True to multiply the diffraction pattern by a filtering window
+apodize_window = 'tukey'  # filtering window, 'gaussian' or 'tukey'
+mu = np.array([0.0, 0.0, 0.0])  # mu of the gaussian window
+sigma = np.array([0.30, 0.30, 0.30])  # sigma of the gaussian window
+covariance = np.diag(sigma**2)
+alpha = np.array([0.50, 0.50, 0.50])  # shape parameter of the tukey window
+#########################
 tick_spacing = 50  # for plots, in nm
 tick_direction = 'inout'  # 'out', 'in', 'inout'
 tick_length = 3  # 10  # in plots
 tick_width = 1  # 2  # in plots
-
+#########################
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 align_crystal = 1  # if 1 rotates the crystal to align it along q, 0 otherwise
 ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis

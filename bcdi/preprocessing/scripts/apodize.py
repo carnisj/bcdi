@@ -33,7 +33,7 @@ covariance = np.diag(sigma**2)
 ################################
 # parameter for a tukey window #
 ################################
-alpha = 0.5  # shape parameter of the tukey window
+alpha = np.array([0.50, 0.50, 0.50])  # shape parameter of the tukey window
 
 ##################################
 # end of user-defined parameters #
