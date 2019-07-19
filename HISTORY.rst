@@ -1,6 +1,6 @@
 * Feature: create preprocessing/scripts/apodize.py to apodize reciprocal space data
 
-* Feature: implement a 3d Tukey window for apodization in postprocessing_utils()
+* Feature: implement 3d Tukey and 3d Blackman windows for apodization in postprocessing_utils()
 
 * Feature: in postprocessing/scripts/resolution_prtf.py, allow for binning the detector plane
 
