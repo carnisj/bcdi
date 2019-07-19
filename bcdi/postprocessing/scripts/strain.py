@@ -64,13 +64,13 @@ hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no aver
 isosurface_strain = 0.68  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 
-comment = "_1" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = "_1_gaussian" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 threshold_plot = isosurface_strain  # suppor4t threshold for plots (max amplitude of 1)
 strain_range = 0.0002  # for plots
 phase_range = np.pi  # for plots
 phase_offset = 0   # manual offset to add to the phase, should be 0 normally
 
-plot_width = (40, 40, 40)  # (z, y, x) margin outside the support in each direction, can be negative
+plot_width = (35, 20, 25)  # (z, y, x) margin outside the support in each direction, can be negative
 # useful to avoid cutting the object during the orthogonalization
 
 # define setup below
@@ -109,10 +109,9 @@ save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
 #########################
 apodize_flag = True  # True to multiply the diffraction pattern by a filtering window
-apodize_window = 'tukey'  # filtering window, 'gaussian' or 'tukey'
+apodize_window = 'gaussian'  # filtering window, 'gaussian' or 'tukey'
 mu = np.array([0.0, 0.0, 0.0])  # mu of the gaussian window
 sigma = np.array([0.30, 0.30, 0.30])  # sigma of the gaussian window
-covariance = np.diag(sigma**2)
 alpha = np.array([0.50, 0.50, 0.50])  # shape parameter of the tukey window
 #########################
 tick_spacing = 50  # for plots, in nm
@@ -302,7 +301,7 @@ phase = phase + gridz * rampz + gridy * rampy + gridx * rampx  # put back the ph
 
 if apodize_flag:
     amp, phase = pu.apodize(amp=amp, phase=phase, initial_shape=original_size, window=apodize_window,
-                            sigma=np.array([0.3, 0.3, 0.3]), mu=np.array([0.0, 0.0, 0.0]))
+                            sigma=sigma, mu=mu, alpha=alpha, debugging=True)
     comment = comment + '_apodize'
 
 ####################################################################################################################

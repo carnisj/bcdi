@@ -138,10 +138,13 @@ def apodize(amp, phase, initial_shape, window, debugging=False, **kwargs):
     for k in kwargs.keys():
         if k in ['sigma']:
             sigma = kwargs['sigma']
+            print('defaulting sigma parameter')
         elif k in ['mu']:
             mu = kwargs['mu']
+            print('defaulting mu parameter')
         elif k in ['alpha']:
             alpha = kwargs['alpha']
+            print('defaulting alpha parameter')
         else:
             raise Exception("unknown keyword argument given: allowed is"
                             "'fix_bragg', 'fix_size', 'pad_size' and 'q_values'")
@@ -159,9 +162,11 @@ def apodize(amp, phase, initial_shape, window, debugging=False, **kwargs):
         alpha = np.array([0.5, 0.5, 0.5])
 
     if window == 'gaussian':
+        print('Apodization using a 3d Gaussian window')
         filtered_amp, filtered_phase = apodize_gaussian(amp=amp, phase=phase, initial_shape=initial_shape,
                                                         sigma=sigma, mu=mu, debugging=debugging)
     elif window == 'tukey':
+        print('Apodization using a 3d Tukey window')
         filtered_amp, filtered_phase = apodize_tukey(amp=amp, phase=phase, initial_shape=initial_shape,
                                                      alpha=alpha, debugging=debugging)
     else:
