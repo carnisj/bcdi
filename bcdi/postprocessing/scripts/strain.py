@@ -106,8 +106,8 @@ save_raw = False  # True to save the amp-phase.vti before orthogonalization
 save_support = False  # True to save the non-orthogonal support for later phase retrieval
 save_labframe = False  # True to save the data in the laboratory frame (before rotations), used for PRTF calculation
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
-apodize_flag = False  # True to multiply the diffraction pattern by a 3D gaussian
-apodize_window = 'tukey'  # 'gaussian' or 'tukey'
+apodize_flag = False  # True to multiply the diffraction pattern by a filtering window
+apodize_window = 'tukey'  # filtering window, 'gaussian' or 'tukey'
 debug = False  # set to True to show all plots for debugging
 
 tick_spacing = 50  # for plots, in nm
