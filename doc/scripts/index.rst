@@ -19,7 +19,7 @@ Facet recognition
    :end-before: """
    :language: rst
    
-.. _facet:
+.. _postprocess:
 
 Postprocessing
 --------------
@@ -84,6 +84,8 @@ Preprocessing
    :start-after: helptext
    :end-before: """
    :language: rst
+
+.. _publi:
 
 Publication
 -----------

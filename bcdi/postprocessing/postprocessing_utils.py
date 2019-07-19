@@ -117,6 +117,7 @@ def align_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thresho
 def apodize(amp, phase, initial_shape, window, debugging=False, **kwargs):
     """
     Apodize the complex array based on the window of the same shape.
+
     :param amp: 3D array, amplitude before apodization
     :param phase: 3D array, phase before apodization
     :param initial_shape: shape of the FFT used for phasing

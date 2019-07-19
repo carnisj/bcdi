@@ -26,7 +26,7 @@ BCDI as a python toolkit
 BCDI can be used as a python library with the following main modules:
 
 1) :mod:`bcdi.facet_recognition`: automatic detection of facets on the reconstruction, based on watershed segmentation. 
-   TODO
+   WORK IN PROGRESS
 
 2) :mod:`bcdi.experiment`: definition of the experimental geometry (beamline, setup, detector...).
 
