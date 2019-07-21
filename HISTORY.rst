@@ -1,3 +1,5 @@
+* Feature: enable PRTF resolution calculation for simulated data
+
 * Feature: create preprocessing/scripts/apodize.py to apodize reciprocal space data
 
 * Feature: implement 3d Tukey and 3d Blackman windows for apodization in postprocessing_utils()
