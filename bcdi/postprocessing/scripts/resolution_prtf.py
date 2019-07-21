@@ -16,7 +16,7 @@ import xrayutilities as xu
 from scipy.interpolate import interp1d
 import gc
 import sys
-sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
@@ -36,18 +36,19 @@ For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 Supported beamline: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
 """
 
-scan = 528
-root_folder = "C:/Users/carnis/Work Folders/Documents/data/CRISTAL/"
+scan = 2227
+root_folder = "C:/Users/Jerome/Documents/data/test/apodize_postprocessing/"  # apod_post_blackman/"
+# root_folder = "D:/review paper/BCDI_isosurface/S"+str(scan)+"/simu/"
 sample_name = "S"  # "SN"  #
-comment = "_test"  # should start with _
+comment = "_1"  # should start with _
 ############################
 # beamline parameters #
 ############################
-beamline = 'CRISTAL'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = ''
+specfile_name = 'alignment'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -58,7 +59,7 @@ specfile_name = ''
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-template_imagefile = 'S%d.nxs'
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -67,8 +68,8 @@ template_imagefile = 'S%d.nxs'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
-sdd = 1.4359  # sample to detector distance in m
-energy = 8310   # x-ray energy in eV, 6eV offset at ID01
+sdd = 0.50678  # sample to detector distance in m
+energy = 8994   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
@@ -77,10 +78,18 @@ binning = (1, 1, 1)  # binning factor during phasing: rocking curve axis, detect
 # TODO: the pixel size is multiplied. If we pad the phased object we find back the initial resolution?
 rawdata_binned = False  # set to True if the raw data and the mask loaded are already binned.
 # If False, the raw data and the mask will be binned using 'binning' parameter
+###############################
+# only needed for simulations #
+###############################
+simulation = True  # True is this is simulated data, will not load the specfile
+bragg_angle_simu = 17.1177  # value of the incident angle at Bragg peak (eta at ID01)
+outofplane_simu = 35.3240  # detector delta @ ID01
+inplane_simu = -1.6029  # detector nu @ ID01
+tilt_simu = 0.01015  # angular step size for rocking angle, eta @ ID01
 ###########
 # options #
 ###########
-modes = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
+modes = False  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = True  # True to show more plots
 save = True  # True to save the prtf figure
 ##########################
@@ -108,18 +117,21 @@ print('Scan type: ', setup.rocking_angle)
 print('Sample to detector distance: ', setup.distance, 'm')
 print('Energy:', setup.energy, 'ev')
 
-if setup.beamline != 'P10':
-    homedir = root_folder + sample_name + str(scan) + '/'
-    detector.datadir = homedir + "data/"
+if simulation:
+    detector.datadir = root_folder
 else:
-    specfile_name = specfile_name % scan
-    homedir = root_folder + specfile_name + '/'
-    detector.datadir = homedir + 'e4m/'
-    template_imagefile = specfile_name + template_imagefile
-    detector.template_imagefile = template_imagefile
+    if setup.beamline != 'P10':
+        homedir = root_folder + sample_name + str(scan) + '/'
+        detector.datadir = homedir + "data/"
+    else:
+        specfile_name = specfile_name % scan
+        homedir = root_folder + specfile_name + '/'
+        detector.datadir = homedir + 'e4m/'
+        template_imagefile = specfile_name + template_imagefile
+        detector.template_imagefile = template_imagefile
 
-logfile = pru.create_logfile(beamline=setup.beamline, detector=detector, scan_number=scan, root_folder=root_folder,
-                             filename=specfile_name)
+    logfile = pru.create_logfile(beamline=setup.beamline, detector=detector, scan_number=scan, root_folder=root_folder,
+                                 filename=specfile_name)
 
 #############################################
 # Initialize geometry for orthogonalization #
@@ -179,9 +191,12 @@ hxrd.Ang2Q.init_area('z-', 'y+', cch1=int(y0), cch2=int(x0), Nch1=numy, Nch2=num
                      pwidth2=detector.pixelsize * binning[2],
                      distance=setup.distance)
 # first two arguments in init_area are the direction of the detector
-
-qx, qz, qy, _ = pru.regrid(logfile=logfile, nb_frames=numz, scan_number=scan, detector=detector,
-                           setup=setup, hxrd=hxrd, follow_bragg=follow_bragg)
+if simulation:
+    eta = bragg_angle_simu + tilt_simu * (np.arange(0, numz, 1) - int(z0))
+    qx, qy, qz = hxrd.Ang2Q.area(eta, 0, 0, inplane_simu, outofplane_simu, delta=(0, 0, 0, 0, 0))
+else:
+    qx, qz, qy, _ = pru.regrid(logfile=logfile, nb_frames=numz, scan_number=scan, detector=detector,
+                               setup=setup, hxrd=hxrd, follow_bragg=follow_bragg)
 
 if debug:
     gu.combined_plots(tuple_array=(qz, qy, qx), tuple_sum_frames=False, tuple_sum_axis=(0, 1, 2),
