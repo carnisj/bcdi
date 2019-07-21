@@ -16,6 +16,7 @@ import xrayutilities as xu
 from scipy.interpolate import interp1d
 import gc
 import sys
+import os
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
@@ -37,10 +38,9 @@ Supported beamline: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
 """
 
 scan = 2227
-root_folder = "C:/Users/Jerome/Documents/data/test/apodize_postprocessing/"  # apod_post_blackman/"
-# root_folder = "D:/review paper/BCDI_isosurface/S"+str(scan)+"/simu/"
+root_folder = "D:/review paper/BCDI_isosurface/S"+str(scan)+"/simu/crop100/apod_post_gaussian/"
 sample_name = "S"  # "SN"  #
-comment = "_1"  # should start with _
+comment = "_4_new"  # should start with _
 ############################
 # beamline parameters #
 ############################
@@ -89,7 +89,7 @@ tilt_simu = 0.01015  # angular step size for rocking angle, eta @ ID01
 ###########
 # options #
 ###########
-modes = False  # set to True when the solution is the first mode - then the intensity needs to be normalized
+normalize_prtf = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = True  # True to show more plots
 save = True  # True to save the prtf figure
 ##########################
@@ -223,6 +223,9 @@ if debug:
 file_path = filedialog.askopenfilename(initialdir=detector.datadir,  title="Select reconstructions (prtf)",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
                                                   ("CXI", "*.cxi"), ("HDF5", "*.h5")])
+if 'prtf' not in os.path.splitext(os.path.basename(file_path))[0]:
+    print('Wrong reconstruction file - should be still in the detector frame')
+    sys.exit()
 
 obj, extension = pu.load_reconstruction(file_path)
 print('Opening ', file_path)
@@ -239,10 +242,6 @@ if obj.shape != diff_pattern.shape:
 phased_fft = fftshift(fftn(obj)) / (np.sqrt(numz)*np.sqrt(numy)*np.sqrt(numx))  # complex amplitude
 del obj
 gc.collect()
-
-if modes:  # if this is the first mode, intensity should be normalized to the measured diffraction pattern
-    phased_fft = phased_fft * np.sqrt(diff_pattern).max() / abs(phased_fft).max()
-    print('Max(retrieved amplitude) after modes normalization =', abs(phased_fft).max())  # needed for modes
 
 plt.figure()
 plt.imshow(np.log10(abs(phased_fft).sum(axis=0)), cmap=my_cmap, vmin=0, vmax=3.5)
@@ -287,7 +286,7 @@ for index in range(nb_bins):
     prtf_avg[index] = temp[~np.isnan(temp)].mean()
 q_axis = q_axis[:-1]
 
-if modes:
+if normalize_prtf:
     print('Normalizing the PRTF to 1 ...')
     prtf_avg = prtf_avg / prtf_avg[~np.isnan(prtf_avg)].max()  # normalize to 1
 
@@ -323,7 +322,7 @@ print('q resolution =', str('{:.5f}'.format(q_resolution)), ' (1/nm)')
 print('resolution d= ' + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm')
 
 fig = plt.figure()
-plt.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'o')  # q_axis in 1/nm
+plt.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
 plt.title('PRTF')
 plt.xlabel('q (1/nm)')
 plt.ylim(0, 1.1)
