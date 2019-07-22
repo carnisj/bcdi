@@ -887,19 +887,19 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     return
 
 
-if __name__ == "__main__":
-    datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop300/test/'
-    strain = np.load(datadir +
-                     'S2227_ampphasestrain_1_gaussianthreshold_iso_0.68_avg1_apodize_crystal-frame.npz')['strain']
-    voxel_size = 4.0
-    tick_spacing = 50  # for plots, in nm
-    pixel_spacing = tick_spacing / voxel_size
-    tick_direction = 'inout'  # 'out', 'in', 'inout'
-    tick_length = 3  # 10  # in plots
-    tick_width = 1  # 2  # in plots
-    multislices_plot(strain, sum_frames=False, invert_yaxis=True, title='Orthogonal strain',
-                     vmin=-0.0002, vmax=0.0002, tick_direction=tick_direction,
-                     tick_width=tick_width, tick_length=tick_length, plot_colorbar=True,
-                     pixel_spacing=pixel_spacing)
-    plt.ioff()
-    plt.show()
+# if __name__ == "__main__":
+#     datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop300/test/'
+#     strain = np.load(datadir +
+#                      'S2227_ampphasestrain_1_gaussianthreshold_iso_0.68_avg1_apodize_crystal-frame.npz')['strain']
+#     voxel_size = 4.0
+#     tick_spacing = 50  # for plots, in nm
+#     pixel_spacing = tick_spacing / voxel_size
+#     tick_direction = 'inout'  # 'out', 'in', 'inout'
+#     tick_length = 3  # 10  # in plots
+#     tick_width = 1  # 2  # in plots
+#     multislices_plot(strain, sum_frames=False, invert_yaxis=True, title='Orthogonal strain',
+#                      vmin=-0.0002, vmax=0.0002, tick_direction=tick_direction,
+#                      tick_width=tick_width, tick_length=tick_length, plot_colorbar=True,
+#                      pixel_spacing=pixel_spacing)
+#     plt.ioff()
+#     plt.show()
