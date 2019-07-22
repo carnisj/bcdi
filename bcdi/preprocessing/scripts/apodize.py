@@ -16,14 +16,14 @@ sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-Apodization applied directly on reciprocal space data, using a 3d Gaussian or a 3d Tukey window. 
+Apodization applied directly on reciprocal space data, using a 3d Gaussian, Tukey or Blackman window. 
 """
 
 scan = 2227
-datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/crop400phase/new/apodize_during_phasing/"
-comment = 'diff_apodize'
+datadir = "D:/review paper/BCDI_isosurface/S"+str(scan) + "/simu/crop100/apod_pre_blackman/"
+comment = 'diff_100_apod'
 debug = True
-window_type = 'gaussian'  # 'gaussian' or 'tukey'
+window_type = 'blackman'  # 'gaussian' or 'tukey' or 'blackman'
 #############################
 # parameters for a gaussian #
 #############################
@@ -33,8 +33,7 @@ covariance = np.diag(sigma**2)
 ################################
 # parameter for a tukey window #
 ################################
-alpha = np.array([0.50, 0.50, 0.50])  # shape parameter of the tukey window
-
+alpha = np.array([0.70, 0.70, 0.70])  # shape parameter of the tukey window
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -54,12 +53,17 @@ plt.title('Initial diffraction pattern')
 plt.pause(0.1)
 
 if window_type == 'gaussian':
+    comment = comment + '_gaussian'
     grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby), np.linspace(-1, 1, nbx),
                                          indexing='ij')
     window = multivariate_normal.pdf(np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]), mean=mu, cov=covariance)
     window = window.reshape((nbz, nby, nbx))
 elif window_type == 'tukey':
+    comment = comment + '_tukey'
     window = pu.tukey_window(data.shape, alpha=alpha)
+elif window_type == 'blackman':
+    comment = comment + '_blackman'
+    window = pu.blackman_window(data.shape)
 else:
     print('invalid window type')
     sys.exit()
