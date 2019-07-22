@@ -138,28 +138,13 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     for k in kwargs.keys():
         if k in ['sigma']:
             sigma = kwargs['sigma']
-            print('defaulting sigma parameter')
         elif k in ['mu']:
             mu = kwargs['mu']
-            print('defaulting mu parameter')
         elif k in ['alpha']:
             alpha = kwargs['alpha']
-            print('defaulting alpha parameter')
         else:
             raise Exception("unknown keyword argument given: allowed is"
                             "'fix_bragg', 'fix_size', 'pad_size' and 'q_values'")
-    try:
-        sigma
-    except NameError:  # sigma not declared
-        sigma = np.array([0.3, 0.3, 0.3])
-    try:
-        mu
-    except NameError:  # mu not declared
-        mu = np.array([0.0, 0.0, 0.0])
-    try:
-        alpha
-    except NameError:  # alpha not declared
-        alpha = np.array([0.5, 0.5, 0.5])
 
     nb_z, nb_y, nb_x = amp.shape
     nbz, nby, nbx = initial_shape
@@ -183,6 +168,17 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
 
     if window_type == 'gaussian':
         print('Apodization using a 3d Gaussian window')
+        try:
+            sigma
+        except NameError:  # sigma not declared
+            sigma = np.array([0.3, 0.3, 0.3])
+            print('defaulting sigma parameter')
+        try:
+            mu
+        except NameError:  # mu not declared
+            mu = np.array([0.0, 0.0, 0.0])
+            print('defaulting mu parameter')
+
         grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby), np.linspace(-1, 1, nbx),
                                              indexing='ij')
         covariance = np.diag(sigma ** 2)
@@ -194,6 +190,12 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
 
     elif window_type == 'tukey':
         print('Apodization using a 3d Tukey window')
+        try:
+            alpha
+        except NameError:  # alpha not declared
+            alpha = np.array([0.5, 0.5, 0.5])
+            print('defaulting alpha parameter')
+
         window = tukey_window(initial_shape, alpha=alpha)
 
     elif window_type == 'blackman':
@@ -1380,7 +1382,7 @@ def wrap(phase):
 # #     # newdata = bin_data(data, (2, 1, 2), True)
 # #
 #     nbz, nby, nbx = (200, 200, 200)
-#     w = blackman_window((nbz, nby, nbx))
+#     w = tukey_window((nbz, nby, nbx), (0.2, 0.2, 0.2))
 #     plt.figure()
 #     plt.subplot(1, 3, 1)
 #     plt.imshow(w[nbz//2, :, :])
