@@ -7,11 +7,10 @@ from matplotlib.colors import LinearSegmentedColormap
 import tkinter as tk
 from tkinter import filedialog
 import gc
-
 scan = 2227
-datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/crop400phase/no_apodization/avg1/"  # no_apodization"  # apodize_during_phasing # apodize_postprocessing
+datadir = "D:/review paper/BCDI_isosurface/S"+str(scan)+"/simu/crop150/apod_post_tukey_0.7/"  # no_apodization"  # apodize_during_phasing # apodize_postprocessing
 strain_range = 0.001  # for plots
-support_threshold = 0.73  # threshold for support determination
+support_threshold = 0.75  # threshold for support determination
 flag_plot = 0  # 1 to show plots of data
 ######################################
 # define a colormap
@@ -119,9 +118,9 @@ if flag_plot == 1:
 mean_strain = strain[np.nonzero(support)].mean()
 var_strain = strain[np.nonzero(support)].var()
 rms_strain = np.sqrt(np.mean(np.ndarray.flatten(strain[np.nonzero(support)])**2))
-print('Mean strain = ', str('{:.4e}'.format(mean_strain)),
-      '\nVariance strain = ', str('{:.4e}'.format(var_strain)),
-      '\nRMS strain = ', str('{:.4e}'.format(rms_strain)))
+print('Mean strain = ', str('{:.4e}'.format(mean_strain)).replace('.', ','),
+      # '\nVariance strain = ', str('{:.4e}'.format(var_strain)),
+      '\nRMS strain = ', str('{:.4e}'.format(rms_strain)).replace('.', ','))
 
 plt.ioff()
 plt.show()
