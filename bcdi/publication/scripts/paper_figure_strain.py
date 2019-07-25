@@ -16,6 +16,7 @@ import matplotlib.ticker as ticker
 import sys
 sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.graph.graph_utils as gu
 
 helptext = """
 Template for making 2D slices figures for a publication about BCDI.
@@ -61,31 +62,15 @@ flag_linecut = False  # True to plot and save a linecut of the phase
 # end of user parameters #
 ##########################
 
-#######################
-# define the colormap #
-#######################
-cdict = {'red':  ((0.0, 1.0, 1.0),
-                  (0.11, 0.0, 0.0),
-                  (0.36, 0.0, 0.0),
-                  (0.62, 1.0, 1.0),
-                  (0.87, 1.0, 1.0),
-                  (1.0, 0.0, 0.0)),
-         'green': ((0.0, 1.0, 1.0),
-                   (0.11, 0.0, 0.0),
-                   (0.36, 1.0, 1.0),
-                   (0.62, 1.0, 1.0),
-                   (0.87, 0.0, 0.0),
-                   (1.0, 0.0, 0.0)),
-         'blue': ((0.0, 1.0, 1.0),
-                  (0.11, 1.0, 1.0),
-                  (0.36, 1.0, 1.0),
-                  (0.62, 0.0, 0.0),
-                  (0.87, 0.0, 0.0),
-                  (1.0, 0.0, 0.0))}
-my_cmap = LinearSegmentedColormap('my_colormap', cdict, 256)
-my_cmap.set_bad(color='0.7')
+###################
+# define colormap #
+###################
+colormap = gu.Colormap()
+my_cmap = colormap.cmap
 
-#######################################
+#############
+# load data #
+#############
 plt.ion()
 root = tk.Tk()
 root.withdraw()
