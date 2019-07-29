@@ -28,7 +28,7 @@ tick_length = 6  # in plots
 tick_width = 2  # in plots
 strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
-support_threshold = 0.05  # threshold for support determination
+support_threshold = 0.025  # threshold for support determination
 min_amp = 0.01  # everything with lower amplitude will be set to np.nan in plots
 debug = 0  # 1 to show all plots
 save_YZ = 0  # 1 to save the strain in YZ plane
@@ -178,8 +178,9 @@ strain_simu = npzfile['strain']
 phase_simu = npzfile['phase']  # ['displacement']
 numz, numy, numx = amp_simu.shape
 print("SIMU: Initial data size: (", numz, ',', numy, ',', numx, ')')
-strain_simu[amp_simu == 0] = 0
+strain_simu[amp_simu == 0] = np.nan
 phase_simu[amp_simu == 0] = np.nan
+
 ##########################
 # open phased amp_phase_strain.npz
 ##########################
@@ -192,27 +193,19 @@ obj = amp * np.exp(1j * phase)
 del amp, phase
 numz, numy, numx = obj.shape
 print("Phased: Initial data size: (", numz, ',', numy, ',', numx, ')')
-# amp = crop_pad(amp, amp_simu.shape)
-# phase = crop_pad(phase, amp_simu.shape)
 obj = crop_pad(obj, amp_simu.shape)
-# temp = np.copy(abs(obj))
-# temp[temp == 0] = 2
-# min_amp = temp.min()
-# piz, piy, pix = np.unravel_index(abs(temp).argmin(), obj.shape)
-# print("Min ", min_amp, " at (z, y, x): (", piz, ',', piy, ',', pix, ')')
-# del temp
 numz, numy, numx = obj.shape
 print("Cropped/padded size: (", numz, ',', numy, ',', numx, ')')
 plt.figure()
 plt.imshow(np.angle(obj)[numz//2, :, :], cmap=my_cmap, vmin=-phase_range, vmax=phase_range)
 plt.title('Phase before subpixel shift')
 plt.pause(0.1)
+
 ##############################
 # align datasets
 ##############################
 # dft registration and subpixel shift (see Matlab code)
 shiftz, shifty, shiftx = reg.getimageregistration(amp_simu, abs(obj), precision=1000)
-# new_amp = abs(reg.subpixel_shift(amp, shiftz, shifty, shiftx))
 obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)
 print("Shift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
       str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
@@ -317,33 +310,44 @@ plt.savefig(savedir + 'linecut_amp.png', bbox_inches="tight")
 
 if debug:
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2)
-    plt0 = ax0.imshow(new_amp[:, :, numx//2], cmap=my_cmap, vmin=0, vmax=1)
-    plt1 = ax1.imshow(new_amp[:, numy//2, :], cmap=my_cmap, vmin=0, vmax=1)
-    plt2 = ax2.imshow(new_amp[numz//2, :, :], cmap=my_cmap, vmin=0, vmax=1)
+    plt0 = ax0.imshow(new_amp[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV,
+                      numy // 2 - pixel_FOV:numy // 2+pixel_FOV, numx//2], cmap=my_cmap, vmin=0, vmax=1)
+    plt1 = ax1.imshow(new_amp[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV,
+                      numy // 2, numx//2-pixel_FOV:numx//2+pixel_FOV], cmap=my_cmap, vmin=0, vmax=1)
+    plt2 = ax2.imshow(new_amp[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV,
+                      numx // 2 - pixel_FOV:numx // 2 + pixel_FOV], cmap=my_cmap, vmin=0, vmax=1)
     ax2.invert_yaxis()
     plt.title('new_amp')
 
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2,)
-    plt0 = ax0.imshow(amp_simu[:, :, numx//2], cmap=my_cmap, vmin=0, vmax=1)
-    plt1 = ax1.imshow(amp_simu[:, numy//2, :], cmap=my_cmap, vmin=0, vmax=1)
-    plt2 = ax2.imshow(amp_simu[numz//2, :, :], cmap=my_cmap, vmin=0, vmax=1)
+    plt0 = ax0.imshow(amp_simu[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV,
+                      numy // 2 - pixel_FOV:numy // 2+pixel_FOV, numx//2], cmap=my_cmap, vmin=0, vmax=1)
+    plt1 = ax1.imshow(amp_simu[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2,
+                      numx//2-pixel_FOV:numx//2+pixel_FOV], cmap=my_cmap, vmin=0, vmax=1)
+    plt2 = ax2.imshow(amp_simu[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV,
+                      numx // 2 - pixel_FOV:numx // 2 + pixel_FOV], cmap=my_cmap, vmin=0, vmax=1)
     ax2.invert_yaxis()
     plt.title('amp_simu')
 
 diff_amp = (amp_simu - new_amp) * 100
 diff_amp_copy = np.copy(diff_amp)
 support = np.zeros(amp_simu.shape)
+
 support[np.nonzero(amp_simu)] = 1
 support[np.nonzero(new_amp)] = 1
+# the support will have the size of the largest object between the simulation and the reconstruction
 diff_amp_copy[support == 0] = np.nan
 masked_array = np.ma.array(diff_amp_copy, mask=np.isnan(diff_amp_copy))
 if debug:
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2)
-    plt0 = ax0.imshow(masked_array[:, :, numx//2], cmap=my_cmap, vmin=-100, vmax=100)
+    plt0 = ax0.imshow(masked_array[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV,
+                      numy // 2 - pixel_FOV:numy // 2+pixel_FOV, numx//2], cmap=my_cmap, vmin=-100, vmax=100)
     plt.colorbar(plt0, ax=ax0)
-    plt1 = ax1.imshow(masked_array[:, numy//2, :], cmap=my_cmap, vmin=-100, vmax=100)
+    plt1 = ax1.imshow(masked_array[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2,
+                      numx//2-pixel_FOV:numx//2+pixel_FOV], cmap=my_cmap, vmin=-100, vmax=100)
     plt.colorbar(plt1, ax=ax1)
-    plt2 = ax2.imshow(masked_array[numz//2, :, :], cmap=my_cmap, vmin=-100, vmax=100)
+    plt2 = ax2.imshow(masked_array[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV,
+                      numx // 2 - pixel_FOV:numx // 2 + pixel_FOV], cmap=my_cmap, vmin=-100, vmax=100)
     ax2.invert_yaxis()
     plt.colorbar(plt2, ax=ax2)
     plt.title('(amp_simu - new_amp)*100')
@@ -383,6 +387,7 @@ plt.colorbar(plt2, ax=ax2)
 plt.savefig(savedir + 'diff_amp_XY_colorbar.png', bbox_inches="tight")
 
 del diff_amp_copy
+support[amp_simu == 0] = 0  # redefine the support as the simulated object
 
 ##############################
 # plot individual strain maps
@@ -393,11 +398,14 @@ masked_array = np.ma.array(new_strain_copy, mask=np.isnan(new_strain_copy))
 
 if debug:
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2)
-    plt0 = ax0.imshow(masked_array[:, :, numx//2], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+    plt0 = ax0.imshow(masked_array[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV,
+                      numy // 2 - pixel_FOV:numy // 2+pixel_FOV, numx//2], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
     plt.colorbar(plt0, ax=ax0)
-    plt1 = ax1.imshow(masked_array[:, numy//2, :], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+    plt1 = ax1.imshow(masked_array[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2,
+                      numx//2-pixel_FOV:numx//2+pixel_FOV], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
     plt.colorbar(plt1, ax=ax1)
-    plt2 = ax2.imshow(masked_array[numz//2, :, :], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+    plt2 = ax2.imshow(masked_array[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV,
+                      numx // 2 - pixel_FOV:numx // 2 + pixel_FOV], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
     ax2.invert_yaxis()
     plt.colorbar(plt2, ax=ax2)
     plt.title('new_strain')
@@ -441,20 +449,22 @@ plt.savefig(savedir + 'phased_strain_XY' + comment + '_colorbar.png', bbox_inche
 
 del new_strain_copy
 
-strain_simu_copy = np.copy(strain_simu)
-strain_simu_copy[bulk_simu == 0] = np.nan
-masked_array = np.ma.array(strain_simu_copy, mask=np.isnan(strain_simu_copy))
+strain_simu[bulk_simu == 0] = np.nan  # remove the non-physical outer layer for simulated strain
+masked_array = np.ma.array(strain_simu, mask=np.isnan(strain_simu))
 
-if debug==0:
-    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2)
-    plt0 = ax0.imshow(masked_array[:, :, numx//2], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
-    plt.colorbar(plt0, ax=ax0)
-    plt1 = ax1.imshow(masked_array[:, numy//2, :], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
-    plt.colorbar(plt1, ax=ax1)
-    plt2 = ax2.imshow(masked_array[numz//2, :, :], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
-    plt.colorbar(plt2, ax=ax2)
-    ax2.invert_yaxis()
-    plt.title('strain_simu')
+fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2)
+plt0 = ax0.imshow(masked_array[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV,
+                  numy // 2 - pixel_FOV:numy // 2+pixel_FOV, numx//2],
+                  cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+plt.colorbar(plt0, ax=ax0)
+plt1 = ax1.imshow(masked_array[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2,
+                  numx//2-pixel_FOV:numx//2+pixel_FOV], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+plt.colorbar(plt1, ax=ax1)
+plt2 = ax2.imshow(masked_array[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV,
+                  numx // 2 - pixel_FOV:numx // 2 + pixel_FOV], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+plt.colorbar(plt2, ax=ax2)
+ax2.invert_yaxis()
+plt.title('strain_simu')
 
 fig, ax0 = plt.subplots(1, 1)
 plt0 = ax0.imshow(
@@ -493,38 +503,57 @@ if save_XY == 1:
 plt.colorbar(plt2, ax=ax2)
 plt.savefig(savedir + 'simu_strain_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
-del strain_simu_copy
-
 ##############################
 # plot difference strain maps
 ##############################
 diff_strain = strain_simu - new_strain
-diff_strain[support == 0] = np.nan  # support is 0 only outside of both reconstructions
+diff_strain[support == 0] = np.nan  # the support is 0 outside of the simulated object, strain is not defined there
 masked_array = np.ma.array(diff_strain, mask=np.isnan(diff_strain))
 if debug:
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2)
-    plt0 = ax0.imshow(masked_array[:, :, numx//2], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+    plt0 = ax0.imshow(masked_array[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV,
+                      numy // 2 - pixel_FOV:numy // 2+pixel_FOV, numx//2],
+                      cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
     plt.colorbar(plt0, ax=ax0)
-    plt1 = ax1.imshow(masked_array[:, numy//2, :], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+    plt1 = ax1.imshow(masked_array[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2,
+                      numx//2-pixel_FOV:numx//2+pixel_FOV], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
     plt.colorbar(plt1, ax=ax1)
-    plt2 = ax2.imshow(masked_array[numz//2, :, :], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+    plt2 = ax2.imshow(masked_array[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV,
+                      numx // 2 - pixel_FOV:numx // 2 + pixel_FOV], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
     ax2.invert_yaxis()
     plt.colorbar(plt2, ax=ax2)
     plt.title('(strain_simu - new_strain) on full data')
 
-support = np.ones(amp_simu.shape)
-support[new_amp < support_threshold] = 0
-diff_strain = strain_simu - new_strain
-diff_strain[support == 0] = np.nan
+phased_support = np.ones(amp_simu.shape)
+phased_support[new_amp < support_threshold] = 0
+if debug:
+    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2)
+    plt0 = ax0.imshow(phased_support[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV,
+                      numy // 2 - pixel_FOV:numy // 2+pixel_FOV, numx//2])
+    plt.colorbar(plt0, ax=ax0)
+    plt1 = ax1.imshow(phased_support[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2,
+                      numx//2-pixel_FOV:numx//2+pixel_FOV])
+    plt.colorbar(plt1, ax=ax1)
+    plt2 = ax2.imshow(phased_support[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV,
+                      numx // 2 - pixel_FOV:numx // 2 + pixel_FOV])
+    ax2.invert_yaxis()
+    plt.colorbar(plt2, ax=ax2)
+    plt.title('Phased support')
+
+diff_strain[phased_support == 0] = np.nan  # exclude also layers outside of the isosurface for the reconstruction
 masked_array = np.ma.array(diff_strain, mask=np.isnan(diff_strain))
 
 if debug:
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2)
-    plt0 = ax0.imshow(masked_array[:, :, numx//2], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+    plt0 = ax0.imshow(masked_array[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV,
+                      numy // 2 - pixel_FOV:numy // 2+pixel_FOV, numx//2], cmap=my_cmap,
+                      vmin=-strain_range, vmax=strain_range)
     plt.colorbar(plt0, ax=ax0)
-    plt1 = ax1.imshow(masked_array[:, numy//2, :], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+    plt1 = ax1.imshow(masked_array[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2,
+                      numx//2-pixel_FOV:numx//2+pixel_FOV], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
     plt.colorbar(plt1, ax=ax1)
-    plt2 = ax2.imshow(masked_array[numz//2, :, :], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
+    plt2 = ax2.imshow(masked_array[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV,
+                      numx // 2 - pixel_FOV:numx // 2 + pixel_FOV], cmap=my_cmap, vmin=-strain_range, vmax=strain_range)
     ax2.invert_yaxis()
     plt.colorbar(plt2, ax=ax2)
     plt.title('(strain_simu - new_strain) with isosurface ' + str(support_threshold))
@@ -566,77 +595,92 @@ if save_XY == 1:
 plt.colorbar(plt2, ax=ax2)
 plt.savefig(savedir + 'diff_strain_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
-support = np.ones((numz, numy, numx))
-support[abs(new_amp) < support_threshold * abs(new_amp).max()] = 0
-coordination_matrix = calc_coordination(support, debugging=0)
-surface = np.copy(support)
+coordination_matrix = calc_coordination(phased_support, debugging=0)  # the surface is defined for the reconstruction
+surface = np.copy(phased_support)
 surface[coordination_matrix > 22] = 0  # remove the bulk 22
-bulk = support - surface
+bulk = phased_support - surface
 bulk[np.nonzero(bulk)] = 1
 
-if debug == 0:
-    plt.figure()
-    plt.subplot(3, 3, 1)
-    plt.imshow(surface[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2 - pixel_FOV:numy // 2+pixel_FOV, numx//2])
-    plt.colorbar()
-    plt.axis('scaled')
-    plt.title("Surface matrix in middle slice in YZ")
-    plt.subplot(3, 3, 2)
-    plt.imshow(surface[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2, numx // 2 - pixel_FOV:numx//2+pixel_FOV])
-    plt.colorbar()
-    plt.title("Surface matrix in middle slice in XZ")
-    plt.axis('scaled')
-    plt.subplot(3, 3, 3)
-    plt.imshow(surface[numz // 2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx // 2 - pixel_FOV:numx//2+pixel_FOV])
-    plt.gca().invert_yaxis()
-    plt.colorbar()
-    plt.title("Surface matrix in middle slice in XY")
-    plt.axis('scaled')
-    surface[surface == 0] = np.nan
-    surface = np.multiply(surface, diff_strain)
-    bulk[bulk == 0] = np.nan
-    bulk = np.multiply(bulk, diff_strain)
+plt.figure()
+plt.subplot(4, 3, 1)
+plt.imshow(surface[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2 - pixel_FOV:numy // 2+pixel_FOV, numx//2])
+plt.colorbar()
+plt.axis('scaled')
+plt.title("Surface matrix in middle slice in YZ")
+plt.subplot(4, 3, 2)
+plt.imshow(surface[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2, numx // 2 - pixel_FOV:numx//2+pixel_FOV])
+plt.colorbar()
+plt.title("Surface matrix in middle slice in XZ")
+plt.axis('scaled')
+plt.subplot(4, 3, 3)
+plt.imshow(surface[numz // 2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx // 2 - pixel_FOV:numx//2+pixel_FOV])
+plt.gca().invert_yaxis()
+plt.colorbar()
+plt.title("Surface matrix in middle slice in XY")
+plt.axis('scaled')
+surface[surface == 0] = np.nan
+surface = np.multiply(surface, diff_strain)
+bulk[bulk == 0] = np.nan
+bulk = np.multiply(bulk, diff_strain)
 
-    plt.subplot(3, 3, 4)
-    plt.imshow(surface[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx//2],
-               vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
-    plt.colorbar()
-    plt.axis('scaled')
-    plt.title("Surface difference strain in middle slice in YZ")
-    plt.subplot(3, 3, 5)
-    plt.imshow(surface[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy//2, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
-               vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
-    plt.colorbar()
-    plt.title("Surface difference strain in middle slice in XZ")
-    plt.axis('scaled')
-    plt.subplot(3, 3, 6)
-    plt.imshow(surface[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
-               vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
-    plt.gca().invert_yaxis()
-    plt.colorbar()
-    plt.title("Surface difference strain in middle slice in XY")
-    plt.axis('scaled')
+plt.subplot(4, 3, 4)
+plt.imshow(surface[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx//2],
+           vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
+plt.colorbar()
+plt.axis('scaled')
+plt.title("Surface difference strain in middle slice in YZ")
+plt.subplot(4, 3, 5)
+plt.imshow(surface[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy//2, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
+           vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
+plt.colorbar()
+plt.title("Surface difference strain in middle slice in XZ")
+plt.axis('scaled')
+plt.subplot(4, 3, 6)
+plt.imshow(surface[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
+           vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
+plt.gca().invert_yaxis()
+plt.colorbar()
+plt.title("Surface difference strain in middle slice in XY")
+plt.axis('scaled')
 
-    plt.subplot(3, 3, 7)
-    plt.imshow(bulk[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx//2],
-               vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
-    plt.colorbar()
-    plt.axis('scaled')
-    plt.title("Bulk difference strain in middle slice in YZ")
-    plt.subplot(3, 3, 8)
-    plt.imshow(bulk[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy//2, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
-               vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
-    plt.colorbar()
-    plt.title("Bulk difference strain in middle slice in XZ")
-    plt.axis('scaled')
-    plt.subplot(3, 3, 9)
-    plt.imshow(bulk[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
-               vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
-    plt.gca().invert_yaxis()
-    plt.colorbar()
-    plt.title("Bulk difference strain in middle slice in XY")
-    plt.axis('scaled')
+plt.subplot(4, 3, 7)
+plt.imshow(bulk[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx//2],
+           vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
+plt.colorbar()
+plt.axis('scaled')
+plt.title("Bulk difference strain in middle slice in YZ")
+plt.subplot(4, 3, 8)
+plt.imshow(bulk[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy//2, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
+           vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
+plt.colorbar()
+plt.title("Bulk difference strain in middle slice in XZ")
+plt.axis('scaled')
+plt.subplot(4, 3, 9)
+plt.imshow(bulk[numz//2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
+           vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
+plt.gca().invert_yaxis()
+plt.colorbar()
+plt.title("Bulk difference strain in middle slice in XY")
+plt.axis('scaled')
 
+plt.subplot(4, 3, 10)
+plt.imshow(support[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2 - pixel_FOV:numy // 2+pixel_FOV, numx//2])
+plt.colorbar()
+plt.axis('scaled')
+plt.title("Simulation support in middle slice in YZ")
+plt.subplot(4, 3, 11)
+plt.imshow(support[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2, numx // 2 - pixel_FOV:numx//2+pixel_FOV])
+plt.colorbar()
+plt.title("Simulation support in middle slice in XZ")
+plt.axis('scaled')
+plt.subplot(4, 3, 12)
+plt.imshow(support[numz // 2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx // 2 - pixel_FOV:numx//2+pixel_FOV])
+plt.gca().invert_yaxis()
+plt.colorbar()
+plt.title("Simulation support in middle slice in XY")
+plt.axis('scaled')
+
+print("Number of defined points in surface = ", (~np.isnan(surface)).sum())
 rms_strain = np.sqrt(np.mean(np.ndarray.flatten(surface[~np.isnan(surface)])**2))
 print('RMS of the difference in surface strain = ', str('{:.4e}'.format(rms_strain)))
 rms_strain = np.sqrt(np.mean(np.ndarray.flatten(bulk[~np.isnan(bulk)])**2))
