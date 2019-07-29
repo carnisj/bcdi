@@ -13,13 +13,12 @@ import sys
 from tkinter import filedialog
 from scipy.signal import convolve
 import matplotlib.ticker as ticker
-sys.path.append('C:/Users/carnis/Work Folders/Documents/myscripts/postprocessing_cdi/')
-import image_registration as reg
+sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+from bcdi.utils import image_registration as reg
 
 scan = 2227  # spec scan number
-# datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/"
-datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/crop400phase/no_apodization/avg1/"
-savedir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/crop400phase/test/"  # no_apodization"  # apodize_during_phasing # apodize_postprocessing
+datadir = "G:/review paper/BCDI_isosurface/S"+str(scan)+"/simu/crop400phase/no_apodization/avg1/"
+savedir = "G:/review paper/BCDI_isosurface/S"+str(scan)+"/simu/crop400phase/no_apodization/avg1/rmse_iso/"
 voxel_size = 3.0  # in nm
 tick_spacing = 50  # for plots, in nm
 planar_dist = 0.2269735  # in nm, for strain calculation
@@ -29,13 +28,13 @@ tick_length = 6  # in plots
 tick_width = 2  # in plots
 strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
-support_threshold = 0.71  # threshold for support determination
+support_threshold = 0.05  # threshold for support determination
 min_amp = 0.01  # everything with lower amplitude will be set to np.nan in plots
 debug = 0  # 1 to show all plots
 save_YZ = 0  # 1 to save the strain in YZ plane
 save_XZ = 0  # 1 to save the strain in XZ plane
 save_XY = 0  # 1 to save the strain in XY plane
-comment = 'test' + str(support_threshold)   # should start with _
+comment = '_iso' + str(support_threshold)   # should start with _
 comment = comment + "_strainrange_" + str(strain_range)
 ######################################
 # define a colormap
