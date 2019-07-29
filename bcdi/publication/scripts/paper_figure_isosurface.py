@@ -28,7 +28,7 @@ tick_length = 6  # in plots
 tick_width = 2  # in plots
 strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
-support_threshold = 0.025  # threshold for support determination
+support_threshold = 0.375  # threshold for support determination
 min_amp = 0.01  # everything with lower amplitude will be set to np.nan in plots
 debug = 0  # 1 to show all plots
 save_YZ = 0  # 1 to save the strain in YZ plane
@@ -618,7 +618,11 @@ plt.gca().invert_yaxis()
 plt.colorbar()
 plt.title("Surface matrix in middle slice in XY")
 plt.axis('scaled')
+
 surface[surface == 0] = np.nan
+print("Total number of points in surface = ", (~np.isnan(surface)).sum())
+rms_strain = np.sqrt(np.mean(np.ndarray.flatten(surface[~np.isnan(surface)])**2))
+
 surface = np.multiply(surface, diff_strain)
 bulk[bulk == 0] = np.nan
 bulk = np.multiply(bulk, diff_strain)
