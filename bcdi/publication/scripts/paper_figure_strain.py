@@ -31,14 +31,14 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 
 
 scan = 2227  # spec scan number
-datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/simu/crop100/"
+datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/simu/crop100/apod_post_blackman/"
 savedir = 'G:/review paper/BCDI_isosurface/New figures/apod_amp_blackman/'
 comment = '_100'   # should start with _
 simulated_data = True
 
 voxel_size = 12.0  # in nm
 tick_spacing = 50  # for plots, in nm
-field_of_view = 500  # in nm, can be larger than the total width (the array will be padded)
+field_of_view = 600  # in nm, can be larger than the total width (the array will be padded)
 
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
@@ -46,16 +46,16 @@ tick_width = 2  # in plots
 
 strain_range = 0.0002  # for plots
 phase_range = np.pi  # for plots
-grey_background = True  # True to set the background to grey in phase and strain plots
+grey_background = False  # True to set the background to grey in phase and strain plots
 
 save_YZ = False  # True to save the strain in YZ plane
 save_XZ = True  # True to save the strain in XZ plane
 save_XY = True  # True to save the strain in XY plane
 
-flag_strain = False  # True to plot and save the strain
+flag_strain = True  # True to plot and save the strain
 flag_phase = False  # True to plot and save the phase
 flag_amp = True  # True to plot and save the amplitude
-amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
+amp_histogram_Yaxis = 'log'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
 flag_linecut = False  # True to plot and save a linecut of the phase
 ##########################
@@ -138,7 +138,7 @@ if flag_support:
 
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
     if save_YZ:
         fig.savefig(savedir + 'support_YZ' + comment + '.png', bbox_inches="tight")
@@ -149,7 +149,7 @@ if flag_support:
         vmin=0, vmax=1, cmap=my_cmap)
     ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
     if save_XZ:
         fig.savefig(savedir + 'support_XZ' + comment + '.png', bbox_inches="tight")
@@ -161,7 +161,7 @@ if flag_support:
     ax2.invert_yaxis()
     ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
 
     if save_XY:
@@ -178,7 +178,7 @@ if flag_amp:
 
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
     if save_YZ:
         fig.savefig(savedir + 'amp_YZ' + comment + '.png', bbox_inches="tight")
@@ -189,7 +189,7 @@ if flag_amp:
         vmin=0, vmax=1, cmap=my_cmap)
     ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
     if save_XZ:
         fig.savefig(savedir + 'amp_XZ' + comment + '.png', bbox_inches="tight")
@@ -201,7 +201,7 @@ if flag_amp:
     ax2.invert_yaxis()
     ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
 
     if save_XY:
@@ -217,9 +217,9 @@ if flag_amp:
     if amp_histogram_Yaxis == 'log':
         ax.set_yscale('log')
         plt.ylim(top=100000)
-    ax.tick_params(labelbottom='off', labelleft='off', direction='out', length=tick_length, width=tick_width)
+    ax.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
     plt.savefig(savedir + 'phased_histogram_amp' + comment + '.png', bbox_inches="tight")
-    ax.tick_params(labelbottom='on', labelleft='on', direction='out', length=tick_length, width=tick_width)
+    ax.tick_params(labelbottom=True, labelleft=True, direction='out', length=tick_length, width=tick_width)
     ax.spines['right'].set_linewidth(1.5)
     ax.spines['left'].set_linewidth(1.5)
     ax.spines['top'].set_linewidth(1.5)
@@ -240,7 +240,7 @@ if flag_strain:
                       vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
     if save_YZ:
         fig.savefig(savedir + 'strain_YZ' + comment + '.png', bbox_inches="tight")
@@ -250,7 +250,7 @@ if flag_strain:
                       vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
     ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
     if save_XZ:
         fig.savefig(savedir + 'strain_XZ' + comment + '.png', bbox_inches="tight")
@@ -261,7 +261,7 @@ if flag_strain:
     ax2.invert_yaxis()
     ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
 
     if save_XY:
@@ -282,7 +282,7 @@ if flag_phase:
                       vmin=-phase_range, vmax=phase_range, cmap=my_cmap)
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
     if save_YZ:
         fig.savefig(savedir + 'phase_YZ' + comment + '.png', bbox_inches="tight")
@@ -292,7 +292,7 @@ if flag_phase:
                       vmin=-phase_range, vmax=phase_range, cmap=my_cmap)
     ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
     if save_XZ:
         fig.savefig(savedir + 'phase_XZ' + comment + '.png', bbox_inches="tight")
@@ -303,7 +303,7 @@ if flag_phase:
     ax2.invert_yaxis()
     ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-    ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+    ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
 
     if save_XY:
@@ -357,7 +357,7 @@ if flag_phase:
         ax3.set_xlim(50, 150)
         ax3.set_ylim(-np.pi, np.pi)
         ax3.xaxis.set_major_locator(ticker.MultipleLocator(10))
-        ax3.tick_params(labelbottom='off', labelleft='off', top='off', bottom='on', direction='inout',
+        ax3.tick_params(labelbottom=False, labelleft=False, top=False, bottom=True, direction='inout',
                         length=tick_length, width=tick_width)
         fig.savefig(savedir + 'Linecut_phase_X_Y=130' + comment + '.png', bbox_inches="tight")
 
