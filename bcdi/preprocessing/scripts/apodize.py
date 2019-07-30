@@ -20,15 +20,15 @@ Apodization applied directly on reciprocal space data, using a 3d Gaussian, Tuke
 """
 
 scan = 2227
-datadir = "G:/review paper/BCDI_isosurface/S"+str(scan) + "/simu/crop100/compa_apod_windows/"
-comment = 'diff_100_apod'
+datadir = "G:/review paper/BCDI_isosurface/S"+str(scan) + "/simu/crop400phase/pre_apod_blackman/"
+comment = '_blackman'
 debug = True
 
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 6  # in plots
 tick_width = 2  # in plots
 
-window_type = 'normal'  # 'normal' or 'tukey' or 'blackman'
+window_type = 'blackman'  # 'normal' or 'tukey' or 'blackman'
 #############################
 # parameters for a gaussian #
 #############################
@@ -78,18 +78,20 @@ if debug:
     plt.imshow(window[:, :, nbx//2], vmin=0, vmax=window.max())
     plt.title('Window at middle frame')
 
-    # window2 = pu.blackman_window(data.shape)
-    #
-    # window3 = pu.tukey_window(data.shape, alpha=alpha)
+    fig, ax0 = plt.subplots(1, 1)
+    plt.plot(window[nbz // 2, nby // 2, :])
+    plt.plot(window[:, nby//2, nbx//2])
+    plt.plot(window[nbz//2, :, nbx//2])
+    plt.title('Window linecuts at array center')
 
+    #########################################################
+    # the plot below compare different appodization windows #
+    #########################################################
+    # window2 = pu.blackman_window(data.shape)
+    # window3 = pu.tukey_window(data.shape, alpha=alpha)
     # fig, ax = plt.subplots(1, 1)
     # plt.plot(window2[nbz // 2, nby // 2, :], '.r')
     # plt.plot(window3[nbz // 2, nby // 2, :], 'sb')
-
-    # plt.plot(window[nbz // 2, nby // 2, :])
-    # plt.plot(window[:, nby//2, nbx//2])
-    # plt.plot(window[nbz//2, :, nbx//2])
-    # plt.title('Window linecuts at array center')
     # ax.tick_params(labelbottom=False, labelleft=False, direction=tick_direction, length=tick_length,
     #                width=tick_width)
     # plt.savefig(datadir + 'windows.png', bbox_inches="tight")
