@@ -121,11 +121,11 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     :param amp: 3D array, amplitude before apodization
     :param phase: 3D array, phase before apodization
     :param initial_shape: shape of the FFT used for phasing
-    :param window_type: window filtering function, 'gaussian' or 'tukey' or 'blackman'
+    :param window_type: window filtering function, 'normal' or 'tukey' or 'blackman'
     :param debugging: set to True to see plots
     :type debugging: bool
     :param kwargs:
-     - if 'gaussian': sigma and mu of the 3d gaussian, tuples of 3 floats
+     - if 'normal': sigma and mu of the 3d multivariate normal distribution, tuples of 3 floats
      - if 'tukey': alpha (shape parameter) of the 3d Tukey window, tuple of 3 floats
     :return: filtered amplitude, phase of the same shape as myamp
     """
@@ -166,8 +166,8 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
         plt.colorbar()
         plt.pause(0.1)
 
-    if window_type == 'gaussian':
-        print('Apodization using a 3d Gaussian window')
+    if window_type == 'normal':
+        print('Apodization using a 3d multivariate normal window')
         try:
             sigma
         except NameError:  # sigma not declared

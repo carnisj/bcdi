@@ -40,10 +40,10 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 2227  # spec scan number
+scan = 2191  # spec scan number
 
 # datadir = 'C:/Users/carnis/Work Folders/Documents/data/SIXS/S' + str(scan) + '/pynxraw/'
-datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop300/test/'
+datadir = 'D:/review paper/BCDI_isosurface/S' + str(scan) + '/simu/crop400phase/'
 get_temperature = False
 reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
@@ -109,7 +109,7 @@ save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
 #########################
 apodize_flag = True  # True to multiply the diffraction pattern by a filtering window
-apodize_window = 'blackman'  # filtering window, 'gaussian' or 'tukey' or 'blackman'
+apodize_window = 'blackman'  # filtering window, multivariate 'normal' or 'tukey' or 'blackman'
 mu = np.array([0.0, 0.0, 0.0])  # mu of the gaussian window
 sigma = np.array([0.30, 0.30, 0.30])  # sigma of the gaussian window
 alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
