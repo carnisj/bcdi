@@ -14,7 +14,7 @@ import tkinter as tk
 from tkinter import filedialog
 import matplotlib.ticker as ticker
 import sys
-sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
 
@@ -30,33 +30,33 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 """
 
 
-scan = 978  # spec scan number
-datadir = "C:/Users/carnis/Work Folders/Documents/data/HC3207/SN"+str(scan)+"/pynxraw/"
-savedir = "C:/Users/carnis/Work Folders/Documents/data/HC3207/SN"+str(scan) + "/figures/"
-comment = '_modes'   # should start with _
-simulated_data = False
+scan = 2227  # spec scan number
+datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/simu/crop100/"
+savedir = 'G:/review paper/BCDI_isosurface/New figures/apod_amp_blackman/'
+comment = '_100'   # should start with _
+simulated_data = True
 
-voxel_size = 3  # in nm
+voxel_size = 12.0  # in nm
 tick_spacing = 50  # for plots, in nm
-field_of_view = 400  # in nm, can be larger than the total width (the array will be padded)
+field_of_view = 500  # in nm, can be larger than the total width (the array will be padded)
 
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 
-strain_range = 0.002  # for plots
+strain_range = 0.0002  # for plots
 phase_range = np.pi  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
 
-save_YZ = 0  # True to save the strain in YZ plane
+save_YZ = False  # True to save the strain in YZ plane
 save_XZ = True  # True to save the strain in XZ plane
 save_XY = True  # True to save the strain in XY plane
 
-flag_strain = True  # True to plot and save the strain
-flag_phase = True  # True to plot and save the phase
+flag_strain = False  # True to plot and save the strain
+flag_phase = False  # True to plot and save the phase
 flag_amp = True  # True to plot and save the amplitude
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
-flag_support = True  # True to plot and save the support
+flag_support = False  # True to plot and save the support
 flag_linecut = False  # True to plot and save a linecut of the phase
 ##########################
 # end of user parameters #
