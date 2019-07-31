@@ -18,7 +18,7 @@ from bcdi.utils import image_registration as reg
 
 scan = 2227  # spec scan number
 datadir = "G:/review paper/BCDI_isosurface/S"+str(scan)+"/simu/crop400phase/no_apodization/avg1/"
-savedir = "G:/review paper/BCDI_isosurface/S"+str(scan)+"/simu/crop400phase/no_apodization/avg1/rmse_iso/"
+savedir = 'G:/review paper/BCDI_isosurface/New figures/isosurface/no_apodization/avg1_new/'
 voxel_size = 3.0  # in nm
 tick_spacing = 50  # for plots, in nm
 planar_dist = 0.2269735  # in nm, for strain calculation
@@ -28,12 +28,12 @@ tick_length = 6  # in plots
 tick_width = 2  # in plots
 strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
-support_threshold = 0.375  # threshold for support determination
+support_threshold = 0.7  # threshold for support determination
 min_amp = 0.01  # everything with lower amplitude will be set to np.nan in plots
 debug = 0  # 1 to show all plots
 save_YZ = 0  # 1 to save the strain in YZ plane
-save_XZ = 0  # 1 to save the strain in XZ plane
-save_XY = 0  # 1 to save the strain in XY plane
+save_XZ = 1  # 1 to save the strain in XZ plane
+save_XY = 1  # 1 to save the strain in XY plane
 comment = '_iso' + str(support_threshold)   # should start with _
 comment = comment + "_strainrange_" + str(strain_range)
 ######################################
@@ -237,7 +237,7 @@ plt0 = ax0.imshow(masked_array[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixe
                   vmin=-phase_range, vmax=phase_range, cmap=my_cmap)
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 if save_YZ == 1:
     plt.savefig(savedir + 'simu_phase_YZ.png', bbox_inches="tight")
@@ -247,7 +247,7 @@ plt1 = ax1.imshow(masked_array[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2, n
                   vmin=-phase_range, vmax=phase_range, cmap=my_cmap)
 ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 if save_XZ == 1:
     plt.savefig(savedir + 'simu_phase_XZ.png', bbox_inches="tight")
@@ -258,7 +258,7 @@ plt2 = ax2.imshow(masked_array[numz // 2, numy//2-pixel_FOV:numy//2+pixel_FOV, n
 ax2.invert_yaxis()
 ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 
 if save_XY == 1:
@@ -287,9 +287,9 @@ plt.hist(new_amp[new_amp > min_amp].flatten(), bins=250)
 plt.xlim(left=min_amp)
 plt.ylim(bottom=1)
 ax.set_yscale('log')
-ax.tick_params(labelbottom='off', labelleft='off', direction='out', length=tick_length, width=tick_width)
+ax.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
 plt.savefig(savedir + 'phased_histogram_amp.png', bbox_inches="tight")
-ax.tick_params(labelbottom='on', labelleft='on', direction='out', length=tick_length, width=tick_width)
+ax.tick_params(labelbottom=True, labelleft=True, direction='out', length=tick_length, width=tick_width)
 ax.spines['right'].set_linewidth(1.5)
 ax.spines['left'].set_linewidth(1.5)
 ax.spines['top'].set_linewidth(1.5)
@@ -300,7 +300,7 @@ plt.savefig(savedir + 'phased_histogram_amp_labels.png', bbox_inches="tight")
 fig, ax0 = plt.subplots(1, 1)
 plt.plot(amp_simu[numz // 2, 183, 128:136], 'r')
 plt.plot(new_amp[numz // 2, 183, 128:136], 'k')
-ax0.tick_params(labelbottom='off', labelleft='off', direction='out', top='on', bottom='off',
+ax0.tick_params(labelbottom=False, labelleft=False, direction='out', top=True, bottom=False,
                 length=tick_length, width=tick_width)
 ax0.spines['right'].set_linewidth(1.5)
 ax0.spines['left'].set_linewidth(1.5)
@@ -357,7 +357,7 @@ plt0 = ax0.imshow(masked_array[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixe
                   vmin=-100, vmax=100, cmap=my_cmap)
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 if save_YZ == 1:
     plt.savefig(savedir + 'diff_amp_YZ.png', bbox_inches="tight")
@@ -367,7 +367,7 @@ plt1 = ax1.imshow(masked_array[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2, n
                   vmin=-100, vmax=100, cmap=my_cmap)
 ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 if save_XZ == 1:
     plt.savefig(savedir + 'diff_amp_XZ.png', bbox_inches="tight")
@@ -378,7 +378,7 @@ plt2 = ax2.imshow(masked_array[numz // 2, numy//2-pixel_FOV:numy//2+pixel_FOV, n
 ax2.invert_yaxis()
 ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 
 if save_XY == 1:
@@ -416,7 +416,7 @@ plt0 = ax0.imshow(
     vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 if save_YZ == 1:
     plt.savefig(savedir + 'phased_strain_YZ' + comment + '.png', bbox_inches="tight")
@@ -427,7 +427,7 @@ plt1 = ax1.imshow(
     vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
 ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 if save_XZ == 1:
     plt.savefig(savedir + 'phased_strain_XZ' + comment + '.png', bbox_inches="tight")
@@ -439,7 +439,7 @@ plt2 = ax2.imshow(
 ax2.invert_yaxis()
 ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 
 if save_XY == 1:
@@ -472,7 +472,7 @@ plt0 = ax0.imshow(
     vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 if save_YZ == 1:
     plt.savefig(savedir + 'simu_strain_YZ' + comment + '.png', bbox_inches="tight")
@@ -483,7 +483,7 @@ plt1 = ax1.imshow(
     vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
 ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 if save_XZ == 1:
     plt.savefig(savedir + 'simu_strain_XZ' + comment + '.png', bbox_inches="tight")
@@ -495,7 +495,7 @@ plt2 = ax2.imshow(
 ax2.invert_yaxis()
 ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 
 if save_XY == 1:
@@ -564,7 +564,7 @@ plt0 = ax0.imshow(
     vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax0.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 if save_YZ == 1:
     plt.savefig(savedir + 'diff_strain_YZ' + comment + '.png', bbox_inches="tight")
@@ -575,7 +575,7 @@ plt1 = ax1.imshow(
     vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
 ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax1.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 if save_XZ == 1:
     plt.savefig(savedir + 'diff_strain_XZ' + comment + '.png', bbox_inches="tight")
@@ -587,7 +587,7 @@ plt2 = ax2.imshow(
 ax2.invert_yaxis()
 ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
+ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 
 if save_XY == 1:
