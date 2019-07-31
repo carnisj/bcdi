@@ -31,12 +31,12 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 
 
 scan = 2227  # spec scan number
-datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/simu/crop100/apod_post_blackman/"
-savedir = 'G:/review paper/BCDI_isosurface/New figures/apod_amp_blackman/'
-comment = '_100'   # should start with _
+datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/simu/crop400noise/gap/"
+savedir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/simu/crop400noise/noise/"
+comment = '_gap_noise'   # should start with _
 simulated_data = True
 
-voxel_size = 12.0  # in nm
+voxel_size = 3.0  # in nm
 tick_spacing = 50  # for plots, in nm
 field_of_view = 600  # in nm, can be larger than the total width (the array will be padded)
 
@@ -55,7 +55,7 @@ save_XY = True  # True to save the strain in XY plane
 flag_strain = True  # True to plot and save the strain
 flag_phase = False  # True to plot and save the phase
 flag_amp = True  # True to plot and save the amplitude
-amp_histogram_Yaxis = 'log'  # 'log' or 'linear', Y axis scale for the amplitude histogram
+amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
 flag_linecut = False  # True to plot and save a linecut of the phase
 ##########################
@@ -209,11 +209,10 @@ if flag_amp:
     plt.colorbar(plt2, ax=ax2)
     fig.savefig(savedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
-    min_amp = amp.min()
     fig, ax = plt.subplots(1, 1)
-    plt.hist(amp[amp > min_amp].flatten(), bins=250)
+    plt.hist(amp[amp > 0.01].flatten(), bins=250)
     plt.xlim(left=0.05)
-    plt.ylim(bottom=1)
+    plt.ylim(bottom=1, top=100000)
     if amp_histogram_Yaxis == 'log':
         ax.set_yscale('log')
         plt.ylim(top=100000)
