@@ -1,3 +1,7 @@
+* Refactor: exclude voxels left over by coordination number selection in postprocessing/postprocessing_utils.find_bulk()
+
+* Refactor: use the mean amplitude of the surface layer to define the bulk in postprocessing/postprocessing_utils.find_bulk()
+
 * Feature: enable PRTF resolution calculation for simulated data
 
 * Feature: create preprocessing/scripts/apodize.py to apodize reciprocal space data
