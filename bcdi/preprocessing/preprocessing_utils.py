@@ -616,60 +616,6 @@ def find_bragg(data, peak_method):
 
     return z0, y0, x0
 
-def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixels=None, debugging=False):
-    """
-    Load ID01 data, apply filters and concatenate it for phasing.
-
-    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL'
-    :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
-    :param debugging: set to True to see plots
-    :return:
-     - the 3D data array in the detector frame and the 3D mask array
-     - the monitor values for normalization
-     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    """
-    if flatfield is None:
-        flatfield = np.ones((detector.nb_pixel_y, detector.nb_pixel_x))
-    if hotpixels is None:
-        hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
-    if beamline == 'ID01':
-        data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
-                                                               debugging=debugging)
-    elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
-        data, mask3d, monitor, frames_logical = load_sixs_data(logfile, beamline, detector, flatfield, hotpixels,
-                                                               debugging=debugging)
-    elif beamline == 'CRISTAL':
-        data, mask3d, monitor, frames_logical = load_cristal_data(logfile, detector, flatfield, hotpixels,
-                                                                  debugging=debugging)
-    elif beamline == 'P10':
-        data, mask3d, monitor, frames_logical = load_p10_data(logfile, detector, flatfield, hotpixels,
-                                                              debugging=debugging)
-    else:
-        raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    # remove indices where frames_logical=0
-    nbz, nby, nbx = data.shape
-    nb_frames = (frames_logical != 0).sum()
-
-    newdata = np.zeros((nb_frames, nby, nbx))
-    newmask = np.zeros((nb_frames, nby, nbx))
-    # do not process the monitor here, it is done in normalize_dataset()
-
-    nb_overlap = 0
-    for idx in range(len(frames_logical)):
-        if frames_logical[idx]:
-            newdata[idx - nb_overlap, :, :] = data[idx, :, :]
-            newmask[idx - nb_overlap, :, :] = mask3d[idx, :, :]
-        else:
-            nb_overlap = nb_overlap + 1
-
-    return newdata, newmask, monitor, frames_logical
 
 def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False, hxrd=None,
             debugging=False, **kwargs):
@@ -862,6 +808,62 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
     monitor = logfile['/' + group_key + '/scan_data/data_04'][:]
 
     return data, mask3d, monitor, frames_logical
+
+
+def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixels=None, debugging=False):
+    """
+    Load ID01 data, apply filters and concatenate it for phasing.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL'
+    :param flatfield: the 2D flatfield array
+    :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
+    :param debugging: set to True to see plots
+    :return:
+     - the 3D data array in the detector frame and the 3D mask array
+     - the monitor values for normalization
+     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    """
+    if flatfield is None:
+        flatfield = np.ones((detector.nb_pixel_y, detector.nb_pixel_x))
+    if hotpixels is None:
+        hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+
+    if beamline == 'ID01':
+        data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
+                                                               debugging=debugging)
+    elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
+        data, mask3d, monitor, frames_logical = load_sixs_data(logfile, beamline, detector, flatfield, hotpixels,
+                                                               debugging=debugging)
+    elif beamline == 'CRISTAL':
+        data, mask3d, monitor, frames_logical = load_cristal_data(logfile, detector, flatfield, hotpixels,
+                                                                  debugging=debugging)
+    elif beamline == 'P10':
+        data, mask3d, monitor, frames_logical = load_p10_data(logfile, detector, flatfield, hotpixels,
+                                                              debugging=debugging)
+    else:
+        raise ValueError('Wrong value for "rocking_angle" parameter')
+
+    # remove indices where frames_logical=0
+    nbz, nby, nbx = data.shape
+    nb_frames = (frames_logical != 0).sum()
+
+    newdata = np.zeros((nb_frames, nby, nbx))
+    newmask = np.zeros((nb_frames, nby, nbx))
+    # do not process the monitor here, it is done in normalize_dataset()
+
+    nb_overlap = 0
+    for idx in range(len(frames_logical)):
+        if frames_logical[idx]:
+            newdata[idx - nb_overlap, :, :] = data[idx, :, :]
+            newmask[idx - nb_overlap, :, :] = mask3d[idx, :, :]
+        else:
+            nb_overlap = nb_overlap + 1
+
+    return newdata, newmask, monitor, frames_logical
 
 
 def load_flatfield(flatfield_file):
@@ -1567,6 +1569,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
      - updated frames_logical
     """
     if frames_logical is None:  # retrieve the raw data length, then len(frames_logical) may be different from nb_frames
+        # TODO: create a function which does not loda the data but use the specfile
         _, _, _, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                             beamline=setup.beamline)
 
