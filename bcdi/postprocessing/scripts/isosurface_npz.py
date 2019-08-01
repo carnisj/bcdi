@@ -19,11 +19,12 @@ Help to define the isosurface for the reconstructed scan depending on amplitude 
 
 save = 1  # 1 to save the histogram, 0 otherwise
 plot = 0  # 1 to plot the summed amplitude, 0 otherwise
-# scan = 978
+scan = 2191
 polyfit = 0  # fir with polynomial instead of spline
 histogram_Yaxis = 'linear'  # 'log' or 'linear'
+threshold_amp = 0.05  # use only points with larger modulus to calculate mean, std and the histogram
 comment = '1'
-datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop600/'  # 'C:/users/CARNIS/Work Folders/Documents/data/HC3207/SN'+str(scan)+'/pynxraw/'
+datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan) + "/pynxraw/apod_pre_blackman/"
 ################################################################################
 
 
@@ -155,11 +156,11 @@ if plot == 1:
 
 amp = abs(obj)
 amp = amp / amp.max()
-mean_amp = amp[amp > 0.01].mean()
-std_amp = amp[amp > 0.01].std()
+mean_amp = amp[amp > threshold_amp].mean()
+std_amp = amp[amp > threshold_amp].std()
 print("Mean amp=", mean_amp)
 print("Std amp=", std_amp)
-hist, bin_edges = np.histogram(amp[amp > 0.01].flatten(), bins=30)
+hist, bin_edges = np.histogram(amp[amp > threshold_amp].flatten(), bins=250)
 bin_step = (bin_edges[1]-bin_edges[0])/2
 bin_axis = bin_edges + bin_step
 bin_axis = bin_axis[0:len(hist)]
