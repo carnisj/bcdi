@@ -42,8 +42,7 @@ or data[z, y, x] for real space
 
 scan = 2191  # spec scan number
 
-# datadir = 'C:/Users/carnis/Work Folders/Documents/data/SIXS/S' + str(scan) + '/pynxraw/'
-datadir = 'D:/review paper/BCDI_isosurface/S' + str(scan) + '/simu/crop400phase/'
+datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan) + "/pynxraw/apod_pre_blackman/"
 get_temperature = False
 reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
@@ -52,25 +51,25 @@ reference_temperature = None  # used to calibrate the thermal expansion, if None
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 
-original_size = [300, 300, 300]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [270, 432, 400]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor during phasing
 
 output_size = original_size  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
-fix_voxel = 4.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
+fix_voxel = 3.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no averaging
 
-isosurface_strain = 0.68  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
-isosurface_method = 'threshold'  # 'threshold' or 'defect'
+isosurface_strain = 0.5  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_method = 'defect'  # 'threshold' or 'defect'
 
-comment = "_1" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = "_2_blackman_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 threshold_plot = isosurface_strain  # suppor4t threshold for plots (max amplitude of 1)
-strain_range = 0.0002  # for plots
+strain_range = 0.005  # for plots
 phase_range = np.pi  # for plots
-phase_offset = 0   # manual offset to add to the phase, should be 0 normally
+phase_offset = 0  # manual offset to add to the phase, should be 0 normally
 
-plot_width = (35, 20, 25)  # (z, y, x) margin outside the support in each direction, can be negative
+plot_width = (30, 15, 20)  # (z, y, x) margin outside the support in each direction, can be negative
 # useful to avoid cutting the object during the orthogonalization
 
 # define setup below
@@ -82,22 +81,22 @@ sdd = 0.50678  # sample to detector distance in m
 pixel_size = 55e-6  # detector pixel size in m
 energy = 8994  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # beam along z
-outofplane_angle = 35.3240  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = -1.6029  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 35.3440  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = -0.9265  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
 tilt_angle = 0.01015  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
-correct_refraction = 0  # 1 for correcting the phase shift due to refraction, 0 otherwise
-correct_absorption = 0  # 1 for correcting the amplitude for absorption, 0 otherwise
+correct_refraction = 1  # 1 for correcting the phase shift due to refraction, 0 otherwise
+correct_absorption = 1  # 1 for correcting the amplitude for absorption, 0 otherwise
 dispersion = 4.1184E-05  # delta
 # Pt:  3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994keV, 5.2647E-05 @ 7994keV, 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
 absorption = 3.4298E-06  # beta
 # Pt:  2.3486E-06 @ 9994eV, 3.4298E-06 @ 8994keV, 5.2245E-06 @ 7994keV, 4.1969E-06 @ 8500eV
-threshold_refraction = 0.025  # threshold used to calculate the optical path
+threshold_refraction = 0.05  # threshold used to calculate the optical path
 # the threshold for refraction/absorption corrections should be low, to correct for an object larger than the real one,
 # otherwise it messes up the phase
 #########################
-simu_flag = 1  # set to 1 if it is simulation, the parameter invert_phase will be set to 0 and pi added to the phase
-invert_phase = False  # True for the displacement to have the right sign (FFT convention), False only for simulations
+simu_flag = 0  # set to 1 if it is simulation, the parameter invert_phase will be set to 0 and pi added to the phase
+invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
 flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling'
 threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use for ramp removal
@@ -108,7 +107,7 @@ save_labframe = False  # True to save the data in the laboratory frame (before r
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
 #########################
-apodize_flag = True  # True to multiply the diffraction pattern by a filtering window
+apodize_flag = False  # True to multiply the diffraction pattern by a filtering window
 apodize_window = 'blackman'  # filtering window, multivariate 'normal' or 'tukey' or 'blackman'
 mu = np.array([0.0, 0.0, 0.0])  # mu of the gaussian window
 sigma = np.array([0.30, 0.30, 0.30])  # sigma of the gaussian window
@@ -634,7 +633,7 @@ if save:
 # plot phase & strain #
 #######################
 amp = amp / amp.max()
-volume = bulk.sum()*voxel_size**3  # in nm3
+volume = amp.sum()*voxel_size**3  # in nm3
 strain[bulk == 0] = -2*strain_range
 phase[bulk == 0] = -2*phase_range
 pixel_spacing = tick_spacing / voxel_size
