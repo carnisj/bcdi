@@ -17,6 +17,7 @@ from scipy.interpolate import interp1d
 import gc
 import sys
 import os
+sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
@@ -35,12 +36,16 @@ For the laboratory frame, the CXI convention is used: z downstream, y vertical, 
 For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 
 Supported beamline: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
+
+Path structure: 
+    specfile in /root_folder/
+    data in /root_folder/S2191/data/
 """
 
-scan = 2227
-root_folder = "D:/review paper/BCDI_isosurface/S"+str(scan)+"/simu/crop100/apod_post_gaussian/"
+scan = 2191
+root_folder = "G:/review paper/BCDI_isosurface/"  # location of the .spec or log file
 sample_name = "S"  # "SN"  #
-comment = "_4_new"  # should start with _
+comment = "_1_new"  # should start with _
 ############################
 # beamline parameters #
 ############################
@@ -81,7 +86,7 @@ rawdata_binned = False  # set to True if the raw data and the mask loaded are al
 ###############################
 # only needed for simulations #
 ###############################
-simulation = True  # True is this is simulated data, will not load the specfile
+simulation = False  # True is this is simulated data, will not load the specfile
 bragg_angle_simu = 17.1177  # value of the incident angle at Bragg peak (eta at ID01)
 outofplane_simu = 35.3240  # detector delta @ ID01
 inplane_simu = -1.6029  # detector nu @ ID01
@@ -90,7 +95,7 @@ tilt_simu = 0.01015  # angular step size for rocking angle, eta @ ID01
 # options #
 ###########
 normalize_prtf = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
-debug = True  # True to show more plots
+debug = False  # True to show more plots
 save = True  # True to save the prtf figure
 ##########################
 # end of user parameters #
