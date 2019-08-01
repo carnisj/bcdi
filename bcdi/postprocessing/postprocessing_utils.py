@@ -554,13 +554,13 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=np.nan, width_
         mybulk = mysupport
 
     else:
-        mysupport[abs(amp) < 0.01 * max_amp] = 0
+        mysupport[abs(amp) < 0.1 * max_amp] = 0  # predefine a larger support
         mykernel = np.ones((9, 9, 9))
         mycoordination_matrix = calc_coordination(mysupport, kernel=mykernel, debugging=False)
         outer = np.copy(mycoordination_matrix)
         outer[np.nonzero(outer)] = 1
         if mykernel.shape == np.ones((9, 9, 9)).shape:
-            outer[mycoordination_matrix > 20] = 0  # start with a larger object
+            outer[mycoordination_matrix > 300] = 0  # start with a larger object, the mean surface amplitude is ~ 5%
         else:
             raise ValueError('Kernel not yet implemented')
 
@@ -582,7 +582,7 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=np.nan, width_
             surface[np.nonzero(surface)] = 1
             surface[mycoordination_matrix > 389] = 0  # remove part from outer  389
             outer[mycoordination_matrix > 389] = 1  # include points left over by the coordination number selection
-            surface[mycoordination_matrix < 311] = 0  # remove part from bulk   311
+            surface[mycoordination_matrix < 362] = 0  # remove part from bulk   311
             # below is to exclude from surface the frame outer part
             surface[0:5, :, :] = 0
             surface[:, 0:5, :] = 0
@@ -1385,10 +1385,11 @@ def wrap(phase):
     return phase
 
 
-# if __name__ == "__main__":
-#     datadir = 'G:/review paper/BCDI_isosurface/S2191/pynxraw/no_apodization/avg1/'
-#     data = np.load(datadir + 'S2191_ampdispstrain_1defect_iso_0.5_avg1_crystal-frame.npz')['amp']
-#     bulk = find_bulk(data, 0.5, method='defect', debugging=False)
-#     gu.multislices_plot(bulk, invert_yaxis=True, vmin=0, vmax=1, title='Bulk')
-#     plt.ioff()
-#     plt.show()
+if __name__ == "__main__":
+    datadir = 'G:/review paper/BCDI_isosurface/S2191/pynxraw/apod_pre_blackman/'  # no_apodization/avg1/'
+    data = np.load(datadir + 'S2191_pynx_270_432_400_blackman-1_LLKf000.021_LLK000.032.npz')['obj']
+    data = abs(data)
+    bulk = find_bulk(data, 0.5, method='defect', debugging=False)
+    gu.multislices_plot(bulk, invert_yaxis=True, vmin=0, vmax=1, title='Bulk')
+    plt.ioff()
+    plt.show()
