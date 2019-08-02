@@ -233,11 +233,6 @@ if flag_amp:
 # Strain #
 ##########
 if flag_strain:
-    if grey_background:
-        strain_copy = np.copy(strain)
-        strain_copy[bulk == 0] = np.nan
-        strain = np.ma.array(strain_copy, mask=np.isnan(strain_copy))
-
     fig, ax0 = plt.subplots(1, 1)
     plt0 = ax0.imshow(strain[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixel_FOV:numy//2+pixel_FOV, numx // 2],
                       vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
@@ -276,10 +271,6 @@ if flag_strain:
 # Phase #
 #########
 if flag_phase:
-    if grey_background:
-        phase_copy = np.copy(phase)
-        phase_copy[bulk == 0] = np.nan
-        phase = np.ma.array(phase_copy, mask=np.isnan(phase_copy))
     fig, ax0 = plt.subplots(1, 1)
     plt0 = ax0.imshow(phase[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixel_FOV:numy//2+pixel_FOV, numx // 2],
                       vmin=-phase_range, vmax=phase_range, cmap=my_cmap)
