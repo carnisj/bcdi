@@ -31,9 +31,9 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 
 
 scan = 2191  # spec scan number
-datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/pynxraw/apod_post_blackman/"
-savedir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/pynxraw/figures/apod_post_blackman/"
-comment = '_post_blackman_'   # should start with _
+datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/pynxraw/no_apodization/avg1/"
+savedir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/pynxraw/test/"
+comment = ''   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 
 voxel_size = 3.0  # in nm
@@ -58,6 +58,7 @@ flag_amp = True  # True to plot and save the amplitude
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
 flag_linecut = False  # True to plot and save a linecut of the phase
+y_linecut = 257  # in pixels
 ##########################
 # end of user parameters #
 ##########################
@@ -309,8 +310,8 @@ if flag_phase:
     # example of a line cut on the phase, can also load more data for the lineplot for comparison
     ##################
     if flag_linecut:
-        file_path = filedialog.askopenfilename(initialdir=datadir, title="Select avg7 file",
-                                               filetypes=[("NPZ", "*.npz")])
+        # file_path = filedialog.askopenfilename(initialdir=datadir, title="Select avg7 file",
+        #                                        filetypes=[("NPZ", "*.npz")])
         # npzfile = np.load(file_path)
         # phase2 = npzfile['displacement']
         # bulk = npzfile['bulk']
@@ -339,21 +340,25 @@ if flag_phase:
         #     sys.exit()
         # phase4[bulk == 0] = np.nan
 
+        fig, ax0 = plt.subplots(1, 1)
+        plt0 = ax0.imshow(
+            phase[numz // 2, :, :], vmin=-phase_range, vmax=phase_range, cmap=my_cmap)
+
         fig, ax3 = plt.subplots(1, 1)
-        plt.plot(phase[numz // 2, 130, :], 'r', linestyle='-')  # (1, (4, 4)))  #
-        # plt.plot(phase2[numz // 2, 130, :], 'k', linestyle='-.')  # , marker='D', fillstyle='none'
-        # plt.plot(phase3[numz // 2, 130, :], 'b', linestyle=':')  # , marker='^', fillstyle='none'
-        # plt.plot(phase4[numz // 2, 130, :], 'g', linestyle='--')  # , marker='^', fillstyle='none'
+        plt.plot(phase[numz // 2, y_linecut, :], 'r', linestyle='-')  # (1, (4, 4)))  #
+        # plt.plot(phase2[numz // 2, y_linecut, :], 'k', linestyle='-.')  # , marker='D', fillstyle='none'
+        # plt.plot(phase3[numz // 2, y_linecut, :], 'b', linestyle=':')  # , marker='^', fillstyle='none'
+        # plt.plot(phase4[numz // 2, y_linecut, :], 'g', linestyle='--')  # , marker='^', fillstyle='none'
         ax3.spines['right'].set_linewidth(1)
         ax3.spines['left'].set_linewidth(1)
         ax3.spines['top'].set_linewidth(1)
         ax3.spines['bottom'].set_linewidth(1)
-        ax3.set_xlim(50, 150)
+        ax3.set_xlim(155, 255)
         ax3.set_ylim(-np.pi, np.pi)
         ax3.xaxis.set_major_locator(ticker.MultipleLocator(10))
         ax3.tick_params(labelbottom=False, labelleft=False, top=False, bottom=True, direction='inout',
                         length=tick_length, width=tick_width)
-        fig.savefig(savedir + 'Linecut_phase_X_Y=130' + comment + '.png', bbox_inches="tight")
+        fig.savefig(savedir + 'Linecut_phase_X_Y=' + str(y_linecut) + comment + '.png', bbox_inches="tight")
 
 plt.ioff()
 plt.show()
