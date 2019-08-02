@@ -30,21 +30,21 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 """
 
 
-scan = 2227  # spec scan number
-datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/simu/crop400noise/gap/"
-savedir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/simu/crop400noise/noise/"
-comment = '_gap_noise'   # should start with _
-simulated_data = True
+scan = 2191  # spec scan number
+datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/pynxraw/apod_post_blackman/"
+savedir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/pynxraw/figures/apod_post_blackman/"
+comment = '_post_blackman_'   # should start with _
+simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 
 voxel_size = 3.0  # in nm
 tick_spacing = 50  # for plots, in nm
-field_of_view = 600  # in nm, can be larger than the total width (the array will be padded)
+field_of_view = 500  # in nm, can be larger than the total width (the array will be padded)
 
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 
-strain_range = 0.0002  # for plots
+strain_range = 0.001  # for plots
 phase_range = np.pi  # for plots
 grey_background = False  # True to set the background to grey in phase and strain plots
 
@@ -52,8 +52,8 @@ save_YZ = False  # True to save the strain in YZ plane
 save_XZ = True  # True to save the strain in XZ plane
 save_XY = True  # True to save the strain in XY plane
 
-flag_strain = True  # True to plot and save the strain
-flag_phase = False  # True to plot and save the phase
+flag_strain = False  # True to plot and save the strain
+flag_phase = True  # True to plot and save the phase
 flag_amp = True  # True to plot and save the amplitude
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
@@ -65,7 +65,11 @@ flag_linecut = False  # True to plot and save a linecut of the phase
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
+if grey_background:
+    bad_color = '0.7'
+else:
+    bad_color = '1.0'  # white background
+colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
 
 #############
