@@ -393,13 +393,14 @@ class SetupPreprocessing(object):
     """
     Class to handle the experimental geometry for preprocessing.
     """
-    def __init__(self, beamline, rocking_angle, distance=1, energy=8000, beam_direction=(1, 0, 0),
+    def __init__(self, beamline, rocking_angle, angular_step=0, distance=1, energy=8000, beam_direction=(1, 0, 0),
                  sample_inplane=(1, 0, 0), sample_outofplane=(0, 0, 1), offset_inplane=0):
         """
         Initialize parameters of the experiment.
 
         :param beamline: name of the beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL'
         :param rocking_angle: angle which is tilted during the scan. 'outofplane', 'inplane', or 'energy'
+        :param angular_step: angular step for a forward scattering CDI experiment, in degrees
         :param distance: sample to detector distance in meters, default=1m
         :param energy: X-ray energy in eV, default=8000eV
         :param beam_direction: x-ray beam direction
