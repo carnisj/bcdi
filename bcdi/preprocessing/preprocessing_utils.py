@@ -15,7 +15,7 @@ from scipy.interpolate import RegularGridInterpolator
 import xrayutilities as xu
 import fabio
 import os
-import pdb
+import gc
 
 
 def align_diffpattern(reference_data, data, mask, method='registration', combining_method='rgi'):
@@ -617,8 +617,64 @@ def find_bragg(data, peak_method):
     return z0, y0, x0
 
 
+def grid_cdi(data, mask, setup):
+    """
+
+    :param data: the 3D data
+    :param mask: the corresponding 3D mask
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :return: the data and mask interpolated in the laboratory frame
+    """
+    if data.ndim != 3:
+        raise ValueError('data is expected to be a 3D array')
+    if mask.ndim != 3:
+        raise ValueError('mask is expected to be a 3D array')
+    nbz, nby, nbx = data.shape
+    rocking_angle = setup.rocking_angle
+    angular_step = setup.angular_step * np.pi / 180  # switch to radians
+    rotation_matrix = np.zeros((3, 3))
+
+    if rocking_angle == 'inplane':
+        rotation_matrix[:, 0] = np.array([np.cos(angular_step), 0, -np.sin(angular_step)])  # x
+        rotation_matrix[:, 1] = np.array([0, 1, 0])                                         # y
+        rotation_matrix[:, 2] = np.array([np.sin(angular_step), 0, np.cos(angular_step)])   # z
+    elif rocking_angle == 'outofplane':
+        rotation_matrix[:, 0] = np.array([1, 0, 0])                                         # x
+        rotation_matrix[:, 1] = np.array([0, np.cos(angular_step), np.sin(angular_step)])   # y
+        rotation_matrix[:, 2] = np.array([0, -np.sin(angular_step), np.cos(angular_step)])  # z
+    else:
+        raise ValueError('Wrong value for "rotation_angle" parameter')
+
+    myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1),
+                                np.arange(-nby // 2, nby // 2, 1),
+                                np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
+    rotation_imatrix = np.linalg.inv(rotation_matrix)
+    new_x = rotation_imatrix[0, 0] * myx + rotation_imatrix[0, 1] * myy + rotation_imatrix[0, 2] * myz
+    new_y = rotation_imatrix[1, 0] * myx + rotation_imatrix[1, 1] * myy + rotation_imatrix[1, 2] * myz
+    new_z = rotation_imatrix[2, 0] * myx + rotation_imatrix[2, 1] * myy + rotation_imatrix[2, 2] * myz
+    del myx, myy, myz
+    gc.collect()
+
+    rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
+                                   np.arange(-nbx // 2, nbx // 2)), data, method='linear',
+                                  bounds_error=False, fill_value=0)
+    newdata = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                  new_x.reshape((1, new_z.size)))).transpose())
+    newdata = newdata.reshape((nbz, nby, nbx)).astype(data.dtype)
+
+    rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
+                                   np.arange(-nbx // 2, nbx // 2)), data, method='linear',
+                                  bounds_error=False, fill_value=0)
+    newmask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                  new_x.reshape((1, new_z.size)))).transpose())
+    newmask = newmask.reshape((nbz, nby, nbx)).astype(mask.dtype)
+    newmask[np.nonzero(newmask)] = 1
+
+    return newdata, newmask
+
+
 def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False, hxrd=None,
-            debugging=False, **kwargs):
+            regrid_cdi=False, debugging=False, **kwargs):
     """
     Load the data, apply filters and concatenate it for phasing.
 
@@ -630,6 +686,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param orthogonalize: if True will interpolate the data and the mask on an orthogonal grid using xrayutilities
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
+    :param regrid_cdi: set to True to interpolate forward scattering CDI data into the loaboratory frame
     :param debugging: set to True to see plots
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
@@ -654,6 +711,8 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
                                                           hotpixels=hotpixels, debugging=debugging)
     
     if not orthogonalize:
+        if regrid_cdi:
+            rawdata, rawmask = grid_cdi(rawdata, rawmask, setup=setup)
         return [], rawdata, [], rawmask, [], frames_logical, monitor
     else:
         nbz, nby, nbx = rawdata.shape
