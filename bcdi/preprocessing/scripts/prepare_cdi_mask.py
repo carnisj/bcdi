@@ -73,18 +73,18 @@ flag_medianfilter = 'skip'
 # set to 'skip' will skip filtering
 medfilt_order = 8    # for custom median filter, number of pixels with intensity surrounding the empty pixel
 ###########################
-reload_previous = 0  # set to 1 to resume a previous masking (load data and mask)
+reload_previous = False  # set to 1 to resume a previous masking (load data and mask)
 ###########################
 use_rawdata = True  # 0 for using data orthogonalized by xrayutilities/ 1 for using data in detector reference frame
 save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'SIXS_2019'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = root_folder + 'alias_dict_2019.txt'
+specfile_name = sample_name + '_%05d'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -94,7 +94,7 @@ specfile_name = root_folder + 'alias_dict_2019.txt'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 1495  # horizontal pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
@@ -103,17 +103,22 @@ roi_detector = []  # [0, 256, 0, 256]
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'align_ascan_mu_%05d.nxs'
+template_imagefile = '_data_%06d.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_data_%06d.h5'
+#################################################################################
+# define parameters below if you want to regrid forward CDI data before phasing #
+#################################################################################
+regrid_cdi = True
+angular_step = 0.5  # in degrees
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-sdd = 1.8  # sample to detector distance in m, not important if you use raw data
-energy = 10300  # x-ray energy in eV, not important if you use raw data
+sdd = 5.1  # sample to detector distance in m, not important if you use raw data
+energy = 8700  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
@@ -185,8 +190,8 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 ####################
 # Initialize setup #
 ####################
-setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
-                               beam_direction=beam_direction, sample_inplane=sample_inplane,
+setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, angular_step=angular_step,
+                               distance=sdd, beam_direction=beam_direction, sample_inplane=sample_inplane,
                                sample_outofplane=sample_outofplane, offset_inplane=offset_inplane)
 
 #############################################
@@ -298,12 +303,12 @@ for scan_nb in range(len(scans)):
             q_values, data, _, mask, _, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=follow_bragg,
-                            debugging=debug, orthogonalize=False)
+                            debugging=debug, regrid_cdi=regrid_cdi, orthogonalize=False)
         else:
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
-                            debugging=debug, orthogonalize=True)
+                            debugging=debug, regrid_cdi=regrid_cdi, orthogonalize=True)
 
             np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
             if save_to_mat:
