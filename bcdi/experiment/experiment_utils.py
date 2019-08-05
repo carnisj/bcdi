@@ -412,6 +412,7 @@ class SetupPreprocessing(object):
         self.energy = energy  # in eV
         self.wavelength = 12.398 * 1e-7 / energy  # in m
         self.rocking_angle = rocking_angle  # string
+        self.angular_step = angular_step  # in degrees
         self.distance = distance  # in meters
         self.beam_direction = beam_direction  # tuple vector
         self.sample_inplane = sample_inplane  # tuple vector
