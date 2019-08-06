@@ -6,8 +6,6 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
 import numpy as np
-import bcdi.graph.graph_utils as gu
-from bcdi.utils import image_registration as reg
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 from scipy.ndimage.measurements import center_of_mass
@@ -16,6 +14,11 @@ import xrayutilities as xu
 import fabio
 import os
 import gc
+import sys
+sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+import bcdi.graph.graph_utils as gu
+from bcdi.utils import image_registration as reg
+
 
 
 def align_diffpattern(reference_data, data, mask, method='registration', combining_method='rgi'):
@@ -633,25 +636,33 @@ def grid_cdi(data, mask, setup):
     rocking_angle = setup.rocking_angle
     angular_step = setup.angular_step * np.pi / 180  # switch to radians
     rotation_matrix = np.zeros((3, 3))
-
-    if rocking_angle == 'inplane':
-        rotation_matrix[:, 0] = np.array([np.cos(angular_step), 0, -np.sin(angular_step)])  # x
-        rotation_matrix[:, 1] = np.array([0, 1, 0])                                         # y
-        rotation_matrix[:, 2] = np.array([np.sin(angular_step), 0, np.cos(angular_step)])   # z
-    elif rocking_angle == 'outofplane':
-        rotation_matrix[:, 0] = np.array([1, 0, 0])                                         # x
-        rotation_matrix[:, 1] = np.array([0, np.cos(angular_step), np.sin(angular_step)])   # y
-        rotation_matrix[:, 2] = np.array([0, -np.sin(angular_step), np.cos(angular_step)])  # z
-    else:
-        raise ValueError('Wrong value for "rotation_angle" parameter')
-
     myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1),
                                 np.arange(-nby // 2, nby // 2, 1),
                                 np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
-    rotation_imatrix = np.linalg.inv(rotation_matrix)
-    new_x = rotation_imatrix[0, 0] * myx + rotation_imatrix[0, 1] * myy + rotation_imatrix[0, 2] * myz
-    new_y = rotation_imatrix[1, 0] * myx + rotation_imatrix[1, 1] * myy + rotation_imatrix[1, 2] * myz
-    new_z = rotation_imatrix[2, 0] * myx + rotation_imatrix[2, 1] * myy + rotation_imatrix[2, 2] * myz
+    new_x = np.zeros(data.shape)
+    new_y = np.zeros(data.shape)
+    new_z = np.zeros(data.shape)
+    frames = np.arange(-nbz//2, nbz//2)
+    for idx in range(len(frames)):
+        angle = frames[idx] * angular_step
+        if rocking_angle == 'inplane':
+            rotation_matrix[:, 0] = np.array([np.cos(angle), 0, -np.sin(angle)])  # x
+            rotation_matrix[:, 1] = np.array([0, 1, 0])                                         # y
+            rotation_matrix[:, 2] = np.array([np.sin(angle), 0, np.cos(angle)])   # z
+        elif rocking_angle == 'outofplane':
+            rotation_matrix[:, 0] = np.array([1, 0, 0])                                         # x
+            rotation_matrix[:, 1] = np.array([0, np.cos(angle), np.sin(angle)])   # y
+            rotation_matrix[:, 2] = np.array([0, -np.sin(angle), np.cos(angle)])  # z
+        else:
+            raise ValueError('Wrong value for "rotation_angle" parameter')
+
+        rotation_imatrix = np.linalg.inv(rotation_matrix)
+        new_x[idx, :, :] = rotation_imatrix[0, 0] * myx[idx, :, :] + rotation_imatrix[0, 1] * myy[idx, :, :] +\
+                           rotation_imatrix[0, 2] * myz[idx, :, :]
+        new_y[idx, :, :] = rotation_imatrix[1, 0] * myx[idx, :, :] + rotation_imatrix[1, 1] * myy[idx, :, :] +\
+                           rotation_imatrix[1, 2] * myz[idx, :, :]
+        new_z[idx, :, :] = rotation_imatrix[2, 0] * myx[idx, :, :] + rotation_imatrix[2, 1] * myy[idx, :, :] +\
+                           rotation_imatrix[2, 2] * myz[idx, :, :]
     del myx, myy, myz
     gc.collect()
 
@@ -2560,3 +2571,26 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
         gu.multislices_plot(array=newobj, sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=0, vmax=1,
                             title='Array after padding')
     return newobj
+
+
+if __name__ == "__main__":
+    data = np.ones((12, 50, 40))
+    nz, ny, nx = data.shape
+    mask = np.zeros((12, 50, 40))
+    import bcdi.experiment.experiment_utils as exp
+    from mayavi import mlab
+    setup = exp.SetupPreprocessing(beamline='P10', energy=8700, rocking_angle='inplane', angular_step=20,
+                                   distance=5100)
+    data, mask = grid_cdi(data, mask, setup)
+
+    grid_qx, grid_qz, grid_qy = np.mgrid[np.arange(-nz//2, nz//2), np.arange(-ny//2, ny//2),
+                                np.arange(-nx//2, nx//2)]
+    # in nexus convention, z is downstream, y vertical and x outboard
+    # but with Q, Qx is downstream, Qz vertical and Qy outboard
+    mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+    mlab.contour3d((grid_qx, grid_qz, grid_qy, data), contours=20, opacity=0.5, colormap="jet")
+    mlab.colorbar(orientation="vertical", nb_labels=6)
+    mlab.outline(line_width=2.0)
+    mlab.axes(xlabel='Qx', ylabel='Qz', zlabel='Qy')  #
+    mlab.show()
+
