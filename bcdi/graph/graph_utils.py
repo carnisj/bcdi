@@ -887,6 +887,77 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     return
 
 
+def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, title="", flag_plotplanes=True):
+    """
+    Plot the stereographic projection with some cosmetics.
+
+    :param euclidian_u: normalized Euclidian metric coordinate
+    :param euclidian_v: normalized Euclidian metric coordinate
+    :param color: intensity of density kernel estimation at radius_mean
+    :param radius_mean: radius of the sphere in reciprocal space from which the projection is done
+    :param planes: dictionnary of crystallographic planes, e.g. {'111':angle_with_q_measurement}
+    :param title: title for the stereographic plot
+    :param flag_plotplanes: if True, will draw circle corresponding to planes
+    :return: figure and axe instances
+    """
+    from scipy.interpolate import griddata
+
+    u_grid, v_grid = np.mgrid[-91:91:183j, -91:91:183j]
+    intensity_grid = griddata((euclidian_u, euclidian_v), color, (u_grid, v_grid), method='linear')
+
+    # plot the stereographic projection
+    myfig, (myax0, myax1) = plt.subplots(1, 2, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
+    plt0 = myax0.contourf(u_grid, v_grid, abs(intensity_grid), range(100, 6100, 250), cmap='hsv')
+    # plt.colorbar(plt0, ax=myax0)
+    myax0.axis('equal')
+    myax0.axis('off')
+
+    # add the projection of the elevation angle, depending on the center of projection
+    for ii in range(15, 90, 5):
+        circle = plt.Circle((0, 0),
+                            radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
+                            color='grey', fill=False, linestyle='dotted', linewidth=0.5)
+        myax0.add_artist(circle)
+    for ii in range(10, 90, 20):
+        circle = plt.Circle((0, 0),
+                            radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
+                            color='grey', fill=False, linestyle='dotted', linewidth=1)
+        myax0.add_artist(circle)
+    for ii in range(10, 95, 20):
+        myax0.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
+                   str(ii) + '$^\circ$', fontsize=10, color='k')
+    circle = plt.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
+    myax0.add_artist(circle)
+
+    # add azimutal lines every 5 and 45 degrees
+    for ii in range(5, 365, 5):
+        myax0.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
+                   linestyle='dotted', linewidth=0.5)
+    for ii in range(0, 365, 20):
+        myax0.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
+                   linestyle='dotted', linewidth=1)
+
+    # draw circles corresponding to particular reflection
+    if flag_plotplanes == 1 and len(planes)!=0:
+        indx = 0
+        for key, value in planes.items():
+            circle = plt.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
+                                (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                                color='g', fill=False, linestyle='dotted', linewidth=1.5)
+            myax0.add_artist(circle)
+            myax0.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                       np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                       key, fontsize=10, color='k', fontweight='bold')
+            indx = indx + 6
+            print(key + ": ", str('{:.2f}'.format(value)))
+    myax0.set_title('Top projection\nfrom ' + title)
+    plt.pause(0.1)
+
+    return myfig, myax0
+
+
 # if __name__ == "__main__":
 #     datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop300/test/'
 #     strain = np.load(datadir +
