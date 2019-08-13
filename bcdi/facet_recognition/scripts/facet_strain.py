@@ -18,6 +18,7 @@ from tkinter import filedialog
 from skimage import measure
 import logging
 import sys
+import gc
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.facet_recognition.facet_utils as fu
@@ -40,12 +41,16 @@ smoothing_iterations = 10  # number of iterations in Taubin smoothing
 smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
 smooth_mu = 0.51  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
-kde_threshold = -1000  # 0.2  # threshold for defining the background in the density estimation of normals
 my_min_distance = 15  # pixel separation between peaks in corner_peaks()
 #########################################################
-# parameter only used in the equirectangular projection #
+# parameters only used in the stereographic projection #
 #########################################################
-bw_method = 0.06  # bandwidth in the gaussian kernel density estimation
+threshold_stereo = -1000  # threshold for defining the background in the density estimation of normals
+#########################################################
+# parameters only used in the equirectangular projection #
+#########################################################
+bw_method = 0.03  # bandwidth in the gaussian kernel density estimation
+kde_threshold = -0.2  # threshold for defining the background in the density estimation of normals
 ###############################################################################
 # define crystallographic planes of interest for the stereographic projection #
 ###############################################################################
@@ -69,6 +74,12 @@ planes['5 -2 -1'] = fu.plane_angle(reflection, np.array([5, -2, -1]))
 ###########################################################
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 logger = logging.getLogger()
+
+###################
+# define colormap #
+###################
+colormap = gu.Colormap()
+my_cmap = colormap.cmap
 
 #############
 # load data #
@@ -110,6 +121,7 @@ if debug:
 vertices_new, normals, areas, color, error_normals = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
                      debugging=1)
+nb_normals = normals.shape[0]
 
 # Display smoothed triangular mesh
 if debug:
@@ -118,34 +130,116 @@ if debug:
 
 if projection_method == 'stereographic':
     labels_top, labels_bottom, stereo_proj = fu.stereographic_proj(normals=normals, color=color, weights=areas,
-                                                                   background_threshold=kde_threshold,
+                                                                   background_threshold=threshold_stereo,
                                                                    min_distance=my_min_distance, savedir=savedir,
                                                                    save_txt=False, planes=planes, plot_planes=True,
                                                                    debugging=debug)
+    numy, numx = labels_top.shape  # identical to labels_bottom.shape
+    if stereo_proj.shape[0] != nb_normals:
+        print('incompatible number of normals')
+        sys.exit()
+    # reorganize stereo_proj to keep only the projected point which is in the range [-90 90]
+    # TODO: include in stereographic_proj a procedure to give the same label to overlapping peaks
+    pole_proj = np.zeros((nb_normals, 3), dtype=stereo_proj.dtype)  # the 3rd column is an indicator for South or North
+    for idx in range(nb_normals):
+        if abs(stereo_proj[idx, 0]) > 90 or abs(stereo_proj[idx, 1]) > 90:
+            pole_proj[idx, 0:2] = stereo_proj[idx, 2:]  # use values for the projection from North pole
+            pole_proj[idx, 2] = 1  # need to use values from labels_bottom (projection from North pole)
+        else:
+            pole_proj[idx, 0:2] = stereo_proj[idx, 0:2]  # use values for the projection from South pole
+            pole_proj[idx, 2] = 0  # need to use values from labels_top (projection from South pole)
+    del stereo_proj
+    gc.collect()
+
+    # rescale u axis from [-90 90] to [0 numy]
+    pole_proj[:, 0] = (pole_proj[:, 0] + 90) * numy / 180  # euclidian u vertical
+    # rescale v axis from [-90 90] to [0 numx]
+    pole_proj[:, 1] = (pole_proj[:, 1] + 90) * numx / 180  # euclidian v horizontal
+    # change pole_proj to an array of integer indices
+    coordinates = pole_proj.astype(int)
+    max_label = max(labels_top.max(), labels_bottom.max())
+    # # need to create the labels array from labels_top and labels_bottom, keeping only the correct label
+    # labels = np.zeros(labels_top.shape, dtype=labels_top.dtype)
+    # for idx in range(nb_normals):
+    #     if coordinates[idx, 2] == 0:  # use values from labels_top (projection from South pole)
+    #         labels[coordinates[idx, 0], coordinates[idx, 1]] = labels_top[coordinates[idx, 0], coordinates[idx, 1]]
+    #     else:  # use values from labels_bottom (projection from North pole)
+    #         labels[coordinates[idx, 0], coordinates[idx, 1]] = labels_bottom[coordinates[idx, 0], coordinates[idx, 1]]
+    #
+    # plt.figure()
+    # plt.imshow(labels, cmap=my_cmap, interpolation='nearest')
+    # plt.title('Sorted labels for stereographic projection')
+    # plt.colorbar()
+    # plt.gca().invert_yaxis()
+    # plt.pause(0.1)
+
+    ##############################################
+    # assign back labels to normals and vertices #
+    ##############################################
+    # check if a normal belongs to a particular label, assigns label to the triangle vertices if this is the case
+    normals_label = np.zeros(nb_normals, dtype=int)  # a label will be attributed to each normal
+    vertices_label = np.zeros(vertices_new.shape[0], dtype=int)  # a label will be attributed to each vertex
+    # the number of vertices is: vertices_new.shape[0]
+    for idx in range(nb_normals):
+        # check to which label belongs this normal
+        if coordinates[idx, 2] == 0:  # use values from labels_top (projection from South pole)
+            for label in range(1, labels_top.max() + 1, 1):  # label 0 is the background
+                try:
+                    if labels_top[coordinates[idx, 0], coordinates[idx, 1]] == label:
+                        normals_label[idx] = label  # attribute the label to the normal
+                        vertices_label[faces[idx, :]] = label  # attribute the label to the corresponding vertices
+                        # faces are the list of vertices defining normals (there are nb_normals faces)
+                except BaseException as e:
+                    logger.error(str(e))
+                    continue
+        else:  # use values from labels_bottom (projection from North pole)
+            for label in range(1, labels_bottom.max() + 1, 1):  # label 0 is the background
+                try:
+                    if labels_bottom[coordinates[idx, 0], coordinates[idx, 1]] == label:
+                        normals_label[idx] = label  # attribute the label to the normal
+                        vertices_label[faces[idx, :]] = label  # attribute the label to the corresponding vertices
+                        # faces are the list of vertices defining normals (there are nb_normals faces)
+                except BaseException as e:
+                    logger.error(str(e))
+                    continue
+
 elif projection_method == 'equirectangular':
     labels, longitude_latitude = fu.equirectangular_proj(normals, color, weights=areas, bw_method=bw_method,
                                                          background_threshold=kde_threshold,
                                                          min_distance=my_min_distance, debugging=debug)
+    if longitude_latitude.shape[0] != nb_normals:
+        print('incompatible number of normals')
+        sys.exit()
+    numy, numx = labels.shape
+    # rescale the horizontal axis from [-pi pi] to [0 numx]
+    longitude_latitude[:, 0] = (longitude_latitude[:, 0] + np.pi) * numx / (2 * np.pi)  # longitude
+    # rescale the vertical axis from [-pi/2 pi/2] to [0 numy]
+    longitude_latitude[:, 1] = (longitude_latitude[:, 1] + np.pi / 2) * numy / np.pi  # latitude
+    # change longitude_latitude to an array of integer indices
+    coordinates = np.fliplr(longitude_latitude).astype(int)  # put the vertical axis in first position
+    max_label = labels.max()
+    ##############################################
+    # assign back labels to normals and vertices #
+    ##############################################
+    # check if a normal belongs to a particular label, assigns label to the triangle vertices if this is the case
+    normals_label = np.zeros(nb_normals, dtype=int)  # a label will be attributed to each normal
+    vertices_label = np.zeros(vertices_new.shape[0], dtype=int)  # a label will be attributed to each vertex
+    # the number of vertices is: vertices_new.shape[0]
+    for idx in range(nb_normals):
+        # check if this normal belongs to a particular label
+        for label in range(1, max_label + 1, 1):  # label 0 is the background
+            try:
+                if labels[coordinates[idx, 0], coordinates[idx, 1]] == label:
+                    normals_label[idx] = label  # attribute the label to the normal
+                    vertices_label[faces[idx, :]] = label  # attribute the label to the corresponding vertices
+                    # faces are the list of vertices defining normals (there are nb_normals faces)
+            except BaseException as e:
+                logger.error(str(e))
+                continue
+
 else:
     print('Invalid value for projection_method')
     sys.exit()
-
-numy, numx = labels.shape
-# TODO: calculate the stereographic projection of normals, for direction determination
-# check if a normal belongs to a particular label, assigns label to the triangle vertices if this is the case
-normals_label = np.zeros(longitude_latitude.shape[0], dtype=int)
-vertices_label = np.zeros(vertices_new.shape[0], dtype=int)
-for idx in range(longitude_latitude.shape[0]):
-    row = int((longitude_latitude[idx, 1] + np.pi/2) * numy/np.pi)
-    col = int((longitude_latitude[idx, 0] + np.pi) * numx/(2*np.pi))
-    for label in range(1, labels.max()+1, 1):  # label 0 is the background
-        try:
-            if labels[row, col] == label:
-                normals_label[idx] = label
-                vertices_label[faces[idx, :]] = label
-        except BaseException as e:
-            logger.error(str(e))
-            continue
 
 ###############################################
 # assign back labels to voxels using vertices #
@@ -170,7 +264,7 @@ for idx in range(vertices_new.shape[0]):
 ########################################
 fu.save_planes_vti(filename=os.path.join(savedir, "S" + str(scan) + "_planes before refinement.vti"),
                    voxel_size=(1, 1, 1), tuple_array=(amp, support), tuple_fieldnames=('amp', 'support'),
-                   plane_labels=range(0, labels.max()+1, 1), planes=all_planes, amplitude_threshold=0.01)
+                   plane_labels=range(0, max_label+1, 1), planes=all_planes, amplitude_threshold=0.01)
 
 ##############################
 # define a conjugate support #
