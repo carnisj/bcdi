@@ -35,13 +35,31 @@ savedir = datadir + "isosurface_" + str(support_threshold) + "/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
-debug = 0  # 1 to see all plots
+debug = False  # set to True to see all plots for debugging
 smoothing_iterations = 10  # number of iterations in Taubin smoothing
 smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
 smooth_mu = 0.51  # mu parameter in Taubin smoothing
-kde_threshold = -0.2  # threshold for defining the background in the kernel density estimation of normals
-my_bw_method = 0.06  # bandwidth in the gaussian kernel density estimation
+projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
+kde_threshold = -1000  # 0.2  # threshold for defining the background in the density estimation of normals
 my_min_distance = 15  # pixel separation between peaks in corner_peaks()
+#########################################################
+# parameter only used in the equirectangular projection #
+#########################################################
+bw_method = 0.06  # bandwidth in the gaussian kernel density estimation
+###############################################################################
+# define crystallographic planes of interest for the stereographic projection #
+###############################################################################
+planes = {}
+planes['1 0 0'] = fu.plane_angle(reflection, np.array([1, 0, 0]))
+planes['1 1 0'] = fu.plane_angle(reflection, np.array([1, 1, 0]))
+planes['1 -1 1'] = fu.plane_angle(reflection, np.array([1, -1, 1]))
+planes['2 1 0'] = fu.plane_angle(reflection, np.array([2, 1, 0]))
+planes['2 -1 0'] = fu.plane_angle(reflection, np.array([2, -1, 0]))
+planes['3 2 1'] = fu.plane_angle(reflection, np.array([3, 2, 1]))
+planes['4 0 -1'] = fu.plane_angle(reflection, np.array([4, 0, -1]))
+planes['5 2 0'] = fu.plane_angle(reflection, np.array([5, 2, 0]))
+planes['5 2 1'] = fu.plane_angle(reflection, np.array([5, 2, 1]))
+planes['5 -2 -1'] = fu.plane_angle(reflection, np.array([5, -2, -1]))
 ##########################
 # end of user parameters #
 ##########################
@@ -83,23 +101,35 @@ vertices_old, faces, _, _ = measure.marching_cubes_lewiner(amp, level=support_th
 # savemat('//win.desy.de/home/carnisj/My Documents/MATLAB/TAUBIN/vertices.mat', {'V': vertices_old})
 # savemat('//win.desy.de/home/carnisj/My Documents/MATLAB/TAUBIN/faces.mat', {'F': faces})
 
-# Display resulting triangular mesh using Matplotlib.
-gu.plot_3dmesh(vertices_old, faces, (nz, ny, nx), title='Mesh after marching cubes')
-plt.ion()
+# Display mesh before smoothing
+if debug:
+    gu.plot_3dmesh(vertices_old, faces, (nz, ny, nx), title='Mesh after marching cubes')
+    plt.ion()
 
-# estimate the probability density using gaussian_kde
-vertices_new, normals, areas, color, error_normals = fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations,
-                                                               lamda=smooth_lamda, mu=smooth_mu, debugging=1)
-# Display resulting triangular mesh using Matplotlib.
-# gu.plot_3dmesh(vertices_new, faces, (nz, ny, nx), title='Mesh after Taubin smoothing')
-# plt.ion()
+# smooth the mesh using taubin_smooth
+vertices_new, normals, areas, color, error_normals = \
+    fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
+                     debugging=1)
 
-# fu.stereographic_proj(normals, color, reflection, flag_plotplanes=0, debugging=False)
+# Display smoothed triangular mesh
+if debug:
+    gu.plot_3dmesh(vertices_new, faces, (nz, ny, nx), title='Mesh after Taubin smoothing')
+    plt.ion()
 
-labels, longitude_latitude = fu.equiproj_splatt_segment(normals, color, weights=areas, bw_method=my_bw_method,
-                                                        background_threshold=kde_threshold,
-                                                        min_distance=my_min_distance,
-                                                        debugging=1)
+if projection_method == 'stereographic':
+    labels_top, labels_bottom, stereo_proj = fu.stereographic_proj(normals=normals, color=color, weights=areas,
+                                                                   background_threshold=kde_threshold,
+                                                                   min_distance=my_min_distance, savedir=savedir,
+                                                                   save_txt=False, planes=planes, plot_planes=True,
+                                                                   debugging=debug)
+elif projection_method == 'equirectangular':
+    labels, longitude_latitude = fu.equirectangular_proj(normals, color, weights=areas, bw_method=bw_method,
+                                                         background_threshold=kde_threshold,
+                                                         min_distance=my_min_distance, debugging=debug)
+else:
+    print('Invalid value for projection_method')
+    sys.exit()
+
 numy, numx = labels.shape
 # TODO: calculate the stereographic projection of normals, for direction determination
 # check if a normal belongs to a particular label, assigns label to the triangle vertices if this is the case

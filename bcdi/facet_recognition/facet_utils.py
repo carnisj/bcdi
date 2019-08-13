@@ -8,6 +8,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+import gc
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
@@ -62,21 +63,21 @@ def distance_threshold(myfit, myindices, mythreshold, myshape):
     return myplane, no_points
 
 
-def equiproj_splatt_segment(mynormals, mycolor, weights, cmap=default_cmap, bw_method=0.03, min_distance=10,
-                            background_threshold=-0.35, debugging=0):
+def equirectangular_proj(mynormals, color, weights, cmap=default_cmap, bw_method=0.03, min_distance=10,
+                         background_threshold=-0.35, debugging=False):
     """
 
     :param mynormals: normals array
-    :param mycolor: intensity array
+    :param color: intensity array
     :param weights: weights used in the gaussian kernel density estimation
     :param cmap: colormap used for plotting
     :param bw_method: bw_method of gaussian_kde
     :param min_distance: min_distance of corner_peaks()
     :param background_threshold: threshold for background determination (depth of the KDE)
-    :param debugging: show plots for debugging
+    :param debugging: if True, show plots for debugging
     :return: ndarray of labelled regions
     """
-    from matplotlib.pyplot import cm
+    from matplotlib import cm
     from scipy import stats
     from scipy import ndimage
     from skimage.feature import corner_peaks
@@ -87,7 +88,7 @@ def equiproj_splatt_segment(mynormals, mycolor, weights, cmap=default_cmap, bw_m
     if len(list_nan) != 0:
         for i in range(list_nan.shape[0]//3):
             mynormals = np.delete(mynormals, list_nan[i*3, 0], axis=0)
-            mycolor = np.delete(mycolor, list_nan[i*3, 0], axis=0)
+            color = np.delete(color, list_nan[i*3, 0], axis=0)
     # calculate latitude and longitude from xyz, this is equal to the equirectangular flat square projection
     long_lat = np.zeros((mynormals.shape[0], 2), dtype=mynormals.dtype)
     for i in range(mynormals.shape[0]):
@@ -97,79 +98,89 @@ def equiproj_splatt_segment(mynormals, mycolor, weights, cmap=default_cmap, bw_m
         long_lat[i, 1] = np.arcsin(mynormals[i, 2])  # latitude
     myfig = plt.figure()
     myax = myfig.add_subplot(111)
-    myax.scatter(long_lat[:, 0], long_lat[:, 1], c=mycolor, cmap=cmap)
+    myax.scatter(long_lat[:, 0], long_lat[:, 1], c=color, cmap=cmap)
     myax.set_xlim(-np.pi, np.pi)
     myax.set_ylim(-np.pi / 2, np.pi / 2)
     plt.axis('scaled')
     plt.title('Equirectangular projection of the weighted point densities before KDE')
     plt.pause(0.1)
 
+    del color
+    gc.collect()
+
     # kernel density estimation
     kde = stats.gaussian_kde(long_lat.T, bw_method=bw_method)
+    # input should be a 2D array with shape (# of dims, # of data)
+
     # Create a regular 3D grid
-    yi, xi = np.mgrid[-np.pi/2:np.pi/2:150j, -np.pi:np.pi:300j]
+    yi, xi = np.mgrid[-np.pi/2:np.pi/2:150j, -np.pi:np.pi:300j]  # vertical, horizontal
+
     # Evaluate the KDE on a regular grid...
     coords = np.vstack([item.ravel() for item in [xi, yi]])
+    # coords is a contiguous flattened array of coordinates of shape (2, size(xi))
+
     density = -1 * kde(coords).reshape(xi.shape)  # inverse density for later watershed segmentation
-    if debugging == 1:
-        myfig = plt.figure()
-        myax = myfig.add_subplot(111)
-        scatter = myax.scatter(xi, yi, c=density, cmap=cmap, vmin=-1.5, vmax=0)
-        myax.set_xlim(-np.pi, np.pi)
-        myax.set_ylim(-np.pi / 2, np.pi / 2)
-        myfig.colorbar(scatter)
-        plt.axis('scaled')
-        plt.title('Equirectangular projection of the KDE')
-        plt.pause(0.1)
+
+    myfig = plt.figure()
+    myax = myfig.add_subplot(111)
+    scatter = myax.scatter(xi, yi, c=density, cmap=cmap, vmin=-1.5, vmax=0)
+    myax.set_xlim(-np.pi, np.pi)
+    myax.set_ylim(-np.pi / 2, np.pi / 2)
+    myfig.colorbar(scatter)
+    plt.axis('scaled')
+    plt.title('Equirectangular projection of the KDE')
+    plt.pause(0.1)
 
     # identification of local minima
     density[density > background_threshold] = 0  # define the background
     mymask = np.copy(density)
     mymask[mymask != 0] = 1
-    if debugging == 1:
-        plt.figure()
-        plt.imshow(mymask, cmap=cm.gray, interpolation='nearest')
-        plt.title('Background mask')
-        plt.gca().invert_yaxis()
-        myfig = plt.figure()
-        myax = myfig.add_subplot(111)
-        scatter = myax.scatter(xi, yi, c=density, cmap=cmap)
-        myax.set_xlim(-np.pi, np.pi)
-        myax.set_ylim(-np.pi / 2, np.pi / 2)
-        myfig.colorbar(scatter)
-        plt.axis('scaled')
-        plt.title('KDE after background definition')
-        plt.pause(0.1)
+
+    plt.figure()
+    plt.imshow(mymask, cmap=cm.gray, interpolation='nearest')
+    plt.title('Background mask')
+    plt.gca().invert_yaxis()
+    myfig = plt.figure()
+    myax = myfig.add_subplot(111)
+    scatter = myax.scatter(xi, yi, c=density, cmap=cmap)
+    myax.set_xlim(-np.pi, np.pi)
+    myax.set_ylim(-np.pi / 2, np.pi / 2)
+    myfig.colorbar(scatter)
+    plt.axis('scaled')
+    plt.title('KDE after background definition')
+    plt.pause(0.1)
 
     # Generate the markers as local minima of the distance to the background
     mydistances = ndimage.distance_transform_edt(density)
-    if debugging == 1:
+    if debugging:
         plt.figure()
         plt.imshow(mydistances, cmap=cm.gray, interpolation='nearest')
         plt.title('Distances')
         plt.gca().invert_yaxis()
 
+    # find peaks
     local_maxi = corner_peaks(mydistances, exclude_border=False, min_distance=min_distance, indices=False)  #
-    plt.figure()
-    # plt.imshow(mylabels, cmap=cm.spectral, interpolation='nearest')
-    plt.imshow(local_maxi, interpolation='nearest')
-    plt.title('local_maxi')
-    plt.gca().invert_yaxis()
+    if debugging:
+        plt.figure()
+        plt.imshow(local_maxi, interpolation='nearest')
+        plt.title('local_maxi')
+        plt.gca().invert_yaxis()
 
+    # define markers for each peak
     mymarkers = ndimage.label(local_maxi)[0]
-    plt.figure()
-    # plt.imshow(mylabels, cmap=cm.spectral, interpolation='nearest')
-    plt.imshow(mymarkers, interpolation='nearest')
-    plt.title('mymarkers')
-    plt.colorbar()
-    plt.gca().invert_yaxis()
+    if debugging:
+        plt.figure()
+        plt.imshow(mymarkers, interpolation='nearest')
+        plt.title('mymarkers')
+        plt.colorbar()
+        plt.gca().invert_yaxis()
 
     # watershed segmentation
     mylabels = watershed(-mydistances, mymarkers, mask=mymask)
     print('There are', str(mylabels.max()), 'facets')  # label 0 is the background
+
     plt.figure()
-    # plt.imshow(mylabels, cmap=cm.spectral, interpolation='nearest')
-    plt.imshow(mylabels, interpolation='nearest')
+    plt.imshow(mylabels, cmap=cm.Spectral, interpolation='nearest')
     plt.title('Separated objects')
     plt.colorbar()
     plt.gca().invert_yaxis()
@@ -339,10 +350,10 @@ def grow_facet(fit, plane, label, debugging=1):
 
     if debugging == 1 and len(new_indices[0]) != 0:
         # myindices = np.nonzero(mycoord)
-        # mycolor = mycoord[myindices[0], myindices[1], myindices[2]]
+        # color = mycoord[myindices[0], myindices[1], myindices[2]]
         # myfig = plt.figure()
         # myax = plt.subplot(111, projection='3d')
-        # myscatter = myax.scatter(myindices[0], myindices[1], myindices[2], s=2, c=mycolor,
+        # myscatter = myax.scatter(myindices[0], myindices[1], myindices[2], s=2, c=color,
         #                          cmap=my_cmap, vmin=0, vmax=mythreshold)
         # myax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
         # myax.set_ylabel('y')
@@ -380,187 +391,200 @@ def plane_angle(ref_plane, myplane):
     return angle
 
 
-def stereographic_proj(mynormals, mycolor, myreflection, savedir, flag_plotplanes=1, debugging=False):
+def stereographic_proj(normals, color, weights, savedir, min_distance=10, background_threshold=-1000,
+                       save_txt=False, cmap=default_cmap, planes={}, plot_planes=True, debugging=False):
     """
 
-    :param mynormals: array of normals (nb_normals rows x 3 columns)
-    :param mycolor: array of intensities (nb_normals rows x 1 column)
-    :param myreflection: measured crystallographic reflection
+    :param normals: array of normals (nb_normals rows x 3 columns)
+    :param color: array of intensities (nb_normals rows x 1 column)
+    :param weights: weights used in the density estimation
     :param savedir: directory for saving figures
-    :param flag_plotplanes: plot circles corresponding to crystallogrpahic orientations in the pole figure
+    :param min_distance: min_distance of corner_peaks()
+    :param background_threshold: threshold for background determination (depth of the KDE)
+    :param save_txt: if True, will save coordinates in a .txt file
+    :param cmap: colormap used for plotting pole figures
+    :param planes: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
+    :param plot_planes: if True, will draw circles corresponding to crystallographic planes in the pole figure
     :param debugging: show plots for debugging
     :return:
     """
     from scipy.interpolate import griddata
-    # define crystallographic planes of interest
-    planes = {}
-    planes['1 0 0'] = plane_angle(myreflection, np.array([1, 0, 0]))
-    # planes['-1 0 0'] = plane_angle(myreflection, np.array([-1, 0, 0]))
-    planes['1 1 0'] = plane_angle(myreflection, np.array([1, 1, 0]))
-    # planes['1 -1 0'] = plane_angle(myreflection, np.array([1, -1, 0]))
-    # planes['1 1 1'] = plane_angle(myreflection, np.array([1, 1, 1]))
-    planes['1 -1 1'] = plane_angle(myreflection, np.array([1, -1, 1]))
-    # planes['1 -1 -1'] = plane_angle(myreflection, np.array([1, -1, -1]))
-    planes['2 1 0'] = plane_angle(myreflection, np.array([2, 1, 0]))
-    planes['2 -1 0'] = plane_angle(myreflection, np.array([2, -1, 0]))
-    # planes['2 -1 1'] = plane_angle(myreflection, np.array([2, -1, 1]))
-    # planes['3 0 1'] = plane_angle(myreflection, np.array([3, 0, 1]))
-    # planes['3 -1 0'] = plane_angle(myreflection, np.array([3, -1, 0]))
-    planes['3 2 1'] = plane_angle(myreflection, np.array([3, 2, 1]))
-    # planes['3 -2 -1'] = plane_angle(myreflection, np.array([3, -2, -1]))
-    # planes['-3 0 -1'] = plane_angle(myreflection, np.array([-3, 0, -1]))
-    planes['4 0 -1'] = plane_angle(myreflection, np.array([4, 0, -1]))
-    planes['5 2 0'] = plane_angle(myreflection, np.array([5, 2, 0]))
-    # planes['5 -2 0'] = plane_angle(myreflection, np.array([5, -2, 0]))
-    planes['5 2 1'] = plane_angle(myreflection, np.array([5, 2, 1]))
-    planes['5 -2 -1'] = plane_angle(myreflection, np.array([5, -2, -1]))
-    # planes['-5 0 -2'] = plane_angle(myreflection, np.array([-5, 0, -2]))
-    # planes['7 0 3'] = plane_angle(myreflection, np.array([7, 0, 3]))
-    # planes['7 -3 0'] = plane_angle(myreflection, np.array([-7, 0, 3]))
-    # planes['-7 0 -3'] = plane_angle(myreflection, np.array([-7, 0, -3]))
-    # planes['1 3 6'] = plane_angle(myreflection, np.array([1, 3, 6]))
+    from scipy import ndimage
+    from skimage.feature import corner_peaks
+    from skimage.morphology import watershed
 
     # check normals for nan
     radius_mean = 1  # normals are normalized
     stereo_centerz = 0  # COM of the weighted point density
-    list_nan = np.argwhere(np.isnan(mynormals))
+    list_nan = np.argwhere(np.isnan(normals))
     if len(list_nan) != 0:
         for i in range(list_nan.shape[0]//3):
-            mynormals = np.delete(mynormals, list_nan[i*3, 0], axis=0)
-            mycolor = np.delete(mycolor, list_nan[i*3, 0], axis=0)
+            normals = np.delete(normals, list_nan[i*3, 0], axis=0)
+            color = np.delete(color, list_nan[i*3, 0], axis=0)
 
     # calculate u and v from xyz, this is equal to the stereographic projection from South pole
-    stereo_proj = np.zeros((mynormals.shape[0], 4), dtype=mynormals.dtype)
-    for i in range(mynormals.shape[0]):
-        if mynormals[i, 1] == 0 and mynormals[i, 0] == 0:
+    stereo_proj = np.zeros((normals.shape[0], 4), dtype=normals.dtype)
+    for i in range(normals.shape[0]):
+        if normals[i, 1] == 0 and normals[i, 0] == 0:
             continue
-        stereo_proj[i, 0] = radius_mean * mynormals[i, 0] / (radius_mean+mynormals[i, 1] - stereo_centerz)  # u_top
-        stereo_proj[i, 1] = radius_mean * mynormals[i, 2] / (radius_mean+mynormals[i, 1] - stereo_centerz)  # v_top
-        stereo_proj[i, 2] = radius_mean * mynormals[i, 0] / (stereo_centerz - radius_mean+mynormals[i, 1])  # u_bottom
-        stereo_proj[i, 3] = radius_mean * mynormals[i, 2] / (stereo_centerz - radius_mean+mynormals[i, 1])  # v_bottom
+        stereo_proj[i, 0] = radius_mean * normals[i, 0] / (radius_mean+normals[i, 1] - stereo_centerz)  # u_top qx
+        stereo_proj[i, 1] = radius_mean * normals[i, 2] / (radius_mean+normals[i, 1] - stereo_centerz)  # v_top qy
+        stereo_proj[i, 2] = radius_mean * normals[i, 0] / (stereo_centerz - radius_mean+normals[i, 1])  # u_bottom qx
+        stereo_proj[i, 3] = radius_mean * normals[i, 2] / (stereo_centerz - radius_mean+normals[i, 1])  # v_bottom qy
     stereo_proj = stereo_proj / radius_mean * 90  # rescaling from radius_mean to 90
 
-    u_grid_top, v_grid_top = np.mgrid[-91:91:183j, -91:91:183j]
-    u_grid_bottom, v_grid_bottom = np.mgrid[-91:91:183j, -91:91:183j]
-    int_grid_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), mycolor,
-                            (u_grid_top, v_grid_top), method='linear')
-    int_grid_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), mycolor,
-                               (u_grid_bottom, v_grid_bottom), method='linear')
-    int_grid_top = int_grid_top / int_grid_top[int_grid_top > 0].max() * 10000  # normalize for easier plotting
-    int_grid_bottom = int_grid_bottom / int_grid_bottom[int_grid_bottom > 0].max() * 10000  # normalize for plotting
+    if debugging:
+        fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=color,
+                                       radius_mean=radius_mean, planes=planes, title="South pole",
+                                       plot_planes=plot_planes)
+        fig.savefig(savedir + 'South pole.png')
+        fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=color,
+                                       radius_mean=radius_mean, planes=planes, title="North pole",
+                                       plot_planes=plot_planes)
+        fig.savefig(savedir + 'North pole.png')
 
-    # plot the stereographic projection
-    myfig, (myax0, myax1) = plt.subplots(1, 2, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
-    # plot top part (projection from South pole on equator)
-    plt0 = myax0.contourf(u_grid_top, v_grid_top, abs(int_grid_top), range(100, 6100, 250), cmap='hsv')
-    # plt.colorbar(plt0, ax=myax0)
-    myax0.axis('equal')
-    myax0.axis('off')
+    yi, xi = np.mgrid[-91:91:364j, -91:91:365j]  # vertical, horizontal
+    density_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), color, (yi, xi), method='linear')
+    density_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), color, (yi, xi), method='linear')
+    density_top = density_top / density_top[density_top > 0].max() * 10000  # normalize for plotting
+    density_bottom = density_bottom / density_bottom[density_bottom > 0].max() * 10000  # normalize for plotting
 
-    # # add the projection of the elevation angle, depending on the center of projection
-    for ii in range(15, 90, 5):
-        circle = plt.Circle((0, 0),
-                            radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                            color='grey', fill=False, linestyle='dotted', linewidth=0.5)
-        myax0.add_artist(circle)
-    for ii in range(10, 90, 20):
-        circle = plt.Circle((0, 0),
-                            radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                            color='grey', fill=False, linestyle='dotted', linewidth=1)
-        myax0.add_artist(circle)
-    for ii in range(10, 95, 20):
-        myax0.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
-                   str(ii) + '$^\circ$', fontsize=10, color='k')
-    circle = plt.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
-    myax0.add_artist(circle)
+    if save_txt:
+        # save metric coordinates in text file
+        density_top[np.isnan(density_top)] = 0.0
+        density_bottom[np.isnan(density_bottom)] = 0.0
+        fichier = open(savedir + 'CDI_poles.dat', "w")
+        for ii in range(len(yi)):
+            for jj in range(len(xi)):
+                fichier.write(str(yi[ii, 0]) + '\t' + str(xi[0, jj]) + '\t' +
+                              str(density_top[ii, jj]) + '\t' + str(yi[ii, 0]) + '\t' +
+                              str(xi[0, jj]) + '\t' + str(density_bottom[ii, jj]) + '\n')
+        fichier.close()
+        del color
+        gc.collect()
 
-    # add azimutal lines every 5 and 45 degrees
-    for ii in range(5, 365, 5):
-        myax0.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
-                   linestyle='dotted', linewidth=0.5)
-    for ii in range(0, 365, 20):
-        myax0.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
-                   linestyle='dotted', linewidth=1)
+    # inverse densities for watershed segmentation
+    density_top = -1 * density_top
+    density_bottom = -1 * density_bottom
 
-    # draw circles corresponding to particular reflection
-    if flag_plotplanes == 1:
-        indx = 0
-        for key, value in planes.items():
-            circle = plt.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
-                                (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                                color='g', fill=False, linestyle='dotted', linewidth=1.5)
-            myax0.add_artist(circle)
-            myax0.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                       np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                       key, fontsize=10, color='k', fontweight='bold')
-            indx = indx + 6
-            print(key + ": ", str('{:.2f}'.format(value)))
-    myax0.set_title('Top projection\nfrom South pole')
-
-    # plot bottom part (projection from North pole on equator)
-    plt1 = myax1.contourf(u_grid_bottom, v_grid_bottom, abs(int_grid_bottom), range(100, 6100, 250), cmap='hsv')
-    # plt.colorbar(plt1, ax=ax1)
-    myax1.axis('equal')
-    myax1.axis('off')
-
-    # # add the projection of the elevation angle, depending on the center of projection
-    for ii in range(15, 90, 5):
-        circle = plt.Circle((0, 0),
-                            radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                            color='grey', fill=False, linestyle='dotted', linewidth=0.5)
-        myax1.add_artist(circle)
-    for ii in range(10, 90, 20):
-        circle = plt.Circle((0, 0),
-                            radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                            color='grey', fill=False, linestyle='dotted', linewidth=1)
-        myax1.add_artist(circle)
-    for ii in range(10, 95, 20):
-        myax1.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
-                   str(ii) + '$^\circ$', fontsize=10, color='k')
-    circle = plt.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
-    myax1.add_artist(circle)
-
-    # add azimutal lines every 5 and 45 degrees
-    for ii in range(5, 365, 5):
-        myax1.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
-                   linestyle='dotted', linewidth=0.5)
-    for ii in range(0, 365, 20):
-        myax1.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
-                   linestyle='dotted', linewidth=1)
-
-    # draw circles corresponding to particular reflection
-    if flag_plotplanes == 1:
-        indx = 0
-        for key, value in planes.items():
-            circle = plt.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
-                                (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                                color='g', fill=False, linestyle='dotted', linewidth=1.5)
-            myax1.add_artist(circle)
-            myax1.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                       np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                       key, fontsize=10, color='k', fontweight='bold')
-            indx = indx + 6
-            print(key + ": ", str('{:.2f}'.format(value)))
-    plt.title('Bottom projection\nfrom North pole\n')
-
+    myfig = plt.figure(figsize=(15, 10))
+    myax0 = myfig.add_subplot(121)
+    scatter_top = myax0.scatter(xi, yi, c=density_top, cmap=cmap)
+    myax0.set_xlim(-91, 91)
+    myax0.set_ylim(-91, 91)
+    myfig.colorbar(scatter_top)
+    plt.axis('scaled')
+    plt.title('KDE \nSouth pole')
     plt.pause(0.1)
 
-    # save figure
-    plt.savefig(savedir + 'CDI_poles.png')
-    # save metric coordinates in text file
-    int_grid_top[np.isnan(int_grid_top)] = 0.0
-    fichier = open(savedir + 'CDI_poles.dat', "w")
-    for ii in range(len(u_grid_top)):
-        for jj in range(len(v_grid_top)):
-            fichier.write(str(u_grid_top[ii, 0]) + '\t' + str(v_grid_top[0, jj]) + '\t' +
-                          str(int_grid_top[ii, jj]) + '\t' + str(u_grid_bottom[ii, 0]) + '\t' +
-                          str(v_grid_bottom[0, jj]) + '\t' + str(int_grid_bottom[ii, jj]) + '\n')
-    fichier.close()
-    return 0
+    myax1 = myfig.add_subplot(122)
+    scatter_bottom = myax1.scatter(xi, yi, c=density_bottom, cmap=cmap)
+    myax1.set_xlim(-91, 91)
+    myax1.set_ylim(-91, 91)
+    myfig.colorbar(scatter_bottom)
+    plt.axis('scaled')
+    plt.title('KDE \nNorth pole')
+    plt.pause(0.1)
+
+    # identification of local minima
+    density_top[density_top > background_threshold] = 0  # define the background
+    mask_top = np.copy(density_top)
+    mask_top[mask_top != 0] = 1
+
+    density_bottom[density_bottom > background_threshold] = 0  # define the background
+    mask_bottom = np.copy(density_bottom)
+    mask_bottom[mask_bottom != 0] = 1
+
+    myfig = plt.figure(figsize=(15, 10))
+    myax0 = myfig.add_subplot(221)
+    myax0.imshow(mask_top, cmap=cmap, interpolation='nearest')  # cm.gray
+    plt.title('Background mask South')
+    plt.gca().invert_yaxis()
+    myax1 = myfig.add_subplot(223)
+    scatter_top = myax1.scatter(xi, yi, c=density_top, cmap=cmap)
+    myax1.set_xlim(-91, 91)
+    myax1.set_ylim(-91, 91)
+    myfig.colorbar(scatter_top)
+    plt.axis('scaled')
+    plt.title('KDE South pole\nafter background definition')
+
+    myax2 = myfig.add_subplot(222)
+    myax2.imshow(mask_bottom, cmap=cmap, interpolation='nearest')  # cm.gray
+    plt.title('Background mask North')
+    plt.gca().invert_yaxis()
+    myax3 = myfig.add_subplot(224)
+    scatter_bottom = myax3.scatter(xi, yi, c=density_bottom, cmap=cmap)
+    myax3.set_xlim(-91, 91)
+    myax3.set_ylim(-91, 91)
+    myfig.colorbar(scatter_bottom)
+    plt.axis('scaled')
+    plt.title('KDE North pole\nafter background definition')
+    plt.pause(0.1)
+
+    # Generate the markers as local minima of the distance to the background
+    distances_top = ndimage.distance_transform_edt(density_top)
+    distances_bottom = ndimage.distance_transform_edt(density_bottom)
+
+    if debugging:
+        myfig = plt.figure(figsize=(15, 10))
+        myfig.add_subplot(121)
+        plt.imshow(distances_top, cmap=cmap, interpolation='nearest')  # cm.gray
+        plt.title('Distances South')
+        plt.gca().invert_yaxis()
+        myfig.add_subplot(122)
+        plt.imshow(distances_bottom, cmap=cmap, interpolation='nearest')
+        plt.title('Distances North')
+        plt.gca().invert_yaxis()
+        plt.pause(0.1)
+
+    # find peaks
+    local_maxi_top = corner_peaks(distances_top, exclude_border=False, min_distance=min_distance, indices=False)
+    local_maxi_bottom = corner_peaks(distances_bottom, exclude_border=False, min_distance=min_distance, indices=False)
+
+    if debugging:
+        myfig = plt.figure(figsize=(15, 10))
+        myfig.add_subplot(121)
+        plt.imshow(local_maxi_top, interpolation='nearest')
+        plt.title('local_maxi South')
+        plt.gca().invert_yaxis()
+        myfig.add_subplot(122)
+        plt.imshow(local_maxi_bottom, interpolation='nearest')
+        plt.title('local_maxi North')
+        plt.gca().invert_yaxis()
+        plt.pause(0.1)
+
+    # define markers for each peak
+    markers_top = ndimage.label(local_maxi_top)[0]
+    markers_bottom = ndimage.label(local_maxi_bottom)[0]
+
+    if debugging:
+        myfig = plt.figure(figsize=(15, 10))
+        myfig.add_subplot(121)
+        plt.imshow(markers_top, interpolation='nearest')
+        plt.title('markers South')
+        plt.gca().invert_yaxis()
+        myfig.add_subplot(122)
+        plt.imshow(markers_bottom, interpolation='nearest')
+        plt.title('markers North')
+        plt.gca().invert_yaxis()
+        plt.pause(0.1)
+
+    # watershed segmentation
+    labels_top = watershed(-distances_top, markers_top, mask=mask_top)
+    labels_bottom = watershed(-markers_bottom, markers_bottom, mask=mask_bottom)
+
+    myfig = plt.figure(figsize=(15, 10))
+    myfig.add_subplot(121)
+    plt.imshow(labels_top, cmap=cmap, interpolation='nearest')  # cm.Spectral
+    plt.title('Separated objects South')
+    plt.gca().invert_yaxis()
+    myfig.add_subplot(122)
+    plt.imshow(labels_bottom, cmap=cmap, interpolation='nearest')
+    plt.title('Separated objects North')
+    plt.gca().invert_yaxis()
+    plt.pause(0.1)
+
+    return labels_top, labels_bottom, stereo_proj
 
 
 def taubin_smooth(myfaces, myvertices, cmap=default_cmap, iterations=10, lamda=0.5, mu=0.53, debugging=0):
@@ -624,16 +648,16 @@ def taubin_smooth(myfaces, myvertices, cmap=default_cmap, iterations=10, lamda=0
 
     # calculate the colormap for plotting the weighted point density of normals on a sphere
     local_radius = 0.1
-    mycolor = np.zeros(mynormals.shape[0], dtype=mynormals.dtype)
+    color = np.zeros(mynormals.shape[0], dtype=mynormals.dtype)
     for i in range(mynormals.shape[0]):
         mydistances = np.sqrt(np.sum((mynormals - mynormals[i, :]) ** 2, axis=1))  # ndarray of my mynormals.shape[0]
-        mycolor[i] = mydistances[mydistances < local_radius].sum()
-    mycolor = mycolor / max(mycolor)
+        color[i] = mydistances[mydistances < local_radius].sum()
+    color = color / max(color)
     if debugging:
         myfig = plt.figure()
         myax = Axes3D(myfig)
-        myax.scatter(mynormals[:, 0], mynormals[:, 1], mynormals[:, 2], c=mycolor, cmap=cmap)
-        # myax.scatter(mynormals[:, 2], mynormals[:, 1], mynormals[:, 0], c=mycolor, cmap=cmap)
+        myax.scatter(mynormals[:, 0], mynormals[:, 1], mynormals[:, 2], c=color, cmap=cmap)
+        # myax.scatter(mynormals[:, 2], mynormals[:, 1], mynormals[:, 0], c=color, cmap=cmap)
         myax.set_xlim(-1, 1)
         myax.set_xlabel('z')
         myax.set_ylim(-1, 1)
@@ -646,7 +670,7 @@ def taubin_smooth(myfaces, myvertices, cmap=default_cmap, iterations=10, lamda=0
     err_normals = np.argwhere(np.isnan(mynormals[:, 0]))
     mynormals[err_normals, :] = mynormals[err_normals-1, :]
     plt.ioff()
-    return new_vertices, mynormals, areas, mycolor, err_normals
+    return new_vertices, mynormals, areas, color, err_normals
 
 
 def save_planes_vti(filename, voxel_size, tuple_array, tuple_fieldnames, plane_labels, planes, origin=(0, 0, 0),
