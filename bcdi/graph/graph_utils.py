@@ -953,7 +953,7 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
                      key, fontsize=10, color='k', fontweight='bold')
             indx = indx + 6
             print(key + ": ", str('{:.2f}'.format(value)))
-    ax0.set_title('Top projection\nfrom ' + title)
+    ax0.set_title('Projection\nfrom ' + title)
     plt.pause(0.1)
 
     return fig, ax0
