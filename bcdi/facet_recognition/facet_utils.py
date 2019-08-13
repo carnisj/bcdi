@@ -17,16 +17,16 @@ colormap = gu.Colormap()
 default_cmap = colormap.cmap
 
 
-def detect_edges(myfaces):
+def detect_edges(faces):
     """
     find indices of vertices defining non-shared edges
-    :param myfaces: ndarray of m*3 faces
+    :param faces: ndarray of m*3 faces
     :return: 1D list of indices of vertices defining non-shared edges (near hole...)
     """
     # Get the three edges per triangle
-    edge1 = np.copy(myfaces[:, 0:2])
-    edge2 = np.array([np.copy(myfaces[:, 0]), np.copy(myfaces[:, 2])]).T
-    edge3 = np.array([np.copy(myfaces[:, 1]), np.copy(myfaces[:, 2])]).T
+    edge1 = np.copy(faces[:, 0:2])
+    edge2 = np.array([np.copy(faces[:, 0]), np.copy(faces[:, 2])]).T
+    edge3 = np.array([np.copy(faces[:, 1]), np.copy(faces[:, 2])]).T
     edge1.sort(axis=1)
     edge2.sort(axis=1)
     edge3.sort(axis=1)
@@ -40,34 +40,34 @@ def detect_edges(myfaces):
     return unique_edges
 
 
-def distance_threshold(myfit, myindices, mythreshold, myshape):
-    myplane = np.zeros(myshape, dtype=int)
+def distance_threshold(fit, indices, threshold, shape):
+    plane = np.zeros(shape, dtype=int)
     no_points = 0
-    indx = myindices[0]
-    indy = myindices[1]
-    indz = myindices[2]
-    if len(myindices[0]) == 0:
+    indx = indices[0]
+    indy = indices[1]
+    indz = indices[2]
+    if len(indices[0]) == 0:
         no_points = 1
-        return myplane, no_points
+        return plane, no_points
     # remove outsiders based on distance to plane
-    myplane_normal = np.array([myfit[0, 0], myfit[1, 0], -1])  # normal is [a, b, c] if ax+by+cz+d=0
-    for mypoint in range(len(myindices[0])):
-        mydist = abs(myfit[0, 0]*indx[mypoint] + myfit[1, 0]*indy[mypoint] -
-                     indz[mypoint] + myfit[2, 0])/np.linalg.norm(myplane_normal)
-        if mydist < mythreshold:
-            myplane[indx[mypoint], indy[mypoint], indz[mypoint]] = 1
-    if myplane[myplane == 1].sum() == 0:
+    plane_normal = np.array([fit[0, 0], fit[1, 0], -1])  # normal is [a, b, c] if ax+by+cz+d=0
+    for point in range(len(indices[0])):
+        dist = abs(fit[0, 0]*indx[point] + fit[1, 0]*indy[point] -
+                   indz[point] + fit[2, 0])/np.linalg.norm(plane_normal)
+        if dist < threshold:
+            plane[indx[point], indy[point], indz[point]] = 1
+    if plane[plane == 1].sum() == 0:
         print('Distance_threshold: no points for plane')
         no_points = 1
-        return myplane, no_points
-    return myplane, no_points
+        return plane, no_points
+    return plane, no_points
 
 
-def equirectangular_proj(mynormals, color, weights, cmap=default_cmap, bw_method=0.03, min_distance=10,
+def equirectangular_proj(normals, color, weights, cmap=default_cmap, bw_method=0.03, min_distance=10,
                          background_threshold=-0.35, debugging=False):
     """
 
-    :param mynormals: normals array
+    :param normals: normals array
     :param color: intensity array
     :param weights: weights used in the gaussian kernel density estimation
     :param cmap: colormap used for plotting
@@ -84,23 +84,23 @@ def equirectangular_proj(mynormals, color, weights, cmap=default_cmap, bw_method
     from skimage.morphology import watershed
 
     # check normals for nan
-    list_nan = np.argwhere(np.isnan(mynormals))
+    list_nan = np.argwhere(np.isnan(normals))
     if len(list_nan) != 0:
         for i in range(list_nan.shape[0]//3):
-            mynormals = np.delete(mynormals, list_nan[i*3, 0], axis=0)
+            normals = np.delete(normals, list_nan[i*3, 0], axis=0)
             color = np.delete(color, list_nan[i*3, 0], axis=0)
     # calculate latitude and longitude from xyz, this is equal to the equirectangular flat square projection
-    long_lat = np.zeros((mynormals.shape[0], 2), dtype=mynormals.dtype)
-    for i in range(mynormals.shape[0]):
-        if mynormals[i, 1] == 0 and mynormals[i, 0] == 0:
+    long_lat = np.zeros((normals.shape[0], 2), dtype=normals.dtype)
+    for i in range(normals.shape[0]):
+        if normals[i, 1] == 0 and normals[i, 0] == 0:
             continue
-        long_lat[i, 0] = np.arctan2(mynormals[i, 1], mynormals[i, 0])  # longitude
-        long_lat[i, 1] = np.arcsin(mynormals[i, 2])  # latitude
-    myfig = plt.figure()
-    myax = myfig.add_subplot(111)
-    myax.scatter(long_lat[:, 0], long_lat[:, 1], c=color, cmap=cmap)
-    myax.set_xlim(-np.pi, np.pi)
-    myax.set_ylim(-np.pi / 2, np.pi / 2)
+        long_lat[i, 0] = np.arctan2(normals[i, 1], normals[i, 0])  # longitude
+        long_lat[i, 1] = np.arcsin(normals[i, 2])  # latitude
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(long_lat[:, 0], long_lat[:, 1], c=color, cmap=cmap)
+    ax.set_xlim(-np.pi, np.pi)
+    ax.set_ylim(-np.pi / 2, np.pi / 2)
     plt.axis('scaled')
     plt.title('Equirectangular projection of the weighted point densities before KDE')
     plt.pause(0.1)
@@ -121,162 +121,166 @@ def equirectangular_proj(mynormals, color, weights, cmap=default_cmap, bw_method
 
     density = -1 * kde(coords).reshape(xi.shape)  # inverse density for later watershed segmentation
 
-    myfig = plt.figure()
-    myax = myfig.add_subplot(111)
-    scatter = myax.scatter(xi, yi, c=density, cmap=cmap, vmin=-1.5, vmax=0)
-    myax.set_xlim(-np.pi, np.pi)
-    myax.set_ylim(-np.pi / 2, np.pi / 2)
-    myfig.colorbar(scatter)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    scatter = ax.scatter(xi, yi, c=density, cmap=cmap, vmin=-1.5, vmax=0)
+    ax.set_xlim(-np.pi, np.pi)
+    ax.set_ylim(-np.pi / 2, np.pi / 2)
+    fig.colorbar(scatter)
     plt.axis('scaled')
     plt.title('Equirectangular projection of the KDE')
     plt.pause(0.1)
 
     # identification of local minima
     density[density > background_threshold] = 0  # define the background
-    mymask = np.copy(density)
-    mymask[mymask != 0] = 1
+    mask = np.copy(density)
+    mask[mask != 0] = 1
 
     plt.figure()
-    plt.imshow(mymask, cmap=cm.gray, interpolation='nearest')
+    plt.imshow(mask, cmap=cmap, interpolation='nearest')
     plt.title('Background mask')
     plt.gca().invert_yaxis()
-    myfig = plt.figure()
-    myax = myfig.add_subplot(111)
-    scatter = myax.scatter(xi, yi, c=density, cmap=cmap)
-    myax.set_xlim(-np.pi, np.pi)
-    myax.set_ylim(-np.pi / 2, np.pi / 2)
-    myfig.colorbar(scatter)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    scatter = ax.scatter(xi, yi, c=density, cmap=cmap)
+    ax.set_xlim(-np.pi, np.pi)
+    ax.set_ylim(-np.pi / 2, np.pi / 2)
+    fig.colorbar(scatter)
     plt.axis('scaled')
     plt.title('KDE after background definition')
     plt.pause(0.1)
 
     # Generate the markers as local minima of the distance to the background
-    mydistances = ndimage.distance_transform_edt(density)
+    distances = ndimage.distance_transform_edt(density)
     if debugging:
         plt.figure()
-        plt.imshow(mydistances, cmap=cm.gray, interpolation='nearest')
+        plt.imshow(distances, cmap=cmap, interpolation='nearest')
         plt.title('Distances')
         plt.gca().invert_yaxis()
+        plt.pause(0.1)
 
     # find peaks
-    local_maxi = corner_peaks(mydistances, exclude_border=False, min_distance=min_distance, indices=False)  #
+    local_maxi = corner_peaks(distances, exclude_border=False, min_distance=min_distance, indices=False)  #
     if debugging:
         plt.figure()
         plt.imshow(local_maxi, interpolation='nearest')
         plt.title('local_maxi')
         plt.gca().invert_yaxis()
+        plt.pause(0.1)
 
     # define markers for each peak
-    mymarkers = ndimage.label(local_maxi)[0]
+    markers = ndimage.label(local_maxi)[0]
     if debugging:
         plt.figure()
-        plt.imshow(mymarkers, interpolation='nearest')
-        plt.title('mymarkers')
+        plt.imshow(markers, interpolation='nearest')
+        plt.title('markers')
         plt.colorbar()
         plt.gca().invert_yaxis()
+        plt.pause(0.1)
 
     # watershed segmentation
-    mylabels = watershed(-mydistances, mymarkers, mask=mymask)
-    print('There are', str(mylabels.max()), 'facets')  # label 0 is the background
+    labels = watershed(-distances, markers, mask=mask)
+    print('There are', str(labels.max()), 'facets')  # label 0 is the background
 
     plt.figure()
-    plt.imshow(mylabels, cmap=cm.Spectral, interpolation='nearest')
+    plt.imshow(labels, cmap=cmap, interpolation='nearest')
     plt.title('Separated objects')
     plt.colorbar()
     plt.gca().invert_yaxis()
+    plt.pause(0.1)
 
-    return mylabels, long_lat
+    return labels, long_lat
 
 
-def find_neighbours(myvertices, myfaces):
+def find_neighbours(vertices, faces):
     """
     Get the list of neighbouring vertices for each vertex
-    :param myvertices: ndarray of n*3 vertices
-    :param myfaces: ndarray of m*3 faces
+    :param vertices: ndarray of n*3 vertices
+    :param faces: ndarray of m*3 faces
     :return: list of lists of indices
     """
-    neighbors = [None]*myvertices.shape[0]
+    neighbors = [None]*vertices.shape[0]
 
-    for indx in range(myfaces.shape[0]):
-        if neighbors[myfaces[indx, 0]] is None:
-            neighbors[myfaces[indx, 0]] = [myfaces[indx, 1], myfaces[indx, 2]]
+    for indx in range(faces.shape[0]):
+        if neighbors[faces[indx, 0]] is None:
+            neighbors[faces[indx, 0]] = [faces[indx, 1], faces[indx, 2]]
         else:
-            neighbors[myfaces[indx, 0]].append(myfaces[indx, 1])
-            neighbors[myfaces[indx, 0]].append(myfaces[indx, 2])
-        if neighbors[myfaces[indx, 1]] is None:
-            neighbors[myfaces[indx, 1]] = [myfaces[indx, 2], myfaces[indx, 0]]
+            neighbors[faces[indx, 0]].append(faces[indx, 1])
+            neighbors[faces[indx, 0]].append(faces[indx, 2])
+        if neighbors[faces[indx, 1]] is None:
+            neighbors[faces[indx, 1]] = [faces[indx, 2], faces[indx, 0]]
         else:
-            neighbors[myfaces[indx, 1]].append(myfaces[indx, 2])
-            neighbors[myfaces[indx, 1]].append(myfaces[indx, 0])
-        if neighbors[myfaces[indx, 2]] is None:
-            neighbors[myfaces[indx, 2]] = [myfaces[indx, 0], myfaces[indx, 1]]
+            neighbors[faces[indx, 1]].append(faces[indx, 2])
+            neighbors[faces[indx, 1]].append(faces[indx, 0])
+        if neighbors[faces[indx, 2]] is None:
+            neighbors[faces[indx, 2]] = [faces[indx, 0], faces[indx, 1]]
         else:
-            neighbors[myfaces[indx, 2]].append(myfaces[indx, 0])
-            neighbors[myfaces[indx, 2]].append(myfaces[indx, 1])
-    neighbors = [mylist for mylist in neighbors if mylist is not None]
-    for indx in range(myvertices.shape[0]):
+            neighbors[faces[indx, 2]].append(faces[indx, 0])
+            neighbors[faces[indx, 2]].append(faces[indx, 1])
+    neighbors = [point for point in neighbors if point is not None]
+    for indx in range(vertices.shape[0]):
         neighbors[indx] = list(set(neighbors[indx]))  # remove redundant indices in each sublist
     return neighbors
 
 
-def fit_plane(myplane, mylabel, debugging=1):
+def fit_plane(plane, label, debugging=1):
     """
     fit a plane to labelled indices, ax+by+c=z
-    :param myplane: 3D binary array of the shape of the data
-    :param mylabel: int, only used for title in plot
+    :param plane: 3D binary array of the shape of the data
+    :param label: int, only used for title in plot
     :param debugging: show plots for debugging
     :return: matrix of fit parameters [a, b, c], plane indices and errors associated
     """
     from scipy.ndimage.measurements import center_of_mass
 
-    myindices = np.nonzero(myplane == 1)
+    indices = np.nonzero(plane == 1)
     no_points = 0
-    if len(myindices[0]) == 0:
+    if len(indices[0]) == 0:
         no_points = 1
-        return 0, myindices, no_points
-    tmp_x = myindices[0]
-    tmp_y = myindices[1]
-    tmp_z = myindices[2]
-    x_com, y_com, z_com = center_of_mass(myplane)
+        return 0, indices, no_points
+    tmp_x = indices[0]
+    tmp_y = indices[1]
+    tmp_z = indices[2]
+    x_com, y_com, z_com = center_of_mass(plane)
 
     # remove isolated points, which probably do not belong to the plane
-    for mypoint in range(tmp_x.shape[0]):
-        my_neighbors = myplane[tmp_x[mypoint]-2:tmp_x[mypoint]+3, tmp_y[mypoint]-2:tmp_y[mypoint]+3,
-                               tmp_z[mypoint]-2:tmp_z[mypoint]+3].sum()
+    for point in range(tmp_x.shape[0]):
+        _neighbors = plane[tmp_x[point]-2:tmp_x[point]+3, tmp_y[point]-2:tmp_y[point]+3,
+                               tmp_z[point]-2:tmp_z[point]+3].sum()
         # if debugging == 1:
-        #     print(my_neighbors)
-        if my_neighbors < 5:
-            myplane[tmp_x[mypoint], tmp_y[mypoint], tmp_z[mypoint]] = 0
-    print('Plane', mylabel, ', ', str(tmp_x.shape[0]-myplane[myplane == 1].sum()), 'points isolated, ',
-          str(myplane[myplane == 1].sum()), 'remaining')
-    myindices = np.nonzero(myplane == 1)
-    if len(myindices[0]) == 0:
+        #     print(_neighbors)
+        if _neighbors < 5:
+            plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
+    print('Plane', label, ', ', str(tmp_x.shape[0]-plane[plane == 1].sum()), 'points isolated, ',
+          str(plane[plane == 1].sum()), 'remaining')
+    indices = np.nonzero(plane == 1)
+    if len(indices[0]) == 0:
         no_points = 1
-        return 0, myindices, no_points
-    tmp_x = myindices[0]
-    tmp_y = myindices[1]
-    tmp_z = myindices[2]
+        return 0, indices, no_points
+    tmp_x = indices[0]
+    tmp_y = indices[1]
+    tmp_z = indices[2]
 
     # remove points farther than 1.8 times the mean distance to COM
-    mydist = np.zeros(tmp_x.shape[0])
-    for mypoint in range(tmp_x.shape[0]):
-        mydist[mypoint] = np.sqrt((tmp_x[mypoint]-x_com)**2+(tmp_y[mypoint]-y_com)**2+(tmp_z[mypoint]-z_com)**2)
-    average_dist = np.mean(mydist)
+    dist = np.zeros(tmp_x.shape[0])
+    for point in range(tmp_x.shape[0]):
+        dist[point] = np.sqrt((tmp_x[point]-x_com)**2+(tmp_y[point]-y_com)**2+(tmp_z[point]-z_com)**2)
+    average_dist = np.mean(dist)
     # plt.figure()
-    # myax = plt.subplot(111, projection='3d')
-    # myax.scatter(tmp_x, tmp_y, tmp_z, color='b')
-    for mypoint in range(tmp_x.shape[0]):
-        if mydist[mypoint] > 1.8 * average_dist:
-            myplane[tmp_x[mypoint], tmp_y[mypoint], tmp_z[mypoint]] = 0
-    print('Plane', mylabel, ', ', str(tmp_x.shape[0] - myplane[myplane == 1].sum()), 'points too far from COM, ',
-          str(myplane[myplane == 1].sum()), 'remaining')
-    myindices = np.nonzero(myplane == 1)
-    if len(myindices[0]) < 5:
+    # ax = plt.subplot(111, projection='3d')
+    # ax.scatter(tmp_x, tmp_y, tmp_z, color='b')
+    for point in range(tmp_x.shape[0]):
+        if dist[point] > 1.8 * average_dist:
+            plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
+    print('Plane', label, ', ', str(tmp_x.shape[0] - plane[plane == 1].sum()), 'points too far from COM, ',
+          str(plane[plane == 1].sum()), 'remaining')
+    indices = np.nonzero(plane == 1)
+    if len(indices[0]) < 5:
         no_points = 1
-        return 0, myindices, no_points
-    tmp_x = myindices[0]
-    tmp_y = myindices[1]
-    tmp_z = myindices[2]
+        return 0, indices, no_points
+    tmp_x = indices[0]
+    tmp_y = indices[1]
+    tmp_z = indices[2]
 
     tmp_x = tmp_x[:, np.newaxis]
     tmp_y = tmp_y[:, np.newaxis]
@@ -284,28 +288,28 @@ def fit_plane(myplane, mylabel, debugging=1):
 
     a = np.matrix(np.concatenate((tmp_x, tmp_y, tmp_1), axis=1))
     b = np.matrix(tmp_z).T
-    myfit = (a.T * a).I * a.T * b
-    # myerrors = b - a * myfit
+    fit = (a.T * a).I * a.T * b
+    # errors = b - a * fit
 
     if debugging == 1:
         plt.figure()
-        myax = plt.subplot(111, projection='3d')
-        myax.scatter(tmp_x, tmp_y, tmp_z, color='b')
-        myax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-        myax.set_ylabel('y')
-        myax.set_zlabel('z')
-        xlim = myax.get_xlim()  # first dimension is x for plots, but z for NEXUS convention
-        ylim = myax.get_ylim()
+        ax = plt.subplot(111, projection='3d')
+        ax.scatter(tmp_x, tmp_y, tmp_z, color='b')
+        ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+        xlim = ax.get_xlim()  # first dimension is x for plots, but z for NEXUS convention
+        ylim = ax.get_ylim()
         meshx, meshy = np.meshgrid(np.arange(xlim[0], xlim[1]+1, 1), np.arange(ylim[0], ylim[1]+1, 1))
         meshz = np.zeros(meshx.shape)
-        for myrow in range(meshx.shape[0]):
-            for mycol in range(meshx.shape[1]):
-                meshz[myrow, mycol] = myfit[0, 0] * meshx[myrow, mycol] +\
-                                      myfit[1, 0] * meshy[myrow, mycol] + myfit[2, 0]
-        myax.plot_wireframe(meshx, meshy, meshz, color='k')
-        plt.title("Points and fitted plane" + str(mylabel))
+        for row in range(meshx.shape[0]):
+            for col in range(meshx.shape[1]):
+                meshz[row, col] = fit[0, 0] * meshx[row, col] +\
+                                      fit[1, 0] * meshy[row, col] + fit[2, 0]
+        ax.plot_wireframe(meshx, meshy, meshz, color='k')
+        plt.title("Points and fitted plane" + str(label))
         plt.pause(0.1)
-    return myfit, myindices, no_points
+    return fit, indices, no_points
 
 
 def grow_facet(fit, plane, label, debugging=1):
@@ -319,29 +323,29 @@ def grow_facet(fit, plane, label, debugging=1):
     """
     from scipy.signal import convolve
 
-    myindices = np.nonzero(plane == 1)
-    if len(myindices[0]) == 0:
+    indices = np.nonzero(plane == 1)
+    if len(indices[0]) == 0:
         no_points = 1
         return plane, no_points
-    mykernel = np.ones((10, 10, 10))
-    myobject = np.copy(plane[myindices[0].min():myindices[0].max()+1, myindices[1].min():myindices[1].max()+1,
-                       myindices[2].min(): myindices[2].max() + 1])
-    mycoord = np.rint(convolve(myobject, mykernel, mode='same'))
+    kernel = np.ones((10, 10, 10))
+    object = np.copy(plane[indices[0].min():indices[0].max()+1, indices[1].min():indices[1].max()+1,
+                       indices[2].min(): indices[2].max() + 1])
+    coord = np.rint(convolve(object, kernel, mode='same'))
 
     # determine the threshold for growing the facet
-    mycoord[myobject == 0] = 0
-    mean_coord = mycoord.sum() / len(myindices[0])
+    coord[object == 0] = 0
+    mean_coord = coord.sum() / len(indices[0])
     print('Plane ' + str(label) + ', mean coordination number = ' + str(mean_coord))
-    mythreshold = mean_coord - 12  # -10 extension starting outwards
+    threshold = mean_coord - 12  # -10 extension starting outwards
 
     # apply the estimated threshold
-    mycoord = np.rint(convolve(myobject, mykernel, mode='same'))
-    mycoord = mycoord.astype(int)
-    mycoord[mycoord < mythreshold] = 0
+    coord = np.rint(convolve(object, kernel, mode='same'))
+    coord = coord.astype(int)
+    coord[coord < threshold] = 0
 
     temp_plane = np.copy(plane)
-    temp_plane[myindices[0].min():myindices[0].max() + 1, myindices[1].min():myindices[1].max() + 1,
-               myindices[2].min(): myindices[2].max() + 1] = mycoord
+    temp_plane[indices[0].min():indices[0].max() + 1, indices[1].min():indices[1].max() + 1,
+               indices[2].min(): indices[2].max() + 1] = coord
     new_indices = np.nonzero(temp_plane)
     temp_plane, no_points = distance_threshold(fit, new_indices, 0.5, temp_plane.shape)
 
@@ -349,43 +353,43 @@ def grow_facet(fit, plane, label, debugging=1):
     plane[new_indices[0], new_indices[1], new_indices[2]] = 1
 
     if debugging == 1 and len(new_indices[0]) != 0:
-        # myindices = np.nonzero(mycoord)
-        # color = mycoord[myindices[0], myindices[1], myindices[2]]
-        # myfig = plt.figure()
-        # myax = plt.subplot(111, projection='3d')
-        # myscatter = myax.scatter(myindices[0], myindices[1], myindices[2], s=2, c=color,
-        #                          cmap=my_cmap, vmin=0, vmax=mythreshold)
-        # myax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-        # myax.set_ylabel('y')
-        # myax.set_zlabel('z')
-        # plt.title("Convolution for plane " + str(mylabel) + ' after distance threshold')
-        # myfig.colorbar(myscatter)
+        # indices = np.nonzero(coord)
+        # color = coord[indices[0], indices[1], indices[2]]
+        # fig = plt.figure()
+        # ax = plt.subplot(111, projection='3d')
+        # scatter = ax.scatter(indices[0], indices[1], indices[2], s=2, c=color,
+        #                          cmap=_cmap, vmin=0, vmax=threshold)
+        # ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
+        # ax.set_ylabel('y')
+        # ax.set_zlabel('z')
+        # plt.title("Convolution for plane " + str(label) + ' after distance threshold')
+        # fig.colorbar(scatter)
 
-        myindices = np.nonzero(plane)
+        indices = np.nonzero(plane)
         plt.figure()
-        myax = plt.subplot(111, projection='3d')
-        myax.scatter(myindices[0], myindices[1], myindices[2], color='b')
-        myax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-        myax.set_ylabel('y')
-        myax.set_zlabel('z')
+        ax = plt.subplot(111, projection='3d')
+        ax.scatter(indices[0], indices[1], indices[2], color='b')
+        ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
         plt.title("Plane " + str(label) + ' after 1 cycle of facet growing')
         plt.pause(0.1)
-        print(str(len(myindices[0])) + ' after 1 cycle of facet growing')
+        print(str(len(indices[0])) + ' after 1 cycle of facet growing')
     return plane, no_points
 
 
-def plane_angle(ref_plane, myplane):
+def plane_angle(ref_plane, plane):
     """
     Calculate the angle between two crystallographic planes in cubic materials
     :param ref_plane: measured reflection
-    :param myplane: plane for which angle should be calculated
+    :param plane: plane for which angle should be calculated
     :return: the angle in degrees
     """
-    if np.array_equal(ref_plane, myplane):
+    if np.array_equal(ref_plane, plane):
         angle = 0.0
     else:
-        angle = 180 / np.pi * np.arccos(sum(np.multiply(ref_plane, myplane)) /
-                                        (np.linalg.norm(ref_plane) * np.linalg.norm(myplane)))
+        angle = 180 / np.pi * np.arccos(sum(np.multiply(ref_plane, plane)) /
+                                        (np.linalg.norm(ref_plane) * np.linalg.norm(plane)))
     if angle > 90.0:
         angle = 180.0 - angle
     return angle
@@ -467,21 +471,21 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     density_top = -1 * density_top
     density_bottom = -1 * density_bottom
 
-    myfig = plt.figure(figsize=(15, 10))
-    myax0 = myfig.add_subplot(121)
-    scatter_top = myax0.scatter(xi, yi, c=density_top, cmap=cmap)
-    myax0.set_xlim(-91, 91)
-    myax0.set_ylim(-91, 91)
-    myfig.colorbar(scatter_top)
+    fig = plt.figure(figsize=(15, 10))
+    ax0 = fig.add_subplot(121)
+    scatter_top = ax0.scatter(xi, yi, c=density_top, cmap=cmap)
+    ax0.set_xlim(-91, 91)
+    ax0.set_ylim(-91, 91)
+    fig.colorbar(scatter_top)
     plt.axis('scaled')
     plt.title('KDE \nSouth pole')
     plt.pause(0.1)
 
-    myax1 = myfig.add_subplot(122)
-    scatter_bottom = myax1.scatter(xi, yi, c=density_bottom, cmap=cmap)
-    myax1.set_xlim(-91, 91)
-    myax1.set_ylim(-91, 91)
-    myfig.colorbar(scatter_bottom)
+    ax1 = fig.add_subplot(122)
+    scatter_bottom = ax1.scatter(xi, yi, c=density_bottom, cmap=cmap)
+    ax1.set_xlim(-91, 91)
+    ax1.set_ylim(-91, 91)
+    fig.colorbar(scatter_bottom)
     plt.axis('scaled')
     plt.title('KDE \nNorth pole')
     plt.pause(0.1)
@@ -495,28 +499,28 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     mask_bottom = np.copy(density_bottom)
     mask_bottom[mask_bottom != 0] = 1
 
-    myfig = plt.figure(figsize=(15, 10))
-    myax0 = myfig.add_subplot(221)
-    myax0.imshow(mask_top, cmap=cmap, interpolation='nearest')  # cm.gray
+    fig = plt.figure(figsize=(15, 10))
+    ax0 = fig.add_subplot(221)
+    ax0.imshow(mask_top, cmap=cmap, interpolation='nearest')  # cm.gray
     plt.title('Background mask South')
     plt.gca().invert_yaxis()
-    myax1 = myfig.add_subplot(223)
-    scatter_top = myax1.scatter(xi, yi, c=density_top, cmap=cmap)
-    myax1.set_xlim(-91, 91)
-    myax1.set_ylim(-91, 91)
-    myfig.colorbar(scatter_top)
+    ax1 = fig.add_subplot(223)
+    scatter_top = ax1.scatter(xi, yi, c=density_top, cmap=cmap)
+    ax1.set_xlim(-91, 91)
+    ax1.set_ylim(-91, 91)
+    fig.colorbar(scatter_top)
     plt.axis('scaled')
     plt.title('KDE South pole\nafter background definition')
 
-    myax2 = myfig.add_subplot(222)
-    myax2.imshow(mask_bottom, cmap=cmap, interpolation='nearest')  # cm.gray
+    ax2 = fig.add_subplot(222)
+    ax2.imshow(mask_bottom, cmap=cmap, interpolation='nearest')  # cm.gray
     plt.title('Background mask North')
     plt.gca().invert_yaxis()
-    myax3 = myfig.add_subplot(224)
-    scatter_bottom = myax3.scatter(xi, yi, c=density_bottom, cmap=cmap)
-    myax3.set_xlim(-91, 91)
-    myax3.set_ylim(-91, 91)
-    myfig.colorbar(scatter_bottom)
+    ax3 = fig.add_subplot(224)
+    scatter_bottom = ax3.scatter(xi, yi, c=density_bottom, cmap=cmap)
+    ax3.set_xlim(-91, 91)
+    ax3.set_ylim(-91, 91)
+    fig.colorbar(scatter_bottom)
     plt.axis('scaled')
     plt.title('KDE North pole\nafter background definition')
     plt.pause(0.1)
@@ -526,12 +530,12 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     distances_bottom = ndimage.distance_transform_edt(density_bottom)
 
     if debugging:
-        myfig = plt.figure(figsize=(15, 10))
-        myfig.add_subplot(121)
+        fig = plt.figure(figsize=(15, 10))
+        fig.add_subplot(121)
         plt.imshow(distances_top, cmap=cmap, interpolation='nearest')  # cm.gray
         plt.title('Distances South')
         plt.gca().invert_yaxis()
-        myfig.add_subplot(122)
+        fig.add_subplot(122)
         plt.imshow(distances_bottom, cmap=cmap, interpolation='nearest')
         plt.title('Distances North')
         plt.gca().invert_yaxis()
@@ -542,12 +546,12 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     local_maxi_bottom = corner_peaks(distances_bottom, exclude_border=False, min_distance=min_distance, indices=False)
 
     if debugging:
-        myfig = plt.figure(figsize=(15, 10))
-        myfig.add_subplot(121)
+        fig = plt.figure(figsize=(15, 10))
+        fig.add_subplot(121)
         plt.imshow(local_maxi_top, interpolation='nearest')
         plt.title('local_maxi South')
         plt.gca().invert_yaxis()
-        myfig.add_subplot(122)
+        fig.add_subplot(122)
         plt.imshow(local_maxi_bottom, interpolation='nearest')
         plt.title('local_maxi North')
         plt.gca().invert_yaxis()
@@ -558,12 +562,12 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     markers_bottom = ndimage.label(local_maxi_bottom)[0]
 
     if debugging:
-        myfig = plt.figure(figsize=(15, 10))
-        myfig.add_subplot(121)
+        fig = plt.figure(figsize=(15, 10))
+        fig.add_subplot(121)
         plt.imshow(markers_top, interpolation='nearest')
         plt.title('markers South')
         plt.gca().invert_yaxis()
-        myfig.add_subplot(122)
+        fig.add_subplot(122)
         plt.imshow(markers_bottom, interpolation='nearest')
         plt.title('markers North')
         plt.gca().invert_yaxis()
@@ -573,12 +577,12 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     labels_top = watershed(-distances_top, markers_top, mask=mask_top)
     labels_bottom = watershed(-markers_bottom, markers_bottom, mask=mask_bottom)
 
-    myfig = plt.figure(figsize=(15, 10))
-    myfig.add_subplot(121)
+    fig = plt.figure(figsize=(15, 10))
+    fig.add_subplot(121)
     plt.imshow(labels_top, cmap=cmap, interpolation='nearest')  # cm.Spectral
     plt.title('Separated objects South')
     plt.gca().invert_yaxis()
-    myfig.add_subplot(122)
+    fig.add_subplot(122)
     plt.imshow(labels_bottom, cmap=cmap, interpolation='nearest')
     plt.title('Separated objects North')
     plt.gca().invert_yaxis()
@@ -587,12 +591,12 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     return labels_top, labels_bottom, stereo_proj
 
 
-def taubin_smooth(myfaces, myvertices, cmap=default_cmap, iterations=10, lamda=0.5, mu=0.53, debugging=0):
+def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.5, mu=0.53, debugging=0):
     """
     taubinsmooth: performs a back and forward Laplacian smoothing "without shrinking" of a triangulated mesh,
     as described by Gabriel Taubin (ICCV '95)
-    :param myfaces: m*3 ndarray of m faces defined by 3 indices of vertices
-    :param myvertices: n*3 ndarray of n vertices defined by 3 positions
+    :param faces: m*3 ndarray of m faces defined by 3 indices of vertices
+    :param vertices: n*3 ndarray of n vertices defined by 3 positions
     :param cmap: colormap used for plotting
     :param iterations: number of iterations for smoothing (default 30)
     :param lamda: smoothing variable 0 < lambda < mu < 1 (default 0.5)
@@ -603,74 +607,74 @@ def taubin_smooth(myfaces, myvertices, cmap=default_cmap, iterations=10, lamda=0
     from mpl_toolkits.mplot3d import Axes3D
     plt.ion()
 
-    neighbours = find_neighbours(myvertices, myfaces)  # get the indices of neighboring vertices for each vertex
-    old_vertices = np.copy(myvertices)
-    indices_edges = detect_edges(myfaces)  # find indices of vertices defining non-shared edges (near hole...)
-    new_vertices = np.copy(myvertices)
+    neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
+    old_vertices = np.copy(vertices)
+    indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
+    new_vertices = np.copy(vertices)
 
     for k in range(iterations):
-        myvertices = np.copy(new_vertices)
-        for i in range(myvertices.shape[0]):
+        vertices = np.copy(new_vertices)
+        for i in range(vertices.shape[0]):
             indices = neighbours[i]  # list of indices
-            mydistances = np.sqrt(np.sum((myvertices[indices, :]-myvertices[i, :]) ** 2, axis=1))
-            weights = mydistances**(-1)
-            vectoren = weights[:, np.newaxis] * myvertices[indices, :]
+            distances = np.sqrt(np.sum((vertices[indices, :]-vertices[i, :]) ** 2, axis=1))
+            weights = distances**(-1)
+            vectoren = weights[:, np.newaxis] * vertices[indices, :]
             totaldist = sum(weights)
-            new_vertices[i, :] = myvertices[i, :] + lamda*(np.sum(vectoren, axis=0)/totaldist-myvertices[i, :])
+            new_vertices[i, :] = vertices[i, :] + lamda*(np.sum(vectoren, axis=0)/totaldist-vertices[i, :])
         if indices_edges.size != 0:
-            new_vertices[indices_edges, :] = myvertices[indices_edges, :]
+            new_vertices[indices_edges, :] = vertices[indices_edges, :]
 
-        myvertices = np.copy(new_vertices)
-        for i in range(myvertices.shape[0]):
+        vertices = np.copy(new_vertices)
+        for i in range(vertices.shape[0]):
             indices = neighbours[i]  # list of indices
-            mydistances = np.sqrt(np.sum((myvertices[indices, :]-myvertices[i, :])**2, axis=1))
-            weights = mydistances**(-1)
+            distances = np.sqrt(np.sum((vertices[indices, :]-vertices[i, :])**2, axis=1))
+            weights = distances**(-1)
             # weights[np.argwhere(np.isnan(weights))] = 0
-            vectoren = weights[:, np.newaxis] * myvertices[indices, :]
+            vectoren = weights[:, np.newaxis] * vertices[indices, :]
             totaldist = sum(weights)
-            new_vertices[i, :] = myvertices[i, :] - mu*(sum(vectoren)/totaldist - myvertices[i, :])
+            new_vertices[i, :] = vertices[i, :] - mu*(sum(vectoren)/totaldist - vertices[i, :])
         if indices_edges.size != 0:
-            new_vertices[indices_edges, :] = myvertices[indices_edges, :]
+            new_vertices[indices_edges, :] = vertices[indices_edges, :]
 
     tfind = np.argwhere(np.isnan(new_vertices[:, 0]))
     new_vertices[tfind, :] = old_vertices[tfind, :]
 
     # Create an indexed view into the vertex array using the array of three indices for triangles
-    tris = new_vertices[myfaces]
+    tris = new_vertices[faces]
     # Calculate the normal for all the triangles, by taking the cross product of the vectors v1-v0,
     # and v2-v0 in each triangle
     # TODO: check direction of normals by dot product with the gradient of the support
-    mynormals = np.cross(tris[::, 1] - tris[::, 0], tris[::, 2] - tris[::, 0])
-    areas = np.array([1/2 * np.linalg.norm(normal) for normal in mynormals])
-    normals_length = np.sqrt(mynormals[:, 0]**2 + mynormals[:, 1]**2 + mynormals[:, 2]**2)
-    mynormals = -1 * mynormals / normals_length[:, np.newaxis]   # flip and normalize normals
+    normals = np.cross(tris[::, 1] - tris[::, 0], tris[::, 2] - tris[::, 0])
+    areas = np.array([1/2 * np.linalg.norm(normal) for normal in normals])
+    normals_length = np.sqrt(normals[:, 0]**2 + normals[:, 1]**2 + normals[:, 2]**2)
+    normals = -1 * normals / normals_length[:, np.newaxis]   # flip and normalize normals
     # n is now an array of normalized normals, one per triangle.
 
     # calculate the colormap for plotting the weighted point density of normals on a sphere
     local_radius = 0.1
-    color = np.zeros(mynormals.shape[0], dtype=mynormals.dtype)
-    for i in range(mynormals.shape[0]):
-        mydistances = np.sqrt(np.sum((mynormals - mynormals[i, :]) ** 2, axis=1))  # ndarray of my mynormals.shape[0]
-        color[i] = mydistances[mydistances < local_radius].sum()
+    color = np.zeros(normals.shape[0], dtype=normals.dtype)
+    for i in range(normals.shape[0]):
+        distances = np.sqrt(np.sum((normals - normals[i, :]) ** 2, axis=1))  # ndarray of  normals.shape[0]
+        color[i] = distances[distances < local_radius].sum()
     color = color / max(color)
     if debugging:
-        myfig = plt.figure()
-        myax = Axes3D(myfig)
-        myax.scatter(mynormals[:, 0], mynormals[:, 1], mynormals[:, 2], c=color, cmap=cmap)
-        # myax.scatter(mynormals[:, 2], mynormals[:, 1], mynormals[:, 0], c=color, cmap=cmap)
-        myax.set_xlim(-1, 1)
-        myax.set_xlabel('z')
-        myax.set_ylim(-1, 1)
-        myax.set_ylabel('y')
-        myax.set_zlim(-1, 1)
-        myax.set_zlabel('x')
-#         myax.set_aspect('equal', 'box')
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.scatter(normals[:, 0], normals[:, 1], normals[:, 2], c=color, cmap=cmap)
+        # ax.scatter(normals[:, 2], normals[:, 1], normals[:, 0], c=color, cmap=cmap)
+        ax.set_xlim(-1, 1)
+        ax.set_xlabel('z')
+        ax.set_ylim(-1, 1)
+        ax.set_ylabel('y')
+        ax.set_zlim(-1, 1)
+        ax.set_zlabel('x')
+#         ax.set_aspect('equal', 'box')
         plt.title('Weighted point densities before KDE')
         plt.pause(0.1)
-    err_normals = np.argwhere(np.isnan(mynormals[:, 0]))
-    mynormals[err_normals, :] = mynormals[err_normals-1, :]
+    err_normals = np.argwhere(np.isnan(normals[:, 0]))
+    normals[err_normals, :] = normals[err_normals-1, :]
     plt.ioff()
-    return new_vertices, mynormals, areas, color, err_normals
+    return new_vertices, normals, areas, color, err_normals
 
 
 def save_planes_vti(filename, voxel_size, tuple_array, tuple_fieldnames, plane_labels, planes, origin=(0, 0, 0),
