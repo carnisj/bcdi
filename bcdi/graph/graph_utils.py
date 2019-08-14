@@ -8,6 +8,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib import patches as patches
 import matplotlib.ticker as ticker
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -915,19 +916,19 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
 
     # add the projection of the elevation angle, depending on the center of projection
     for ii in range(15, 90, 5):
-        circle = plt.Circle((0, 0),
+        circle = patches.Circle((0, 0),
                             radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
                             color='grey', fill=False, linestyle='dotted', linewidth=0.5)
         ax0.add_artist(circle)
     for ii in range(10, 90, 20):
-        circle = plt.Circle((0, 0),
+        circle = patches.Circle((0, 0),
                             radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
                             color='grey', fill=False, linestyle='dotted', linewidth=1)
         ax0.add_artist(circle)
     for ii in range(10, 95, 20):
         ax0.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
                  str(ii) + '$^\circ$', fontsize=10, color='k')
-    circle = plt.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
+    circle = patches.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
     ax0.add_artist(circle)
 
     # add azimutal lines every 5 and 45 degrees
@@ -942,7 +943,7 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     if plot_planes == 1 and len(planes) != 0:
         indx = 0
         for key, value in planes.items():
-            circle = plt.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
+            circle = patches.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
                                 (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
                                 color='g', fill=False, linestyle='dotted', linewidth=1.5)
             ax0.add_artist(circle)
