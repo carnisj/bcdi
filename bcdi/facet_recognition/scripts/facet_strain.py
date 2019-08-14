@@ -41,7 +41,7 @@ smoothing_iterations = 10  # number of iterations in Taubin smoothing
 smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
 smooth_mu = 0.51  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
-my_min_distance = 15  # pixel separation between peaks in corner_peaks()
+my_min_distance = 20  # pixel separation between peaks in corner_peaks()
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
@@ -104,7 +104,7 @@ surface[coordination_matrix > 22] = 0  # remove the bulk 22
 
 
 # Use marching cubes to obtain the surface mesh of these ellipsoids
-vertices_old, faces, _, _ = measure.marching_cubes_lewiner(amp, level=support_threshold, step_size=2)
+vertices_old, faces, _, _ = measure.marching_cubes_lewiner(amp, level=support_threshold, step_size=1)
 # vertices is a list of 3d coordinates of all vertices points
 # faces is a list of facets defined by the indices of 3 vertices
 
@@ -158,50 +158,21 @@ if projection_method == 'stereographic':
     # change pole_proj to an array of integer indices
     coordinates = pole_proj.astype(int)
     max_label = max(labels_top.max(), labels_bottom.max())
-    # # need to create the labels array from labels_top and labels_bottom, keeping only the correct label
-    # labels = np.zeros(labels_top.shape, dtype=labels_top.dtype)
-    # for idx in range(nb_normals):
-    #     if coordinates[idx, 2] == 0:  # use values from labels_top (projection from South pole)
-    #         labels[coordinates[idx, 0], coordinates[idx, 1]] = labels_top[coordinates[idx, 0], coordinates[idx, 1]]
-    #     else:  # use values from labels_bottom (projection from North pole)
-    #         labels[coordinates[idx, 0], coordinates[idx, 1]] = labels_bottom[coordinates[idx, 0], coordinates[idx, 1]]
-    #
-    # plt.figure()
-    # plt.imshow(labels, cmap=my_cmap, interpolation='nearest')
-    # plt.title('Sorted labels for stereographic projection')
-    # plt.colorbar()
-    # plt.gca().invert_yaxis()
-    # plt.pause(0.1)
 
     ##############################################
     # assign back labels to normals and vertices #
     ##############################################
-    # check if a normal belongs to a particular label, assigns label to the triangle vertices if this is the case
-    normals_label = np.zeros(nb_normals, dtype=int)  # a label will be attributed to each normal
-    vertices_label = np.zeros(vertices_new.shape[0], dtype=int)  # a label will be attributed to each vertex
-    # the number of vertices is: vertices_new.shape[0]
+    normals_label = np.zeros(nb_normals, dtype=int)
+    vertices_label = np.zeros(vertices_new.shape[0], dtype=int)  # the number of vertices is: vertices_new.shape[0]
     for idx in range(nb_normals):
         # check to which label belongs this normal
         if coordinates[idx, 2] == 0:  # use values from labels_top (projection from South pole)
-            for label in range(1, labels_top.max() + 1, 1):  # label 0 is the background
-                try:
-                    if labels_top[coordinates[idx, 0], coordinates[idx, 1]] == label:
-                        normals_label[idx] = label  # attribute the label to the normal
-                        vertices_label[faces[idx, :]] = label  # attribute the label to the corresponding vertices
-                        # faces are the list of vertices defining normals (there are nb_normals faces)
-                except BaseException as e:
-                    logger.error(str(e))
-                    continue
+            label_idx = labels_top[coordinates[idx, 0], coordinates[idx, 1]]
         else:  # use values from labels_bottom (projection from North pole)
-            for label in range(1, labels_bottom.max() + 1, 1):  # label 0 is the background
-                try:
-                    if labels_bottom[coordinates[idx, 0], coordinates[idx, 1]] == label:
-                        normals_label[idx] = label  # attribute the label to the normal
-                        vertices_label[faces[idx, :]] = label  # attribute the label to the corresponding vertices
-                        # faces are the list of vertices defining normals (there are nb_normals faces)
-                except BaseException as e:
-                    logger.error(str(e))
-                    continue
+            label_idx = labels_bottom[coordinates[idx, 0], coordinates[idx, 1]]
+
+        normals_label[idx] = label_idx  # attribute the label to the normal
+        vertices_label[faces[idx, :]] = label_idx  # attribute the label to the corresponding vertices
 
 elif projection_method == 'equirectangular':
     labels, longitude_latitude = fu.equirectangular_proj(normals, color, weights=areas, bw_method=bw_method,
@@ -221,35 +192,32 @@ elif projection_method == 'equirectangular':
     ##############################################
     # assign back labels to normals and vertices #
     ##############################################
-    # check if a normal belongs to a particular label, assigns label to the triangle vertices if this is the case
-    normals_label = np.zeros(nb_normals, dtype=int)  # a label will be attributed to each normal
-    vertices_label = np.zeros(vertices_new.shape[0], dtype=int)  # a label will be attributed to each vertex
-    # the number of vertices is: vertices_new.shape[0]
+    normals_label = np.zeros(nb_normals, dtype=int)
+    vertices_label = np.zeros(vertices_new.shape[0], dtype=int)  # the number of vertices is: vertices_new.shape[0]
     for idx in range(nb_normals):
-        # check if this normal belongs to a particular label
-        for label in range(1, max_label + 1, 1):  # label 0 is the background
-            try:
-                if labels[coordinates[idx, 0], coordinates[idx, 1]] == label:
-                    normals_label[idx] = label  # attribute the label to the normal
-                    vertices_label[faces[idx, :]] = label  # attribute the label to the corresponding vertices
-                    # faces are the list of vertices defining normals (there are nb_normals faces)
-            except BaseException as e:
-                logger.error(str(e))
-                continue
+        label_idx = labels[coordinates[idx, 0], coordinates[idx, 1]]
+        normals_label[idx] = label_idx  # attribute the label to the normal
+        vertices_label[faces[idx, :]] = label_idx  # attribute the label to the corresponding vertices
 
 else:
     print('Invalid value for projection_method')
     sys.exit()
+#######################
+# printing statistics #
+#######################
+for idx in range(max_label+1):
+    print("Facet", str(idx), ': ', str((normals_label == idx).sum()), 'normals detected')
 
 ###############################################
 # assign back labels to voxels using vertices #
 ###############################################
+# TODO: this part is not working correctly
 all_planes = np.zeros((nz, ny, nx), dtype=int)
 planes_counter = np.zeros((nz, ny, nx), dtype=int)  # check if a voxel is used several times
 for idx in range(vertices_new.shape[0]):
     temp_indices = np.rint(vertices_old[idx, :]).astype(int)
-    planes_counter[temp_indices[0], temp_indices[1],
-                   temp_indices[2]] = planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] + 1
+    planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] = \
+        planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] + 1
     # check duplicated pixels (appearing several times) and remove them if they belong to different planes
     if planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] > 1:
         if all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] != vertices_label[idx]:
@@ -306,7 +274,7 @@ index_vti = 1
 ##################################################################
 # fit points by a plane, exclude points far away, refine the fit #
 ##################################################################
-for label in range(1, labels.max()+1, 1):  # label 0 is the background
+for label in range(1, max_label+1, 1):  # label 0 is the background
 
     # raw fit including all points
     plane = np.copy(all_planes)
