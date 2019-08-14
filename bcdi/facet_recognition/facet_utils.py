@@ -395,13 +395,14 @@ def plane_angle(ref_plane, plane):
     return angle
 
 
-def stereographic_proj(normals, color, weights, savedir, min_distance=10, background_threshold=-1000,
+def stereographic_proj(normals, color, weights, max_angle, savedir, min_distance=10, background_threshold=-1000,
                        save_txt=False, cmap=default_cmap, planes={}, plot_planes=True, debugging=False):
     """
 
     :param normals: array of normals (nb_normals rows x 3 columns)
     :param color: array of intensities (nb_normals rows x 1 column)
     :param weights: weights used in the density estimation
+    :param max_angle: maximum angle in degree of the stereographic projection (should be larger than 90)
     :param savedir: directory for saving figures
     :param min_distance: min_distance of corner_peaks()
     :param background_threshold: threshold for background determination (depth of the KDE)
@@ -447,7 +448,7 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
                                        plot_planes=plot_planes)
         fig.savefig(savedir + 'North pole.png')
 
-    yi, xi = np.mgrid[-90:90:362j, -90:90:361j]  # vertical, horizontal
+    yi, xi = np.mgrid[-max_angle:max_angle:381j, -max_angle:max_angle:381j]  # vertical, horizontal
     density_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), color, (yi, xi), method='linear')
     density_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), color, (yi, xi), method='linear')
     density_top = density_top / density_top[density_top > 0].max() * 10000  # normalize for plotting
@@ -474,8 +475,8 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     fig = plt.figure(figsize=(15, 10))
     ax0 = fig.add_subplot(121)
     scatter_top = ax0.scatter(xi, yi, c=density_top, cmap=cmap)
-    ax0.set_xlim(-91, 91)
-    ax0.set_ylim(-91, 91)
+    ax0.set_xlim(-max_angle, max_angle)
+    ax0.set_ylim(-max_angle, max_angle)
     fig.colorbar(scatter_top)
     plt.axis('scaled')
     plt.title('KDE \nSouth pole')
@@ -483,8 +484,8 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
 
     ax1 = fig.add_subplot(122)
     scatter_bottom = ax1.scatter(xi, yi, c=density_bottom, cmap=cmap)
-    ax1.set_xlim(-91, 91)
-    ax1.set_ylim(-91, 91)
+    ax1.set_xlim(-max_angle, max_angle)
+    ax1.set_ylim(-max_angle, max_angle)
     fig.colorbar(scatter_bottom)
     plt.axis('scaled')
     plt.title('KDE \nNorth pole')
@@ -501,14 +502,14 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
 
     fig = plt.figure(figsize=(15, 10))
     ax0 = fig.add_subplot(221)
-    ax0.imshow(mask_top, cmap=cmap, interpolation='nearest')  # cm.gray
+    ax0.imshow(mask_top, cmap=cmap, interpolation='nearest')
     plt.title('Background mask South')
     plt.gca().invert_yaxis()
 
     ax1 = fig.add_subplot(223)
     scatter_top = ax1.scatter(xi, yi, c=density_top, cmap=cmap)
-    ax1.set_xlim(-91, 91)
-    ax1.set_ylim(-91, 91)
+    ax1.set_xlim(-max_angle, max_angle)
+    ax1.set_ylim(-max_angle, max_angle)
     fig.colorbar(scatter_top)
     plt.axis('scaled')
     plt.title('KDE South pole\nafter background definition')
@@ -516,14 +517,14 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     ax1.add_artist(circle)
 
     ax2 = fig.add_subplot(222)
-    ax2.imshow(mask_bottom, cmap=cmap, interpolation='nearest')  # cm.gray
+    ax2.imshow(mask_bottom, cmap=cmap, interpolation='nearest')
     plt.title('Background mask North')
     plt.gca().invert_yaxis()
 
     ax3 = fig.add_subplot(224)
     scatter_bottom = ax3.scatter(xi, yi, c=density_bottom, cmap=cmap)
-    ax3.set_xlim(-91, 91)
-    ax3.set_ylim(-91, 91)
+    ax3.set_xlim(-max_angle, max_angle)
+    ax3.set_ylim(-max_angle, max_angle)
     fig.colorbar(scatter_bottom)
     plt.axis('scaled')
     plt.title('KDE North pole\nafter background definition')
@@ -538,7 +539,7 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     if debugging:
         fig = plt.figure(figsize=(15, 10))
         fig.add_subplot(121)
-        plt.imshow(distances_top, cmap=cmap, interpolation='nearest')  # cm.gray
+        plt.imshow(distances_top, cmap=cmap, interpolation='nearest')
         plt.title('Distances South')
         plt.gca().invert_yaxis()
         fig.add_subplot(122)
@@ -588,18 +589,16 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     nby, nbx = xi.shape
     fig = plt.figure(figsize=(15, 10))
     ax0 = fig.add_subplot(121)
-    plt.imshow(labels_top, cmap=cmap, interpolation='nearest')  # cm.Spectral
+    plt.imshow(labels_top, cmap=cmap, interpolation='nearest')
     plt.title('Separated objects South')
     plt.gca().invert_yaxis()
-    # circle = patches.Circle((nbx//2, nby//2), 90, color='r', fill=False, linewidth=1.5)
-    circle = patches.Ellipse((nbx // 2, nby // 2), nbx, nby, color='r', fill=False, linewidth=1.5)
+    circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
     ax0.add_artist(circle)
     ax1 = fig.add_subplot(122)
     plt.imshow(labels_bottom, cmap=cmap, interpolation='nearest')
     plt.title('Separated objects North')
     plt.gca().invert_yaxis()
-    # circle = patches.Circle((nbx//2, nby//2), 90, color='r', fill=False, linewidth=1.5)
-    circle = patches.Ellipse((nbx // 2, nby // 2), nbx, nby, color='r', fill=False, linewidth=1.5)
+    circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
     ax1.add_artist(circle)
     plt.pause(0.1)
 

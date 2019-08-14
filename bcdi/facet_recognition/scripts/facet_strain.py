@@ -46,14 +46,15 @@ my_min_distance = 20  # pixel separation between peaks in corner_peaks()
 # parameters only used in the stereographic projection #
 #########################################################
 threshold_stereo = -1000  # threshold for defining the background in the density estimation of normals
+max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 #########################################################
 # parameters only used in the equirectangular projection #
 #########################################################
 bw_method = 0.03  # bandwidth in the gaussian kernel density estimation
 kde_threshold = -0.2  # threshold for defining the background in the density estimation of normals
-###############################################################################
-# define crystallographic planes of interest for the stereographic projection #
-###############################################################################
+##############################################################################################
+# define crystallographic planes of interest for the stereographic projection (cubic lattice #
+##############################################################################################
 planes = {}
 planes['1 0 0'] = fu.plane_angle(reflection, np.array([1, 0, 0]))
 planes['1 1 0'] = fu.plane_angle(reflection, np.array([1, 1, 0]))
@@ -137,14 +138,48 @@ if projection_method == 'stereographic':
                                                                    background_threshold=threshold_stereo,
                                                                    min_distance=my_min_distance, savedir=savedir,
                                                                    save_txt=False, planes=planes, plot_planes=True,
-                                                                   debugging=debug)
+                                                                   max_angle=max_angle, debugging=debug)
     numy, numx = labels_top.shape  # identical to labels_bottom.shape
     if stereo_proj.shape[0] != nb_normals:
         print('incompatible number of normals')
         sys.exit()
+
+    # look for potentially duplicated labels (labels crossing the 90 degree circle)
+    duplicated_label = [0]  # it will store bottom_labels which are duplicate from top_labels
+    for label in range(1, labels_top.max()+1, 1):
+        label_points = np.argwhere(labels_top == label)
+        label_points[:, 0] = (label_points[:, 0] * 2*max_angle / numy) - max_angle  # rescale to [-max_angle max_angle]
+        label_points[:, 1] = (label_points[:, 1] * 2*max_angle / numx) - max_angle  # rescale to [-max_angle max_angle]
+
+        label_distances = np.sqrt(label_points[:, 0]**2 + label_points[:, 1]**2)
+        if (label_distances < 90).sum() < label_points.shape[0]:  # some points on the other side of the 90deg border
+            print('Label ', str(label), 'is potentially duplicated')
+            # look for the corresponding label in the bottom projection
+            for idx in range(nb_normals):
+                if 85 < np.sqrt(stereo_proj[idx, 0]**2 + stereo_proj[idx, 1]**2) < 90:  # point near the 90deg border
+                    # calculate the corresponding index coordinates
+                    # by rescaling from [-max_angle max_angle] to [0 numy] or [0 numx]
+                    u_top = int((stereo_proj[idx, 0] + max_angle) * numy / (2*max_angle))
+                    v_top = int((stereo_proj[idx, 1] + max_angle) * numx / (2*max_angle))
+                    u_bottom = int((stereo_proj[idx, 2] + max_angle) * numy / (2*max_angle))
+                    v_bottom = int((stereo_proj[idx, 3] + max_angle) * numx / (2*max_angle))
+                    try:
+                        if labels_top[u_top, v_top] == label and \
+                                labels_bottom[u_bottom, v_bottom] not in duplicated_label:
+                            # only the first duplicated point will be checked, then the whole bottom_label is changed
+                            # and there is no need to checked anymore
+                            duplicated_label.append(labels_bottom[u_bottom, v_bottom])
+                            print('    Corresponding label=', str(labels_bottom[u_bottom, v_bottom]))
+                            labels_bottom[labels_bottom == labels_bottom[u_bottom, v_bottom]] = label
+                    except IndexError:
+                        continue
+    del label_points, label_distances
+    gc.collect()
+
     # reorganize stereo_proj to keep only the projected point which is in the range [-90 90]
-    # TODO: include in stereographic_proj a procedure to give the same label to overlapping peaks
-    pole_proj = np.zeros((nb_normals, 3), dtype=stereo_proj.dtype)  # the 3rd column is an indicator for South or North
+    pole_proj = np.zeros((nb_normals, 4), dtype=stereo_proj.dtype)
+    # 1st and 2nd columns are coordinates
+    # the 3rd column is an indicator for South, North or duplicated facets
     for idx in range(nb_normals):
         if abs(stereo_proj[idx, 0]) > 90 or abs(stereo_proj[idx, 1]) > 90:
             pole_proj[idx, 0:2] = stereo_proj[idx, 2:]  # use values for the projection from North pole
@@ -155,10 +190,10 @@ if projection_method == 'stereographic':
     del stereo_proj
     gc.collect()
 
-    # rescale u axis from [-90 90] to [0 numy]
-    pole_proj[:, 0] = (pole_proj[:, 0] + 90) * numy / 180  # euclidian u vertical
-    # rescale v axis from [-90 90] to [0 numx]
-    pole_proj[:, 1] = (pole_proj[:, 1] + 90) * numx / 180  # euclidian v horizontal
+    # rescale euclidian u axis from [-95 95] to [0 numy]
+    pole_proj[:, 0] = (pole_proj[:, 0] + max_angle) * numy / (2*max_angle)
+    # rescale euclidian v axis from [-95 95] to [0 numx]
+    pole_proj[:, 1] = (pole_proj[:, 1] + max_angle) * numx / (2*max_angle)
     # change pole_proj to an array of integer indices
     coordinates = pole_proj.astype(int)
     max_label = max(labels_top.max(), labels_bottom.max())
@@ -214,9 +249,12 @@ else:
     print('Invalid value for projection_method')
     sys.exit()
 
+updated_label = []
 print('Background: ', str((normals_label == 0).sum()), 'normals')
 for idx in range(1, max_label+1):
     print("Facet", str(idx), ': ', str((normals_label == idx).sum()), 'normals detected')
+    if (normals_label == idx).sum() != 0:
+        updated_label.append(idx)
 
 del normals_label, coordinates
 gc.collect()
@@ -246,9 +284,9 @@ gc.collect()
 # save planes before refinement in vti #
 ########################################
 # TODO: this part is not working correctly
-fu.save_planes_vti(filename=os.path.join(savedir, "S" + str(scan) + "_planes before refinement.vti"),
-                   voxel_size=(1, 1, 1), tuple_array=(amp, support), tuple_fieldnames=('amp', 'support'),
-                   plane_labels=range(0, max_label+1, 1), planes=all_planes, amplitude_threshold=0.01)
+# fu.save_planes_vti(filename=os.path.join(savedir, "S" + str(scan) + "_planes before refinement.vti"),
+#                    voxel_size=(1, 1, 1), tuple_array=(amp, support), tuple_fieldnames=('amp', 'support'),
+#                    plane_labels=range(0, max_label+1, 1), planes=all_planes, amplitude_threshold=0.01)
 
 ##############################
 # define a conjugate support #
@@ -293,8 +331,7 @@ index_vti = 1
 ##################################################################
 # fit points by a plane, exclude points far away, refine the fit #
 ##################################################################
-for label in range(1, max_label+1, 1):  # label 0 is the background
-
+for label in updated_label:
     # raw fit including all points
     plane = np.copy(all_planes)
     plane[plane != label] = 0
