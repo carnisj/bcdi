@@ -916,14 +916,16 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
 
     # add the projection of the elevation angle, depending on the center of projection
     for ii in range(15, 90, 5):
-        circle = patches.Circle((0, 0),
-                            radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                            color='grey', fill=False, linestyle='dotted', linewidth=0.5)
+        circle =\
+            patches.Circle((0, 0), radius_mean * np.sin(ii * np.pi / 180) /
+                           (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
+                           color='grey', fill=False, linestyle='dotted', linewidth=0.5)
         ax0.add_artist(circle)
     for ii in range(10, 90, 20):
-        circle = patches.Circle((0, 0),
-                            radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                            color='grey', fill=False, linestyle='dotted', linewidth=1)
+        circle =\
+            patches.Circle((0, 0), radius_mean * np.sin(ii * np.pi / 180) /
+                           (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
+                           color='grey', fill=False, linestyle='dotted', linewidth=1)
         ax0.add_artist(circle)
     for ii in range(10, 95, 20):
         ax0.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
@@ -944,8 +946,8 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
         indx = 0
         for key, value in planes.items():
             circle = patches.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
-                                (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                                color='g', fill=False, linestyle='dotted', linewidth=1.5)
+                                    (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                                    color='g', fill=False, linestyle='dotted', linewidth=1.5)
             ax0.add_artist(circle)
             ax0.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
                      (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
