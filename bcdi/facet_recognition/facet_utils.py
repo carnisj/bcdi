@@ -8,6 +8,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib import patches as patches
 import gc
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
@@ -77,7 +78,6 @@ def equirectangular_proj(normals, color, weights, cmap=default_cmap, bw_method=0
     :param debugging: if True, show plots for debugging
     :return: ndarray of labelled regions
     """
-    from matplotlib import cm
     from scipy import stats
     from scipy import ndimage
     from skimage.feature import corner_peaks
@@ -447,7 +447,7 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
                                        plot_planes=plot_planes)
         fig.savefig(savedir + 'North pole.png')
 
-    yi, xi = np.mgrid[-91:91:364j, -91:91:365j]  # vertical, horizontal
+    yi, xi = np.mgrid[-90:90:362j, -90:90:361j]  # vertical, horizontal
     density_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), color, (yi, xi), method='linear')
     density_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), color, (yi, xi), method='linear')
     density_top = density_top / density_top[density_top > 0].max() * 10000  # normalize for plotting
@@ -504,6 +504,7 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     ax0.imshow(mask_top, cmap=cmap, interpolation='nearest')  # cm.gray
     plt.title('Background mask South')
     plt.gca().invert_yaxis()
+
     ax1 = fig.add_subplot(223)
     scatter_top = ax1.scatter(xi, yi, c=density_top, cmap=cmap)
     ax1.set_xlim(-91, 91)
@@ -511,11 +512,14 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     fig.colorbar(scatter_top)
     plt.axis('scaled')
     plt.title('KDE South pole\nafter background definition')
+    circle = patches.Circle((0, 0), 90, color='w', fill=False, linewidth=1.5)
+    ax1.add_artist(circle)
 
     ax2 = fig.add_subplot(222)
     ax2.imshow(mask_bottom, cmap=cmap, interpolation='nearest')  # cm.gray
     plt.title('Background mask North')
     plt.gca().invert_yaxis()
+
     ax3 = fig.add_subplot(224)
     scatter_bottom = ax3.scatter(xi, yi, c=density_bottom, cmap=cmap)
     ax3.set_xlim(-91, 91)
@@ -523,6 +527,8 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     fig.colorbar(scatter_bottom)
     plt.axis('scaled')
     plt.title('KDE North pole\nafter background definition')
+    circle = patches.Circle((0, 0), 90, color='w', fill=False, linewidth=1.5)
+    ax3.add_artist(circle)
     plt.pause(0.1)
 
     # Generate the markers as local minima of the distance to the background
@@ -558,8 +564,11 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
         plt.pause(0.1)
 
     # define markers for each peak
-    markers_top = ndimage.label(local_maxi_top)[0]
-    markers_bottom = ndimage.label(local_maxi_bottom)[0]
+    markers_top = ndimage.label(local_maxi_top)[0]  # range from 0 to nb_peaks
+    # define non overlaping markers for bottom projection
+    markers_bottom = ndimage.label(local_maxi_bottom)[0] + markers_top.max()
+    # markers_bottom.min() should be 0 since it is the background
+    markers_bottom[markers_bottom == markers_top.max()] = 0
 
     if debugging:
         fig = plt.figure(figsize=(15, 10))
@@ -576,16 +585,22 @@ def stereographic_proj(normals, color, weights, savedir, min_distance=10, backgr
     # watershed segmentation
     labels_top = watershed(-distances_top, markers_top, mask=mask_top)
     labels_bottom = watershed(-markers_bottom, markers_bottom, mask=mask_bottom)
-
+    nby, nbx = xi.shape
     fig = plt.figure(figsize=(15, 10))
-    fig.add_subplot(121)
+    ax0 = fig.add_subplot(121)
     plt.imshow(labels_top, cmap=cmap, interpolation='nearest')  # cm.Spectral
     plt.title('Separated objects South')
     plt.gca().invert_yaxis()
-    fig.add_subplot(122)
+    # circle = patches.Circle((nbx//2, nby//2), 90, color='r', fill=False, linewidth=1.5)
+    circle = patches.Ellipse((nbx // 2, nby // 2), nbx, nby, color='r', fill=False, linewidth=1.5)
+    ax0.add_artist(circle)
+    ax1 = fig.add_subplot(122)
     plt.imshow(labels_bottom, cmap=cmap, interpolation='nearest')
     plt.title('Separated objects North')
     plt.gca().invert_yaxis()
+    # circle = patches.Circle((nbx//2, nby//2), 90, color='r', fill=False, linewidth=1.5)
+    circle = patches.Ellipse((nbx // 2, nby // 2), nbx, nby, color='r', fill=False, linewidth=1.5)
+    ax1.add_artist(circle)
     plt.pause(0.1)
 
     return labels_top, labels_bottom, stereo_proj
