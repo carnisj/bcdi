@@ -105,6 +105,7 @@ surface[coordination_matrix > 22] = 0  # remove the bulk 22
 
 # Use marching cubes to obtain the surface mesh of these ellipsoids
 vertices_old, faces, _, _ = measure.marching_cubes_lewiner(amp, level=support_threshold, step_size=1)
+nb_vertices = vertices_old.shape[0]
 # vertices is a list of 3d coordinates of all vertices points
 # faces is a list of facets defined by the indices of 3 vertices
 
@@ -118,16 +119,19 @@ if debug:
     plt.ion()
 
 # smooth the mesh using taubin_smooth
-vertices_new, normals, areas, color, error_normals = \
+vertices_new, normals, areas, color, _ = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
                      debugging=1)
-nb_normals = normals.shape[0]
 
 # Display smoothed triangular mesh
 if debug:
     gu.plot_3dmesh(vertices_new, faces, (nz, ny, nx), title='Mesh after Taubin smoothing')
     plt.ion()
 
+del vertices_new
+gc.collect()
+
+nb_normals = normals.shape[0]
 if projection_method == 'stereographic':
     labels_top, labels_bottom, stereo_proj = fu.stereographic_proj(normals=normals, color=color, weights=areas,
                                                                    background_threshold=threshold_stereo,
@@ -159,11 +163,14 @@ if projection_method == 'stereographic':
     coordinates = pole_proj.astype(int)
     max_label = max(labels_top.max(), labels_bottom.max())
 
+    del pole_proj
+    gc.collect()
+
     ##############################################
     # assign back labels to normals and vertices #
     ##############################################
     normals_label = np.zeros(nb_normals, dtype=int)
-    vertices_label = np.zeros(vertices_new.shape[0], dtype=int)  # the number of vertices is: vertices_new.shape[0]
+    vertices_label = np.zeros(nb_vertices, dtype=int)  # the number of vertices is: vertices_new.shape[0]
     for idx in range(nb_normals):
         # check to which label belongs this normal
         if coordinates[idx, 2] == 0:  # use values from labels_top (projection from South pole)
@@ -189,11 +196,15 @@ elif projection_method == 'equirectangular':
     # change longitude_latitude to an array of integer indices
     coordinates = np.fliplr(longitude_latitude).astype(int)  # put the vertical axis in first position
     max_label = labels.max()
+
+    del longitude_latitude
+    gc.collect()
+
     ##############################################
     # assign back labels to normals and vertices #
     ##############################################
     normals_label = np.zeros(nb_normals, dtype=int)
-    vertices_label = np.zeros(vertices_new.shape[0], dtype=int)  # the number of vertices is: vertices_new.shape[0]
+    vertices_label = np.zeros(nb_vertices, dtype=int)  # the number of vertices is: vertices_new.shape[0]
     for idx in range(nb_normals):
         label_idx = labels[coordinates[idx, 0], coordinates[idx, 1]]
         normals_label[idx] = label_idx  # attribute the label to the normal
@@ -202,19 +213,20 @@ elif projection_method == 'equirectangular':
 else:
     print('Invalid value for projection_method')
     sys.exit()
-#######################
-# printing statistics #
-#######################
-for idx in range(max_label+1):
+
+print('Background: ', str((normals_label == 0).sum()), 'normals')
+for idx in range(1, max_label+1):
     print("Facet", str(idx), ': ', str((normals_label == idx).sum()), 'normals detected')
+
+del normals_label, coordinates
+gc.collect()
 
 ###############################################
 # assign back labels to voxels using vertices #
 ###############################################
-# TODO: this part is not working correctly
 all_planes = np.zeros((nz, ny, nx), dtype=int)
 planes_counter = np.zeros((nz, ny, nx), dtype=int)  # check if a voxel is used several times
-for idx in range(vertices_new.shape[0]):
+for idx in range(nb_vertices):
     temp_indices = np.rint(vertices_old[idx, :]).astype(int)
     planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] = \
         planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] + 1
@@ -227,9 +239,13 @@ for idx in range(vertices_new.shape[0]):
         all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = \
                 vertices_label[idx]
 
+del planes_counter, vertices_label, vertices_old
+gc.collect()
+
 ########################################
 # save planes before refinement in vti #
 ########################################
+# TODO: this part is not working correctly
 fu.save_planes_vti(filename=os.path.join(savedir, "S" + str(scan) + "_planes before refinement.vti"),
                    voxel_size=(1, 1, 1), tuple_array=(amp, support), tuple_fieldnames=('amp', 'support'),
                    plane_labels=range(0, max_label+1, 1), planes=all_planes, amplitude_threshold=0.01)
@@ -244,6 +260,9 @@ zCOM, yCOM, xCOM = center_of_mass(support)
 print("COM at (z, y, x): (", str('{:.2f}'.format(zCOM)), ',', str('{:.2f}'.format(yCOM)), ',',
       str('{:.2f}'.format(xCOM)), ')')
 gradz, grady, gradx = np.gradient(support, 1)  # support
+
+del support
+gc.collect()
 
 ######################################
 # Initialize log files and .vti file #
