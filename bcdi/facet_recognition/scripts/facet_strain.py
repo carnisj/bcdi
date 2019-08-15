@@ -42,6 +42,7 @@ smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
 smooth_mu = 0.51  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
 my_min_distance = 20  # pixel separation between peaks in corner_peaks()
+max_distance_plane = 1.25  # in pixels, maximum allowed distance to the facet plane of a voxel
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
@@ -56,16 +57,16 @@ kde_threshold = -0.2  # threshold for defining the background in the density est
 # define crystallographic planes of interest for the stereographic projection (cubic lattice #
 ##############################################################################################
 planes = {}
-planes['1 0 0'] = fu.plane_angle(reflection, np.array([1, 0, 0]))
-planes['1 1 0'] = fu.plane_angle(reflection, np.array([1, 1, 0]))
-planes['1 -1 1'] = fu.plane_angle(reflection, np.array([1, -1, 1]))
-planes['2 1 0'] = fu.plane_angle(reflection, np.array([2, 1, 0]))
-planes['2 -1 0'] = fu.plane_angle(reflection, np.array([2, -1, 0]))
-planes['3 2 1'] = fu.plane_angle(reflection, np.array([3, 2, 1]))
-planes['4 0 -1'] = fu.plane_angle(reflection, np.array([4, 0, -1]))
-planes['5 2 0'] = fu.plane_angle(reflection, np.array([5, 2, 0]))
-planes['5 2 1'] = fu.plane_angle(reflection, np.array([5, 2, 1]))
-planes['5 -2 -1'] = fu.plane_angle(reflection, np.array([5, -2, -1]))
+planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
+planes['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
+planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
+planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
+planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
+planes['3 2 1'] = fu.plane_angle_cubic(reflection, np.array([3, 2, 1]))
+planes['4 0 -1'] = fu.plane_angle_cubic(reflection, np.array([4, 0, -1]))
+planes['5 2 0'] = fu.plane_angle_cubic(reflection, np.array([5, 2, 0]))
+planes['5 2 1'] = fu.plane_angle_cubic(reflection, np.array([5, 2, 1]))
+planes['5 -2 -1'] = fu.plane_angle_cubic(reflection, np.array([5, -2, -1]))
 ##########################
 # end of user parameters #
 ##########################
@@ -288,9 +289,9 @@ gc.collect()
 #                    voxel_size=(1, 1, 1), tuple_array=(amp, support), tuple_fieldnames=('amp', 'support'),
 #                    plane_labels=range(0, max_label+1, 1), planes=all_planes, amplitude_threshold=0.01)
 
-##############################
-# define a conjugate support #
-##############################
+#####################################################
+# define surface gradient using a conjugate support #
+#####################################################
 # this support is 1 outside, 0 inside so that the gradient points towards exterior
 support = np.ones((nz, ny, nx))
 support[abs(amp) > support_threshold * abs(amp).max()] = 0
@@ -299,8 +300,11 @@ print("COM at (z, y, x): (", str('{:.2f}'.format(zCOM)), ',', str('{:.2f}'.forma
       str('{:.2f}'.format(xCOM)), ')')
 gradz, grady, gradx = np.gradient(support, 1)  # support
 
-del support
-gc.collect()
+######################
+# define the support #
+######################
+support = np.zeros((nz, ny, nx))
+support[abs(amp) > support_threshold * abs(amp).max()] = 1
 
 ######################################
 # Initialize log files and .vti file #
@@ -339,65 +343,50 @@ for label in updated_label:
     if plane[plane == 1].sum() == 0:  # no points on the plane
         print('Raw fit: no points for plane', label)
         continue
-    # TODO: why not using direclty the centroid?
-    coeffs,  plane_indices, stop = fu.fit_plane(plane, label, debugging=debug)
+    # Why not using direclty the centroid to find plane equation?
+    # Because it does not distinguish pixels coming from different but parallel facets
+    coeffs,  plane_indices, errors, stop = fu.fit_plane(plane=plane, label=label, debugging=debug)
     if stop == 1:
         print('No points remaining after raw fit for plane', label)
         continue
 
-    # update plane
-    plane, stop = fu.distance_threshold(coeffs,  plane_indices, 1, plane.shape)
+    # update plane by filtering out pixels too far from the fit plane
+    plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
+                                        max_distance=max_distance_plane)
     if stop == 1:  # no points on the plane
         print('Refined fit: no points for plane', label)
         continue
     else:
         print('Plane', label, ', ', str(plane[plane == 1].sum()), 'points after checking distance to plane')
 
-    coeffs, plane_indices, stop = fu.fit_plane(plane, label, debugging=debug)
-    if stop == 1:
-        print('No points remaining after refined fit for plane', label)
-        continue
+    if debug:
+        gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
+                        title='Plane' + str(label) + ' after raw fit')
 
-    # update plane
-    plane, stop = fu.distance_threshold(coeffs, plane_indices, 0.45, plane.shape)
-    if stop == 1:  # no points on the plane
-        print('Refined fit: no points for plane', label)
-        continue
-    print('Plane', label, ', ', str(plane[plane == 1].sum()), 'points after refined fit')
-    if debug == 1:
-        plane_indices = np.nonzero(plane == 1)
-        plt.figure()
-        ax = plt.subplot(111, projection='3d')
-        ax.scatter(plane_indices[0], plane_indices[1], plane_indices[2], color='b')
-        plt.title('Plane' + str(label) + ' after refined fit')
-        ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-        plt.pause(0.1)
-
-    # grow the facet towards the interior
+    ##################
+    # grow the facet #
+    ##################
     iterate = 0
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
-        plane, stop = fu.grow_facet(coeffs, plane, label, debugging=debug)
+        plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
+                                    max_distance=max_distance_plane, debugging=debug)
         plane_indices = np.nonzero(plane == 1)
         iterate = iterate + 1
-        if plane[plane == 1].sum() == previous_nb:
+        if plane[plane == 1].sum() == previous_nb:  # no growth anymore, the number of voxels is constant
             break
     grown_points = plane[plane == 1].sum()
-    print('Plane ', label, ', ', str(grown_points), 'points after growing facet')
-    plane_indices = np.nonzero(plane == 1)
-    if debug == 1:
-        plt.figure()
-        ax = plt.subplot(111, projection='3d')
-        ax.scatter(plane_indices[0], plane_indices[1], plane_indices[2], color='b')
-        plt.title('Plane' + str(label) + ' after growing the facet')
-        ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-        plt.pause(0.1)
+    print('Plane ', label, ', ', str(grown_points), 'points after growing facet into support')
+    # update plane indices
+    plane_indices = np.nonzero(plane)
 
-    # correct for the offset between plane equation and the outer shell of the support (effect of meshing/smoothing)
+    if debug:
+        gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
+                        title='Plane' + str(label) + ' after growing facet into support')
+    ##########################################################################################################
+    # Look for the surface: correct for the offset between plane equation and the outer shell of the support #
+    # Effect of meshing/smoothing: the meshed support is smaller than the initial support #
+    #############################################################################################
     # crop the support to a small ROI included in the plane box
     support_indices = np.nonzero(surface[
                                  plane_indices[0].min() - 3:plane_indices[0].max() + 3,
@@ -407,17 +396,20 @@ for label in updated_label:
     sup1 = support_indices[1] + plane_indices[1].min() - 3  # add offset plane_indices[1].min() - 3
     sup2 = support_indices[2] + plane_indices[2].min() - 3  # add offset plane_indices[2].min() - 3
     plane_normal = np.array([coeffs[0, 0], coeffs[1, 0], -1])  # normal is [a, b, c] if ax+by+cz+d=0
+
     dist = np.zeros(len(support_indices[0]))
     for point in range(len(support_indices[0])):
         dist[point] = (coeffs[0, 0]*sup0[point] + coeffs[1, 0]*sup1[point] - sup2[point] + coeffs[2, 0]) \
                / np.linalg.norm(plane_normal)
     mean_dist = dist.mean()
     print('Mean distance of plane ', label, ' to outer shell = ' + str('{:.2f}'.format(mean_dist)) + 'pixels')
+
     dist = np.zeros(len(support_indices[0]))
     for point in range(len(support_indices[0])):
-        dist[point] = (coeffs[0, 0]*sup0[point] + coeffs[1, 0]*sup1[point] - sup2[point] +
-                       (coeffs[2, 0] - mean_dist / 2)) / np.linalg.norm(plane_normal)
+        dist[point] = (coeffs[0, 0]*sup0[point] + coeffs[1, 0]*sup1[point] - sup2[point]
+                       + (coeffs[2, 0] - mean_dist / 2)) / np.linalg.norm(plane_normal)
     new_dist = dist.mean()
+
     # these directions are for a mesh smaller than the support
     if mean_dist*new_dist < 0:  # crossed the support surface
         step_shift = np.sign(mean_dist) * 0.5
@@ -450,7 +442,7 @@ for label in updated_label:
                         and plane_newindices2[point] == sup2[point2]:
                     common_points = common_points + 1
 
-        if debug == 1:
+        if debug:
             tempcoeff2 = coeffs[2, 0] - nbloop * step_shift
             dist = np.zeros(len(support_indices[0]))
             for point in range(len(support_indices[0])):
@@ -459,16 +451,16 @@ for label in updated_label:
             temp_mean_dist = dist.mean()
             plane = np.zeros(surface.shape)
             plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
-            plt.figure()
-            ax = plt.subplot(111, projection='3d')
-            ax.scatter(plane_newindices0, plane_newindices1, plane_newindices2, s=8, color='b')
 
-            ax.scatter(sup0, sup1, sup2, s=2, color='r')
-            plt.title('Plane ' + str(label) + ' after shifting facet - iteration' + str(nbloop))
-            ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-            ax.set_ylabel('y')
-            ax.set_zlabel('z')
-            plt.pause(0.1)
+            gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_newindices0[:, np.newaxis],
+                                                             plane_newindices1[:, np.newaxis],
+                                                             plane_newindices2[:, np.newaxis]), axis=1),
+                                             np.concatenate((sup0[:, np.newaxis],
+                                                             sup1[:, np.newaxis],
+                                                             sup2[:, np.newaxis]), axis=1)),
+                                     markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                     title='Plane' + str(label) + ' after shifting facet - iteration' + str(nbloop))
+
             print('(while) iteration ', nbloop, '- Mean distance of the plane to outer shell = ' +
                   str('{:.2f}'.format(temp_mean_dist)) + '\n pixels - common_points = ', common_points)
 
@@ -529,54 +521,87 @@ for label in updated_label:
     plane = np.zeros(surface.shape)
     plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
 
-
     # use only pixels belonging to the outer shell of the support
     plane = plane * surface
     # plot result
     plane_indices = np.nonzero(plane == 1)
-    plt.figure()
-    ax = plt.subplot(111, projection='3d')
-    ax.scatter(plane_indices[0], plane_indices[1], plane_indices[2], s=8, color='b')
 
-    ax.scatter(sup0, sup1, sup2, s=2, color='r')
-    plt.title('Plane ' + str(label) + ' after growing facet and matching to support\n iteration' +
-              str(iterate) + '- Points number=' + str(len(plane_indices[0])))
-    ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
-    plt.pause(0.1)
+    gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                     np.concatenate((sup0[:, np.newaxis],
+                                                     sup1[:, np.newaxis],
+                                                     sup2[:, np.newaxis]), axis=1)),
+                             markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                             title='Plane' + str(label) + ' after finding the surface\n iteration' +
+                                   str(iterate) + '- Points number=' + str(len(plane_indices[0])))
 
     if plane[plane == 1].sum() == 0:  # no point belongs to the support
         print('Plane ', label, ' , no point belongs to support')
         continue
 
-    # grow again the facet on the support towards the interior
+    #######################################
+    # grow again the facet on the surface #
+    #######################################
     print('Growing again the facet')
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
-        plane, stop = fu.grow_facet(coeffs, plane, label, debug)
-        plane_indices = np.nonzero(plane == 1)
+        plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
+                                    max_distance=max_distance_plane, debugging=debug)
+        plane_indices = np.nonzero(plane)
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
         if plane[plane == 1].sum() == previous_nb:
             break
     grown_points = plane[plane == 1].sum().astype(int)
-    print('Plane ', label, ', ', str(grown_points), 'points after growing facet on support\n')
-    plane_indices = np.nonzero(plane == 1)
-    if plane[plane == 1].sum() < 20:  # not enough point belongs to the support
-        print('Plane ', label, ' , not enough points belong to support')
+    print('Plane ', label, ', ', str(grown_points), 'points after growing facet at the surface\n')
+
+    if debug:
+        plane_indices = np.nonzero(plane == 1)
+        gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
+                        title='Plane' + str(label) + ' after growing facet at the surface\nPoints number='
+                              + str(len(plane_indices[0])))
+
+    ######################################################################
+    # refine plane fit, now we are sure that we keep only surface voxels #
+    ######################################################################
+    coeffs, plane_indices, errors, stop = fu.fit_plane(plane=plane, label=label, debugging=debug)
+    if stop == 1:
+        print('No points remaining after refined fit for plane', label)
         continue
-    if debug == 1:
-        plt.figure()
-        ax = plt.subplot(111, projection='3d')
-        ax.scatter(plane_indices[0], plane_indices[1], plane_indices[2], color='b')
-        plt.title('Plane'+str(label)+' after growing the facet on support - Points number='+str(len(plane_indices[0])))
-        ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-        plt.pause(0.1)
+
+    # update plane by filtering out pixels too far from the fit plane
+    plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
+                                        max_distance=max_distance_plane)
+    if stop == 1:  # no points on the plane
+        print('Refined fit: no points for plane', label)
+        continue
+    print('Plane', label, ', ', str(plane[plane == 1].sum()), 'points after refined fit')
+    plane_indices = np.nonzero(plane)
+
+    #######################################
+    # final growth of the facet on the surface #
+    #######################################
+    print('Final growth of the facet')
+    while stop == 0:
+        previous_nb = plane[plane == 1].sum()
+        plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
+                                    max_distance=max_distance_plane, debugging=debug)
+        plane_indices = np.nonzero(plane)
+        plane = plane * surface  # use only pixels belonging to the outer shell of the support
+        if plane[plane == 1].sum() == previous_nb:
+            break
+    grown_points = plane[plane == 1].sum().astype(int)
+    print('Plane ', label, ', ', str(grown_points), 'points after the final growth of the facet\n')
+
+    if debug:
+        plane_indices = np.nonzero(plane == 1)
+        gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
+                        title='Plane' + str(label) + ' after final grwoth at the surface\nPoints number='
+                              + str(len(plane_indices[0])))
+
+    ####################################
+    # calculate quantities of interest #
+    ####################################
     # calculate mean gradient
     mean_gradient = np.zeros(3)
-    # mean_gradient2 = np.zeros(3)
     ind_z = plane_indices[0]
     ind_y = plane_indices[1]
     ind_x = plane_indices[2]
@@ -584,14 +609,12 @@ for label in updated_label:
         mean_gradient[0] = mean_gradient[0] + (ind_z[point] - zCOM)
         mean_gradient[1] = mean_gradient[1] + (ind_y[point] - yCOM)
         mean_gradient[2] = mean_gradient[2] + (ind_x[point] - xCOM)
-        # mean_gradient2[0] = mean_gradient2[0] + gradz[ind_z[point], ind_y[point], ind_x[point]]
-        # mean_gradient2[1] = mean_gradient2[1] + grady[ind_z[point], ind_y[point], ind_x[point]]
-        # mean_gradient2[2] = mean_gradient2[2] + gradx[ind_z[point], ind_y[point], ind_x[point]]
+
     if np.linalg.norm(mean_gradient) == 0:
         print('gradient at surface is 0, cannot determine the correct direction of surface normal')
     else:
         mean_gradient = mean_gradient / np.linalg.norm(mean_gradient)
-        # mean_gradient2 = mean_gradient2 / np.linalg.norm(mean_gradient2)
+
     # check the correct direction of the normal using the gradient of the support
     ref_direction = np.array([0, 1, 0])  # [111] is vertical
     plane_normal = np.array([coeffs[0, 0], coeffs[1, 0], -1])  # normal is [a, b, c] if ax+by+cz+d=0
@@ -599,9 +622,11 @@ for label in updated_label:
     if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
         print('Flip normal direction plane', str(label),'\n')
         plane_normal = -1 * plane_normal
+
     # calculate the angle of the plane normal to [111]
     angle_plane = 180 / np.pi * np.arccos(np.dot(ref_direction, plane_normal))
-    # calculate the average strain for plane voxels
+
+    # calculate the average strain for plane voxels and update the log file
     plane_indices = np.nonzero(plane == 1)
     ind_z = plane_indices[0]
     ind_y = plane_indices[1]
@@ -627,6 +652,7 @@ for label in updated_label:
                '{0: <10}'.format(str('{:.5f}'.format(plane_normal[0]))) + '\t' +
                '{0: <10}'.format(str('{:.5f}'.format(plane_normal[1]))) + '\t' +
                '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
+
     # update vti file
     PLANE = np.transpose(plane).reshape(plane.size)
     plane_array = numpy_support.numpy_to_vtk(PLANE)
@@ -634,6 +660,10 @@ for label in updated_label:
     pd.GetArray(index_vti).SetName("plane_"+str(label))
     pd.Update()
     index_vti = index_vti + 1
+
+##########################
+# update and close files #
+##########################
 file.write('\n'+'Isosurface value'+'\t' '{0: <10}'.format(str(support_threshold)))
 strain_file.write('\n'+'Isosurface value'+'\t' '{0: <10}'.format(str(support_threshold)))
 file.close()
