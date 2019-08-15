@@ -964,101 +964,108 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
 
 def scatter_plot(array, labels, markersize=4, markercolor='b', title=''):
     """
-    Scatter plot of a 2D or 3D array.
+    2D or 3D Scatter plot of a 2D ndarray.
 
-    :param array: array or tuple of 2D or 3D arrays of the same number of dimensions
-    :param labels: tuple of string labels, number = number of dimensions of array
+    :param array: 2D ndarray, the number of columns is the number of dimensions of the scatter plot (2 or 3)
+    :param labels: tuple of string labels (length = number of columns in array)
     :param markersize: number corresponding to the marker size
     :param markercolor: string corresponding to the marker color
     :param title: string, title for the scatter plot
     :return: figure, axes instances
     """
-    ndim = array.ndim
-    if labels is not tuple:
+    if array.ndim != 2:
+        raise ValueError('array should be 2D')
+    ndim = array.shape[1]
+    if not isinstance(labels, tuple):
         labels = (labels,) * ndim
 
     if len(labels) != ndim:
-        raise ValueError('the number of labels is different from the dimension of the array')
+        raise ValueError('the number of labels is different from the number of columns in the array')
 
     fig = plt.figure()
     for idx in range(len(array)):
         if ndim == 2:
             ax = plt.subplot(111)
-            ax.scatter(array[0], array[1], s=markersize, color=markercolor)
+            ax.scatter(array[:, 0], array[:, 1], s=markersize, color=markercolor)
             plt.title(title)
             ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
             ax.set_ylabel(labels[1])
             plt.pause(0.1)
         elif ndim == 3:
             ax = plt.subplot(111, projection='3d')
-            ax.scatter(array[0], array[1], array[2], s=markersize, color=markercolor)
+            ax.scatter(array[:, 0], array[:, 1], array[:, 2], s=markersize, color=markercolor)
             plt.title(title)
             ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
             ax.set_ylabel(labels[1])
             ax.set_zlabel(labels[2])
         else:
-            raise ValueError('array should be 2D or 3D')
+            raise ValueError('There should be 2 or 3 columns in the array')
     plt.pause(0.1)
     return fig, ax
 
 
 def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=''):
     """
-    Overlaid scatter plot of a 2D or 3D arrays.
+    Overlaid scatter plot of 2D ndarrays having the same number of columns.
 
-    :param arrays: array or tuple of 2D or 3D arrays of the same number of dimensions
+    :param arrays: tuple of 2D ndarrays, the number of columns is the number of dimensions of the scatter plot (2 or 3)
     :param markersizes: tuple of numbers corresponding to the marker sizes (length = number of arrays)
     :param markercolors: tuple of strings corresponding to the marker color (length = number of arrays)
-    :param labels: tuple of string labels(length = number of dimensions of the arrays)
+    :param labels: tuple of string labels (length = number of columns in arrays)
     :param title: string, title for the scatter plot
     :return: figure, axes instances
     """
-    if arrays is not tuple:
+    if not isinstance(arrays, tuple):
         fig, ax = scatter_plot(array=arrays, markersize=markersizes, markercolor=markercolors, labels=labels,
                                title=title)
         return fig, ax
 
-    ndim = arrays[0].ndim
+    if arrays[0].ndim != 2:
+        raise ValueError('arrays should be 2D')
+
+    ndim = arrays[0].shape[1]
     nb_arrays = len(arrays)
 
-    if labels is not tuple:
+    if not isinstance(labels, tuple):
         labels = (labels,) * ndim
-    if markersizes is not tuple:
+    if not isinstance(markersizes, tuple):
         markersizes = (markersizes,) * ndim
-    if markercolors is not tuple:
+    if not isinstance(markercolors, tuple):
         markercolors = (markercolors,) * ndim
 
     if len(labels) != ndim:
-        raise ValueError('the number of labels is different from the dimension of the array')
+        raise ValueError('the number of labels is different from the number of columns in arrays')
     if len(markersizes) != nb_arrays:
-        raise ValueError('the number of labels is different from the number of arrays')
+        raise ValueError('the number of markersizes is different from the number of arrays')
     if len(markercolors) != nb_arrays:
-        raise ValueError('the number of labels is different from the number of arrays')
+        raise ValueError('the number of markercolors is different from the number of arrays')
 
     fig = plt.figure()
+    if ndim == 2:
+        ax = plt.subplot(111)
+    elif ndim == 3:
+        ax = plt.subplot(111, projection='3d')
+    else:
+        raise ValueError('There should be 2 or 3 columns in the array')
 
     for idx in range(nb_arrays):
-
         array = arrays[idx]
-        if array.ndim != ndim:
-            raise ValueError('All arrays should have the same number of dimensions')
+        if array.shape[1] != ndim:
+            raise ValueError('All arrays should have the same number of columns')
 
         if ndim == 2:
-            ax = plt.subplot(111)
-            ax.scatter(array[0], array[1], s=markersizes[idx], color=markercolors[idx])
-            plt.title(title)
-            ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
-            ax.set_ylabel(labels[1])
-            plt.pause(0.1)
-        elif ndim == 3:
-            ax = plt.subplot(111, projection='3d')
-            ax.scatter(array[0], array[1], array[2], s=markersizes[idx], color=markercolors[idx])
-            plt.title(title)
-            ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
-            ax.set_ylabel(labels[1])
-            ax.set_zlabel(labels[2])
-        else:
-            raise ValueError('arrays should be 2D or 3D')
+            ax.scatter(array[:, 0], array[:, 1], s=markersizes[idx], color=markercolors[idx])
+        else:  # 3D
+            ax.scatter(array[:, 0], array[:, 1], array[:, 2], s=markersizes[idx], color=markercolors[idx])
+
+    plt.title(title)
+    if ndim == 2:
+        ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
+        ax.set_ylabel(labels[1])
+    else:
+        ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
+        ax.set_ylabel(labels[1])
+        ax.set_zlabel(labels[2])
     plt.pause(0.1)
     return fig, ax
 
