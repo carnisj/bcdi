@@ -1,3 +1,12 @@
+Version 0.0.6
+-------------
+
+* Feature: implement facet detection using a stereographic projection in facet_recognition/scripts/facet_strain.py
+
+* Feature: Converted bcdi/facet_recognition/scripts/facet_strain.py
+
+* Feature: implement bcdi/facet_recognition/facets_utils.py
+
 * Refactor: exclude voxels left over by coordination number selection in postprocessing/postprocessing_utils.find_bulk()
 
 * Refactor: use the mean amplitude of the surface layer to define the bulk in postprocessing/postprocessing_utils.find_bulk()

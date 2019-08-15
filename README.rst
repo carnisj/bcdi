@@ -9,7 +9,7 @@ BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:
 
 * pre-processing BCDI data (masking aliens, detector gaps...) before phasing
 
-* post-processing phased data (phase offset and phase ramp removal, averaging...)
+* post-processing phased data (phase offset and phase ramp removal, averaging, apodization, ...)
 
 * data analysis on diffraction data (stereographic projection)
 
@@ -17,7 +17,7 @@ BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:
 
 * simulation of diffraction intensity (including noise, detector gaps, displacement fields...)
 
-* making figures for publication using templates
+* creating figures for publication using templates
 
 
 BCDI as a python toolkit
@@ -25,19 +25,18 @@ BCDI as a python toolkit
 
 BCDI can be used as a python library with the following main modules:
 
-1) :mod:`bcdi.facet_recognition`: automatic detection of facets on the reconstruction, based on watershed segmentation. 
-   WORK IN PROGRESS
+1) :mod:`bcdi.facet_recognition`: automatic detection of reconstructed crystal facets and statistics on facet strain.
 
 2) :mod:`bcdi.experiment`: definition of the experimental geometry (beamline, setup, detector...).
 
 3) :mod:`bcdi.graph` : generation of plots using predefined templates.
 
-4) :mod:`bcdi.polarplot`: generation of the stereographic projection of a diffraction peak or a reconstructed object.
+4) :mod:`bcdi.polarplot`: generation of the stereographic projection of a diffraction peak or a reconstructed crystal.
    TODO
 
-5) :mod:`bcdi.postprocessing`: all methods for post-processing the complex output of a phasing algorithm.
+5) :mod:`bcdi.postprocessing`: various methods for post-processing the complex output of a phasing algorithm.
 
-6) :mod:`bcdi.preprocessing`: all methods for pre-processing the diffraction intensity.
+6) :mod:`bcdi.preprocessing`: various methods for pre-processing the diffraction intensity.
 
 7) :mod:`bcdi.simulation`: calculation of the diffraction intensity based on FFT or kinematical sum. 
    It can include a displacement field, noise, detector gaps etc...
@@ -80,19 +79,20 @@ Download & Installation
 BCDI is available from:
  * Python Package Index: pip install bcdi
  * https://github.com/carnisj
+ * upgrade existing version from GitHub: pip install --upgrade git+https://github.com/carnisj/bcdi.git
 
 Changelog
 =========
 
 .. include:: ../HISTORY.rst
-  :end-before: EOF
+  :end-before: Version 0.0.5
 
 See the full :doc:`Changelog<changelog>`
 
 Citation & Bibliography
 =======================
 
-If you use BCDI for scientific work, please consider including a citation.
+If you use BCDI for scientific work, please consider including a citation (DOI: 10.5281/zenodo.3257617).
 
 License
 =======
