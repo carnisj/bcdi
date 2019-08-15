@@ -251,7 +251,7 @@ def fit_plane(plane, label, debugging=1):
     no_points = 0
     if len(indices[0]) == 0:
         no_points = 1
-        return 0, indices, _, no_points
+        return 0, indices, 0, no_points
     tmp_x = indices[0]
     tmp_y = indices[1]
     tmp_z = indices[2]
@@ -270,7 +270,7 @@ def fit_plane(plane, label, debugging=1):
     indices = np.nonzero(plane)
     if len(indices[0]) == 0:
         no_points = 1
-        return 0, indices, _, no_points
+        return 0, indices, 0, no_points
     tmp_x = indices[0]
     tmp_y = indices[1]
     tmp_z = indices[2]
@@ -290,7 +290,7 @@ def fit_plane(plane, label, debugging=1):
     indices = np.nonzero(plane)
     if len(indices[0]) < 5:
         no_points = 1
-        return 0, indices, _, no_points
+        return 0, indices, 0, no_points
     tmp_x = indices[0]
     tmp_y = indices[1]
     tmp_z = indices[2]
@@ -381,6 +381,29 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
                         title='Plane' + str(label) + ' after 1 cycle of facet growing')
         print(str(len(indices[0])) + ' after 1 cycle of facet growing')
     return plane, no_points
+
+
+def offset_plane(indices, offset, plane_normal):
+    """
+    Shift plane indices by the offset value in order to scan perpendicular to the plane.
+
+    :param indices: tuple of 3 1D ndarrays (array shape = nb_points)
+    :param offset: offset to be applied to the indices (offset of the plane)
+    :param plane_normal: ndarray of 3 elements, normal to the plane
+    :return: offseted indices
+    """
+    if not isinstance(indices, tuple):
+        raise ValueError('indices should be a tuple of 3 1D ndarrays')
+    new_indices0 = np.rint(indices[0] +
+                           offset * np.dot(np.array([1, 0, 0]), plane_normal /
+                                           np.linalg.norm(plane_normal))).astype(int)
+    new_indices1 = np.rint(indices[1] +
+                           offset * np.dot(np.array([0, 1, 0]), plane_normal /
+                                           np.linalg.norm(plane_normal))).astype(int)
+    new_indices2 = np.rint(indices[2] +
+                           offset * np.dot(np.array([0, 0, 1]), plane_normal /
+                                           np.linalg.norm(plane_normal))).astype(int)
+    return new_indices0, new_indices1, new_indices2
 
 
 def plane_angle_cubic(ref_plane, plane):

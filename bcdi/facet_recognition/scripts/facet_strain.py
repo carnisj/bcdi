@@ -285,14 +285,6 @@ for idx in range(nb_vertices):
 del planes_counter, vertices_label, vertices_old
 gc.collect()
 
-########################################
-# save planes before refinement in vti #
-########################################
-# TODO: this part is not working correctly
-# fu.save_planes_vti(filename=os.path.join(savedir, "S" + str(scan) + "_planes before refinement.vti"),
-#                    voxel_size=(1, 1, 1), tuple_array=(amp, support), tuple_fieldnames=('amp', 'support'),
-#                    plane_labels=range(0, max_label+1, 1), planes=all_planes, amplitude_threshold=0.01)
-
 #####################################################
 # define surface gradient using a conjugate support #
 #####################################################
@@ -432,15 +424,10 @@ for label in updated_label:
     shift_direction = 0
     while found_plane == 0:
         common_points = 0
-        plane_newindices0 = np.rint(plane_indices[0] +
-                                    nbloop*step_shift * np.dot(np.array([1, 0, 0]), plane_normal /
-                                                               np.linalg.norm(plane_normal))).astype(int)
-        plane_newindices1 = np.rint(plane_indices[1] +
-                                    nbloop*step_shift * np.dot(np.array([0, 1, 0]), plane_normal /
-                                                               np.linalg.norm(plane_normal))).astype(int)
-        plane_newindices2 = np.rint(plane_indices[2] +
-                                    nbloop*step_shift * np.dot(np.array([0, 0, 1]), plane_normal /
-                                                               np.linalg.norm(plane_normal))).astype(int)
+        # shift indices
+        plane_newindices0, plane_newindices1, plane_newindices2 =\
+            fu.offset_plane(indices=plane_indices, offset=nbloop*step_shift, plane_normal=plane_normal)
+
         for point in range(len(plane_newindices0)):
             for point2 in range(len(sup0)):
                 if plane_newindices0[point] == sup0[point2] and plane_newindices1[point] == sup1[point2]\
@@ -457,6 +444,7 @@ for label in updated_label:
             plane = np.zeros(surface.shape)
             plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
 
+            # plot plane points overlaid with the support
             gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_newindices0[:, np.newaxis],
                                                              plane_newindices1[:, np.newaxis],
                                                              plane_newindices2[:, np.newaxis]), axis=1),
@@ -514,24 +502,18 @@ for label in updated_label:
 
     # go back one step
     coeffs[2, 0] = coeffs[2, 0] - (nbloop-1)*step_shift
-    plane_newindices0 = np.rint(plane_indices[0] +
-                                (nbloop-1)*step_shift * np.dot(np.array([1, 0, 0]), plane_normal /
-                                                               np.linalg.norm(plane_normal))).astype(int)
-    plane_newindices1 = np.rint(plane_indices[1] +
-                                (nbloop - 1)*step_shift * np.dot(np.array([0, 1, 0]), plane_normal /
-                                                                 np.linalg.norm(plane_normal))).astype(int)
-    plane_newindices2 = np.rint(plane_indices[2] +
-                                (nbloop - 1)*step_shift * np.dot(np.array([0, 0, 1]), plane_normal /
-                                                                 np.linalg.norm(plane_normal))).astype(int)
+    # shift indices
+    plane_newindices0, plane_newindices1, plane_newindices2 = \
+        fu.offset_plane(indices=plane_indices, offset=(nbloop-1)*step_shift, plane_normal=plane_normal)
 
     plane = np.zeros(surface.shape)
     plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
 
     # use only pixels belonging to the outer shell of the support
     plane = plane * surface
-    # plot result
-    plane_indices = np.nonzero(plane == 1)
 
+    # plot plane points overlaid with the support
+    plane_indices = np.nonzero(plane == 1)
     gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
                                      np.concatenate((sup0[:, np.newaxis],
                                                      sup1[:, np.newaxis],
@@ -595,6 +577,7 @@ for label in updated_label:
         if plane[plane == 1].sum() == previous_nb:
             break
     grown_points = plane[plane == 1].sum().astype(int)
+    # plot plane points overlaid with the support
     print('Plane ', label, ', ', str(grown_points), 'points after the final growth of the facet\n')
 
     gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
@@ -604,10 +587,11 @@ for label in updated_label:
                              markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
                              title='Plane' + str(label) + ' final growth at the surface\nPoints number='
                                    + str(len(plane_indices[0])))
-    # TODO: create an edge support in order to exclude edge points from planes (this is probably not easy)
-    ####################################
-    # calculate quantities of interest #
-    ####################################
+    # TODO: create an edge support in order to exclude edge points from planes (this is probably not easy).
+
+    #################################################################
+    # calculate quantities of interest and update log and VTK files #
+    #################################################################
     # calculate mean gradient
     mean_gradient = np.zeros(3)
     ind_z = plane_indices[0]
