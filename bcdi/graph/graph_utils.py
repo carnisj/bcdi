@@ -962,6 +962,44 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     return fig, ax0
 
 
+def scatter_plot(array, tuple_labels, title=''):
+    """
+    Scatter plot of a 2D or 3D array.
+
+    :param array: 2D or 3D array
+    :param tuple_labels: tuple of string labels of the same size as the number of dimensions of array
+    :param title: string, title for the scatter plot
+    :return: figure, axes instances
+    """
+    ndim = array.ndim
+    if tuple_labels is not tuple:
+        tuple_labels = ('',) * ndim
+    if len(tuple_labels) != ndim:
+        raise ValueError('the number of labels is different from the dimension of the array')
+
+    fig = plt.figure()
+
+    if ndim == 2:
+        ax = plt.subplot(111)
+        ax.scatter(array[0], array[1], color='b')
+        plt.title(title)
+        ax.set_xlabel(tuple_labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
+        ax.set_ylabel(tuple_labels[1])
+        plt.pause(0.1)
+    elif ndim == 3:
+        ax = plt.subplot(111, projection='3d')
+        ax.scatter(array[0], array[1], array[2], color='b')
+        plt.title(title)
+        ax.set_xlabel(tuple_labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
+        ax.set_ylabel(tuple_labels[1])
+        ax.set_zlabel(tuple_labels[2])
+    else:
+        raise ValueError('array should be 2D or 3D')
+    plt.pause(0.1)
+    return fig, ax
+
+
+
 # if __name__ == "__main__":
 #     datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop300/test/'
 #     strain = np.load(datadir +
