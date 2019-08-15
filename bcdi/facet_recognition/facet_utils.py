@@ -243,7 +243,7 @@ def fit_plane(plane, label, debugging=1):
     :param plane: 3D binary array of the shape of the data
     :param label: int, only used for title in plot
     :param debugging: show plots for debugging
-    :return: matrix of fit parameters [a, b, c], plane indices and errors associated
+    :return: matrix of fit parameters [a, b, c], plane indices, errors associated, a stop flag
     """
     from scipy.ndimage.measurements import center_of_mass
 
@@ -251,7 +251,7 @@ def fit_plane(plane, label, debugging=1):
     no_points = 0
     if len(indices[0]) == 0:
         no_points = 1
-        return 0, indices, no_points
+        return 0, indices, _, no_points
     tmp_x = indices[0]
     tmp_y = indices[1]
     tmp_z = indices[2]
@@ -261,7 +261,7 @@ def fit_plane(plane, label, debugging=1):
     for point in range(tmp_x.shape[0]):
         neighbors = plane[tmp_x[point]-2:tmp_x[point]+3, tmp_y[point]-2:tmp_y[point]+3,
                           tmp_z[point]-2:tmp_z[point]+3].sum()
-        if neighbors < 9:
+        if neighbors < 5:
             plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
     print('Plane', label, ', ', str(tmp_x.shape[0]-plane[plane == 1].sum()), 'points isolated, ',
           str(plane[plane == 1].sum()), 'remaining')
@@ -270,18 +270,18 @@ def fit_plane(plane, label, debugging=1):
     indices = np.nonzero(plane)
     if len(indices[0]) == 0:
         no_points = 1
-        return 0, indices, no_points
+        return 0, indices, _, no_points
     tmp_x = indices[0]
     tmp_y = indices[1]
     tmp_z = indices[2]
 
-    # remove also points farther than 1.5 times the mean distance to the COM
+    # remove also points farther than 2 times the mean distance to the COM
     dist = np.zeros(tmp_x.shape[0])
     for point in range(tmp_x.shape[0]):
         dist[point] = np.sqrt((tmp_x[point]-x_com)**2+(tmp_y[point]-y_com)**2+(tmp_z[point]-z_com)**2)
     average_dist = np.mean(dist)
     for point in range(tmp_x.shape[0]):
-        if dist[point] > 1.5 * average_dist:
+        if dist[point] > 2 * average_dist:
             plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
     print('Plane', label, ', ', str(tmp_x.shape[0] - plane[plane == 1].sum()), 'points too far from COM, ',
           str(plane[plane == 1].sum()), 'remaining')
@@ -290,7 +290,7 @@ def fit_plane(plane, label, debugging=1):
     indices = np.nonzero(plane)
     if len(indices[0]) < 5:
         no_points = 1
-        return 0, indices, no_points
+        return 0, indices, _, no_points
     tmp_x = indices[0]
     tmp_y = indices[1]
     tmp_z = indices[2]
