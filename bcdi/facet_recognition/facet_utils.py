@@ -20,7 +20,8 @@ default_cmap = colormap.cmap
 
 def detect_edges(faces):
     """
-    find indices of vertices defining non-shared edges
+    Find indices of vertices defining non-shared edges
+
     :param faces: ndarray of m*3 faces
     :return: 1D list of indices of vertices defining non-shared edges (near hole...)
     """
@@ -41,7 +42,16 @@ def detect_edges(faces):
     return unique_edges
 
 
-def distance_threshold(fit, indices, threshold, shape):
+def distance_threshold(fit, indices, shape, max_distance=1.1):
+    """
+    Filter out pixels depending on their distance to a fit plane
+
+    :param fit: coefficients of the plane (tuple of 3 numbers)
+    :param indices: plane indices
+    :param shape: shape of the intial plane array
+    :param max_distance: max distance allowed from the fit plane in pixels
+    :return: the updated plane, a stop flag
+    """
     plane = np.zeros(shape, dtype=int)
     no_points = 0
     indx = indices[0]
@@ -55,7 +65,7 @@ def distance_threshold(fit, indices, threshold, shape):
     for point in range(len(indices[0])):
         dist = abs(fit[0, 0]*indx[point] + fit[1, 0]*indy[point] -
                    indz[point] + fit[2, 0])/np.linalg.norm(plane_normal)
-        if dist < threshold:
+        if dist < max_distance:
             plane[indx[point], indy[point], indz[point]] = 1
     if plane[plane == 1].sum() == 0:
         print('Distance_threshold: no points for plane')
@@ -67,6 +77,8 @@ def distance_threshold(fit, indices, threshold, shape):
 def equirectangular_proj(normals, color, weights, cmap=default_cmap, bw_method=0.03, min_distance=10,
                          background_threshold=-0.35, debugging=False):
     """
+    Detect facets in an object using an equirectangular projection of normals to mesh triangles
+     and watershed segmentation.
 
     :param normals: normals array
     :param color: intensity array
@@ -194,7 +206,8 @@ def equirectangular_proj(normals, color, weights, cmap=default_cmap, bw_method=0
 
 def find_neighbours(vertices, faces):
     """
-    Get the list of neighbouring vertices for each vertex
+    Get the list of neighbouring vertices for each vertex.
+
     :param vertices: ndarray of n*3 vertices
     :param faces: ndarray of m*3 faces
     :return: list of lists of indices
@@ -225,7 +238,8 @@ def find_neighbours(vertices, faces):
 
 def fit_plane(plane, label, debugging=1):
     """
-    fit a plane to labelled indices, ax+by+c=z
+    Fit a plane to labelled indices, ax+by+c=z
+
     :param plane: 3D binary array of the shape of the data
     :param label: int, only used for title in plot
     :param debugging: show plots for debugging
@@ -233,7 +247,7 @@ def fit_plane(plane, label, debugging=1):
     """
     from scipy.ndimage.measurements import center_of_mass
 
-    indices = np.nonzero(plane == 1)
+    indices = np.nonzero(plane)
     no_points = 0
     if len(indices[0]) == 0:
         no_points = 1
@@ -245,15 +259,15 @@ def fit_plane(plane, label, debugging=1):
 
     # remove isolated points, which probably do not belong to the plane
     for point in range(tmp_x.shape[0]):
-        _neighbors = plane[tmp_x[point]-2:tmp_x[point]+3, tmp_y[point]-2:tmp_y[point]+3,
-                               tmp_z[point]-2:tmp_z[point]+3].sum()
-        # if debugging == 1:
-        #     print(_neighbors)
-        if _neighbors < 5:
+        neighbors = plane[tmp_x[point]-2:tmp_x[point]+3, tmp_y[point]-2:tmp_y[point]+3,
+                          tmp_z[point]-2:tmp_z[point]+3].sum()
+        if neighbors < 9:
             plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
     print('Plane', label, ', ', str(tmp_x.shape[0]-plane[plane == 1].sum()), 'points isolated, ',
           str(plane[plane == 1].sum()), 'remaining')
-    indices = np.nonzero(plane == 1)
+
+    # update plane indices
+    indices = np.nonzero(plane)
     if len(indices[0]) == 0:
         no_points = 1
         return 0, indices, no_points
@@ -261,20 +275,19 @@ def fit_plane(plane, label, debugging=1):
     tmp_y = indices[1]
     tmp_z = indices[2]
 
-    # remove points farther than 1.8 times the mean distance to COM
+    # remove also points farther than 1.5 times the mean distance to the COM
     dist = np.zeros(tmp_x.shape[0])
     for point in range(tmp_x.shape[0]):
         dist[point] = np.sqrt((tmp_x[point]-x_com)**2+(tmp_y[point]-y_com)**2+(tmp_z[point]-z_com)**2)
     average_dist = np.mean(dist)
-    # plt.figure()
-    # ax = plt.subplot(111, projection='3d')
-    # ax.scatter(tmp_x, tmp_y, tmp_z, color='b')
     for point in range(tmp_x.shape[0]):
-        if dist[point] > 1.8 * average_dist:
+        if dist[point] > 1.5 * average_dist:
             plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
     print('Plane', label, ', ', str(tmp_x.shape[0] - plane[plane == 1].sum()), 'points too far from COM, ',
           str(plane[plane == 1].sum()), 'remaining')
-    indices = np.nonzero(plane == 1)
+
+    # update plane indices and check if enough points remain
+    indices = np.nonzero(plane)
     if len(indices[0]) < 5:
         no_points = 1
         return 0, indices, no_points
@@ -286,12 +299,14 @@ def fit_plane(plane, label, debugging=1):
     tmp_y = tmp_y[:, np.newaxis]
     tmp_1 = np.ones((tmp_y.shape[0], 1))
 
+    # calculate plane parameters
+    # TODO: update this part (numpy.matrix will not be supported anymore in the future)
     a = np.matrix(np.concatenate((tmp_x, tmp_y, tmp_1), axis=1))
     b = np.matrix(tmp_z).T
     fit = (a.T * a).I * a.T * b
-    # errors = b - a * fit
+    errors = b - a * fit
 
-    if debugging == 1:
+    if debugging:
         plt.figure()
         ax = plt.subplot(111, projection='3d')
         ax.scatter(tmp_x, tmp_y, tmp_z, color='b')
@@ -309,78 +324,69 @@ def fit_plane(plane, label, debugging=1):
         ax.plot_wireframe(meshx, meshy, meshz, color='k')
         plt.title("Points and fitted plane" + str(label))
         plt.pause(0.1)
-    return fit, indices, no_points
+    return fit, indices, errors, no_points
 
 
-def grow_facet(fit, plane, label, debugging=1):
+def grow_facet(fit, plane, label, support, max_distance=1.1, debugging=True):
     """
+    Find voxels of the object which belong to a facet using the facet plane equation and the distance to the plane.
 
-    :param fit:
-    :param plane:
-    :param label:
-    :param debugging:
-    :return:
+    :param fit: coefficients of the plane (tuple of 3 numbers)
+    :param plane: 3D binary array of the shape of the data
+    :param label: the label of the plane processed
+    :param support: binary support of the object
+    :param max_distance: in pixels, maximum allowed distance to the facet plane of a voxel
+    :param debugging: set to True to see plots
+    :return: the updated plane, a stop flag
     """
     from scipy.signal import convolve
-
-    indices = np.nonzero(plane == 1)
+    nbz, nby, nbx = plane.shape
+    indices = np.nonzero(plane)
     if len(indices[0]) == 0:
         no_points = 1
         return plane, no_points
-    kernel = np.ones((10, 10, 10))
-    object = np.copy(plane[indices[0].min():indices[0].max()+1, indices[1].min():indices[1].max()+1,
-                       indices[2].min(): indices[2].max() + 1])
-    coord = np.rint(convolve(object, kernel, mode='same'))
+    kernel = np.ones((3, 3, 3))
 
-    # determine the threshold for growing the facet
-    coord[object == 0] = 0
-    mean_coord = coord.sum() / len(indices[0])
-    print('Plane ' + str(label) + ', mean coordination number = ' + str(mean_coord))
-    threshold = mean_coord - 12  # -10 extension starting outwards
+    start_z = min(indices[0].min()-20, 0)
+    stop_z = min(indices[0].max()+21, nbz)
+    start_y = min(indices[1].min()-20, 0)
+    stop_y = min(indices[1].max()+21, nby)
+    start_x = min(indices[2].min()-20, 0)
+    stop_x = min(indices[2].max()+21, nbx)
 
-    # apply the estimated threshold
-    coord = np.rint(convolve(object, kernel, mode='same'))
+    # find nearby voxels using the coordination number
+    obj = np.copy(plane[start_z:stop_z, start_y:stop_y, start_x: stop_x])
+    coord = np.rint(convolve(obj, kernel, mode='same'))
     coord = coord.astype(int)
-    coord[coord < threshold] = 0
+    coord[coord < 1] = 0
 
+    # update plane with new voxels
     temp_plane = np.copy(plane)
-    temp_plane[indices[0].min():indices[0].max() + 1, indices[1].min():indices[1].max() + 1,
-               indices[2].min(): indices[2].max() + 1] = coord
+    temp_plane[start_z:stop_z, start_y:stop_y, start_x: stop_x] = coord
+    # remove voxels not belonging to the support
+    temp_plane[support == 0] = 0
+    # check distance of new voxels to the plane
     new_indices = np.nonzero(temp_plane)
-    temp_plane, no_points = distance_threshold(fit, new_indices, 0.5, temp_plane.shape)
 
+    temp_plane, no_points = distance_threshold(fit=fit, indices=new_indices, shape=temp_plane.shape,
+                                               max_distance=max_distance)
+
+    # update indices and plane voxels
     new_indices = np.nonzero(temp_plane)
     plane[new_indices[0], new_indices[1], new_indices[2]] = 1
 
-    if debugging == 1 and len(new_indices[0]) != 0:
-        # indices = np.nonzero(coord)
-        # color = coord[indices[0], indices[1], indices[2]]
-        # fig = plt.figure()
-        # ax = plt.subplot(111, projection='3d')
-        # scatter = ax.scatter(indices[0], indices[1], indices[2], s=2, c=color,
-        #                          cmap=_cmap, vmin=0, vmax=threshold)
-        # ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-        # ax.set_ylabel('y')
-        # ax.set_zlabel('z')
-        # plt.title("Convolution for plane " + str(label) + ' after distance threshold')
-        # fig.colorbar(scatter)
-
+    if debugging and len(new_indices[0]) != 0:
         indices = np.nonzero(plane)
-        plt.figure()
-        ax = plt.subplot(111, projection='3d')
-        ax.scatter(indices[0], indices[1], indices[2], color='b')
-        ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-        plt.title("Plane " + str(label) + ' after 1 cycle of facet growing')
-        plt.pause(0.1)
+        gu.scatter_plot(array=np.asarray(indices).T, labels=('x', 'y', 'z'),
+                        title='Plane' + str(label) + ' after 1 cycle of facet growing')
         print(str(len(indices[0])) + ' after 1 cycle of facet growing')
     return plane, no_points
 
 
-def plane_angle(ref_plane, plane):
+def plane_angle_cubic(ref_plane, plane):
     """
     Calculate the angle between two crystallographic planes in cubic materials
+
     :param ref_plane: measured reflection
     :param plane: plane for which angle should be calculated
     :return: the angle in degrees
@@ -398,6 +404,8 @@ def plane_angle(ref_plane, plane):
 def stereographic_proj(normals, color, weights, max_angle, savedir, min_distance=10, background_threshold=-1000,
                        save_txt=False, cmap=default_cmap, planes={}, plot_planes=True, debugging=False):
     """
+    Detect facets in an object using a stereographic projection of normals to mesh triangles
+     and watershed segmentation.
 
     :param normals: array of normals (nb_normals rows x 3 columns)
     :param color: array of intensities (nb_normals rows x 1 column)
@@ -607,8 +615,9 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, min_distance
 
 def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.5, mu=0.53, debugging=0):
     """
-    taubinsmooth: performs a back and forward Laplacian smoothing "without shrinking" of a triangulated mesh,
-    as described by Gabriel Taubin (ICCV '95)
+    Taubinsmooth: performs a back and forward Laplacian smoothing "without shrinking" of a triangulated mesh,
+     as described by Gabriel Taubin (ICCV '95)
+
     :param faces: m*3 ndarray of m faces defined by 3 indices of vertices
     :param vertices: n*3 ndarray of n vertices defined by 3 positions
     :param cmap: colormap used for plotting
