@@ -42,7 +42,7 @@ def detect_edges(faces):
     return unique_edges
 
 
-def distance_threshold(fit, indices, shape, max_distance=1.1):
+def distance_threshold(fit, indices, shape, max_distance=0.90):
     """
     Filter out pixels depending on their distance to a fit plane
 
@@ -327,7 +327,7 @@ def fit_plane(plane, label, debugging=1):
     return fit, indices, errors, no_points
 
 
-def grow_facet(fit, plane, label, support, max_distance=1.1, debugging=True):
+def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     """
     Find voxels of the object which belong to a facet using the facet plane equation and the distance to the plane.
 
