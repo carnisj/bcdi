@@ -142,7 +142,7 @@ if projection_method == 'stereographic':
                                                                    background_threshold=threshold_stereo,
                                                                    min_distance=my_min_distance, savedir=savedir,
                                                                    save_txt=False, planes=planes, plot_planes=True,
-                                                                   max_angle=max_angle, debugging=True)
+                                                                   max_angle=max_angle, debugging=debug)
     numy, numx = labels_top.shape  # identical to labels_bottom.shape
     if stereo_proj.shape[0] != nb_normals:
         print('incompatible number of normals')
@@ -443,16 +443,15 @@ for label in updated_label:
             plane = np.zeros(surface.shape)
             plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
 
-            if debug:
-                # plot plane points overlaid with the support
-                gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_newindices0[:, np.newaxis],
-                                                                 plane_newindices1[:, np.newaxis],
-                                                                 plane_newindices2[:, np.newaxis]), axis=1),
-                                                 np.concatenate((sup0[:, np.newaxis],
-                                                                 sup1[:, np.newaxis],
-                                                                 sup2[:, np.newaxis]), axis=1)),
-                                         markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
-                                         title='Plane' + str(label) + ' after shifting facet - iteration' + str(nbloop))
+            # plot plane points overlaid with the support
+            gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_newindices0[:, np.newaxis],
+                                                             plane_newindices1[:, np.newaxis],
+                                                             plane_newindices2[:, np.newaxis]), axis=1),
+                                             np.concatenate((sup0[:, np.newaxis],
+                                                             sup1[:, np.newaxis],
+                                                             sup2[:, np.newaxis]), axis=1)),
+                                     markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                     title='Plane' + str(label) + ' after shifting facet - iteration' + str(nbloop))
 
             print('(while) iteration ', nbloop, '- Mean distance of the plane to outer shell = ' +
                   str('{:.2f}'.format(temp_mean_dist)) + '\n pixels - common_points = ', common_points)
@@ -512,15 +511,16 @@ for label in updated_label:
     # use only pixels belonging to the outer shell of the support
     plane = plane * surface
 
-    # plot plane points overlaid with the support
-    plane_indices = np.nonzero(plane == 1)
-    gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
-                                     np.concatenate((sup0[:, np.newaxis],
-                                                     sup1[:, np.newaxis],
-                                                     sup2[:, np.newaxis]), axis=1)),
-                             markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
-                             title='Plane' + str(label) + ' after finding the surface\n iteration' +
-                                   str(iterate) + '- Points number=' + str(len(plane_indices[0])))
+    if debug:
+        # plot plane points overlaid with the support
+        plane_indices = np.nonzero(plane == 1)
+        gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                         np.concatenate((sup0[:, np.newaxis],
+                                                         sup1[:, np.newaxis],
+                                                         sup2[:, np.newaxis]), axis=1)),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 title='Plane' + str(label) + ' after finding the surface\n iteration' +
+                                       str(iterate) + '- Points number=' + str(len(plane_indices[0])))
 
     if plane[plane == 1].sum() == 0:  # no point belongs to the support
         print('Plane ', label, ' , no point belongs to support')
