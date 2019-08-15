@@ -130,9 +130,8 @@ vertices_new, normals, areas, color, _ = \
                      debugging=1)
 
 # Display smoothed triangular mesh
-if debug:
-    gu.plot_3dmesh(vertices_new, faces, (nz, ny, nx), title='Mesh after Taubin smoothing')
-    plt.ion()
+gu.plot_3dmesh(vertices_new, faces, (nz, ny, nx), title='Mesh after Taubin smoothing')
+plt.ion()
 
 del vertices_new
 gc.collect()
@@ -143,7 +142,7 @@ if projection_method == 'stereographic':
                                                                    background_threshold=threshold_stereo,
                                                                    min_distance=my_min_distance, savedir=savedir,
                                                                    save_txt=False, planes=planes, plot_planes=True,
-                                                                   max_angle=max_angle, debugging=debug)
+                                                                   max_angle=max_angle, debugging=True)
     numy, numx = labels_top.shape  # identical to labels_bottom.shape
     if stereo_proj.shape[0] != nb_normals:
         print('incompatible number of normals')
@@ -444,15 +443,16 @@ for label in updated_label:
             plane = np.zeros(surface.shape)
             plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
 
-            # plot plane points overlaid with the support
-            gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_newindices0[:, np.newaxis],
-                                                             plane_newindices1[:, np.newaxis],
-                                                             plane_newindices2[:, np.newaxis]), axis=1),
-                                             np.concatenate((sup0[:, np.newaxis],
-                                                             sup1[:, np.newaxis],
-                                                             sup2[:, np.newaxis]), axis=1)),
-                                     markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
-                                     title='Plane' + str(label) + ' after shifting facet - iteration' + str(nbloop))
+            if debug:
+                # plot plane points overlaid with the support
+                gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_newindices0[:, np.newaxis],
+                                                                 plane_newindices1[:, np.newaxis],
+                                                                 plane_newindices2[:, np.newaxis]), axis=1),
+                                                 np.concatenate((sup0[:, np.newaxis],
+                                                                 sup1[:, np.newaxis],
+                                                                 sup2[:, np.newaxis]), axis=1)),
+                                         markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                         title='Plane' + str(label) + ' after shifting facet - iteration' + str(nbloop))
 
             print('(while) iteration ', nbloop, '- Mean distance of the plane to outer shell = ' +
                   str('{:.2f}'.format(temp_mean_dist)) + '\n pixels - common_points = ', common_points)
