@@ -25,7 +25,11 @@ import bcdi.facet_recognition.facet_utils as fu
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-help text comes here
+Script for detecting facets on a 3D crytal reconstructed by a phasing algorithm (Bragg CDI) and making some statistics
+ about strain by facet. The correct isosurface value should be given as input.
+
+Input: a reconstruction .npz file with fields: 'amp' and 'strain' 
+Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
 
 scan = 2227  # spec scan number
@@ -42,7 +46,7 @@ smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
 smooth_mu = 0.51  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
 my_min_distance = 20  # pixel separation between peaks in corner_peaks()
-max_distance_plane = 1.25  # in pixels, maximum allowed distance to the facet plane of a voxel
+max_distance_plane = 0.90  # in pixels, maximum allowed distance to the facet plane of a voxel
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
@@ -56,7 +60,7 @@ kde_threshold = -0.2  # threshold for defining the background in the density est
 ##############################################################################################
 # define crystallographic planes of interest for the stereographic projection (cubic lattice #
 ##############################################################################################
-planes = {}
+planes = dict()  # create dictionnary
 planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
 planes['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
 planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
@@ -410,13 +414,14 @@ for label in updated_label:
                        + (coeffs[2, 0] - mean_dist / 2)) / np.linalg.norm(plane_normal)
     new_dist = dist.mean()
 
+    step_shift = 0.5  # will scan by half pixel through the crystal in order to not miss voxels
     # these directions are for a mesh smaller than the support
     if mean_dist*new_dist < 0:  # crossed the support surface
-        step_shift = np.sign(mean_dist) * 0.5
+        step_shift = np.sign(mean_dist) * step_shift
     elif abs(new_dist) - abs(mean_dist) < 0:
-        step_shift = np.sign(mean_dist) * 0.5
+        step_shift = np.sign(mean_dist) * step_shift
     else:  # going away from surface, wrong direction
-        step_shift = -1 * np.sign(mean_dist) * 0.5
+        step_shift = -1 * np.sign(mean_dist) * step_shift
 
     step_shift = -1*step_shift  # added JCR 24082018 because the direction of normals was flipped
 
@@ -484,7 +489,7 @@ for label in updated_label:
                 nbloop = nbloop + 1
                 crossed_surface = 1
         else:
-            if crossed_surface == 1:  # found the outer shell
+            if crossed_surface == 1:  # found the outer shell, which is 1 step before
                 found_plane = 1
                 print('Exiting while loop - ', common_previous, 'points belonging to the facet for plane ', label,
                       '- next step common points=', common_points)
@@ -506,6 +511,7 @@ for label in updated_label:
     if stop == 1:  # no points on the plane
         print('Intersecting with support: no points for plane', label)
         continue
+
     # go back one step
     coeffs[2, 0] = coeffs[2, 0] - (nbloop-1)*step_shift
     plane_newindices0 = np.rint(plane_indices[0] +
@@ -559,9 +565,9 @@ for label in updated_label:
                         title='Plane' + str(label) + ' after growing facet at the surface\nPoints number='
                               + str(len(plane_indices[0])))
 
-    ######################################################################
-    # refine plane fit, now we are sure that we keep only surface voxels #
-    ######################################################################
+    ################################################################
+    # refine plane fit, now we are sure that we are at the surface #
+    ################################################################
     coeffs, plane_indices, errors, stop = fu.fit_plane(plane=plane, label=label, debugging=debug)
     if stop == 1:
         print('No points remaining after refined fit for plane', label)
@@ -576,27 +582,29 @@ for label in updated_label:
     print('Plane', label, ', ', str(plane[plane == 1].sum()), 'points after refined fit')
     plane_indices = np.nonzero(plane)
 
-    #######################################
+    ############################################
     # final growth of the facet on the surface #
-    #######################################
+    ############################################
     print('Final growth of the facet')
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
                                     max_distance=max_distance_plane, debugging=debug)
-        plane_indices = np.nonzero(plane)
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
+        plane_indices = np.nonzero(plane)
         if plane[plane == 1].sum() == previous_nb:
             break
     grown_points = plane[plane == 1].sum().astype(int)
     print('Plane ', label, ', ', str(grown_points), 'points after the final growth of the facet\n')
 
-    if debug:
-        plane_indices = np.nonzero(plane == 1)
-        gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
-                        title='Plane' + str(label) + ' after final grwoth at the surface\nPoints number='
-                              + str(len(plane_indices[0])))
-
+    gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                     np.concatenate((sup0[:, np.newaxis],
+                                                     sup1[:, np.newaxis],
+                                                     sup2[:, np.newaxis]), axis=1)),
+                             markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                             title='Plane' + str(label) + ' final growth at the surface\nPoints number='
+                                   + str(len(plane_indices[0])))
+    # TODO: create an edge support in order to exclude edge points from planes (this is probably not easy)
     ####################################
     # calculate quantities of interest #
     ####################################
