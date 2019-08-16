@@ -109,11 +109,6 @@ template_imagefile = '_data_%06d.h5'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_data_%06d.h5'
-#################################################################################
-# define parameters below if you want to regrid forward CDI data before phasing #
-#################################################################################
-regrid_cdi = True
-angular_step = 0.5  # in degrees
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
@@ -190,8 +185,8 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 ####################
 # Initialize setup #
 ####################
-setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, angular_step=angular_step,
-                               distance=sdd, beam_direction=beam_direction, sample_inplane=sample_inplane,
+setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+                               beam_direction=beam_direction, sample_inplane=sample_inplane,
                                sample_outofplane=sample_outofplane, offset_inplane=offset_inplane)
 
 #############################################

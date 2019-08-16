@@ -658,11 +658,11 @@ def grid_cdi(data, mask, setup):
 
         rotation_imatrix = np.linalg.inv(rotation_matrix)
         new_x[idx, :, :] = rotation_imatrix[0, 0] * myx[idx, :, :] + rotation_imatrix[0, 1] * myy[idx, :, :] +\
-                           rotation_imatrix[0, 2] * myz[idx, :, :]
+            rotation_imatrix[0, 2] * myz[idx, :, :]
         new_y[idx, :, :] = rotation_imatrix[1, 0] * myx[idx, :, :] + rotation_imatrix[1, 1] * myy[idx, :, :] +\
-                           rotation_imatrix[1, 2] * myz[idx, :, :]
+            rotation_imatrix[1, 2] * myz[idx, :, :]
         new_z[idx, :, :] = rotation_imatrix[2, 0] * myx[idx, :, :] + rotation_imatrix[2, 1] * myy[idx, :, :] +\
-                           rotation_imatrix[2, 2] * myz[idx, :, :]
+            rotation_imatrix[2, 2] * myz[idx, :, :]
     del myx, myy, myz
     gc.collect()
 
@@ -685,7 +685,7 @@ def grid_cdi(data, mask, setup):
 
 
 def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False, hxrd=None,
-            regrid_cdi=False, debugging=False, **kwargs):
+            debugging=False, **kwargs):
     """
     Load the data, apply filters and concatenate it for phasing.
 
@@ -697,7 +697,6 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param orthogonalize: if True will interpolate the data and the mask on an orthogonal grid using xrayutilities
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
-    :param regrid_cdi: set to True to interpolate forward scattering CDI data into the loaboratory frame
     :param debugging: set to True to see plots
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
@@ -722,8 +721,6 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
                                                           hotpixels=hotpixels, debugging=debugging)
     
     if not orthogonalize:
-        if regrid_cdi:
-            rawdata, rawmask = grid_cdi(rawdata, rawmask, setup=setup)
         return [], rawdata, [], rawmask, [], frames_logical, monitor
     else:
         nbz, nby, nbx = rawdata.shape
@@ -1134,20 +1131,20 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
     
     if detector.roiUser:
         # apply roi
-        slice0 = slice(detector.roi[0],detector.roi[1],1)
-        slice1 = slice(detector.roi[2],detector.roi[3],1)
+        slice0 = slice(detector.roi[0], detector.roi[1], 1)
+        slice1 = slice(detector.roi[2], detector.roi[3], 1)
         
-        data = data[:,slice0,slice1]
-        hotpixels = hotpixels[slice0,slice1]
-        flatfield = flatfield[slice0,slice1]
-        mask_2d = np.zeros_like(data[0,:,:])
+        data = data[:, slice0, slice1]
+        hotpixels = hotpixels[slice0, slice1]
+        flatfield = flatfield[slice0, slice1]
+        mask_2d = np.zeros_like(data[0, :, :])
         
     else: 
         mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x)) 
         # load data as usual
 
     frames_logical = np.ones(data.shape[0])
-    #frames_logical[0] = 0  # first frame is duplicated
+    # frames_logical[0] = 0  # first frame is duplicated
 
     nb_img = data.shape[0]
     for idx in range(nb_img):
@@ -1158,10 +1155,10 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
         else:
             raise ValueError('Detector ', detector.name, 'not supported for SIXS')
         ccdraw = flatfield * ccdraw
-        #ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        # ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
         data[idx, :, :] = ccdraw
 
-    #mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    # mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
@@ -1561,7 +1558,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, deb
 
     # crop/pad monitor depending on frames_logical array
     monitor = np.zeros((frames_logical != 0).sum())
-    print(frames_logical,frames_logical.shape)
+    print(frames_logical, frames_logical.shape)
     nb_overlap = 0
     nb_padded = 0
     for idx in range(len(frames_logical)):
@@ -1575,7 +1572,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, deb
             monitor[idx - nb_overlap] = raw_monitor[idx-nb_padded]
         else:
             nb_overlap = nb_overlap + 1
-    print(monitor.shape,monitor)
+    print(monitor.shape, monitor)
     if nb_padded != 0:
         print('Monitor value set to 1 for ', nb_padded, ' frames padded')
 
@@ -2573,24 +2570,24 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
     return newobj
 
 
-if __name__ == "__main__":
-    data = np.ones((12, 50, 40))
-    nz, ny, nx = data.shape
-    mask = np.zeros((12, 50, 40))
-    import bcdi.experiment.experiment_utils as exp
-    from mayavi import mlab
-    setup = exp.SetupPreprocessing(beamline='P10', energy=8700, rocking_angle='inplane', angular_step=20,
-                                   distance=5100)
-    data, mask = grid_cdi(data, mask, setup)
-
-    grid_qx, grid_qz, grid_qy = np.mgrid[np.arange(-nz//2, nz//2), np.arange(-ny//2, ny//2),
-                                np.arange(-nx//2, nx//2)]
-    # in nexus convention, z is downstream, y vertical and x outboard
-    # but with Q, Qx is downstream, Qz vertical and Qy outboard
-    mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
-    mlab.contour3d((grid_qx, grid_qz, grid_qy, data), contours=20, opacity=0.5, colormap="jet")
-    mlab.colorbar(orientation="vertical", nb_labels=6)
-    mlab.outline(line_width=2.0)
-    mlab.axes(xlabel='Qx', ylabel='Qz', zlabel='Qy')  #
-    mlab.show()
+# if __name__ == "__main__":
+#     data = np.ones((12, 50, 40))
+#     nz, ny, nx = data.shape
+#     mask = np.zeros((12, 50, 40))
+#     import bcdi.experiment.experiment_utils as exp
+#     from mayavi import mlab
+#     setup = exp.SetupPreprocessing(beamline='P10', energy=8700, rocking_angle='inplane', angular_step=20,
+#                                    distance=5100)
+#     data, mask = grid_cdi(data, mask, setup)
+#
+#     grid_qx, grid_qz, grid_qy = np.mgrid[np.arange(-nz//2, nz//2), np.arange(-ny//2, ny//2),
+#                                 np.arange(-nx//2, nx//2)]
+#     # in nexus convention, z is downstream, y vertical and x outboard
+#     # but with Q, Qx is downstream, Qz vertical and Qy outboard
+#     mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+#     mlab.contour3d((grid_qx, grid_qz, grid_qy, data), contours=20, opacity=0.5, colormap="jet")
+#     mlab.colorbar(orientation="vertical", nb_labels=6)
+#     mlab.outline(line_width=2.0)
+#     mlab.axes(xlabel='Qx', ylabel='Qz', zlabel='Qy')  #
+#     mlab.show()
 
