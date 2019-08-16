@@ -39,7 +39,7 @@ scan = 2227  # spec scan number
 datadir = 'D:/data/PtRh/PtRh(103x98x157)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
 support_threshold = 0.55  # threshold for support determination
-voxel_size = (1, 1, 1)  # tuple of 3 numbers, voxel size of the reconstruction in each dimension
+voxel_size = (1, 1, 1.3)  # tuple of 3 numbers, voxel size of the reconstruction in each dimension
 savedir = datadir + "isosurface_" + str(support_threshold) + "/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
@@ -156,7 +156,11 @@ if projection_method == 'stereographic':
         label_points[:, 1] = (label_points[:, 1] * 2*max_angle / numx) - max_angle  # rescale to [-max_angle max_angle]
 
         label_distances = np.sqrt(label_points[:, 0]**2 + label_points[:, 1]**2)
-        if (label_distances < 90).sum() < label_points.shape[0]:  # some points on the other side of the 90deg border
+        if (label_distances <= 90).sum() == label_points.shape[0]:  # all points inside the 90deg border
+            continue  # do nothing, the facet is valid
+        elif (label_distances > 90).sum() == label_points.shape[0]:  # all points outside the 90deg border
+            continue  # do nothing, the facet will be filtered out in next section by distance check
+        else:  # some points on the other side of the 90deg border
             print('Label ', str(label), 'is potentially duplicated')
             # look for the corresponding label in the bottom projection
             for idx in range(nb_normals):
@@ -181,16 +185,16 @@ if projection_method == 'stereographic':
     gc.collect()
 
     # reorganize stereo_proj to keep only the projected point which is in the range [-90 90]
-    pole_proj = np.zeros((nb_normals, 4), dtype=stereo_proj.dtype)
+    pole_proj = np.zeros((nb_normals, 3), dtype=stereo_proj.dtype)
     # 1st and 2nd columns are coordinates
-    # the 3rd column is an indicator for South, North or duplicated facets
+    # the 3rd column is an indicator for using South or North projected coordinates
     for idx in range(nb_normals):
-        if abs(stereo_proj[idx, 0]) > 90 or abs(stereo_proj[idx, 1]) > 90:
+        if np.sqrt(stereo_proj[idx, 0]**2 + stereo_proj[idx, 1]**2) > 90:
             pole_proj[idx, 0:2] = stereo_proj[idx, 2:]  # use values for the projection from North pole
-            pole_proj[idx, 2] = 1  # need to use values from labels_bottom (projection from North pole)
+            pole_proj[idx, 2] = 1  # use values from labels_bottom (projection from North pole)
         else:
             pole_proj[idx, 0:2] = stereo_proj[idx, 0:2]  # use values for the projection from South pole
-            pole_proj[idx, 2] = 0  # need to use values from labels_top (projection from South pole)
+            pole_proj[idx, 2] = 0  # use values from labels_top (projection from South pole)
     del stereo_proj
     gc.collect()
 
@@ -214,9 +218,10 @@ if projection_method == 'stereographic':
         # check to which label belongs this normal
         if coordinates[idx, 2] == 0:  # use values from labels_top (projection from South pole)
             label_idx = labels_top[coordinates[idx, 0], coordinates[idx, 1]]
-        else:  # use values from labels_bottom (projection from North pole)
+        elif coordinates[idx, 2] == 1:  # use values from labels_bottom (projection from North pole)
             label_idx = labels_bottom[coordinates[idx, 0], coordinates[idx, 1]]
-
+        else:
+            label_idx = 0  # duplicated facet, set it to the background
         normals_label[idx] = label_idx  # attribute the label to the normal
         vertices_label[faces[idx, :]] = label_idx  # attribute the label to the corresponding vertices
 
