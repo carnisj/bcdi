@@ -39,12 +39,12 @@ scan = 2227  # spec scan number
 datadir = 'D:/data/PtRh/PtRh(103x98x157)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
 support_threshold = 0.55  # threshold for support determination
-voxel_size = (1, 1, 1.3)
+voxel_size = (1, 1, 1.5)  # tuple of 3 numbers, voxel size of the reconstruction in each dimension
 savedir = datadir + "isosurface_" + str(support_threshold) + "/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
-reflection_axis = 0  # array axis along which is aligned the measurement direction (0, 1 or 2)
+reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
 smoothing_iterations = 10  # number of iterations in Taubin smoothing
 smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
@@ -69,13 +69,6 @@ planes = dict()  # create dictionnary
 planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
 planes['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
 planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
-planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
-planes['3 2 1'] = fu.plane_angle_cubic(reflection, np.array([3, 2, 1]))
-planes['4 0 -1'] = fu.plane_angle_cubic(reflection, np.array([4, 0, -1]))
-planes['5 2 0'] = fu.plane_angle_cubic(reflection, np.array([5, 2, 0]))
-planes['5 2 1'] = fu.plane_angle_cubic(reflection, np.array([5, 2, 1]))
-planes['5 -2 -1'] = fu.plane_angle_cubic(reflection, np.array([5, -2, -1]))
 ##########################
 # end of user parameters #
 ##########################
@@ -627,17 +620,17 @@ for label in updated_label:
 
     # check where is the measurement direction
     if reflection_axis == 0:  # q aligned along the 1st axis
-        reflection_axis = np.array([1, 0, 0])
+        ref_axis = np.array([1, 0, 0])
     elif reflection_axis == 1:  # q aligned along the 2nd axis
-        reflection_axis = np.array([0, 1, 0])
+        ref_axis = np.array([0, 1, 0])
     elif reflection_axis == 2:  # q aligned along the 3rd axis
-        reflection_axis = np.array([0, 0, 1])
+        ref_axis = np.array([0, 0, 1])
     else:
         print('reflection_axis should be a basis axis of the reconstructed array')
         sys.exit()
 
     # calculate the angle of the plane normal to the measurement direction, which is aligned along reflection_axis
-    angle_plane = 180 / np.pi * np.arccos(np.dot(reflection_axis / np.linalg.norm(reflection_axis), plane_normal))
+    angle_plane = 180 / np.pi * np.arccos(np.dot(ref_axis, plane_normal))
 
     # calculate the average strain for plane voxels and update the log file
     plane_indices = np.nonzero(plane == 1)

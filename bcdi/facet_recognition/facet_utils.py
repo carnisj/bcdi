@@ -424,7 +424,7 @@ def plane_angle_cubic(ref_plane, plane):
     return angle
 
 
-def stereographic_proj(normals, color, weights, max_angle, savedir, min_distance=10, background_threshold=-1000,
+def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, reflection_axis, min_distance=10, background_threshold=-1000,
                        save_txt=False, cmap=default_cmap, planes={}, plot_planes=True, debugging=False):
     """
     Detect facets in an object using a stereographic projection of normals to mesh triangles
@@ -435,6 +435,8 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, min_distance
     :param weights: weights used in the density estimation
     :param max_angle: maximum angle in degree of the stereographic projection (should be larger than 90)
     :param savedir: directory for saving figures
+    :param voxel_size: tuple of three numbers corresponding to the voxel size in each dimension
+    :param reflection_axis: array axis along which is aligned the measurement direction (0, 1 or 2)
     :param min_distance: min_distance of corner_peaks()
     :param background_threshold: threshold for background determination (depth of the KDE)
     :param save_txt: if True, will save coordinates in a .txt file
@@ -449,32 +451,61 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, min_distance
     from skimage.feature import corner_peaks
     from skimage.morphology import watershed
     # TODO: use reference_axis to do the stereographic projection depending on which direction q is aligned with
+    if reflection_axis == 0:  # q aligned along the 1st axis
+        ref_axis = np.array([1, 0, 0])
+    elif reflection_axis == 1:  # q aligned along the 2nd axis
+        ref_axis = np.array([0, 1, 0])
+    elif reflection_axis == 2:  # q aligned along the 3rd axis
+        ref_axis = np.array([0, 0, 1])
+    else:
+        raise ValueError('reflection_axis should be a basis axis of the reconstructed array')
+
     # check normals for nan
     radius_mean = 1  # normals are normalized
     stereo_centerz = 0  # COM of the weighted point density
     list_nan = np.argwhere(np.isnan(normals))
     if len(list_nan) != 0:
-        for i in range(list_nan.shape[0]//3):
-            normals = np.delete(normals, list_nan[i*3, 0], axis=0)
-            color = np.delete(color, list_nan[i*3, 0], axis=0)
+        for idx in range(list_nan.shape[0]//3):
+            normals = np.delete(normals, list_nan[idx*3, 0], axis=0)
+            color = np.delete(color, list_nan[idx*3, 0], axis=0)
 
     # calculate u and v from xyz, this is equal to the stereographic projection from South pole
     stereo_proj = np.zeros((normals.shape[0], 4), dtype=normals.dtype)
-    for i in range(normals.shape[0]):
-        if normals[i, 1] == 0 and normals[i, 0] == 0:
+    for idx in range(normals.shape[0]):
+        if normals[idx, 1] == 0 and normals[idx, 0] == 0:
             continue
-        stereo_proj[i, 0] = radius_mean * normals[i, 0] / (radius_mean+normals[i, 1] - stereo_centerz)  # u_top qx
-        stereo_proj[i, 1] = radius_mean * normals[i, 2] / (radius_mean+normals[i, 1] - stereo_centerz)  # v_top qy
-        stereo_proj[i, 2] = radius_mean * normals[i, 0] / (stereo_centerz - radius_mean+normals[i, 1])  # u_bottom qx
-        stereo_proj[i, 3] = radius_mean * normals[i, 2] / (stereo_centerz - radius_mean+normals[i, 1])  # v_bottom qy
+        stereo_proj[idx, 0] = radius_mean * normals[idx, 0] / (radius_mean+normals[idx, 1] - stereo_centerz)  # u_top
+        stereo_proj[idx, 1] = radius_mean * normals[idx, 2] / (radius_mean+normals[idx, 1] - stereo_centerz)  # v_top
+        stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (stereo_centerz - radius_mean+normals[idx, 1])  # u_bottom
+        stereo_proj[idx, 3] = radius_mean * normals[idx, 2] / (stereo_centerz - radius_mean+normals[idx, 1])  # v_bottom
     stereo_proj = stereo_proj / radius_mean * 90  # rescaling from radius_mean to 90
 
-    if debugging:
-        fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=color,
+    if True:
+        # recalculate normals considering the anisotropy of voxel sizes (otherwise angles are wrong)
+        iso_normals = np.copy(normals)
+        iso_normals[:, 0] = iso_normals[:, 0] * voxel_size[0]
+        iso_normals[:, 1] = iso_normals[:, 1] * voxel_size[1]
+        iso_normals[:, 2] = iso_normals[:, 2] * voxel_size[2]
+        # normalize iso_normals
+        iso_normals_length = np.sqrt(iso_normals[:, 0] ** 2 + iso_normals[:, 1] ** 2 + iso_normals[:, 2] ** 2)
+        iso_normals = iso_normals / iso_normals_length[:, np.newaxis]
+
+        # recalculate the stereographic projection
+        iso_proj = np.zeros((normals.shape[0], 4), dtype=normals.dtype)
+        for idx in range(normals.shape[0]):
+            if normals[idx, 1] == 0 and normals[idx, 0] == 0:
+                continue
+            iso_proj[idx, 0] = radius_mean * iso_normals[idx, 0] / (radius_mean + iso_normals[idx, 1] - stereo_centerz)
+            iso_proj[idx, 1] = radius_mean * iso_normals[idx, 2] / (radius_mean + iso_normals[idx, 1] - stereo_centerz)
+            iso_proj[idx, 2] = radius_mean * iso_normals[idx, 0] / (stereo_centerz - radius_mean + iso_normals[idx, 1])
+            iso_proj[idx, 3] = radius_mean * iso_normals[idx, 2] / (stereo_centerz - radius_mean + iso_normals[idx, 1])
+        iso_proj = iso_proj / radius_mean * 90  # rescaling from radius_mean to 90
+
+        fig, _ = gu.plot_stereographic(euclidian_u=iso_proj[:, 0], euclidian_v=iso_proj[:, 1], color=color,
                                        radius_mean=radius_mean, planes=planes, title="South pole",
                                        plot_planes=plot_planes)
         fig.savefig(savedir + 'South pole.png')
-        fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=color,
+        fig, _ = gu.plot_stereographic(euclidian_u=iso_proj[:, 2], euclidian_v=iso_proj[:, 3], color=color,
                                        radius_mean=radius_mean, planes=planes, title="North pole",
                                        plot_planes=plot_planes)
         fig.savefig(savedir + 'North pole.png')
