@@ -26,7 +26,10 @@ import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 Script for detecting facets on a 3D crytal reconstructed by a phasing algorithm (Bragg CDI) and making some statistics
- about strain by facet. The correct isosurface value should be given as input.
+about strain by facet. The correct threshold for support determination should be given as input,
+as well as voxel sizes for a correct calculation of facet angle.
+For now the stereographic projection considers that the measurement direction is aligned with
+the second axis of the 3D array (to be modified).
 
 Input: a reconstruction .npz file with fields: 'amp' and 'strain' 
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
@@ -36,10 +39,12 @@ scan = 2227  # spec scan number
 datadir = 'D:/data/PtRh/PtRh(103x98x157)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
 support_threshold = 0.55  # threshold for support determination
+voxel_sizes = (1, 1, 1.3)
 savedir = datadir + "isosurface_" + str(support_threshold) + "/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
+reflection_axis = np.array([0, 0, 1])  # direction along which is aligned the measurement direction in the array
 debug = False  # set to True to see all plots for debugging
 smoothing_iterations = 10  # number of iterations in Taubin smoothing
 smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
@@ -138,6 +143,8 @@ gc.collect()
 
 nb_normals = normals.shape[0]
 if projection_method == 'stereographic':
+    # TODO: use reference_axis to do the stereographic projection depending on which direction q is aligned with
+    # now it supposes that q is along the second axis vertical Y (CXI convention)
     labels_top, labels_bottom, stereo_proj = fu.stereographic_proj(normals=normals, color=color, weights=areas,
                                                                    background_threshold=threshold_stereo,
                                                                    min_distance=my_min_distance, savedir=savedir,
@@ -314,13 +321,12 @@ strain_file = open(os.path.join(savedir, "S" + str(scan) + "_strain.dat"), "w")
 strain_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('Z') + '\t' + '{0: <10}'.format('Y') + '\t' +
                   '{0: <10}'.format('X') + '\t' + '{0: <10}'.format('strain')+'\n')
 
-
 # prepare amp for vti file
 amp_array = np.transpose(amp).reshape(amp.size)
 amp_array = numpy_support.numpy_to_vtk(amp_array)
 image_data = vtk.vtkImageData()
 image_data.SetOrigin(0, 0, 0)
-image_data.SetSpacing(1, 1, 1)
+image_data.SetSpacing(voxel_sizes[0], voxel_sizes[1], voxel_sizes[2])
 image_data.SetExtent(0, nz - 1, 0, ny - 1, 0, nx - 1)
 pd = image_data.GetPointData()
 pd.SetScalars(amp_array)
@@ -608,15 +614,19 @@ for label in updated_label:
         mean_gradient = mean_gradient / np.linalg.norm(mean_gradient)
 
     # check the correct direction of the normal using the gradient of the support
-    ref_direction = np.array([0, 1, 0])  # [111] is vertical
     plane_normal = np.array([coeffs[0, 0], coeffs[1, 0], -1])  # normal is [a, b, c] if ax+by+cz+d=0
     plane_normal = plane_normal / np.linalg.norm(plane_normal)
     if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
-        print('Flip normal direction plane', str(label),'\n')
+        print('Flip normal direction plane', str(label), '\n')
         plane_normal = -1 * plane_normal
+    # correct plane_normal for anisotropic voxel size
+    plane_normal = np.array([plane_normal[0] * voxel_sizes[0],
+                             plane_normal[1] * voxel_sizes[1],
+                             plane_normal[2] * voxel_sizes[2]])
+    plane_normal = plane_normal / np.linalg.norm(plane_normal)
 
-    # calculate the angle of the plane normal to [111]
-    angle_plane = 180 / np.pi * np.arccos(np.dot(ref_direction, plane_normal))
+    # calculate the angle of the plane normal to the measurement direction, which is aligned along reflection_axis
+    angle_plane = 180 / np.pi * np.arccos(np.dot(reflection_axis / np.linalg.norm(reflection_axis), plane_normal))
 
     # calculate the average strain for plane voxels and update the log file
     plane_indices = np.nonzero(plane == 1)
