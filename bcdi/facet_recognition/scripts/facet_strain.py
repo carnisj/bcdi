@@ -44,7 +44,7 @@ savedir = datadir + "isosurface_" + str(support_threshold) + "/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
-reflection_axis = np.array([0, 0, 1])  # direction along which is aligned the measurement direction in the array
+reflection_axis = 0  # array axis along which is aligned the measurement direction (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
 smoothing_iterations = 10  # number of iterations in Taubin smoothing
 smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
@@ -79,6 +79,19 @@ planes['5 -2 -1'] = fu.plane_angle_cubic(reflection, np.array([5, -2, -1]))
 ##########################
 # end of user parameters #
 ##########################
+
+############################################
+# check where is the measurement direction #
+############################################
+if reflection_axis == 0:  # q aligned along the 1st axis
+    reflection_axis = np.array([1, 0, 0])
+elif reflection_axis == 1:  # q aligned along the 2nd axis
+    reflection_axis = np.array([0, 1, 0])
+elif reflection_axis == 2:  # q aligned along the 3rd axis
+    reflection_axis = np.array([0, 0, 1])
+else:
+    print('reflection_axis should be one basis axis on the reconstructed array')
+    sys.exit()
 
 ###########################################################
 # create directory and initialize error logger #
