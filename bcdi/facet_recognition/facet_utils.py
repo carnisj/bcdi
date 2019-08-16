@@ -448,7 +448,7 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, min_distance
     from scipy import ndimage
     from skimage.feature import corner_peaks
     from skimage.morphology import watershed
-
+    # TODO: use reference_axis to do the stereographic projection depending on which direction q is aligned with
     # check normals for nan
     radius_mean = 1  # normals are normalized
     stereo_centerz = 0  # COM of the weighted point density
@@ -721,128 +721,6 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.5, 
     normals[err_normals, :] = normals[err_normals-1, :]
     plt.ioff()
     return new_vertices, normals, areas, color, err_normals
-
-
-def save_planes_vti(filename, voxel_size, tuple_array, tuple_fieldnames, plane_labels, planes, origin=(0, 0, 0),
-                    amplitude_threshold=0.01):
-    """
-    Save arrays defined by their name in a single vti file.
-
-    :param filename: the file name of the vti file
-    :param voxel_size: tuple (voxel_size_axis0, voxel_size_axis1, voxel_size_axis2)
-    :param tuple_array: tuple of arrays of the same dimension
-    :param tuple_fieldnames: tuple of name containing the same number of elements as tuple_array
-    :param plane_labels: range of labels (label 0 is the background)
-    :param planes: array of the same shape as arrays in 'tuple_array', with labeled voxels
-    :param origin: tuple of points for vtk SetOrigin()
-    :param amplitude_threshold: lower threshold for saving the reconstruction modulus (save memory space)
-    :return: nothing
-    """
-    import vtk
-    from vtk.util import numpy_support
-
-    if type(tuple_fieldnames) is tuple:
-        nb_fieldnames = len(tuple_fieldnames)
-    elif type(tuple_fieldnames) is str:
-        nb_fieldnames = 1
-    else:
-        raise TypeError('Invalid input for tuple_fieldnames')
-
-    if type(tuple_array) is tuple:
-        nb_arrays = len(tuple_array)
-        nb_dim = tuple_array[0].ndim
-        if nb_dim != 3:  # wrong array dimension
-            raise ValueError('save_to_vti() needs a 3D array')
-        nbz, nby, nbx = tuple_array[0].shape
-    elif type(tuple_array) is np.ndarray:
-        nb_arrays = 1
-        nb_dim = tuple_array.ndim
-        if nb_dim != 3:  # wrong array dimension
-            raise ValueError('save_to_vti() needs a 3D array')
-        nbz, nby, nbx = tuple_array.shape
-    else:
-        raise TypeError('Invalid input for tuple_array')
-
-    if nb_arrays != nb_fieldnames:
-        print('Different number of arrays and field names')
-        return
-
-    image_data = vtk.vtkImageData()
-    image_data.SetOrigin(origin[0], origin[1], origin[2])
-    image_data.SetSpacing(voxel_size[0], voxel_size[1], voxel_size[2])
-    image_data.SetExtent(0, nbz - 1, 0, nby - 1, 0, nbx - 1)
-
-    try:
-        amp_index = tuple_fieldnames.index('amp')  # look for the substring 'amp'
-        if nb_arrays > 1:
-            amp_array = tuple_array[amp_index]
-        else:
-            amp_array = tuple_array
-        amp_array = amp_array / amp_array.max()
-        amp_array[amp_array < amplitude_threshold] = 0  # save disk space
-        amp_array = np.transpose(np.flip(amp_array, 2)).reshape(amp_array.size)
-        amp_array = numpy_support.numpy_to_vtk(amp_array)
-        pd = image_data.GetPointData()
-        pd.SetScalars(amp_array)
-        pd.GetArray(0).SetName("amp")
-        counter = 1
-        if nb_arrays > 1:
-            for idx in range(nb_arrays):
-                if idx == amp_index:
-                    continue
-                temp_array = tuple_array[idx]
-                temp_array[amp_array == 0] = 0
-                temp_array = np.transpose(np.flip(temp_array, 2)).reshape(temp_array.size)
-                temp_array = numpy_support.numpy_to_vtk(temp_array)
-                pd.AddArray(temp_array)
-                pd.GetArray(counter).SetName(tuple_fieldnames[idx])
-                pd.Update()
-                counter = counter + 1
-    except ValueError:
-        print('amp not in fieldnames, will save arrays without thresholding')
-        if nb_arrays > 1:
-            temp_array = tuple_array[0]
-        else:
-            temp_array = tuple_array
-        temp_array = np.transpose(np.flip(temp_array, 2)).reshape(temp_array.size)
-        temp_array = numpy_support.numpy_to_vtk(temp_array)
-        pd = image_data.GetPointData()
-        pd.SetScalars(temp_array)
-        if nb_arrays > 1:
-            pd.GetArray(0).SetName(tuple_fieldnames[0])
-            for idx in range(1, nb_arrays):
-                temp_array = tuple_array[idx]
-                temp_array = np.transpose(np.flip(temp_array, 2)).reshape(temp_array.size)
-                temp_array = numpy_support.numpy_to_vtk(temp_array)
-                pd.AddArray(temp_array)
-                pd.GetArray(idx).SetName(tuple_fieldnames[idx])
-                pd.Update()
-        else:
-            pd.GetArray(0).SetName(tuple_fieldnames)
-        counter = nb_arrays
-
-    # save planes
-    for label in plane_labels:
-        plane = np.copy(planes)
-        plane[plane != label] = 0
-        plane[plane == label] = 1
-        plane_array = np.transpose(plane).reshape(plane.size)
-        plane_array = numpy_support.numpy_to_vtk(plane_array)
-        pd.AddArray(plane_array)
-        pd.GetArray(label + counter).SetName("plane_" + str(label))
-        pd.Update()
-    plane_array = np.transpose(planes).reshape(planes.size)
-    plane_array = numpy_support.numpy_to_vtk(plane_array)
-    pd.AddArray(plane_array)
-    pd.GetArray(label + 1 + counter).SetName("all_planes")
-    pd.Update()
-
-    # export data to file
-    writer = vtk.vtkXMLImageDataWriter()
-    writer.SetFileName(filename)
-    writer.SetInputData(image_data)
-    writer.Write()
-    return
 
 
 # if __name__ == "__main__":
