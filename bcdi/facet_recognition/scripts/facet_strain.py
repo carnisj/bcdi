@@ -39,7 +39,7 @@ scan = 2227  # spec scan number
 datadir = 'D:/data/PtRh/PtRh(103x98x157)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
 support_threshold = 0.55  # threshold for support determination
-voxel_size = (1, 1, 1.5)  # tuple of 3 numbers, voxel size of the reconstruction in each dimension
+voxel_size = (1, 1, 1)  # tuple of 3 numbers, voxel size of the reconstruction in each dimension
 savedir = datadir + "isosurface_" + str(support_threshold) + "/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
@@ -194,9 +194,9 @@ if projection_method == 'stereographic':
     del stereo_proj
     gc.collect()
 
-    # rescale euclidian u axis from [-95 95] to [0 numy]
+    # rescale euclidian u axis from [-max_angle max_angle] to [0 numy]
     pole_proj[:, 0] = (pole_proj[:, 0] + max_angle) * numy / (2*max_angle)
-    # rescale euclidian v axis from [-95 95] to [0 numx]
+    # rescale euclidian v axis from [-max_angle max_angle] to [0 numx]
     pole_proj[:, 1] = (pole_proj[:, 1] + max_angle) * numx / (2*max_angle)
     # change pole_proj to an array of integer indices
     coordinates = pole_proj.astype(int)
