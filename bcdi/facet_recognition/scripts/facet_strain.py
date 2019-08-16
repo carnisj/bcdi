@@ -80,19 +80,6 @@ planes['5 -2 -1'] = fu.plane_angle_cubic(reflection, np.array([5, -2, -1]))
 # end of user parameters #
 ##########################
 
-############################################
-# check where is the measurement direction #
-############################################
-if reflection_axis == 0:  # q aligned along the 1st axis
-    reflection_axis = np.array([1, 0, 0])
-elif reflection_axis == 1:  # q aligned along the 2nd axis
-    reflection_axis = np.array([0, 1, 0])
-elif reflection_axis == 2:  # q aligned along the 3rd axis
-    reflection_axis = np.array([0, 0, 1])
-else:
-    print('reflection_axis should be one basis axis on the reconstructed array')
-    sys.exit()
-
 ###########################################################
 # create directory and initialize error logger #
 ###########################################################
@@ -637,6 +624,17 @@ for label in updated_label:
                              plane_normal[1] * voxel_size[1],
                              plane_normal[2] * voxel_size[2]])
     plane_normal = plane_normal / np.linalg.norm(plane_normal)
+
+    # check where is the measurement direction
+    if reflection_axis == 0:  # q aligned along the 1st axis
+        reflection_axis = np.array([1, 0, 0])
+    elif reflection_axis == 1:  # q aligned along the 2nd axis
+        reflection_axis = np.array([0, 1, 0])
+    elif reflection_axis == 2:  # q aligned along the 3rd axis
+        reflection_axis = np.array([0, 0, 1])
+    else:
+        print('reflection_axis should be a basis axis of the reconstructed array')
+        sys.exit()
 
     # calculate the angle of the plane normal to the measurement direction, which is aligned along reflection_axis
     angle_plane = 180 / np.pi * np.arccos(np.dot(reflection_axis / np.linalg.norm(reflection_axis), plane_normal))
