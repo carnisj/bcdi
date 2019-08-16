@@ -845,4 +845,7 @@ def save_planes_vti(filename, voxel_size, tuple_array, tuple_fieldnames, plane_l
     return
 
 
-
+# if __name__ == "__main__":
+#     ref_plane = np.array([1, 1, 1])
+#     my_plane = np.array([1, 1, -1])
+#     print(plane_angle_cubic(ref_plane, my_plane))
