@@ -18,6 +18,41 @@ colormap = gu.Colormap()
 default_cmap = colormap.cmap
 
 
+def calc_stereoproj(reflection_axis, normals, radius_mean, stereo_center):
+    """
+    Calculate the coordinates of normals in the stereographic projection depending on the reference axis
+
+    :param reflection_axis: array axis along which is aligned the measurement direction (0, 1 or 2)
+    :param normals: array of normals to mesh triangles (nb_normals rows x 3 columns)
+    :param radius_mean: q radius from which the projection will be done
+    :param stereo_center: offset of the projection plane
+    :return: the coordinates of the stereographic projection both top projection (1st and 2nd columns) and bottom
+     (3rd and 4th columns) projection, rescale from radius_mean to 90 degrees
+    """
+
+    if reflection_axis == 0:  # q aligned along the 1st axis
+        ref_axis = np.array([1, 0, 0])
+    elif reflection_axis == 1:  # q aligned along the 2nd axis
+        ref_axis = np.array([0, 1, 0])
+    elif reflection_axis == 2:  # q aligned along the 3rd axis
+        ref_axis = np.array([0, 0, 1])
+    else:
+        raise ValueError('reflection_axis should be a basis axis of the reconstructed array')
+
+    # calculate u and v from xyz
+    stereo_proj = np.zeros((normals.shape[0], 4), dtype=normals.dtype)
+    for idx in range(normals.shape[0]):
+        if normals[idx, 1] == 0 and normals[idx, 0] == 0:
+            continue
+        stereo_proj[idx, 0] = radius_mean * normals[idx, 0] / (radius_mean+normals[idx, 1] - stereo_center)  # u_top
+        stereo_proj[idx, 1] = radius_mean * normals[idx, 2] / (radius_mean+normals[idx, 1] - stereo_center)  # v_top
+        stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (stereo_center - radius_mean+normals[idx, 1])  # u_bottom
+        stereo_proj[idx, 3] = radius_mean * normals[idx, 2] / (stereo_center - radius_mean+normals[idx, 1])  # v_bottom
+    stereo_proj = stereo_proj / radius_mean * 90  # rescaling from radius_mean to 90
+
+    return stereo_proj
+
+
 def detect_edges(faces):
     """
     Find indices of vertices defining non-shared edges
@@ -424,13 +459,14 @@ def plane_angle_cubic(ref_plane, plane):
     return angle
 
 
-def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, reflection_axis, min_distance=10, background_threshold=-1000,
-                       save_txt=False, cmap=default_cmap, planes={}, plot_planes=True, debugging=False):
+def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, reflection_axis, min_distance=10,
+                       background_threshold=-1000, save_txt=False, cmap=default_cmap, planes={}, plot_planes=True,
+                       debugging=False):
     """
     Detect facets in an object using a stereographic projection of normals to mesh triangles
      and watershed segmentation.
 
-    :param normals: array of normals (nb_normals rows x 3 columns)
+    :param normals: array of normals to mesh triangles (nb_normals rows x 3 columns)
     :param color: array of intensities (nb_normals rows x 1 column)
     :param weights: weights used in the density estimation
     :param max_angle: maximum angle in degree of the stereographic projection (should be larger than 90)
@@ -451,34 +487,19 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, 
     from skimage.feature import corner_peaks
     from skimage.morphology import watershed
     # TODO: use reference_axis to do the stereographic projection depending on which direction q is aligned with
-    if reflection_axis == 0:  # q aligned along the 1st axis
-        ref_axis = np.array([1, 0, 0])
-    elif reflection_axis == 1:  # q aligned along the 2nd axis
-        ref_axis = np.array([0, 1, 0])
-    elif reflection_axis == 2:  # q aligned along the 3rd axis
-        ref_axis = np.array([0, 0, 1])
-    else:
-        raise ValueError('reflection_axis should be a basis axis of the reconstructed array')
 
     # check normals for nan
     radius_mean = 1  # normals are normalized
-    stereo_centerz = 0  # COM of the weighted point density
+    stereo_center = 0  # COM of the weighted point density
     list_nan = np.argwhere(np.isnan(normals))
     if len(list_nan) != 0:
         for idx in range(list_nan.shape[0]//3):
             normals = np.delete(normals, list_nan[idx*3, 0], axis=0)
             color = np.delete(color, list_nan[idx*3, 0], axis=0)
 
-    # calculate u and v from xyz, this is equal to the stereographic projection from South pole
-    stereo_proj = np.zeros((normals.shape[0], 4), dtype=normals.dtype)
-    for idx in range(normals.shape[0]):
-        if normals[idx, 1] == 0 and normals[idx, 0] == 0:
-            continue
-        stereo_proj[idx, 0] = radius_mean * normals[idx, 0] / (radius_mean+normals[idx, 1] - stereo_centerz)  # u_top
-        stereo_proj[idx, 1] = radius_mean * normals[idx, 2] / (radius_mean+normals[idx, 1] - stereo_centerz)  # v_top
-        stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (stereo_centerz - radius_mean+normals[idx, 1])  # u_bottom
-        stereo_proj[idx, 3] = radius_mean * normals[idx, 2] / (stereo_centerz - radius_mean+normals[idx, 1])  # v_bottom
-    stereo_proj = stereo_proj / radius_mean * 90  # rescaling from radius_mean to 90
+    # calculate u and v from xyz
+    stereo_proj = calc_stereoproj(reflection_axis=reflection_axis, normals=normals, radius_mean=radius_mean,
+                                  stereo_center=stereo_center)
 
     if True:
         # recalculate normals considering the anisotropy of voxel sizes (otherwise angles are wrong)
@@ -491,15 +512,8 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, 
         iso_normals = iso_normals / iso_normals_length[:, np.newaxis]
 
         # recalculate the stereographic projection
-        iso_proj = np.zeros((normals.shape[0], 4), dtype=normals.dtype)
-        for idx in range(normals.shape[0]):
-            if normals[idx, 1] == 0 and normals[idx, 0] == 0:
-                continue
-            iso_proj[idx, 0] = radius_mean * iso_normals[idx, 0] / (radius_mean + iso_normals[idx, 1] - stereo_centerz)
-            iso_proj[idx, 1] = radius_mean * iso_normals[idx, 2] / (radius_mean + iso_normals[idx, 1] - stereo_centerz)
-            iso_proj[idx, 2] = radius_mean * iso_normals[idx, 0] / (stereo_centerz - radius_mean + iso_normals[idx, 1])
-            iso_proj[idx, 3] = radius_mean * iso_normals[idx, 2] / (stereo_centerz - radius_mean + iso_normals[idx, 1])
-        iso_proj = iso_proj / radius_mean * 90  # rescaling from radius_mean to 90
+        iso_proj = calc_stereoproj(reflection_axis=reflection_axis, normals=iso_normals, radius_mean=radius_mean,
+                                   stereo_center=stereo_center)
 
         fig, _ = gu.plot_stereographic(euclidian_u=iso_proj[:, 0], euclidian_v=iso_proj[:, 1], color=color,
                                        radius_mean=radius_mean, planes=planes, title="South pole",
