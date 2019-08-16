@@ -21,6 +21,7 @@ default_cmap = colormap.cmap
 def calc_stereoproj(reflection_axis, normals, radius_mean, stereo_center):
     """
     Calculate the coordinates of normals in the stereographic projection depending on the reference axis
+     see Nanoscale 10, 4833 (2018).
 
     :param reflection_axis: array axis along which is aligned the measurement direction (0, 1 or 2)
     :param normals: array of normals to mesh triangles (nb_normals rows x 3 columns)
@@ -30,25 +31,42 @@ def calc_stereoproj(reflection_axis, normals, radius_mean, stereo_center):
      (3rd and 4th columns) projection, rescale from radius_mean to 90 degrees
     """
 
-    if reflection_axis == 0:  # q aligned along the 1st axis
-        ref_axis = np.array([1, 0, 0])
-    elif reflection_axis == 1:  # q aligned along the 2nd axis
-        ref_axis = np.array([0, 1, 0])
-    elif reflection_axis == 2:  # q aligned along the 3rd axis
-        ref_axis = np.array([0, 0, 1])
-    else:
+    if reflection_axis not in [0, 1, 2]:
         raise ValueError('reflection_axis should be a basis axis of the reconstructed array')
 
     # calculate u and v from xyz
     stereo_proj = np.zeros((normals.shape[0], 4), dtype=normals.dtype)
-    for idx in range(normals.shape[0]):
-        if normals[idx, 1] == 0 and normals[idx, 0] == 0:
-            continue
-        stereo_proj[idx, 0] = radius_mean * normals[idx, 0] / (radius_mean+normals[idx, 1] - stereo_center)  # u_top
-        stereo_proj[idx, 1] = radius_mean * normals[idx, 2] / (radius_mean+normals[idx, 1] - stereo_center)  # v_top
-        stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (stereo_center - radius_mean+normals[idx, 1])  # u_bottom
-        stereo_proj[idx, 3] = radius_mean * normals[idx, 2] / (stereo_center - radius_mean+normals[idx, 1])  # v_bottom
-    stereo_proj = stereo_proj / radius_mean * 90  # rescaling from radius_mean to 90
+    # stereo_proj[:, 0] is the euclidian u_top, stereo_proj[:, 1] is the euclidian v_top
+    # stereo_proj[:, 2] is the euclidian u_bottom, stereo_proj[:, 3] is the euclidian v_bottom
+
+    if reflection_axis == 0:  # q aligned along the 1st axis (Z downstream in CXI convention)
+        for idx in range(normals.shape[0]):
+            # if normals[idx, 1] == 0 and normals[idx, 0] == 0:
+            #     continue
+            stereo_proj[idx, 0] = radius_mean * normals[idx, 1] / (radius_mean + normals[idx, 0] - stereo_center)
+            stereo_proj[idx, 1] = radius_mean * normals[idx, 2] / (radius_mean + normals[idx, 0] - stereo_center)
+            stereo_proj[idx, 2] = radius_mean * normals[idx, 1] / (stereo_center - radius_mean + normals[idx, 0])
+            stereo_proj[idx, 3] = radius_mean * normals[idx, 2] / (stereo_center - radius_mean + normals[idx, 0])
+
+    elif reflection_axis == 1:  # q aligned along the 2nd axis (Y vertical up in CXI convention)
+        for idx in range(normals.shape[0]):
+            # if normals[idx, 1] == 0 and normals[idx, 0] == 0:
+            #     continue
+            stereo_proj[idx, 0] = radius_mean * normals[idx, 0] / (radius_mean + normals[idx, 1] - stereo_center)
+            stereo_proj[idx, 1] = radius_mean * normals[idx, 2] / (radius_mean + normals[idx, 1] - stereo_center)
+            stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (stereo_center - radius_mean + normals[idx, 1])
+            stereo_proj[idx, 3] = radius_mean * normals[idx, 2] / (stereo_center - radius_mean + normals[idx, 1])
+
+    else:  # q aligned along the 3rd axis (X outboard in CXI convention)
+        for idx in range(normals.shape[0]):
+            # if normals[idx, 1] == 0 and normals[idx, 0] == 0:
+            #     continue
+            stereo_proj[idx, 0] = radius_mean * normals[idx, 0] / (radius_mean + normals[idx, 2] - stereo_center)
+            stereo_proj[idx, 1] = radius_mean * normals[idx, 1] / (radius_mean + normals[idx, 2] - stereo_center)
+            stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (stereo_center - radius_mean + normals[idx, 2])
+            stereo_proj[idx, 3] = radius_mean * normals[idx, 1] / (stereo_center - radius_mean + normals[idx, 2])
+
+    stereo_proj = stereo_proj / radius_mean * 90  # rescale from radius_mean to 90
 
     return stereo_proj
 
