@@ -39,7 +39,7 @@ scan = 2227  # spec scan number
 datadir = 'D:/data/PtRh/PtRh(103x98x157)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
 support_threshold = 0.55  # threshold for support determination
-voxel_sizes = (1, 1, 1.3)
+voxel_size = (1, 1, 1.3)
 savedir = datadir + "isosurface_" + str(support_threshold) + "/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
@@ -143,13 +143,13 @@ gc.collect()
 
 nb_normals = normals.shape[0]
 if projection_method == 'stereographic':
-    # TODO: use reference_axis to do the stereographic projection depending on which direction q is aligned with
     # now it supposes that q is along the second axis vertical Y (CXI convention)
     labels_top, labels_bottom, stereo_proj = fu.stereographic_proj(normals=normals, color=color, weights=areas,
                                                                    background_threshold=threshold_stereo,
                                                                    min_distance=my_min_distance, savedir=savedir,
                                                                    save_txt=False, planes=planes, plot_planes=True,
-                                                                   max_angle=max_angle, debugging=debug)
+                                                                   max_angle=max_angle, voxel_size=voxel_size,
+                                                                   reflection_axis=reflection_axis, debugging=debug)
     numy, numx = labels_top.shape  # identical to labels_bottom.shape
     if stereo_proj.shape[0] != nb_normals:
         print('incompatible number of normals')
@@ -326,7 +326,7 @@ amp_array = np.transpose(amp).reshape(amp.size)
 amp_array = numpy_support.numpy_to_vtk(amp_array)
 image_data = vtk.vtkImageData()
 image_data.SetOrigin(0, 0, 0)
-image_data.SetSpacing(voxel_sizes[0], voxel_sizes[1], voxel_sizes[2])
+image_data.SetSpacing(voxel_size[0], voxel_size[1], voxel_size[2])
 image_data.SetExtent(0, nz - 1, 0, ny - 1, 0, nx - 1)
 pd = image_data.GetPointData()
 pd.SetScalars(amp_array)
@@ -620,9 +620,9 @@ for label in updated_label:
         print('Flip normal direction plane', str(label), '\n')
         plane_normal = -1 * plane_normal
     # correct plane_normal for anisotropic voxel size
-    plane_normal = np.array([plane_normal[0] * voxel_sizes[0],
-                             plane_normal[1] * voxel_sizes[1],
-                             plane_normal[2] * voxel_sizes[2]])
+    plane_normal = np.array([plane_normal[0] * voxel_size[0],
+                             plane_normal[1] * voxel_size[1],
+                             plane_normal[2] * voxel_size[2]])
     plane_normal = plane_normal / np.linalg.norm(plane_normal)
 
     # calculate the angle of the plane normal to the measurement direction, which is aligned along reflection_axis
