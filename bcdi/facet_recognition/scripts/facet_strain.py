@@ -39,7 +39,7 @@ scan = 2227  # spec scan number
 datadir = 'D:/data/PtRh/PtRh(103x98x157)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
 support_threshold = 0.55  # threshold for support determination
-voxel_size = (1, 1, 1.3)  # tuple of 3 numbers, voxel size of the reconstruction in each dimension
+voxel_size = (1, 1, 1.6)  # tuple of 3 numbers, voxel size of the reconstruction in each dimension
 savedir = datadir + "isosurface_" + str(support_threshold) + "/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
@@ -324,7 +324,7 @@ amp_array = np.transpose(amp).reshape(amp.size)
 amp_array = numpy_support.numpy_to_vtk(amp_array)
 image_data = vtk.vtkImageData()
 image_data.SetOrigin(0, 0, 0)
-image_data.SetSpacing(voxel_size[0], voxel_size[1], voxel_size[2])
+image_data.SetSpacing(1 / voxel_size[0], 1 / voxel_size[1], 1 / voxel_size[2])
 image_data.SetExtent(0, nz - 1, 0, ny - 1, 0, nx - 1)
 pd = image_data.GetPointData()
 pd.SetScalars(amp_array)

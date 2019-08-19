@@ -904,7 +904,7 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
 
     image_data = vtk.vtkImageData()
     image_data.SetOrigin(origin[0], origin[1], origin[2])
-    image_data.SetSpacing(voxel_size[0], voxel_size[1], voxel_size[2])
+    image_data.SetSpacing(1 / voxel_size[0], 1 / voxel_size[1], 1 / voxel_size[2])
     image_data.SetExtent(0, nbz - 1, 0, nby - 1, 0, nbx - 1)
 
     try:
