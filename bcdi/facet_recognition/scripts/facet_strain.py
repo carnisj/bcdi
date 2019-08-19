@@ -39,7 +39,7 @@ scan = 2227  # spec scan number
 datadir = 'D:/data/PtRh/PtRh(103x98x157)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
 support_threshold = 0.55  # threshold for support determination
-voxel_size = (1, 1, 1.6)  # tuple of 3 numbers, voxel size of the reconstruction in each dimension
+voxel_size = (2.95, 3.09, 1.93)  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
 savedir = datadir + "isosurface_" + str(support_threshold) + "/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
@@ -99,15 +99,20 @@ nz, ny, nx = amp.shape
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
 strain = npzfile['strain']
 
-# define the support and the surface layer
+############################
+# define the surface layer #
+############################
 support = np.zeros(amp.shape)
 support[amp > support_threshold*amp.max()] = 1
 coordination_matrix = pu.calc_coordination(support, kernel=np.ones((3, 3, 3)), debugging=False)
 surface = np.copy(support)
 surface[coordination_matrix > 22] = 0  # remove the bulk 22
+del coordination_matrix, support
+gc.collect()
 
-
-# Use marching cubes to obtain the surface mesh of these ellipsoids
+#####################################################################
+# Use marching cubes to obtain the surface mesh of these ellipsoids #
+#####################################################################
 vertices_old, faces, _, _ = measure.marching_cubes_lewiner(amp, level=support_threshold, step_size=1)
 nb_vertices = vertices_old.shape[0]
 # vertices is a list of 3d coordinates of all vertices points
@@ -122,7 +127,9 @@ if debug:
     gu.plot_3dmesh(vertices_old, faces, (nz, ny, nx), title='Mesh after marching cubes')
     plt.ion()
 
-# smooth the mesh using taubin_smooth
+#######################################
+# smooth the mesh using taubin_smooth #
+#######################################
 vertices_new, normals, areas, color, _ = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
                      debugging=1)
@@ -134,6 +141,9 @@ plt.ion()
 del vertices_new
 gc.collect()
 
+#####################################################################
+# 2D projection of normals, peak finding and watershed segmentation #
+#####################################################################
 nb_normals = normals.shape[0]
 if projection_method == 'stereographic':
     # now it supposes that q is along the second axis vertical Y (CXI convention)
@@ -300,6 +310,11 @@ print("COM at (z, y, x): (", str('{:.2f}'.format(zCOM)), ',', str('{:.2f}'.forma
       str('{:.2f}'.format(xCOM)), ')')
 gradz, grady, gradx = np.gradient(support, 1)  # support
 
+########################################################
+# define edges using the coordination number of voxels #
+########################################################
+# coordination_matrix = pu.calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=np.nan, width_y=np.nan, width_x=np.nan,
+#                       debugging=False):
 ######################
 # define the support #
 ######################
@@ -324,7 +339,7 @@ amp_array = np.transpose(amp).reshape(amp.size)
 amp_array = numpy_support.numpy_to_vtk(amp_array)
 image_data = vtk.vtkImageData()
 image_data.SetOrigin(0, 0, 0)
-image_data.SetSpacing(1 / voxel_size[0], 1 / voxel_size[1], 1 / voxel_size[2])
+image_data.SetSpacing(voxel_size[0], voxel_size[1], voxel_size[2])
 image_data.SetExtent(0, nz - 1, 0, ny - 1, 0, nx - 1)
 pd = image_data.GetPointData()
 pd.SetScalars(amp_array)
