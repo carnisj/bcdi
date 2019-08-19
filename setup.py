@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
-#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP 
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
 #       authors:
-#         Jerome Carnis, jerome.carnis@esrf.fr
+#         Jerome Carnis, carnis_jerome@yahoo.fr
 
 from setuptools import setup, find_packages
 from os import path
@@ -16,7 +17,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 
-setup(name='bcdi', version='0.0.6',
+setup(name='bcdi', version='0.0.7',
       packages=find_packages(),
       include_package_data=True,
       # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},  # the file needs to be in a package
@@ -68,9 +69,9 @@ setup(name='bcdi', version='0.0.6',
       long_description="BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data.\n\
                         BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:\n\n\
                         1. Pre-processing BCDI data (masking aliens, detector gaps...) before phasing.\n\
-                        2. Post-processing phased data (phase offset and phase ramp removal, averaging...).\n\
+                        2. Post-processing phased data (phase offset and phase ramp removal, averaging, apodization, ...).\n\
                         3. Data analysis on diffraction data (stereographic projection).\n\
-                        4. Data analysis on phased data (resolution calculation, statistics on the strain...).\n\
+                        4. Data analysis on phased data (resolution calculation, statistics on the retrieved strain...).\n\
                         5. Simulation of diffraction intensity (including noise, detector gaps, displacement...).\n\
                         6. Making figures for publication using templates.\n\n",
       url='https://github.com/carnisj/bcdi',

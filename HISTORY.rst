@@ -1,6 +1,8 @@
 Version 0.0.7
 -------------
 
+* Feature: in facet_strain.py, implement edge removal for more precise statistics on facet strain.
+
 * Feature: in facet_strain.py, allow anisotropic voxel size and user-defined reference axis in the stereographic projection
 
 Version 0.0.6
