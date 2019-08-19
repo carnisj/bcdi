@@ -489,7 +489,7 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, 
     :param weights: weights used in the density estimation
     :param max_angle: maximum angle in degree of the stereographic projection (should be larger than 90)
     :param savedir: directory for saving figures
-    :param voxel_size: tuple of three numbers corresponding to the voxel size in each dimension
+    :param voxel_size: tuple of three numbers corresponding to the real-space voxel size in each dimension
     :param reflection_axis: array axis along which is aligned the measurement direction (0, 1 or 2)
     :param min_distance: min_distance of corner_peaks()
     :param background_threshold: threshold for background determination (depth of the KDE)
@@ -521,10 +521,11 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, 
 
     if True:
         # recalculate normals considering the anisotropy of voxel sizes (otherwise angles are wrong)
+        # the stereographic projection is in reciprocal space, therefore we need to use the reciprocal voxel sizes
         iso_normals = np.copy(normals)
-        iso_normals[:, 0] = iso_normals[:, 0] * voxel_size[0]
-        iso_normals[:, 1] = iso_normals[:, 1] * voxel_size[1]
-        iso_normals[:, 2] = iso_normals[:, 2] * voxel_size[2]
+        iso_normals[:, 0] = iso_normals[:, 0] * 2 * np.pi / voxel_size[0]
+        iso_normals[:, 1] = iso_normals[:, 1] * 2 * np.pi / voxel_size[1]
+        iso_normals[:, 2] = iso_normals[:, 2] * 2 * np.pi / voxel_size[2]
         # normalize iso_normals
         iso_normals_length = np.sqrt(iso_normals[:, 0] ** 2 + iso_normals[:, 1] ** 2 + iso_normals[:, 2] ** 2)
         iso_normals = iso_normals / iso_normals_length[:, np.newaxis]
