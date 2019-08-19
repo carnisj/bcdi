@@ -310,16 +310,21 @@ print("COM at (z, y, x): (", str('{:.2f}'.format(zCOM)), ',', str('{:.2f}'.forma
       str('{:.2f}'.format(xCOM)), ')')
 gradz, grady, gradx = np.gradient(support, 1)  # support
 
-########################################################
-# define edges using the coordination number of voxels #
-########################################################
-# coordination_matrix = pu.calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=np.nan, width_y=np.nan, width_x=np.nan,
-#                       debugging=False):
 ######################
 # define the support #
 ######################
 support = np.zeros((nz, ny, nx))
 support[abs(amp) > support_threshold * abs(amp).max()] = 1
+
+########################################################
+# define edges using the coordination number of voxels #
+########################################################
+edges = pu.calc_coordination(support, kernel=np.ones((9, 9, 9)), debugging=False)
+edges[support == 0] = 0
+if debug:
+    gu.multislices_plot(edges, invert_yaxis=True, vmin=0, title='Coordination matrix')
+edges[edges > 350] = 0  # remove facets and bulk
+edges[np.nonzero(edges)] = 1  # edge support
 
 ######################################
 # Initialize log files and .vti file #
@@ -592,22 +597,35 @@ for label in updated_label:
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
                                     max_distance=max_distance_plane, debugging=debug)
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
-        plane_indices = np.nonzero(plane)
+
         if plane[plane == 1].sum() == previous_nb:
             break
     grown_points = plane[plane == 1].sum().astype(int)
     # plot plane points overlaid with the support
     print('Plane ', label, ', ', str(grown_points), 'points after the final growth of the facet\n')
 
+    if debug:
+        plane_indices = np.nonzero(plane)
+        gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                         np.concatenate((sup0[:, np.newaxis],
+                                                         sup1[:, np.newaxis],
+                                                         sup2[:, np.newaxis]), axis=1)),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 title='Plane' + str(label) + ' final growth at the surface\nPoints number='
+                                       + str(len(plane_indices[0])))
+
+    #####################################
+    # remove point belonging to an edge #
+    #####################################
+    plane[np.nonzero(edges)] = 0
+    plane_indices = np.nonzero(plane)
     gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
                                      np.concatenate((sup0[:, np.newaxis],
                                                      sup1[:, np.newaxis],
                                                      sup2[:, np.newaxis]), axis=1)),
                              markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
-                             title='Plane' + str(label) + ' final growth at the surface\nPoints number='
+                             title='Plane' + str(label) + ' after edge removal\nPoints number='
                                    + str(len(plane_indices[0])))
-    # TODO: create an edge support in order to exclude edge points from planes (this is probably not easy).
-
     #################################################################
     # calculate quantities of interest and update log and VTK files #
     #################################################################
@@ -694,6 +712,14 @@ file.write('\n'+'Isosurface value'+'\t' '{0: <10}'.format(str(support_threshold)
 strain_file.write('\n'+'Isosurface value'+'\t' '{0: <10}'.format(str(support_threshold)))
 file.close()
 strain_file.close()
+
+# update vti file with edges
+EDGES = np.transpose(edges).reshape(edges.size)
+edges_array = numpy_support.numpy_to_vtk(EDGES)
+pd.AddArray(edges_array)
+pd.GetArray(index_vti).SetName("edges")
+pd.Update()
+
 # export data to file
 writer = vtk.vtkXMLImageDataWriter()
 writer.SetFileName(os.path.join(savedir, "S" + str(scan) + "_refined planes.vti"))
