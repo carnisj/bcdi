@@ -16,7 +16,7 @@ class SetupPostprocessing(object):
     Class to handle the experimental geometry for postprocessing.
     """
     def __init__(self, beamline, energy, outofplane_angle, inplane_angle, tilt_angle, rocking_angle, distance,
-                 direct_beam=(0,0), grazing_angle=0, pixel_x=55e-6, pixel_y=55e-6):
+                 direct_beam=(0, 0), grazing_angle=0, pixel_x=55e-6, pixel_y=55e-6):
         """
         Initialize parameters of the experiment.
 
