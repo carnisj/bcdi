@@ -85,10 +85,10 @@ Preprocessing
    :end-before: """
    :language: rst
 
-`read_data.py`:
-^^^^^^^^^^^^^^^
+`read_bcdi_data.py`:
+^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/read_data.py
+.. literalinclude:: ../../bcdi/preprocessing/scripts/read_bcdi_data.py
    :start-after: helptext
    :end-before: """
    :language: rst
