@@ -19,29 +19,29 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import gc
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
+sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 
 
 helptext = """
-Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and filter the data.
+Prepare experimental data for forward CDI phasing: crop/pad, center, mask, normalize, filter and regrid the data.
 
 Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS and PETRAIII P10.
 
 Output: data and mask as numpy .npz or Matlab .mat 3D arrays for phasing
 
 File structure should be (e.g. scan 1):
-specfile, hotpixels file and flatfield file in:    /rootdir/
-data in:                                           /rootdir/S1/data/
+specfile, background, hotpixels file and flatfield file in:    /rootdir/
+data in:                                                       /rootdir/S1/data/
 
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [263]  # list or array of scan numbers
-root_folder = "C:/Users/Jerome/Documents/data/SIXS/"
-sample_name = "S"  # "SN"  #
+scans = [501]  # list or array of scan numbers
+root_folder = "D:/data/P10_August2019/data/"
+sample_name = "gold2_2"  # "S"
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 ###########################
@@ -75,15 +75,14 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 ###########################
 reload_previous = False  # set to 1 to resume a previous masking (load data and mask)
 ###########################
-use_rawdata = True  # 0 for using data orthogonalized by xrayutilities/ 1 for using data in detector reference frame
+use_rawdata = False  # False for using regridded data / True for using data in detector reference frame
 save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
 beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
-rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
-follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
+rocking_angle = "inplane"  # "outofplane" or "inplane"
 specfile_name = sample_name + '_%05d'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
@@ -109,23 +108,26 @@ template_imagefile = '_data_%06d.h5'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_data_%06d.h5'
-################################################################################
-# define parameters below if you want to orthogonalize the data before phasing #
-################################################################################
-sdd = 5.1  # sample to detector distance in m, not important if you use raw data
+#########################################################################
+# define parameters below if you want to regrid the data before phasing #
+#########################################################################
+sdd = 4.95  # sample to detector distance in m, not important if you use raw data
 energy = 8700  # x-ray energy in eV, not important if you use raw data
-beam_direction = (1, 0, 0)  # beam along z
-sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
-sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = 0  # outer detector angle offset, not important if you use raw data
-cch1 = 71.61  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-cch2 = 1656.65  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-detrot = -0.897  # detrot parameter from xrayutilities 2D detector calibration
-tiltazimuth = 28.4  # tiltazimuth parameter from xrayutilities 2D detector calibration
-tilt = 3.772  # tilt parameter from xrayutilities 2D detector calibration
+cch1 = 500  # vertical position of the direct beam in pixels
+cch2 = 500  # horizontal position of the direct beam in pixels
 ##################################
 # end of user-defined parameters #
 ##################################
+
+
+def close_event(event):
+    """
+    This function handles closing events on plots.
+
+    :return: nothing
+    """
+    print(event, 'Click on the figure instead of closing it!')
+    sys.exit()
 
 
 def on_click(event):
@@ -185,23 +187,20 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 ####################
 # Initialize setup #
 ####################
-setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
-                               beam_direction=beam_direction, sample_inplane=sample_inplane,
-                               sample_outofplane=sample_outofplane, offset_inplane=offset_inplane)
+setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd)
 
-#############################################
-# Initialize geometry for orthogonalization #
-#############################################
-qconv, offsets = pru.init_qconversion(setup)
-detector.offsets = offsets
-hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x downstream, y outboard, z vertical
-# first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
+############################################################
+# Initialize geometry for gridding on an orthonormal frame #
+############################################################
 cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
 cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
-hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
-                     Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize,
-                     pwidth2=detector.pixelsize, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
-# first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
+
+############################################
+# Initialize values for callback functions #
+############################################
+flag_mask = False
+flag_aliens = False
+plt.rcParams["keymap.quit"] = ["ctrl+w", "cmd+w"]  # this one to avoid that q closes window (matplotlib default)
 
 ############################
 # start looping over scans #
@@ -213,9 +212,6 @@ if len(scans) > 1:
         center_fft = 'do_nothing'
         # avoid croping the detector plane XY while centering the Bragg peak
         # otherwise outputs may have a different size, which will be problematic for combining or comparing them
-if rocking_angle == "energy":
-    use_rawdata = False  # you need to interpolate the data in QxQyQz for energy scans
-    print("Energy scan implemented only for ID01")
 
 for scan_nb in range(len(scans)):
     plt.ion()
@@ -296,14 +292,14 @@ for scan_nb in range(len(scans)):
 
         if use_rawdata:
             q_values, data, _, mask, _, frames_logical, monitor = \
-                pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
-                            flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=follow_bragg,
-                            debugging=debug, orthogonalize=False)
+                pru.grid_cdi(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
+                             flatfield=flatfield, hotpixels=hotpix_array, normalize=normalize_flux, debugging=debug,
+                             orthogonalize=False)
         else:
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
-                pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
-                            flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
-                            debugging=debug, orthogonalize=True)
+                pru.grid_cdi(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
+                             flatfield=flatfield, hotpixels=hotpix_array, normalize=normalize_flux, debugging=debug,
+                             orthogonalize=True)
 
             np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
             if save_to_mat:
@@ -316,20 +312,12 @@ for scan_nb in range(len(scans)):
     ########################
     # crop/pad/center data #
     ########################
-    # plt.figure()
-    # plt.imshow(np.log10(data.sum(axis=0)))
-    # plt.pause(0.1)
-
     nz, ny, nx = np.shape(data)
     print('Data size:', nz, ny, nx)
 
     data, mask, pad_width, q_vector, frames_logical = \
         pru.center_fft(data=data, mask=mask, frames_logical=frames_logical, centering=centering, fft_option=center_fft,
                        pad_size=pad_size, fix_bragg=fix_bragg, fix_size=fix_size, q_values=q_values)
-
-    # plt.figure()
-    # plt.imshow(np.log10(data.sum(axis=0)))
-    # plt.pause(0.1)
 
     starting_frame = [pad_width[0], pad_width[2], pad_width[4]]  # no need to check padded frames
     print('Pad width:', pad_width)
@@ -353,7 +341,9 @@ for scan_nb in range(len(scans)):
     plt.savefig(savedir + 'rawdata_S' + str(scans[scan_nb]) + '.png')
 
     if flag_interact:
+        cid = plt.connect('close_event', close_event)
         fig.waitforbuttonpress()
+        plt.disconnect(cid)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
@@ -362,7 +352,9 @@ for scan_nb in range(len(scans)):
     plt.savefig(savedir + 'rawmask_S' + str(scans[scan_nb]) + '.png')
 
     if flag_interact:
+        cid = plt.connect('close_event', close_event)
         fig.waitforbuttonpress()
+        plt.disconnect(cid)
     plt.close(fig)
 
     ###############################################
@@ -436,13 +428,15 @@ for scan_nb in range(len(scans)):
         fig_mask.set_facecolor(background_plot)
         plt.show()
 
-        del dim, width, fig_mask, original_data, flag_aliens
+        del dim, width, fig_mask, original_data
 
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                         title='Data after aliens removal\n', invert_yaxis=False, reciprocal_space=True)
 
         if flag_interact:
+            cid = plt.connect('close_event', close_event)
             fig.waitforbuttonpress()
+            plt.disconnect(cid)
         plt.close(fig)
 
         fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
@@ -450,7 +444,9 @@ for scan_nb in range(len(scans)):
                                         reciprocal_space=True)
 
         if flag_interact:
+            cid = plt.connect('close_event', close_event)
             fig.waitforbuttonpress()
+            plt.disconnect(cid)
         plt.close(fig)
 
         #############################################
@@ -546,7 +542,7 @@ for scan_nb in range(len(scans)):
         del temp_mask, dim
 
         data = original_data
-        del original_data, flag_aliens, flag_mask, flag_pause
+        del original_data, flag_pause
 
     data[mask == 1] = 0
 
@@ -568,7 +564,9 @@ for scan_nb in range(len(scans)):
 
         fig.savefig(savedir + 'monitor_S' + str(scans[scan_nb]) + '.png')
         if flag_interact:
+            cid = plt.connect('close_event', close_event)
             fig.waitforbuttonpress()
+            plt.disconnect(cid)
         plt.close(fig)
         plt.ioff()
         comment = comment + '_norm'

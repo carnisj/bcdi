@@ -620,7 +620,7 @@ def find_bragg(data, peak_method):
 
 
 def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False,
-             debugging=False):
+             normalize=False, debugging=False):
     """
     Load the forward CDI data, apply filters and optionally regrid it for phasing.
 
@@ -632,6 +632,7 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param orthogonalize: if True will regrid the data and the mask on an orthogonal frame
+    :param normalize: set to True to normalize the diffracted intensity by the incident X-ray beam intensity
     :param debugging:  set to True to see plots
     :return:
      - the 3D data array (in an orthonormal frame or in the detector frame) and the 3D mask array
@@ -642,13 +643,16 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           beamline=setup.beamline, flatfield=flatfield,
                                                           hotpixels=hotpixels, debugging=debugging)
-
+    # normalize by the incident X-ray beam intensity
+    if normalize:
+        rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
+                                                norm_to_min=True, debugging=debugging)
     if not orthogonalize:
         return [], rawdata, [], rawmask, [], frames_logical, monitor
     else:
         data, mask, q_values, frames_logical = \
             regrid_cdi(data=rawdata, mask=rawmask, logfile=logfile, scan_number=scan_number, detector=detector,
-                       setup=setup)
+                       setup=setup, frames_logical=frames_logical)
 
         q_values = []
 
