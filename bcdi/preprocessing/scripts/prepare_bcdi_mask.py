@@ -26,7 +26,7 @@ import bcdi.preprocessing.preprocessing_utils as pru
 
 
 helptext = """
-Prepare experimental data for CDI phasing: crop/pad, center, mask, normalize and filter the data.
+Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and filter the data.
 
 Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS and PETRAIII P10.
 
@@ -298,12 +298,12 @@ for scan_nb in range(len(scans)):
             q_values, data, _, mask, _, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=follow_bragg,
-                            debugging=debug, regrid_cdi=regrid_cdi, orthogonalize=False)
+                            debugging=debug, orthogonalize=False)
         else:
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
-                            debugging=debug, regrid_cdi=regrid_cdi, orthogonalize=True)
+                            debugging=debug, orthogonalize=True)
 
             np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
             if save_to_mat:

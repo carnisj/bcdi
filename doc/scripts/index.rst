@@ -69,10 +69,10 @@ Preprocessing
    :end-before: """
    :language: rst
 
-`prepare_cdi_mask.py`:
-^^^^^^^^^^^^^^^^^^^^^^
+`prepare_bcdi_mask.py`:
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/prepare_cdi_mask.py
+.. literalinclude:: ../../bcdi/preprocessing/scripts/prepare_bcdi_mask.py
    :start-after: helptext
    :end-before: """
    :language: rst
