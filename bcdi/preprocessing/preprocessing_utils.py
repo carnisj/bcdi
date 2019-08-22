@@ -1558,7 +1558,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, deb
 
     # crop/pad monitor depending on frames_logical array
     monitor = np.zeros((frames_logical != 0).sum())
-    print(frames_logical, frames_logical.shape)
+    print('frames_logical: length=', frames_logical.shape, 'value=', frames_logical, frames_logical.shape)
     nb_overlap = 0
     nb_padded = 0
     for idx in range(len(frames_logical)):
@@ -1572,7 +1572,6 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, deb
             monitor[idx - nb_overlap] = raw_monitor[idx-nb_padded]
         else:
             nb_overlap = nb_overlap + 1
-    print(monitor.shape, monitor)
     if nb_padded != 0:
         print('Monitor value set to 1 for ', nb_padded, ' frames padded')
 
