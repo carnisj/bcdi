@@ -112,6 +112,7 @@ template_imagefile = '_data_%06d.h5'
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
+# xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
 sdd = 5.1  # sample to detector distance in m, not important if you use raw data
 energy = 8700  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
