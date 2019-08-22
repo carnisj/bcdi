@@ -20,7 +20,6 @@ import bcdi.graph.graph_utils as gu
 from bcdi.utils import image_registration as reg
 
 
-
 def align_diffpattern(reference_data, data, mask, method='registration', combining_method='rgi'):
     """
     Align two diffraction patterns based on the shift of the center of mass or based on dft registration.
@@ -620,74 +619,46 @@ def find_bragg(data, peak_method):
     return z0, y0, x0
 
 
-def grid_cdi(data, mask, setup):
+def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False,
+             debugging=False):
     """
+    Load the forward CDI data, apply filters and optionally regrid it for phasing.
 
-    :param data: the 3D data
-    :param mask: the corresponding 3D mask
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: the data and mask interpolated in the laboratory frame
+    :param flatfield: the 2D flatfield array
+    :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
+    :param orthogonalize: if True will regrid the data and the mask on an orthogonal frame
+    :param debugging:  set to True to see plots
+    :return:
+     - the 3D data array (in an orthonormal frame or in the detector frame) and the 3D mask array
+     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+     - the monitor values for normalization
     """
-    if data.ndim != 3:
-        raise ValueError('data is expected to be a 3D array')
-    if mask.ndim != 3:
-        raise ValueError('mask is expected to be a 3D array')
-    nbz, nby, nbx = data.shape
-    rocking_angle = setup.rocking_angle
-    angular_step = setup.angular_step * np.pi / 180  # switch to radians
-    rotation_matrix = np.zeros((3, 3))
-    myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1),
-                                np.arange(-nby // 2, nby // 2, 1),
-                                np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
-    new_x = np.zeros(data.shape)
-    new_y = np.zeros(data.shape)
-    new_z = np.zeros(data.shape)
-    frames = np.arange(-nbz//2, nbz//2)
-    for idx in range(len(frames)):
-        angle = frames[idx] * angular_step
-        if rocking_angle == 'inplane':
-            rotation_matrix[:, 0] = np.array([np.cos(angle), 0, -np.sin(angle)])  # x
-            rotation_matrix[:, 1] = np.array([0, 1, 0])                                         # y
-            rotation_matrix[:, 2] = np.array([np.sin(angle), 0, np.cos(angle)])   # z
-        elif rocking_angle == 'outofplane':
-            rotation_matrix[:, 0] = np.array([1, 0, 0])                                         # x
-            rotation_matrix[:, 1] = np.array([0, np.cos(angle), np.sin(angle)])   # y
-            rotation_matrix[:, 2] = np.array([0, -np.sin(angle), np.cos(angle)])  # z
-        else:
-            raise ValueError('Wrong value for "rotation_angle" parameter')
+    rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
+                                                          beamline=setup.beamline, flatfield=flatfield,
+                                                          hotpixels=hotpixels, debugging=debugging)
 
-        rotation_imatrix = np.linalg.inv(rotation_matrix)
-        new_x[idx, :, :] = rotation_imatrix[0, 0] * myx[idx, :, :] + rotation_imatrix[0, 1] * myy[idx, :, :] +\
-            rotation_imatrix[0, 2] * myz[idx, :, :]
-        new_y[idx, :, :] = rotation_imatrix[1, 0] * myx[idx, :, :] + rotation_imatrix[1, 1] * myy[idx, :, :] +\
-            rotation_imatrix[1, 2] * myz[idx, :, :]
-        new_z[idx, :, :] = rotation_imatrix[2, 0] * myx[idx, :, :] + rotation_imatrix[2, 1] * myy[idx, :, :] +\
-            rotation_imatrix[2, 2] * myz[idx, :, :]
-    del myx, myy, myz
-    gc.collect()
+    if not orthogonalize:
+        return [], rawdata, [], rawmask, [], frames_logical, monitor
+    else:
+        data, mask, q_values, frames_logical = \
+            regrid_cdi(data=rawdata, mask=rawmask, logfile=logfile, scan_number=scan_number, detector=detector,
+                       setup=setup)
 
-    rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
-                                   np.arange(-nbx // 2, nbx // 2)), data, method='linear',
-                                  bounds_error=False, fill_value=0)
-    newdata = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                  new_x.reshape((1, new_z.size)))).transpose())
-    newdata = newdata.reshape((nbz, nby, nbx)).astype(data.dtype)
+        q_values = []
 
-    rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
-                                   np.arange(-nbx // 2, nbx // 2)), data, method='linear',
-                                  bounds_error=False, fill_value=0)
-    newmask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                  new_x.reshape((1, new_z.size)))).transpose())
-    newmask = newmask.reshape((nbz, nby, nbx)).astype(mask.dtype)
-    newmask[np.nonzero(newmask)] = 1
-
-    return newdata, newmask
+        return q_values, rawdata, data, rawmask, mask, frames_logical, monitor
 
 
 def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False, hxrd=None,
-            debugging=False, **kwargs):
+            normalize=False, debugging=False, **kwargs):
     """
-    Load the data, apply filters and concatenate it for phasing.
+    Load the Bragg CDI data, apply filters and concatenate it for phasing.
 
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param scan_number: the scan number to load
@@ -697,11 +668,12 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param orthogonalize: if True will interpolate the data and the mask on an orthogonal grid using xrayutilities
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
+    :param normalize: set to True to normalize the diffracted intensity by the incident X-ray beam intensity
     :param debugging: set to True to see plots
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
     :return:
-     - the 3D data array in the detector frame and the 3D mask array
+     - the 3D data array (in an orthonormal frame or in the detector frame) and the 3D mask array
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values for normalization
@@ -719,7 +691,10 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           beamline=setup.beamline, flatfield=flatfield,
                                                           hotpixels=hotpixels, debugging=debugging)
-    
+    # normalize by the incident X-ray beam intensity
+    if normalize:
+        rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
+                                                norm_to_min=True, debugging=debugging)
     if not orthogonalize:
         return [], rawdata, [], rawmask, [], frames_logical, monitor
     else:
@@ -1635,7 +1610,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
      - updated frames_logical
     """
     if frames_logical is None:  # retrieve the raw data length, then len(frames_logical) may be different from nb_frames
-        # TODO: create a function which does not loda the data but use the specfile
+        # TODO: create a function which does not load the data but use the specfile
         _, _, _, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                             beamline=setup.beamline)
 
@@ -1753,6 +1728,76 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
 
     return qx, qz, qy, frames_logical
+
+
+def regrid_cdi(data, mask, logfile, scan_number, detector, setup, frames_logical):
+    """
+
+    :param data: the 3D data
+    :param mask: the corresponding 3D mask
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :return: the data and mask interpolated in the laboratory frame, q values
+    """
+    if data.ndim != 3:
+        raise ValueError('data is expected to be a 3D array')
+    if mask.ndim != 3:
+        raise ValueError('mask is expected to be a 3D array')
+    nbz, nby, nbx = data.shape
+    rocking_angle = setup.rocking_angle
+    angular_step = setup.angular_step * np.pi / 180  # switch to radians
+    rotation_matrix = np.zeros((3, 3))
+    myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1),
+                                np.arange(-nby // 2, nby // 2, 1),
+                                np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
+    new_x = np.zeros(data.shape)
+    new_y = np.zeros(data.shape)
+    new_z = np.zeros(data.shape)
+    frames = np.arange(-nbz//2, nbz//2)
+    for idx in range(len(frames)):
+        angle = frames[idx] * angular_step
+        if rocking_angle == 'inplane':
+            rotation_matrix[:, 0] = np.array([np.cos(angle), 0, -np.sin(angle)])  # x
+            rotation_matrix[:, 1] = np.array([0, 1, 0])                                         # y
+            rotation_matrix[:, 2] = np.array([np.sin(angle), 0, np.cos(angle)])   # z
+        elif rocking_angle == 'outofplane':
+            rotation_matrix[:, 0] = np.array([1, 0, 0])                                         # x
+            rotation_matrix[:, 1] = np.array([0, np.cos(angle), np.sin(angle)])   # y
+            rotation_matrix[:, 2] = np.array([0, -np.sin(angle), np.cos(angle)])  # z
+        else:
+            raise ValueError('Wrong value for "rotation_angle" parameter')
+
+        rotation_imatrix = np.linalg.inv(rotation_matrix)
+        new_x[idx, :, :] = rotation_imatrix[0, 0] * myx[idx, :, :] + rotation_imatrix[0, 1] * myy[idx, :, :] +\
+            rotation_imatrix[0, 2] * myz[idx, :, :]
+        new_y[idx, :, :] = rotation_imatrix[1, 0] * myx[idx, :, :] + rotation_imatrix[1, 1] * myy[idx, :, :] +\
+            rotation_imatrix[1, 2] * myz[idx, :, :]
+        new_z[idx, :, :] = rotation_imatrix[2, 0] * myx[idx, :, :] + rotation_imatrix[2, 1] * myy[idx, :, :] +\
+            rotation_imatrix[2, 2] * myz[idx, :, :]
+    del myx, myy, myz
+    gc.collect()
+
+    rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
+                                   np.arange(-nbx // 2, nbx // 2)), data, method='linear',
+                                  bounds_error=False, fill_value=0)
+    newdata = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                  new_x.reshape((1, new_z.size)))).transpose())
+    newdata = newdata.reshape((nbz, nby, nbx)).astype(data.dtype)
+
+    rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
+                                   np.arange(-nbx // 2, nbx // 2)), data, method='linear',
+                                  bounds_error=False, fill_value=0)
+    newmask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                  new_x.reshape((1, new_z.size)))).transpose())
+    newmask = newmask.reshape((nbz, nby, nbx)).astype(mask.dtype)
+    newmask[np.nonzero(newmask)] = 1
+
+    q_values = []
+    return newdata, newmask, q_values, frames_logical
 
 
 def remove_hotpixels(data, mask, hotpixels=None):

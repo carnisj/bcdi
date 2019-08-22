@@ -315,12 +315,12 @@ for scan_nb in range(len(scans)):
             q_values, data, _, mask, _, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=follow_bragg,
-                            debugging=debug, orthogonalize=False)
+                            normalize=normalize_flux, debugging=debug, orthogonalize=False)
         else:
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
-                            debugging=debug, orthogonalize=True)
+                            normalize=normalize_flux, debugging=debug, orthogonalize=True)
 
             np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
             if save_to_mat:
@@ -330,23 +330,37 @@ for scan_nb in range(len(scans)):
             del rawdata
             gc.collect()
 
+    ##########################################
+    # plot normalization by incident monitor #
+    ##########################################
+    if normalize_flux:
+        plt.ion()
+        fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
+                                tuple_sum_axis=(0, 1), tuple_width_v=(np.nan, np.nan),
+                                tuple_width_h=(np.nan, np.nan), tuple_colorbar=(False, False),
+                                tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
+                                tuple_title=('monitor.min() / monitor', 'Data after normalization'),
+                                tuple_scale=('linear', 'log'), xlabel=('Frame number', 'Frame number'),
+                                ylabel=('Counts (a.u.)', 'Rocking dimension'))
+
+        fig.savefig(savedir + 'monitor_S' + str(scans[scan_nb]) + '.png')
+        if flag_interact:
+            cid = plt.connect('close_event', close_event)
+            fig.waitforbuttonpress()
+            plt.disconnect(cid)
+        plt.close(fig)
+        plt.ioff()
+        comment = comment + '_norm'
+
     ########################
     # crop/pad/center data #
     ########################
-    # plt.figure()
-    # plt.imshow(np.log10(data.sum(axis=0)))
-    # plt.pause(0.1)
-
     nz, ny, nx = np.shape(data)
     print('Data size:', nz, ny, nx)
 
     data, mask, pad_width, q_vector, frames_logical = \
         pru.center_fft(data=data, mask=mask, frames_logical=frames_logical, centering=centering, fft_option=center_fft,
                        pad_size=pad_size, fix_bragg=fix_bragg, fix_size=fix_size, q_values=q_values)
-
-    # plt.figure()
-    # plt.imshow(np.log10(data.sum(axis=0)))
-    # plt.pause(0.1)
 
     starting_frame = [pad_width[0], pad_width[2], pad_width[4]]  # no need to check padded frames
     print('Pad width:', pad_width)
@@ -575,31 +589,6 @@ for scan_nb in range(len(scans)):
 
     data[mask == 1] = 0
     flag_mask = False
-
-    #################################
-    # normalize by incident monitor #
-    #################################
-    if normalize_flux and use_rawdata:
-        data, monitor, monitor_title = pru.normalize_dataset(array=data, raw_monitor=monitor,
-                                                             frames_logical=frames_logical,
-                                                             norm_to_min=False, debugging=debug)
-        plt.ion()
-        fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
-                                tuple_sum_axis=(0, 1), tuple_width_v=(np.nan, np.nan),
-                                tuple_width_h=(np.nan, np.nan), tuple_colorbar=(False, False),
-                                tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
-                                tuple_title=('monitor.min() / monitor', 'Data after normalization'),
-                                tuple_scale=('linear', 'log'), xlabel=('Frame number', 'Frame number'),
-                                ylabel=('Counts (a.u.)', 'Rocking dimension'))
-
-        fig.savefig(savedir + 'monitor_S' + str(scans[scan_nb]) + '.png')
-        if flag_interact:
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
-        plt.close(fig)
-        plt.ioff()
-        comment = comment + '_norm'
 
     #############################################
     # mask or median filter isolated empty pixels
