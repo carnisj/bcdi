@@ -579,7 +579,7 @@ for scan_nb in range(len(scans)):
     #################################
     # normalize by incident monitor #
     #################################
-    if normalize_flux:
+    if normalize_flux and use_rawdata:
         data, monitor, monitor_title = pru.normalize_dataset(array=data, raw_monitor=monitor,
                                                              frames_logical=frames_logical,
                                                              norm_to_min=False, debugging=debug)
