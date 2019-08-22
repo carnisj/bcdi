@@ -16,7 +16,7 @@ class SetupPostprocessing(object):
     Class to handle the experimental geometry for postprocessing.
     """
     def __init__(self, beamline, energy, outofplane_angle, inplane_angle, tilt_angle, rocking_angle, distance,
-                 grazing_angle=0, pixel_x=55e-6, pixel_y=55e-6):
+                 direct_beam=(0,0), grazing_angle=0, pixel_x=55e-6, pixel_y=55e-6):
         """
         Initialize parameters of the experiment.
 
@@ -27,6 +27,7 @@ class SetupPostprocessing(object):
         :param tilt_angle: angular step of the sample during the rocking curve, in degrees
         :param rocking_angle: name of the angle which is tilted during the rocking curve, 'outofplane' or 'inplane'
         :param distance: sample to detector distance in meters
+        :param direct_beam: tuple describing the position of the direct beam in pixels (vertical, horizontal)
         :param grazing_angle: grazing angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
@@ -40,6 +41,8 @@ class SetupPostprocessing(object):
         self.rocking_angle = rocking_angle  # string
         self.grazing_angle = grazing_angle  # string
         self.distance = distance  # in meters
+        self.direct_x = direct_beam[0]  # in pixels
+        self.direct_y = direct_beam[1]  # in pixels
         self.pixel_x = pixel_x  # in meters
         self.pixel_y = pixel_y  # in meters
 
