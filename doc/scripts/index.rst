@@ -77,6 +77,14 @@ Preprocessing
    :end-before: """
    :language: rst
 
+`prepare_cdi_mask.py`:
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/prepare_cdi_mask.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 `read_data.py`:
 ^^^^^^^^^^^^^^^
 
