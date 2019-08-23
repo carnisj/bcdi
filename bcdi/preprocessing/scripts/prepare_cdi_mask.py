@@ -96,7 +96,7 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
-roi_detector = [direct_beam[0] - 512, direct_beam[0] + 512, direct_beam[1] - 512, direct_beam[1] + 512]  # V x H
+roi_detector = [direct_beam[0] - 200, direct_beam[0] + 200, direct_beam[1] - 200, direct_beam[1] + 200]  # V x H
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
@@ -161,7 +161,7 @@ def press_key(event):
                                   original_data=original_data, updated_data=data, updated_mask=mask,
                                   figure=fig_mask, width=width, dim=dim, idx=idx, vmin=0, vmax=max_colorbar)
         elif flag_mask:
-            data, temp_mask, flag_pause, xy, width, vmax, stop_masking = \
+            data, temp_mask, flag_pause, xy, width, max_colorbar, stop_masking = \
                 pru.update_mask(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
                                 original_data=original_data, original_mask=mask, updated_data=data,
                                 updated_mask=temp_mask, figure=fig_mask, flag_pause=flag_pause, points=points,
@@ -216,6 +216,15 @@ if len(scans) > 1:
 for scan_nb in range(len(scans)):
     plt.ion()
 
+    print('\nScan', scans[scan_nb])
+    print('Setup: ', setup.beamline)
+    print('Detector: ', detector.name)
+    print('Pixel Size: ', detector.pixelsize, 'm')
+    print('Specfile: ', specfile_name)
+    print('Scan type: ', setup.rocking_angle)
+    print('Sample to detector distance: ', setup.distance, 'm')
+    print('Energy:', setup.energy, 'ev')
+
     if setup.beamline != 'P10':
         homedir = root_folder + sample_name + str(scans[scan_nb]) + '/'
         detector.datadir = homedir + "data/"
@@ -225,6 +234,7 @@ for scan_nb in range(len(scans)):
         detector.datadir = homedir + 'e4m/'
         template_imagefile = specfile_name + template_imagefile
         detector.template_imagefile = template_imagefile
+        print('The scan is composed of series:', is_series)
 
     if not use_rawdata:
         comment = comment + '_ortho'
@@ -233,15 +243,6 @@ for scan_nb in range(len(scans)):
     else:
         savedir = homedir + "pynxraw/"
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-
-    print('\nScan', scans[scan_nb])
-    print('Setup: ', setup.beamline)
-    print('Detector: ', detector.name)
-    print('Pixel Size: ', detector.pixelsize, 'm')
-    print('Specfile: ', specfile_name)
-    print('Scan type: ', setup.rocking_angle)
-    print('Sample to detector distance: ', setup.distance, 'm')
-    print('Energy:', setup.energy, 'ev')
 
     if not use_rawdata:
         print('Output will be orthogonalized by xrayutilities')
@@ -308,6 +309,28 @@ for scan_nb in range(len(scans)):
                         {'data': np.moveaxis(rawdata, [0, 1, 2], [-1, -3, -2])})
             del rawdata
             gc.collect()
+
+    ##########################################
+    # plot normalization by incident monitor #
+    ##########################################
+    if normalize_flux:
+        plt.ion()
+        fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
+                                tuple_sum_axis=(0, 1), tuple_width_v=(np.nan, np.nan),
+                                tuple_width_h=(np.nan, np.nan), tuple_colorbar=(False, False),
+                                tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
+                                tuple_title=('monitor.min() / monitor', 'Data after normalization'),
+                                tuple_scale=('linear', 'log'), xlabel=('Frame number', 'Frame number'),
+                                ylabel=('Counts (a.u.)', 'Rocking dimension'))
+
+        fig.savefig(savedir + 'monitor_S' + str(scans[scan_nb]) + '.png')
+        if flag_interact:
+            cid = plt.connect('close_event', close_event)
+            fig.waitforbuttonpress()
+            plt.disconnect(cid)
+        plt.close(fig)
+        plt.ioff()
+        comment = comment + '_norm'
 
     ########################
     # crop/pad/center data #
@@ -545,31 +568,7 @@ for scan_nb in range(len(scans)):
         del original_data, flag_pause
 
     data[mask == 1] = 0
-
-    #################################
-    # normalize by incident monitor #
-    #################################
-    if normalize_flux:
-        data, monitor, monitor_title = pru.normalize_dataset(array=data, raw_monitor=monitor,
-                                                             frames_logical=frames_logical,
-                                                             norm_to_min=False, debugging=debug)
-        plt.ion()
-        fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
-                                tuple_sum_axis=(0, 1), tuple_width_v=(np.nan, np.nan),
-                                tuple_width_h=(np.nan, np.nan), tuple_colorbar=(False, False),
-                                tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
-                                tuple_title=('monitor.min() / monitor', 'Data after normalization'),
-                                tuple_scale=('linear', 'log'), xlabel=('Frame number', 'Frame number'),
-                                ylabel=('Counts (a.u.)', 'Rocking dimension'))
-
-        fig.savefig(savedir + 'monitor_S' + str(scans[scan_nb]) + '.png')
-        if flag_interact:
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
-        plt.close(fig)
-        plt.ioff()
-        comment = comment + '_norm'
+    flag_mask = False
 
     #############################################
     # mask or median filter isolated empty pixels
