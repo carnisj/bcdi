@@ -1032,26 +1032,48 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, debugging=False):
     import h5py
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
-    ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile % 1)
-    h5file = h5py.File(ccdfiletmp, 'r')
+    ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
 
-    try:
-        tmp_data = h5file['entry']['data']['data'][:]
-    except OSError:
-        raise OSError('hdf5plugin is not installed')
-    nb_img = tmp_data.shape[0]
+    h5file = h5py.File(ccdfiletmp, 'r')
+    nb_img = len(list(h5file['entry/data']))
     data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
 
-    for idx in range(nb_img):
+    is_series = detector.is_series
 
-        ccdraw, mask2d = remove_hotpixels(data=tmp_data[idx, :, :], mask=mask_2d, hotpixels=hotpixels)
-        if detector.name == "Eiger4M":
-            ccdraw, mask_2d = mask_eiger4m(data=ccdraw, mask=mask_2d)
+    for file_idx in range(nb_img):
+
+        idx = 0
+        series_data = []
+        if is_series:
+            data_path = 'data_' + str('{:06d}'.format(file_idx+1))
         else:
-            raise ValueError('Detector ', detector.name, 'not supported for ID01')
-        ccdraw = flatfield * ccdraw
-        ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
-        data[idx, :, :] = ccdraw
+            data_path = 'data_000001'
+
+        while True:
+            try:
+                try:
+                    tmp_data = h5file['entry']['data'][data_path][idx]
+                except OSError:
+                    raise OSError('hdf5plugin is not installed')
+
+                ccdraw, mask2d = remove_hotpixels(data=tmp_data, mask=mask_2d, hotpixels=hotpixels)
+                if detector.name == "Eiger4M":
+                    ccdraw, mask_2d = mask_eiger4m(data=ccdraw, mask=mask_2d)
+                else:
+                    raise ValueError('Detector ', detector.name, 'not supported for P10')
+                ccdraw = flatfield * ccdraw
+                ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+                series_data.append(ccdraw)
+                idx = idx + 1
+            except ValueError:  # reached the end of the series
+                break
+
+        if is_series:
+            data[file_idx, :, :] = np.asarray(series_data).sum(axis=0)
+        else:
+            data = np.asarray(series_data)
+            break
+        print(file_idx)
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)

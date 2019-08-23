@@ -426,7 +426,7 @@ class Detector(object):
     """
     Class to handle the configuration of the detector used for data acquisition.
     """
-    def __init__(self, name, datadir='', template_imagefile='', roi=()):
+    def __init__(self, name, datadir='', template_imagefile='', roi=(), **kwargs):
         """
         Initialize parameters of the detector.
 
@@ -438,7 +438,15 @@ class Detector(object):
          - Cristal: 'S%d.nxs'
          - P10: sample_name + str('{:05d}'.format(scans[scan_nb])) + '_data_%06d.h5'
         :param roi: region of interest in the detector, use [] to use the full detector
+        :param kwargs:
+         - 'is_series' = boolean, True is the measurement is a series at P10 beamline
         """
+        for k in kwargs.keys():
+            if k in ['is_series']:
+                self.is_series = kwargs['is_series']
+            else:
+                raise Exception("unknown keyword argument given:", k)
+
         self.name = name  # string
         self.offsets = ()
         if name == 'Maxipix':

@@ -39,9 +39,9 @@ data in:                                                       /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [501]  # list or array of scan numbers
+scans = [22]  # list or array of scan numbers
 root_folder = "D:/data/P10_August2019/data/"
-sample_name = "gold2_2"  # "S"
+sample_name = "gold_2_2_2"  # "S"
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 ###########################
@@ -75,7 +75,7 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 ###########################
 reload_previous = False  # set to 1 to resume a previous masking (load data and mask)
 ###########################
-use_rawdata = False  # False for using regridded data / True for using data in detector reference frame
+use_rawdata = True  # False for using regridded data / True for using data in detector reference frame
 save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 # define beamline related parameters #
@@ -83,6 +83,7 @@ save_to_mat = False  # set to 1 to save also in .mat format
 beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "inplane"  # "outofplane" or "inplane"
+is_series = True  # specific to series measurement at P10
 specfile_name = sample_name + '_%05d'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
@@ -94,15 +95,13 @@ specfile_name = sample_name + '_%05d'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1495  # horizontal pixel number of the Bragg peak
-# roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-# roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
-roi_detector = []  # [0, 256, 0, 256]
+direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
+roi_detector = [direct_beam[0] - 512, direct_beam[0] + 512, direct_beam[1] - 512, direct_beam[1] + 512]  # V x H
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = '_data_%06d.h5'
+template_imagefile = '_master.h5'  # ''_data_%06d.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -113,8 +112,6 @@ template_imagefile = '_data_%06d.h5'
 #########################################################################
 sdd = 4.95  # sample to detector distance in m, not important if you use raw data
 energy = 8700  # x-ray energy in eV, not important if you use raw data
-cch1 = 500  # vertical position of the direct beam in pixels
-cch2 = 500  # horizontal position of the direct beam in pixels
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -182,18 +179,21 @@ def press_key(event):
 #######################
 # Initialize detector #
 #######################
-detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector)
+detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
+                        is_series=is_series)
 
 ####################
 # Initialize setup #
 ####################
-setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd)
+setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+                               direct_beam=direct_beam)
 
 ############################################################
 # Initialize geometry for gridding on an orthonormal frame #
 ############################################################
-cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
-cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
+# TODO: see where I need to use these values
+cch1 = direct_beam[0] - detector.roi[0]  # take into account the roi if the image is cropped
+cch2 = direct_beam[1] - detector.roi[2]  # take into account the roi if the image is cropped
 
 ############################################
 # Initialize values for callback functions #
