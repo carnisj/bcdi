@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
-open data at P10 beamline
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
+helptext = """
+open series data at P10 beamline
 """
 import hdf5plugin  # for lz4 filter
 import h5py
@@ -10,9 +17,9 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import os
 
-scan = 8
+scan = 25
 image = 1
-sample_name = "magnetite_A2"
+sample_name = "gold_2_2_2"
 datadir = "D:/data/P10_August2019/data/" + sample_name + '_' + str('{:05d}'.format(scan)) + '/e4m/'
 ccdfiletmp = os.path.join(datadir, sample_name + '_' + str('{:05d}'.format(scan)) + 
                           "_data_" + str('{:06d}'.format(image))+".h5")
