@@ -583,7 +583,7 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
     :param pixel_spacing: pixel_spacing=desired tick_spacing (in nm)/voxel_size of the reconstruction(in nm)
-    :param reciprocal_space: True if the data is in reciprocal space, False otherwise
+    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot titles.
     :param vmin: lower boundary for the colorbar. Float or tuple of 3 floats
     :param vmax: higher boundary for the colorbar. Float or tuple of 3 floats
     :return: fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) instances
