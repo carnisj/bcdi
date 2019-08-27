@@ -86,6 +86,52 @@ def align_diffpattern(reference_data, data, mask, method='registration', combini
     return data, mask
 
 
+def beamstop_correction(data, direct_beam, debugging=True):
+    """
+    Correct absorption from the beamstops during P10 forward CDI experiment.
+
+    :param data: the 3D stack of 2D CDI images, shape = (nbz, nby, nbx) or 2D image of shape (nby, nbx)
+    :param direct_beam: # tuple of int (vertical, horizontal): position of the direct beam in pixels
+    :param debugging: set to True to see plots
+    :return: the corrected data
+    """
+    # at 8700eV, the transmission of 100um Si is 0.32478
+    factor_large = 1/0.32478  # 5mm*5mm (100um thick) Si wafer
+    factor_small = 1/0.32478  # 3mm*3mm (100um thick) Si wafer
+    ndim = data.ndim
+    if ndim == 3:
+        pass
+    elif ndim == 2:
+        data = data[np.newaxis, :, :]
+    else:
+        raise ValueError('2D or 3D data expected')
+    nbz, nby, nbx = data.shape
+
+    large_square = np.zeros((nby, nbx))
+    large_square[direct_beam[0] - 33:direct_beam[0] + 35, direct_beam[1] - 31:direct_beam[1] + 36] = 1
+    small_square = np.zeros((nby, nbx))
+    small_square[direct_beam[0] - 14:direct_beam[0] + 14, direct_beam[1] - 11:direct_beam[1] + 16] = 1
+
+    # TODO: include interpolation for the outer layer of the beamstops, using neighbours intensity (kernel 3)
+
+    if debugging:
+        gu.combined_plots(tuple_array=(data, large_square, small_square), tuple_sum_frames=(True, False, False),
+                          tuple_sum_axis=0, tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=False,
+                          tuple_vmin=0, tuple_vmax=np.nan, tuple_title=('data', 'large_square', 'small_square'),
+                          tuple_scale=('log', 'linear', 'linear'), is_orthogonal=False, reciprocal_space=True)
+
+    for idx in range(nbz):
+        tempdata = data[idx, :, :]
+        tempdata[np.nonzero(large_square)] = tempdata[np.nonzero(large_square)] * factor_large
+        tempdata[np.nonzero(small_square)] = tempdata[np.nonzero(small_square)] * factor_small
+        data[idx, :, :] = tempdata
+
+    if debugging:
+        gu.imshow_plot(data, sum_frames=True, sum_axis=0, vmin=0, title='data after absorption correction', scale='log',
+                       is_orthogonal=False, reciprocal_space=True)
+    return data
+
+
 def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asymmetric_ZYX', **kwargs):
     """
     Center and crop/pad the dataset depending on user parameters
@@ -666,6 +712,9 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           beamline=setup.beamline, flatfield=flatfield,
                                                           hotpixels=hotpixels, debugging=debugging)
+
+    rawdata = beamstop_correction(data=rawdata, direct_beam=setup.direct_beam, debugging=True)
+
     # normalize by the incident X-ray beam intensity
     if normalize:
         rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
@@ -2715,6 +2764,9 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
 
 
 # if __name__ == "__main__":
+#     data = np.load('D:/data/P10_August2019/data/gold_2_2_2_00022/pynxraw/S22_pynx_norm_381_400_400.npz')['data']
+#     nz, ny, nx = data.shape
+#     data = beamstop_correction(data=data, direct_beam=(ny//2, nx//2), debugging=True)
 #     start_angle = -5 * np.pi / 180
 #     z_interp = np.array([-0])
 #     x_interp = np.array([100])
