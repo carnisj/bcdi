@@ -477,6 +477,29 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
     return data, mask, pad_width, q_values, frames_logical
 
 
+def check_cdi_angle(data, mask, cdi_angle, frames_logical):
+    """
+    Check if there is no overlap in the measurement angles, crop it otherwise. Update data, mask and frames_logical
+    accordingly.
+
+    :param data: 3D forward CDI dataset before gridding.
+    :param mask: 3D mask
+    :param cdi_angle:
+    :param frames_logical:
+    :return: updated data, mask, cdi_angle, frames_logical
+    """
+    wrap_angle = wrap(angle=cdi_angle, start_angle=cdi_angle[0], range_angle=180)
+    for idx in range(len(wrap_angle)):
+        duplicate = (wrap_angle[:idx] == wrap_angle[idx]).sum()
+        frames_logical[idx] = frames_logical[idx] * (duplicate == 0)  # remove duplicated frames
+
+    print('frames_logical after checking duplicated angles:\n', frames_logical)
+    data = data[np.nonzero(frames_logical)[0], :, :]
+    mask = mask[np.nonzero(frames_logical)[0], :, :]
+    cdi_angle = cdi_angle[np.nonzero(frames_logical)]
+    return data, mask, cdi_angle, frames_logical
+
+
 def check_pixels(data, mask, debugging=False):
     """
     Check for hot pixels in the data using the mean value and the variance.
@@ -651,7 +674,7 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
         return [], rawdata, [], rawmask, [], frames_logical, monitor
     else:
         data, mask, q_values, frames_logical = \
-            regrid_cdi(data=rawdata, mask=rawmask, logfile=logfile, scan_number=scan_number, detector=detector,
+            regrid_cdi(data=rawdata, mask=rawmask, logfile=logfile, detector=detector,
                        setup=setup, frames_logical=frames_logical)
 
         q_values = []
@@ -1758,10 +1781,12 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
 def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
     """
+    Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in cartesian coordinates.
 
     :param data: the 3D data
     :param mask: the corresponding 3D mask
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
@@ -1773,7 +1798,10 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
     if mask.ndim != 3:
         raise ValueError('mask is expected to be a 3D array')
     if setup.beamline == 'P10':
-        om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile, setup)
+        if setup.rocking_angle == 'inplane':
+            _, cdi_angle, _, _, _, _ = motor_positions_p10(logfile, setup)
+        else:
+            raise ValueError('out-of-plane rotation not yet implemented for forward CDI data')
     else:
         raise ValueError('Not yet implemented for beamlines other than P10')
 
@@ -1782,23 +1810,16 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
     pixel_x = detector.pixelsize * 1e9  # convert to nm
     pixel_y = detector.pixelsize * 1e9  # convert to nm
     lambdaz = wavelength * distance
-    phi = phi[np.nonzero(frames_logical)]
+
+    data, mask, cdi_angle, frames_logical = check_cdi_angle(data=data, mask=mask, cdi_angle=cdi_angle,
+                                                            frames_logical=frames_logical)
 
     nbz, nby, nbx = data.shape
-    print(data.shape)
-    print(phi.shape)
-    rocking_angle = setup.rocking_angle
-    if rocking_angle == 'inplane':
-        start_angle = phi[0]
-        angular_step = phi[1] - phi[0]
-    elif rocking_angle == "outofplane":
-        start_angle = om[0]
-        angular_step = om[1] - om[0]
-    else:
-        raise ValueError('Invalid value for parameter rocking_angle')
-    angular_step = angular_step * np.pi / 180  # switch to radians
-    start_angle = start_angle * np.pi / 180  # switch to radians
+    print('Data shape for regridding:', data.shape)
+    print('Angle range:', cdi_angle.min(), cdi_angle.max())
+    angular_step = (cdi_angle[1] - cdi_angle[0]) * np.pi / 180  # switch to radians
 
+    #  calculate voxel sizes
     dz_realspace = wavelength / (nbz * abs(angular_step))  # in nm
     dy_realspace = wavelength * distance / (nby * pixel_y)  # in nm
     dx_realspace = wavelength * distance / (nbx * pixel_x) # in nm
@@ -1806,32 +1827,46 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
           str('{:.2f}'.format(dz_realspace)), 'nm,',
           str('{:.2f}'.format(dy_realspace)), 'nm,',
           str('{:.2f}'.format(dx_realspace)), 'nm )')
-    # voxel = np.mean([dz_realspace, dy_realspace, dx_realspace])  # in nm
 
     # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
+    # the range along z* is nbx because the frame is rotating aroung y*
     z_interp, y_interp, x_interp = np.meshgrid(np.arange(-nbx // 2, nbx // 2, 1),
                                                np.arange(-nby // 2, nby // 2, 1),
                                                np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
 
-    # map these points to (phi, Y, X), the measurement cylindrical coordinates
-    phi_det = wrap(angle=np.arctan2(z_interp, -x_interp), start_angle=start_angle, range_angle=np.pi)
-    # phi_det in radians, located in the range [start_angle, start_angle+np.pi[
+    # map these points to (angle, Y, X), the measurement cylindrical coordinates
+    angle_det = wrap(angle=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
+    # angle_det in radians, located in the range [start_angle, start_angle+np.pi[
     y_det = - y_interp  # Y axis of the detector is going down but y* is going up
-    sign_array = sign(phi_det, z_interp)
+    sign_array = sign(angle_det, z_interp)
     x_det = np.multiply(sign_array, np.sqrt(x_interp**2 + z_interp**2))
-    # if phi_det in [0, np.pi/2[ X axis of the detector is opposite to x*
-    # if phi_det in [0, np.pi/2[ X axis of the detector is in the same direction as x*
+    # if angle_det in [0, np.pi/2[ X axis of the detector is opposite to x*
+    # if angle_det in [0, np.pi/2[ X axis of the detector is in the same direction as x*
 
-    # interpolate the function onto the new points
-    rgi = RegularGridInterpolator((np.arange(nbz)*angular_step, np.arange(-nby // 2, nby // 2),
-                                   np.arange(-nbx // 2, nbx // 2)), data, method='nearest',
-                                  bounds_error=False, fill_value=0)
-    newdata = rgi(np.concatenate((phi_det.reshape((1, z_interp.size)),
+    # interpolate the data onto the new points
+    rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-nby // 2, nby // 2), np.arange(-nbx // 2, nbx // 2)),
+                                  data, method='nearest', bounds_error=False, fill_value=0)
+    newdata = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
                                   y_det.reshape((1, z_interp.size)),
                                   x_det.reshape((1, z_interp.size)))).transpose())
     newdata = newdata.reshape((nbx, nby, nbx)).astype(data.dtype)
+
+    # interpolate the mask onto the new points
+    rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-nby // 2, nby // 2), np.arange(-nbx // 2, nbx // 2)),
+                                  mask, method='nearest', bounds_error=False, fill_value=0)
+    newmask = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
+                                  y_det.reshape((1, z_interp.size)),
+                                  x_det.reshape((1, z_interp.size)))).transpose())
+    newmask = newmask.reshape((nbx, nby, nbx)).astype(mask.dtype)
+    newmask[np.nonzero(newmask)] = 1
+
+    # check for Nan
+    newmask[np.isnan(newdata)] = 1
+    newdata[np.isnan(newdata)] = 0
+    newmask[np.isnan(newmask)] = 1
+
     q_values = []
-    newmask = []
+
     return newdata, newmask, q_values, frames_logical
 
 
