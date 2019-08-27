@@ -312,7 +312,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
 
 
 def contour_slices(array, coordinates, sum_frames=False, levels=150, width_z=np.nan, width_y=np.nan, width_x=np.nan,
-                   plot_colorbar=False, cmap=my_cmap, title='', scale='linear', reciprocal_space=True):
+                   plot_colorbar=False, cmap=my_cmap, title='', scale='linear', is_orthogonal=False,
+                   reciprocal_space=True):
     """
     Create a figure with three 2D contour plots from a 3D dataset.
 
@@ -327,6 +328,7 @@ def contour_slices(array, coordinates, sum_frames=False, levels=150, width_z=np.
     :param cmap: colormap to be used
     :param title: string to include in the plot
     :param scale: 'linear' or 'log'
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame)
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise
     :return: fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) instances
     """
@@ -336,9 +338,15 @@ def contour_slices(array, coordinates, sum_frames=False, levels=150, width_z=np.
         title = title + ' sum'
 
     if reciprocal_space:
-        slice_names = (' QyQz', ' QyQx', ' QzQx')
+        if is_orthogonal:
+            slice_names = (' QyQz', ' QyQx', ' QzQx')
+        else:  # detector frame
+            slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
     else:
-        slice_names = (' XY', ' XZ', ' YZ')
+        if is_orthogonal:
+            slice_names = (' xy', ' xz', ' yz')
+        else:  # detector frame
+            slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
 
     if nb_dim != 3:  # wrong array dimension
         print('multislices_plot() needs a 3D array')
@@ -439,7 +447,8 @@ def contour_slices(array, coordinates, sum_frames=False, levels=150, width_z=np.
 
 def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=np.nan, width_h=np.nan, plot_colorbar=False,
                 vmin=np.nan, vmax=np.nan, cmap=my_cmap, title='', scale='linear',
-                tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan, reciprocal_space=False):
+                tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
+                is_orthogonal=False, reciprocal_space=False):
     """
     2D imshow plot of a 2D or 3D dataset using user-defined parameters.
 
@@ -458,6 +467,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=np.nan, width_h=np.
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
     :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm)
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame)
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise
     :return:  fig, axis, plot instances
     """
@@ -470,9 +480,15 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=np.nan, width_h=np.
             title = title + ' sum'
 
         if reciprocal_space:
-            slice_names = (' QyQz', ' QyQx', ' QzQx')
+            if is_orthogonal:
+                slice_names = (' QyQz', ' QyQx', ' QzQx')
+            else:  # detector frame
+                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
         else:
-            slice_names = (' XY', ' XZ', ' YZ')
+            if is_orthogonal:
+                slice_names = (' xy', ' xz', ' yz')
+            else:  # detector frame
+                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
 
         nbz, nby, nbx = array.shape
         if np.isnan(width_v):
