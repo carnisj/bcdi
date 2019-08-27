@@ -1417,7 +1417,7 @@ def motor_positions_p10(logfile, setup):
         if 'om' in words and '=' in words and setup.rocking_angle == "inplane":  # om is a positioner
             om = float(words[2])
 
-        if 'Col' in words and 'phi' in words:  # phi is scanned, template = ' Col 0 phi DOUBLE\n'
+        if 'Col' in words and ('phi' in words or 'sprz' in words):  # phi is scanned, template = ' Col 0 phi DOUBLE\n'
             index_phi = int(words[1]) - 1  # python index starts at 0
         if 'phi' in words and '=' in words and setup.rocking_angle == "outofplane":  # phi is a positioner
             phi = float(words[2])
@@ -1756,73 +1756,82 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
     return qx, qz, qy, frames_logical
 
 
-def regrid_cdi(data, mask, logfile, scan_number, detector, setup, frames_logical):
+def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
     """
 
     :param data: the 3D data
     :param mask: the corresponding 3D mask
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :return: the data and mask interpolated in the laboratory frame, q values
     """
+
     if data.ndim != 3:
         raise ValueError('data is expected to be a 3D array')
     if mask.ndim != 3:
         raise ValueError('mask is expected to be a 3D array')
+    if setup.beamline == 'P10':
+        om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile, setup)
+    else:
+        raise ValueError('Not yet implemented for beamlines other than P10')
+
+    wavelength = setup.wavelength * 1e9  # convert to nm
+    distance = setup.distance * 1e9  # convert to nm
+    pixel_x = detector.pixelsize * 1e9  # convert to nm
+    pixel_y = detector.pixelsize * 1e9  # convert to nm
+    lambdaz = wavelength * distance
+    phi = phi[np.nonzero(frames_logical)]
+
     nbz, nby, nbx = data.shape
+    print(data.shape)
+    print(phi.shape)
     rocking_angle = setup.rocking_angle
-    angular_step = setup.angular_step * np.pi / 180  # switch to radians
-    rotation_matrix = np.zeros((3, 3))
-    myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1),
-                                np.arange(-nby // 2, nby // 2, 1),
-                                np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
-    new_x = np.zeros(data.shape)
-    new_y = np.zeros(data.shape)
-    new_z = np.zeros(data.shape)
-    frames = np.arange(-nbz//2, nbz//2)
-    for idx in range(len(frames)):
-        angle = frames[idx] * angular_step
-        if rocking_angle == 'inplane':
-            rotation_matrix[:, 0] = np.array([np.cos(angle), 0, -np.sin(angle)])  # x
-            rotation_matrix[:, 1] = np.array([0, 1, 0])                                         # y
-            rotation_matrix[:, 2] = np.array([np.sin(angle), 0, np.cos(angle)])   # z
-        elif rocking_angle == 'outofplane':
-            rotation_matrix[:, 0] = np.array([1, 0, 0])                                         # x
-            rotation_matrix[:, 1] = np.array([0, np.cos(angle), np.sin(angle)])   # y
-            rotation_matrix[:, 2] = np.array([0, -np.sin(angle), np.cos(angle)])  # z
-        else:
-            raise ValueError('Wrong value for "rotation_angle" parameter')
+    if rocking_angle == 'inplane':
+        start_angle = phi[0]
+        angular_step = phi[1] - phi[0]
+    elif rocking_angle == "outofplane":
+        start_angle = om[0]
+        angular_step = om[1] - om[0]
+    else:
+        raise ValueError('Invalid value for parameter rocking_angle')
+    angular_step = angular_step * np.pi / 180  # switch to radians
+    start_angle = start_angle * np.pi / 180  # switch to radians
 
-        rotation_imatrix = np.linalg.inv(rotation_matrix)
-        new_x[idx, :, :] = rotation_imatrix[0, 0] * myx[idx, :, :] + rotation_imatrix[0, 1] * myy[idx, :, :] +\
-            rotation_imatrix[0, 2] * myz[idx, :, :]
-        new_y[idx, :, :] = rotation_imatrix[1, 0] * myx[idx, :, :] + rotation_imatrix[1, 1] * myy[idx, :, :] +\
-            rotation_imatrix[1, 2] * myz[idx, :, :]
-        new_z[idx, :, :] = rotation_imatrix[2, 0] * myx[idx, :, :] + rotation_imatrix[2, 1] * myy[idx, :, :] +\
-            rotation_imatrix[2, 2] * myz[idx, :, :]
-    del myx, myy, myz
-    gc.collect()
+    dz_realspace = wavelength / (nbz * abs(angular_step))  # in nm
+    dy_realspace = wavelength * distance / (nby * pixel_y)  # in nm
+    dx_realspace = wavelength * distance / (nbx * pixel_x) # in nm
+    print('Real space pixel size (z, y, x) based on initial FFT shape: (',
+          str('{:.2f}'.format(dz_realspace)), 'nm,',
+          str('{:.2f}'.format(dy_realspace)), 'nm,',
+          str('{:.2f}'.format(dx_realspace)), 'nm )')
+    # voxel = np.mean([dz_realspace, dy_realspace, dx_realspace])  # in nm
 
-    rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
-                                   np.arange(-nbx // 2, nbx // 2)), data, method='linear',
+    # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
+    z_interp, y_interp, x_interp = np.meshgrid(np.arange(-nbx // 2, nbx // 2, 1),
+                                               np.arange(-nby // 2, nby // 2, 1),
+                                               np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
+
+    # map these points to (phi, Y, X), the measurement cylindrical coordinates
+    phi_det = wrap(angle=np.arctan2(z_interp, -x_interp), start_angle=start_angle, range_angle=np.pi)
+    # phi_det in radians, located in the range [start_angle, start_angle+np.pi[
+    y_det = - y_interp  # Y axis of the detector is going down but y* is going up
+    sign_array = sign(phi_det, z_interp)
+    x_det = np.multiply(sign_array, np.sqrt(x_interp**2 + z_interp**2))
+    # if phi_det in [0, np.pi/2[ X axis of the detector is opposite to x*
+    # if phi_det in [0, np.pi/2[ X axis of the detector is in the same direction as x*
+
+    # interpolate the function onto the new points
+    rgi = RegularGridInterpolator((np.arange(nbz)*angular_step, np.arange(-nby // 2, nby // 2),
+                                   np.arange(-nbx // 2, nbx // 2)), data, method='nearest',
                                   bounds_error=False, fill_value=0)
-    newdata = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                  new_x.reshape((1, new_z.size)))).transpose())
-    newdata = newdata.reshape((nbz, nby, nbx)).astype(data.dtype)
-
-    rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
-                                   np.arange(-nbx // 2, nbx // 2)), data, method='linear',
-                                  bounds_error=False, fill_value=0)
-    newmask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                  new_x.reshape((1, new_z.size)))).transpose())
-    newmask = newmask.reshape((nbz, nby, nbx)).astype(mask.dtype)
-    newmask[np.nonzero(newmask)] = 1
-
+    newdata = rgi(np.concatenate((phi_det.reshape((1, z_interp.size)),
+                                  y_det.reshape((1, z_interp.size)),
+                                  x_det.reshape((1, z_interp.size)))).transpose())
+    newdata = newdata.reshape((nbx, nby, nbx)).astype(data.dtype)
     q_values = []
+    newmask = []
     return newdata, newmask, q_values, frames_logical
 
 
@@ -1863,6 +1872,22 @@ def remove_hotpixels(data, mask, hotpixels=None):
     else:
         raise ValueError('2D or 3D data array expected, got ', data.ndim, 'D')
     return data, mask
+
+
+def sign(angle, z_coord):
+    """
+    Define the sign to apply to coordinates calculate for forward CDI data. The reciprocal frame follows the CXI
+    convention z* downstream, y* vertical up and x* outboard. The detector frame follows the convention Y vertical
+    down and X opposite to x* at zero detector angles.
+
+    :param angle: ndarray, angle to be assessed in radians
+    :param z_coord: ndarrray, needed when the angle is pi/2 to define the sign
+    :return: sign_array, array of the same shape filled with -1 and 1
+    """
+    sign_array = -1 * np.sign(np.cos(angle))
+    sign_array[angle == np.pi/2] = np.sign(z_coord[angle == np.pi/2])
+    sign_array[angle == np.pi / 2] = -1 * np.sign(z_coord[angle == np.pi / 2])
+    return sign_array
 
 
 def smaller_primes(number, maxprime=13, required_dividers=(4,)):
@@ -2601,6 +2626,19 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
         stop_masking = True
 
     return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
+
+
+def wrap(angle, start_angle, range_angle):
+    """
+    Wrap the angle between start_angle and start_angle + range
+
+    :param angle: angle to be wrapped in radians
+    :param start_angle: start angle of the range in radians
+    :param range_angle: range in radians
+    :return: the wrapped angle in [start_angle, start_angle+range[
+    """
+    angle = (angle - start_angle + range_angle) % range_angle + start_angle
+    return angle
 
 
 def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False, debugging=False):
