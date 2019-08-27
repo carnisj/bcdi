@@ -1813,7 +1813,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
 
     data, mask, cdi_angle, frames_logical = check_cdi_angle(data=data, mask=mask, cdi_angle=cdi_angle,
                                                             frames_logical=frames_logical)
-
+    print('cdi_angle', cdi_angle)
     nbz, nby, nbx = data.shape
     print('Data shape for regridding:', data.shape)
     print('Angle range:', cdi_angle.min(), cdi_angle.max())
@@ -1838,7 +1838,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
     angle_det = wrap(angle=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
     # angle_det in radians, located in the range [start_angle, start_angle+np.pi[
     y_det = - y_interp  # Y axis of the detector is going down but y* is going up
-    sign_array = sign(angle_det, z_interp)
+    sign_array = sign(angle=angle_det, z_coord=z_interp, x_coord=x_interp)
     x_det = np.multiply(sign_array, np.sqrt(x_interp**2 + z_interp**2))
     # if angle_det in [0, np.pi/2[ X axis of the detector is opposite to x*
     # if angle_det in [0, np.pi/2[ X axis of the detector is in the same direction as x*
@@ -1909,19 +1909,20 @@ def remove_hotpixels(data, mask, hotpixels=None):
     return data, mask
 
 
-def sign(angle, z_coord):
+def sign(angle, z_coord, x_coord):
     """
     Define the sign to apply to coordinates calculate for forward CDI data. The reciprocal frame follows the CXI
     convention z* downstream, y* vertical up and x* outboard. The detector frame follows the convention Y vertical
-    down and X opposite to x* at zero detector angles.
+    down and X opposite to x* at zero detector angles. The rotation is around y*
 
     :param angle: ndarray, angle to be assessed in radians
-    :param z_coord: ndarrray, needed when the angle is pi/2 to define the sign
+    :param z_coord: ndarrray, coordinates along z*
+    :param x_coord: ndarrray, coordinates along x*
     :return: sign_array, array of the same shape filled with -1 and 1
     """
-    sign_array = -1 * np.sign(np.cos(angle))
+    sign_array = -1 * np.sign(np.cos(angle)) * np.sign(x_coord)
     sign_array[angle == np.pi/2] = np.sign(z_coord[angle == np.pi/2])
-    sign_array[angle == np.pi / 2] = -1 * np.sign(z_coord[angle == np.pi / 2])
+    sign_array[angle == -np.pi/2] = -1 * np.sign(z_coord[angle == -np.pi/2])
     return sign_array
 
 
@@ -2714,23 +2715,17 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
 
 
 # if __name__ == "__main__":
-#     data = np.ones((12, 50, 40))
-#     nz, ny, nx = data.shape
-#     mask = np.zeros((12, 50, 40))
-#     import bcdi.experiment.experiment_utils as exp
-#     from mayavi import mlab
-#     setup = exp.SetupPreprocessing(beamline='P10', energy=8700, rocking_angle='inplane', angular_step=20,
-#                                    distance=5100)
-#     data, mask = grid_cdi(data, mask, setup)
-#
-#     grid_qx, grid_qz, grid_qy = np.mgrid[np.arange(-nz//2, nz//2), np.arange(-ny//2, ny//2),
-#                                 np.arange(-nx//2, nx//2)]
-#     # in nexus convention, z is downstream, y vertical and x outboard
-#     # but with Q, Qx is downstream, Qz vertical and Qy outboard
-#     mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
-#     mlab.contour3d((grid_qx, grid_qz, grid_qy, data), contours=20, opacity=0.5, colormap="jet")
-#     mlab.colorbar(orientation="vertical", nb_labels=6)
-#     mlab.outline(line_width=2.0)
-#     mlab.axes(xlabel='Qx', ylabel='Qz', zlabel='Qy')  #
-#     mlab.show()
+#     start_angle = -5 * np.pi / 180
+#     z_interp = np.array([-0])
+#     x_interp = np.array([100])
+#     print('z_interp', z_interp, 'x_interp', x_interp)
+#     angle = np.arctan2(z_interp, -x_interp)
+#     print('angle', angle)
+#     angle_det = wrap(angle=angle, start_angle=start_angle, range_angle=np.pi)
+#     print('wrap_angle', angle_det)
+#     sign_array = sign(angle_det, z_interp, x_interp)
+#     print('sign_array', sign_array)
+#     x_det = np.multiply(sign_array, np.sqrt(x_interp ** 2 + z_interp ** 2))
+#     print('x_det', x_det)
+
 
