@@ -403,7 +403,7 @@ class SetupPreprocessing(object):
         :param rocking_angle: angle which is tilted during the scan. 'outofplane', 'inplane', or 'energy'
         :param distance: sample to detector distance in meters, default=1m
         :param energy: X-ray energy in eV, default=8000eV
-            :param direct_beam: tuple describing the position of the direct beam in pixels (vertical, horizontal)
+        :param direct_beam: tuple describing the position of the direct beam in pixels (vertical, horizontal)
         :param beam_direction: x-ray beam direction
         :param sample_inplane: sample inplane reference direction along the beam at 0 angles
         :param sample_outofplane: surface normal of the sample at 0 angles
@@ -414,8 +414,7 @@ class SetupPreprocessing(object):
         self.wavelength = 12.398 * 1e-7 / energy  # in m
         self.rocking_angle = rocking_angle  # string
         self.distance = distance  # in meters
-        self.direct_x = direct_beam[0]  # in pixels
-        self.direct_y = direct_beam[1]  # in pixels
+        self.direct_beam = direct_beam  # in pixels (vertical, horizontal)
         self.beam_direction = beam_direction  # tuple vector
         self.sample_inplane = sample_inplane  # tuple vector
         self.sample_outofplane = sample_outofplane  # tuple vector
