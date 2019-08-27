@@ -104,13 +104,13 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
     """
     if type(tuple_array) is not tuple:
         raise TypeError('Expected "tuple_array" to be a tuple')
-    if type(tuple_sum_axis) is not tuple:
-        raise TypeError('Expected "tuple_sum_axis" to be a tuple')
 
     nb_subplots = len(tuple_array)
 
     if type(tuple_sum_frames) is not tuple:
         tuple_sum_frames = (tuple_sum_frames,) * nb_subplots
+    if type(tuple_sum_axis) is not tuple:
+        tuple_sum_axis = (tuple_sum_axis,) * nb_subplots
     if type(tuple_width_v) is not tuple:
         tuple_width_v = (tuple_width_v,) * nb_subplots
     if type(tuple_width_h) is not tuple:
