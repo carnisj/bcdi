@@ -96,7 +96,7 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
-roi_detector = [direct_beam[0] - 200, direct_beam[0] + 200, direct_beam[1] - 200, direct_beam[1] + 200]  # V x H
+roi_detector = [direct_beam[0] - 300, direct_beam[0] + 300, direct_beam[1] - 300, direct_beam[1] + 300]  # V x H
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
@@ -321,7 +321,8 @@ for scan_nb in range(len(scans)):
                                 tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
                                 tuple_title=('monitor.min() / monitor', 'Data after normalization'),
                                 tuple_scale=('linear', 'log'), xlabel=('Frame number', 'Frame number'),
-                                ylabel=('Counts (a.u.)', 'Rocking dimension'))
+                                ylabel=('Counts (a.u.)', 'Rocking dimension'),
+                                is_orthogonal=not use_rawdata, reciprocal_space=True)
 
         fig.savefig(savedir + 'monitor_S' + str(scans[scan_nb]) + '.png')
         if flag_interact:
@@ -360,7 +361,8 @@ for scan_nb in range(len(scans)):
     # save the raw data and mask #
     ##############################
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                    title='Data before aliens removal\n', invert_yaxis=False, reciprocal_space=True)
+                                    title='Data before aliens removal\n', invert_yaxis=False,
+                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
     plt.savefig(savedir + 'rawdata_S' + str(scans[scan_nb]) + '.png')
 
     if flag_interact:
@@ -371,7 +373,7 @@ for scan_nb in range(len(scans)):
 
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     vmax=(nz, ny, nx), title='Mask before aliens removal\n', invert_yaxis=False,
-                                    reciprocal_space=True)
+                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
     plt.savefig(savedir + 'rawmask_S' + str(scans[scan_nb]) + '.png')
 
     if flag_interact:
@@ -454,7 +456,8 @@ for scan_nb in range(len(scans)):
         del dim, width, fig_mask, original_data
 
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                        title='Data after aliens removal\n', invert_yaxis=False, reciprocal_space=True)
+                                        title='Data after aliens removal\n', invert_yaxis=False,
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
 
         if flag_interact:
             cid = plt.connect('close_event', close_event)
@@ -464,7 +467,7 @@ for scan_nb in range(len(scans)):
 
         fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                         vmax=(nz, ny, nx), title='Mask after aliens removal\n', invert_yaxis=False,
-                                        reciprocal_space=True)
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
 
         if flag_interact:
             cid = plt.connect('close_event', close_event)
@@ -639,19 +642,21 @@ for scan_nb in range(len(scans)):
     if center_fft in ['crop_symmetric_ZYX', 'pad_symmetric_ZYX']:
         # in other cases the diffraction pattern will not be centered
         fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                        title='Masked data', invert_yaxis=False, reciprocal_space=True)
+                                        title='Masked data', invert_yaxis=False, is_orthogonal=not use_rawdata,
+                                        reciprocal_space=True)
         plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + comment + '.png')
         if not flag_interact:
             plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
-                                    invert_yaxis=False, reciprocal_space=True)
+                                    invert_yaxis=False, is_orthogonal=not use_rawdata, reciprocal_space=True)
     plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                    vmax=(nz, ny, nx), title='Mask', invert_yaxis=False, reciprocal_space=True)
+                                    vmax=(nz, ny, nx), title='Mask', invert_yaxis=False, is_orthogonal=not use_rawdata,
+                                    reciprocal_space=True)
     plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)

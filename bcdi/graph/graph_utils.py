@@ -75,7 +75,8 @@ class Colormap(object):
 
 def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v, tuple_width_h, tuple_colorbar,
                    tuple_vmin, tuple_vmax, tuple_title, tuple_scale, cmap=my_cmap, tick_direction='inout',
-                   tick_width=1, tick_length=3, pixel_spacing=np.nan, reciprocal_space=False, **kwargs):
+                   tick_width=1, tick_length=3, pixel_spacing=np.nan, is_orthogonal=False, reciprocal_space=False,
+                   **kwargs):
     """
     Subplots of a 1D, 2D or 3D datasets using user-defined parameters.
 
@@ -96,6 +97,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
     :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm)
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame)
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise
     :param kwargs: optional 'xlabel' and 'ylabel', labels for plots
     :return:  the figure instance
@@ -201,9 +203,15 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
         elif nb_dim == 3:  # 3D, needs to be reduced to 2D by slicing or projecting
 
             if reciprocal_space:
-                slice_names = (' QyQz', ' QyQx', ' QzQx')
+                if is_orthogonal:
+                    slice_names = (' QyQz', ' QyQx', ' QzQx')
+                else:  # detector frame
+                    slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
             else:
-                slice_names = (' XY', ' XZ', ' YZ')
+                if is_orthogonal:
+                    slice_names = (' xy', ' xz', ' yz')
+                else:  # detector frame
+                    slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
 
             nbz, nby, nbx = array.shape
             if np.isnan(width_v):
@@ -565,7 +573,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=np.nan, width_h=np.
 
 def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, width_x=np.nan, plot_colorbar=False,
                      cmap=my_cmap, title='', scale='linear', invert_yaxis=False, vmin=np.nan, vmax=np.nan,
-                     tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan, reciprocal_space=False):
+                     tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
+                     is_orthogonal=False, reciprocal_space=False):
     """
     Create a figure with three 2D imshow plots from a 3D dataset.
 
@@ -583,6 +592,7 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
     :param pixel_spacing: pixel_spacing=desired tick_spacing (in nm)/voxel_size of the reconstruction(in nm)
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame)
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot titles.
     :param vmin: lower boundary for the colorbar. Float or tuple of 3 floats
     :param vmax: higher boundary for the colorbar. Float or tuple of 3 floats
@@ -612,9 +622,15 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
     if sum_frames:
         title = title + ' sum'
     if reciprocal_space:
-        slice_names = (' QyQz', ' QyQx', ' QzQx')
+        if is_orthogonal:
+            slice_names = (' QyQz', ' QyQx', ' QzQx')
+        else:  # detector frame
+            slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
     else:
-        slice_names = (' XY', ' XZ', ' YZ')
+        if is_orthogonal:
+            slice_names = (' xy', ' xz', ' yz')
+        else:  # detector frame
+            slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
     if nb_dim != 3:  # wrong array dimension
         raise ValueError('multislices_plot() needs a 3D array')
     else:
