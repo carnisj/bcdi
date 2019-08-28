@@ -651,9 +651,9 @@ for label in updated_label:
         print('Flip normal direction plane', str(label), '\n')
         plane_normal = -1 * plane_normal
     # correct plane_normal for anisotropic voxel size
-    plane_normal = np.array([plane_normal[0] * voxel_size[0],
-                             plane_normal[1] * voxel_size[1],
-                             plane_normal[2] * voxel_size[2]])
+    plane_normal = np.array([plane_normal[0] * 2 * np.pi / voxel_size[0],
+                             plane_normal[1] * 2 * np.pi / voxel_size[1],
+                             plane_normal[2] * 2 * np.pi / voxel_size[2]])
     plane_normal = plane_normal / np.linalg.norm(plane_normal)
 
     # check where is the measurement direction
