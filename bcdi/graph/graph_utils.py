@@ -311,14 +311,14 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
     return plt.gcf()
 
 
-def contour_slices(array, coordinates, sum_frames=False, levels=150, width_z=np.nan, width_y=np.nan, width_x=np.nan,
+def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=np.nan, width_y=np.nan, width_x=np.nan,
                    plot_colorbar=False, cmap=my_cmap, title='', scale='linear', is_orthogonal=False,
                    reciprocal_space=True):
     """
     Create a figure with three 2D contour plots from a 3D dataset.
 
     :param array: 3D array of real numbers
-    :param coordinates: a tuple of (qx, qz, qy) 1D-coordinates corresponding to the (Z, Y, X) of the cxi convention
+    :param q_coordinates: a tuple of (qx, qz, qy) 1D-coordinates corresponding to the (Z, Y, X) of the cxi convention
     :param sum_frames: if True, will sum the data along the 3rd axis
     :param levels: int n, will use n data intervals and draw n+1 contour lines
     :param width_z: user-defined zoom width along axis 0 (rocking angle), should be smaller than the actual data size
@@ -353,7 +353,7 @@ def contour_slices(array, coordinates, sum_frames=False, levels=150, width_z=np.
         return
     else:
         nbz, nby, nbx = array.shape
-        qx, qz, qy = coordinates
+        qx, qz, qy = q_coordinates
         if len(qx) != nbz or len(qz) != nby or len(qy) != nbx:
             print('Coordinates shape is not compatible with data shape')
 
