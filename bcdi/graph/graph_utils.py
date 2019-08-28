@@ -838,6 +838,7 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     intensity_grid = intensity_grid / intensity_grid[intensity_grid > 0].max() * 10000  # normalize for easier plotting
 
     # plot the stereographic projection
+    plt.ion()
     fig, ax0 = plt.subplots(1, 1, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
     plt0 = ax0.contourf(u_grid, v_grid, abs(intensity_grid), range(100, 6100, 250), cmap='hsv')
     plt.colorbar(plt0, ax=ax0)
@@ -888,8 +889,8 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
             print(key + ": ", str('{:.2f}'.format(value)))
         print('\n')
     ax0.set_title('Projection\nfrom ' + title)
-    plt.pause(0.1)
-
+    plt.pause(0.5)
+    plt.ioff()
     return fig, ax0
 
 
@@ -1014,26 +1015,29 @@ def scatter_plot(array, labels, markersize=4, markercolor='b', title=''):
 
     if len(labels) != ndim:
         raise ValueError('the number of labels is different from the number of columns in the array')
-
+    plt.ion()
     fig = plt.figure()
-    for idx in range(len(array)):
-        if ndim == 2:
-            ax = plt.subplot(111)
-            ax.scatter(array[:, 0], array[:, 1], s=markersize, color=markercolor)
-            plt.title(title)
-            ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
-            ax.set_ylabel(labels[1])
-            plt.pause(0.1)
-        elif ndim == 3:
-            ax = plt.subplot(111, projection='3d')
-            ax.scatter(array[:, 0], array[:, 1], array[:, 2], s=markersize, color=markercolor)
-            plt.title(title)
-            ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
-            ax.set_ylabel(labels[1])
-            ax.set_zlabel(labels[2])
-        else:
-            raise ValueError('There should be 2 or 3 columns in the array')
-    plt.pause(0.1)
+
+    if ndim == 2:
+        ax = plt.subplot(111)
+        ax.scatter(array[:, 0], array[:, 1], s=markersize, color=markercolor)
+        plt.title(title)
+        ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
+        ax.set_ylabel(labels[1])
+        plt.pause(0.1)
+    elif ndim == 3:
+        ax = plt.subplot(111, projection='3d')
+        ax.scatter(array[:, 0], array[:, 1], array[:, 2], s=markersize, color=markercolor)
+        plt.title(title)
+        ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
+        ax.set_ylabel(labels[1])
+        ax.set_zlabel(labels[2])
+    else:
+        raise ValueError('There should be 2 or 3 columns in the array')
+    if ndim == 2:
+        plt.axis('scaled')
+    plt.pause(0.5)
+    plt.ioff()
     return fig, ax
 
 
@@ -1072,7 +1076,7 @@ def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=''):
         raise ValueError('the number of markersizes is different from the number of arrays')
     if len(markercolors) != nb_arrays:
         raise ValueError('the number of markercolors is different from the number of arrays')
-
+    plt.ion()
     fig = plt.figure()
     if ndim == 2:
         ax = plt.subplot(111)
@@ -1099,7 +1103,10 @@ def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=''):
         ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
         ax.set_ylabel(labels[1])
         ax.set_zlabel(labels[2])
-    plt.pause(0.1)
+    if ndim == 2:
+        plt.axis('scaled')
+    plt.pause(0.5)
+    plt.ioff()
     return fig, ax
 
 
