@@ -107,19 +107,31 @@ def beamstop_correction(data, direct_beam, debugging=True):
         raise ValueError('2D or 3D data expected')
     nbz, nby, nbx = data.shape
 
+    # define boolean arrays for the large and the small square beam stops
     large_square = np.zeros((nby, nbx))
     large_square[direct_beam[0] - 33:direct_beam[0] + 35, direct_beam[1] - 31:direct_beam[1] + 36] = 1
     small_square = np.zeros((nby, nbx))
     small_square[direct_beam[0] - 14:direct_beam[0] + 14, direct_beam[1] - 11:direct_beam[1] + 16] = 1
 
-    # TODO: include interpolation for the outer layer of the beamstops, using neighbours intensity (kernel 3)
+    # define the boolean array for the border of the large square
+    temp_array = np.zeros((nby, nbx))
+    temp_array[direct_beam[0] - 32:direct_beam[0] + 34, direct_beam[1] - 30:direct_beam[1] + 35] = 1
+    large_border = large_square - temp_array
+
+    # define the boolean array for the border of the small square
+    temp_array = np.zeros((nby, nbx))
+    temp_array[direct_beam[0] - 13:direct_beam[0] + 13, direct_beam[1] - 10:direct_beam[1] + 15] = 1
+    small_border = small_square - temp_array
 
     if debugging:
-        gu.combined_plots(tuple_array=(data, large_square, small_square), tuple_sum_frames=(True, False, False),
+        gu.combined_plots(tuple_array=(data, large_square, small_square, large_border, small_border),
+                          tuple_sum_frames=(True, False, False, False, False),
                           tuple_sum_axis=0, tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=False,
-                          tuple_vmin=0, tuple_vmax=np.nan, tuple_title=('data', 'large_square', 'small_square'),
-                          tuple_scale=('log', 'linear', 'linear'), is_orthogonal=False, reciprocal_space=True)
+                          tuple_vmin=0, tuple_vmax=np.nan, is_orthogonal=False, reciprocal_space=True,
+                          tuple_title=('data', 'large_square', 'small_square', 'larger border', 'small border'),
+                          tuple_scale=('log', 'linear', 'linear', 'linear', 'linear'))
 
+    # absorption correction for the large and small square beam stops
     for idx in range(nbz):
         tempdata = data[idx, :, :]
         tempdata[np.nonzero(large_square)] = tempdata[np.nonzero(large_square)] * factor_large
@@ -128,6 +140,35 @@ def beamstop_correction(data, direct_beam, debugging=True):
 
     if debugging:
         gu.imshow_plot(data, sum_frames=True, sum_axis=0, vmin=0, title='data after absorption correction', scale='log',
+                       is_orthogonal=False, reciprocal_space=True)
+
+    # interpolation for the border of the large square beam stop
+    indices = np.argwhere(large_border == 1)
+    data[np.nonzero(np.repeat(large_border[np.newaxis, :, :], nbz, axis=0))] = 0  # exclude large border points
+    for frame in range(nbz):
+        tempdata = data[frame, :, :]
+        for idx in range(indices.shape[0]):
+            pixrow = indices[idx, 0]
+            pixcol = indices[idx, 1]
+            counter = 9 - large_border[pixrow-1:pixrow+2, pixcol-1:pixcol+2].sum()  # number of pixels not in the border
+            tempdata[pixrow, pixcol] = tempdata[pixrow-1:pixrow+2, pixcol-1:pixcol+2].sum() / counter
+        data[frame, :, :] = tempdata
+
+    # interpolation for the border of the large square beam stop
+    indices = np.argwhere(small_border == 1)
+    data[np.nonzero(np.repeat(small_border[np.newaxis, :, :], nbz, axis=0))] = 0  # exclude large border points
+    for frame in range(nbz):
+        tempdata = data[frame, :, :]
+        for idx in range(indices.shape[0]):
+            pixrow = indices[idx, 0]
+            pixcol = indices[idx, 1]
+            counter = 9 - small_border[pixrow-1:pixrow+2, pixcol-1:pixcol+2].sum()  # number of pixels not in the border
+            tempdata[pixrow, pixcol] = tempdata[pixrow-1:pixrow+2, pixcol-1:pixcol+2].sum() / counter
+        data[frame, :, :] = tempdata
+
+    if debugging:
+        gu.imshow_plot(data, sum_frames=True, sum_axis=0, vmin=0, scale='log',
+                       title='data after interpolating the border of beam stops',
                        is_orthogonal=False, reciprocal_space=True)
     return data
 
@@ -2767,6 +2808,7 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
 #     data = np.load('D:/data/P10_August2019/data/gold_2_2_2_00022/pynxraw/S22_pynx_norm_381_400_400.npz')['data']
 #     nz, ny, nx = data.shape
 #     data = beamstop_correction(data=data, direct_beam=(ny//2, nx//2), debugging=True)
+#     plt.show()
 #     start_angle = -5 * np.pi / 180
 #     z_interp = np.array([-0])
 #     x_interp = np.array([100])
