@@ -566,13 +566,14 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
 
 def check_cdi_angle(data, mask, cdi_angle, frames_logical):
     """
-    Check if there is no overlap in the measurement angles, crop it otherwise. Update data, mask and frames_logical
-    accordingly.
+    In forward CDI experiment, check if there is no overlap in the measurement angles, crop it otherwise.
+     Update data, mask and frames_logical accordingly.
 
     :param data: 3D forward CDI dataset before gridding.
     :param mask: 3D mask
-    :param cdi_angle:
-    :param frames_logical:
+    :param cdi_angle: array of measurement angles in degrees
+    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :return: updated data, mask, cdi_angle, frames_logical
     """
     wrap_angle = wrap(angle=cdi_angle, start_angle=cdi_angle[0], range_angle=180)
@@ -690,6 +691,23 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
         raise ValueError('Incorrect value for beamline parameter')
 
     return logfile
+
+
+def ewald_curvature(data, mask, cdi_angle, detector, setup, debugging=False):
+    """
+    Correct the data for the curvature of Ewald sphere.
+
+    :param data: 2D or 3D data to be corrected
+    :param mask: is it used here?
+    :param cdi_angle: array of measurement angles in degrees
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :return:
+    """
+    # TODO: implement this
+    return data, mask
 
 
 def find_bragg(data, peak_method):
@@ -1869,7 +1887,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
     return qx, qz, qy, frames_logical
 
 
-def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
+def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=False):
     """
     Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in cartesian coordinates.
 
@@ -1880,6 +1898,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param debugging: set to True to see plots
     :return: the data and mask interpolated in the laboratory frame, q values
     """
 
@@ -1909,20 +1928,47 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
     print('Angle range:', cdi_angle.min(), cdi_angle.max())
     angular_step = (cdi_angle[1] - cdi_angle[0]) * np.pi / 180  # switch to radians
 
-    #  calculate voxel sizes
-    dz_realspace = wavelength / (nbz * abs(angular_step))  # in nm
-    dy_realspace = wavelength * distance / (nby * pixel_y)  # in nm
-    dx_realspace = wavelength * distance / (nbx * pixel_x) # in nm
-    print('Real space pixel size (z, y, x) based on initial FFT shape: (',
-          str('{:.2f}'.format(dz_realspace)), 'nm,',
-          str('{:.2f}'.format(dy_realspace)), 'nm,',
-          str('{:.2f}'.format(dx_realspace)), 'nm )')
+    if debugging:
+        # calculate and plot measured voxels in a cartesian 2D grid x*z* (z* downstream x* outboard y* vertical up)
+        xstar_exp = - np.arange(-nbx // 2, nbx // 2, 1)[:, np.newaxis] * np.cos(cdi_angle[np.newaxis, :] * np.pi / 180)
+        # x* along raws, angle along columns, X axis of the detector is opposite to x*
+        zstar_exp = np.arange(-nbx // 2, nbx // 2, 1)[:, np.newaxis] * np.sin(cdi_angle[np.newaxis, :] * np.pi / 180)
+        _, ax = gu.scatter_plot(np.concatenate((xstar_exp.flatten()[:, np.newaxis],
+                                                zstar_exp.flatten()[:, np.newaxis]), axis=1),
+                                labels=('x*', 'z*'), markersize=1)
+
+    data, mask = ewald_curvature(data=data, mask=mask, cdi_angle=cdi_angle, detector=detector, setup=setup)
+
+    # calculate interpolation voxel size along x* and z* based on the difference at largest q
+    voxelsize_xz = nbx // 2 * np.sin(angular_step/2) - nbx // 2 * np.sin(-angular_step/2)  # in pixels
+    voxelsize_y = 1  # in pixels, y* axis is not affected by the rotation
+
+    # calculate the number of pixels in each direction using above voxel sizes
+    numxz = int(np.floor(nbx/voxelsize_xz))  # number of voxels in x* and z* directions (should be an integer)
+    numy = int(np.floor(nby/voxelsize_y))  # number of voxels in y* directions (should be an integer)
+
+    # update accordingly voxel sizes
+    voxelsize_xz = nbx / numxz  # in pixels
+    voxelsize_y = nby / numy  # in pixels
+    print('Voxel sizes for interpolation (z*,y*,x*)=', voxelsize_xz, voxelsize_y, voxelsize_xz)
+
+    # calculate q spacing and q values using above voxel sizes
+    dq_xz = 2*np.pi / lambdaz * (pixel_x * voxelsize_xz)  # in 1/nm
+    dq_y = 2*np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm
+    q_xz = np.arange(-numxz // 2, numxz // 2, 1) * dq_xz
+    q_y = np.arange(-numy // 2, numy // 2, 1) * dq_y
+    print('q spacing for interpolation (z*,y*,x*)=', dq_xz, dq_y, dq_xz, ' (1/nm)')
 
     # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
     # the range along z* is nbx because the frame is rotating aroung y*
-    z_interp, y_interp, x_interp = np.meshgrid(np.arange(-nbx // 2, nbx // 2, 1),
-                                               np.arange(-nby // 2, nby // 2, 1),
-                                               np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
+    # z_interp, y_interp, x_interp = np.meshgrid(np.arange(-nbx // 2, nbx // 2, 1),
+    #                                            np.arange(-nby // 2, nby // 2, 1),
+    #                                            np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
+
+    z_interp, y_interp, x_interp = np.meshgrid(np.linspace(-nbx // 2, nbx // 2, num=numxz, endpoint=False),
+                                               np.linspace(-nby // 2, nby // 2, num=numy, endpoint=False),
+                                               np.linspace(-nbx // 2, nbx // 2, num=numxz, endpoint=False),
+                                               indexing='ij')
 
     # map these points to (angle, Y, X), the measurement cylindrical coordinates
     angle_det = wrap(angle=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
@@ -1939,7 +1985,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
     newdata = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
                                   y_det.reshape((1, z_interp.size)),
                                   x_det.reshape((1, z_interp.size)))).transpose())
-    newdata = newdata.reshape((nbx, nby, nbx)).astype(data.dtype)
+    newdata = newdata.reshape((numxz, numy, numxz)).astype(data.dtype)
 
     # interpolate the mask onto the new points
     rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-nby // 2, nby // 2), np.arange(-nbx // 2, nbx // 2)),
@@ -1947,7 +1993,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
     newmask = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
                                   y_det.reshape((1, z_interp.size)),
                                   x_det.reshape((1, z_interp.size)))).transpose())
-    newmask = newmask.reshape((nbx, nby, nbx)).astype(mask.dtype)
+    newmask = newmask.reshape((numxz, numy, numxz)).astype(mask.dtype)
     newmask[np.nonzero(newmask)] = 1
 
     # check for Nan
@@ -1955,14 +2001,16 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical):
     newdata[np.isnan(newdata)] = 0
     newmask[np.isnan(newmask)] = 1
 
-    q_values = []
+    if True:
+        gu.contour_slices(newdata, (q_xz, q_y, q_xz), sum_frames=False, levels=150, title='Regridded data', scale='log',
+                          is_orthogonal=True, reciprocal_space=True)
 
-    return newdata, newmask, q_values, frames_logical
+    return newdata, newmask, (q_xz, q_y, q_xz), frames_logical
 
 
 def remove_hotpixels(data, mask, hotpixels=None):
     """
-    Remove hot pixels from CCD frames and update the mask
+    Remove hot pixels from CCD frames and update the mask.
 
     :param data: 2D or 3D array
     :param hotpixels: 2D array of hotpixels. 1 for a hotpixel, 0 for normal pixels.
