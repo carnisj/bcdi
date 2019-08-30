@@ -36,26 +36,26 @@ Output: a log file with strain statistics by plane, a VTK file for 3D visualizat
 """
 
 scan = 2227  # spec scan number
-datadir = 'D:/data/PtRh/ArCOO2(102x92x140)/'
+datadir = 'D:/data/PtRh/Ar(103x98x157)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
 support_threshold = 0.55  # threshold for support determination
-voxel_size = (2.96, 3.29, 2.17)  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
-savedir = datadir + "isosurface_" + str(support_threshold) + " 2.96x3.29x2.17nm3/"
+voxel_size = (2.95, 3.09, 1.93)  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+savedir = datadir + "isosurface_" + str(support_threshold) + " 2.95x3.09x1.93nm3/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
-smoothing_iterations = 10  # number of iterations in Taubin smoothing
+smoothing_iterations = 5  # number of iterations in Taubin smoothing
 smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
 smooth_mu = 0.51  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
 my_min_distance = 20  # pixel separation between peaks in corner_peaks()
-max_distance_plane = 0.71  # in pixels, maximum allowed distance to the facet plane of a voxel
+max_distance_plane = 1.01  # in pixels, maximum allowed distance to the facet plane of a voxel
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
-threshold_stereo = -1000  # threshold for defining the background in the density estimation of normals
+threshold_stereo = -1500  # threshold for defining the background in the density estimation of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 #########################################################
 # parameters only used in the equirectangular projection #
@@ -283,6 +283,7 @@ gc.collect()
 ###############################################
 all_planes = np.zeros((nz, ny, nx), dtype=int)
 planes_counter = np.zeros((nz, ny, nx), dtype=int)  # check if a voxel is used several times
+duplicated_counter = 0
 for idx in range(nb_vertices):
     temp_indices = np.rint(vertices_old[idx, :]).astype(int)
     planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] = \
@@ -292,10 +293,11 @@ for idx in range(nb_vertices):
         if all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] != vertices_label[idx]:
             # belongs to different groups, therefore it is set as background (label 0)
             all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = 0
+            duplicated_counter = duplicated_counter + 1
     else:  # non duplicated pixel
         all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = \
                 vertices_label[idx]
-
+print('Rounded vertices belonging to multiple labels = ', duplicated_counter)
 del planes_counter, vertices_label, vertices_old
 gc.collect()
 
@@ -534,10 +536,9 @@ for label in updated_label:
     plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
 
     # use only pixels belonging to the outer shell of the support
-    if label != 11:
-        plane = plane * surface
+    plane = plane * surface
 
-    if label == 11:  # debug
+    if debug:
         # plot plane points overlaid with the support
         plane_indices = np.nonzero(plane == 1)
         gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
@@ -547,7 +548,7 @@ for label in updated_label:
                                  markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
                                  title='Plane' + str(label) + ' after finding the surface\n iteration' +
                                        str(iterate) + '- Points number=' + str(len(plane_indices[0])))
-        print('')
+
     if plane[plane == 1].sum() == 0:  # no point belongs to the support
         print('Plane ', label, ' , no point belongs to support')
         continue
@@ -559,7 +560,8 @@ for label in updated_label:
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=max_distance_plane, debugging=debug)
+                                    max_distance=2*max_distance_plane, debugging=False)
+        # here the distance threshold is larger in order to reach voxels missed when rounding vertices to integer
         plane_indices = np.nonzero(plane)
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
         if plane[plane == 1].sum() == previous_nb:
@@ -569,9 +571,13 @@ for label in updated_label:
 
     if debug:
         plane_indices = np.nonzero(plane == 1)
-        gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
-                        title='Plane' + str(label) + ' after growing facet at the surface\nPoints number='
-                              + str(len(plane_indices[0])))
+        gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                         np.concatenate((surf0[:, np.newaxis],
+                                                         surf1[:, np.newaxis],
+                                                         surf2[:, np.newaxis]), axis=1)),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 title='Plane' + str(label) + ' after 1st growth at the surface\n iteration' +
+                                       str(iterate) + '- Points number=' + str(len(plane_indices[0])))
 
     ################################################################
     # refine plane fit, now we are sure that we are at the surface #
@@ -581,6 +587,15 @@ for label in updated_label:
         print('No points remaining after refined fit for plane', label)
         continue
 
+    if debug:
+        gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                         np.concatenate((surf0[:, np.newaxis],
+                                                         surf1[:, np.newaxis],
+                                                         surf2[:, np.newaxis]), axis=1)),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 title='Plane' + str(label) + ' after refined fit at surface\n iteration' +
+                                       str(iterate) + '- Points number=' + str(len(plane_indices[0])))
+
     # update plane by filtering out pixels too far from the fit plane
     plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
                                         max_distance=max_distance_plane)
@@ -589,6 +604,15 @@ for label in updated_label:
         continue
     print('Plane', label, ', ', str(plane[plane == 1].sum()), 'points after refined fit')
     plane_indices = np.nonzero(plane)
+
+    if debug:
+        gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                         np.concatenate((surf0[:, np.newaxis],
+                                                         surf1[:, np.newaxis],
+                                                         surf2[:, np.newaxis]), axis=1)),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 title='Plane' + str(label) + ' after distance threshold at surface\n iteration' +
+                                       str(iterate) + '- Points number=' + str(len(plane_indices[0])))
 
     ############################################
     # final growth of the facet on the surface #
