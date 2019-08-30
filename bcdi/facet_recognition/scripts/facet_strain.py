@@ -36,11 +36,11 @@ Output: a log file with strain statistics by plane, a VTK file for 3D visualizat
 """
 
 scan = 2227  # spec scan number
-datadir = 'D:/data/PtRh/PtRh(103x98x157)/'
+datadir = 'D:/data/PtRh/ArCOO2(102x92x140)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
 support_threshold = 0.55  # threshold for support determination
-voxel_size = (2.95, 3.09, 1.93)  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
-savedir = datadir + "isosurface_" + str(support_threshold) + "/"
+voxel_size = (2.96, 3.29, 2.17)  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+savedir = datadir + "isosurface_" + str(support_threshold) + " 2.96x3.29x2.17nm3/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
@@ -155,7 +155,7 @@ if projection_method == 'stereographic':
                                                                    reflection_axis=reflection_axis, debugging=debug)
     numy, numx = labels_top.shape  # identical to labels_bottom.shape
     if stereo_proj.shape[0] != nb_normals:
-        print('incompatible number of normals')
+        print(projection_method, 'projection output: incompatible number of normals')
         sys.exit()
 
     # look for potentially duplicated labels (labels crossing the 90 degree circle)
@@ -240,7 +240,7 @@ elif projection_method == 'equirectangular':
                                                          background_threshold=kde_threshold,
                                                          min_distance=my_min_distance, debugging=debug)
     if longitude_latitude.shape[0] != nb_normals:
-        print('incompatible number of normals')
+        print(projection_method, 'projection output: incompatible number of normals')
         sys.exit()
     numy, numx = labels.shape
     # rescale the horizontal axis from [-pi pi] to [0 numx]
