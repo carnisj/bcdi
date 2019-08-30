@@ -504,11 +504,11 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, 
     from scipy import ndimage
     from skimage.feature import corner_peaks
     from skimage.morphology import watershed
-    # TODO: use reference_axis to do the stereographic projection depending on which direction q is aligned with
 
-    # check normals for nan
     radius_mean = 1  # normals are normalized
     stereo_center = 0  # COM of the weighted point density
+
+    # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
     if len(list_nan) != 0:
         for idx in range(list_nan.shape[0]//3):
@@ -753,7 +753,6 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.5, 
     tris = new_vertices[faces]
     # Calculate the normal for all the triangles, by taking the cross product of the vectors v1-v0,
     # and v2-v0 in each triangle
-    # TODO: check direction of normals by dot product with the gradient of the support
     normals = np.cross(tris[::, 1] - tris[::, 0], tris[::, 2] - tris[::, 0])
     areas = np.array([1/2 * np.linalg.norm(normal) for normal in normals])
     normals_length = np.sqrt(normals[:, 0]**2 + normals[:, 1]**2 + normals[:, 2]**2)
@@ -784,6 +783,14 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.5, 
     err_normals = np.argwhere(np.isnan(normals[:, 0]))
     normals[err_normals, :] = normals[err_normals-1, :]
     plt.ioff()
+
+    # check normals for nan
+    list_nan = np.argwhere(np.isnan(normals))
+    if len(list_nan) != 0:
+        for i in range(list_nan.shape[0]//3):
+            normals = np.delete(normals, list_nan[i*3, 0], axis=0)
+            color = np.delete(color, list_nan[i*3, 0], axis=0)
+
     return new_vertices, normals, areas, color, err_normals
 
 
