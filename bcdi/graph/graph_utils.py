@@ -385,7 +385,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=n
         else:
             raise ValueError('Wrong value for scale')
 
-        plt.axis('scaled')
+        ax0.set_aspect("equal")
         ax0.set_title(title + slice_names[0])
         if plot_colorbar:
             plt.colorbar(plt0, ax=ax0)
@@ -408,7 +408,8 @@ def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=n
             plt1 = ax1.contourf(qy, qx, np.log10(abs(temp_array)), levels, cmap=cmap)
         else:
             raise ValueError('Wrong value for scale')
-        plt.axis('scaled')
+
+        ax1.set_aspect("equal")
         ax1.set_title(title + slice_names[1])
         if plot_colorbar:
             plt.colorbar(plt1, ax=ax1)
@@ -432,14 +433,14 @@ def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=n
         else:
             raise ValueError('Wrong value for scale')
 
-        plt.axis('scaled')
+        ax2.set_aspect("equal")
         ax2.set_title(title + slice_names[2])
         if plot_colorbar:
             plt.colorbar(plt2, ax=ax2)
 
         # axis 3
         ax3.set_visible(False)
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.pause(0.5)
     plt.ioff()
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
