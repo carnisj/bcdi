@@ -409,7 +409,6 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
 
     # find nearby voxels using the coordination number
     obj = np.copy(plane[start_z:stop_z, start_y:stop_y, start_x: stop_x])
-    print('grow facet, before convolution, nb of points=', str(plane[np.nonzero(plane)].sum()))
     coord = np.rint(convolve(obj, kernel, mode='same'))
     coord = coord.astype(int)
     coord[np.nonzero(coord)] = 1
@@ -421,7 +420,6 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     temp_plane[support == 0] = 0
     # check distance of new voxels to the plane
     new_indices = np.nonzero(temp_plane)
-    print('grow facet, before distance_threhsold, nb of points=', str(temp_plane[np.nonzero(temp_plane)].sum()))
 
     temp_plane, no_points = distance_threshold(fit=fit, indices=new_indices, shape=temp_plane.shape,
                                                max_distance=max_distance)
