@@ -379,6 +379,7 @@ for label in updated_label:
         print('Plane', label, ', ', str(plane[plane == 1].sum()), 'points after checking distance to plane')
 
     if debug:
+        plane_indices = np.nonzero(plane == 1)
         gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
                         title='Plane' + str(label) + ' after raw fit')
 
@@ -402,33 +403,33 @@ for label in updated_label:
     if debug:
         gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
                         title='Plane' + str(label) + ' after growing facet into support')
+        print('')
     ##########################################################################################################
     # Look for the surface: correct for the offset between plane equation and the outer shell of the support #
     # Effect of meshing/smoothing: the meshed support is smaller than the initial support #
     #############################################################################################
     # crop the support to a small ROI included in the plane box
-    support_indices = np.nonzero(surface[
+    surface_indices = np.nonzero(surface[
                                  plane_indices[0].min() - 3:plane_indices[0].max() + 3,
                                  plane_indices[1].min() - 3:plane_indices[1].max() + 3,
                                  plane_indices[2].min() - 3:plane_indices[2].max() + 3])
-    sup0 = support_indices[0] + plane_indices[0].min() - 3  # add offset plane_indices[0].min() - 3
-    sup1 = support_indices[1] + plane_indices[1].min() - 3  # add offset plane_indices[1].min() - 3
-    sup2 = support_indices[2] + plane_indices[2].min() - 3  # add offset plane_indices[2].min() - 3
+    surf0 = surface_indices[0] + plane_indices[0].min() - 3  # add offset plane_indices[0].min() - 3
+    surf1 = surface_indices[1] + plane_indices[1].min() - 3  # add offset plane_indices[1].min() - 3
+    surf2 = surface_indices[2] + plane_indices[2].min() - 3  # add offset plane_indices[2].min() - 3
     plane_normal = np.array([coeffs[0, 0], coeffs[1, 0], -1])  # normal is [a, b, c] if ax+by+cz+d=0
 
-    dist = np.zeros(len(support_indices[0]))
-    for point in range(len(support_indices[0])):
-        dist[point] = (coeffs[0, 0]*sup0[point] + coeffs[1, 0]*sup1[point] - sup2[point] + coeffs[2, 0]) \
+    dist = np.zeros(len(surface_indices[0]))
+    for point in range(len(surface_indices[0])):
+        dist[point] = (coeffs[0, 0]*surf0[point] + coeffs[1, 0]*surf1[point] - surf2[point] + coeffs[2, 0]) \
                / np.linalg.norm(plane_normal)
     mean_dist = dist.mean()
     print('Mean distance of plane ', label, ' to outer shell = ' + str('{:.2f}'.format(mean_dist)) + 'pixels')
 
-    dist = np.zeros(len(support_indices[0]))
-    for point in range(len(support_indices[0])):
-        dist[point] = (coeffs[0, 0]*sup0[point] + coeffs[1, 0]*sup1[point] - sup2[point]
+    dist = np.zeros(len(surface_indices[0]))
+    for point in range(len(surface_indices[0])):
+        dist[point] = (coeffs[0, 0]*surf0[point] + coeffs[1, 0]*surf1[point] - surf2[point]
                        + (coeffs[2, 0] - mean_dist / 2)) / np.linalg.norm(plane_normal)
     new_dist = dist.mean()
-
     step_shift = 0.5  # will scan by half pixel through the crystal in order to not miss voxels
     # these directions are for a mesh smaller than the support
     if mean_dist*new_dist < 0:  # crossed the support surface
@@ -452,16 +453,16 @@ for label in updated_label:
             fu.offset_plane(indices=plane_indices, offset=nbloop*step_shift, plane_normal=plane_normal)
 
         for point in range(len(plane_newindices0)):
-            for point2 in range(len(sup0)):
-                if plane_newindices0[point] == sup0[point2] and plane_newindices1[point] == sup1[point2]\
-                        and plane_newindices2[point] == sup2[point2]:
+            for point2 in range(len(surf0)):
+                if plane_newindices0[point] == surf0[point2] and plane_newindices1[point] == surf1[point2]\
+                        and plane_newindices2[point] == surf2[point2]:
                     common_points = common_points + 1
 
         if debug:
             tempcoeff2 = coeffs[2, 0] - nbloop * step_shift
-            dist = np.zeros(len(support_indices[0]))
-            for point in range(len(support_indices[0])):
-                dist[point] = (coeffs[0, 0] * sup0[point] + coeffs[1, 0] * sup1[point] - sup2[point] + tempcoeff2) \
+            dist = np.zeros(len(surface_indices[0]))
+            for point in range(len(surface_indices[0])):
+                dist[point] = (coeffs[0, 0] * surf0[point] + coeffs[1, 0] * surf1[point] - surf2[point] + tempcoeff2) \
                               / np.linalg.norm(plane_normal)
             temp_mean_dist = dist.mean()
             plane = np.zeros(surface.shape)
@@ -471,9 +472,9 @@ for label in updated_label:
             gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_newindices0[:, np.newaxis],
                                                              plane_newindices1[:, np.newaxis],
                                                              plane_newindices2[:, np.newaxis]), axis=1),
-                                             np.concatenate((sup0[:, np.newaxis],
-                                                             sup1[:, np.newaxis],
-                                                             sup2[:, np.newaxis]), axis=1)),
+                                             np.concatenate((surf0[:, np.newaxis],
+                                                             surf1[:, np.newaxis],
+                                                             surf2[:, np.newaxis]), axis=1)),
                                      markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
                                      title='Plane' + str(label) + ' after shifting facet - iteration' + str(nbloop))
 
@@ -533,19 +534,20 @@ for label in updated_label:
     plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
 
     # use only pixels belonging to the outer shell of the support
-    plane = plane * surface
+    if label != 11:
+        plane = plane * surface
 
-    if debug:
+    if label == 11:  # debug
         # plot plane points overlaid with the support
         plane_indices = np.nonzero(plane == 1)
         gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
-                                         np.concatenate((sup0[:, np.newaxis],
-                                                         sup1[:, np.newaxis],
-                                                         sup2[:, np.newaxis]), axis=1)),
+                                         np.concatenate((surf0[:, np.newaxis],
+                                                         surf1[:, np.newaxis],
+                                                         surf2[:, np.newaxis]), axis=1)),
                                  markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
                                  title='Plane' + str(label) + ' after finding the surface\n iteration' +
                                        str(iterate) + '- Points number=' + str(len(plane_indices[0])))
-
+        print('')
     if plane[plane == 1].sum() == 0:  # no point belongs to the support
         print('Plane ', label, ' , no point belongs to support')
         continue
@@ -607,9 +609,9 @@ for label in updated_label:
     if debug:
         plane_indices = np.nonzero(plane)
         gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
-                                         np.concatenate((sup0[:, np.newaxis],
-                                                         sup1[:, np.newaxis],
-                                                         sup2[:, np.newaxis]), axis=1)),
+                                         np.concatenate((surf0[:, np.newaxis],
+                                                         surf1[:, np.newaxis],
+                                                         surf2[:, np.newaxis]), axis=1)),
                                  markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
                                  title='Plane' + str(label) + ' final growth at the surface\nPoints number='
                                        + str(len(plane_indices[0])))
@@ -620,9 +622,9 @@ for label in updated_label:
     plane[np.nonzero(edges)] = 0
     plane_indices = np.nonzero(plane)
     gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
-                                     np.concatenate((sup0[:, np.newaxis],
-                                                     sup1[:, np.newaxis],
-                                                     sup2[:, np.newaxis]), axis=1)),
+                                     np.concatenate((surf0[:, np.newaxis],
+                                                     surf1[:, np.newaxis],
+                                                     surf2[:, np.newaxis]), axis=1)),
                              markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
                              title='Plane' + str(label) + ' after edge removal\nPoints number='
                                    + str(len(plane_indices[0])))
