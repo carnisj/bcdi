@@ -51,7 +51,7 @@ smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
 smooth_mu = 0.51  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
 my_min_distance = 20  # pixel separation between peaks in corner_peaks()
-max_distance_plane = 0.90  # in pixels, maximum allowed distance to the facet plane of a voxel
+max_distance_plane = 0.71  # in pixels, maximum allowed distance to the facet plane of a voxel
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
@@ -130,7 +130,7 @@ if debug:
 #######################################
 # smooth the mesh using taubin_smooth #
 #######################################
-vertices_new, normals, areas, color, _ = \
+vertices_new, normals, areas, intensity, _ = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
                      debugging=1)
 
@@ -147,7 +147,7 @@ gc.collect()
 nb_normals = normals.shape[0]
 if projection_method == 'stereographic':
     # now it supposes that q is along the second axis vertical Y (CXI convention)
-    labels_top, labels_bottom, stereo_proj = fu.stereographic_proj(normals=normals, color=color, weights=areas,
+    labels_top, labels_bottom, stereo_proj = fu.stereographic_proj(normals=normals, intensity=intensity,
                                                                    background_threshold=threshold_stereo,
                                                                    min_distance=my_min_distance, savedir=savedir,
                                                                    save_txt=False, planes=planes, plot_planes=True,
@@ -236,7 +236,7 @@ if projection_method == 'stereographic':
         vertices_label[faces[idx, :]] = label_idx  # attribute the label to the corresponding vertices
 
 elif projection_method == 'equirectangular':
-    labels, longitude_latitude = fu.equirectangular_proj(normals, color, weights=areas, bw_method=bw_method,
+    labels, longitude_latitude = fu.equirectangular_proj(normals=normals, intensity=intensity, bw_method=bw_method,
                                                          background_threshold=kde_threshold,
                                                          min_distance=my_min_distance, debugging=debug)
     if longitude_latitude.shape[0] != nb_normals:

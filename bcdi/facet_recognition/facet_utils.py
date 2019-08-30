@@ -127,15 +127,14 @@ def distance_threshold(fit, indices, shape, max_distance=0.90):
     return plane, no_points
 
 
-def equirectangular_proj(normals, color, weights, cmap=default_cmap, bw_method=0.03, min_distance=10,
+def equirectangular_proj(normals, intensity, cmap=default_cmap, bw_method=0.03, min_distance=10,
                          background_threshold=-0.35, debugging=False):
     """
     Detect facets in an object using an equirectangular projection of normals to mesh triangles
      and watershed segmentation.
 
     :param normals: normals array
-    :param color: intensity array
-    :param weights: weights used in the gaussian kernel density estimation
+    :param intensity: intensity array
     :param cmap: colormap used for plotting
     :param bw_method: bw_method of gaussian_kde
     :param min_distance: min_distance of corner_peaks()
@@ -153,7 +152,7 @@ def equirectangular_proj(normals, color, weights, cmap=default_cmap, bw_method=0
     if len(list_nan) != 0:
         for i in range(list_nan.shape[0]//3):
             normals = np.delete(normals, list_nan[i*3, 0], axis=0)
-            color = np.delete(color, list_nan[i*3, 0], axis=0)
+            intensity = np.delete(intensity, list_nan[i*3, 0], axis=0)
     # calculate latitude and longitude from xyz, this is equal to the equirectangular flat square projection
     long_lat = np.zeros((normals.shape[0], 2), dtype=normals.dtype)
     for i in range(normals.shape[0]):
@@ -163,14 +162,14 @@ def equirectangular_proj(normals, color, weights, cmap=default_cmap, bw_method=0
         long_lat[i, 1] = np.arcsin(normals[i, 2])  # latitude
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.scatter(long_lat[:, 0], long_lat[:, 1], c=color, cmap=cmap)
+    ax.scatter(long_lat[:, 0], long_lat[:, 1], c=intensity, cmap=cmap)
     ax.set_xlim(-np.pi, np.pi)
     ax.set_ylim(-np.pi / 2, np.pi / 2)
     plt.axis('scaled')
     plt.title('Equirectangular projection of the weighted point densities before KDE')
     plt.pause(0.1)
 
-    del color
+    del intensity
     gc.collect()
 
     # kernel density estimation
@@ -477,7 +476,7 @@ def plane_angle_cubic(ref_plane, plane):
     return angle
 
 
-def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, reflection_axis, min_distance=10,
+def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, reflection_axis, min_distance=10,
                        background_threshold=-1000, save_txt=False, cmap=default_cmap, planes={}, plot_planes=True,
                        debugging=False):
     """
@@ -485,8 +484,7 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, 
      and watershed segmentation.
 
     :param normals: array of normals to mesh triangles (nb_normals rows x 3 columns)
-    :param color: array of intensities (nb_normals rows x 1 column)
-    :param weights: weights used in the density estimation
+    :param intensity: array of intensities (nb_normals rows x 1 column)
     :param max_angle: maximum angle in degree of the stereographic projection (should be larger than 90)
     :param savedir: directory for saving figures
     :param voxel_size: tuple of three numbers corresponding to the real-space voxel size in each dimension
@@ -513,7 +511,7 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, 
     if len(list_nan) != 0:
         for idx in range(list_nan.shape[0]//3):
             normals = np.delete(normals, list_nan[idx*3, 0], axis=0)
-            color = np.delete(color, list_nan[idx*3, 0], axis=0)
+            intensity = np.delete(intensity, list_nan[idx*3, 0], axis=0)
 
     # recalculate normals considering the anisotropy of voxel sizes (otherwise angles are wrong)
     # the stereographic projection is in reciprocal space, therefore we need to use the reciprocal voxel sizes
@@ -530,18 +528,18 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, 
                                   stereo_center=stereo_center)
 
     if True:
-        fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=color,
+        fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=intensity,
                                        radius_mean=radius_mean, planes=planes, title="South pole",
                                        plot_planes=plot_planes)
         fig.savefig(savedir + 'South pole.png')
-        fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=color,
+        fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=intensity,
                                        radius_mean=radius_mean, planes=planes, title="North pole",
                                        plot_planes=plot_planes)
         fig.savefig(savedir + 'North pole.png')
 
     yi, xi = np.mgrid[-max_angle:max_angle:381j, -max_angle:max_angle:381j]  # vertical, horizontal
-    density_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), color, (yi, xi), method='linear')
-    density_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), color, (yi, xi), method='linear')
+    density_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), intensity, (yi, xi), method='linear')
+    density_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), intensity, (yi, xi), method='linear')
     density_top = density_top / density_top[density_top > 0].max() * 10000  # normalize for plotting
     density_bottom = density_bottom / density_bottom[density_bottom > 0].max() * 10000  # normalize for plotting
 
@@ -556,7 +554,7 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, 
                               str(density_top[ii, jj]) + '\t' + str(yi[ii, 0]) + '\t' +
                               str(xi[0, jj]) + '\t' + str(density_bottom[ii, jj]) + '\n')
         fichier.close()
-        del color
+        del intensity
         gc.collect()
 
     # inverse densities for watershed segmentation
@@ -708,7 +706,7 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.5, 
     :param lamda: smoothing variable 0 < lambda < mu < 1 (default 0.5)
     :param mu: smoothing variable 0 < lambda < mu < 1 (default 0.53)
     :param debugging: show plots for debugging
-    :return: smoothened vertices (ndarray n*3), normals to triangle (ndarray m*3)
+    :return: smoothened vertices (ndarray n*3), normals to triangle (ndarray m*3), weighted density of normals, errors
     """
     from mpl_toolkits.mplot3d import Axes3D
     plt.ion()
@@ -757,16 +755,18 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.5, 
 
     # calculate the colormap for plotting the weighted point density of normals on a sphere
     local_radius = 0.1
-    color = np.zeros(normals.shape[0], dtype=normals.dtype)
+    intensity = np.zeros(normals.shape[0], dtype=normals.dtype)
     for i in range(normals.shape[0]):
         distances = np.sqrt(np.sum((normals - normals[i, :]) ** 2, axis=1))  # ndarray of  normals.shape[0]
-        color[i] = distances[distances < local_radius].sum()
-    color = color / max(color)
+        intensity[i] = np.multiply(areas[distances < local_radius], distances[distances < local_radius]).sum()
+        # normals are weighted by the area of mesh triangles
+
+    intensity = intensity / max(intensity)
     if debugging:
         fig = plt.figure()
         ax = Axes3D(fig)
-        ax.scatter(normals[:, 0], normals[:, 1], normals[:, 2], c=color, cmap=cmap)
-        # ax.scatter(normals[:, 2], normals[:, 1], normals[:, 0], c=color, cmap=cmap)
+        ax.scatter(normals[:, 0], normals[:, 1], normals[:, 2], c=intensity, cmap=cmap)
+        # ax.scatter(normals[:, 2], normals[:, 1], normals[:, 0], c=intensity, cmap=cmap)
         ax.set_xlim(-1, 1)
         ax.set_xlabel('z')
         ax.set_ylim(-1, 1)
@@ -785,9 +785,9 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.5, 
     if len(list_nan) != 0:
         for i in range(list_nan.shape[0]//3):
             normals = np.delete(normals, list_nan[i*3, 0], axis=0)
-            color = np.delete(color, list_nan[i*3, 0], axis=0)
+            intensity = np.delete(intensity, list_nan[i*3, 0], axis=0)
 
-    return new_vertices, normals, areas, color, err_normals
+    return new_vertices, normals, areas, intensity, err_normals
 
 
 # if __name__ == "__main__":
