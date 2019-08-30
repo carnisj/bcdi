@@ -515,30 +515,26 @@ def stereographic_proj(normals, color, weights, max_angle, savedir, voxel_size, 
             normals = np.delete(normals, list_nan[idx*3, 0], axis=0)
             color = np.delete(color, list_nan[idx*3, 0], axis=0)
 
+    # recalculate normals considering the anisotropy of voxel sizes (otherwise angles are wrong)
+    # the stereographic projection is in reciprocal space, therefore we need to use the reciprocal voxel sizes
+    iso_normals = np.copy(normals)
+    iso_normals[:, 0] = iso_normals[:, 0] * 2 * np.pi / voxel_size[0]
+    iso_normals[:, 1] = iso_normals[:, 1] * 2 * np.pi / voxel_size[1]
+    iso_normals[:, 2] = iso_normals[:, 2] * 2 * np.pi / voxel_size[2]
+    # normalize iso_normals
+    iso_normals_length = np.sqrt(iso_normals[:, 0] ** 2 + iso_normals[:, 1] ** 2 + iso_normals[:, 2] ** 2)
+    iso_normals = iso_normals / iso_normals_length[:, np.newaxis]
+
     # calculate u and v from xyz
-    stereo_proj = calc_stereoproj(reflection_axis=reflection_axis, normals=normals, radius_mean=radius_mean,
+    stereo_proj = calc_stereoproj(reflection_axis=reflection_axis, normals=iso_normals, radius_mean=radius_mean,
                                   stereo_center=stereo_center)
 
     if True:
-        # recalculate normals considering the anisotropy of voxel sizes (otherwise angles are wrong)
-        # the stereographic projection is in reciprocal space, therefore we need to use the reciprocal voxel sizes
-        iso_normals = np.copy(normals)
-        iso_normals[:, 0] = iso_normals[:, 0] * 2 * np.pi / voxel_size[0]
-        iso_normals[:, 1] = iso_normals[:, 1] * 2 * np.pi / voxel_size[1]
-        iso_normals[:, 2] = iso_normals[:, 2] * 2 * np.pi / voxel_size[2]
-        # normalize iso_normals
-        iso_normals_length = np.sqrt(iso_normals[:, 0] ** 2 + iso_normals[:, 1] ** 2 + iso_normals[:, 2] ** 2)
-        iso_normals = iso_normals / iso_normals_length[:, np.newaxis]
-
-        # recalculate the stereographic projection
-        iso_proj = calc_stereoproj(reflection_axis=reflection_axis, normals=iso_normals, radius_mean=radius_mean,
-                                   stereo_center=stereo_center)
-
-        fig, _ = gu.plot_stereographic(euclidian_u=iso_proj[:, 0], euclidian_v=iso_proj[:, 1], color=color,
+        fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=color,
                                        radius_mean=radius_mean, planes=planes, title="South pole",
                                        plot_planes=plot_planes)
         fig.savefig(savedir + 'South pole.png')
-        fig, _ = gu.plot_stereographic(euclidian_u=iso_proj[:, 2], euclidian_v=iso_proj[:, 3], color=color,
+        fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=color,
                                        radius_mean=radius_mean, planes=planes, title="North pole",
                                        plot_planes=plot_planes)
         fig.savefig(savedir + 'North pole.png')
