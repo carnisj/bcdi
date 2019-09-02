@@ -1205,7 +1205,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, debugging=False):
         else:
             data = np.asarray(series_data)
             break
-        print(file_idx)
+        print('Loading frame', file_idx)
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
@@ -1965,10 +1965,6 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
 
     # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
     # the range along z* is nbx because the frame is rotating aroung y*
-    # z_interp, y_interp, x_interp = np.meshgrid(np.linspace(-nbx // 2, nbx // 2, num=numxz, endpoint=False),
-    #                                            np.linspace(-nby // 2, nby // 2, num=numy, endpoint=False),
-    #                                            np.linspace(-nbx // 2, nbx // 2, num=numxz, endpoint=False),
-    #                                            indexing='ij')
     z_interp, y_interp, x_interp =\
         np.meshgrid(np.linspace(-directbeam_x, -directbeam_x + nbx, num=numxz, endpoint=False),
                     np.linspace(-directbeam_y, -directbeam_y + nby, num=numy, endpoint=False),
@@ -1985,8 +1981,6 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     # if angle_det in [0, np.pi/2[ X axis of the detector is in the same direction as x*
 
     # interpolate the data onto the new points
-    # rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-nby // 2, nby // 2), np.arange(-nbx // 2, nbx // 2)),
-    #                               data, method='nearest', bounds_error=False, fill_value=0)
     rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
                                    np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
                                   data, method='nearest', bounds_error=False, fill_value=0)
@@ -1996,8 +1990,6 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     newdata = newdata.reshape((numxz, numy, numxz)).astype(data.dtype)
 
     # interpolate the mask onto the new points
-    # rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-nby // 2, nby // 2), np.arange(-nbx // 2, nbx // 2)),
-    #                               mask, method='nearest', bounds_error=False, fill_value=0)
     rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
                                    np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
                                   mask, method='nearest', bounds_error=False, fill_value=0)
@@ -2015,7 +2007,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     gu.contour_slices(newdata, (q_xz, q_y, q_xz), sum_frames=False, levels=150, title='Regridded data', scale='log',
                       is_orthogonal=True, reciprocal_space=True)
 
-    return newdata, newmask, (q_xz, q_y, q_xz), frames_logical
+    return newdata, newmask, [q_xz, q_y, q_xz], frames_logical
 
 
 def remove_hotpixels(data, mask, hotpixels=None):
