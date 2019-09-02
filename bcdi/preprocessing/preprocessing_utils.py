@@ -86,15 +86,19 @@ def align_diffpattern(reference_data, data, mask, method='registration', combini
     return data, mask
 
 
-def beamstop_correction(data, direct_beam, debugging=True):
+def beamstop_correction(data, detector, setup, debugging=True):
     """
     Correct absorption from the beamstops during P10 forward CDI experiment.
 
     :param data: the 3D stack of 2D CDI images, shape = (nbz, nby, nbx) or 2D image of shape (nby, nbx)
-    :param direct_beam: # tuple of int (vertical, horizontal): position of the direct beam in pixels
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param setup: the experimental setup: Class SetupPreprocessing()
     :param debugging: set to True to see plots
     :return: the corrected data
     """
+    directbeam_y = setup.direct_beam[0] - detector.roi[0]  # vertical
+    directbeam_x = setup.direct_beam[1] - detector.roi[2]  # horizontal
+
     # at 8700eV, the transmission of 100um Si is 0.32478
     factor_large = 1/0.32478  # 5mm*5mm (100um thick) Si wafer
     factor_small = 1/0.32478  # 3mm*3mm (100um thick) Si wafer
@@ -109,18 +113,18 @@ def beamstop_correction(data, direct_beam, debugging=True):
 
     # define boolean arrays for the large and the small square beam stops
     large_square = np.zeros((nby, nbx))
-    large_square[direct_beam[0] - 33:direct_beam[0] + 35, direct_beam[1] - 31:direct_beam[1] + 36] = 1
+    large_square[directbeam_y - 33:directbeam_y + 35, directbeam_x - 31:directbeam_x + 36] = 1
     small_square = np.zeros((nby, nbx))
-    small_square[direct_beam[0] - 14:direct_beam[0] + 14, direct_beam[1] - 11:direct_beam[1] + 16] = 1
+    small_square[directbeam_y - 14:directbeam_y + 14, directbeam_x - 11:directbeam_x + 16] = 1
 
     # define the boolean array for the border of the large square
     temp_array = np.zeros((nby, nbx))
-    temp_array[direct_beam[0] - 32:direct_beam[0] + 34, direct_beam[1] - 30:direct_beam[1] + 35] = 1
+    temp_array[directbeam_y - 32:directbeam_y + 34, directbeam_x - 30:directbeam_x + 35] = 1
     large_border = large_square - temp_array
 
     # define the boolean array for the border of the small square
     temp_array = np.zeros((nby, nbx))
-    temp_array[direct_beam[0] - 13:direct_beam[0] + 13, direct_beam[1] - 10:direct_beam[1] + 15] = 1
+    temp_array[directbeam_y - 13:directbeam_y + 13, directbeam_x - 10:directbeam_x + 15] = 1
     small_border = small_square - temp_array
 
     if debugging:
@@ -772,7 +776,7 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
                                                           beamline=setup.beamline, flatfield=flatfield,
                                                           hotpixels=hotpixels, debugging=debugging)
 
-    rawdata = beamstop_correction(data=rawdata, direct_beam=setup.direct_beam, debugging=True)
+    rawdata = beamstop_correction(data=rawdata, detector=detector, setup=setup, debugging=True)
 
     # normalize by the incident X-ray beam intensity
     if normalize:
@@ -784,9 +788,6 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
         data, mask, q_values, frames_logical = \
             regrid_cdi(data=rawdata, mask=rawmask, logfile=logfile, detector=detector,
                        setup=setup, frames_logical=frames_logical)
-
-        q_values = []
-
         return q_values, rawdata, data, rawmask, mask, frames_logical, monitor
 
 
@@ -1919,6 +1920,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     pixel_x = detector.pixelsize * 1e9  # convert to nm
     pixel_y = detector.pixelsize * 1e9  # convert to nm
     lambdaz = wavelength * distance
+    directbeam_y = setup.direct_beam[0] - detector.roi[0]  # vertical
+    directbeam_x = setup.direct_beam[1] - detector.roi[2]  # horizontal
 
     data, mask, cdi_angle, frames_logical = check_cdi_angle(data=data, mask=mask, cdi_angle=cdi_angle,
                                                             frames_logical=frames_logical)
@@ -1930,9 +1933,10 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
 
     if debugging:
         # calculate and plot measured voxels in a cartesian 2D grid x*z* (z* downstream x* outboard y* vertical up)
-        xstar_exp = - np.arange(-nbx // 2, nbx // 2, 1)[:, np.newaxis] * np.cos(cdi_angle[np.newaxis, :] * np.pi / 180)
+        x_span = np.arange(-directbeam_x, -directbeam_x + nbx, 1)  # np.arange(-nbx // 2, nbx // 2, 1)
+        xstar_exp = - x_span[:, np.newaxis] * np.cos(cdi_angle[np.newaxis, :] * np.pi / 180)
         # x* along raws, angle along columns, X axis of the detector is opposite to x*
-        zstar_exp = np.arange(-nbx // 2, nbx // 2, 1)[:, np.newaxis] * np.sin(cdi_angle[np.newaxis, :] * np.pi / 180)
+        zstar_exp = x_span[:, np.newaxis] * np.sin(cdi_angle[np.newaxis, :] * np.pi / 180)
         _, ax = gu.scatter_plot(np.concatenate((xstar_exp.flatten()[:, np.newaxis],
                                                 zstar_exp.flatten()[:, np.newaxis]), axis=1),
                                 labels=('x*', 'z*'), markersize=1)
@@ -1961,14 +1965,15 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
 
     # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
     # the range along z* is nbx because the frame is rotating aroung y*
-    # z_interp, y_interp, x_interp = np.meshgrid(np.arange(-nbx // 2, nbx // 2, 1),
-    #                                            np.arange(-nby // 2, nby // 2, 1),
-    #                                            np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
-
-    z_interp, y_interp, x_interp = np.meshgrid(np.linspace(-nbx // 2, nbx // 2, num=numxz, endpoint=False),
-                                               np.linspace(-nby // 2, nby // 2, num=numy, endpoint=False),
-                                               np.linspace(-nbx // 2, nbx // 2, num=numxz, endpoint=False),
-                                               indexing='ij')
+    # z_interp, y_interp, x_interp = np.meshgrid(np.linspace(-nbx // 2, nbx // 2, num=numxz, endpoint=False),
+    #                                            np.linspace(-nby // 2, nby // 2, num=numy, endpoint=False),
+    #                                            np.linspace(-nbx // 2, nbx // 2, num=numxz, endpoint=False),
+    #                                            indexing='ij')
+    z_interp, y_interp, x_interp =\
+        np.meshgrid(np.linspace(-directbeam_x, -directbeam_x + nbx, num=numxz, endpoint=False),
+                    np.linspace(-directbeam_y, -directbeam_y + nby, num=numy, endpoint=False),
+                    np.linspace(-directbeam_x, -directbeam_x + nbx, num=numxz, endpoint=False),
+                    indexing='ij')
 
     # map these points to (angle, Y, X), the measurement cylindrical coordinates
     angle_det = wrap(angle=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
@@ -1980,7 +1985,10 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     # if angle_det in [0, np.pi/2[ X axis of the detector is in the same direction as x*
 
     # interpolate the data onto the new points
-    rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-nby // 2, nby // 2), np.arange(-nbx // 2, nbx // 2)),
+    # rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-nby // 2, nby // 2), np.arange(-nbx // 2, nbx // 2)),
+    #                               data, method='nearest', bounds_error=False, fill_value=0)
+    rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
+                                   np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
                                   data, method='nearest', bounds_error=False, fill_value=0)
     newdata = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
                                   y_det.reshape((1, z_interp.size)),
@@ -1988,7 +1996,10 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     newdata = newdata.reshape((numxz, numy, numxz)).astype(data.dtype)
 
     # interpolate the mask onto the new points
-    rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-nby // 2, nby // 2), np.arange(-nbx // 2, nbx // 2)),
+    # rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-nby // 2, nby // 2), np.arange(-nbx // 2, nbx // 2)),
+    #                               mask, method='nearest', bounds_error=False, fill_value=0)
+    rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
+                                   np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
                                   mask, method='nearest', bounds_error=False, fill_value=0)
     newmask = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
                                   y_det.reshape((1, z_interp.size)),
@@ -2001,9 +2012,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     newdata[np.isnan(newdata)] = 0
     newmask[np.isnan(newmask)] = 1
 
-    if True:
-        gu.contour_slices(newdata, (q_xz, q_y, q_xz), sum_frames=False, levels=150, title='Regridded data', scale='log',
-                          is_orthogonal=True, reciprocal_space=True)
+    gu.contour_slices(newdata, (q_xz, q_y, q_xz), sum_frames=False, levels=150, title='Regridded data', scale='log',
+                      is_orthogonal=True, reciprocal_space=True)
 
     return newdata, newmask, (q_xz, q_y, q_xz), frames_logical
 

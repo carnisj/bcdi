@@ -188,13 +188,6 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                                direct_beam=direct_beam)
 
-############################################################
-# Initialize geometry for gridding on an orthonormal frame #
-############################################################
-# TODO: see where I need to use these values
-cch1 = direct_beam[0] - detector.roi[0]  # take into account the roi if the image is cropped
-cch2 = direct_beam[1] - detector.roi[2]  # take into account the roi if the image is cropped
-
 ############################################
 # Initialize values for callback functions #
 ############################################
