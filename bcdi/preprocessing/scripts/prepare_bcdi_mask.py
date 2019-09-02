@@ -254,7 +254,8 @@ for scan_nb in range(len(scans)):
     else:
         savedir = homedir + "pynxraw/"
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-
+    detector.savedir = savedir
+    
     print('\nScan', scans[scan_nb])
     print('Setup: ', setup.beamline)
     print('Detector: ', detector.name)
