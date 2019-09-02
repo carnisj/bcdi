@@ -425,12 +425,13 @@ class Detector(object):
     """
     Class to handle the configuration of the detector used for data acquisition.
     """
-    def __init__(self, name, datadir='', template_imagefile='', roi=(), **kwargs):
+    def __init__(self, name, datadir='', savedir='', template_imagefile='', roi=(), **kwargs):
         """
         Initialize parameters of the detector.
 
         :param name: name of the detector: 'Maxipix'or 'Eiger2M' or 'Eiger4M'
         :param datadir: directory where the data is saved
+        :param savedir: directory where to save files if needed
         :param template_imagefile: template for the name of image files
          - ID01: 'data_mpx4_%05d.edf.gz'
          - SIXS: 'spare_ascan_mu_%05d.nxs'
@@ -467,6 +468,7 @@ class Detector(object):
             raise ValueError('Unknown detector name')
 
         self.datadir = datadir
+        self.savedir = savedir
         self.template_imagefile = template_imagefile
 
         if len(roi) == 0:

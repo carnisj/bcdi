@@ -75,7 +75,7 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 ###########################
 reload_previous = False  # set to 1 to resume a previous masking (load data and mask)
 ###########################
-use_rawdata = True  # False for using regridded data / True for using data in detector reference frame
+use_rawdata = False  # False for using regridded data / True for using data in detector reference frame
 save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 # define beamline related parameters #
@@ -96,7 +96,7 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
-roi_detector = [direct_beam[0] - 300, direct_beam[0] + 300, direct_beam[1] - 300, direct_beam[1] + 300]  # V x H
+roi_detector = [direct_beam[0] - 246, direct_beam[0] + 246, direct_beam[1] - 280, direct_beam[1] + 280]  # V x H
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
@@ -236,6 +236,7 @@ for scan_nb in range(len(scans)):
     else:
         savedir = homedir + "pynxraw/"
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
+    detector.savedir = savedir
 
     if not use_rawdata:
         print('Output will be orthogonalized by xrayutilities')
