@@ -13,7 +13,6 @@ from scipy.interpolate import RegularGridInterpolator
 import xrayutilities as xu
 import fabio
 import os
-import gc
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
@@ -86,7 +85,7 @@ def align_diffpattern(reference_data, data, mask, method='registration', combini
     return data, mask
 
 
-def beamstop_correction(data, detector, setup, debugging=True):
+def beamstop_correction(data, detector, setup, debugging=False):
     """
     Correct absorption from the beamstops during P10 forward CDI experiment.
 
@@ -586,6 +585,16 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical):
         frames_logical[idx] = frames_logical[idx] * (duplicate == 0)  # remove duplicated frames
 
     print('frames_logical after checking duplicated angles:\n', frames_logical)
+
+    # find first duplicated angle
+    index_duplicated = np.where(frames_logical == 0)[0][0]
+
+    # change the angle by a negligeable amount to still be able to use it for interpolation
+    cdi_angle[index_duplicated] = cdi_angle[index_duplicated] - 0.001
+    print('shifting frame', index_duplicated, 'by 1/1000 degrees for interpolation')
+
+    frames_logical[index_duplicated] = 1
+
     data = data[np.nonzero(frames_logical)[0], :, :]
     mask = mask[np.nonzero(frames_logical)[0], :, :]
     cdi_angle = cdi_angle[np.nonzero(frames_logical)]
@@ -776,7 +785,7 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
                                                           beamline=setup.beamline, flatfield=flatfield,
                                                           hotpixels=hotpixels, debugging=debugging)
 
-    rawdata = beamstop_correction(data=rawdata, detector=detector, setup=setup, debugging=True)
+    rawdata = beamstop_correction(data=rawdata, detector=detector, setup=setup, debugging=debugging)
 
     # normalize by the incident X-ray beam intensity
     if normalize:
@@ -787,7 +796,7 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     else:
         data, mask, q_values, frames_logical = \
             regrid_cdi(data=rawdata, mask=rawmask, logfile=logfile, detector=detector,
-                       setup=setup, frames_logical=frames_logical)
+                       setup=setup, frames_logical=frames_logical, debugging=debugging)
         return q_values, rawdata, data, rawmask, mask, frames_logical, monitor
 
 
@@ -1983,7 +1992,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     # interpolate the data onto the new points
     rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
                                    np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
-                                  data, method='nearest', bounds_error=False, fill_value=0)
+                                  data, method='nearest', bounds_error=False, fill_value=np.nan)
     newdata = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
                                   y_det.reshape((1, z_interp.size)),
                                   x_det.reshape((1, z_interp.size)))).transpose())
@@ -1992,7 +2001,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     # interpolate the mask onto the new points
     rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
                                    np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
-                                  mask, method='nearest', bounds_error=False, fill_value=0)
+                                  mask, method='nearest', bounds_error=False, fill_value=np.nan)
     newmask = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
                                   y_det.reshape((1, z_interp.size)),
                                   x_det.reshape((1, z_interp.size)))).transpose())
@@ -2004,9 +2013,17 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     newdata[np.isnan(newdata)] = 0
     newmask[np.isnan(newmask)] = 1
 
-    gu.contour_slices(newdata, (q_xz, q_y, q_xz), sum_frames=False, levels=150, title='Regridded data', scale='log',
-                      is_orthogonal=True, reciprocal_space=True)
+    fig, _, _ = gu.contour_slices(newdata, (q_xz, q_y, q_xz), sum_frames=False, levels=150, title='Regridded data',
+                                  scale='log', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space.png')
+    plt.close(fig)
 
+    if debugging:
+        gu.multislices_plot(newdata, sum_frames=False, scale='log', plot_colorbar=True, vmin=0, title='Regridded data',
+                            invert_yaxis=False, is_orthogonal=True, reciprocal_space=True)
+        gu.multislices_plot(newmask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
+                            title='Regridded mask',
+                            invert_yaxis=False, is_orthogonal=True, reciprocal_space=True)
     return newdata, newmask, [q_xz, q_y, q_xz], frames_logical
 
 
