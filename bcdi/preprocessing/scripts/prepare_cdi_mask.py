@@ -96,7 +96,7 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
-roi_detector = [direct_beam[0] - 246, direct_beam[0] + 246, direct_beam[1] - 280, direct_beam[1] + 280]  # V x H
+roi_detector = [direct_beam[0] - 240, direct_beam[0] + 240, direct_beam[1] - 280, direct_beam[1] + 280]  # V x H
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
@@ -293,7 +293,7 @@ for scan_nb in range(len(scans)):
         else:
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
                 pru.grid_cdi(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
-                             flatfield=flatfield, hotpixels=hotpix_array, normalize=normalize_flux, debugging=debug,
+                             flatfield=flatfield, hotpixels=hotpix_array, normalize=normalize_flux, debugging=False,
                              orthogonalize=True)
 
             np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
@@ -604,7 +604,6 @@ for scan_nb in range(len(scans)):
     plt.ion()
     nz, ny, nx = np.shape(data)
     print('Data size after cropping / padding:', nz, ny, nx)
-    comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)  # need these numbers to calculate the voxel size
 
     # check for Nan
     mask[np.isnan(data)] = 1
@@ -616,19 +615,6 @@ for scan_nb in range(len(scans)):
     mask[np.isinf(mask)] = 1
 
     data[mask == 1] = 0
-
-    if not use_rawdata:
-        np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
-                            qx=q_vector[0], qz=q_vector[1], qy=q_vector[2])
-    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
-    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
-
-    if save_to_mat:
-        # save to .mat, x becomes z for Matlab phasing code
-        savemat(savedir + 'S' + str(scans[scan_nb]) + '_data.mat',
-                {'data': np.moveaxis(data, [0, 1, 2], [-1, -3, -2])})
-        savemat(savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
-                {'data': np.moveaxis(mask, [0, 1, 2], [-1, -3, -2])})
 
     ###################################
     # plot the prepared data and mask #
@@ -655,5 +641,47 @@ for scan_nb in range(len(scans)):
     if not flag_interact:
         plt.close(fig)
 
+    ############################################################
+    # select the largest cubic array fitting inside data range #
+    ############################################################
+    # this is to avoid having large masked areas near the corner of the area
+    # which is a side effect of regridding the data from cylindrical coordinates
+    final_nxz = int(np.floor(nx / np.sqrt(2)))
+    if (final_nxz % 2) != 0:
+        final_nxz = final_nxz - 1  # we want the number of pixels to be even
+    data = data[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :, (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
+    mask = mask[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :, (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
+    print('Data size after taking the largest gapless area:', data.shape)
+    comment = comment + "_" + str(final_nxz) + "_" + str(ny) + "_" + str(final_nxz)
+    # need these numbers to calculate the voxel size
+
+    fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Final data',
+                                    invert_yaxis=False, is_orthogonal=not use_rawdata, reciprocal_space=True)
+    plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
+    if not flag_interact:
+        plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                    vmax=(nz, ny, nx), title='Final mask', invert_yaxis=False, is_orthogonal=not use_rawdata,
+                                    reciprocal_space=True)
+    plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
+    if not flag_interact:
+        plt.close(fig)
+
+    ############################
+    # save final data and mask #
+    ############################
+    if not use_rawdata:
+        np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
+                            qx=q_vector[0], qz=q_vector[1], qy=q_vector[2])
+    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
+    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
+
+    if save_to_mat:
+        # save to .mat, x becomes z for Matlab phasing code
+        savemat(savedir + 'S' + str(scans[scan_nb]) + '_data.mat',
+                {'data': np.moveaxis(data, [0, 1, 2], [-1, -3, -2])})
+        savemat(savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
+                {'data': np.moveaxis(mask, [0, 1, 2], [-1, -3, -2])})
 plt.ioff()
 plt.show()
