@@ -2162,6 +2162,10 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
     if dim > 2:
         raise ValueError('dim should be 0, 1 or 2')
 
+    myaxs = figure.gca()
+    xmin, xmax = myaxs.get_xlim()
+    ymin, ymax = myaxs.get_ylim()
+    print('xmin, xmax, ymin, ymax', xmin, xmax, ymin, ymax)
     if key == 'u':
         idx = idx + 1
         figure.clear()
@@ -2186,6 +2190,9 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
             plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        myaxs.set_xlim([xmin, xmax])
+        myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
     elif key == 'd':
@@ -2212,6 +2219,9 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
             plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        myaxs.set_xlim([xmin, xmax])
+        myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
     elif key == 'up':
@@ -2243,6 +2253,9 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
             plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        myaxs.set_xlim([xmin, xmax])
+        myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
     elif key == 'left':
@@ -2266,6 +2279,9 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
             plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        myaxs.set_xlim([xmin, xmax])
+        myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
     elif key == 'm':
@@ -2299,6 +2315,9 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
             plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        myaxs.set_xlim([xmin, xmax])
+        myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
     elif key == 'b':
@@ -2335,6 +2354,28 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
             plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        myaxs.set_xlim([xmin, xmax])
+        myaxs.set_ylim([ymin, ymax])
+        plt.draw()
+
+    elif key == 'p':  # plot full image
+        figure.clear()
+        if dim == 0:
+            plt.imshow(updated_data[idx, :, ], vmin=vmin, vmax=vmax)
+            plt.title("Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
+                      "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                      "up larger ; down smaller ; right darker ; left brighter")
+        elif dim == 1:
+            plt.imshow(updated_data[:, idx, :], vmin=vmin, vmax=vmax)
+            plt.title("Frame " + str(idx + 1) + "/" + str(nby) + "\n"
+                      "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                      "up larger ; down smaller ; right darker ; left brighter")
+        elif dim == 2:
+            plt.imshow(updated_data[:, :, idx], vmin=vmin, vmax=vmax)
+            plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
+                      "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                      "up larger ; down smaller ; right darker ; left brighter")
         plt.draw()
 
     elif key == 'q':
@@ -2364,7 +2405,9 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         raise ValueError('original_data, updated_data and updated_mask should be 2D arrays')
 
     stop_masking = False
-
+    myaxs = figure.gca()
+    xmin, xmax = myaxs.get_xlim()
+    ymin, ymax = myaxs.get_ylim()
     if key == 'up':
         width = width + 1
         print('width: ', width)
@@ -2383,6 +2426,9 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         plt.imshow(updated_data, vmin=vmin, vmax=vmax)
         plt.title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        myaxs.set_xlim([xmin, xmax])
+        myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
     elif key == 'left':
@@ -2395,6 +2441,9 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         plt.imshow(updated_data, vmin=vmin, vmax=vmax)
         plt.title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        myaxs.set_xlim([xmin, xmax])
+        myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
     elif key == 'm':
@@ -2413,6 +2462,9 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         plt.imshow(updated_data, vmin=vmin, vmax=vmax)
         plt.title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        myaxs.set_xlim([xmin, xmax])
+        myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
     elif key == 'b':
@@ -2429,6 +2481,16 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         updated_data[starty:piy + width + 1, startx:pix + width + 1] = \
             original_data[starty:piy + width + 1, startx:pix + width + 1]
         updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 0
+        plt.imshow(updated_data, vmin=vmin, vmax=vmax)
+        plt.title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                  "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        myaxs.set_xlim([xmin, xmax])
+        myaxs.set_ylim([ymin, ymax])
+        plt.draw()
+
+    elif key == 'p':  # plot full image
+        figure.clear()
         plt.imshow(updated_data, vmin=vmin, vmax=vmax)
         plt.title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
