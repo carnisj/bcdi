@@ -684,7 +684,7 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
         logfile = h5py.File(ccdfiletmp, 'r')
 
     elif beamline == 'P10':  # load .fio file
-        logfile = root_folder + filename + '\\' + filename + '.fio'
+        logfile = root_folder + filename + '/' + filename + '.fio'
 
     elif beamline == 'SIXS_2018':  # no specfile, load directly the dataset
         import bcdi.preprocessing.nxsReady as nxsReady
