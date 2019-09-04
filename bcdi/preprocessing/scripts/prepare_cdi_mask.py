@@ -66,7 +66,7 @@ normalize_flux = True  # will normalize the intensity by the default monitor.
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
-flag_medianfilter = 'skip'
+flag_medianfilter = 'interp_isolated'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -651,6 +651,10 @@ for scan_nb in range(len(scans)):
         final_nxz = final_nxz - 1  # we want the number of pixels to be even
     data = data[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :, (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
     mask = mask[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :, (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
+    if not use_rawdata:
+        qx = qx[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along Z
+        qy = qy[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along X
+        # qz (along Y) keeps the same number of pixels
     print('Data size after taking the largest gapless area:', data.shape)
     comment = comment + "_" + str(final_nxz) + "_" + str(ny) + "_" + str(final_nxz)
     # need these numbers to calculate the voxel size
