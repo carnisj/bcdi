@@ -2168,7 +2168,6 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
     myaxs = figure.gca()
     xmin, xmax = myaxs.get_xlim()
     ymin, ymax = myaxs.get_ylim()
-    print('xmin, xmax, ymin, ymax', xmin, xmax, ymin, ymax)
     if key == 'u':
         idx = idx + 1
         figure.clear()
