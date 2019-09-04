@@ -1956,10 +1956,13 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     voxelsize_xz = nbx // 2 * np.sin(angular_step/2) - nbx // 2 * np.sin(-angular_step/2)  # in pixels
     voxelsize_y = 1  # in pixels, y* axis is not affected by the rotation
 
-    # calculate the number of pixels in each direction using above voxel sizes
-    numxz = int(np.floor(nbx/voxelsize_xz))  # number of voxels in x* and z* directions (should be an integer)
+    # calculate the number of pixels in each direction using above voxel sizes and make it even (for FFT)
+    numxz = int(np.ceil(nbx/voxelsize_xz))  # number of voxels in x* and z* directions (should be an integer)
+    if (numxz % 2) != 0:
+        numxz = numxz + 1
     numy = int(np.floor(nby/voxelsize_y))  # number of voxels in y* directions (should be an integer)
-
+    if (numy % 2) != 0:
+        numy = numy - 1
     # update accordingly voxel sizes
     voxelsize_xz = nbx / numxz  # in pixels
     voxelsize_y = nby / numy  # in pixels
