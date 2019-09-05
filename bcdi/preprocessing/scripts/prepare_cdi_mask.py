@@ -641,36 +641,37 @@ for scan_nb in range(len(scans)):
     if not flag_interact:
         plt.close(fig)
 
-    ############################################################
-    # select the largest cubic array fitting inside data range #
-    ############################################################
-    # this is to avoid having large masked areas near the corner of the area
-    # which is a side effect of regridding the data from cylindrical coordinates
-    final_nxz = int(np.floor(nx / np.sqrt(2)))
-    if (final_nxz % 2) != 0:
-        final_nxz = final_nxz - 1  # we want the number of pixels to be even
-    data = data[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :, (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
-    mask = mask[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :, (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
     if not use_rawdata:
+        ############################################################
+        # select the largest cubic array fitting inside data range #
+        ############################################################
+        # this is to avoid having large masked areas near the corner of the area
+        # which is a side effect of regridding the data from cylindrical coordinates
+        final_nxz = int(np.floor(nx / np.sqrt(2)))
+        if (final_nxz % 2) != 0:
+            final_nxz = final_nxz - 1  # we want the number of pixels to be even
+        data = data[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :, (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
+        mask = mask[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :, (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
         qx = qx[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along Z
         qy = qy[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along X
         # qz (along Y) keeps the same number of pixels
-    print('Data size after taking the largest gapless area:', data.shape)
-    comment = comment + "_" + str(final_nxz) + "_" + str(ny) + "_" + str(final_nxz)
-    # need these numbers to calculate the voxel size
+        print('Data size after taking the largest gapless area:', data.shape)
+        comment = comment + "_" + str(final_nxz) + "_" + str(ny) + "_" + str(final_nxz)
+        # need these numbers to calculate the voxel size
 
-    fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Final data',
-                                    invert_yaxis=False, is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
-    if not flag_interact:
-        plt.close(fig)
+        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                        title='Final data', invert_yaxis=False, is_orthogonal=not use_rawdata,
+                                        reciprocal_space=True)
+        plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
+        if not flag_interact:
+            plt.close(fig)
 
-    fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                    vmax=(nz, ny, nx), title='Final mask', invert_yaxis=False, is_orthogonal=not use_rawdata,
-                                    reciprocal_space=True)
-    plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
-    if not flag_interact:
-        plt.close(fig)
+        fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                        vmax=(nz, ny, nx), title='Final mask', invert_yaxis=False,
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+        plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
+        if not flag_interact:
+            plt.close(fig)
 
     ############################
     # save final data and mask #
@@ -678,6 +679,8 @@ for scan_nb in range(len(scans)):
     if not use_rawdata:
         np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
                             qx=q_vector[0], qz=q_vector[1], qy=q_vector[2])
+    else:
+        comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
 
