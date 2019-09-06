@@ -10,19 +10,19 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import os
 
-scan = 4
+scan = 5
 image = 1
-sample_name = "background"  # without _
+sample_name = "magnetite_A2"  # without _
 series = True  # set to True if the measurement is a time series, False for a single image
 
 if series: 
-    datadir  = 'T:/current/raw/'  + sample_name + '_' + str('{:05d}'.format(scan)) + '/e4m/'
+    datadir = "D:/data/P10_August2019/data/" + sample_name + '_' + str('{:05d}'.format(scan)) + '/e4m/'
     ccdfiletmp = os.path.join(datadir, sample_name + '_' + str('{:05d}'.format(scan)) + 
-                          "_data_" + str('{:06d}'.format(image))+".h5")
+                              "_data_" + str('{:06d}'.format(image))+".h5")
 else:
-    datadir  = 'T:/current/raw/'  + sample_name + '/e4m/'
+    datadir = "D:/data/P10_August2019/data/" + sample_name + '/e4m/'
     ccdfiletmp = os.path.join(datadir, sample_name + '_take_' + str('{:05d}'.format(scan)) + 
-                          "_data_" + str('{:06d}'.format(image))+".h5")
+                              "_data_" + str('{:06d}'.format(image))+".h5")
 
 h5file = h5py.File(ccdfiletmp, 'r')
 data = h5file['entry']['data']['data'][:]
