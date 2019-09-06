@@ -105,3 +105,16 @@ Publication
    :start-after: helptext
    :end-before: """
    :language: rst
+
+.. _utils:
+
+Utilities
+---------
+
+`make_support.py`:
+^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/make_support.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
