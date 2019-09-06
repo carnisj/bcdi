@@ -75,8 +75,10 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 ###########################
 reload_previous = False  # set to 1 to resume a previous masking (load data and mask)
 ###########################
-use_rawdata = False  # False for using regridded data / True for using data in detector reference frame
+use_rawdata = True  # False for using regridded data / True for using data in detector reference frame
+save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_mat = False  # set to 1 to save also in .mat format
+save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
 ######################################
 # define beamline related parameters #
 ######################################
@@ -295,12 +297,12 @@ for scan_nb in range(len(scans)):
                 pru.grid_cdi(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                              flatfield=flatfield, hotpixels=hotpix_array, normalize=normalize_flux, debugging=False,
                              orthogonalize=True)
-
-            np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
-            if save_to_mat:
-                # save to .mat, x becomes z for Matlab phasing code
-                savemat(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack.mat',
-                        {'data': np.moveaxis(rawdata, [0, 1, 2], [-1, -3, -2])})
+            if save_rawdata:
+                np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
+                if save_to_mat:
+                    # save to .mat, x becomes z for Matlab phasing code
+                    savemat(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack.mat',
+                            {'data': np.moveaxis(rawdata, [0, 1, 2], [-1, -3, -2])})
             del rawdata
             gc.collect()
 
@@ -384,19 +386,20 @@ for scan_nb in range(len(scans)):
         qz = q_vector[1]
         qy = q_vector[2]
 
-        # save diffraction pattern to vti
-        nqx, nqz, nqy = data.shape  # in nexus z downstream, y vertical / in q z vertical, x downstream
-        print('dqx, dqy, dqz = ', qx[1] - qx[0], qy[1] - qy[0], qz[1] - qz[0])
-        # in nexus z downstream, y vertical / in q z vertical, x downstream
-        qx0 = qx.min()
-        dqx = (qx.max() - qx0) / nqx
-        qy0 = qy.min()
-        dqy = (qy.max() - qy0) / nqy
-        qz0 = qz.min()
-        dqz = (qz.max() - qz0) / nqz
+        if save_to_vti:
+            # save diffraction pattern to vti
+            nqx, nqz, nqy = data.shape  # in nexus z downstream, y vertical / in q z vertical, x downstream
+            print('dqx, dqy, dqz = ', qx[1] - qx[0], qy[1] - qy[0], qz[1] - qz[0])
+            # in nexus z downstream, y vertical / in q z vertical, x downstream
+            qx0 = qx.min()
+            dqx = (qx.max() - qx0) / nqx
+            qy0 = qy.min()
+            dqy = (qy.max() - qy0) / nqy
+            qz0 = qz.min()
+            dqz = (qz.max() - qz0) / nqz
 
-        gu.save_to_vti(filename=os.path.join(savedir, "S"+str(scans[scan_nb])+"_ortho_int"+comment+".vti"),
-                       voxel_size=(dqx, dqz, dqy), tuple_array=data, tuple_fieldnames='int', origin=(qx0, qz0, qy0))
+            gu.save_to_vti(filename=os.path.join(savedir, "S"+str(scans[scan_nb])+"_ortho_int"+comment+".vti"),
+                           voxel_size=(dqx, dqz, dqy), tuple_array=data, tuple_fieldnames='int', origin=(qx0, qz0, qy0))
 
     if flag_interact:
 
