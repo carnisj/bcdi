@@ -11,13 +11,15 @@ import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
+
 helptext = """
 Create a support from a reconstruction, using the indicated threshold.
+The support can be cropped/padded to a desired shape.
 """
 
 root_folder = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/"
-support_threshold = 0.2  # in % of the normalized absolute value
-output_shape = [162, 490, 300]
+support_threshold = 0.15  # in % of the normalized absolute value
+output_shape = [162, 492, 162]
 ###################################################################
 root = tk.Tk()
 root.withdraw()
