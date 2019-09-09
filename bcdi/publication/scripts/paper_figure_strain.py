@@ -30,15 +30,15 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 """
 
 
-scan = 2191  # spec scan number
-datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/pynxraw/no_apodization/avg1/"
-savedir = 'G:/review paper/BCDI_isosurface/S' + str(scan)+"/pynxraw/test/"
-comment = ''   # should start with _
+scan = 981  # spec scan number
+datadir = 'D:/data/HC3207/SN' + str(scan)+"/pynxraw/"
+savedir = 'D:/data/HC3207/Figures/'
+comment = '_SN' + str(scan)   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 
-voxel_size = 3.0  # in nm
+voxel_size = 5.0  # in nm
 tick_spacing = 50  # for plots, in nm
-field_of_view = 500  # in nm, can be larger than the total width (the array will be padded)
+field_of_view = 400  # in nm, can be larger than the total width (the array will be padded)
 
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
@@ -46,19 +46,23 @@ tick_width = 2  # in plots
 
 strain_range = 0.001  # for plots
 phase_range = np.pi  # for plots
-grey_background = False  # True to set the background to grey in phase and strain plots
+grey_background = True  # True to set the background to grey in phase and strain plots
 
-save_YZ = False  # True to save the strain in YZ plane
+save_YZ = True  # True to save the strain in YZ plane
 save_XZ = True  # True to save the strain in XZ plane
 save_XY = True  # True to save the strain in XY plane
 
-flag_strain = False  # True to plot and save the strain
+flag_strain = True  # True to plot and save the strain
 flag_phase = True  # True to plot and save the phase
 flag_amp = True  # True to plot and save the amplitude
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
 flag_linecut = False  # True to plot and save a linecut of the phase
 y_linecut = 257  # in pixels
+
+background_phase = np.nan  # value outside of the crystal, np.nan will give grey if grey_background = True
+background_strain = np.nan  # value outside of the crystal, np.nan will give grey if grey_background = True
+# -2 * strain_range
 ##########################
 # end of user parameters #
 ##########################
@@ -129,8 +133,11 @@ phase = np.roll(phase, (numz//2-zcom, numy//2-ycom, numx//2-xcom), axis=(0, 1, 2
 amp = np.roll(amp, (numz//2-zcom, numy//2-ycom, numx//2-xcom), axis=(0, 1, 2))
 bulk = np.roll(bulk, (numz//2-zcom, numy//2-ycom, numx//2-xcom), axis=(0, 1, 2))
 
-strain[bulk == 0] = -2 * strain_range
-phase[bulk == 0] = np.nan
+################################################
+# assign default values outside of the crystal #
+################################################
+strain[bulk == 0] = background_strain
+phase[bulk == 0] = background_phase
 
 ###########
 # Support #
@@ -217,7 +224,7 @@ if flag_amp:
     fig, ax = plt.subplots(1, 1)
     plt.hist(amp[amp > 0.01].flatten(), bins=250)
     plt.xlim(left=0.05)
-    plt.ylim(bottom=1, top=100000)
+    plt.ylim(bottom=1)  # , top=100000
     if amp_histogram_Yaxis == 'log':
         ax.set_yscale('log')
         plt.ylim(top=100000)
