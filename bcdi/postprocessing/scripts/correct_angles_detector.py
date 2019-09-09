@@ -2,8 +2,9 @@
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
 #       authors:
-#         Jerome Carnis, jerome.carnis@esrf.fr
+#         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import hdf5plugin  # for P10, should be imported before h5py or PyTables
 import numpy as np
@@ -12,7 +13,7 @@ from scipy.interpolate import interp1d
 import tkinter as tk
 from tkinter import filedialog
 import sys
-sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.experiment.experiment_utils as exp
@@ -28,19 +29,19 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 356
-root_folder = "C:/Users/carnis/Work Folders/Documents/data/P10_2018/"
-sample_name = "dewet5"
+scan = 971
+root_folder = 'D:/data/HC3207/'
+sample_name = "SN"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
 peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = sample_name + '_%05d'
+specfile_name = 'align2'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -49,15 +50,15 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1393  # horizontal pixel number of the Bragg peak
-# roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = []
+detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+x_bragg = 430  # horizontal pixel number of the Bragg peak
+roi_detector = [1102, 1610, x_bragg - 300, x_bragg + 300]  # HC3207  x_bragg = 430
+# roi_detector = []
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = '_data_%06d.h5'
+template_imagefile = 'align_eiger2M_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -70,12 +71,12 @@ reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the 
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to Pt 3.9236/norm(reflection)
 reference_temperature = None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
 beam_direction = (1, 0, 0)  # beam along z
-directbeam_x = 476  # x horizontal,  cch2 in xrayutilities
-directbeam_y = 1375  # y vertical,  cch1 in xrayutilities
-direct_inplane = -2.0  # outer angle in xrayutilities
-direct_outofplane = 0.8
-sdd = 1.839  # sample to detector distance in m
-energy = 10300  # in eV, offset of 6eV at ID01
+directbeam_x = 526  # x horizontal,  cch2 in xrayutilities
+directbeam_y = 1317  # y vertical,  cch1 in xrayutilities
+direct_inplane = 0.1755  # outer angle in xrayutilities
+direct_outofplane = 0.2225
+sdd = 0.86180  # sample to detector distance in m
+energy = 8994  # in eV, offset of 6eV at ID01
 ##########################################################
 # end of user parameters
 ##########################################################
