@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
+from scipy.interpolate import RegularGridInterpolator
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -20,7 +21,10 @@ The support can be cropped/padded to a desired shape.
 
 root_folder = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/"
 support_threshold = 0.1  # in % of the normalized absolute value
-output_shape = [162, 492, 162]
+original_shape = [162, 492, 162]  # shape of the array used for phasing and finding the support
+output_shape = [162, 800, 162]  # shape of the array for later phasing
+reload_support = True  # if True, will load the support and skip masking
+is_ortho = True  # True if the data is already orthogonalized
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ###################################################################
 
@@ -61,88 +65,145 @@ plt.rcParams["keymap.fullscreen"] = [""]
 
 root = tk.Tk()
 root.withdraw()
-file_path = filedialog.askopenfilenames(initialdir=root_folder,
-                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"), ("CXI", "*.cxi"),
-                                                   ("HDF5", "*.h5")])
+file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the reconstruction",
+                                       filetypes=[("HDF5", "*.h5"), ("NPZ", "*.npz"), ("CXI", "*.cxi")])
+nz, ny, nx = original_shape
+data, _ = pu.load_reconstruction(file_path)
 
-data, _ = pu.load_reconstruction(file_path[0])
-data[60:, :, :] = 0
-data = abs(data)  # take the real part
-data = data / data.max()  # normalize
-data[data < support_threshold] = 0
-data[np.nonzero(data)] = 1
+if not reload_support:
+    # data[60:, :, :] = 0
+    data = abs(data)  # take the real part
+    data = data / data.max()  # normalize
+    data[data < support_threshold] = 0
+    data[np.nonzero(data)] = 1
 
-data = pu.crop_pad(data, output_shape)
-mask = np.zeros(data.shape)
-print('output data shape', data.shape)
+    data = pu.crop_pad(data, original_shape)
+    mask = np.zeros(data.shape)
+    print('output data shape', data.shape)
 
-fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, vmax=1,
-                                title='Support before masking', invert_yaxis=False, is_orthogonal=True,
-                                reciprocal_space=False)
-cid = plt.connect('close_event', close_event)
-fig.waitforbuttonpress()
-plt.disconnect(cid)
-plt.close(fig)
+    fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, vmax=1,
+                                    title='Support before masking', invert_yaxis=False, is_orthogonal=True,
+                                    reciprocal_space=False)
+    cid = plt.connect('close_event', close_event)
+    fig.waitforbuttonpress()
+    plt.disconnect(cid)
+    plt.close(fig)
 
-##########################
-# remove unwanted pixels #
-##########################
-plt.ioff()
-nz, ny, nx = np.shape(data)
-width = 5
-max_colorbar = 1
-flag_aliens = True
+    ###################################
+    # clean interactively the support #
+    ###################################
+    plt.ioff()
+    width = 5
+    max_colorbar = 1
+    flag_aliens = True
 
-# in XY
-dim = 0
-fig_mask = plt.figure()
-idx = 0
-original_data = np.copy(data)
-plt.imshow(data[idx, :, :], vmin=0, vmax=max_colorbar)
-plt.title("Frame " + str(idx+1) + "/" + str(nz) + "\n"
-          "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-          "up larger ; down smaller ; right darker ; left brighter")
-plt.connect('key_press_event', press_key)
-fig_mask.set_facecolor(background_plot)
-plt.show()
-del dim, fig_mask
+    # in XY
+    dim = 0
+    fig_mask = plt.figure()
+    idx = 0
+    original_data = np.copy(data)
+    plt.imshow(data[idx, :, :], vmin=0, vmax=max_colorbar)
+    plt.title("Frame " + str(idx+1) + "/" + str(nz) + "\n"
+              "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+              "up larger ; down smaller ; right darker ; left brighter")
+    plt.connect('key_press_event', press_key)
+    fig_mask.set_facecolor(background_plot)
+    plt.show()
+    del dim, fig_mask
 
-# in XZ
-dim = 1
-fig_mask = plt.figure()
-idx = 0
-plt.imshow(data[:, idx, :], vmin=0, vmax=max_colorbar)
-plt.title("Frame " + str(idx+1) + "/" + str(ny) + "\n"
-          "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-          "up larger ; down smaller ; right darker ; left brighter")
-plt.connect('key_press_event', press_key)
-fig_mask.set_facecolor(background_plot)
-plt.show()
-del dim, fig_mask
+    # in XZ
+    dim = 1
+    fig_mask = plt.figure()
+    idx = 0
+    plt.imshow(data[:, idx, :], vmin=0, vmax=max_colorbar)
+    plt.title("Frame " + str(idx+1) + "/" + str(ny) + "\n"
+              "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+              "up larger ; down smaller ; right darker ; left brighter")
+    plt.connect('key_press_event', press_key)
+    fig_mask.set_facecolor(background_plot)
+    plt.show()
+    del dim, fig_mask
 
-# in YZ
-dim = 2
-fig_mask = plt.figure()
-idx = 0
-plt.imshow(data[:, :, idx], vmin=0, vmax=max_colorbar)
-plt.title("Frame " + str(idx+1) + "/" + str(nx) + "\n"
-          "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-          "up larger ; down smaller ; right darker ; left brighter")
-plt.connect('key_press_event', press_key)
-fig_mask.set_facecolor(background_plot)
-plt.show()
+    # in YZ
+    dim = 2
+    fig_mask = plt.figure()
+    idx = 0
+    plt.imshow(data[:, :, idx], vmin=0, vmax=max_colorbar)
+    plt.title("Frame " + str(idx+1) + "/" + str(nx) + "\n"
+              "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+              "up larger ; down smaller ; right darker ; left brighter")
+    plt.connect('key_press_event', press_key)
+    fig_mask.set_facecolor(background_plot)
+    plt.show()
 
-del dim, width, fig_mask, original_data
+    del dim, width, fig_mask, original_data
 
-fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                title='Data after aliens removal\n', invert_yaxis=False,
-                                is_orthogonal=True, reciprocal_space=True)
+############################################
+# plot the support with the original shape #
+############################################
+gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, invert_yaxis=False,
+                    title='Support with original shape\n', is_orthogonal=True, reciprocal_space=True)
 
-################
-# save support #
-################
-filename = 'support_' + str(output_shape[0]) + '_' + str(output_shape[1]) + '_' + str(output_shape[2]) + '.npz'
+########################################
+# save support with the original shape #
+########################################
+filename = 'support_' + str(nz) + '_' + str(ny) + '_' + str(nx) + '.npz'
 np.savez_compressed(root_folder+filename, obj=data)
+
+#################################
+# rescale the support if needed #
+#################################
+nbz, nby, nbx = output_shape
+if (nbz != nz) or (nby != ny) or (nbx != nx):
+    print('Interpolating the support to match the output shape')
+    if is_ortho:
+        # load the original q values to calculate actual real space voxel sizes
+        file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select original q values",
+                                               filetypes=[("NPZ", "*.npz")])
+        q_values = np.load(file_path)
+        qx = q_values['qx']
+        qy = q_values['qy']
+        qz = q_values['qz']
+        voxelsize_z = 2 * np.pi / (qx.max() - qx.min())
+        voxelsize_x = 2 * np.pi / (qy.max() - qy.min())
+        voxelsize_y = 2 * np.pi / (qz.max() - qz.min())
+        print('Original voxel sizes:', voxelsize_z, voxelsize_y, voxelsize_x)
+        # load the q values of the desired shape and calculate corresponding real space voxel sizes
+        file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select q values for the new shape",
+                                               filetypes=[("NPZ", "*.npz")])
+        q_values = np.load(file_path)
+        newqx = q_values['qx']
+        newqy = q_values['qy']
+        newqz = q_values['qz']
+        newvoxelsize_z = 2 * np.pi / (newqx.max() - newqx.min())
+        newvoxelsize_x = 2 * np.pi / (newqy.max() - newqy.min())
+        newvoxelsize_y = 2 * np.pi / (newqz.max() - newqz.min())
+        print('Output voxel sizes:', newvoxelsize_z, newvoxelsize_y, newvoxelsize_x)
+    else:
+        # TODO: implement this for the non-orthogonal case
+        pass
+
+    rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2, 1) * voxelsize_z,
+                                   np.arange(-ny // 2, ny // 2, 1) * voxelsize_y,
+                                   np.arange(-nx // 2, nx // 2, 1) * voxelsize_x),
+                                  data, method='linear', bounds_error=False, fill_value=0)
+
+    new_z, new_y, new_x = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * newvoxelsize_z,
+                                      np.arange(-nby // 2, nby // 2, 1) * newvoxelsize_x,
+                                      np.arange(-nbx // 2, nbx // 2, 1) * newvoxelsize_y, indexing='ij')
+
+    new_support = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                      new_x.reshape((1, new_z.size)))).transpose())
+    new_support = new_support.reshape((nbz, nby, nbx)).astype(data.dtype)
+
+    gu.multislices_plot(new_support, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, invert_yaxis=False,
+                        title='Support with output shape\n', is_orthogonal=True, reciprocal_space=True)
+
+    ###################################
+    # save support with the new shape #
+    ###################################
+    filename = 'support_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '.npz'
+    np.savez_compressed(root_folder+filename, obj=new_support)
 
 plt.ioff()
 plt.show()
