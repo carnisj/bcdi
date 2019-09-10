@@ -22,7 +22,8 @@ The support can be cropped/padded to a desired shape.
 root_folder = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/"
 support_threshold = 0.1  # in % of the normalized absolute value
 original_shape = [162, 492, 162]  # shape of the array used for phasing and finding the support
-output_shape = [162, 1200, 162]  # shape of the array for later phasing
+output_shape = [162, 800, 162]  # shape of the array for later phasing
+binning = (1, 2, 1)  # binning that will be used in PyNX during phasing
 reload_support = True  # if True, will load the support and skip masking
 is_ortho = True  # True if the data is already orthogonalized
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
@@ -162,6 +163,7 @@ gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin
 ########################################
 # save support with the original shape #
 ########################################
+print('Shape of the original support:', data.shape)
 filename = 'support_' + str(nz) + '_' + str(ny) + '_' + str(nx) + '.npz'
 np.savez_compressed(root_folder+filename, obj=data)
 
@@ -193,7 +195,6 @@ if (nbz != nz) or (nby != ny) or (nbx != nx):
         newvoxelsize_z = 2 * np.pi / (newqx.max() - newqx.min())
         newvoxelsize_x = 2 * np.pi / (newqy.max() - newqy.min())
         newvoxelsize_y = 2 * np.pi / (newqz.max() - newqz.min())
-        print('Output voxel sizes:', newvoxelsize_z, newvoxelsize_y, newvoxelsize_x)
 
     else:  # data in detector frame
         # TODO: check this part
@@ -224,13 +225,23 @@ if (nbz != nz) or (nby != ny) or (nbx != nx):
                                       new_x.reshape((1, new_z.size)))).transpose())
     new_support = new_support.reshape((nbz, nby, nbx)).astype(data.dtype)
 
+    print('Shape after interpolating the support:', new_support.shape)
+
     gu.multislices_plot(new_support, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, invert_yaxis=False,
                         title='Support with output shape\n', is_orthogonal=True, reciprocal_space=True)
+
+    ##########################################################################
+    # crop the new support to accomodate the binning factor in later phasing #
+    ##########################################################################
+    binned_shape = [int(output_shape[idx] / binning[idx]) for idx in range(0, len(binning))]
+    new_support = pu.crop_pad(new_support, binned_shape)
+    print('Final shape after accomodating for later binning:', binned_shape)
 
     ###################################
     # save support with the new shape #
     ###################################
-    filename = 'support_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '.npz'
+    filename = 'support_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) +\
+               '_bin_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.npz'
     np.savez_compressed(root_folder+filename, obj=new_support)
 
 plt.ioff()
