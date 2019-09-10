@@ -706,12 +706,10 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
     return logfile
 
 
-def ewald_curvature(data, mask, cdi_angle, detector, setup, debugging=False):
+def ewald_curvature(cdi_angle, detector, setup, debugging=False):
     """
     Correct the data for the curvature of Ewald sphere.
 
-    :param data: 2D or 3D data to be corrected
-    :param mask: is it used here?
     :param cdi_angle: array of measurement angles in degrees
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
@@ -719,8 +717,10 @@ def ewald_curvature(data, mask, cdi_angle, detector, setup, debugging=False):
     :type debugging: bool
     :return:
     """
-    # TODO: implement this
-    return data, mask
+    qx = []
+    qy = []
+    qz = []
+    return qz, qy, qx
 
 
 def find_bragg(data, peak_method):
@@ -1897,7 +1897,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
     return qx, qz, qy, frames_logical
 
 
-def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=False):
+def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curvature=False, debugging=False):
     """
     Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in cartesian coordinates.
 
@@ -1908,8 +1908,9 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param correct_curvature: if True, will correct for the curvature of the Ewald sphere
     :param debugging: set to True to see plots
-    :return: the data and mask interpolated in the laboratory frame, q values
+    :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard)
     """
 
     if data.ndim != 3:
@@ -1950,8 +1951,6 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
                                                 zstar_exp.flatten()[:, np.newaxis]), axis=1),
                                 labels=('x*', 'z*'), markersize=1)
 
-    data, mask = ewald_curvature(data=data, mask=mask, cdi_angle=cdi_angle, detector=detector, setup=setup)
-
     # calculate interpolation voxel size along x* and z* based on the difference at largest q
     voxelsize_xz = nbx // 2 * np.sin(angular_step/2) - nbx // 2 * np.sin(-angular_step/2)  # in pixels
     voxelsize_y = 1  # in pixels, y* axis is not affected by the rotation
@@ -1968,55 +1967,82 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
     voxelsize_y = nby / numy  # in pixels
     print('Voxel sizes for interpolation (z*,y*,x*)=', voxelsize_xz, voxelsize_y, voxelsize_xz)
 
-    # calculate q spacing and q values using above voxel sizes
-    dq_xz = 2*np.pi / lambdaz * (pixel_x * voxelsize_xz)  # in 1/nm
-    dq_y = 2*np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm
-    q_xz = np.arange(-numxz // 2, numxz // 2, 1) * dq_xz
-    q_y = np.arange(-numy // 2, numy // 2, 1) * dq_y
-    print('q spacing for interpolation (z*,y*,x*)=', dq_xz, dq_y, dq_xz, ' (1/nm)')
+    if not correct_curvature:
+        # calculate q spacing and q values using above voxel sizes
+        dq_xz = 2*np.pi / lambdaz * (pixel_x * voxelsize_xz)  # in 1/nm
+        dq_y = 2*np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm
+        q_x = np.arange(-numxz // 2, numxz // 2, 1) * dq_xz  # x* outboard
+        q_z = np.arange(-numxz // 2, numxz // 2, 1) * dq_xz  # z* downstream
+        q_y = np.arange(-numy // 2, numy // 2, 1) * dq_y  # y* vertical up
+        print('q spacing for interpolation (z*,y*,x*)=', dq_xz, dq_y, dq_xz, ' (1/nm)')
 
-    # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
-    # the range along z* is nbx because the frame is rotating aroung y*
-    z_interp, y_interp, x_interp =\
-        np.meshgrid(np.linspace(-directbeam_x, -directbeam_x + nbx, num=numxz, endpoint=False),
-                    np.linspace(-directbeam_y, -directbeam_y + nby, num=numy, endpoint=False),
-                    np.linspace(-directbeam_x, -directbeam_x + nbx, num=numxz, endpoint=False),
-                    indexing='ij')
+        # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
+        # the range along z* is nbx because the frame is rotating aroung y*
+        z_interp, y_interp, x_interp =\
+            np.meshgrid(np.linspace(-directbeam_x, -directbeam_x + nbx, num=numxz, endpoint=False),
+                        np.linspace(-directbeam_y, -directbeam_y + nby, num=numy, endpoint=False),
+                        np.linspace(-directbeam_x, -directbeam_x + nbx, num=numxz, endpoint=False),
+                        indexing='ij')
 
-    # map these points to (angle, Y, X), the measurement cylindrical coordinates
-    angle_det = wrap(angle=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
-    # angle_det in radians, located in the range [start_angle, start_angle+np.pi[
-    y_det = - y_interp  # Y axis of the detector is going down but y* is going up
-    sign_array = sign(angle=angle_det, z_coord=z_interp, x_coord=x_interp)
-    x_det = np.multiply(sign_array, np.sqrt(x_interp**2 + z_interp**2))
-    # if angle_det in [0, np.pi/2[ X axis of the detector is opposite to x*
-    # if angle_det in [0, np.pi/2[ X axis of the detector is in the same direction as x*
+        # map these points to (angle, Y, X), the measurement cylindrical coordinates
+        angle_det = wrap(angle=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
+        # angle_det in radians, located in the range [start_angle, start_angle+np.pi[
+        y_det = - y_interp  # Y axis of the detector is going down but y* is going up
+        sign_array = sign(angle=angle_det, z_coord=z_interp, x_coord=x_interp)
+        x_det = np.multiply(sign_array, np.sqrt(x_interp**2 + z_interp**2))
+        # if angle_det in [0, np.pi/2[ X axis of the detector is opposite to x*
+        # if angle_det in [0, np.pi/2[ X axis of the detector is in the same direction as x*
 
-    # interpolate the data onto the new points
-    rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
-                                   np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
-                                  data, method='nearest', bounds_error=False, fill_value=np.nan)
-    newdata = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
-                                  y_det.reshape((1, z_interp.size)),
-                                  x_det.reshape((1, z_interp.size)))).transpose())
-    newdata = newdata.reshape((numxz, numy, numxz)).astype(data.dtype)
+        # interpolate the data onto the new points
+        rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
+                                       np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
+                                      data, method='nearest', bounds_error=False, fill_value=np.nan)
+        newdata = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
+                                      y_det.reshape((1, z_interp.size)),
+                                      x_det.reshape((1, z_interp.size)))).transpose())
+        newdata = newdata.reshape((numxz, numy, numxz)).astype(data.dtype)
 
-    # interpolate the mask onto the new points
-    rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
-                                   np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
-                                  mask, method='nearest', bounds_error=False, fill_value=np.nan)
-    newmask = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
-                                  y_det.reshape((1, z_interp.size)),
-                                  x_det.reshape((1, z_interp.size)))).transpose())
-    newmask = newmask.reshape((numxz, numy, numxz)).astype(mask.dtype)
-    newmask[np.nonzero(newmask)] = 1
+        # interpolate the mask onto the new points
+        rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
+                                       np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
+                                      mask, method='nearest', bounds_error=False, fill_value=np.nan)
+        newmask = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
+                                      y_det.reshape((1, z_interp.size)),
+                                      x_det.reshape((1, z_interp.size)))).transpose())
+        newmask = newmask.reshape((numxz, numy, numxz)).astype(mask.dtype)
+        newmask[np.nonzero(newmask)] = 1
+
+    else:
+        # calculate exact q values for each voxel of the 3D dataset
+        qz, qy, qx = ewald_curvature(cdi_angle=cdi_angle, detector=detector, setup=setup)
+
+        # create the grid for interpolation
+        q_z = np.linspace(qz.min(), qz.max(), numxz, endpoint=False)  # z* downstream
+        q_y = np.linspace(qy.min(), qy.max(), numy, endpoint=False)  # y* vertical up
+        q_x = np.linspace(qx.min(), qx.max(), numxz, endpoint=False)  # x* outboard
+
+        new_qz, new_qy, new_qx = np.meshgrid(q_z, q_y, q_x, indexing='ij')
+
+        # interpolate the data onto the new points
+        rgi = RegularGridInterpolator((qz, qy, qx), data, method='nearest', bounds_error=False, fill_value=np.nan)
+        newdata = rgi(np.concatenate((new_qz.reshape((1, new_qx.size)),
+                                      new_qy.reshape((1, new_qx.size)),
+                                      new_qx.reshape((1, new_qx.size)))).transpose())
+        newdata = newdata.reshape((numxz, numy, numxz)).astype(data.dtype)
+
+        # interpolate the mask onto the new points
+        rgi = RegularGridInterpolator((qz, qy, qx), mask, method='nearest', bounds_error=False, fill_value=np.nan)
+        newmask = rgi(np.concatenate((new_qz.reshape((1, new_qx.size)),
+                                      new_qy.reshape((1, new_qx.size)),
+                                      new_qx.reshape((1, new_qx.size)))).transpose())
+        newmask = newmask.reshape((numxz, numy, numxz)).astype(mask.dtype)
 
     # check for Nan
     newmask[np.isnan(newdata)] = 1
     newdata[np.isnan(newdata)] = 0
     newmask[np.isnan(newmask)] = 1
 
-    fig, _, _ = gu.contour_slices(newdata, (q_xz, q_y, q_xz), sum_frames=False, levels=150, title='Regridded data',
+    fig, _, _ = gu.contour_slices(newdata, (q_z, q_y, q_x), sum_frames=False, levels=150, title='Regridded data',
                                   scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space.png')
     plt.close(fig)
@@ -2027,7 +2053,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, debugging=F
         gu.multislices_plot(newmask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                             title='Regridded mask',
                             invert_yaxis=False, is_orthogonal=True, reciprocal_space=True)
-    return newdata, newmask, [q_xz, q_y, q_xz], frames_logical
+    return newdata, newmask, [q_z, q_y, q_x], frames_logical
 
 
 def remove_hotpixels(data, mask, hotpixels=None):
