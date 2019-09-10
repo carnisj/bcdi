@@ -382,9 +382,9 @@ for scan_nb in range(len(scans)):
     # save the orthogonalized diffraction pattern #
     ###############################################
     if not use_rawdata:
-        qx = q_vector[0]
-        qz = q_vector[1]
-        qy = q_vector[2]
+        qx = q_vector[0]  # downstream
+        qz = q_vector[1]  # vertical up
+        qy = q_vector[2]  # outboard
 
         if save_to_vti:
             # save diffraction pattern to vti
