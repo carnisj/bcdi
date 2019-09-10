@@ -2168,7 +2168,7 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
     myaxs = figure.gca()
     xmin, xmax = myaxs.get_xlim()
     ymin, ymax = myaxs.get_ylim()
-    if key == 'u':
+    if key == 'u':  # show next frame
         idx = idx + 1
         figure.clear()
         if dim == 0:
@@ -2197,7 +2197,7 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
-    elif key == 'd':
+    elif key == 'd':  # show previous frame
         idx = idx - 1
         figure.clear()
         if dim == 0:
@@ -2236,7 +2236,7 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
             width = 0
         print('width: ', width)
 
-    elif key == 'right':
+    elif key == 'right':  # increase colobar max
         vmax = vmax * 2
         print('vmax: ', vmax)
         figure.clear()
@@ -2260,7 +2260,7 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
-    elif key == 'left':
+    elif key == 'left':  # reduce colobar max
         vmax = vmax / 2
         if vmax < 1:
             vmax = 1
@@ -2286,7 +2286,7 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
-    elif key == 'm':
+    elif key == 'm':  # mask intensities
         figure.clear()
         if (piy - width) < 0:
             starty = 0
@@ -2322,7 +2322,7 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
 
-    elif key == 'b':
+    elif key == 'b':  # back to measured intensities
         figure.clear()
         if (piy - width) < 0:
             starty = 0
@@ -2352,6 +2352,42 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
             updated_data[starty:piy + width + 1, startx:pix + width + 1, idx] = \
                 original_data[starty:piy + width + 1, startx:pix + width + 1, idx]
             updated_mask[starty:piy + width + 1, startx:pix + width + 1, idx] = 0
+            plt.imshow(updated_data[:, :, idx], vmin=vmin, vmax=vmax)
+            plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
+                      "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                      "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        myaxs.set_xlim([xmin, xmax])
+        myaxs.set_ylim([ymin, ymax])
+        plt.draw()
+
+    elif key == 'f':  # fill with 1
+        figure.clear()
+        if (piy - width) < 0:
+            starty = 0
+        else:
+            starty = piy - width
+        if (pix - width) < 0:
+            startx = 0
+        else:
+            startx = pix - width
+        if dim == 0:
+            updated_data[idx, starty:piy + width + 1, startx:pix + width + 1] = 1
+            updated_mask[idx, starty:piy + width + 1, startx:pix + width + 1] = 1
+            plt.imshow(updated_data[idx, :, :], vmin=vmin, vmax=vmax)
+            plt.title("Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
+                      "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                      "up larger ; down smaller ; right darker ; left brighter")
+        elif dim == 1:
+            updated_data[starty:piy + width + 1, idx, startx:pix + width + 1] = 1
+            updated_mask[starty:piy + width + 1, idx, startx:pix + width + 1] = 1
+            plt.imshow(updated_data[:, idx, :], vmin=vmin, vmax=vmax)
+            plt.title("Frame " + str(idx + 1) + "/" + str(nby) + "\n"
+                      "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                      "up larger ; down smaller ; right darker ; left brighter")
+        elif dim == 2:
+            updated_data[starty:piy + width + 1, startx:pix + width + 1, idx] = 1
+            updated_mask[starty:piy + width + 1, startx:pix + width + 1, idx] = 1
             plt.imshow(updated_data[:, :, idx], vmin=vmin, vmax=vmax)
             plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
