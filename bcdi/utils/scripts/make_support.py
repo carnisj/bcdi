@@ -177,7 +177,7 @@ if (nbz != nz) or (nby != ny) or (nbx != nx):
         voxelsize_z = 2 * np.pi / (qx.max() - qx.min())
         voxelsize_x = 2 * np.pi / (qy.max() - qy.min())
         voxelsize_y = 2 * np.pi / (qz.max() - qz.min())
-        print('Original voxel sizes:', voxelsize_z, voxelsize_y, voxelsize_x)
+
         # load the q values of the desired shape and calculate corresponding real space voxel sizes
         file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select q values for the new shape",
                                                filetypes=[("NPZ", "*.npz")])
@@ -200,6 +200,11 @@ if (nbz != nz) or (nby != ny) or (nbx != nx):
         newvoxelsize_z = wavelength / (nbz * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
         newvoxelsize_x = wavelength * distance / (nby * pixel_y) * 1e9  # in nm
         newvoxelsize_y = wavelength * distance / (nbx * pixel_x) * 1e9  # in nm
+
+    print('Original voxel sizes (nm):', str('{:.2f}'.format(voxelsize_z)), str('{:.2f}'.format(voxelsize_y)),
+          str('{:.2f}'.format(voxelsize_x)))
+    print('Output voxel sizes (nm):', str('{:.2f}'.format(newvoxelsize_z)), str('{:.2f}'.format(newvoxelsize_y)),
+          str('{:.2f}'.format(newvoxelsize_x)))
 
     rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2, 1) * voxelsize_z,
                                    np.arange(-ny // 2, ny // 2, 1) * voxelsize_y,
