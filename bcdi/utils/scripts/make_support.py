@@ -56,6 +56,9 @@ def press_key(event):
         pass
 
 
+###############################################
+plt.rcParams["keymap.fullscreen"] = [""]
+
 root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilenames(initialdir=root_folder,
@@ -63,7 +66,6 @@ file_path = filedialog.askopenfilenames(initialdir=root_folder,
                                                    ("HDF5", "*.h5")])
 
 data, _ = pu.load_reconstruction(file_path[0])
-mask = np.zeros(data.shape)
 data[60:, :, :] = 0
 data = abs(data)  # take the real part
 data = data / data.max()  # normalize
@@ -71,6 +73,7 @@ data[data < support_threshold] = 0
 data[np.nonzero(data)] = 1
 
 data = pu.crop_pad(data, output_shape)
+mask = np.zeros(data.shape)
 print('output data shape', data.shape)
 
 fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, vmax=1,
