@@ -452,17 +452,17 @@ class Detector(object):
         if name == 'Maxipix':
             self.nb_pixel_x = 516
             self.nb_pixel_y = 516
-            self.pixelsize = 55e-06  # um
+            self.pixelsize = 55e-06  # m
             self.counter = 'mpx4inr'
         elif name == 'Eiger2M':
             self.nb_pixel_x = 1030
             self.nb_pixel_y = 2164  # 1614 now since one quadrant is dead
-            self.pixelsize = 75e-06  # um
+            self.pixelsize = 75e-06  # m
             self.counter = 'ei2minr'
         elif name == 'Eiger4M':
             self.nb_pixel_x = 2070
             self.nb_pixel_y = 2167
-            self.pixelsize = 75e-06  # um
+            self.pixelsize = 75e-06  # m
             self.counter = ''  # unused
         else:
             raise ValueError('Unknown detector name')
