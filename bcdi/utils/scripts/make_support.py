@@ -26,7 +26,17 @@ output_shape = [162, 800, 162]  # shape of the array for later phasing
 reload_support = True  # if True, will load the support and skip masking
 is_ortho = True  # True if the data is already orthogonalized
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
-###################################################################
+##############################################################################
+# parameters used when (original_shape != output_shape) and (is_ortho=False) #
+##############################################################################
+energy = 8700  # in eV
+tilt_angle = 0.5  # in degrees
+distance = 4.95  # in m
+pixel_x = 75e-06  # in m
+pixel_y = 75e-06  # in m
+##################################
+# end of user-defined parameters #
+##################################
 
 
 def close_event(event):
@@ -179,9 +189,17 @@ if (nbz != nz) or (nby != ny) or (nbx != nx):
         newvoxelsize_x = 2 * np.pi / (newqy.max() - newqy.min())
         newvoxelsize_y = 2 * np.pi / (newqz.max() - newqz.min())
         print('Output voxel sizes:', newvoxelsize_z, newvoxelsize_y, newvoxelsize_x)
-    else:
-        # TODO: implement this for the non-orthogonal case
-        pass
+
+    else:  # data in detector frame
+        # TODO: check this part
+        wavelength = 12.398 * 1e-7 / energy  # in m
+        voxelsize_z = wavelength / (nz * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
+        voxelsize_y = wavelength * distance / (ny * pixel_y) * 1e9  # in nm
+        voxelsize_x = wavelength * distance / (nx * pixel_x) * 1e9  # in nm
+
+        newvoxelsize_z = wavelength / (nbz * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
+        newvoxelsize_x = wavelength * distance / (nby * pixel_y) * 1e9  # in nm
+        newvoxelsize_y = wavelength * distance / (nbx * pixel_x) * 1e9  # in nm
 
     rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2, 1) * voxelsize_z,
                                    np.arange(-ny // 2, ny // 2, 1) * voxelsize_y,
