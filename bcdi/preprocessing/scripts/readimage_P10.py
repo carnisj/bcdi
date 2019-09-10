@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
+helptext = """
+Open images or series data at P10 beamline.
 """
-open data at P10 beamline
-"""
+
 import hdf5plugin  # for lz4 filter
 import h5py
 import numpy as np
@@ -10,9 +18,10 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import os
 
-scan = 5
-image = 1
-sample_name = "magnetite_A2"  # without _
+sample_name = "gold_2_2_2"  # without _ at the end
+scan = 22  # scan number as it appears in the folder name
+image = 2  # last number in the filename, e.g. 1 for gold_2_2_2_00022_data_000001.h5
+
 series = True  # set to True if the measurement is a time series, False for a single image
 
 if series: 
