@@ -22,7 +22,7 @@ The support can be cropped/padded to a desired shape.
 root_folder = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/"
 support_threshold = 0.1  # in % of the normalized absolute value
 original_shape = [162, 492, 162]  # shape of the array used for phasing and finding the support
-output_shape = [162, 800, 162]  # shape of the array for later phasing
+output_shape = [162, 1200, 162]  # shape of the array for later phasing
 reload_support = True  # if True, will load the support and skip masking
 is_ortho = True  # True if the data is already orthogonalized
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
@@ -147,7 +147,12 @@ if not reload_support:
     plt.show()
 
     del dim, width, fig_mask, original_data
-
+######################
+# center the support #
+######################
+data = pu.center_com(data)
+# you can use the line below if the center by COM is not optimal
+data = np.roll(data, (0, 0, 2), axis=(0, 1, 2))
 ############################################
 # plot the support with the original shape #
 ############################################
