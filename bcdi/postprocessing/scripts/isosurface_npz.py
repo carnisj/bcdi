@@ -19,12 +19,12 @@ Help to define the isosurface for the reconstructed scan depending on amplitude 
 
 save = 1  # 1 to save the histogram, 0 otherwise
 plot = 0  # 1 to plot the summed amplitude, 0 otherwise
-scan = 2191
-polyfit = 0  # fir with polynomial instead of spline
+scan = 1017
+polyfit = 0  # fit with polynomial instead of spline
 histogram_Yaxis = 'linear'  # 'log' or 'linear'
 threshold_amp = 0.05  # use only points with larger modulus to calculate mean, std and the histogram
-comment = '1'
-datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan) + "/pynxraw/apod_pre_blackman/"
+comment = ''
+datadir = 'D:/data/HC3207/SN' + str(scan) + "/pynxraw/"
 ################################################################################
 
 
@@ -184,4 +184,3 @@ if save == 1:
     plt.savefig(datadir + 'amp_histogram_' + comment + '.png')
 plt.ioff()
 plt.show()
-
