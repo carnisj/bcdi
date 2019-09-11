@@ -40,9 +40,9 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 2191  # spec scan number
+scan = 1038  # spec scan number
 
-datadir = 'G:/review paper/BCDI_isosurface/S' + str(scan) + "/pynxraw/apod_pre_blackman/"
+datadir = 'D:/data/HC3207/SN' + str(scan) + "/pynxraw/"
 get_temperature = False
 reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
@@ -51,25 +51,25 @@ reference_temperature = None  # used to calibrate the thermal expansion, if None
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 
-original_size = [270, 432, 400]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [100, 400, 512]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor during phasing
 
-output_size = original_size  # (z, y, x) Fix the size of the output array, leave it as () otherwise
+output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
-fix_voxel = 3.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
+fix_voxel = 6.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no averaging
 
-isosurface_strain = 0.5  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
-isosurface_method = 'defect'  # 'threshold' or 'defect'
+isosurface_strain = 0.43  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_method = 'threshold'  # 'threshold' or 'defect'
 
-comment = "_2_blackman_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = "_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 threshold_plot = isosurface_strain  # suppor4t threshold for plots (max amplitude of 1)
-strain_range = 0.005  # for plots
+strain_range = 0.001  # for plots
 phase_range = np.pi  # for plots
-phase_offset = 0  # manual offset to add to the phase, should be 0 normally
+phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 
-plot_width = (30, 15, 20)  # (z, y, x) margin outside the support in each direction, can be negative
+plot_width = (60, 30, 30)  # (z, y, x) margin outside the support in each direction, can be negative
 # useful to avoid cutting the object during the orthogonalization
 
 # define setup below
@@ -77,16 +77,16 @@ beamline = "ID01"  # name of the beamline, used for data loading and normalizati
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 0.50678  # sample to detector distance in m
+sdd = 0.86180  # sample to detector distance in m
 pixel_size = 55e-6  # detector pixel size in m
 energy = 8994  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # beam along z
-outofplane_angle = 35.3440  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = -0.9265  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 35.1029  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 3.5655  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.01015  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
-correct_refraction = 1  # 1 for correcting the phase shift due to refraction, 0 otherwise
-correct_absorption = 1  # 1 for correcting the amplitude for absorption, 0 otherwise
+tilt_angle = 0.010  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+correct_refraction = 0  # 1 for correcting the phase shift due to refraction, 0 otherwise
+correct_absorption = 0  # 1 for correcting the amplitude for absorption, 0 otherwise
 dispersion = 4.1184E-05  # delta
 # Pt:  3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994keV, 5.2647E-05 @ 7994keV, 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
 absorption = 3.4298E-06  # beta
@@ -220,7 +220,7 @@ for ii in sorted_obj:
     if extension == '.h5':
         centering_method = 'do_nothing'  # do not center, data is already cropped just on support for mode decomposition
         # you can use the line below if there is a roll of one pixel
-        # obj = np.roll(obj, (0, -1, 0), axis=(0, 1, 2))
+        obj = np.roll(obj, (0, -1, 0), axis=(0, 1, 2))
 
     # use the range of interest defined above
     obj = pu.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
@@ -629,11 +629,21 @@ if save:
                    voxel_size=(voxel_size, voxel_size, voxel_size), tuple_array=(amp, bulk, phase, strain),
                    tuple_fieldnames=('amp', 'bulk', phase_fieldname, 'strain'), amplitude_threshold=0.01)
 
+
+########################
+# calculate the volume #
+########################
+amp = amp / amp.max()
+temp_amp = np.copy(amp)
+temp_amp[amp < isosurface_strain] = 0
+temp_amp[np.nonzero(temp_amp)] = 1
+volume = temp_amp.sum()*voxel_size**3  # in nm3
+del temp_amp
+gc.collect()
+
 #######################
 # plot phase & strain #
 #######################
-amp = amp / amp.max()
-volume = amp.sum()*voxel_size**3  # in nm3
 strain[bulk == 0] = -2*strain_range
 phase[bulk == 0] = -2*phase_range
 pixel_spacing = tick_spacing / voxel_size
@@ -651,7 +661,7 @@ if save:
         datadir + 'S' + str(scan) + '_bulk' + comment + '.png')
 
 # amplitude
-fig, _, _ = gu.multislices_plot(amp, sum_frames=False, invert_yaxis=True, title='Orthogonal amp', vmin=0, vmax=1,
+fig, _, _ = gu.multislices_plot(amp, sum_frames=False, invert_yaxis=True, title='Normalized orthogonal amp', vmin=0, vmax=1,
                                 tick_direction=tick_direction, tick_width=tick_width, tick_length=tick_length,
                                 pixel_spacing=pixel_spacing, plot_colorbar=True)
 fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
