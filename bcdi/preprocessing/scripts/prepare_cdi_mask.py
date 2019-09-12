@@ -7,7 +7,6 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import hdf5plugin  # for P10, should be imported before h5py or PyTables
-import xrayutilities as xu
 import numpy as np
 import matplotlib.pyplot as plt
 plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
@@ -75,7 +74,8 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 ###########################
 reload_previous = False  # set to 1 to resume a previous masking (load data and mask)
 ###########################
-use_rawdata = True  # False for using regridded data / True for using data in detector reference frame
+use_rawdata = False  # False for using regridded data / True for using data in detector reference frame
+correct_curvature = True  # True to correcture q values for the curvature of Ewald sphere
 save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_mat = False  # set to 1 to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
@@ -296,7 +296,7 @@ for scan_nb in range(len(scans)):
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
                 pru.grid_cdi(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                              flatfield=flatfield, hotpixels=hotpix_array, normalize=normalize_flux, debugging=False,
-                             orthogonalize=True)
+                             correct_curvature=correct_curvature, orthogonalize=True)
             if save_rawdata:
                 np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
                 if save_to_mat:
