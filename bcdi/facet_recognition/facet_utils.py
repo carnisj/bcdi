@@ -471,8 +471,9 @@ def plane_angle_cubic(ref_plane, plane):
     else:
         angle = 180 / np.pi * np.arccos(sum(np.multiply(ref_plane, plane)) /
                                         (np.linalg.norm(ref_plane) * np.linalg.norm(plane)))
-    if angle > 90.0:
-        angle = 180.0 - angle
+    if np.isnan(angle):  # the ration is out of [-1,1] due to Python limited precision
+        angle = 180 / np.pi * np.arccos(np.rint(sum(np.multiply(ref_plane, plane)) /
+                                        (np.linalg.norm(ref_plane) * np.linalg.norm(plane))))
     return angle
 
 
