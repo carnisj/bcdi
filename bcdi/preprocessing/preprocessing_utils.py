@@ -706,20 +706,60 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
     return logfile
 
 
-def ewald_curvature(cdi_angle, detector, setup, debugging=False):
+def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     """
-    Correct the data for the curvature of Ewald sphere.
+    Correct the data for the curvature of Ewald sphere. Based on the CXI detector geometry convention:
+     Laboratory frame: z downstream, y vertical up, x outboard
+     Detector axes: Y vertical and X horizontal
+     Y is vertical down at out-of-plane angle=0, X is opposite to x at inplane angle=0)
 
-    :param cdi_angle: array of measurement angles in degrees
+    :param cdi_angle: 1D array of measurement angles in degrees
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
-    :param debugging: set to True to see plots
-    :type debugging: bool
-    :return:
+    :param anticlockwise: True if the rotation is anticlockwise
+    :return: qz, qy, qx values in the laboratory frame (downstream, vertical up, outboard).
+     Each array has the shape: nb_pixel_x * nb_pixel_y * nb_angles
     """
-    qx = []
-    qy = []
-    qz = []
+    wavelength = setup.wavelength * 1e9  # convert to nm
+    kin = np.asarray(setup.beam_direction)  # (1, 0 , 0) by default
+    directbeam_y = setup.direct_beam[0] - detector.roi[0]  # vertical
+    directbeam_x = setup.direct_beam[1] - detector.roi[2]  # horizontal
+    nbz = len(cdi_angle)
+    nby = detector.roi[1] - detector.roi[0]
+    nbx = detector.roi[3] - detector.roi[2]
+    pixelsize = detector.pixelsize * 1e9  # in nm
+    distance = setup.distance * 1e9  # in nm
+    qz = np.zeros((nbz, nby, nbx))
+    qy = np.zeros((nbz, nby, nbx))
+    qx = np.zeros((nbz, nby, nbx))
+
+    # calculate q values of the detector frame for each angular position and stack them
+    for idx in range(len(cdi_angle)):
+        angle = cdi_angle[idx] * np.pi / 180
+        if not anticlockwise:
+            rotation_matrix = np.array([[np.cos(angle), 0, -np.sin(angle)],
+                                        [0, 1, 0],
+                                        [np.sin(angle), 0, np.cos(angle)]])
+        else:
+            rotation_matrix = np.array([[np.cos(angle), 0, np.sin(angle)],
+                                        [0, 1, 0],
+                                        [-np.sin(angle), 0, np.cos(angle)]])
+
+        myy, myx = np.meshgrid(np.linspace(-directbeam_y, -directbeam_y + nby, num=nby, endpoint=False),
+                               np.linspace(-directbeam_x, -directbeam_x + nbx, num=nbx, endpoint=False),
+                               indexing='ij')
+
+        two_theta = np.arctan(myx * pixelsize / distance)
+        alpha_f = np.arctan(np.divide(myy, np.sqrt((distance/pixelsize)**2 + np.power(myx, 2))))
+
+        qlab0 = 2 * np.pi / wavelength * (np.cos(alpha_f) * np.cos(two_theta) - kin[0])  # along z*
+        qlab1 = 2 * np.pi / wavelength * (np.cos(alpha_f) * np.sin(two_theta) - kin[1])  # along y*
+        qlab2 = 2 * np.pi / wavelength * (np.sin(alpha_f) - kin[2])  # along x*
+
+        qz[idx, :, :] = rotation_matrix[0, 0] * qlab0 + rotation_matrix[0, 1] * qlab1 + rotation_matrix[0, 2] * qlab2
+        qy[idx, :, :] = rotation_matrix[1, 0] * qlab0 + rotation_matrix[1, 1] * qlab1 + rotation_matrix[1, 2] * qlab2
+        qx[idx, :, :] = rotation_matrix[2, 0] * qlab0 + rotation_matrix[2, 1] * qlab1 + rotation_matrix[2, 2] * qlab2
+
     return qz, qy, qx
 
 
@@ -761,7 +801,7 @@ def find_bragg(data, peak_method):
 
 
 def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False,
-             normalize=False, debugging=False):
+             normalize=False, correct_curvature=False, debugging=False):
     """
     Load the forward CDI data, apply filters and optionally regrid it for phasing.
 
@@ -774,6 +814,7 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param orthogonalize: if True will regrid the data and the mask on an orthogonal frame
     :param normalize: set to True to normalize the diffracted intensity by the incident X-ray beam intensity
+    :param correct_curvature: if True, will correct for the curvature of the Ewald sphere
     :param debugging:  set to True to see plots
     :return:
      - the 3D data array (in an orthonormal frame or in the detector frame) and the 3D mask array
@@ -796,7 +837,8 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     else:
         data, mask, q_values, frames_logical = \
             regrid_cdi(data=rawdata, mask=rawmask, logfile=logfile, detector=detector,
-                       setup=setup, frames_logical=frames_logical, debugging=debugging)
+                       setup=setup, frames_logical=frames_logical, correct_curvature=correct_curvature,
+                       debugging=debugging)
         return q_values, rawdata, data, rawmask, mask, frames_logical, monitor
 
 
@@ -1969,12 +2011,14 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
 
     if not correct_curvature:
         # calculate q spacing and q values using above voxel sizes
-        dq_xz = 2*np.pi / lambdaz * (pixel_x * voxelsize_xz)  # in 1/nm
+        dq_z = 2*np.pi / lambdaz * (pixel_x * voxelsize_xz)  # in 1/nm
         dq_y = 2*np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm
-        q_x = np.arange(-numxz // 2, numxz // 2, 1) * dq_xz  # x* outboard
-        q_z = np.arange(-numxz // 2, numxz // 2, 1) * dq_xz  # z* downstream
+        dq_x = 2 * np.pi / lambdaz * (pixel_x * voxelsize_xz)  # in 1/nm
+
+        q_z = np.arange(-numxz // 2, numxz // 2, 1) * dq_z  # z* downstream
         q_y = np.arange(-numy // 2, numy // 2, 1) * dq_y  # y* vertical up
-        print('q spacing for interpolation (z*,y*,x*)=', dq_xz, dq_y, dq_xz, ' (1/nm)')
+        q_x = np.arange(-numxz // 2, numxz // 2, 1) * dq_x  # x* outboard
+        print('q spacing for interpolation (z*,y*,x*)=', dq_z, dq_y, dq_x, ' (1/nm)')
 
         # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
         # the range along z* is nbx because the frame is rotating aroung y*
@@ -2014,7 +2058,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
 
     else:
         # calculate exact q values for each voxel of the 3D dataset
-        qz, qy, qx = ewald_curvature(cdi_angle=cdi_angle, detector=detector, setup=setup)
+        qz, qy, qx = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
 
         # create the grid for interpolation
         q_z = np.linspace(qz.min(), qz.max(), numxz, endpoint=False)  # z* downstream
@@ -2024,7 +2068,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
         new_qz, new_qy, new_qx = np.meshgrid(q_z, q_y, q_x, indexing='ij')
 
         # interpolate the data onto the new points
-        rgi = RegularGridInterpolator((qz, qy, qx), data, method='nearest', bounds_error=False, fill_value=np.nan)
+        rgi = RegularGridInterpolator((qz.reshape((1, qz.size)), qy.reshape((1, qz.size)), qx.reshape((1, qz.size))),
+                                      data, method='nearest', bounds_error=False, fill_value=np.nan)
         newdata = rgi(np.concatenate((new_qz.reshape((1, new_qx.size)),
                                       new_qy.reshape((1, new_qx.size)),
                                       new_qx.reshape((1, new_qx.size)))).transpose())
