@@ -2020,7 +2020,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         voxelsize_x = nbx / numx  # in pixels
 
     else:  # interpolated data will have the same shape as the original data
-        numz, numy, numx = (nbz, nby, nbx)
+        numz, numy, numx = (nbx, nby, nbx)
         voxelsize_z, voxelsize_y, voxelsize_x = (1, 1, 1)  # in pixels
 
     print('Voxel sizes for interpolation (z*,y*,x*)=', voxelsize_z, voxelsize_y, voxelsize_x)
@@ -2104,7 +2104,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     newmask[np.isnan(newmask)] = 1
 
     fig, _, _ = gu.contour_slices(newdata, (q_z, q_y, q_x), sum_frames=False, title='Regridded data',
-                                  levels=np.linspace(0, int(newdata.max()), 150, endpoint=False),
+                                  levels=np.linspace(0, int(np.log10(newdata.max())), 150, endpoint=False),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_' + str(numz)+'_' + str(numy) + '_' + str(numx) + '_' + '.png')
     plt.close(fig)
