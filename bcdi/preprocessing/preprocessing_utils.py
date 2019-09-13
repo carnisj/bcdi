@@ -1946,7 +1946,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
     :param data: the 3D data
     :param mask: the corresponding 3D mask
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param detector: the detector object: Class experiment_utils.Detector()
+    :param detector: the detector object: Class experiment_utils.Detector(). The detector orientation is supposed to
+     follow the CXI convention: (z downstream, y vertical up, x outboard) Y opposite to y, X opposite to x
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
@@ -2016,8 +2017,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
         dq_x = 2 * np.pi / lambdaz * (pixel_x * voxelsize_xz)  # in 1/nm
 
         q_z = np.arange(-numxz // 2, numxz // 2, 1) * dq_z  # z* downstream
-        q_y = np.arange(-numy // 2, numy // 2, 1) * dq_y  # y* vertical up
-        q_x = np.arange(-numxz // 2, numxz // 2, 1) * dq_x  # x* outboard
+        q_y = -1 * np.arange(-numy // 2, numy // 2, 1) * dq_y  # y* vertical up opposite to detector Y
+        q_x = -1 * np.arange(-numxz // 2, numxz // 2, 1) * dq_x  # x* outboard opposite to detector X
         print('q spacing for interpolation (z*,y*,x*)=', dq_z, dq_y, dq_x, ' (1/nm)')
 
         # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
