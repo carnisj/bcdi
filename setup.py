@@ -24,10 +24,10 @@ setup(name='bcdi', version='0.0.7',
       # data_files=[('bcdi/data', ['bcdi/data/S978_LLKf000.460.cxi'])], # data files will be installed
       # outtside of the package, which is not ideal
       scripts=['bcdi/facet_recognition/scripts/facet_strain.py',
+               'bcdi/facet_recognition/scripts/xrutils_polarplot.py',
                'bcdi/graph/scripts/make_movie.py',
                'bcdi/graph/scripts/merge3D_qspace.py',
                'bcdi/graph/scripts/xrutils_Qplot_3Dmayavi.py',
-               'bcdi/polarplot/scripts/xrutils_polarplot.py',
                'bcdi/postprocessing/scripts/isosurface_npz.py',
                'bcdi/postprocessing/scripts/post_process_CDI_2D.py',
                'bcdi/postprocessing/scripts/strain.py',

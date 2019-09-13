@@ -3,8 +3,8 @@
 .. toctree::
    :maxdepth: 2
 
-:mod:`bcdi.facet_recognition`: Facet detection and statistics on strain
-=======================================================================
+:mod:`bcdi.facet_recognition`: Stereographic projection, facet detection and statistics on strain
+=================================================================================================
 
 .. include:: ../../../README.rst
    :start-after: bcdi.facet_recognition section

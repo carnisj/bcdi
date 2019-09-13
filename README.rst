@@ -25,20 +25,17 @@ BCDI as a python toolkit
 
 BCDI can be used as a python library with the following main modules:
 
-1) :mod:`bcdi.facet_recognition`: automatic detection of reconstructed crystal facets and statistics on facet strain.
+1) :mod:`bcdi.facet_recognition`: Stereographic projection of a diffraction peak or a reconstructed crystal. Automatic detection of reconstructed facets and statistics on facet strain.
 
 2) :mod:`bcdi.experiment`: definition of the experimental geometry (beamline, setup, detector...).
 
 3) :mod:`bcdi.graph` : generation of plots using predefined templates.
 
-4) :mod:`bcdi.polarplot`: generation of the stereographic projection of a diffraction peak or a reconstructed crystal.
-   TODO
+4) :mod:`bcdi.postprocessing`: various methods for post-processing the complex output of a phasing algorithm.
 
-5) :mod:`bcdi.postprocessing`: various methods for post-processing the complex output of a phasing algorithm.
+5) :mod:`bcdi.preprocessing`: various methods for pre-processing the diffraction intensity.
 
-6) :mod:`bcdi.preprocessing`: various methods for pre-processing the diffraction intensity.
-
-7) :mod:`bcdi.simulation`: calculation of the diffraction intensity based on FFT or kinematical sum. 
+6) :mod:`bcdi.simulation`: calculation of the diffraction intensity based on FFT or kinematical sum. 
    It can include a displacement field, noise, detector gaps etc...
    TODO
 
@@ -112,8 +109,9 @@ BCDI.facet_recognition: automatic facet detection in BCDI 3D reconstructions
 Description
 -----------
 
-This module provides tools for facet detection and statistics on facet strain. After meshing the object, facets are found
-using a guassian kernel density estimation of mesh triangles normals, followed by watershed segmentation.
+This module provides tools for plotting the stereographic projection of a diffraction peak or an object. 
+There is also a script for facet detection on a reconstructed object, and for calculating statistics on facet strain.
+After meshing the object, facets are found using a density estimation of mesh triangles normals, followed by watershed segmentation.
 
 .. bcdi.facet_recognition end
 
@@ -167,18 +165,6 @@ This module provides methods used for post-processing phased data. For example (
 phase offset and ramp removal, centering, cropping, padding, aligning reconstructions, filtering...
 
 .. bcdi.postprocessing end
-
-BCDI.polarplot: calculate the stereographic projection of a 3D diffraction peak
-===============================================================================
-
-.. bcdi.polarplot section
-
-Description
------------
-
-This module provides methods calculate the stereographic projection of a diffraction peak or an object.
-
-.. bcdi.polarplot end
 
 BCDI.publication: utilities to make formatted figure for publication
 ====================================================================

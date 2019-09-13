@@ -18,6 +18,11 @@ Facet recognition
    :start-after: helptext
    :end-before: """
    :language: rst
+
+.. literalinclude:: ../../bcdi/facet_recognition/scripts/polarplot.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
    
 .. _postprocess:
 
