@@ -752,9 +752,9 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
         two_theta = np.arctan(myx * pixelsize / distance)
         alpha_f = np.arctan(np.divide(myy, np.sqrt((distance/pixelsize)**2 + np.power(myx, 2))))
 
-        qlab0 = 2 * np.pi / wavelength * (np.cos(alpha_f) * np.cos(two_theta) - kin[0])  # along z*
-        qlab1 = 2 * np.pi / wavelength * (np.cos(alpha_f) * np.sin(two_theta) - kin[1])  # along y*
-        qlab2 = 2 * np.pi / wavelength * (np.sin(alpha_f) - kin[2])  # along x*
+        qlab0 = 2 * np.pi / wavelength * (np.cos(alpha_f) * np.cos(two_theta) - kin[0])  # along z* downstream
+        qlab1 = 2 * np.pi / wavelength * (np.sin(alpha_f) - kin[1])  # along y* vertical up
+        qlab2 = 2 * np.pi / wavelength * (np.cos(alpha_f) * np.sin(two_theta) - kin[2])  # along x* outboard
 
         qz[idx, :, :] = rotation_matrix[0, 0] * qlab0 + rotation_matrix[0, 1] * qlab1 + rotation_matrix[0, 2] * qlab2
         qy[idx, :, :] = rotation_matrix[1, 0] * qlab0 + rotation_matrix[1, 1] * qlab1 + rotation_matrix[1, 2] * qlab2
