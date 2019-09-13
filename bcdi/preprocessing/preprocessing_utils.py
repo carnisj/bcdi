@@ -1939,7 +1939,8 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
     return qx, qz, qy, frames_logical
 
 
-def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curvature=False, debugging=False):
+def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate_qmax=False,
+               correct_curvature=False, debugging=False):
     """
     Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in cartesian coordinates.
 
@@ -1951,6 +1952,9 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param interpolate_qmax: set to True if you want to calculate the interpolation voxel size from the difference in q
+     between two angular steps at the farthest position away from the direct beam. If False the interpolated data will
+     have the same shape as the original data.
     :param correct_curvature: if True, will correct for the curvature of the Ewald sphere
     :param debugging: set to True to see plots
     :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard)
@@ -1994,39 +1998,50 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
                                                 zstar_exp.flatten()[:, np.newaxis]), axis=1),
                                 labels=('x*', 'z*'), markersize=1)
 
-    # calculate interpolation voxel size along x* and z* based on the difference at largest q
-    voxelsize_xz = nbx // 2 * np.sin(angular_step/2) - nbx // 2 * np.sin(-angular_step/2)  # in pixels
-    voxelsize_y = 1  # in pixels, y* axis is not affected by the rotation
+    if interpolate_qmax:
+        # calculate interpolation voxel size along x* and z* based on the difference at largest q
+        voxelsize_z = nbx // 2 * np.sin(angular_step / 2) - nbx // 2 * np.sin(-angular_step / 2)  # in pixels
+        voxelsize_y = 1  # in pixels, y* axis is not affected by the rotation
+        voxelsize_x = nbx // 2 * np.sin(angular_step / 2) - nbx // 2 * np.sin(-angular_step / 2)  # in pixels
 
-    # calculate the number of pixels in each direction using above voxel sizes and make it even (for FFT)
-    numxz = int(np.ceil(nbx/voxelsize_xz))  # number of voxels in x* and z* directions (should be an integer)
-    if (numxz % 2) != 0:
-        numxz = numxz + 1
-    numy = int(np.floor(nby/voxelsize_y))  # number of voxels in y* directions (should be an integer)
-    if (numy % 2) != 0:
-        numy = numy - 1
-    # update accordingly voxel sizes
-    voxelsize_xz = nbx / numxz  # in pixels
-    voxelsize_y = nby / numy  # in pixels
-    print('Voxel sizes for interpolation (z*,y*,x*)=', voxelsize_xz, voxelsize_y, voxelsize_xz)
+        # calculate the number of pixels in each direction using above voxel sizes and make it even (for FFT)
+        numz = int(np.ceil(nbx/voxelsize_z))  # number of voxels in z* direction (should be an integer)
+        if (numz % 2) != 0:
+            numz = numz + 1
+        numy = int(np.floor(nby/voxelsize_y))  # number of voxels in y* direction (should be an integer)
+        if (numy % 2) != 0:
+            numy = numy - 1
+        numx = int(np.ceil(nbx/voxelsize_x))  # number of voxels in x* direction (should be an integer)
+        if (numx % 2) != 0:
+            numx = numx + 1
+        # update accordingly voxel sizes
+        voxelsize_z = nbx / numz  # in pixels
+        voxelsize_y = nby / numy  # in pixels
+        voxelsize_x = nbx / numx  # in pixels
+
+    else:  # interpolated data will have the same shape as the original data
+        numz, numy, numx = (nbz, nby, nbx)
+        voxelsize_z, voxelsize_y, voxelsize_x = (1, 1, 1)  # in pixels
+
+    print('Voxel sizes for interpolation (z*,y*,x*)=', voxelsize_z, voxelsize_y, voxelsize_x)
 
     if not correct_curvature:
         # calculate q spacing and q values using above voxel sizes
-        dq_z = 2*np.pi / lambdaz * (pixel_x * voxelsize_xz)  # in 1/nm
-        dq_y = 2*np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm
-        dq_x = 2 * np.pi / lambdaz * (pixel_x * voxelsize_xz)  # in 1/nm
+        dq_z = 2 * np.pi / lambdaz * (pixel_x * voxelsize_z)  # in 1/nm
+        dq_y = 2 * np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm
+        dq_x = 2 * np.pi / lambdaz * (pixel_x * voxelsize_x)  # in 1/nm
 
-        q_z = np.arange(-numxz // 2, numxz // 2, 1) * dq_z  # z* downstream
+        q_z = np.arange(-numz // 2, numz // 2, 1) * dq_z  # z* downstream
         q_y = -1 * np.arange(-numy // 2, numy // 2, 1) * dq_y  # y* vertical up opposite to detector Y
-        q_x = -1 * np.arange(-numxz // 2, numxz // 2, 1) * dq_x  # x* outboard opposite to detector X
+        q_x = -1 * np.arange(-numx // 2, numx // 2, 1) * dq_x  # x* outboard opposite to detector X
         print('q spacing for interpolation (z*,y*,x*)=', dq_z, dq_y, dq_x, ' (1/nm)')
 
         # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
         # the range along z* is nbx because the frame is rotating aroung y*
         z_interp, y_interp, x_interp =\
-            np.meshgrid(np.linspace(-directbeam_x, -directbeam_x + nbx, num=numxz, endpoint=False),
+            np.meshgrid(np.linspace(-directbeam_x, -directbeam_x + nbx, num=numz, endpoint=False),
                         np.linspace(-directbeam_y, -directbeam_y + nby, num=numy, endpoint=False),
-                        np.linspace(-directbeam_x, -directbeam_x + nbx, num=numxz, endpoint=False),
+                        np.linspace(-directbeam_x, -directbeam_x + nbx, num=numx, endpoint=False),
                         indexing='ij')
 
         # map these points to (angle, Y, X), the measurement cylindrical coordinates
@@ -2041,20 +2056,20 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
         # interpolate the data onto the new points
         rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
                                        np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
-                                      data, method='nearest', bounds_error=False, fill_value=np.nan)
+                                      data, method='linear', bounds_error=False, fill_value=np.nan)
         newdata = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
                                       y_det.reshape((1, z_interp.size)),
                                       x_det.reshape((1, z_interp.size)))).transpose())
-        newdata = newdata.reshape((numxz, numy, numxz)).astype(data.dtype)
+        newdata = newdata.reshape((numz, numy, numx)).astype(data.dtype)
 
         # interpolate the mask onto the new points
         rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
                                        np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
-                                      mask, method='nearest', bounds_error=False, fill_value=np.nan)
+                                      mask, method='linear', bounds_error=False, fill_value=np.nan)
         newmask = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
                                       y_det.reshape((1, z_interp.size)),
                                       x_det.reshape((1, z_interp.size)))).transpose())
-        newmask = newmask.reshape((numxz, numy, numxz)).astype(mask.dtype)
+        newmask = newmask.reshape((numz, numy, numx)).astype(mask.dtype)
         newmask[np.nonzero(newmask)] = 1
 
     else:
@@ -2062,9 +2077,9 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
         qz, qy, qx = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
 
         # create the grid for interpolation
-        q_z = np.linspace(qz.min(), qz.max(), numxz, endpoint=False)  # z* downstream
+        q_z = np.linspace(qz.min(), qz.max(), numz, endpoint=False)  # z* downstream
         q_y = np.linspace(qy.min(), qy.max(), numy, endpoint=False)  # y* vertical up
-        q_x = np.linspace(qx.min(), qx.max(), numxz, endpoint=False)  # x* outboard
+        q_x = np.linspace(qx.min(), qx.max(), numx, endpoint=False)  # x* outboard
 
         new_qz, new_qy, new_qx = np.meshgrid(q_z, q_y, q_x, indexing='ij')
 
@@ -2074,23 +2089,24 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
         newdata = rgi(np.concatenate((new_qz.reshape((1, new_qx.size)),
                                       new_qy.reshape((1, new_qx.size)),
                                       new_qx.reshape((1, new_qx.size)))).transpose())
-        newdata = newdata.reshape((numxz, numy, numxz)).astype(data.dtype)
+        newdata = newdata.reshape((numz, numy, numx)).astype(data.dtype)
 
         # interpolate the mask onto the new points
         rgi = RegularGridInterpolator((qz, qy, qx), mask, method='nearest', bounds_error=False, fill_value=np.nan)
         newmask = rgi(np.concatenate((new_qz.reshape((1, new_qx.size)),
                                       new_qy.reshape((1, new_qx.size)),
                                       new_qx.reshape((1, new_qx.size)))).transpose())
-        newmask = newmask.reshape((numxz, numy, numxz)).astype(mask.dtype)
+        newmask = newmask.reshape((numz, numy, numx)).astype(mask.dtype)
 
     # check for Nan
     newmask[np.isnan(newdata)] = 1
     newdata[np.isnan(newdata)] = 0
     newmask[np.isnan(newmask)] = 1
 
-    fig, _, _ = gu.contour_slices(newdata, (q_z, q_y, q_x), sum_frames=False, levels=150, title='Regridded data',
-                                  scale='log', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space.png')
+    fig, _, _ = gu.contour_slices(newdata, (q_z, q_y, q_x), sum_frames=False, title='Regridded data',
+                                  levels=np.linspace(0, int(newdata.max()), 150, endpoint=False),
+                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space_' + str(numz)+'_' + str(numy) + '_' + str(numx) + '_' + '.png')
     plt.close(fig)
 
     if debugging:
