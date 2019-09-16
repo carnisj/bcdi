@@ -2090,16 +2090,6 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
             np.ndarray.flatten(data),
             np.array([np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy), np.ndarray.flatten(new_qx)]).T,
             method='linear', fill_value=np.nan)
-
-        # newdata = griddata(
-        #     np.array([np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy), np.ndarray.flatten(old_qx)]).T,
-        #     np.ndarray.flatten(data), (new_qz, new_qy, new_qx), method='linear', fill_value=np.nan)
-
-        # rgi = RegularGridInterpolator((qz.reshape((1, qz.size)), qy.reshape((1, qz.size)), qx.reshape((1, qz.size))),
-        #                               data, method='linear', bounds_error=False, fill_value=np.nan)
-        # newdata = rgi(np.concatenate((new_qz.reshape((1, new_qx.size)),
-        #                               new_qy.reshape((1, new_qx.size)),
-        #                               new_qx.reshape((1, new_qx.size)))).transpose())
         newdata = newdata.reshape((numz, numy, numx)).astype(data.dtype)
 
         # interpolate the mask onto the new points
@@ -2108,15 +2098,6 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
             np.ndarray.flatten(mask),
             np.array([np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy), np.ndarray.flatten(new_qx)]).T,
             method='linear', fill_value=np.nan)
-
-        # newmask = griddata(
-        #     np.array([np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy), np.ndarray.flatten(old_qx)]).T,
-        #     np.ndarray.flatten(data), (new_qz, new_qy, new_qx), method='linear', fill_value=np.nan)
-
-        # rgi = RegularGridInterpolator((qz, qy, qx), mask, method='linear', bounds_error=False, fill_value=np.nan)
-        # newmask = rgi(np.concatenate((new_qz.reshape((1, new_qx.size)),
-        #                               new_qy.reshape((1, new_qx.size)),
-        #                               new_qx.reshape((1, new_qx.size)))).transpose())
         newmask = newmask.reshape((numz, numy, numx)).astype(mask.dtype)
 
     # check for Nan
