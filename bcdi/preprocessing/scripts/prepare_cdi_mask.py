@@ -55,7 +55,7 @@ fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
 fix_size = []  # [10, 170, 0, 512, 0, 480]  # crop the array to predefined size, leave it to [] otherwise
 # [zstart, zstop, ystart, ystop, xstart, xstop]
 ###########################
-center_fft = 'do_nothing'
+center_fft = 'crop_sym_ZYX'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'do_nothing'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
@@ -65,7 +65,7 @@ normalize_flux = True  # will normalize the intensity by the default monitor.
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
-flag_medianfilter = 'interp_isolated'
+flag_medianfilter = 'mask_isolated'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -75,7 +75,10 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 reload_previous = False  # set to 1 to resume a previous masking (load data and mask)
 ###########################
 use_rawdata = False  # False for using regridded data / True for using data in detector reference frame
-correct_curvature = True  # True to correcture q values for the curvature of Ewald sphere
+correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
+interpolate_qmax = False  # paramter defining the interpolation interval when use_rawdata is False
+# if True, will interpolate using the q spacing at the outer boundary of the data array
+# if False, the output data will have the same shape as the ungridded data
 save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_mat = False  # set to 1 to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
@@ -98,7 +101,7 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
-roi_detector = [direct_beam[0] - 240, direct_beam[0] + 240, direct_beam[1] - 280, direct_beam[1] + 280]  # V x H
+roi_detector = [direct_beam[0] - 247, direct_beam[0] + 247, direct_beam[1] - 247, direct_beam[1] + 247]  # V x H
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
