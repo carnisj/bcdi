@@ -38,21 +38,24 @@ And qx, qz, qy = mygridder.xaxis, mygridder.yaxis, mygridder.zaxis
 @author: CARNIS
 """
 
-scan = 936    # spec scan number
-root_folder = "D:/data/HC3207/"
-sample_name = "SN"  # "SN"  #
+scan = 2227    # spec scan number
+root_folder = "D:/data/BCDI_isosurface/"  # "D:/data/HC3207/"
+sample_name = "S"  # "SN"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile, before orthogonalization
-radius_mean = 0.028  # q from Bragg peak
-dr = 0.0005        # delta_q
+radius_mean = 0.03  # q from Bragg peak
+dr = 0.0015        # delta_q
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
 # will rotate peaks counterclockwise in the pole figure
 offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation around Qx)
 # will shift peaks upwards in the pole figure
+range_min = 500  # low limit for the colorbar in polar plots, every below will be set to nan
+range_max = 1600  # high limit for the colorbar in polar plots
+range_step = 500  # step for color change in polar plots
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
 ###################################################################################################
@@ -68,10 +71,10 @@ pad_size = 3  # int >= 1, will pad to get this number times the initial array si
 ###################
 flag_medianfilter = False  # set to True for applying med2filter [3,3]
 flag_plotplanes = True    # if True, plot red dotted circle with plane index
-photon_threshold = 1  # photon threshold in detector counts
+photon_threshold = 0  # photon threshold in detector counts
 normalize_flux = True  # will normalize the intensity by the default monitor.
 debug = False  # True to show more plots, False otherwise
-qz_offset = -0.000  # offset of the projection plane in the vertical direction (0 = equatorial plane)
+qz_offset = 0  # offset of the projection plane in the vertical direction (0 = equatorial plane)
 ######################################
 # define beamline related parameters #
 ######################################
@@ -79,7 +82,7 @@ beamline = 'ID01'  # name of the beamline, used for data loading and normalizati
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'align2'
+specfile_name = 'alignment'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -89,15 +92,15 @@ specfile_name = 'align2'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 424  # horizontal pixel number of the Bragg peak
-roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
+roi_detector = []  # [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'align_eiger2M_%05d.edf.gz'
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -107,17 +110,17 @@ template_imagefile = 'align_eiger2M_%05d.edf.gz'
 # define parameters for xrayutilities, used for orthogonalization #
 ###################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
-sdd = 5.1  # sample to detector distance in m, not important if you use raw data
-energy = 8700  # x-ray energy in eV, not important if you use raw data
+sdd = 0.50678  # sample to detector distance in m, not important if you use raw data
+energy = 9000  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = 0  # outer detector angle offset, not important if you use raw data
-cch1 = 71.61  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-cch2 = 1656.65  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-detrot = -0.897  # detrot parameter from xrayutilities 2D detector calibration
-tiltazimuth = 28.4  # tiltazimuth parameter from xrayutilities 2D detector calibration
-tilt = 3.772  # tilt parameter from xrayutilities 2D detector calibration
+offset_inplane = -0.6358  # outer detector angle offset, not important if you use raw data
+cch1 = 207.88  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch2 = 50.49  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+detrot = -0.436  # detrot parameter from xrayutilities 2D detector calibration
+tiltazimuth = 273.4  # tiltazimuth parameter from xrayutilities 2D detector calibration
+tilt = 3.940  # tilt parameter from xrayutilities 2D detector calibration
 
 
 ###################
@@ -265,21 +268,17 @@ qz1_top = qz_top[np.newaxis, :, np.newaxis]   # broadcast array
 qz1_bottom = qz_bottom[np.newaxis, :, np.newaxis]   # broadcast array
 distances_top = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_top - (qzCOM+qz_offset))**2)
 distances_bottom = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_bottom - (qzCOM+qz_offset))**2)
-# The shape of volume_R is (qx1 qy1 qz1)
 
 ######################################
 # define matrix of radii radius_mean #
 ######################################
-# mask_top = np.zeros(np.shape(intensity_top))
-# mask_bottom = np.zeros(np.shape(intensity_bottom))
-# mask_top[np.where((volume_R_top < (radius_mean+dr)) & (volume_R_top > (radius_mean-dr)))] = 1
 mask_top = np.logical_and((distances_top < (radius_mean+dr)), (distances_top > (radius_mean-dr)))
 mask_bottom = np.logical_and((distances_bottom < (radius_mean+dr)), (distances_bottom > (radius_mean-dr)))
 
 ################
 # plot 2D maps #
 ################
-fig, ax = plt.subplots(num=1, figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
+fig, ax = plt.subplots(figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
 plt.subplot(2, 2, 1)
 plt.contourf(qz, qx, xu.maplog(data.sum(axis=2)), 150, cmap=my_cmap)
 plt.plot([min(qz), max(qz)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
@@ -330,7 +329,7 @@ plt.savefig(homedir + 'diffpattern' + comment + 'S' + str(scan) + '_q=' + str(ra
 #  plot upper and lower part of intensity with intersecting sphere #
 ####################################################################
 if debug:
-    fig, ax = plt.subplots(num=2, figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
+    fig, ax = plt.subplots(figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
     plt.subplot(2, 3, 1)
     plt.contourf(qz_top, qx, xu.maplog(intensity_top.sum(axis=2), 6, 1), 75, cmap=my_cmap)
     plt.plot([qzCOM, max(qz)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
@@ -411,7 +410,7 @@ if debug:
 I_masked_top = intensity_top*mask_top
 I_masked_bottom = intensity_bottom*mask_bottom
 if debug:
-    fig, ax = plt.subplots(num=3, figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
+    fig, ax = plt.subplots(figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
     plt.subplot(2, 3, 1)
     plt.contourf(qz_top, qx, xu.maplog(I_masked_top.sum(axis=2), 5, 1), 75, cmap=my_cmap)
     circle = plt.Circle((qzCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
@@ -511,10 +510,11 @@ planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
 # create top projection from South pole #
 #########################################
 # plot the stereographic projection
-myfig, myax0 = plt.subplots(1, 1, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
+myfig, myax0 = plt.subplots(1, 1, figsize=(15, 10), facecolor='w', edgecolor='k')
 # plot top part (projection from South pole on equator)
-plt0 = myax0.contourf(u_grid_top, v_grid_top, abs(int_grid_top), range(100, 6100, 200), cmap='hsv')
-# plt0 = myax0.contourf(u_grid_top, v_grid_top, np.log10(abs(int_grid_top)), np.linspace(2.0, 4.0, 9), cmap='hsv')
+int_grid_top[int_grid_top < 10] = -1
+plt0 = myax0.contourf(u_grid_top, v_grid_top, int_grid_top, range(range_min, range_max, range_step),
+                      cmap=my_cmap)
 plt.colorbar(plt0, ax=myax0)
 myax0.axis('equal')
 myax0.axis('off')
@@ -573,7 +573,9 @@ plt.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
 # create bottom projection from North pole #
 ############################################
 myfig, myax1 = plt.subplots(1, 1, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
-plt1 = myax1.contourf(u_grid_bottom, v_grid_bottom, abs(int_grid_bottom), range(100, 6100, 200), cmap='hsv')
+int_grid_bottom[int_grid_bottom < 10] = -1
+plt1 = myax1.contourf(u_grid_bottom, v_grid_bottom, int_grid_bottom, range(range_min, range_max, range_step),
+                      cmap=my_cmap)
 plt.colorbar(plt1, ax=myax1)
 myax1.axis('equal')
 myax1.axis('off')
