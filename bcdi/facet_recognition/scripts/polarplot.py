@@ -6,6 +6,25 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import hdf5plugin  # for P10, should be imported before h5py or PyTables
+import numpy as np
+import xrayutilities as xu
+import scipy.signal  # for medfilt2d
+import matplotlib.pyplot as plt
+from scipy.interpolate import griddata
+import sys
+import tkinter as tk
+from tkinter import filedialog
+from numpy.fft import fftn, fftshift
+import gc
+sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+import bcdi.graph.graph_utils as gu
+import bcdi.experiment.experiment_utils as exp
+import bcdi.facet_recognition.facet_utils as fu
+import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.preprocessing.preprocessing_utils as pru
+
+
 helptext = """
 xrutils_polarplot.py
 Stereographic projection of diffraction pattern, based on ESRF/ID01 geometry
@@ -18,313 +37,180 @@ Hence the gridder is mygridder(myqx, myqz, myqy, rawdata)
 And qx, qz, qy = mygridder.xaxis, mygridder.yaxis, mygridder.zaxis
 @author: CARNIS
 """
-import numpy as np
-import xrayutilities as xu
-import os
-import matplotlib
-import scipy.io  # for savemat
-import scipy.signal  # for medfilt2d
-import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
-import sys
-import fabio
-from matplotlib.colors import LinearSegmentedColormap
-from silx.io.specfile import SpecFile
-import tkinter as tk
-from tkinter import filedialog
-from numpy.fft import fftn, fftshift
 
-scan = 2606    # spec scan number
-flag_medianfilter = 0  # set to 1 for applying med2filter [3,3]
+scan = 936    # spec scan number
+root_folder = "D:/data/HC3207/"
+sample_name = "SN"  # "SN"  #
 comment = ""
-
-filtered_data = 0  # set to 1 if the data is already a 3D array, 0 otherwise
+reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
+filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile, before orthogonalization
-
-reconstructed_data = 0  # set to 1 if the data is a BCDI reconstruction (real space), 0 otherwise
+radius_mean = 0.028  # q from Bragg peak
+dr = 0.0005        # delta_q
+offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
+# will shift peaks rightwards in the pole figure
+offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
+# will rotate peaks counterclockwise in the pole figure
+offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation around Qx)
+# will shift peaks upwards in the pole figure
+###################################################################################################
+# parameters for plotting the stereographic projection starting from the phased real space object #
+###################################################################################################
+reconstructed_data = False  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
-threshold_amp = 0.25  # threshold for support determination from amplitude, if reconstructed_data=1
-use_phase = 0  # set to 0 to use only a support, 1 to use the compex amplitude
+threshold_amp = 0.36  # threshold for support determination from amplitude, if reconstructed_data=1
+use_phase = False  # set to False to use only a support, True to use the compex amplitude
 voxel_size = 5  # in nm, voxel size of the CDI reconstruction, should be equal in all directions.  Put 0 if unknown
 photon_nb = 5e7  # total number of photons in the diffraction pattern calculated from CDI reconstruction
 pad_size = 3  # int >= 1, will pad to get this number times the initial array size  (avoid aliasing)
-
-flag_savedata = 0      # set to 1 to save data
-flag_plotplanes = 1    # plot red dotted circle with plane index
-debug = 1  # 1 to show more plots, 0 otherwise
-sdd = 0.61681  # sample to detector distance in m
-en = 9994     # x-ray energy in eV
-offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
-# will shift peaks rightwards in the pole figure
-offset_phi = -4     # positive make diff pattern rotate clockwise (phi rotation around Qz)
-# will rotate peaks counterclockwise in the pole figure
-offset_chi = 3  # positive make diff pattern rotate clockwise (chi rotation around Qx)
-# will shift peaks upwards in the pole figure
-offset = 2.9954   # outer detector angle offset (nu)
-threshold = 1  # photon threshold in detector counts
-radius_mean = 0.028  # q from Bragg peak
-dr = 0.0005        # delta_q
-reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
-# specdir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/"
-specdir = "C:/users/CARNIS/Work Folders/Documents/data/HC3796/OER/"
-datadir = specdir + "S"+str(scan)+"/data/"
-savedir = specdir + "S"+str(scan)+"/"
-spec_prefix = "2018_11_01_022929_OER"  #
-detector = 1    # 0 for eiger, 1 for maxipix
-if detector == 0:  # eiger.y_bragg = 1412  # y pixel of the Bragg peak, only used for Eiger ROI
-    x_bragg = 430  # x pixel of the Bragg peak, only used for Eiger ROI
-    roi = [1102, 1610, x_bragg - 300, x_bragg + 301]
-    pixelsize = 7.5e-05
-    ccdfiletmp = os.path.join(datadir, "align_eiger2M_%05d.edf.gz")   # template for the CCD file names
-elif detector == 1:  # maxipix
-    roi = [0, 516, 0, 516]  # [261, 516, 261, 516]  # [0, 516, 0, 516]
-    pixelsize = 5.5e-05
-    ccdfiletmp = os.path.join(datadir, "data_mpx4_%05d.edf.gz")   # template for the CCD file names
-else:
-    sys.exit("Incorrect value for 'detector' parameter")
-comment = ''
-hotpixels_file = ""  # specdir + "hotpixels_HS4670.npz"  # specdir + "align_eiger2M_02694_limahotmask.edf"
-flatfield_file = ""  # specdir + "flatfield_maxipix_8kev.npz"  # "flatfield_eiger.npz"
-nch1 = roi[1] - roi[0]  # 2164 Eiger, 516 Maxipix
-nch2 = roi[3] - roi[2]  # 1030 Eiger, 516 Maxipix
-# geometry of diffractometer
-qconv = xu.experiment.QConversion(['y-', 'x+', 'z-'], ['z-', 'y-'], [1, 0, 0])
-# 3S+2D goniometer (simplified ID01 goniometer, sample: eta, chi, phi      detector: nu,del
-# convention for coordinate system: x downstream; z upwards; y to the "outside" (righthanded)
-cch1 = 180.66 - roi[0]  # direct_beam_y - roi[0]
-cch2 = 995.44 - roi[2]  # direct_beam_x - roi[2]
-hxrd = xu.experiment.HXRD([1, 0, 0], [0, 0, 1], en=en, qconv=qconv)
-# detector should be calibrated for the same roi as defined above
-hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=nch1, Nch2=nch2, pwidth1=pixelsize, pwidth2=pixelsize,
-                     distance=sdd, detrot=-0.744, tiltazimuth=67.7, tilt=4.507)
-nav = [1, 1]  # reduce data: number of pixels to average in each detector direction
-##############################################################################
-##############################################################################
-# parameters for plotting
-params = {'backend': 'Qt5Agg',
-          'axes.labelsize': 20,
-          'font.size': 20,
-          'legend.fontsize': 20,
-          'axes.titlesize': 20,
-          'xtick.labelsize': 20,
-          'ytick.labelsize': 20,
-          'text.usetex': False,
-          'figure.figsize': (11, 9)}
-matplotlib.rcParams.update(params)
-# define a colormap
-cdict = {'red':  ((0.0, 1.0, 1.0),
-                  (0.11, 0.0, 0.0),
-                  (0.36, 0.0, 0.0),
-                  (0.62, 1.0, 1.0),
-                  (0.87, 1.0, 1.0),
-                  (1.0, 0.0, 0.0)),
-         'green': ((0.0, 1.0, 1.0),
-                   (0.11, 0.0, 0.0),
-                   (0.36, 1.0, 1.0),
-                   (0.62, 1.0, 1.0),
-                   (0.87, 0.0, 0.0),
-                   (1.0, 0.0, 0.0)),
-         'blue': ((0.0, 1.0, 1.0),
-                  (0.11, 1.0, 1.0),
-                  (0.36, 1.0, 1.0),
-                  (0.62, 0.0, 0.0),
-                  (0.87, 0.0, 0.0),
-                  (1.0, 0.0, 0.0))}
-my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
+###################
+# various options #
+###################
+flag_medianfilter = False  # set to True for applying med2filter [3,3]
+flag_plotplanes = True    # if True, plot red dotted circle with plane index
+photon_threshold = 1  # photon threshold in detector counts
+normalize_flux = True  # will normalize the intensity by the default monitor.
+debug = False  # True to show more plots, False otherwise
+qz_offset = -0.000  # offset of the projection plane in the vertical direction (0 = equatorial plane)
+######################################
+# define beamline related parameters #
+######################################
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
+follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
+specfile_name = 'align2'
+# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
+# template for ID01: name of the spec file without '.spec'
+# template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
+# template for SIXS_2019: ''
+# template for P10: sample_name + '_%05d'
+# template for CRISTAL: ''
+#############################################################
+# define detector related parameters and region of interest #
+#############################################################
+detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+x_bragg = 424  # horizontal pixel number of the Bragg peak
+roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
+# roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
+# leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
+photon_threshold = 0  # data[data <= photon_threshold] = 0
+hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
+flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
+template_imagefile = 'align_eiger2M_%05d.edf.gz'
+# template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+# template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+# template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+# template for Cristal: 'S%d.nxs'
+# template for P10: '_data_%06d.h5'
+###################################################################
+# define parameters for xrayutilities, used for orthogonalization #
+###################################################################
+# xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
+sdd = 5.1  # sample to detector distance in m, not important if you use raw data
+energy = 8700  # x-ray energy in eV, not important if you use raw data
+beam_direction = (1, 0, 0)  # beam along z
+sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
+sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
+offset_inplane = 0  # outer detector angle offset, not important if you use raw data
+cch1 = 71.61  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch2 = 1656.65  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+detrot = -0.897  # detrot parameter from xrayutilities 2D detector calibration
+tiltazimuth = 28.4  # tiltazimuth parameter from xrayutilities 2D detector calibration
+tilt = 3.772  # tilt parameter from xrayutilities 2D detector calibration
 
 
-def remove_hotpixels(mydata, hotpixels, mymask):
-    """
-    function to remove hot pixels from CCD frames
-    """
-    mydata[hotpixels == -1] = 0
-    mymask[hotpixels == -1] = 1
-    return mydata, mymask
+###################
+# define colormap #
+###################
+bad_color = '1.0'  # white background
+colormap = gu.Colormap(bad_color=bad_color)
+my_cmap = colormap.cmap
 
+#######################
+# Initialize detector #
+#######################
+detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector)
 
-def check_pixels(mydata, mymask):
-    """
-    function to check for hot pixels in the data
-    """
-    numz, _, _ = mydata.shape
-    sumdata = mydata.sum(axis=0)
-    sumdata[sumdata > 1e6*numz/20] = 0
-    print("Mask points number before hot pixels checking: ", int(round(mymask.sum())))
-    mymask[sumdata > 1e6 * numz / 20] = 1
-    print("Mask points number after hot pixels checking: ", int(round(mymask.sum())))
-    for indx in range(numz):
-        temp = mydata[indx, :, :]
-        temp[mymask == 1] = 0
-        mydata[indx, :, :] = temp
-    return mydata, mymask
+####################
+# Initialize setup #
+####################
+setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+                               beam_direction=beam_direction, sample_inplane=sample_inplane,
+                               sample_outofplane=sample_outofplane, offset_inplane=offset_inplane)
 
+#############################################
+# Initialize geometry for orthogonalization #
+#############################################
+qconv, offsets = pru.init_qconversion(setup)
+detector.offsets = offsets
+hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x downstream, y outboard, z vertical
+# first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
+cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
+cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
+hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
+                     Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize,
+                     pwidth2=detector.pixelsize, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
+# first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
-def mask_eiger(mydata, mymask):
-    mydata[:, 255: 259] = 0
-    mydata[:, 513: 517] = 0
-    mydata[:, 771: 775] = 0
-    mydata[0: 257, 72: 80] = 0
-    mydata[255: 259, :] = 0
-    mydata[511: 552, :0] = 0
-    mydata[804: 809, :] = 0
-    mydata[1061: 1102, :] = 0
-    mydata[1355: 1359, :] = 0
-    mydata[1611: 1652, :] = 0
-    mydata[1905: 1909, :] = 0
-    mydata[1248:1290, 478] = 0
-    mydata[1214:1298, 481] = 0
-    mydata[1649:1910, 620:628] = 0
-
-    mymask[:, 255: 259] = 1
-    mymask[:, 513: 517] = 1
-    mymask[:, 771: 775] = 1
-    mymask[0: 257, 72: 80] = 1
-    mymask[255: 259, :] = 1
-    mymask[511: 552, :] = 1
-    mymask[804: 809, :] = 1
-    mymask[1061: 1102, :] = 1
-    mymask[1355: 1359, :] = 1
-    mymask[1611: 1652, :] = 1
-    mymask[1905: 1909, :] = 1
-    mymask[1248:1290, 478] = 1
-    mymask[1214:1298, 481] = 1
-    mymask[1649:1910, 620:628] = 1
-    return mydata, mymask
-
-
-def mask_maxipix(mydata, mymask):
-    mydata[:, 255:261] = 0
-    mydata[255:261, :] = 0
-
-    mymask[:, 255:261] = 1
-    mymask[255:261, :] = 1
-    return mydata, mymask
-
-
-def gridmap(specfile, scan_nb, mydetector, region=None, myflatfield=None, myhotpixels=""):
-    global offset, offset_chi, offset_eta, offset_phi, filtered_data, datadir
-    if region is None:
-        if mydetector == 0:
-            region = [0, 2164, 0, 1030]
-        elif mydetector == 1:
-            region = [0, 516, 0, 516]
-    if mydetector == 0:
-        counter = 'ei2minr'
-        mymask = np.zeros((2164, 1030))
-    elif mydetector == 1:
-        counter = 'mpx4inr'
-        mymask = np.zeros((516, 516))
-    else:
-        sys.exit("Incorrect value for 'mydetector' parameter")
-    if myhotpixels != "":
-        # f = fabio.open(hot_file)
-        # hotpixels = f.data
-        hotpix_array = np.load(myhotpixels)['mask']
-        hotpix_array = hotpix_array.sum(axis=0)
-        hotpix_array[hotpix_array != 0] = -1
-    if myflatfield is None:
-        myflatfield = np.ones(mymask.shape)
-    motor_names = specfile[str(scan_nb) + '.1'].motor_names  # positioners
-    motor_positions = specfile[str(scan_nb) + '.1'].motor_positions  # positioners
-    labels = specfile[str(scan_nb) + '.1'].labels  # motor scanned
-    labels_data = specfile[str(scan_nb) + '.1'].data  # motor scanned
-    chi = offset_chi
-    phi = offset_phi
-    delta = motor_positions[motor_names.index('del')]
-    nu = motor_positions[motor_names.index('nu')]
-    eta = labels_data[labels.index('eta'), :] + offset_eta
-    ccdn = labels_data[labels.index(counter), :]
-    if filtered_data == 0:
-        rawdata = np.zeros((len(ccdn), region[1] - region[0], region[3] - region[2]))
-        for index in range(len(ccdn)):
-            i = int(ccdn[index])
-            e = fabio.open(ccdfiletmp % i)
-            ccdraw = e.data
-            if myhotpixels != "":
-                ccdraw, mymask = remove_hotpixels(ccdraw, hotpix_array, mymask)
-            if mydetector == 0:
-                ccdraw, mymask = mask_eiger(ccdraw, mymask)
-            elif mydetector == 1:
-                ccdraw, mymask = mask_maxipix(ccdraw, mymask)
-            ccdraw = myflatfield * ccdraw
-            ccd = xu.blockAverage2D(ccdraw, nav[0], nav[1], roi=region)
-            rawdata[int(i - ccdn[0]), :, :] = ccd
-    else:
-        myfile_path = filedialog.askopenfilename(initialdir=savedir + "pynxraw/",
-                                                 title="Select 3D data", filetypes=[("NPZ", "*.npz")])
-        rawdata = np.load(myfile_path)['data']
-        rawdata = rawdata[region[0]:region[1], region[2]:region[3]]
-    mymask = mymask[region[0]:region[1], region[2]:region[3]]
-    numz, numy, numx = rawdata.shape
-    if numz != len(ccdn):
-        print('Filtered data has not the same shape as raw data')
-        sys.exit()
-    rawmask3d = np.zeros((numz, region[1] - region[0], region[3] - region[2]))
-    for indx in range(numz):
-        rawmask3d[indx, :, :] = mymask
-    # transform scan angles to reciprocal space coordinates for all detector pixels
-    myqx, myqy, myqz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, delta=(0, 0, 0, offset, 0))
-    mygridder = xu.Gridder3D(numz, numy, numx)
-    # convert mask to rectangular grid in reciprocal space
-    mygridder(myqx, myqz, myqy, rawmask3d)
-    mymask3d = np.copy(mygridder.data)
-    # convert data to rectangular grid in reciprocal space
-    mygridder(myqx, myqz, myqy, rawdata)
-    return mygridder.xaxis, mygridder.yaxis, mygridder.zaxis, rawdata, mygridder.data, rawmask3d, mymask3d
-
-
-def plane_angle(ref_plane, plane):
-    """
-    Calculate the angle between two crystallographic planes in cubic materials
-    :param ref_plane: measured reflection
-    :param plane: plane for which angle should be calculated
-    :return: the angle in degrees
-    """
-    if np.array_equal(ref_plane, plane):
-        angle = 0.0
-    else:
-        angle = 180/np.pi*np.arccos(sum(np.multiply(ref_plane, plane)) /
-                                    (np.linalg.norm(ref_plane)*np.linalg.norm(plane)))
-    if angle > 90.0:
-        angle = 180.0 - angle
-    return angle
-
-
-###################################################################################
+#############
+# load data #
+#############
 plt.ion()
 root = tk.Tk()
 root.withdraw()
+if setup.beamline != 'P10':
+    homedir = root_folder + sample_name + str(scan) + '/'
+    detector.datadir = homedir + "data/"
+else:
+    specfile_name = specfile_name % scan
+    homedir = root_folder + specfile_name + '/'
+    detector.datadir = homedir + 'e4m/'
+    template_imagefile = specfile_name + template_imagefile
+    detector.template_imagefile = template_imagefile
 
-if reconstructed_data == 0:
+if not reconstructed_data:
     comment = comment + "_diffpattern"
-    if flatfield_file != "":
-        flatfield = np.load(flatfield_file)['flatfield']
-    else:
-        flatfield = None
-    spec_file = SpecFile(specdir + spec_prefix + ".spec")
-    qx, qz, qy, intensity, data, _, _ = gridmap(spec_file, scan, detector, roi, flatfield, hotpixels_file)
+    flatfield = pru.load_flatfield(flatfield_file)
+    hotpix_array = pru.load_hotpixels(hotpixels_file)
+    logfile = pru.create_logfile(beamline=setup.beamline, detector=detector, scan_number=scan,
+                                 root_folder=root_folder, filename=specfile_name)
+
+    q_values, _, data, _, _, _, _ = \
+        pru.gridmap(logfile=logfile, scan_number=scan, detector=detector, setup=setup,
+                    flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
+                    normalize=normalize_flux, debugging=debug, orthogonalize=True)
+    qx = q_values[0]  # axis=0, z downstream, qx in reciprocal space
+    qz = q_values[1]  # axis=1, y vertical, qz in reciprocal space
+    qy = q_values[2]  # axis=2, x outboard, qy in reciprocal space
 else:
     comment = comment + "_CDI"
-    file_path = filedialog.askopenfilename(initialdir=savedir + "pynxraw/",
+    file_path = filedialog.askopenfilename(initialdir=root_folder + "pynxraw/",
                                            title="Select 3D data", filetypes=[("NPZ", "*.npz")])
     amp = np.load(file_path)['amp']
+    amp = amp / abs(amp).max()  # normalize amp
     nz, ny, nx = amp.shape  # nexus convention
     print('CDI data shape', amp.shape)
     nz1, ny1, nx1 = [value * pad_size for value in amp.shape]
-    if use_phase == 1:
+
+    if use_phase:  # calculate the complex amplitude
         comment = comment + "_complex"
         phase = np.load(file_path)['phase']
-        obj = amp * np.exp(1j * phase)
-        newobj = np.zeros((nz1, ny1, nx1), dtype=complex)
+        amp = amp * np.exp(1j * phase)  # amp is the complex amplitude
+        del phase
+        gc.collect()
     else:
         comment = comment + "_support"
-        obj = np.zeros(amp.shape)
-        obj[amp > threshold_amp] = 1  # obj is the support
-        newobj = np.zeros((nz1, ny1, nx1), dtype=float)
+        amp[amp > threshold_amp] = 1  # amp is a binary support
+
     # pad array to avoid aliasing
-    newobj[(nz1 - nz) // 2:(nz1 + nz) // 2, (ny1 - ny) // 2:(ny1 + ny) // 2, (nx1 - nx) // 2:(nx1 + nx) // 2] = obj
-    # calculate the diffraction pattern from the support only
-    data = fftshift(abs(fftn(newobj)) ** 2)
+    amp = pu.crop_pad(amp, (nz1, ny1, nx1))
+
+    # calculate the diffraction intensity
+    data = fftshift(abs(fftn(amp)) ** 2)
+    del amp
+    gc.collect()
+
     voxel_size = voxel_size * 10  # conversion in angstroms
     if voxel_size <= 0:
         print('Using arbitraty voxel size of 1 nm')
@@ -334,43 +220,34 @@ else:
     dqz = 2 * np.pi / (voxel_size * ny1)
     print('dqx', str('{:.5f}'.format(dqx)), 'dqy', str('{:.5f}'.format(dqy)), 'dqz', str('{:.5f}'.format(dqz)))
 
-    # crop array to initial size
-    # data = np.zeros(support.shape)
-    # data = intensity[(nz1 - nz) // 2:(nz1 + nz) // 2, (ny1 - ny) // 2:(ny1 + ny) // 2, (nx1 - nx) // 2:(nx1 + nx) // 2]
-
     data = data / abs(data).sum() * photon_nb  # convert into photon number
     # create qx, qy, qz vectors
     nz, ny, nx = data.shape
-    qx = np.arange(-nz//2, nz/2) * dqx
+    qx = np.arange(-nz//2, nz//2) * dqx
     qy = np.arange(-nx//2, nx//2) * dqy
     qz = np.arange(-ny//2, ny//2) * dqz
 
 nz, ny, nx = data.shape  # nexus convention
-if flag_medianfilter == 1:  # apply some noise filtering
+if flag_medianfilter:  # apply some noise filtering
     for idx in range(nz):
         data[idx, :, :] = scipy.signal.medfilt2d(data[idx, :, :], [3, 3])
-if flag_savedata == 1:
-    if reconstructed_data == 0:
-        np.savez_compressed(savedir+'S'+str(scan)+'_stack', data=intensity)
-    # save to .mat, x becomes z for Matlab phasing code
-    scipy.io.savemat(savedir+'S'+str(scan)+'_stack.mat', {'data': np.moveaxis(intensity, [0, 1, 2], [-1, -3, -2])})
-    np.savez_compressed(savedir+'S'+str(scan)+'_ortho_diffpattern', data=data)
 
-##################################
-# define the center of the sphere
-##################################
-intensity = data
-intensity[intensity <= threshold] = 0   # photon threshold
+###################################
+# define the center of the sphere #
+###################################
+intensity = np.copy(data)
+intensity[intensity <= photon_threshold] = 0   # photon threshold
 
 qzCOM = 1/intensity.sum()*(qz*intensity.sum(axis=0).sum(axis=1)).sum()  # COM in qz
 qyCOM = 1/intensity.sum()*(qy*intensity.sum(axis=0).sum(axis=0)).sum()  # COM in qy
 qxCOM = 1/intensity.sum()*(qx*intensity.sum(axis=1).sum(axis=1)).sum()  # COM in qx
 print("Center of mass [qx, qy, qz]: [",
       str('{:.2f}'.format(qxCOM)), str('{:.2f}'.format(qyCOM)), str('{:.2f}'.format(qzCOM)), ']')
-###################################
-# select the half sphere
-###################################
-qz_offset = -0.000
+del intensity
+gc.collect()
+##########################
+# select the half sphere #
+##########################
 # take only the upper part of the sphere
 intensity_top = data[:, np.where(qz > (qzCOM+qz_offset))[0].min():np.where(qz > (qzCOM+qz_offset))[0].max(), :]
 qz_top = qz[np.where(qz > (qzCOM+qz_offset))[0].min():np.where(qz > (qzCOM+qz_offset))[0].max()]-qz_offset
@@ -379,9 +256,9 @@ qz_top = qz[np.where(qz > (qzCOM+qz_offset))[0].min():np.where(qz > (qzCOM+qz_of
 intensity_bottom = data[:, np.where(qz < (qzCOM+qz_offset))[0].min():np.where(qz < (qzCOM+qz_offset))[0].max(), :]
 qz_bottom = qz[np.where(qz < (qzCOM+qz_offset))[0].min():np.where(qz < (qzCOM+qz_offset))[0].max()]-qz_offset
 
-###################################
-# create a 3D array of distances in q from COM
-###################################
+################################################
+# create a 3D array of distances in q from COM #
+################################################
 qx1 = qx[:, np.newaxis, np.newaxis]  # broadcast array
 qy1 = qy[np.newaxis, np.newaxis, :]  # broadcast array
 qz1_top = qz_top[np.newaxis, :, np.newaxis]   # broadcast array
@@ -390,18 +267,18 @@ distances_top = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_top - (qzCOM+
 distances_bottom = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_bottom - (qzCOM+qz_offset))**2)
 # The shape of volume_R is (qx1 qy1 qz1)
 
-###################################
-# define matrix of radii radius_mean
-###################################
+######################################
+# define matrix of radii radius_mean #
+######################################
 # mask_top = np.zeros(np.shape(intensity_top))
 # mask_bottom = np.zeros(np.shape(intensity_bottom))
 # mask_top[np.where((volume_R_top < (radius_mean+dr)) & (volume_R_top > (radius_mean-dr)))] = 1
 mask_top = np.logical_and((distances_top < (radius_mean+dr)), (distances_top > (radius_mean-dr)))
 mask_bottom = np.logical_and((distances_bottom < (radius_mean+dr)), (distances_bottom > (radius_mean-dr)))
 
-############################
-# plot 2D maps
-############################
+################
+# plot 2D maps #
+################
 fig, ax = plt.subplots(num=1, figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
 plt.subplot(2, 2, 1)
 plt.contourf(qz, qx, xu.maplog(data.sum(axis=2)), 150, cmap=my_cmap)
@@ -448,11 +325,11 @@ if reconstructed_data == 0:
     fig.text(0.60, 0.20, "offset_phi=" + str(offset_phi), size=20)
     fig.text(0.60, 0.15, "offset_chi=" + str(offset_chi), size=20)
 plt.pause(0.1)
-plt.savefig(savedir + 'diffpattern' + comment + 'S' + str(scan) + '_q=' + str(radius_mean) + '.png')
-####################################
-#  plot upper and lower part of intensity with intersecting sphere
-####################################
-if debug == 1:
+plt.savefig(homedir + 'diffpattern' + comment + 'S' + str(scan) + '_q=' + str(radius_mean) + '.png')
+####################################################################
+#  plot upper and lower part of intensity with intersecting sphere #
+####################################################################
+if debug:
     fig, ax = plt.subplots(num=2, figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
     plt.subplot(2, 3, 1)
     plt.contourf(qz_top, qx, xu.maplog(intensity_top.sum(axis=2), 6, 1), 75, cmap=my_cmap)
@@ -528,12 +405,12 @@ if debug == 1:
     plt.axis('scaled')
     plt.pause(0.1)
 
-#############################################
-# apply mask
-#############################################
+##############
+# apply mask #
+##############
 I_masked_top = intensity_top*mask_top
 I_masked_bottom = intensity_bottom*mask_bottom
-if debug == 1:
+if debug:
     fig, ax = plt.subplots(num=3, figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
     plt.subplot(2, 3, 1)
     plt.contourf(qz_top, qx, xu.maplog(I_masked_top.sum(axis=2), 5, 1), 75, cmap=my_cmap)
@@ -597,9 +474,9 @@ if debug == 1:
     plt.axis('scaled')
     plt.pause(0.1)
 
-########################################
-# calculation of Euclidian metric coordinates
-########################################
+###############################################
+# calculation of Euclidian metric coordinates #
+###############################################
 qx1_top = qx1*np.ones(intensity_top.shape)
 qy1_top = qy1*np.ones(intensity_top.shape)
 qx1_bottom = qx1*np.ones(intensity_bottom.shape)
@@ -623,39 +500,16 @@ int_grid_top = int_grid_top / int_grid_top[int_grid_top > 0].max() * 10000  # no
 int_grid_bottom = int_grid_bottom / int_grid_bottom[int_grid_bottom > 0].max() * 10000  # normalize for easier plotting
 int_grid_top[np.isnan(int_grid_top)] = 0
 int_grid_bottom[np.isnan(int_grid_bottom)] = 0
-########################################
-# calculate theoretical angles between the measured reflection and other planes - only for cubic
-########################################
-planes = {}
-# planes['1 0 0'] = plane_angle(reflection, np.array([1, 0, 0]))
-# planes['-1 0 0'] = plane_angle(reflection, np.array([-1, 0, 0]))
-# planes['1 1 0'] = plane_angle(reflection, np.array([1, 1, 0]))
-# planes['1 -1 0'] = plane_angle(reflection, np.array([1, -1, 0]))
-# planes['1 1 1'] = plane_angle(reflection, np.array([1, 1, 1]))
-# planes['1 -1 1'] = plane_angle(reflection, np.array([1, -1, 1]))
-# planes['1 -1 -1'] = plane_angle(reflection, np.array([1, -1, -1]))
-planes['2 1 0'] = plane_angle(reflection, np.array([2, 1, 0]))
-planes['2 -1 0'] = plane_angle(reflection, np.array([2, -1, 0]))
-# planes['2 -1 1'] = plane_angle(reflection, np.array([2, -1, 1]))
-# planes['3 0 1'] = plane_angle(reflection, np.array([3, 0, 1]))
-# planes['3 -1 0'] = plane_angle(reflection, np.array([3, -1, 0]))
-# planes['3 2 1'] = plane_angle(reflection, np.array([3, 2, 1]))
-# planes['3 -2 -1'] = plane_angle(reflection, np.array([3, -2, -1]))
-# planes['-3 0 -1'] = plane_angle(reflection, np.array([-3, 0, -1]))
-# planes['4 0 -1'] = plane_angle(reflection, np.array([4, 0, -1]))
-# planes['5 2 0'] = plane_angle(reflection, np.array([5, 2, 0]))
-# planes['5 -2 0'] = plane_angle(reflection, np.array([5, -2, 0]))
-# planes['5 2 1'] = plane_angle(reflection, np.array([5, 2, 1]))
-# planes['5 -2 -1'] = plane_angle(reflection, np.array([5, -2, -1]))
-# planes['-5 0 -2'] = plane_angle(reflection, np.array([-5, 0, -2]))
-# planes['7 0 3'] = plane_angle(reflection, np.array([7, 0, 3]))
-# planes['7 -3 0'] = plane_angle(reflection, np.array([-7, 0, 3]))
-# planes['-7 0 -3'] = plane_angle(reflection, np.array([-7, 0, -3]))
-# planes['1 3 6'] = plane_angle(reflection, np.array([1, 3, 6]))
+##################################################################################################
+# calculate theoretical angles between the measured reflection and other planes - only for cubic #
+##################################################################################################
+planes = dict()  # create dictionnary
+planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
+planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
 
-########################################
-# create top projection from South pole
-########################################
+#########################################
+# create top projection from South pole #
+#########################################
 # plot the stereographic projection
 myfig, myax0 = plt.subplots(1, 1, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
 # plot top part (projection from South pole on equator)
@@ -691,18 +545,18 @@ for ii in range(0, 365, 20):
                linestyle='dotted', linewidth=0.5)
 
 # draw circles corresponding to particular reflection
-if flag_plotplanes == 1:
+if flag_plotplanes:
     indx = 5
     for key, value in planes.items():
         circle = plt.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
                             (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
                             color='r', fill=False, linestyle='dotted', linewidth=2)
         myax0.add_artist(circle)
-        # myax0.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-        #            (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-        #            np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-        #            (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-        #            key, fontsize=14, color='k', fontweight='bold')
+        myax0.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                   (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                   np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                   (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                   key, fontsize=14, color='k', fontweight='bold')
         indx = indx + 5
         print(key + ": ", str('{:.2f}'.format(value)))
 myax0.set_title('Top projection\nfrom South pole S' + str(scan)+'\n')
@@ -714,10 +568,10 @@ if reconstructed_data == 0:
 else:
     myfig.text(0.4, 0.8, "q=" + str(radius_mean) + " dq=" + str(dr), size=20)
 plt.pause(0.1)
-plt.savefig(savedir + 'South pole' + comment + '_S' + str(scan) + '.png')
-########################################
-# create bottom projection from North pole
-########################################
+plt.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
+############################################
+# create bottom projection from North pole #
+############################################
 myfig, myax1 = plt.subplots(1, 1, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
 plt1 = myax1.contourf(u_grid_bottom, v_grid_bottom, abs(int_grid_bottom), range(100, 6100, 200), cmap='hsv')
 plt.colorbar(plt1, ax=myax1)
@@ -750,18 +604,18 @@ for ii in range(0, 365, 20):
                linestyle='dotted', linewidth=0.5)
 
 # draw circles corresponding to particular reflection
-if flag_plotplanes == 1:
+if flag_plotplanes:
     indx = 0
     for key, value in planes.items():
         circle = plt.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
                             (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
                             color='r', fill=False, linestyle='dotted', linewidth=2)
         myax1.add_artist(circle)
-        # myax1.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-        #            (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-        #            np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-        #            (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-        #            key, fontsize=14, color='k', fontweight='bold')
+        myax1.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                   (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                   np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                   (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                   key, fontsize=14, color='k', fontweight='bold')
         indx = indx + 5
         print(key + ": ", str('{:.2f}'.format(value)))
 plt.title('Bottom projection\nfrom North pole S' + str(scan) + '\n')
@@ -774,12 +628,12 @@ if reconstructed_data == 0:
 else:
     myfig.text(0.4, 0.8, "q=" + str(radius_mean) + " dq=" + str(dr), size=20)
 plt.pause(0.1)
-plt.savefig(savedir + 'North pole' + comment + '_S' + str(scan) + '.png')
+plt.savefig(homedir + 'North pole' + comment + '_S' + str(scan) + '.png')
 
 ################################
 # save grid points in txt file #
 ################################
-fichier = open(savedir + 'Poles' + comment + '_S' + str(scan) + '.dat', "w")
+fichier = open(homedir + 'Poles' + comment + '_S' + str(scan) + '.dat', "w")
 # save metric coordinates in text file
 for ii in range(len(u_grid_top)):
     for jj in range(len(v_grid_top)):
