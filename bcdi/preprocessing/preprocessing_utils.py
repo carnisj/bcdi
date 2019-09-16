@@ -2317,17 +2317,14 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
 
     elif key == 'up':
         width = width + 1
-        print('width: ', width)
 
     elif key == 'down':
         width = width - 1
         if width < 0:
             width = 0
-        print('width: ', width)
 
     elif key == 'right':  # increase colobar max
         vmax = vmax * 2
-        print('vmax: ', vmax)
         figure.clear()
         if dim == 0:
             plt.imshow(updated_data[idx, :, :], vmin=vmin, vmax=vmax)
@@ -2353,7 +2350,6 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
         vmax = vmax / 2
         if vmax < 1:
             vmax = 1
-        print('vmax: ', vmax)
         figure.clear()
         if dim == 0:
             plt.imshow(updated_data[idx, :, :], vmin=vmin, vmax=vmax)
@@ -2537,17 +2533,14 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
     ymin, ymax = myaxs.get_ylim()
     if key == 'up':
         width = width + 1
-        print('width: ', width)
 
     elif key == 'down':
         width = width - 1
         if width < 0:
             width = 0
-        print('width: ', width)
 
     elif key == 'right':
         vmax = vmax * 2
-        print('vmax: ', vmax)
         figure.clear()
 
         plt.imshow(updated_data, vmin=vmin, vmax=vmax)
@@ -2562,7 +2555,6 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         vmax = vmax / 2
         if vmax < 1:
             vmax = 1
-        print('vmax: ', vmax)
         figure.clear()
 
         plt.imshow(updated_data, vmin=vmin, vmax=vmax)
@@ -2665,17 +2657,14 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
 
     if key == 'up':
         width = width + 1
-        print('width: ', width)
 
     elif key == 'down':
         width = width - 1
         if width < 0:
             width = 0
-        print('width: ', width)
 
     elif key == 'right':
         vmax = vmax + 1
-        print('vmax: ', vmax)
         array = updated_data.sum(axis=dim)
         array[updated_mask == 1] = masked_color
         myfig = plt.gcf()
@@ -2697,7 +2686,6 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
         vmax = vmax - 1
         if vmax < 1:
             vmax = 1
-        print('vmax: ', vmax)
         array = updated_data.sum(axis=dim)
         array[updated_mask == 1] = masked_color
         myfig = plt.gcf()
@@ -2861,17 +2849,14 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
 
     if key == 'up':
         width = width + 1
-        print('width: ', width)
 
     elif key == 'down':
         width = width - 1
         if width < 0:
             width = 0
-        print('width: ', width)
 
     elif key == 'right':
         vmax = vmax + 1
-        print('vmax: ', vmax)
         updated_data[updated_mask == 1] = masked_color
         myfig = plt.gcf()
         myaxs = myfig.gca()
@@ -2892,7 +2877,6 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
         vmax = vmax - 1
         if vmax < 1:
             vmax = 1
-        print('vmax: ', vmax)
         updated_data[updated_mask == 1] = masked_color
         myfig = plt.gcf()
         myaxs = myfig.gca()
