@@ -527,6 +527,35 @@ def crop_pad_2d(array, output_shape, width_y=np.nan, width_x=np.nan, debugging=F
     return newobj
 
 
+def crop_pad_1d(array, output_length, zero_padding=False):
+    """
+    Crop or pad the 2D object depending on output_shape.
+
+    :param array: 1D complex array to be padded
+    :param output_length: int desired output length
+    :param zero_padding: set to True to pad with zeros, False to use the current spacing (supposed constant)
+    :return: myobj cropped or padded
+    """
+    if array.ndim != 1:
+        raise ValueError('array should be a 1D array')
+
+    nbx = array.shape[0]
+    newx = output_length
+
+    if newx >= nbx:  # pad
+        if zero_padding:
+            newobj = np.zeros(output_length, dtype=array.dtype)
+            newobj[(newx - nbx) // 2:(newx + nbx) // 2] = array
+        else:
+            spacing = array[1] - array[0]
+            start = array[0] - ((newx - nbx) // 2) * spacing
+            newobj = start + np.arange(newx) * spacing
+    else:  # crop
+        newobj = array[(nbx - newx) // 2:(newx + nbx) // 2]
+
+    return newobj
+
+
 def find_bulk(amp, support_threshold, method='threshold', width_z=np.nan, width_y=np.nan, width_x=np.nan,
               debugging=False):
     """
@@ -1385,11 +1414,8 @@ def wrap(phase):
     return phase
 
 
-if __name__ == "__main__":
-    datadir = 'G:/review paper/BCDI_isosurface/S2191/pynxraw/apod_pre_blackman/'  # no_apodization/avg1/'
-    data = np.load(datadir + 'S2191_pynx_270_432_400_blackman-1_LLKf000.021_LLK000.032.npz')['obj']
-    data = abs(data)
-    bulk = find_bulk(data, 0.5, method='defect', debugging=False)
-    gu.multislices_plot(bulk, invert_yaxis=True, vmin=0, vmax=1, title='Bulk')
-    plt.ioff()
-    plt.show()
+# if __name__ == "__main__":
+    # nx = 20
+    # nbx = 26
+    # obj = np.arange(-nx//2, nx//2)
+    # crop_pad_1d(obj, nbx)
