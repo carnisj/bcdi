@@ -21,11 +21,14 @@ The support can be cropped/padded to a desired shape.
 
 root_folder = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/"
 support_threshold = 0.1  # in % of the normalized absolute value
-original_shape = [162, 490, 162]  # shape of the array used for phasing and finding the support
-output_shape = [162, 490, 162]  # shape of the array for later phasing
-binning = (1, 2, 1)  # binning that will be used in PyNX during phasing
+original_shape = [168, 240, 168]  # shape of the array used for phasing and finding the support
+binning_original = (2, 2, 2)  # binning that was used in PyNX during phasing
+output_shape = [560, 800, 560]  # shape of the array for later phasing
+binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
 reload_support = False  # if True, will load the support and skip masking
 is_ortho = True  # True if the data is already orthogonalized
+roll_modes = True  # set to True if there is a roll of 1 pixel after the decomposition into modes in PyNX
+roll_centering = (0, 0, 2)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ##############################################################################
 # parameters used when (original_shape != output_shape) and (is_ortho=False) #
@@ -82,14 +85,17 @@ nz, ny, nx = original_shape
 data, _ = pu.load_reconstruction(file_path)
 
 if not reload_support:
-    # data[60:, :, :] = 0
+    if roll_modes:
+        data = np.roll(data, (0, -1, 0), axis=(0, 1, 2))
+
     data = abs(data)  # take the real part
     data = data / data.max()  # normalize
     data[data < support_threshold] = 0
 
-    data = pu.crop_pad(data, original_shape)
+    binned_shape = [int(original_shape[idx] / binning_original[idx]) for idx in range(0, len(binning_original))]
+    data = pu.crop_pad(data, binned_shape)
     mask = np.zeros(data.shape)
-    print('output data shape', data.shape)
+    print('Data shape after considering original binning and shape:', data.shape)
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, vmax=1,
                                     title='Support before masking', invert_yaxis=False, is_orthogonal=True,
@@ -152,8 +158,8 @@ if not reload_support:
 # center the support #
 ######################
 data = pu.center_com(data)
-# you can use the line below if the center by COM is not optimal
-data = np.roll(data, (0, 0, 2), axis=(0, 1, 2))
+# Use user-defined roll when the center by COM is not optimal
+data = np.roll(data, roll_centering, axis=(0, 1, 2))
 ############################################
 # plot the support with the original shape #
 ############################################
@@ -236,7 +242,7 @@ else:  # no need for interpolation
 ##########################################################################
 # crop the new support to accomodate the binning factor in later phasing #
 ##########################################################################
-binned_shape = [int(output_shape[idx] / binning[idx]) for idx in range(0, len(binning))]
+binned_shape = [int(output_shape[idx] / binning_output[idx]) for idx in range(0, len(binning_output))]
 new_support = pu.crop_pad(new_support, binned_shape)
 print('Final shape after accomodating for later binning:', binned_shape)
 
@@ -244,7 +250,7 @@ print('Final shape after accomodating for later binning:', binned_shape)
 # save support with the new shape #
 ###################################
 filename = 'support_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) +\
-           '_bin_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.npz'
+           '_bin_' + str(binning_output[0]) + '_' + str(binning_output[1]) + '_' + str(binning_output[2]) + '.npz'
 np.savez_compressed(root_folder+filename, obj=new_support)
 
 plt.ioff()
