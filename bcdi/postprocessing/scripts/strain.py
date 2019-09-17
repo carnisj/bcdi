@@ -106,6 +106,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
+roll_modes = True  # set to True if there is a roll of 1 pixel after the decomposition into modes in PyNX
 #########################
 apodize_flag = False  # True to multiply the diffraction pattern by a filtering window
 apodize_window = 'blackman'  # filtering window, multivariate 'normal' or 'tukey' or 'blackman'
@@ -219,8 +220,9 @@ for ii in sorted_obj:
 
     if extension == '.h5':
         centering_method = 'do_nothing'  # do not center, data is already cropped just on support for mode decomposition
-        # you can use the line below if there is a roll of one pixel
-        obj = np.roll(obj, (0, -1, 0), axis=(0, 1, 2))
+        # you can use the line below if there is a roll of one pixel after the decomposition into modes in PyNX
+        if roll_modes:
+            obj = np.roll(obj, (0, -1, 0), axis=(0, 1, 2))
 
     # use the range of interest defined above
     obj = pu.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
