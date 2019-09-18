@@ -30,7 +30,7 @@ output_shape = [564, 800, 564]  # shape of the array for later phasing
 binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
 reload_support = False  # if True, will load the support and skip masking
 is_ortho = True  # True if the data is already orthogonalized
-roll_modes = (0, 0, 2)  # use this if there is a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (0, 0, 2)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 roll_centering = (0, 0, 2)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ##############################################################################

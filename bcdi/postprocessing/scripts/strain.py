@@ -40,7 +40,7 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 1038  # spec scan number
+scan = 936  # spec scan number
 
 datadir = 'D:/data/HC3207/SN' + str(scan) + "/pynxraw/"
 get_temperature = False
@@ -60,10 +60,10 @@ keep_size = False  # set to True to keep the initial array size for orthogonaliz
 fix_voxel = 6.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no averaging
 
-isosurface_strain = 0.43  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.36  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 
-comment = "_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = "_test_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 threshold_plot = isosurface_strain  # suppor4t threshold for plots (max amplitude of 1)
 strain_range = 0.001  # for plots
 phase_range = np.pi  # for plots
@@ -81,8 +81,8 @@ sdd = 0.86180  # sample to detector distance in m
 pixel_size = 55e-6  # detector pixel size in m
 energy = 8994  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # beam along z
-outofplane_angle = 35.1029  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 3.5655  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 35.0502  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 3.5646  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
 tilt_angle = 0.010  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = 0  # 1 for correcting the phase shift due to refraction, 0 otherwise
@@ -106,7 +106,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = True  # set to True if there is a roll of 1 pixel after the decomposition into modes in PyNX
+roll_modes = (0, 0, 2)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 #########################
 apodize_flag = False  # True to multiply the diffraction pattern by a filtering window
 apodize_window = 'blackman'  # filtering window, multivariate 'normal' or 'tukey' or 'blackman'
@@ -220,9 +220,8 @@ for ii in sorted_obj:
 
     if extension == '.h5':
         centering_method = 'do_nothing'  # do not center, data is already cropped just on support for mode decomposition
-        # you can use the line below if there is a roll of one pixel after the decomposition into modes in PyNX
-        if roll_modes:
-            obj = np.roll(obj, (0, -1, 0), axis=(0, 1, 2))
+        # coorect a roll after the decomposition into modes in PyNX
+        obj = np.roll(obj, roll_modes, axis=(0, 1, 2))
 
     # use the range of interest defined above
     obj = pu.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
