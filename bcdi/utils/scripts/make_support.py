@@ -175,13 +175,6 @@ fig.waitforbuttonpress()
 plt.disconnect(cid)
 plt.close(fig)
 
-########################################
-# save support with the original shape #
-########################################
-print('Shape of the original support:', data.shape)
-filename = 'support_' + str(nz) + '_' + str(ny) + '_' + str(nx) + '.npz'
-np.savez_compressed(root_folder+filename, obj=data)
-
 #################################
 # rescale the support if needed #
 #################################
