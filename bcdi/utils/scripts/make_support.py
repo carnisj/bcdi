@@ -17,6 +17,9 @@ import bcdi.graph.graph_utils as gu
 helptext = """
 Create a support from a reconstruction, using the indicated threshold.
 The support can be cropped/padded to a desired shape.
+In real space the CXI convention is used: z downstream, y vertical up, x outboard.
+In reciprocal space, the following convetion is used: qx downtream, qz vertical up, qy outboard
+
 """
 
 root_folder = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/"
@@ -81,9 +84,9 @@ root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the reconstruction",
                                        filetypes=[("HDF5", "*.h5"), ("NPZ", "*.npz"), ("CXI", "*.cxi")])
-nz, ny, nx = original_shape
 data, _ = pu.load_reconstruction(file_path)
-
+binned_shape = [int(original_shape[idx] * binning_original[idx]) for idx in range(0, len(binning_original))]
+nz, ny, nx = binned_shape
 if not reload_support:
     if roll_modes:
         data = np.roll(data, (0, -1, 0), axis=(0, 1, 2))
@@ -92,7 +95,7 @@ if not reload_support:
     data = data / data.max()  # normalize
     data[data < support_threshold] = 0
 
-    binned_shape = [int(original_shape[idx] / binning_original[idx]) for idx in range(0, len(binning_original))]
+    # go back to original shape before binning
     data = pu.crop_pad(data, binned_shape)
     mask = np.zeros(data.shape)
     print('Data shape after considering original binning and shape:', data.shape)
@@ -178,15 +181,20 @@ np.savez_compressed(root_folder+filename, obj=data)
 #################################
 nbz, nby, nbx = output_shape
 if (nbz != nz) or (nby != ny) or (nbx != nx):
-    print('Interpolating the support to match the output shape')
+    print('Interpolating the support to match the output shape of', output_shape)
     if is_ortho:
         # load the original q values to calculate actual real space voxel sizes
         file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select original q values",
                                                filetypes=[("NPZ", "*.npz")])
         q_values = np.load(file_path)
-        qx = q_values['qx']
-        qy = q_values['qy']
-        qz = q_values['qz']
+        qx = q_values['qx']  # 1D array
+        qy = q_values['qy']  # 1D array
+        qz = q_values['qz']  # 1D array
+        # crop q to accomodate a shape change of the original array (e.g. cropping to fit FFT shape requirement)
+        qx = pu.crop_pad_1d(qx, binned_shape[0])  # qx along z
+        qy = pu.crop_pad_1d(qy, binned_shape[2])  # qy along x
+        qz = pu.crop_pad_1d(qz, binned_shape[1])  # qz along y
+        print('Length(q_original)=', len(qx), len(qz), len(qy), '(qx, qz, qy)')
         voxelsize_z = 2 * np.pi / (qx.max() - qx.min())
         voxelsize_x = 2 * np.pi / (qy.max() - qy.min())
         voxelsize_y = 2 * np.pi / (qz.max() - qz.min())
@@ -195,15 +203,21 @@ if (nbz != nz) or (nby != ny) or (nbx != nx):
         file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select q values for the new shape",
                                                filetypes=[("NPZ", "*.npz")])
         q_values = np.load(file_path)
-        newqx = q_values['qx']
-        newqy = q_values['qy']
-        newqz = q_values['qz']
+        newqx = q_values['qx']  # 1D array
+        newqy = q_values['qy']  # 1D array
+        newqz = q_values['qz']  # 1D array
+        # crop q to accomodate a shape change of the original array (e.g. cropping to fit FFT shape requirement)
+        # binning has no effect on the voxel size
+        newqx = pu.crop_pad_1d(newqx, output_shape[0])  # qx along z
+        newqy = pu.crop_pad_1d(newqy, output_shape[2])  # qy along x
+        newqz = pu.crop_pad_1d(newqz, output_shape[1])  # qz along y
+        print('Length(q_output)=', len(newqx), len(newqz), len(newqy), '(qx, qz, qy)')
         newvoxelsize_z = 2 * np.pi / (newqx.max() - newqx.min())
         newvoxelsize_x = 2 * np.pi / (newqy.max() - newqy.min())
         newvoxelsize_y = 2 * np.pi / (newqz.max() - newqz.min())
 
     else:  # data in detector frame
-        # TODO: check this part
+        # TODO: check this part especially dq considering cropping/binning
         wavelength = 12.398 * 1e-7 / energy  # in m
         voxelsize_z = wavelength / (nz * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
         voxelsize_y = wavelength * distance / (ny * pixel_y) * 1e9  # in nm
@@ -237,7 +251,7 @@ if (nbz != nz) or (nby != ny) or (nbx != nx):
                         title='Support with output shape\n', is_orthogonal=True, reciprocal_space=True)
 
 else:  # no need for interpolation
-    new_support = np.copy(data)
+    new_support = data
 
 ##########################################################################
 # crop the new support to accomodate the binning factor in later phasing #
