@@ -26,11 +26,11 @@ root_folder = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/"
 support_threshold = 0.1  # in % of the normalized absolute value
 original_shape = [168, 240, 168]  # shape of the array used for phasing and finding the support
 binning_original = (2, 2, 2)  # binning that was used in PyNX during phasing
-output_shape = [560, 800, 560]  # shape of the array for later phasing
+output_shape = [564, 800, 564]  # shape of the array for later phasing
 binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
 reload_support = False  # if True, will load the support and skip masking
 is_ortho = True  # True if the data is already orthogonalized
-roll_modes = True  # set to True if there is a roll of 1 pixel after the decomposition into modes in PyNX
+roll_modes = (0, 0, 2)  # use this if there is a roll of few pixels after the decomposition into modes in PyNX
 roll_centering = (0, 0, 2)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ##############################################################################
@@ -88,8 +88,8 @@ data, _ = pu.load_reconstruction(file_path)
 binned_shape = [int(original_shape[idx] * binning_original[idx]) for idx in range(0, len(binning_original))]
 nz, ny, nx = binned_shape
 if not reload_support:
-    if roll_modes:
-        data = np.roll(data, (0, -1, 0), axis=(0, 1, 2))
+
+    data = np.roll(data, roll_modes, axis=(0, 1, 2))
 
     data = abs(data)  # take the real part
     data = data / data.max()  # normalize
@@ -101,7 +101,7 @@ if not reload_support:
     print('Data shape after considering original binning and shape:', data.shape)
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, vmax=1,
-                                    title='Support before masking', invert_yaxis=False, is_orthogonal=True,
+                                    title='Support before masking', invert_yaxis=True, is_orthogonal=True,
                                     reciprocal_space=False)
     cid = plt.connect('close_event', close_event)
     fig.waitforbuttonpress()
@@ -157,17 +157,23 @@ if not reload_support:
 
     del dim, width, fig_mask, original_data
     data[np.nonzero(data)] = 1
+
 ######################
 # center the support #
 ######################
 data = pu.center_com(data)
 # Use user-defined roll when the center by COM is not optimal
 data = np.roll(data, roll_centering, axis=(0, 1, 2))
+
 ############################################
 # plot the support with the original shape #
 ############################################
-gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, invert_yaxis=False,
-                    title='Support with original shape\n', is_orthogonal=True, reciprocal_space=True)
+fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, invert_yaxis=True,
+                                title='Support after masking\n', is_orthogonal=True, reciprocal_space=True)
+cid = plt.connect('close_event', close_event)
+fig.waitforbuttonpress()
+plt.disconnect(cid)
+plt.close(fig)
 
 ########################################
 # save support with the original shape #
@@ -195,9 +201,9 @@ if (nbz != nz) or (nby != ny) or (nbx != nx):
         qy = pu.crop_pad_1d(qy, binned_shape[2])  # qy along x
         qz = pu.crop_pad_1d(qz, binned_shape[1])  # qz along y
         print('Length(q_original)=', len(qx), len(qz), len(qy), '(qx, qz, qy)')
-        voxelsize_z = 2 * np.pi / (qx.max() - qx.min())
-        voxelsize_x = 2 * np.pi / (qy.max() - qy.min())
-        voxelsize_y = 2 * np.pi / (qz.max() - qz.min())
+        voxelsize_z = 2 * np.pi / (qx.max() - qx.min())  # qx along z
+        voxelsize_x = 2 * np.pi / (qy.max() - qy.min())  # qy along x
+        voxelsize_y = 2 * np.pi / (qz.max() - qz.min())  # qz along y
 
         # load the q values of the desired shape and calculate corresponding real space voxel sizes
         file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select q values for the new shape",
@@ -212,9 +218,9 @@ if (nbz != nz) or (nby != ny) or (nbx != nx):
         newqy = pu.crop_pad_1d(newqy, output_shape[2])  # qy along x
         newqz = pu.crop_pad_1d(newqz, output_shape[1])  # qz along y
         print('Length(q_output)=', len(newqx), len(newqz), len(newqy), '(qx, qz, qy)')
-        newvoxelsize_z = 2 * np.pi / (newqx.max() - newqx.min())
-        newvoxelsize_x = 2 * np.pi / (newqy.max() - newqy.min())
-        newvoxelsize_y = 2 * np.pi / (newqz.max() - newqz.min())
+        newvoxelsize_z = 2 * np.pi / (newqx.max() - newqx.min())  # qx along z
+        newvoxelsize_x = 2 * np.pi / (newqy.max() - newqy.min())  # qy along x
+        newvoxelsize_y = 2 * np.pi / (newqz.max() - newqz.min())  # qz along y
 
     else:  # data in detector frame
         # TODO: check this part especially dq considering cropping/binning
@@ -238,8 +244,8 @@ if (nbz != nz) or (nby != ny) or (nbx != nx):
                                   data, method='linear', bounds_error=False, fill_value=0)
 
     new_z, new_y, new_x = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * newvoxelsize_z,
-                                      np.arange(-nby // 2, nby // 2, 1) * newvoxelsize_x,
-                                      np.arange(-nbx // 2, nbx // 2, 1) * newvoxelsize_y, indexing='ij')
+                                      np.arange(-nby // 2, nby // 2, 1) * newvoxelsize_y,
+                                      np.arange(-nbx // 2, nbx // 2, 1) * newvoxelsize_x, indexing='ij')
 
     new_support = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                       new_x.reshape((1, new_z.size)))).transpose())
@@ -247,11 +253,15 @@ if (nbz != nz) or (nby != ny) or (nbx != nx):
 
     print('Shape after interpolating the support:', new_support.shape)
 
-    gu.multislices_plot(new_support, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, invert_yaxis=False,
-                        title='Support with output shape\n', is_orthogonal=True, reciprocal_space=True)
-
 else:  # no need for interpolation
     new_support = data
+
+##########################################
+# plot the support with the output shape #
+##########################################
+fig, _, _ = gu.multislices_plot(new_support, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                invert_yaxis=True, title='Support after interpolation\n', is_orthogonal=True,
+                                reciprocal_space=True)
 
 ##########################################################################
 # crop the new support to accomodate the binning factor in later phasing #
