@@ -395,7 +395,7 @@ class SetupPreprocessing(object):
     Class to handle the experimental geometry for preprocessing.
     """
     def __init__(self, beamline, rocking_angle, distance=1, energy=8000, direct_beam=(0, 0), beam_direction=(1, 0, 0),
-                 sample_inplane=(1, 0, 0), sample_outofplane=(0, 0, 1), offset_inplane=0):
+                 sample_inplane=(1, 0, 0), sample_outofplane=(0, 0, 1), sample_offsets=(0, 0, 0), offset_inplane=0):
         """
         Initialize parameters of the experiment.
 
@@ -407,6 +407,8 @@ class SetupPreprocessing(object):
         :param beam_direction: x-ray beam direction
         :param sample_inplane: sample inplane reference direction along the beam at 0 angles
         :param sample_outofplane: surface normal of the sample at 0 angles
+        :param sample_offsets: tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
+         (outboard). This corresponds to (chi, phi, incident angle) in a standard diffractometer.
         :param offset_inplane: outer angle offset as defined by xrayutilities detector calibration
         """
         self.beamline = beamline  # string
@@ -415,9 +417,10 @@ class SetupPreprocessing(object):
         self.rocking_angle = rocking_angle  # string
         self.distance = distance  # in meters
         self.direct_beam = direct_beam  # in pixels (vertical, horizontal)
-        self.beam_direction = beam_direction  # tuple vector
-        self.sample_inplane = sample_inplane  # tuple vector
-        self.sample_outofplane = sample_outofplane  # tuple vector
+        self.beam_direction = beam_direction  # tuple
+        self.sample_inplane = sample_inplane  # tuple
+        self.sample_outofplane = sample_outofplane  # tuple
+        self.sample_offsets = sample_offsets  # tuple
         self.offset_inplane = offset_inplane  # in degrees
 
 
