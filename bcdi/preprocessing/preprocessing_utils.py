@@ -1829,9 +1829,9 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
     if setup.beamline == 'ID01':
         eta, chi, phi, nu, delta, energy, frames_logical = \
             motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
-        chi = chi + setup.offsets[0]
-        phi = phi + setup.offsets[1]
-        eta = eta + setup.offsets[2]
+        chi = chi + setup.sample_offsets[0]
+        phi = phi + setup.sample_offsets[1]
+        eta = eta + setup.sample_offsets[2]
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
             nb_steps = len(eta)
             tilt_angle = eta[1] - eta[0]
@@ -1884,7 +1884,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     elif setup.beamline == 'CRISTAL':
         mgomega, gamma, delta = motor_positions_cristal(logfile, setup)
-        mgomega = mgomega + setup.offsets[2]
+        mgomega = mgomega + setup.sample_offsets[2]
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             nb_steps = len(mgomega)
             tilt_angle = mgomega[1] - mgomega[0]
@@ -1905,9 +1905,9 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     elif setup.beamline == 'P10':
         om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile, setup)
-        chi = chi + setup.offsets[0]
-        phi = phi + setup.offsets[1]
-        om = om + setup.offsets[2]
+        chi = chi + setup.sample_offsets[0]
+        phi = phi + setup.sample_offsets[1]
+        om = om + setup.sample_offsets[2]
         if setup.rocking_angle == 'outofplane':  # om rocking curve
             nb_steps = len(om)
             tilt_angle = om[1] - om[0]
