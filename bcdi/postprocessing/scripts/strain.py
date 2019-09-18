@@ -18,6 +18,7 @@ sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.preprocessing.preprocessing_utils as pru
 
 helptext = """
 strain.py: calculate the strain component from experimental geometry
@@ -266,7 +267,7 @@ print("Phase offset at COM(amp) of:", str('{:.2f}'.format(phase[int(zcom), int(y
 
 phase = phase - phase[int(zcom), int(ycom), int(xcom)]
 
-phase = pu.wrap(phase)
+phase = pru.wrap(obj=phase, start_angle=-np.pi, range_angle=2*np.pi)
 
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
@@ -277,7 +278,7 @@ phase = phase - phase[support == 1].mean() + phase_offset
 del support, zcom, ycom, xcom
 gc.collect()
 
-phase = pu.wrap(phase)
+phase = pru.wrap(obj=phase, start_angle=-np.pi, range_angle=2*np.pi)
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         invert_yaxis=False, plot_colorbar=True, title='Phase after mean removal')
@@ -522,7 +523,7 @@ phase = phase - phase[support == 1].mean()
 del support
 gc.collect()
 
-phase = pu.wrap(phase=phase)
+phase = pru.wrap(obj=phase, start_angle=-np.pi, range_angle=2*np.pi)
 if True:
     gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
                         sum_frames=False, invert_yaxis=True, plot_colorbar=True,

@@ -3000,17 +3000,17 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
     return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
 
 
-def wrap(angle, start_angle, range_angle):
+def wrap(obj, start_angle, range_angle):
     """
-    Wrap angle between start_angle and (start_angle + range_angle)
+    Wrap obj between start_angle and (start_angle + range_angle)
 
-    :param angle: number or array to be wrapped
+    :param obj: number or array to be wrapped
     :param start_angle: start angle of the range
     :param range_angle: range
     :return: wrapped angle in [start_angle, start_angle+range[
     """
-    angle = (angle - start_angle + range_angle) % range_angle + start_angle
-    return angle
+    obj = (obj - start_angle + range_angle) % range_angle + start_angle
+    return obj
 
 
 def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False, debugging=False):
