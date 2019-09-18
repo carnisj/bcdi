@@ -1403,19 +1403,4 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
     return tukey3
 
 
-def wrap(phase):
-    """
-    Wrap the phase in [-pi pi] interval.
-
-    :param phase: phase to wrap
-    :return: phase wrapped in [-pi pi]
-    """
-    phase = (phase + np.pi) % (2 * np.pi) - np.pi
-    return phase
-
-
 # if __name__ == "__main__":
-    # nx = 20
-    # nbx = 26
-    # obj = np.arange(-nx//2, nx//2)
-    # crop_pad_1d(obj, nbx)

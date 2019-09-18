@@ -3002,12 +3002,12 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
 
 def wrap(angle, start_angle, range_angle):
     """
-    Wrap the angle between start_angle and start_angle + range
+    Wrap angle between start_angle and (start_angle + range_angle)
 
-    :param angle: angle to be wrapped in radians
-    :param start_angle: start angle of the range in radians
-    :param range_angle: range in radians
-    :return: the wrapped angle in [start_angle, start_angle+range[
+    :param angle: number or array to be wrapped
+    :param start_angle: start angle of the range
+    :param range_angle: range
+    :return: wrapped angle in [start_angle, start_angle+range[
     """
     angle = (angle - start_angle + range_angle) % range_angle + start_angle
     return angle
@@ -3051,21 +3051,5 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
 
 
 # if __name__ == "__main__":
-#     data = np.load('D:/data/P10_August2019/data/gold_2_2_2_00022/pynxraw/S22_pynx_norm_381_400_400.npz')['data']
-#     nz, ny, nx = data.shape
-#     data = beamstop_correction(data=data, direct_beam=(ny//2, nx//2), debugging=True)
-#     plt.show()
-#     start_angle = -5 * np.pi / 180
-#     z_interp = np.array([-0])
-#     x_interp = np.array([100])
-#     print('z_interp', z_interp, 'x_interp', x_interp)
-#     angle = np.arctan2(z_interp, -x_interp)
-#     print('angle', angle)
-#     angle_det = wrap(angle=angle, start_angle=start_angle, range_angle=np.pi)
-#     print('wrap_angle', angle_det)
-#     sign_array = sign(angle_det, z_interp, x_interp)
-#     print('sign_array', sign_array)
-#     x_det = np.multiply(sign_array, np.sqrt(x_interp ** 2 + z_interp ** 2))
-#     print('x_det', x_det)
-
-
+#     print(wrap(-np.pi, -np.pi, 2*np.pi))
+#
