@@ -235,8 +235,14 @@ def bin_data(array, binning, debugging=False):
     :param debugging: boolean, True to see plots
     :return: the binned array
     """
-    if array.ndim != len(binning):
-        raise ValueError('1 binning parameter expected for each dimension of array')
+
+    try:
+        if array.ndim != len(binning):
+            raise ValueError('1 binning parameter expected for each dimension of array')
+    except TypeError:  # binning may be a number
+        if isinstance(binning, int):
+            pass
+
     if array.ndim == 1:
         nbx = len(array)
         newarray = np.zeros(nbx // binning, dtype=array.dtype)
