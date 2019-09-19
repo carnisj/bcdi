@@ -312,7 +312,13 @@ def bin_data(array, binning, debugging=False):
     """
     if array.ndim != len(binning):
         raise ValueError('1 binning parameter expected for each dimension of array')
-    if array.ndim == 2:
+    if array.ndim == 1:
+        nbx = len(array)
+        newarray = np.zeros(nbx // binning, dtype=array.dtype)
+        print('Initial array shape =', array.shape, 'Binned array shape =', newarray.shape)
+        for idx in range(len(newarray)):
+            newarray[idx] = array[idx * binning:(idx + 1) * binning].sum()
+    elif array.ndim == 2:
         nby, nbx = array.shape
         newarray = np.zeros((nby//binning[0], nbx//binning[1]), dtype=array.dtype)
         print('Initial array shape =', array.shape, 'Binned array shape =', newarray.shape)
@@ -1401,6 +1407,38 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
         for idy in range(nby):
             tukey3[idz, idy] = tukey2[idz, idy] * array_x
     return tukey3
+
+
+def unwrap(obj, start_angle, range_angle, debugging=True):
+    """
+    Wrap obj between start_angle and (start_angle + range_angle)
+
+    :param obj: number or array to be wrapped
+    :param start_angle: start angle of the range
+    :param range_angle: range
+    :param debugging: set to True to see plots
+    :return: wrapped angle in [start_angle, start_angle+range[
+    """
+    ndim = obj.ndim
+    if debugging:
+        if ndim == 3:
+            gu.multislices_plot(obj, invert_yaxis=False, plot_colorbar=True, title='Object before unwraping')
+
+    # obj = (obj - start_angle + range_angle) % range_angle + start_angle
+    obj = np.unwrap(2 * obj, discont=2 * np.pi, axis=0) / 2
+    if debugging:
+        if ndim == 3:
+            gu.multislices_plot(obj, invert_yaxis=False, plot_colorbar=True, title='Object after unwraping axis 0')
+    obj = np.unwrap(2 * obj, discont=2 * np.pi, axis=1) / 2
+    if debugging:
+        if ndim == 3:
+            gu.multislices_plot(obj, invert_yaxis=False, plot_colorbar=True, title='Object after unwraping axis 1')
+    obj = np.unwrap(2 * obj, discont=2 * np.pi, axis=2) / 2
+    if debugging:
+        if ndim == 3:
+            gu.multislices_plot(obj, invert_yaxis=False, plot_colorbar=True, title='Object after unwraping axis 2')
+
+    return obj
 
 
 # if __name__ == "__main__":
