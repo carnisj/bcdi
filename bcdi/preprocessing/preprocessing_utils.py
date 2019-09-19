@@ -579,7 +579,7 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical):
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :return: updated data, mask, cdi_angle, frames_logical
     """
-    wrap_angle = wrap(angle=cdi_angle, start_angle=cdi_angle[0], range_angle=180)
+    wrap_angle = wrap(obj=cdi_angle, start_angle=cdi_angle[0], range_angle=180)
     for idx in range(len(wrap_angle)):
         duplicate = (wrap_angle[:idx] == wrap_angle[idx]).sum()
         frames_logical[idx] = frames_logical[idx] * (duplicate == 0)  # remove duplicated frames
@@ -2051,7 +2051,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
                         indexing='ij')
 
         # map these points to (angle, Y, X), the measurement cylindrical coordinates
-        angle_det = wrap(angle=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
+        angle_det = wrap(obj=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
         # angle_det in radians, located in the range [start_angle, start_angle+np.pi[
         y_det = - y_interp  # Y axis of the detector is going down but y* is going up
         sign_array = sign(angle=angle_det, z_coord=z_interp, x_coord=x_interp)
