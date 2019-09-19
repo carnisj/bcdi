@@ -727,7 +727,7 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     nbz = len(cdi_angle)
     nby = detector.roi[1] - detector.roi[0]
     nbx = detector.roi[3] - detector.roi[2]
-    pixelsize = detector.pixelsize * 1e9  # in nm
+    pixelsize_x = detector.pixelsize_x * 1e9  # in nm, pixel size in the horizontal direction
     distance = setup.distance * 1e9  # in nm
     qz = np.zeros((nbz, nby, nbx))
     qy = np.zeros((nbz, nby, nbx))
@@ -749,8 +749,8 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
                                np.linspace(-directbeam_x, -directbeam_x + nbx, num=nbx, endpoint=False),
                                indexing='ij')
 
-        two_theta = np.arctan(myx * pixelsize / distance)
-        alpha_f = np.arctan(np.divide(myy, np.sqrt((distance/pixelsize)**2 + np.power(myx, 2))))
+        two_theta = np.arctan(myx * pixelsize_x / distance)
+        alpha_f = np.arctan(np.divide(myy, np.sqrt((distance/pixelsize_x)**2 + np.power(myx, 2))))
 
         qlab0 = 2 * np.pi / wavelength * (np.cos(alpha_f) * np.cos(two_theta) - kin[0])  # along z* downstream
         qlab1 = 2 * np.pi / wavelength * (np.sin(alpha_f) - kin[1])  # along y* vertical up
@@ -1980,8 +1980,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
 
     wavelength = setup.wavelength * 1e9  # convert to nm
     distance = setup.distance * 1e9  # convert to nm
-    pixel_x = detector.pixelsize * 1e9  # convert to nm
-    pixel_y = detector.pixelsize * 1e9  # convert to nm
+    pixel_x = detector.pixelsize_x * 1e9  # convert to nm, pixel size in the horizontal direction
+    pixel_y = detector.pixelsize_y * 1e9  # convert to nm, pixel size in the vertical direction
     lambdaz = wavelength * distance
     directbeam_y = setup.direct_beam[0] - detector.roi[0]  # vertical
     directbeam_x = setup.direct_beam[1] - detector.roi[2]  # horizontal
