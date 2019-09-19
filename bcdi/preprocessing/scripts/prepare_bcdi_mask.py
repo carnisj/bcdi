@@ -22,6 +22,7 @@ import gc
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
+import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 
 
@@ -44,6 +45,8 @@ root_folder = "D:/data/test/"
 sample_name = "S"  # "SN"  #
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
+binning = (1, 1, 1)  # binning that will be used for phasing
+# (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
@@ -191,7 +194,8 @@ def press_key(event):
 #######################
 # Initialize detector #
 #######################
-detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector)
+detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
+                        binning=binning)
 
 ####################
 # Initialize setup #
@@ -230,6 +234,9 @@ if len(scans) > 1:
         center_fft = 'do_nothing'
         # avoid croping the detector plane XY while centering the Bragg peak
         # otherwise outputs may have a different size, which will be problematic for combining or comparing them
+if (binning[0] != 1) or (binning[1] != 1) or (binning[2] != 1):
+    center_fft = 'do_nothing'
+    # TODO: implement binning in the detector plane in pu.center_fft()
 if rocking_angle == "energy":
     use_rawdata = False  # you need to interpolate the data in QxQyQz for energy scans
     print("Energy scan implemented only for ID01")
@@ -255,11 +262,12 @@ for scan_nb in range(len(scans)):
         savedir = homedir + "pynxraw/"
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
     detector.savedir = savedir
-    
+
     print('\nScan', scans[scan_nb])
     print('Setup: ', setup.beamline)
     print('Detector: ', detector.name)
-    print('Pixel Size: ', detector.pixelsize, 'm')
+    print('Horizontal pixel Size: ', detector.pixelsize_x, 'm')
+    print('Vertical pixel Size: ', detector.pixelsize_y, 'm')
     print('Specfile: ', specfile_name)
     print('Scan type: ', setup.rocking_angle)
     print('Sample to detector distance: ', setup.distance, 'm')
@@ -644,19 +652,6 @@ for scan_nb in range(len(scans)):
 
     data[mask == 1] = 0
 
-    if not use_rawdata:
-        np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
-                            qx=q_vector[0], qz=q_vector[1], qy=q_vector[2])
-    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
-    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
-
-    if save_to_mat:
-        # save to .mat, x becomes z for Matlab phasing code
-        savemat(savedir + 'S' + str(scans[scan_nb]) + '_data.mat',
-                {'data': np.moveaxis(data, [0, 1, 2], [-1, -3, -2])})
-        savemat(savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
-                {'data': np.moveaxis(mask, [0, 1, 2], [-1, -3, -2])})
-
     ###################################
     # plot the prepared data and mask #
     ###################################
@@ -682,6 +677,51 @@ for scan_nb in range(len(scans)):
     plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
+
+    if detector.binning[0] != 1:
+        ################################################################################################
+        # bin the stacking axis if needed, the detector plane was already binned when loading the data #
+        ################################################################################################
+        data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
+        mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
+        mask[np.nonzero(mask)] = 1
+        if not use_rawdata:
+            qx = pu.bin_data(qx, detector.binning[0])  # along Z
+
+        ############################
+        # plot binned data and mask #
+        ############################
+
+        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                        title='Final data', invert_yaxis=False, is_orthogonal=not use_rawdata,
+                                        reciprocal_space=True)
+        plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
+        if not flag_interact:
+            plt.close(fig)
+
+        fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                        vmax=(nz, ny, nx), title='Final mask', invert_yaxis=False,
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+        plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
+        if not flag_interact:
+            plt.close(fig)
+
+    ############################
+    # save final data and mask #
+    ############################
+    comment = comment + '_' + str(detector.binning[0]) + '_' + str(detector.binning[1]) + '_' + str(detector.binning[2])
+    if not use_rawdata:
+        np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
+                            qx=q_vector[0], qz=q_vector[1], qy=q_vector[2])
+    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
+    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
+
+    if save_to_mat:
+        # save to .mat, x becomes z for Matlab phasing code
+        savemat(savedir + 'S' + str(scans[scan_nb]) + '_data.mat',
+                {'data': np.moveaxis(data, [0, 1, 2], [-1, -3, -2])})
+        savemat(savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
+                {'data': np.moveaxis(mask, [0, 1, 2], [-1, -3, -2])})
 
 plt.ioff()
 plt.show()

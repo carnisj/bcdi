@@ -21,6 +21,7 @@ import gc
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
+import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 
 
@@ -212,14 +213,17 @@ if len(scans) > 1:
         center_fft = 'do_nothing'
         # avoid croping the detector plane XY while centering the Bragg peak
         # otherwise outputs may have a different size, which will be problematic for combining or comparing them
-
+if (binning[0] != 1) or (binning[1] != 1) or (binning[2] != 1):
+    center_fft = 'do_nothing'
+    # TODO: implement binning in the detector plane in pu.center_fft()
 for scan_nb in range(len(scans)):
     plt.ion()
 
     print('\nScan', scans[scan_nb])
     print('Setup: ', setup.beamline)
     print('Detector: ', detector.name)
-    print('Pixel Size: ', detector.pixelsize, 'm')
+    print('Horizontal pixel Size: ', detector.pixelsize_x, 'm')
+    print('Vertical pixel Size: ', detector.pixelsize_y, 'm')
     print('Specfile: ', specfile_name)
     print('Scan type: ', setup.rocking_angle)
     print('Sample to detector distance: ', setup.distance, 'm')
@@ -667,23 +671,38 @@ for scan_nb in range(len(scans)):
         comment = comment + "_" + str(final_nxz) + "_" + str(ny) + "_" + str(final_nxz)
         # need these numbers to calculate the voxel size
 
-        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                        title='Final data', invert_yaxis=False, is_orthogonal=not use_rawdata,
-                                        reciprocal_space=True)
-        plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
-        if not flag_interact:
-            plt.close(fig)
+    if detector.binning[0] != 1:
+        ################################################################################################
+        # bin the stacking axis if needed, the detector plane was already binned when loading the data #
+        ################################################################################################
+        data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
+        mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
+        mask[np.nonzero(mask)] = 1
+        if not use_rawdata:
+            qx = pu.bin_data(qx, detector.binning[0])  # along Z
 
-        fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                        vmax=(nz, ny, nx), title='Final mask', invert_yaxis=False,
-                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
-        plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
-        if not flag_interact:
-            plt.close(fig)
+    ############################
+    # plot final data and mask #
+    ############################
+
+    fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Final data', invert_yaxis=False, is_orthogonal=not use_rawdata,
+                                    reciprocal_space=True)
+    plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
+    if not flag_interact:
+        plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                    vmax=(nz, ny, nx), title='Final mask', invert_yaxis=False,
+                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
+    plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
+    if not flag_interact:
+        plt.close(fig)
 
     ############################
     # save final data and mask #
     ############################
+    comment = comment + '_' + str(detector.binning[0]) + '_' + str(detector.binning[1]) + '_' + str(detector.binning[2])
     if not use_rawdata:
         np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
                             qx=qx, qz=qz, qy=qy)

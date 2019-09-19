@@ -16,7 +16,9 @@ import os
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.postprocessing.postprocessing_utils as pu
 from bcdi.utils import image_registration as reg
+
 
 
 def align_diffpattern(reference_data, data, mask, method='registration', combining_method='rgi'):
@@ -722,11 +724,11 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     """
     wavelength = setup.wavelength * 1e9  # convert to nm
     kin = np.asarray(setup.beam_direction)  # (1, 0 , 0) by default
-    directbeam_y = setup.direct_beam[0] - detector.roi[0]  # vertical
-    directbeam_x = setup.direct_beam[1] - detector.roi[2]  # horizontal
+    directbeam_y = (setup.direct_beam[0] - detector.roi[0]) / detector.binning[1]  # vertical
+    directbeam_x = (setup.direct_beam[1] - detector.roi[2]) / detector.binning[2]  # horizontal
     nbz = len(cdi_angle)
-    nby = detector.roi[1] - detector.roi[0]
-    nbx = detector.roi[3] - detector.roi[2]
+    nby = int((detector.roi[1] - detector.roi[0]) / detector.binning[1])
+    nbx = int((detector.roi[3] - detector.roi[2]) / detector.binning[2])
     pixelsize_x = detector.pixelsize_x * 1e9  # in nm, pixel size in the horizontal direction
     distance = setup.distance * 1e9  # in nm
     qz = np.zeros((nbz, nby, nbx))
@@ -832,6 +834,14 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     if normalize:
         rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
                                                 norm_to_min=True, debugging=debugging)
+
+    # bin data and mask in the detector plane if needed
+    # binning in the stacking dimension is done at the very end of the data processing
+    if (detector.binning[1] != 1) or (detector.binning[2] != 1):
+        rawdata = pu.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        rawmask = pu.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        rawmask[np.nonzero(rawmask)] = 1
+
     if not orthogonalize:
         return [], rawdata, [], rawmask, [], frames_logical, monitor
     else:
@@ -882,6 +892,14 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
     if normalize:
         rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
                                                 norm_to_min=True, debugging=debugging)
+
+    # bin data and mask in the detector plane if needed
+    # binning in the stacking dimension is done at the very end of the data processing
+    if (detector.binning[1] != 1) or (detector.binning[2] != 1):
+        rawdata = pu.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        rawmask = pu.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        rawmask[np.nonzero(rawmask)] = 1
+
     if not orthogonalize:
         return [], rawdata, [], rawmask, [], frames_logical, monitor
     else:
@@ -1983,8 +2001,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     pixel_x = detector.pixelsize_x * 1e9  # convert to nm, pixel size in the horizontal direction
     pixel_y = detector.pixelsize_y * 1e9  # convert to nm, pixel size in the vertical direction
     lambdaz = wavelength * distance
-    directbeam_y = setup.direct_beam[0] - detector.roi[0]  # vertical
-    directbeam_x = setup.direct_beam[1] - detector.roi[2]  # horizontal
+    directbeam_y = (setup.direct_beam[0] - detector.roi[0]) / detector.binning[1]  # vertical
+    directbeam_x = (setup.direct_beam[1] - detector.roi[2]) / detector.binning[2]  # horizontal
 
     data, mask, cdi_angle, frames_logical = check_cdi_angle(data=data, mask=mask, cdi_angle=cdi_angle,
                                                             frames_logical=frames_logical)
