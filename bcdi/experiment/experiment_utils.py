@@ -428,7 +428,7 @@ class Detector(object):
     """
     Class to handle the configuration of the detector used for data acquisition.
     """
-    def __init__(self, name, datadir='', savedir='', template_imagefile='', roi=(), **kwargs):
+    def __init__(self, name, datadir='', savedir='', template_imagefile='', roi=(), binning=(1, 1, 1), **kwargs):
         """
         Initialize parameters of the detector.
 
@@ -441,6 +441,7 @@ class Detector(object):
          - Cristal: 'S%d.nxs'
          - P10: sample_name + str('{:05d}'.format(scans[scan_nb])) + '_data_%06d.h5'
         :param roi: region of interest in the detector, use [] to use the full detector
+        :param binning: binning of the 3D dataset (stacking dimension, detector vertical axis, detector horizontal axis)
         :param kwargs:
          - 'is_series' = boolean, True is the measurement is a series at P10 beamline
         """
@@ -482,3 +483,5 @@ class Detector(object):
             self.roiUser = True
         else:
             raise ValueError("Incorrect value for parameter 'roi'")
+
+        self.binning = binning

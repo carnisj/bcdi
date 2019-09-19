@@ -43,6 +43,8 @@ root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2"  # "S"
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
+binning = (2, 2, 2)  # binning that will be used for phasing
+# (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
@@ -101,7 +103,7 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
-roi_detector = [direct_beam[0] - 247, direct_beam[0] + 247, direct_beam[1] - 247, direct_beam[1] + 247]  # V x H
+roi_detector = [direct_beam[0] - 50, direct_beam[0] + 50, direct_beam[1] - 50, direct_beam[1] + 50]  # V x H
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
@@ -185,7 +187,7 @@ def press_key(event):
 # Initialize detector #
 #######################
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
-                        is_series=is_series)
+                        binning=binning, is_series=is_series)
 
 ####################
 # Initialize setup #
