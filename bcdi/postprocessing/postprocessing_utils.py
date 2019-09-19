@@ -226,6 +226,52 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     return abs(myobj), np.angle(myobj)
 
 
+def bin_data(array, binning, debugging=False):
+    """
+    Bin the array using binning parameter.
+
+    :param array: 2D or 3D array to be binned
+    :param binning: tuple of binning factor, 1 for each dimension of array
+    :param debugging: boolean, True to see plots
+    :return: the binned array
+    """
+    if array.ndim != len(binning):
+        raise ValueError('1 binning parameter expected for each dimension of array')
+    if array.ndim == 1:
+        nbx = len(array)
+        newarray = np.zeros(nbx // binning, dtype=array.dtype)
+        print('Initial array shape =', array.shape, 'Binned array shape =', newarray.shape)
+        for idx in range(len(newarray)):
+            newarray[idx] = array[idx * binning:(idx + 1) * binning].sum()
+    elif array.ndim == 2:
+        nby, nbx = array.shape
+        newarray = np.zeros((nby//binning[0], nbx//binning[1]), dtype=array.dtype)
+        print('Initial array shape =', array.shape, 'Binned array shape =', newarray.shape)
+        for idy in range(newarray.shape[0]):  # bin the vertical axis
+            for idx in range(newarray.shape[1]):  # bin the horizontal axis
+                newarray[idy, idx] = array[idy*binning[0]:(idy+1)*binning[0], idx*binning[1]:(idx+1)*binning[1]].sum()
+    elif array.ndim == 3:
+        nbz, nby, nbx = array.shape
+        newarray = np.zeros((nbz//binning[0], nby//binning[1], nbx//binning[2]), dtype=array.dtype)
+        print('Initial array shape =', array.shape)
+        print('Binned array shape =', newarray.shape)
+        for idz in range(newarray.shape[0]):  # bin axis 0
+            for idy in range(newarray.shape[1]):  # bin the vertical axis
+                for idx in range(newarray.shape[2]):  # bin the horizontal axis
+                    newarray[idz, idy, idx] = array[idz*binning[0]:(idz+1)*binning[0],
+                                                    idy*binning[1]:(idy+1)*binning[1],
+                                                    idx*binning[2]:(idx+1)*binning[2]].sum()
+    else:
+        raise ValueError('The input array should be 2D or 3D')
+
+    if debugging:
+        gu.combined_plots(tuple_array=(array, newarray), tuple_sum_frames=False, tuple_sum_axis=(1, 1),
+                          tuple_colorbar=True, tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_vmin=0,
+                          tuple_vmax=np.nan, tuple_title=('array', 'binned array'),
+                          tuple_scale='log', reciprocal_space=True)
+    return newarray
+
+
 def blackman_window(shape):
     """
     Create a 3d Blackman window based on shape.
@@ -299,52 +345,6 @@ def bragg_temperature(spacing, reflection, spacing_ref=None, temperature_ref=Non
     mytemp = int(myfit(spacing) - 273.15)
     print('Temperature with offset correction=', mytemp, 'C')
     return mytemp
-
-
-def bin_data(array, binning, debugging=False):
-    """
-    Bin the array using binning parameter.
-
-    :param array: 2D or 3D array to be binned
-    :param binning: tuple of binning factor, 1 for each dimension of array
-    :param debugging: boolean, True to see plots
-    :return: the binned array
-    """
-    if array.ndim != len(binning):
-        raise ValueError('1 binning parameter expected for each dimension of array')
-    if array.ndim == 1:
-        nbx = len(array)
-        newarray = np.zeros(nbx // binning, dtype=array.dtype)
-        print('Initial array shape =', array.shape, 'Binned array shape =', newarray.shape)
-        for idx in range(len(newarray)):
-            newarray[idx] = array[idx * binning:(idx + 1) * binning].sum()
-    elif array.ndim == 2:
-        nby, nbx = array.shape
-        newarray = np.zeros((nby//binning[0], nbx//binning[1]), dtype=array.dtype)
-        print('Initial array shape =', array.shape, 'Binned array shape =', newarray.shape)
-        for idy in range(newarray.shape[0]):  # bin the vertical axis
-            for idx in range(newarray.shape[1]):  # bin the horizontal axis
-                newarray[idy, idx] = array[idy*binning[0]:(idy+1)*binning[0], idx*binning[1]:(idx+1)*binning[1]].sum()
-    elif array.ndim == 3:
-        nbz, nby, nbx = array.shape
-        newarray = np.zeros((nbz//binning[0], nby//binning[1], nbx//binning[2]), dtype=array.dtype)
-        print('Initial array shape =', array.shape)
-        print('Binned array shape =', newarray.shape)
-        for idz in range(newarray.shape[0]):  # bin axis 0
-            for idy in range(newarray.shape[1]):  # bin the vertical axis
-                for idx in range(newarray.shape[2]):  # bin the horizontal axis
-                    newarray[idz, idy, idx] = array[idz*binning[0]:(idz+1)*binning[0],
-                                                    idy*binning[1]:(idy+1)*binning[1],
-                                                    idx*binning[2]:(idx+1)*binning[2]].sum()
-    else:
-        raise ValueError('The input array should be 2D or 3D')
-
-    if debugging:
-        gu.combined_plots(tuple_array=(array, newarray), tuple_sum_frames=False, tuple_sum_axis=(1, 1),
-                          tuple_colorbar=True, tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_vmin=0,
-                          tuple_vmax=np.nan, tuple_title=('array', 'binned array'),
-                          tuple_scale='log', reciprocal_space=True)
-    return newarray
 
 
 def calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=np.nan, width_y=np.nan, width_x=np.nan,
