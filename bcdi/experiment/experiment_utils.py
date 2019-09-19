@@ -487,4 +487,7 @@ class Detector(object):
         else:
             raise ValueError("Incorrect value for parameter 'roi'")
 
-        self.binning = binning
+        self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
+        self.pixelsize_y = self.pixelsize_y * binning[1]
+        self.pixelsize_x = self.pixelsize_x * binning[2]
+
