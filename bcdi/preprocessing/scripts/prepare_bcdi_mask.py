@@ -53,11 +53,11 @@ background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual c
 ###########################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
 #  It will be overridden by 'fix_bragg' if not empty
-fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
+fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg] considering the full detector
 # It is useful if hotpixels or intense aliens. Leave it [] otherwise.
 ###########################
-fix_size = []  # [10, 170, 0, 512, 0, 480]  # crop the array to predefined size, leave it to [] otherwise
-# [zstart, zstop, ystart, ystop, xstart, xstop]
+fix_size = []  # crop the array to predefined size considering the full detector,
+# leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop]. ROI will be defaulted to []
 ###########################
 center_fft = 'crop_sym_ZYX'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
@@ -234,9 +234,9 @@ if len(scans) > 1:
         center_fft = 'do_nothing'
         # avoid croping the detector plane XY while centering the Bragg peak
         # otherwise outputs may have a different size, which will be problematic for combining or comparing them
-if (binning[0] != 1) or (binning[1] != 1) or (binning[2] != 1):
-    center_fft = 'do_nothing'
-    # TODO: implement binning in the detector plane in pu.center_fft()
+if len(fix_size) != 0:
+    print('"fix_size" parameter provided, roi_detector will be set to []')
+    roi_detector = []
 if rocking_angle == "energy":
     use_rawdata = False  # you need to interpolate the data in QxQyQz for energy scans
     print("Energy scan implemented only for ID01")
@@ -369,8 +369,9 @@ for scan_nb in range(len(scans)):
     print('Data size:', nz, ny, nx)
 
     data, mask, pad_width, q_vector, frames_logical = \
-        pru.center_fft(data=data, mask=mask, frames_logical=frames_logical, centering=centering, fft_option=center_fft,
-                       pad_size=pad_size, fix_bragg=fix_bragg, fix_size=fix_size, q_values=q_values)
+        pru.center_fft(data=data, mask=mask, detector=detector, frames_logical=frames_logical, centering=centering,
+                       fft_option=center_fft, pad_size=pad_size, fix_bragg=fix_bragg, fix_size=fix_size,
+                       q_values=q_values)
 
     starting_frame = [pad_width[0], pad_width[2], pad_width[4]]  # no need to check padded frames
     print('Pad width:', pad_width)

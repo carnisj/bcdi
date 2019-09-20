@@ -20,7 +20,6 @@ import bcdi.postprocessing.postprocessing_utils as pu
 from bcdi.utils import image_registration as reg
 
 
-
 def align_diffpattern(reference_data, data, mask, method='registration', combining_method='rgi'):
     """
     Align two diffraction patterns based on the shift of the center of mass or based on dft registration.
@@ -178,12 +177,13 @@ def beamstop_correction(data, detector, setup, debugging=False):
     return data
 
 
-def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asymmetric_ZYX', **kwargs):
+def center_fft(data, mask, detector, frames_logical, centering='max', fft_option='crop_asymmetric_ZYX', **kwargs):
     """
     Center and crop/pad the dataset depending on user parameters
 
     :param data: the 3D data array
     :param mask: the 3D mask array
+    :param detector: the detector object: Class experiment_utils.Detector()
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param centering: centering option, 'max' or 'com'. It will be overridden if the kwarg 'fix_bragg' is provided.
@@ -271,7 +271,10 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
         if len(fix_bragg) != 3:
             raise ValueError('fix_bragg should be a list of 3 integers')
         z0, y0, x0 = fix_bragg
-        print("Bragg peak position defined by user at (qx, qz, qy): ", z0, y0, x0)
+        print("Bragg peak position defined by user on the full detector: ", z0, y0, x0)
+        y0 = (y0 - detector.roi[0]) / detector.binning[1]
+        x0 = (x0 - detector.roi[2]) / detector.binning[2]
+        print("Bragg peak position after considering detector ROI and binning in detector plane: ", z0, y0, x0)
 
     iz0, iy0, ix0 = int(round(z0)), int(round(y0)), int(round(x0))
     print('data at Bragg peak = ', data[iz0, iy0, ix0])
@@ -359,6 +362,7 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
         # pad rocking angle based on 'pad_size' (Bragg peak centered) and crop detector (Bragg peak non-centered)
         if len(pad_size) != 3:
             raise ValueError('pad_size should be a list of three elements')
+        print("pad_size for 1st axis before binning: ", pad_size[0])
         if pad_size[0] != higher_primes(pad_size[0], maxprime=7, required_dividers=(2,)):
             raise ValueError(pad_size[0], 'does not meet FFT requirements')
         ny1, nx1 = smaller_primes((max_ny, max_nx), maxprime=7, required_dividers=(2,))
@@ -435,6 +439,7 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
         # pad rocking angle based on 'pad_size'(Bragg peak centered) and keep detector size
         if len(pad_size) != 3:
             raise ValueError('pad_size should be a list of three elements')
+        print("pad_size for 1st axis before binning: ", pad_size[0])
         if pad_size[0] != higher_primes(pad_size[0], maxprime=7, required_dividers=(2,)):
             raise ValueError(pad_size[0], 'does not meet FFT requirements')
 
@@ -477,6 +482,8 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
         # pad both dimensions based on 'pad_size' (Bragg peak centered)
         if len(pad_size) != 3:
             raise ValueError('pad_size should be a list of 3 integers')
+        print("pad_size: ", pad_size)
+        print("The 1st axis (stacking dimension) is padded before binning, detector plane after binning.")
         if pad_size[0] != higher_primes(pad_size[0], maxprime=7, required_dividers=(2,)):
             raise ValueError(pad_size[0], 'does not meet FFT requirements')
         if pad_size[1] != higher_primes(pad_size[1], maxprime=7, required_dividers=(2,)):
@@ -539,6 +546,13 @@ def center_fft(data, mask, frames_logical, centering='max', fft_option='crop_asy
         # keep the full dataset or use 'fix_size' parameter
         pad_width = np.zeros(6, dtype=int)  # do nothing or crop the data, starting_frame should be 0
         if len(fix_size) == 6:
+            # take binning into account
+            print("fix_size defined by user on the full detector: ", z0, y0, x0)
+            fix_size[2] = fix_size[2] / detector.binning[1]
+            fix_size[3] = fix_size[3] / detector.binning[1]
+            fix_size[4] = fix_size[4] / detector.binning[2]
+            fix_size[5] = fix_size[5] / detector.binning[2]
+            print("fix_size defined after considering binning in detector plane (no ROI): ", z0, y0, x0)
             # size of output array defined
             nbz, nby, nbx = np.shape(data)
             z_pan = fix_size[1] - fix_size[0]
