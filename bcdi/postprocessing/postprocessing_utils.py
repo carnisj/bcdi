@@ -228,47 +228,39 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
 
 def bin_data(array, binning, debugging=False):
     """
-    Bin the array using binning parameter.
+    Rebin a 1, 2 or 3-dimensional array. If its dimensions are not a multiple of binning, the array will be cropped.
+    Adapted from PyNX.
 
-    :param array: 2D or 3D array to be binned
-    :param binning: tuple of binning factor, 1 for each dimension of array
+    :param array: the array to resize
+    :param binning: the rebin factor - pixels will be summed by groups of binning x binning (x binning). This can
+     also be a tuple/list of rebin values along each axis, e.g. binning=(4,1,2) for a 3D array
     :param debugging: boolean, True to see plots
     :return: the binned array
     """
-
-    try:
-        if array.ndim != len(binning):
-            raise ValueError('1 binning parameter expected for each dimension of array')
-    except TypeError:  # binning may be a number
-        if isinstance(binning, int):
-            pass
-
-    if array.ndim == 1:
-        nbx = len(array)
-        newarray = np.zeros(nbx // binning, dtype=array.dtype)
-        print('Initial array shape =', array.shape, 'Binned array shape =', newarray.shape)
-        for idx in range(len(newarray)):
-            newarray[idx] = array[idx * binning:(idx + 1) * binning].sum()
-    elif array.ndim == 2:
-        nby, nbx = array.shape
-        newarray = np.zeros((nby//binning[0], nbx//binning[1]), dtype=array.dtype)
-        print('Initial array shape =', array.shape, 'Binned array shape =', newarray.shape)
-        for idy in range(newarray.shape[0]):  # bin the vertical axis
-            for idx in range(newarray.shape[1]):  # bin the horizontal axis
-                newarray[idy, idx] = array[idy*binning[0]:(idy+1)*binning[0], idx*binning[1]:(idx+1)*binning[1]].sum()
-    elif array.ndim == 3:
-        nbz, nby, nbx = array.shape
-        newarray = np.zeros((nbz//binning[0], nby//binning[1], nbx//binning[2]), dtype=array.dtype)
-        print('Initial array shape =', array.shape)
-        print('Binned array shape =', newarray.shape)
-        for idz in range(newarray.shape[0]):  # bin axis 0
-            for idy in range(newarray.shape[1]):  # bin the vertical axis
-                for idx in range(newarray.shape[2]):  # bin the horizontal axis
-                    newarray[idz, idy, idx] = array[idz*binning[0]:(idz+1)*binning[0],
-                                                    idy*binning[1]:(idy+1)*binning[1],
-                                                    idx*binning[2]:(idx+1)*binning[2]].sum()
+    ndim = array.ndim
+    if type(binning) is int:
+        binning = [binning] * ndim
     else:
-        raise ValueError('The input array should be 2D or 3D')
+        assert ndim == len(binning), "Rebin: number of dimensions does not agree with number of rebin values:" + str(
+            binning)
+
+    if ndim == 1:
+        nx = len(array)
+        array = array[:nx - (nx % binning[0])]
+        sh = nx // binning[0], binning[0]
+        newarray = array.reshape(sh).sum(axis=1)
+    elif ndim == 2:
+        ny, nx = array.shape
+        array = array[:ny - (ny % binning[0]), :nx - (nx % binning[1])]
+        sh = ny // binning[0], binning[0], nx // binning[1], binning[1]
+        newarray = array.reshape(sh).sum(axis=(1, 3))
+    elif ndim == 3:
+        nz, ny, nx = array.shape
+        array = array[:nz - (nz % binning[0]), :ny - (ny % binning[1]), :nx - (nx % binning[2])]
+        sh = nz // binning[0], binning[0], ny // binning[1], binning[1], nx // binning[2], binning[2]
+        newarray = array.reshape(sh).sum(axis=(1, 3, 5))
+    else:
+        raise ValueError('Array should be 1D, 2D, or 3D')
 
     if debugging:
         gu.combined_plots(tuple_array=(array, newarray), tuple_sum_frames=False, tuple_sum_axis=(1, 1),
@@ -1447,4 +1439,11 @@ def unwrap(obj, start_angle, range_angle, debugging=True):
     return obj
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
+    a = np.arange(49)
+    b = rebin(a, 8)
+    print(a.shape,b.shape)
+    print(a)
+    print(b)
+    plt.ioff()
+    plt.show()
