@@ -714,6 +714,7 @@ for scan_nb in range(len(scans)):
     if not use_rawdata:
         np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
                             qx=q_vector[0], qz=q_vector[1], qy=q_vector[2])
+    print('saving to directory:', savedir)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
 

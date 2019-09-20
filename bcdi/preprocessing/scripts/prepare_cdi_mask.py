@@ -709,6 +709,7 @@ for scan_nb in range(len(scans)):
                             qx=qx, qz=qz, qy=qy)
     else:
         comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)
+    print('saving to directory:', savedir)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
 
