@@ -639,7 +639,7 @@ for scan_nb in range(len(scans)):
     #############################################
     plt.ion()
     nz, ny, nx = np.shape(data)
-    print('Data size after cropping / padding:', nz, ny, nx)
+    print('Data size after masking:', nz, ny, nx)
     comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)  # need these numbers to calculate the voxel size
 
     # check for Nan
@@ -692,6 +692,9 @@ for scan_nb in range(len(scans)):
         ############################
         # plot binned data and mask #
         ############################
+        nz, ny, nx = data.shape
+        print('Data size after binning the stacking dimension:', data.shape)
+        comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)
 
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                         title='Final data', invert_yaxis=False, is_orthogonal=not use_rawdata,

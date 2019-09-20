@@ -58,7 +58,7 @@ fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg] consid
 fix_size = []  # [10, 170, 0, 512, 0, 480]  # crop the array to predefined size considering the full detector,
 # leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop]. ROI will be defaulted to []
 ###########################
-center_fft = 'crop_sym_ZYX'
+center_fft = 'do_nothing'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'do_nothing'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
@@ -616,7 +616,7 @@ for scan_nb in range(len(scans)):
     #############################################
     plt.ion()
     nz, ny, nx = np.shape(data)
-    print('Data size after cropping / padding:', nz, ny, nx)
+    print('Data size after masking:', nz, ny, nx)
 
     # check for Nan
     mask[np.isnan(data)] = 1
@@ -669,7 +669,6 @@ for scan_nb in range(len(scans)):
         qy = qy[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along X
         # qz (along Y) keeps the same number of pixels
         print('Data size after taking the largest gapless area:', data.shape)
-        comment = comment + "_" + str(final_nxz) + "_" + str(ny) + "_" + str(final_nxz)
         # need these numbers to calculate the voxel size
 
     if detector.binning[0] != 1:
@@ -685,6 +684,9 @@ for scan_nb in range(len(scans)):
     ############################
     # plot final data and mask #
     ############################
+    nz, ny, nx = data.shape
+    print('Data size after binning the stacking dimension:', data.shape)
+    comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Final data', invert_yaxis=False, is_orthogonal=not use_rawdata,
