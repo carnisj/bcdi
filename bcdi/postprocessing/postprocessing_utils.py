@@ -263,6 +263,8 @@ def bin_data(array, binning, debugging=False):
         raise ValueError('Array should be 1D, 2D, or 3D')
 
     if debugging:
+        print('array shape after cropping but before binning:', array.shape)
+        print('array shape after binning:', newarray.shape)
         gu.combined_plots(tuple_array=(array, newarray), tuple_sum_frames=False, tuple_sum_axis=(1, 1),
                           tuple_colorbar=True, tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_vmin=0,
                           tuple_vmax=np.nan, tuple_title=('array', 'binned array'),
