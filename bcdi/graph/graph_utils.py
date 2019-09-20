@@ -181,12 +181,12 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v,
         elif nb_dim == 1:
 
             if np.isnan(vmin):
-                tmp_array = np.copy(array)
+                tmp_array = np.copy(array).astype(float)
                 tmp_array[np.isnan(array)] = np.inf
                 tmp_array[np.isinf(tmp_array)] = np.inf  # set -inf to +inf to find the min
                 vmin = tmp_array.min()
             if np.isnan(vmax):
-                tmp_array = np.copy(array)
+                tmp_array = np.copy(array).astype(float)
                 tmp_array[np.isnan(array)] = -1 * np.inf
                 tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
                 vmax = tmp_array.max()
