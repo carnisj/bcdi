@@ -7,11 +7,16 @@ from matplotlib.colors import LinearSegmentedColormap
 import tkinter as tk
 from tkinter import filedialog
 import gc
+import sys
+sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+import bcdi.postprocessing.postprocessing_utils as pu
+
 scan = 2227
-datadir = "D:/review paper/BCDI_isosurface/S"+str(scan)+"/simu/crop150/apod_post_tukey_0.7/"  # no_apodization"  # apodize_during_phasing # apodize_postprocessing
+datadir = 'D:/data/PtRh/ArCOO2(102x92x140)/'  # "D:/review paper/BCDI_isosurface/S"+str(scan)+"/"
 strain_range = 0.001  # for plots
-support_threshold = 0.75  # threshold for support determination
-flag_plot = 0  # 1 to show plots of data
+support_threshold = 0.55  # threshold for support determination
+use_bulk = True
+flag_plot = 1  # 1 to show plots of data
 ######################################
 # define a colormap
 cdict = {'red':  ((0.0, 1.0, 1.0),
@@ -41,11 +46,23 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir, filetypes=[("NPZ", "*.npz")])
 print('Opening ', file_path)
 npzfile = np.load(file_path)
-bulk = npzfile['bulk']
-nz, ny, nx = bulk.shape
+if use_bulk:
+    try:
+        bulk = npzfile['bulk']
+    except KeyError:
+        amp = npzfile['amp']
+        bulk = pu.find_bulk(amp=amp, support_threshold=support_threshold, method='threshold')
+        del amp
+        gc.collect()
+    nz, ny, nx = bulk.shape
+    support = bulk
+else:  # use amplitude
+    amp = npzfile['amp']
+    nz, ny, nx = amp.shape
+    support = np.ones((nz, ny, nx))
+    support[abs(amp) < support_threshold * abs(amp).max()] = 0
+
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
-support = np.ones((nz, ny, nx))
-support[abs(bulk) < support_threshold * abs(bulk).max()] = 0
 
 ########################################
 # plot data
