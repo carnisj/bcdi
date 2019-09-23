@@ -34,13 +34,13 @@ the second axis of the 3D array (to be modified).
 Input: a reconstruction .npz file with fields: 'amp' and 'strain' 
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
-
+# TODO: include surface estimation for the facets
 scan = 2227  # spec scan number
-datadir = 'D:/data/PtRh/Ar(103x98x157)/'
+datadir = 'D:/data/PtRh/ArCOO2(102x92x140)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
 support_threshold = 0.55  # threshold for support determination
-voxel_size = (2.95, 3.09, 1.93)  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
-savedir = datadir + "isosurface_" + str(support_threshold) + " 2.95x3.09x1.93nm3/"
+voxel_size = (2.96, 3.29, 2.17)  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+savedir = datadir + "isosurface_" + str(support_threshold) + " 2.96x3.29x2.17nm3/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
@@ -55,7 +55,7 @@ max_distance_plane = 1.01  # in pixels, maximum allowed distance to the facet pl
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
-threshold_stereo = -1500  # threshold for defining the background in the density estimation of normals
+threshold_stereo = -1000  # -1500 # threshold for defining the background in the density estimation of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 #########################################################
 # parameters only used in the equirectangular projection #
@@ -67,8 +67,13 @@ kde_threshold = -0.2  # threshold for defining the background in the density est
 ##############################################################################################
 planes = dict()  # create dictionnary
 planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
+planes['-1 0 0'] = fu.plane_angle_cubic(reflection, np.array([-1, 0, 0]))
 planes['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
+planes['-1 1 0'] = fu.plane_angle_cubic(reflection, np.array([-1, 1, 0]))
+planes['-1 -1 0'] = fu.plane_angle_cubic(reflection, np.array([-1, -1, 0]))
 planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
+planes['1 -1 -1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, -1]))
+planes['-1 -1 -1'] = fu.plane_angle_cubic(reflection, np.array([-1, -1, -1]))
 ##########################
 # end of user parameters #
 ##########################
@@ -342,7 +347,7 @@ strain_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('Z') +
                   '{0: <10}'.format('X') + '\t' + '{0: <10}'.format('strain')+'\n')
 
 # prepare amp for vti file
-amp_array = np.transpose(amp).reshape(amp.size)
+amp_array = np.transpose(np.flip(amp, 2)).reshape(amp.size)  # VTK axis 2 is flipped
 amp_array = numpy_support.numpy_to_vtk(amp_array)
 image_data = vtk.vtkImageData()
 image_data.SetOrigin(0, 0, 0)
@@ -724,7 +729,7 @@ for label in updated_label:
                '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
 
     # update vti file
-    PLANE = np.transpose(plane).reshape(plane.size)
+    PLANE = np.transpose(np.flip(plane, 2)).reshape(plane.size)  # VTK axis 2 is flipped
     plane_array = numpy_support.numpy_to_vtk(PLANE)
     pd.AddArray(plane_array)
     pd.GetArray(index_vti).SetName("plane_"+str(label))
