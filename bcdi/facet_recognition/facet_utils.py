@@ -315,7 +315,7 @@ def fit_plane(plane, label, debugging=1):
                           tmp_z[point]-2:tmp_z[point]+3].sum()
         if neighbors < 5:
             plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
-    print('Plane', label, ', ', str(tmp_x.shape[0]-plane[plane == 1].sum()), 'points isolated, ',
+    print('Fit plane', label, ', ', str(tmp_x.shape[0]-plane[plane == 1].sum()), 'points isolated, ',
           str(plane[plane == 1].sum()), 'remaining')
 
     # update plane indices
@@ -335,7 +335,7 @@ def fit_plane(plane, label, debugging=1):
     for point in range(tmp_x.shape[0]):
         if dist[point] > 2 * average_dist:
             plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
-    print('Plane', label, ', ', str(tmp_x.shape[0] - plane[plane == 1].sum()), 'points too far from COM, ',
+    print('Fit plane', label, ', ', str(tmp_x.shape[0] - plane[plane == 1].sum()), 'points too far from COM, ',
           str(plane[plane == 1].sum()), 'remaining')
 
     # update plane indices and check if enough points remain
@@ -420,12 +420,8 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     # check distance of new voxels to the plane
     new_indices = np.nonzero(temp_plane)
 
-    temp_plane, no_points = distance_threshold(fit=fit, indices=new_indices, shape=temp_plane.shape,
-                                               max_distance=max_distance)
-
-    # update indices and plane voxels
-    new_indices = np.nonzero(temp_plane)
-    plane[new_indices[0], new_indices[1], new_indices[2]] = 1
+    plane, no_points = distance_threshold(fit=fit, indices=new_indices, shape=temp_plane.shape,
+                                          max_distance=max_distance)
 
     if debugging and len(new_indices[0]) != 0:
         indices = np.nonzero(plane)
