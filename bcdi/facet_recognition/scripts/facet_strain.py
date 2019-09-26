@@ -185,8 +185,8 @@ if projection_method == 'stereographic':
                             labels_bottom[labels_bottom == labels_bottom[u_bottom, v_bottom]] = label
                     except IndexError:
                         continue
-    del label_points, label_distances
-    gc.collect()
+        del label_points, label_distances
+        gc.collect()
 
     # reorganize stereo_proj to keep only the projected point which is in the range [-90 90]
     pole_proj = np.zeros((nb_normals, 3), dtype=stereo_proj.dtype)
@@ -403,12 +403,14 @@ for label in updated_label:
     # update plane by filtering out pixels too far from the fit plane
     plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
                                         max_distance=max_distance_plane)
+    grown_points = plane[plane == 1].sum().astype(int)
     if stop == 1:  # no points on the plane
         print('Refined fit: no points for plane', label)
         continue
     else:
-        print('Plane', label, ', ', str(plane[plane == 1].sum()), 'points after checking distance to plane')
+        print('Plane', label, ', ', str(grown_points), 'points after checking distance to plane')
     plane_indices = np.nonzero(plane == 1)
+
     if debug:
 
         gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
