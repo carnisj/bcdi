@@ -36,9 +36,9 @@ Output: a log file with strain statistics by plane, a VTK file for 3D visualizat
 """
 # TODO: include surface estimation for the facets
 scan = 2227  # spec scan number
-datadir = 'D:/data/PtRh/ArCOO2(102x92x140)/'
+datadir = 'D:/data/PtRh/new/ArCOO2(102x92x140)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
-support_threshold = 0.55  # threshold for support determination
+support_threshold = 0.5276  # threshold for support determination
 voxel_size = (2.96, 3.29, 2.17)  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
 savedir = datadir + "isosurface_" + str(support_threshold) + " 2.96x3.29x2.17nm3/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
@@ -51,11 +51,11 @@ smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
 smooth_mu = 0.51  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
 my_min_distance = 20  # pixel separation between peaks in corner_peaks()
-max_distance_plane = 1.01  # in pixels, maximum allowed distance to the facet plane of a voxel
+max_distance_plane = 0.5  # in pixels, maximum allowed distance to the facet plane of a voxel
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
-threshold_stereo = -1000  # -1500 # threshold for defining the background in the density estimation of normals
+threshold_stereo = -1500  # -1500 # threshold for defining the background in the density estimation of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 #########################################################
 # parameters only used in the equirectangular projection #
@@ -330,9 +330,10 @@ edges = pu.calc_coordination(support, kernel=np.ones((9, 9, 9)), debugging=False
 edges[support == 0] = 0
 if debug:
     gu.multislices_plot(edges, invert_yaxis=True, vmin=0, title='Coordination matrix')
-edges[edges > 350] = 0  # remove facets and bulk
+edges[edges > 350] = 0  # remove facets and bulk 350 seems to work reasonably well
 edges[np.nonzero(edges)] = 1  # edge support
-
+edges_indices = np.nonzero(edges)
+gu.scatter_plot(array=np.asarray(edges_indices).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'), title='edges')
 ######################################
 # Initialize log files and .vti file #
 ######################################
@@ -384,33 +385,12 @@ for label in updated_label:
         continue
     else:
         print('Plane', label, ', ', str(plane[plane == 1].sum()), 'points after checking distance to plane')
-
+    plane_indices = np.nonzero(plane == 1)
     if debug:
-        plane_indices = np.nonzero(plane == 1)
+
         gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
                         title='Plane' + str(label) + ' after raw fit')
 
-    ##################
-    # grow the facet #
-    ##################
-    iterate = 0
-    while stop == 0:
-        previous_nb = plane[plane == 1].sum()
-        plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=max_distance_plane, debugging=debug)
-        plane_indices = np.nonzero(plane == 1)
-        iterate = iterate + 1
-        if plane[plane == 1].sum() == previous_nb:  # no growth anymore, the number of voxels is constant
-            break
-    grown_points = plane[plane == 1].sum()
-    print('Plane ', label, ', ', str(grown_points), 'points after growing facet into support')
-    # update plane indices
-    plane_indices = np.nonzero(plane)
-
-    if debug:
-        gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
-                        title='Plane' + str(label) + ' after growing facet into support')
-        print('')
     ##########################################################################################################
     # Look for the surface: correct for the offset between plane equation and the outer shell of the support #
     # Effect of meshing/smoothing: the meshed support is smaller than the initial support #
@@ -437,7 +417,7 @@ for label in updated_label:
         dist[point] = (coeffs[0, 0]*surf0[point] + coeffs[1, 0]*surf1[point] - surf2[point]
                        + (coeffs[2, 0] - mean_dist / 2)) / np.linalg.norm(plane_normal)
     new_dist = dist.mean()
-    step_shift = 0.5  # will scan by half pixel through the crystal in order to not miss voxels
+    step_shift = 0.25  # will scan by half pixel through the crystal in order to not miss voxels
     # these directions are for a mesh smaller than the support
     if mean_dist*new_dist < 0:  # crossed the support surface
         step_shift = np.sign(mean_dist) * step_shift
@@ -551,8 +531,8 @@ for label in updated_label:
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
                                  markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
-                                 title='Plane' + str(label) + ' after finding the surface\n iteration' +
-                                       str(iterate) + '- Points number=' + str(len(plane_indices[0])))
+                                 title='Plane' + str(label) + ' after finding the surface\n' +
+                                       'Points number=' + str(len(plane_indices[0])))
 
     if plane[plane == 1].sum() == 0:  # no point belongs to the support
         print('Plane ', label, ' , no point belongs to support')
@@ -562,12 +542,15 @@ for label in updated_label:
     # grow again the facet on the surface #
     #######################################
     print('Growing again the facet')
+    iterate = 0
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=2*max_distance_plane, debugging=False)
-        # here the distance threshold is larger in order to reach voxels missed when rounding vertices to integer
+                                    max_distance=3*max_distance_plane, debugging=False)
+        # here the distance threshold is larger in order to reach voxels missed by the first plane fit
+        # when rounding vertices to integer. Anyway we intersect it with the surface therefore it can not go crazy.
         plane_indices = np.nonzero(plane)
+        iterate = iterate + 1
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
         if plane[plane == 1].sum() == previous_nb:
             break
@@ -583,7 +566,6 @@ for label in updated_label:
                                  markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
                                  title='Plane' + str(label) + ' after 1st growth at the surface\n iteration' +
                                        str(iterate) + '- Points number=' + str(len(plane_indices[0])))
-
     ################################################################
     # refine plane fit, now we are sure that we are at the surface #
     ################################################################
@@ -603,7 +585,7 @@ for label in updated_label:
 
     # update plane by filtering out pixels too far from the fit plane
     plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
-                                        max_distance=max_distance_plane)
+                                        max_distance=2*max_distance_plane)
     if stop == 1:  # no points on the plane
         print('Refined fit: no points for plane', label)
         continue
@@ -616,19 +598,20 @@ for label in updated_label:
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
                                  markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
-                                 title='Plane' + str(label) + ' after distance threshold at surface\n iteration' +
-                                       str(iterate) + '- Points number=' + str(len(plane_indices[0])))
+                                 title='Plane' + str(label) + ' after distance threshold at surface\n' +
+                                       'Points number=' + str(len(plane_indices[0])))
 
     ############################################
     # final growth of the facet on the surface #
     ############################################
     print('Final growth of the facet')
+    iterate = 0
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=max_distance_plane, debugging=debug)
+                                    max_distance=2*max_distance_plane, debugging=debug)
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
-
+        iterate = iterate + 1
         if plane[plane == 1].sum() == previous_nb:
             break
     grown_points = plane[plane == 1].sum().astype(int)
@@ -657,6 +640,7 @@ for label in updated_label:
                              markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
                              title='Plane' + str(label) + ' after edge removal\nPoints number='
                                    + str(len(plane_indices[0])))
+    print('Plane ', label, ', ', str(len(plane_indices[0])), 'points after removing edges\n')
     #################################################################
     # calculate quantities of interest and update log and VTK files #
     #################################################################
