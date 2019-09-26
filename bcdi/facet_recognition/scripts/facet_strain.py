@@ -345,15 +345,15 @@ gu.scatter_plot(array=np.asarray(np.nonzero(corners)).T, markersize=2, markercol
 ######################################
 # Initialize log files and .vti file #
 ######################################
-file = open(os.path.join(savedir, "S" + str(scan) + "_planes.dat"), "w")
-file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('angle') + '\t' +
-           '{0: <10}'.format('points #') + '\t' + '{0: <10}'.format('<strain>') + '\t' +
-           '{0: <10}'.format('std dev') + '\t' + '{0: <10}'.format('A (x)') + '\t' +
-           '{0: <10}'.format('B (y)') + '\t' + 'C (Ax+By+C=z)' + '\t' + 'normal X' + '\t' +
-           'normal Y' + '\t' + 'normal Z' + '\n')
-strain_file = open(os.path.join(savedir, "S" + str(scan) + "_strain.dat"), "w")
-strain_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('Z') + '\t' + '{0: <10}'.format('Y') + '\t' +
-                  '{0: <10}'.format('X') + '\t' + '{0: <10}'.format('strain')+'\n')
+summary_file = open(os.path.join(savedir, "S" + str(scan) + "_planes.dat"), "w")
+summary_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('angle') + '\t' +
+                   '{0: <10}'.format('points #') + '\t' + '{0: <10}'.format('<strain>') + '\t' +
+                   '{0: <10}'.format('std dev') + '\t' + '{0: <10}'.format('A (x)') + '\t' +
+                   '{0: <10}'.format('B (y)') + '\t' + 'C (Ax+By+C=z)' + '\t' + 'normal X' + '\t' +
+                   'normal Y' + '\t' + 'normal Z' + '\n')
+allpoints_file = open(os.path.join(savedir, "S" + str(scan) + "_strain.dat"), "w")
+allpoints_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('Z') + '\t' + '{0: <10}'.format('Y') +
+                     '\t' + '{0: <10}'.format('X') + '\t' + '{0: <10}'.format('strain')+'\n')
 
 # prepare amp for vti file
 amp_array = np.transpose(np.flip(amp, 2)).reshape(amp.size)  # VTK axis 2 is flipped
@@ -367,101 +367,19 @@ pd.SetScalars(amp_array)
 pd.GetArray(0).SetName("amp")
 index_vti = 1
 
-####################
-# save bulk strain #
-####################
-# calculate the average strain for plane voxels and update the log file
-bulk_indices = np.nonzero(bulk == 1)
-ind_z = bulk_indices[0]
-ind_y = bulk_indices[1]
-ind_x = bulk_indices[2]
-nb_points = len(bulk_indices[0])
-for idx in range(nb_points):
-    strain_file.write('{0: <10}'.format('bulk') + '\t' +
-                      '{0: <10}'.format(str(ind_z[idx])) + '\t' +
-                      '{0: <10}'.format(str(ind_y[idx])) + '\t' +
-                      '{0: <10}'.format(str(ind_x[idx])) + '\t' +
-                      '{0: <10}'.format(str('{:.7f}'.format(strain[ind_z[idx], ind_y[idx], ind_x[idx]]))) + '\n')
+##################################################
+# save bulk, edges and corners strain to logfile #
+##################################################
+fu.update_logfile(support=bulk, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
+                  label='bulk')
 
-bulk_strain = np.mean(strain[bulk == 1])
-bulk_deviation = np.std(strain[bulk == 1])
-file.write('{0: <10}'.format(str('bulk')) + '\t' +
-           '{0: <10}'.format(str('{:.3f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str(nb_points)) + '\t' +
-           '{0: <10}'.format(str('{:.7f}'.format(bulk_deviation))) + '\t' +
-           '{0: <10}'.format(str('{:.7f}'.format(bulk_deviation))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\n')
+fu.update_logfile(support=edges, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
+                  label='edges')
 
-del bulk, bulk_indices, bulk_strain, bulk_deviation  # bulk not needed anymore
-gc.collect()
+fu.update_logfile(support=corners, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
+                  label='corners')
 
-####################
-# save edges strain #
-####################
-edges_indices = np.nonzero(edges == 1)
-ind_z = edges_indices[0]
-ind_y = edges_indices[1]
-ind_x = edges_indices[2]
-nb_points = len(edges_indices[0])
-for idx in range(nb_points):
-    strain_file.write('{0: <10}'.format('edges') + '\t' +
-                      '{0: <10}'.format(str(ind_z[idx])) + '\t' +
-                      '{0: <10}'.format(str(ind_y[idx])) + '\t' +
-                      '{0: <10}'.format(str(ind_x[idx])) + '\t' +
-                      '{0: <10}'.format(str('{:.7f}'.format(strain[ind_z[idx], ind_y[idx], ind_x[idx]]))) + '\n')
-
-edges_strain = np.mean(strain[edges == 1])
-edges_deviation = np.std(strain[edges == 1])
-file.write('{0: <10}'.format(str('edges')) + '\t' +
-           '{0: <10}'.format(str('{:.3f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str(nb_points)) + '\t' +
-           '{0: <10}'.format(str('{:.7f}'.format(edges_strain))) + '\t' +
-           '{0: <10}'.format(str('{:.7f}'.format(edges_deviation))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\n')
-
-del edges_indices, edges_strain, edges_deviation
-gc.collect()
-
-#######################
-# save corners strain #
-#######################
-corners_indices = np.nonzero(corners == 1)
-ind_z = corners_indices[0]
-ind_y = corners_indices[1]
-ind_x = corners_indices[2]
-nb_points = len(corners_indices[0])
-for idx in range(nb_points):
-    strain_file.write('{0: <10}'.format('corners') + '\t' +
-                      '{0: <10}'.format(str(ind_z[idx])) + '\t' +
-                      '{0: <10}'.format(str(ind_y[idx])) + '\t' +
-                      '{0: <10}'.format(str(ind_x[idx])) + '\t' +
-                      '{0: <10}'.format(str('{:.7f}'.format(strain[ind_z[idx], ind_y[idx], ind_x[idx]]))) + '\n')
-
-corners_strain = np.mean(strain[corners == 1])
-corners_deviation = np.std(strain[corners == 1])
-file.write('{0: <10}'.format(str('corners')) + '\t' +
-           '{0: <10}'.format(str('{:.3f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str(nb_points)) + '\t' +
-           '{0: <10}'.format(str('{:.7f}'.format(corners_strain))) + '\t' +
-           '{0: <10}'.format(str('{:.7f}'.format(corners_deviation))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
-           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\n')
-
-del corners, corners_indices, corners_strain, corners_deviation
+del bulk, corners
 gc.collect()
 
 ##################################################################
@@ -508,19 +426,19 @@ for label in updated_label:
     surf0 = surface_indices[0] + plane_indices[0].min() - 3  # add offset plane_indices[0].min() - 3
     surf1 = surface_indices[1] + plane_indices[1].min() - 3  # add offset plane_indices[1].min() - 3
     surf2 = surface_indices[2] + plane_indices[2].min() - 3  # add offset plane_indices[2].min() - 3
-    plane_normal = np.array([coeffs[0, 0], coeffs[1, 0], -1])  # normal is [a, b, c] if ax+by+cz+d=0
+    plane_normal = np.array([coeffs[0], coeffs[1], -1])  # normal is [a, b, c] if ax+by+cz+d=0
 
     dist = np.zeros(len(surface_indices[0]))
     for point in range(len(surface_indices[0])):
-        dist[point] = (coeffs[0, 0]*surf0[point] + coeffs[1, 0]*surf1[point] - surf2[point] + coeffs[2, 0]) \
+        dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] - surf2[point] + coeffs[2]) \
                / np.linalg.norm(plane_normal)
     mean_dist = dist.mean()
     print('Mean distance of plane ', label, ' to outer shell = ' + str('{:.2f}'.format(mean_dist)) + 'pixels')
 
     dist = np.zeros(len(surface_indices[0]))
     for point in range(len(surface_indices[0])):
-        dist[point] = (coeffs[0, 0]*surf0[point] + coeffs[1, 0]*surf1[point] - surf2[point]
-                       + (coeffs[2, 0] - mean_dist / 2)) / np.linalg.norm(plane_normal)
+        dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] - surf2[point]
+                       + (coeffs[2] - mean_dist / 2)) / np.linalg.norm(plane_normal)
     new_dist = dist.mean()
     step_shift = 0.25  # will scan by half pixel through the crystal in order to not miss voxels
     # these directions are for a mesh smaller than the support
@@ -551,10 +469,10 @@ for label in updated_label:
                     common_points = common_points + 1
 
         if debug:
-            tempcoeff2 = coeffs[2, 0] - nbloop * step_shift
+            tempcoeff2 = coeffs[2] - nbloop * step_shift
             dist = np.zeros(len(surface_indices[0]))
             for point in range(len(surface_indices[0])):
-                dist[point] = (coeffs[0, 0] * surf0[point] + coeffs[1, 0] * surf1[point] - surf2[point] + tempcoeff2) \
+                dist[point] = (coeffs[0] * surf0[point] + coeffs[1] * surf1[point] - surf2[point] + tempcoeff2) \
                               / np.linalg.norm(plane_normal)
             temp_mean_dist = dist.mean()
             plane = np.zeros(surface.shape)
@@ -617,7 +535,7 @@ for label in updated_label:
         continue
 
     # go back one step
-    coeffs[2, 0] = coeffs[2, 0] - (nbloop-1)*step_shift
+    coeffs[2] = coeffs[2] - (nbloop-1)*step_shift
     # shift indices
     plane_newindices0, plane_newindices1, plane_newindices2 = \
         fu.offset_plane(indices=plane_indices, offset=(nbloop-1)*step_shift, plane_normal=plane_normal)
@@ -765,7 +683,7 @@ for label in updated_label:
         mean_gradient = mean_gradient / np.linalg.norm(mean_gradient)
 
     # check the correct direction of the normal using the gradient of the support
-    plane_normal = np.array([coeffs[0, 0], coeffs[1, 0], -1])  # normal is [a, b, c] if ax+by+cz+d=0
+    plane_normal = np.array([coeffs[0], coeffs[1], -1])  # normal is [a, b, c] if ax+by+cz+d=0
     plane_normal = plane_normal / np.linalg.norm(plane_normal)
     if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
         print('Flip normal direction plane', str(label), '\n')
@@ -790,32 +708,9 @@ for label in updated_label:
     # calculate the angle of the plane normal to the measurement direction, which is aligned along reflection_axis
     angle_plane = 180 / np.pi * np.arccos(np.dot(ref_axis, plane_normal))
 
-    # calculate the average strain for plane voxels and update the log file
-    plane_indices = np.nonzero(plane == 1)
-    ind_z = plane_indices[0]
-    ind_y = plane_indices[1]
-    ind_x = plane_indices[2]
-    nb_points = len(plane_indices[0])
-    for idx in range(nb_points):
-        strain_file.write('{0: <10}'.format(str(label)) + '\t' +
-                          '{0: <10}'.format(str(ind_z[idx])) + '\t' +
-                          '{0: <10}'.format(str(ind_y[idx])) + '\t' +
-                          '{0: <10}'.format(str(ind_x[idx])) + '\t' +
-                          '{0: <10}'.format(str('{:.7f}'.format(strain[ind_z[idx], ind_y[idx], ind_x[idx]])))+'\n')
-
-    plane_strain = np.mean(strain[plane == 1])
-    plane_deviation = np.std(strain[plane == 1])
-    file.write('{0: <10}'.format(str(label)) + '\t' +
-               '{0: <10}'.format(str('{:.3f}'.format(angle_plane))) + '\t' +
-               '{0: <10}'.format(str(nb_points)) + '\t' +
-               '{0: <10}'.format(str('{:.7f}'.format(plane_strain))) + '\t' +
-               '{0: <10}'.format(str('{:.7f}'.format(plane_deviation))) + '\t' +
-               '{0: <10}'.format(str('{:.5f}'.format(coeffs[0, 0]))) + '\t' +
-               '{0: <10}'.format(str('{:.5f}'.format(coeffs[1, 0]))) + '\t' +
-               '{0: <10}'.format(str('{:.5f}'.format(coeffs[2, 0]))) + '\t' +
-               '{0: <10}'.format(str('{:.5f}'.format(plane_normal[0]))) + '\t' +
-               '{0: <10}'.format(str('{:.5f}'.format(plane_normal[1]))) + '\t' +
-               '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
+    # update the log files
+    fu.update_logfile(support=plane, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
+                      label=label, angle_plane=angle_plane, plane_coeffs=coeffs, plane_normal=plane_normal)
 
     # update vti file
     PLANE = np.transpose(np.flip(plane, 2)).reshape(plane.size)  # VTK axis 2 is flipped
@@ -828,10 +723,10 @@ for label in updated_label:
 ##########################
 # update and close files #
 ##########################
-file.write('\n'+'Isosurface value'+'\t' '{0: <10}'.format(str(support_threshold)))
-strain_file.write('\n'+'Isosurface value'+'\t' '{0: <10}'.format(str(support_threshold)))
-file.close()
-strain_file.close()
+summary_file.write('\n'+'Isosurface value'+'\t' '{0: <10}'.format(str(support_threshold)))
+allpoints_file.write('\n'+'Isosurface value'+'\t' '{0: <10}'.format(str(support_threshold)))
+summary_file.close()
+allpoints_file.close()
 
 # update vti file with edges
 EDGES = np.transpose(edges).reshape(edges.size)

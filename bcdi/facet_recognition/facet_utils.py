@@ -114,10 +114,10 @@ def distance_threshold(fit, indices, shape, max_distance=0.90):
         no_points = 1
         return plane, no_points
     # remove outsiders based on distance to plane
-    plane_normal = np.array([fit[0, 0], fit[1, 0], -1])  # normal is [a, b, c] if ax+by+cz+d=0
+    plane_normal = np.array([fit[0], fit[1], -1])  # normal is [a, b, c] if ax+by+cz+d=0
     for point in range(len(indices[0])):
-        dist = abs(fit[0, 0]*indx[point] + fit[1, 0]*indy[point] -
-                   indz[point] + fit[2, 0])/np.linalg.norm(plane_normal)
+        dist = abs(fit[0]*indx[point] + fit[1]*indy[point] -
+                   indz[point] + fit[2])/np.linalg.norm(plane_normal)
         if dist < max_distance:
             plane[indx[point], indy[point], indz[point]] = 1
     if plane[plane == 1].sum() == 0:
@@ -357,6 +357,8 @@ def fit_plane(plane, label, debugging=1):
     b = np.matrix(tmp_z).T
     fit = (a.T * a).I * a.T * b
     errors = b - a * fit
+    fit = np.asarray(fit)
+    fit = fit[:, 0]
 
     if debugging:
         plt.figure()
@@ -371,8 +373,8 @@ def fit_plane(plane, label, debugging=1):
         meshz = np.zeros(meshx.shape)
         for row in range(meshx.shape[0]):
             for col in range(meshx.shape[1]):
-                meshz[row, col] = fit[0, 0] * meshx[row, col] +\
-                                      fit[1, 0] * meshy[row, col] + fit[2, 0]
+                meshz[row, col] = fit[0] * meshx[row, col] +\
+                                      fit[1] * meshy[row, col] + fit[2]
         ax.plot_wireframe(meshx, meshy, meshz, color='k')
         plt.title("Points and fitted plane" + str(label))
         plt.pause(0.1)
@@ -785,6 +787,51 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.5, 
             intensity = np.delete(intensity, list_nan[i*3, 0], axis=0)
 
     return new_vertices, normals, areas, intensity, err_normals
+
+
+def update_logfile(support, strain_array, summary_file, allpoints_file, label=0, angle_plane=0, plane_coeffs=(0, 0, 0),
+                   plane_normal=(0, 0, 0)):
+    """
+    Update log files use in the facet_strain.py script.
+
+    :param support: the 3D binary support defining voxels to be saved in the logfile
+    :param strain_array: the 3D strain array
+    :param summary_file: the handle for the file summarizing strain statistics per facet
+    :param allpoints_file: the handle for the file giving the strain and the label for each voxel
+    :param label: the label of the plane
+    :param angle_plane: the angle of the plane with the measurement direction
+    :param plane_coeffs: the fit coefficients of the plane
+    :param plane_normal: the normal to the plane
+    :return: nothing
+    """
+    if (support.ndim != 3) or (strain_array.ndim != 3):
+        raise ValueError('The support and the strain arrays should be 3D arrays')
+
+    support_indices = np.nonzero(support == 1)
+    ind_z = support_indices[0]
+    ind_y = support_indices[1]
+    ind_x = support_indices[2]
+    nb_points = len(support_indices[0])
+    for idx in range(nb_points):
+        allpoints_file.write('{0: <10}'.format(str(label)) + '\t' +
+                             '{0: <10}'.format(str(ind_z[idx])) + '\t' +
+                             '{0: <10}'.format(str(ind_y[idx])) + '\t' +
+                             '{0: <10}'.format(str(ind_x[idx])) + '\t' +
+                             '{0: <10}'.format(str('{:.7f}'.format(strain_array[ind_z[idx], ind_y[idx], ind_x[idx]])))+'\n')
+
+    support_strain = np.mean(strain_array[support == 1])
+    support_deviation = np.std(strain_array[support == 1])
+    summary_file.write('{0: <10}'.format(str(label)) + '\t' +
+                       '{0: <10}'.format(str('{:.3f}'.format(angle_plane))) + '\t' +
+                       '{0: <10}'.format(str(nb_points)) + '\t' +
+                       '{0: <10}'.format(str('{:.7f}'.format(support_strain))) + '\t' +
+                       '{0: <10}'.format(str('{:.7f}'.format(support_deviation))) + '\t' +
+                       '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[0]))) + '\t' +
+                       '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[1]))) + '\t' +
+                       '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[2]))) + '\t' +
+                       '{0: <10}'.format(str('{:.5f}'.format(plane_normal[0]))) + '\t' +
+                       '{0: <10}'.format(str('{:.5f}'.format(plane_normal[1]))) + '\t' +
+                       '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
 
 
 # if __name__ == "__main__":
