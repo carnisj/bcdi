@@ -55,7 +55,7 @@ max_distance_plane = 0.5  # in pixels, maximum allowed distance to the facet pla
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
-threshold_stereo = -1500  # -1500 # threshold for defining the background in the density estimation of normals
+threshold_stereo = -1200  # -1500 # threshold for defining the background in the density estimation of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 #########################################################
 # parameters only used in the equirectangular projection #
@@ -103,17 +103,6 @@ amp = amp / amp.max()
 nz, ny, nx = amp.shape
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
 strain = npzfile['strain']
-
-############################
-# define the surface layer #
-############################
-support = np.zeros(amp.shape)
-support[amp > support_threshold*amp.max()] = 1
-coordination_matrix = pu.calc_coordination(support, kernel=np.ones((3, 3, 3)), debugging=False)
-surface = np.copy(support)
-surface[coordination_matrix > 22] = 0  # remove the bulk 22
-del coordination_matrix, support
-gc.collect()
 
 #####################################################################
 # Use marching cubes to obtain the surface mesh of these ellipsoids #
@@ -317,11 +306,17 @@ print("COM at (z, y, x): (", str('{:.2f}'.format(zCOM)), ',', str('{:.2f}'.forma
       str('{:.2f}'.format(xCOM)), ')')
 gradz, grady, gradx = np.gradient(support, 1)  # support
 
-######################
-# define the support #
-######################
-support = np.zeros((nz, ny, nx))
+############################################
+# define the support, surface layer & bulk #
+############################################
+support = np.zeros(amp.shape)
 support[abs(amp) > support_threshold * abs(amp).max()] = 1
+coordination_matrix = pu.calc_coordination(support, kernel=np.ones((3, 3, 3)), debugging=False)
+surface = np.copy(support)
+surface[coordination_matrix > 22] = 0  # remove the bulk 22
+bulk = support - surface
+del coordination_matrix
+gc.collect()
 
 ########################################################
 # define edges using the coordination number of voxels #
@@ -332,8 +327,21 @@ if debug:
     gu.multislices_plot(edges, invert_yaxis=True, vmin=0, title='Coordination matrix')
 edges[edges > 350] = 0  # remove facets and bulk 350 seems to work reasonably well
 edges[np.nonzero(edges)] = 1  # edge support
-edges_indices = np.nonzero(edges)
-gu.scatter_plot(array=np.asarray(edges_indices).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'), title='edges')
+gu.scatter_plot(array=np.asarray(np.nonzero(edges)).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'),
+                title='edges')
+
+########################################################
+# define corners using the coordination number of voxels #
+########################################################
+corners = pu.calc_coordination(support, kernel=np.ones((9, 9, 9)), debugging=False)
+corners[support == 0] = 0
+if debug:
+    gu.multislices_plot(corners, invert_yaxis=True, vmin=0, title='Coordination matrix')
+corners[corners > 270] = 0  # remove edges, facets and bulk 270 seems to work reasonably well
+corners[np.nonzero(corners)] = 1  # corner support
+gu.scatter_plot(array=np.asarray(np.nonzero(corners)).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'),
+                title='corners')
+
 ######################################
 # Initialize log files and .vti file #
 ######################################
@@ -358,6 +366,103 @@ pd = image_data.GetPointData()
 pd.SetScalars(amp_array)
 pd.GetArray(0).SetName("amp")
 index_vti = 1
+
+####################
+# save bulk strain #
+####################
+# calculate the average strain for plane voxels and update the log file
+bulk_indices = np.nonzero(bulk == 1)
+ind_z = bulk_indices[0]
+ind_y = bulk_indices[1]
+ind_x = bulk_indices[2]
+nb_points = len(bulk_indices[0])
+for idx in range(nb_points):
+    strain_file.write('{0: <10}'.format('bulk') + '\t' +
+                      '{0: <10}'.format(str(ind_z[idx])) + '\t' +
+                      '{0: <10}'.format(str(ind_y[idx])) + '\t' +
+                      '{0: <10}'.format(str(ind_x[idx])) + '\t' +
+                      '{0: <10}'.format(str('{:.7f}'.format(strain[ind_z[idx], ind_y[idx], ind_x[idx]]))) + '\n')
+
+bulk_strain = np.mean(strain[bulk == 1])
+bulk_deviation = np.std(strain[bulk == 1])
+file.write('{0: <10}'.format(str('bulk')) + '\t' +
+           '{0: <10}'.format(str('{:.3f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str(nb_points)) + '\t' +
+           '{0: <10}'.format(str('{:.7f}'.format(bulk_deviation))) + '\t' +
+           '{0: <10}'.format(str('{:.7f}'.format(bulk_deviation))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\n')
+
+del bulk, bulk_indices, bulk_strain, bulk_deviation  # bulk not needed anymore
+gc.collect()
+
+####################
+# save edges strain #
+####################
+edges_indices = np.nonzero(edges == 1)
+ind_z = edges_indices[0]
+ind_y = edges_indices[1]
+ind_x = edges_indices[2]
+nb_points = len(edges_indices[0])
+for idx in range(nb_points):
+    strain_file.write('{0: <10}'.format('edges') + '\t' +
+                      '{0: <10}'.format(str(ind_z[idx])) + '\t' +
+                      '{0: <10}'.format(str(ind_y[idx])) + '\t' +
+                      '{0: <10}'.format(str(ind_x[idx])) + '\t' +
+                      '{0: <10}'.format(str('{:.7f}'.format(strain[ind_z[idx], ind_y[idx], ind_x[idx]]))) + '\n')
+
+edges_strain = np.mean(strain[edges == 1])
+edges_deviation = np.std(strain[edges == 1])
+file.write('{0: <10}'.format(str('edges')) + '\t' +
+           '{0: <10}'.format(str('{:.3f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str(nb_points)) + '\t' +
+           '{0: <10}'.format(str('{:.7f}'.format(edges_strain))) + '\t' +
+           '{0: <10}'.format(str('{:.7f}'.format(edges_deviation))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\n')
+
+del edges_indices, edges_strain, edges_deviation
+gc.collect()
+
+#######################
+# save corners strain #
+#######################
+corners_indices = np.nonzero(corners == 1)
+ind_z = corners_indices[0]
+ind_y = corners_indices[1]
+ind_x = corners_indices[2]
+nb_points = len(corners_indices[0])
+for idx in range(nb_points):
+    strain_file.write('{0: <10}'.format('corners') + '\t' +
+                      '{0: <10}'.format(str(ind_z[idx])) + '\t' +
+                      '{0: <10}'.format(str(ind_y[idx])) + '\t' +
+                      '{0: <10}'.format(str(ind_x[idx])) + '\t' +
+                      '{0: <10}'.format(str('{:.7f}'.format(strain[ind_z[idx], ind_y[idx], ind_x[idx]]))) + '\n')
+
+corners_strain = np.mean(strain[corners == 1])
+corners_deviation = np.std(strain[corners == 1])
+file.write('{0: <10}'.format(str('corners')) + '\t' +
+           '{0: <10}'.format(str('{:.3f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str(nb_points)) + '\t' +
+           '{0: <10}'.format(str('{:.7f}'.format(corners_strain))) + '\t' +
+           '{0: <10}'.format(str('{:.7f}'.format(corners_deviation))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\t' +
+           '{0: <10}'.format(str('{:.5f}'.format(0))) + '\n')
+
+del corners, corners_indices, corners_strain, corners_deviation
+gc.collect()
 
 ##################################################################
 # fit points by a plane, exclude points far away, refine the fit #
