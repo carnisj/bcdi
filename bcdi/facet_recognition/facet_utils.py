@@ -843,7 +843,7 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
                        '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
 
     if top_part:
-        new_support = np.copy(support)
+        new_support = np.copy(support)  # support is mutable, need to make a copy
         new_support[:, :, :65] = 0
         new_label = str(label) + '_top'
         support_indices = np.nonzero(new_support == 1)
