@@ -734,7 +734,7 @@ summary_file.close()
 allpoints_file.close()
 
 # update vti file with edges
-EDGES = np.transpose(edges).reshape(edges.size)
+EDGES = np.transpose((np.flip(edges, 2))).reshape(edges.size)
 edges_array = numpy_support.numpy_to_vtk(EDGES)
 pd.AddArray(edges_array)
 pd.GetArray(index_vti).SetName("edges")
