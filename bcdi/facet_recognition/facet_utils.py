@@ -844,7 +844,9 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
                                  '{0: <10}'.format(str(ind_z[idx])) + '\t' +
                                  '{0: <10}'.format(str(ind_y[idx])) + '\t' +
                                  '{0: <10}'.format(str(ind_x[idx])) + '\t' +
-                                 '{0: <10}'.format(str('{:.7f}'.format(strain_array[ind_z[idx], ind_y[idx], ind_x[idx]])))
+                                 '{0: <10}'.format(str('{:.7f}'.format(strain_array[ind_z[idx],
+                                                                                    ind_y[idx],
+                                                                                    ind_x[idx]])))
                                  + '\n')
 
     str_array = strain_array[support == 1]
@@ -882,7 +884,9 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
                                      '{0: <10}'.format(str(ind_z[idx])) + '\t' +
                                      '{0: <10}'.format(str(ind_y[idx])) + '\t' +
                                      '{0: <10}'.format(str(ind_x[idx])) + '\t' +
-                                     '{0: <10}'.format(str('{:.7f}'.format(strain_array[ind_z[idx], ind_y[idx], ind_x[idx]])))
+                                     '{0: <10}'.format(str('{:.7f}'.format(strain_array[ind_z[idx],
+                                                                                        ind_y[idx],
+                                                                                        ind_x[idx]])))
                                      + '\n')
 
         str_array = strain_array[new_support == 1]
