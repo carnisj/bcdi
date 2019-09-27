@@ -52,6 +52,8 @@ smooth_mu = 0.51  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
 my_min_distance = 20  # pixel separation between peaks in corner_peaks()
 max_distance_plane = 0.5  # in pixels, maximum allowed distance to the facet plane of a voxel
+top_part = True  # if Ture, will also update logfiles with a support cropped at z_cutoff (remove bottom part)
+z_cutoff = 75  # in pixels. If top_pat=True, will set all support pixels below this value to 0
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
@@ -371,16 +373,16 @@ index_vti = 1
 # save bulk, edges and corners strain to logfile #
 ##################################################
 fu.update_logfile(support=bulk, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='bulk', top_part=True)
+                  label='bulk', top_part=top_part, z_cutoff=z_cutoff)
 
 fu.update_logfile(support=surface, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='surface', top_part=True)
+                  label='surface', top_part=top_part, z_cutoff=z_cutoff)
 
 fu.update_logfile(support=edges, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='edges', top_part=True)
+                  label='edges', top_part=top_part, z_cutoff=z_cutoff)
 
 fu.update_logfile(support=corners, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='corners', top_part=True)
+                  label='corners', top_part=top_part, z_cutoff=z_cutoff)
 
 del bulk, corners
 gc.collect()
@@ -715,7 +717,8 @@ for label in updated_label:
 
     # update the log files
     fu.update_logfile(support=plane, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                      label=label, angle_plane=angle_plane, plane_coeffs=coeffs, plane_normal=plane_normal)
+                      label=label, angle_plane=angle_plane, plane_coeffs=coeffs, plane_normal=plane_normal,
+                      top_part=False)
 
     # update vti file
     PLANE = np.transpose(np.flip(plane, 2)).reshape(plane.size)  # VTK axis 2 is flipped
