@@ -36,11 +36,11 @@ Output: a log file with strain statistics by plane, a VTK file for 3D visualizat
 """
 # TODO: include surface estimation for the facets
 scan = 2227  # spec scan number
-datadir = 'D:/data/PtRh/new/ArCOO2(102x92x140)/'
+datadir = 'D:/data/PtRh/Ar(103x98x157)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
-support_threshold = 0.5276  # threshold for support determination
-voxel_size = (2.96, 3.29, 2.17)  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
-savedir = datadir + "isosurface_" + str(support_threshold) + " 2.96x3.29x2.17nm3/"
+support_threshold = 0.55  # threshold for support determination
+voxel_size = (2.95, 3.09, 1.93)  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+savedir = datadir + "isosurface_" + str(support_threshold) + " 2.95x3.09x1.93nm3/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
@@ -55,7 +55,7 @@ max_distance_plane = 0.5  # in pixels, maximum allowed distance to the facet pla
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
-threshold_stereo = -1200  # -1500 # threshold for defining the background in the density estimation of normals
+threshold_stereo = -1500  # -1500 # threshold for defining the background in the density estimation of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 #########################################################
 # parameters only used in the equirectangular projection #
@@ -371,13 +371,16 @@ index_vti = 1
 # save bulk, edges and corners strain to logfile #
 ##################################################
 fu.update_logfile(support=bulk, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='bulk')
+                  label='bulk', top_part=True)
+
+fu.update_logfile(support=surface, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
+                  label='surface', top_part=True)
 
 fu.update_logfile(support=edges, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='edges')
+                  label='edges', top_part=True)
 
 fu.update_logfile(support=corners, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='corners')
+                  label='corners', top_part=True)
 
 del bulk, corners
 gc.collect()
