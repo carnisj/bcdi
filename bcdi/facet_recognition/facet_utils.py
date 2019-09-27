@@ -475,6 +475,29 @@ def plane_angle_cubic(ref_plane, plane):
     return angle
 
 
+def surface_indices(surface, plane_indices, margin=3):
+    """
+    Crop surface around the plane with a certain margin, and find corresponding surface indices.
+
+    :param surface: the 3D surface binary array
+    :param plane_indices: tuple of 3 1D-arrays of plane indices
+    :param margin: margin to include aroung plane indices, in pixels
+    :return: 3*1D arrays of surface indices
+    """
+    if surface.ndim != 3:
+        raise ValueError('Surface should be a 3D array')
+    if len(plane_indices) != 3:
+        raise ValueError('plane_indices should be a tuple of 3 1D-arrays')
+    surf_indices = np.nonzero(surface[
+                                 plane_indices[0].min() - margin:plane_indices[0].max() + margin,
+                                 plane_indices[1].min() - margin:plane_indices[1].max() + margin,
+                                 plane_indices[2].min() - margin:plane_indices[2].max() + margin])
+    surf0 = surf_indices[0] + plane_indices[0].min() - margin  # add margin plane_indices[0].min() - margin
+    surf1 = surf_indices[1] + plane_indices[1].min() - margin  # add margin plane_indices[1].min() - margin
+    surf2 = surf_indices[2] + plane_indices[2].min() - margin  # add margin plane_indices[2].min() - margin
+    return surf0, surf1, surf2
+
+
 def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, reflection_axis, min_distance=10,
                        background_threshold=-1000, save_txt=False, cmap=default_cmap, planes={}, plot_planes=True,
                        debugging=False):

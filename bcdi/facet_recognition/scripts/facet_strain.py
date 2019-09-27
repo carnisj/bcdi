@@ -424,24 +424,19 @@ for label in updated_label:
     # Effect of meshing/smoothing: the meshed support is smaller than the initial support #
     #############################################################################################
     # crop the support to a small ROI included in the plane box
-    surface_indices = np.nonzero(surface[
-                                 plane_indices[0].min() - 3:plane_indices[0].max() + 3,
-                                 plane_indices[1].min() - 3:plane_indices[1].max() + 3,
-                                 plane_indices[2].min() - 3:plane_indices[2].max() + 3])
-    surf0 = surface_indices[0] + plane_indices[0].min() - 3  # add offset plane_indices[0].min() - 3
-    surf1 = surface_indices[1] + plane_indices[1].min() - 3  # add offset plane_indices[1].min() - 3
-    surf2 = surface_indices[2] + plane_indices[2].min() - 3  # add offset plane_indices[2].min() - 3
+    surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
+
     plane_normal = np.array([coeffs[0], coeffs[1], -1])  # normal is [a, b, c] if ax+by+cz+d=0
 
-    dist = np.zeros(len(surface_indices[0]))
-    for point in range(len(surface_indices[0])):
+    dist = np.zeros(len(surf0))
+    for point in range(len(surf0)):
         dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] - surf2[point] + coeffs[2]) \
                / np.linalg.norm(plane_normal)
     mean_dist = dist.mean()
     print('Mean distance of plane ', label, ' to outer shell = ' + str('{:.2f}'.format(mean_dist)) + 'pixels')
 
-    dist = np.zeros(len(surface_indices[0]))
-    for point in range(len(surface_indices[0])):
+    dist = np.zeros(len(surf0))
+    for point in range(len(surf0)):
         dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] - surf2[point]
                        + (coeffs[2] - mean_dist / 2)) / np.linalg.norm(plane_normal)
     new_dist = dist.mean()
@@ -475,8 +470,8 @@ for label in updated_label:
 
         if debug:
             tempcoeff2 = coeffs[2] - nbloop * step_shift
-            dist = np.zeros(len(surface_indices[0]))
-            for point in range(len(surface_indices[0])):
+            dist = np.zeros(len(surf0))
+            for point in range(len(surf0)):
                 dist[point] = (coeffs[0] * surf0[point] + coeffs[1] * surf1[point] - surf2[point] + tempcoeff2) \
                               / np.linalg.norm(plane_normal)
             temp_mean_dist = dist.mean()
@@ -587,6 +582,7 @@ for label in updated_label:
 
     if debug:
         plane_indices = np.nonzero(plane == 1)
+        surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
         gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
@@ -603,6 +599,7 @@ for label in updated_label:
         continue
 
     if debug:
+        surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
         gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
@@ -621,6 +618,7 @@ for label in updated_label:
     plane_indices = np.nonzero(plane)
 
     if debug:
+        surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
         gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
@@ -648,6 +646,7 @@ for label in updated_label:
 
     if debug:
         plane_indices = np.nonzero(plane)
+        surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
         gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
@@ -661,6 +660,7 @@ for label in updated_label:
     #####################################
     plane[np.nonzero(edges)] = 0
     plane_indices = np.nonzero(plane)
+    surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
     gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
                                      np.concatenate((surf0[:, np.newaxis],
                                                      surf1[:, np.newaxis],
