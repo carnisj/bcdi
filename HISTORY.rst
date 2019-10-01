@@ -1,7 +1,9 @@
 Version 0.0.7
 -------------
 
-* Feature: in facet_strain.py, implement edge removal for more precise statistics on facet strain.
+* Feature: in strain.py, implement phase unwrapping so that the phase range can be larger than 2*pi
+
+* Feature: in facet_strain.py, implement edge removal for more precise statistics on facet strain
 
 * Feature: in facet_strain.py, allow anisotropic voxel size and user-defined reference axis in the stereographic projection
 
