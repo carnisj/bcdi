@@ -84,8 +84,8 @@ outofplane_angle = 35.0502  # detector delta ID01, delta SIXS, gamma 34ID
 inplane_angle = 3.5646  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
 tilt_angle = 0.010  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
-correct_refraction = 0  # 1 for correcting the phase shift due to refraction, 0 otherwise
-correct_absorption = 0  # 1 for correcting the amplitude for absorption, 0 otherwise
+correct_refraction = False  # True for correcting the phase shift due to refraction
+correct_absorption = False  # True for correcting the amplitude for absorption
 dispersion = 4.1184E-05  # delta
 # Pt:  3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994keV, 5.2647E-05 @ 7994keV, 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
 absorption = 3.4298E-06  # beta
@@ -127,9 +127,9 @@ alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
 ############################################
 # parameters related to data visualization #
 ############################################
-align_crystal = 1  # if 1 rotates the crystal to align it along q, 0 otherwise
+align_crystal = True  # if True rotates the crystal to align it along q
 ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
-align_inplane = 0  # if 1 rotates afterwards the crystal inplane to align it along z for easier slicing, 0 otherwise
+align_inplane = False  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
 ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
 inplane_normal = np.array([1, 0, -0.08])  # facet normal to align with ref_axis_inplane (y should be 0)
 strain_range = 0.003  # for plots
@@ -146,7 +146,7 @@ tick_width = 1  # 2  # in plots
 ####################
 # Check parameters #
 ####################
-if simu_flag == 1:
+if simu_flag:
     invert_phase = False
     correct_absorption = 0
     correct_refraction = 0
@@ -514,7 +514,7 @@ if invert_phase:
 ########################################
 # refraction and absorption correction #
 ########################################
-if correct_refraction == 1 or correct_absorption == 1:
+if correct_refraction or correct_absorption:
     bulk = pu.find_bulk(amp=amp, support_threshold=threshold_refraction, method='threshold')
 
     # calculate the optical path of the incoming wavevector: it may be aligned with orthogonalized axis 0
@@ -530,7 +530,7 @@ if correct_refraction == 1 or correct_absorption == 1:
     del path_in, path_out
     gc.collect()
 
-    if correct_refraction == 1:
+    if correct_refraction:
         phase_correction = 2 * np.pi / (1e9 * setup.wavelength) * dispersion * optical_path
         phase = phase + phase_correction
 
@@ -538,7 +538,7 @@ if correct_refraction == 1 or correct_absorption == 1:
                             sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=0, vmax=np.pi/2,
                             title='Refraction correction')
 
-    if correct_absorption == 1:
+    if correct_absorption:
         amp_correction = np.exp(2 * np.pi / (1e9 * setup.wavelength) * absorption * optical_path)
         amp = amp * amp_correction
 
@@ -609,8 +609,8 @@ strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxe
 # rotates the crystal inplane for easier slicing of the result #
 ################################################################
 if not xrayutils_ortho:
-    if align_inplane == 1:
-        align_crystal = 1
+    if align_inplane:
+        align_crystal = True
         if ref_axis_inplane == "x":
             myaxis_inplane = np.array([1, 0, 0])  # must be in [x, y, z] order
         elif ref_axis_inplane == "z":
@@ -625,7 +625,7 @@ if not xrayutils_ortho:
         strain = pu.rotate_crystal(array=strain, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
                                    reference_axis=myaxis_inplane, debugging=False)
 
-    if align_crystal == 1:
+    if align_crystal:
         comment = comment + '_crystal-frame'
     else:
         comment = comment + '_lab-frame'
