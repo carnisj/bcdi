@@ -44,36 +44,34 @@ or data[z, y, x] for real space
 scan = 936  # spec scan number
 
 datadir = 'D:/data/HC3207/SN' + str(scan) + "/pynxraw/"
-get_temperature = False
-reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
-reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
-reference_temperature = None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 
+#########################################################
+# parameters relative to the FFT window and voxel sizes #
+#########################################################
 original_size = [100, 400, 512]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor during phasing
-
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
 fix_voxel = 6.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
-hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no averaging
-
+plot_margin = (60, 30, 30)  # (z, y, x) margin outside the support in each direction, can be negative
+# useful to avoid cutting the object during the orthogonalization
+############################################
+# parameters related to strain calculation #
+############################################
 isosurface_strain = 0.36  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
-
-comment = "_test_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
-threshold_plot = isosurface_strain  # suppor4t threshold for plots (max amplitude of 1)
-strain_range = 0.001  # for plots
-phase_range = np.pi  # for plots
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
-
-plot_width = (60, 30, 30)  # (z, y, x) margin outside the support in each direction, can be negative
-# useful to avoid cutting the object during the orthogonalization
-
-# define setup below
+centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
+# TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
+#  instead of using sample offsets?
+comment = "_test_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+#################################
+# define the experimental setup #
+#################################
 beamline = "ID01"  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
@@ -95,8 +93,17 @@ absorption = 3.4298E-06  # beta
 threshold_refraction = 0.05  # threshold used to calculate the optical path
 # the threshold for refraction/absorption corrections should be low, to correct for an object larger than the real one,
 # otherwise it messes up the phase
-#########################
-simu_flag = 0  # set to 1 if it is simulation, the parameter invert_phase will be set to 0 and pi added to the phase
+##########################################
+# parameteres for temperature estimation #
+##########################################
+get_temperature = False
+reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
+reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
+reference_temperature = None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
+###########
+# options #
+###########
+simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
 flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling'
@@ -107,28 +114,38 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, 0, 2)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
-#########################
+roll_modes = (0, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
+############################################
+# setup for phase averaging or apodization #
+############################################
+hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no averaging
 apodize_flag = False  # True to multiply the diffraction pattern by a filtering window
 apodize_window = 'blackman'  # filtering window, multivariate 'normal' or 'tukey' or 'blackman'
 mu = np.array([0.0, 0.0, 0.0])  # mu of the gaussian window
 sigma = np.array([0.30, 0.30, 0.30])  # sigma of the gaussian window
 alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
-#########################
+############################################
+# parameters related to data visualization #
+############################################
+align_crystal = 1  # if 1 rotates the crystal to align it along q, 0 otherwise
+ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
+align_inplane = 0  # if 1 rotates afterwards the crystal inplane to align it along z for easier slicing, 0 otherwise
+ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
+inplane_normal = np.array([1, 0, -0.08])  # facet normal to align with ref_axis_inplane (y should be 0)
+strain_range = 0.003  # for plots
+phase_range = np.pi  # for plots
+grey_background = True  # True to set the background to grey in phase and strain plots
 tick_spacing = 50  # for plots, in nm
 tick_direction = 'inout'  # 'out', 'in', 'inout'
 tick_length = 3  # 10  # in plots
 tick_width = 1  # 2  # in plots
-#########################
-centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
-align_crystal = 1  # if 1 rotates the crystal to align it along q, 0 otherwise
-ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
-# TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
-#  instead of using sample offsets?
-align_inplane = 0  # if 1 rotates afterwards the crystal inplane to align it along z for easier slicing, 0 otherwise
-ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
-inplane_normal = np.array([1, 0, -0.08])  # facet normal to align with ref_axis_inplane (y should be 0)
-#########################################################
+##################################
+# end of user-defined parameters #
+##################################
+
+####################
+# Check parameters #
+####################
 if simu_flag == 1:
     invert_phase = False
     correct_absorption = 0
@@ -138,9 +155,15 @@ if invert_phase:
 else:
     phase_fieldname = 'phase'
 
-##################################
-# end of user-defined parameters #
-##################################
+###################
+# define colormap #
+###################
+if grey_background:
+    bad_color = '0.7'
+else:
+    bad_color = '1.0'  # white background
+colormap = gu.Colormap(bad_color=bad_color)
+my_cmap = colormap.cmap
 
 ####################################
 # define the experimental geometry #
@@ -187,7 +210,7 @@ print("Initial data size: (", nz, ',', ny, ',', nx, ')')
 # define range for orthogonalization and plotting - speed up calculations #
 ###########################################################################
 zrange, yrange, xrange =\
-    pu.find_datarange(array=obj, plot_margin=plot_width, amplitude_threshold=0.1, keep_size=keep_size)
+    pu.find_datarange(array=obj, plot_margin=plot_margin, amplitude_threshold=0.1, keep_size=keep_size)
 
 numz = zrange * 2
 numy = yrange * 2
@@ -200,7 +223,7 @@ print("Data shape used for orthogonalization and plotting: (", numz, ',', numy, 
 if nbfiles > 1:
     print('\nTrying to find the best reconstruction')
     print('Sorting by ', sort_method)
-    sorted_obj = pu.sort_reconstruction(file_path=file_path, amplitude_threshold=threshold_plot,
+    sorted_obj = pu.sort_reconstruction(file_path=file_path, amplitude_threshold=isosurface_strain,
                                         data_range=(zrange, yrange, xrange), sort_method='sort_method')
 else:
     sorted_obj = [0]
@@ -245,10 +268,9 @@ gc.collect()
 ################
 # unwrap phase #
 ################
-debug=True
-phase = pu.unwrap(avg_obj, support_threshold=0.05, debugging=True)
-extent_phase = np.ceil(phase.max() - phase.min())
-print('Extent of the phase = ', extent_phase, '(rad)')
+phase, extent_phase = pu.unwrap(avg_obj, support_threshold=0.05, debugging=debug)
+
+print('Extent of the phase ~ ', extent_phase, '(rad)')
 phase = pru.wrap(phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
@@ -257,7 +279,7 @@ if debug:
 # phase ramp removal before phase filtering #
 #############################################
 amp, phase, rampz, rampy, rampx = pu.remove_ramp(amp=abs(avg_obj), phase=phase, initial_shape=original_size,
-                                                 method=phase_ramp_removal, amplitude_threshold=threshold_plot,
+                                                 method=phase_ramp_removal, amplitude_threshold=isosurface_strain,
                                                  gradient_threshold=threshold_gradient)
 del avg_obj
 gc.collect()
@@ -270,7 +292,7 @@ if debug:
 # phase offset removal (at COM value) #
 #######################################
 support = np.zeros(amp.shape)
-support[amp > threshold_plot*amp.max()] = 1
+support[amp > isosurface_strain*amp.max()] = 1
 zcom, ycom, xcom = center_of_mass(support)
 print("COM at (z, y, x): (", str('{:.2f}'.format(zcom)), ',', str('{:.2f}'.format(ycom)), ',',
       str('{:.2f}'.format(xcom)), ')')
@@ -326,7 +348,7 @@ np.savez_compressed(datadir + 'S' + str(scan) + '_avg_obj_prtf' + comment, obj=a
 ####################################################
 phase = phase - gridz * rampz - gridy * rampy - gridx * rampx
 
-avg_obj = amp * np.exp(1j * phase)
+avg_obj = amp * np.exp(1j * phase)  # here the phase is again wrapped in [-pi pi[
 
 del amp, phase, gridz, gridy, gridx, rampz, rampy, rampx
 gc.collect()
@@ -346,15 +368,17 @@ elif centering_method is 'max_com':
 #########################################
 #  plot amp & phase, save support & vti #
 #########################################
-if True:
-    phase = np.angle(avg_obj)
+if debug:
+    phase, _ = pu.unwrap(avg_obj, support_threshold=0.05, debugging=True)
 
     gu.multislices_plot(abs(avg_obj), width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         sum_frames=False, invert_yaxis=False, plot_colorbar=True, vmin=0, vmax=abs(avg_obj).max(),
                         title='Amp before orthogonalization')
-    gu.multislices_plot(np.angle(avg_obj), width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
+    gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         sum_frames=False, invert_yaxis=False, plot_colorbar=True,
-                        title='Phase before orthogonalization')
+                        title='Unwrapped phase before orthogonalization')
+    del phase
+    gc.collect()
 
 if save_support:  # to be used as starting support in phasing, hence still in the detector frame
     support = np.zeros((numz, numy, numx))
@@ -386,12 +410,15 @@ if not xrayutils_ortho:
     obj_ortho, voxel_size = setup.orthogonalize(obj=avg_obj, initial_shape=original_size, voxel_size=fix_voxel)
     print("VTK spacing :", str('{:.2f}'.format(voxel_size)), "nm")
     if True:
+        phase, _ = pu.unwrap(obj_ortho, support_threshold=0.05, debugging=True)
         gu.multislices_plot(abs(obj_ortho), width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
                             sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=0, vmax=abs(obj_ortho).max(),
                             title='Amp after orthogonalization')
-        gu.multislices_plot(np.angle(obj_ortho), width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
+        gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
                             sum_frames=False, invert_yaxis=True, plot_colorbar=True,
-                            title='Phase after orthogonalization')
+                            title='Unwrapped phase after orthogonalization')
+        del phase
+        gc.collect()
 
 else:  # data already orthogonalized using xrayutilities, will be in crystal frame
     obj_ortho = avg_obj
@@ -466,7 +493,7 @@ planar_dist = planar_dist / 10  # switch to nm
 ######################
 obj_ortho = pu.center_com(obj_ortho)
 amp = abs(obj_ortho)
-phase = np.angle(obj_ortho)
+phase, extent_phase = pu.unwrap(obj_ortho, support_threshold=0.05, debugging=debug)
 del obj_ortho
 gc.collect()
 
@@ -476,7 +503,7 @@ if debug:
                         title='Amp before absorption correction')
     gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
                         sum_frames=False, invert_yaxis=True, plot_colorbar=True,
-                        title='Phase before refraction correction')
+                        title='Unwrapped phase before refraction correction')
 
 #############################################
 # invert phase: -1*phase = displacement * q #
@@ -526,10 +553,10 @@ if correct_refraction == 1 or correct_absorption == 1:
 # phase ramp and offset removal (mean value) #
 ##############################################
 amp, phase, _, _, _ = pu.remove_ramp(amp=amp, phase=phase, initial_shape=original_size, method=phase_ramp_removal,
-                                     amplitude_threshold=threshold_plot, gradient_threshold=threshold_gradient)
+                                     amplitude_threshold=isosurface_strain, gradient_threshold=threshold_gradient)
 
 support = np.zeros(amp.shape)
-support[amp > threshold_plot*amp.max()] = 1  # better to use the support here in case of defects (impact on the mean)
+support[amp > isosurface_strain*amp.max()] = 1  # better to use the support here in case of defects (impact on the mean)
 phase = phase - phase[support == 1].mean()
 del support
 gc.collect()
@@ -657,16 +684,27 @@ gc.collect()
 #######################
 # plot phase & strain #
 #######################
-strain[bulk == 0] = -2*strain_range
-phase[bulk == 0] = -2*phase_range
 pixel_spacing = tick_spacing / voxel_size
+
+print('Phase extent before and after thresholding:', phase.max()-phase.min(),
+      phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min())
+piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
+strain[bulk == 0] = np.nan
+phase[bulk == 0] = np.nan
+if True:
+    plt.figure()
+    plt.imshow(phase[piz, :, :], cmap=my_cmap)
+    plt.colorbar()
+    plt.title('Phase at maximum')
+    ax = plt.gca()
+    ax.invert_yaxis()
 
 # bulk support
 fig, _, _ = gu.multislices_plot(bulk, sum_frames=False, invert_yaxis=True, title='Orthogonal bulk', vmin=0, vmax=1,
                                 tick_direction=tick_direction, tick_width=tick_width, tick_length=tick_length,
                                 pixel_spacing=pixel_spacing)
 fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
-fig.text(0.60, 0.40, "Bulk - isosurface=" + str('{:.2f}'.format(threshold_plot)), size=20)
+fig.text(0.60, 0.40, "Bulk - isosurface=" + str('{:.2f}'.format(isosurface_strain)), size=20)
 fig.text(0.60, 0.35, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
 plt.pause(0.1)
 if save:
@@ -674,8 +712,8 @@ if save:
         datadir + 'S' + str(scan) + '_bulk' + comment + '.png')
 
 # amplitude
-fig, _, _ = gu.multislices_plot(amp, sum_frames=False, invert_yaxis=True, title='Normalized orthogonal amp', vmin=0, vmax=1,
-                                tick_direction=tick_direction, tick_width=tick_width, tick_length=tick_length,
+fig, _, _ = gu.multislices_plot(amp, sum_frames=False, invert_yaxis=True, title='Normalized orthogonal amp', vmin=0,
+                                vmax=1, tick_direction=tick_direction, tick_width=tick_width, tick_length=tick_length,
                                 pixel_spacing=pixel_spacing, plot_colorbar=True)
 fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
 fig.text(0.60, 0.40, "Voxel size=" + str('{:.2f}'.format(voxel_size)) + "nm", size=20)
@@ -692,7 +730,7 @@ if save:
 
 # phase
 fig, _, _ = gu.multislices_plot(phase, sum_frames=False, invert_yaxis=True, title='Orthogonal displacement',
-                                vmin=-phase_range, vmax=phase_range, tick_direction=tick_direction,
+                                vmin=-phase_range, vmax=phase_range, tick_direction=tick_direction, cmap=my_cmap,
                                 tick_width=tick_width, tick_length=tick_length, pixel_spacing=pixel_spacing,
                                 plot_colorbar=True)
 fig.text(0.60, 0.30, "Scan " + str(scan), size=20)
@@ -709,7 +747,7 @@ if save:
 # strain
 fig, _, _ = gu.multislices_plot(strain, sum_frames=False, invert_yaxis=True, title='Orthogonal strain',
                                 vmin=-strain_range, vmax=strain_range, tick_direction=tick_direction,
-                                tick_width=tick_width, tick_length=tick_length, plot_colorbar=True,
+                                tick_width=tick_width, tick_length=tick_length, plot_colorbar=True, cmap=my_cmap,
                                 pixel_spacing=pixel_spacing)
 fig.text(0.60, 0.30, "Scan " + str(scan), size=20)
 fig.text(0.60, 0.25, "Voxel size=" + str('{:.2f}'.format(voxel_size)) + "nm", size=20)

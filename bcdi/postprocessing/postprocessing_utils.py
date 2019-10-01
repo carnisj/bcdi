@@ -1428,16 +1428,18 @@ def unwrap(obj, support_threshold, debugging=True):
     if debugging:
         if ndim == 3:
             gu.multislices_plot(phase_wrapped.data, invert_yaxis=False, plot_colorbar=True,
-                                title='Object before unwraping')
+                                title='Object before unwrapping')
 
     phase_unwrapped = unwrap_phase(phase_wrapped).data
     phase_unwrapped[np.nonzero(unwrap_support)] = 0
     if debugging:
         if ndim == 3:
             gu.multislices_plot(phase_unwrapped, invert_yaxis=False, plot_colorbar=True,
-                                title='Object after unwraping')
+                                title='Object after unwrapping')
 
-    return phase_unwrapped
+    extent_phase = np.ceil(phase_unwrapped.max() - phase_unwrapped.min())
+
+    return phase_unwrapped, extent_phase
 
 
 # if __name__ == "__main__":
