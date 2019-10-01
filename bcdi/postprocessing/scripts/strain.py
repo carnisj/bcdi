@@ -242,22 +242,33 @@ print('\nAverage performed over ', avg_counter, 'reconstructions\n')
 del obj, ref_obj
 gc.collect()
 
+################
+# unwrap phase #
+################
+debug=True
+phase = pu.unwrap(avg_obj, support_threshold=0.05, debugging=True)
+extent_phase = np.ceil(phase.max() - phase.min())
+print('Extent of the phase = ', extent_phase, '(rad)')
+phase = pru.wrap(phase, start_angle=-extent_phase/2, range_angle=extent_phase)
+if debug:
+    gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
+                        invert_yaxis=False, plot_colorbar=True, title='Phase after unwrap + wrap')
 #############################################
 # phase ramp removal before phase filtering #
 #############################################
-amp, phase, rampz, rampy, rampx = pu.remove_ramp(amp=abs(avg_obj), phase=np.angle(avg_obj), initial_shape=original_size,
+amp, phase, rampz, rampy, rampx = pu.remove_ramp(amp=abs(avg_obj), phase=phase, initial_shape=original_size,
                                                  method=phase_ramp_removal, amplitude_threshold=threshold_plot,
                                                  gradient_threshold=threshold_gradient)
 del avg_obj
 gc.collect()
 
-#######################################
-# phase offset removal (at COM value) #
-#######################################
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         invert_yaxis=False, plot_colorbar=True, title='Phase after ramp removal')
 
+#######################################
+# phase offset removal (at COM value) #
+#######################################
 support = np.zeros(amp.shape)
 support[amp > threshold_plot*amp.max()] = 1
 zcom, ycom, xcom = center_of_mass(support)
@@ -267,7 +278,7 @@ print("Phase offset at COM(amp) of:", str('{:.2f}'.format(phase[int(zcom), int(y
 
 phase = phase - phase[int(zcom), int(ycom), int(xcom)]
 
-phase = pru.wrap(obj=phase, start_angle=-np.pi, range_angle=2*np.pi)
+phase = pru.wrap(obj=phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
@@ -278,7 +289,7 @@ phase = phase - phase[support == 1].mean() + phase_offset
 del support, zcom, ycom, xcom
 gc.collect()
 
-phase = pru.wrap(obj=phase, start_angle=-np.pi, range_angle=2*np.pi)
+phase = pru.wrap(obj=phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         invert_yaxis=False, plot_colorbar=True, title='Phase after mean removal')
@@ -523,7 +534,7 @@ phase = phase - phase[support == 1].mean()
 del support
 gc.collect()
 
-phase = pru.wrap(obj=phase, start_angle=-np.pi, range_angle=2*np.pi)
+phase = pru.wrap(obj=phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 if True:
     gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
                         sum_frames=False, invert_yaxis=True, plot_colorbar=True,
