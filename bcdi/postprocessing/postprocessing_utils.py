@@ -1409,43 +1409,35 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
     return tukey3
 
 
-def unwrap(obj, start_angle, range_angle, debugging=True):
+def unwrap(obj, support_threshold, debugging=True):
     """
     Wrap obj between start_angle and (start_angle + range_angle)
 
     :param obj: number or array to be wrapped
-    :param start_angle: start angle of the range
-    :param range_angle: range
+    :param support_threshold: threshold used to define a support from abs(obj)
     :param debugging: set to True to see plots
     :return: wrapped angle in [start_angle, start_angle+range[
     """
+    from skimage.restoration import unwrap_phase
+    import numpy.ma as ma
     ndim = obj.ndim
+    unwrap_support = np.ones(obj.shape, dtype=int)
+    unwrap_support[abs(obj) > support_threshold * abs(obj).max()] = 0  # 0 is a valid entry for ma.masked_array
+    phase_wrapped = ma.masked_array(np.angle(obj), mask=unwrap_support)
+
     if debugging:
         if ndim == 3:
-            gu.multislices_plot(obj, invert_yaxis=False, plot_colorbar=True, title='Object before unwraping')
+            gu.multislices_plot(phase_wrapped.data, invert_yaxis=False, plot_colorbar=True,
+                                title='Object before unwraping')
 
-    # obj = (obj - start_angle + range_angle) % range_angle + start_angle
-    obj = np.unwrap(2 * obj, discont=2 * np.pi, axis=0) / 2
+    phase_unwrapped = unwrap_phase(phase_wrapped).data
+    phase_unwrapped[np.nonzero(unwrap_support)] = 0
     if debugging:
         if ndim == 3:
-            gu.multislices_plot(obj, invert_yaxis=False, plot_colorbar=True, title='Object after unwraping axis 0')
-    obj = np.unwrap(2 * obj, discont=2 * np.pi, axis=1) / 2
-    if debugging:
-        if ndim == 3:
-            gu.multislices_plot(obj, invert_yaxis=False, plot_colorbar=True, title='Object after unwraping axis 1')
-    obj = np.unwrap(2 * obj, discont=2 * np.pi, axis=2) / 2
-    if debugging:
-        if ndim == 3:
-            gu.multislices_plot(obj, invert_yaxis=False, plot_colorbar=True, title='Object after unwraping axis 2')
+            gu.multislices_plot(phase_unwrapped, invert_yaxis=False, plot_colorbar=True,
+                                title='Object after unwraping')
 
-    return obj
+    return phase_unwrapped
 
 
-if __name__ == "__main__":
-    a = np.arange(49)
-    b = rebin(a, 8)
-    print(a.shape,b.shape)
-    print(a)
-    print(b)
-    plt.ioff()
-    plt.show()
+# if __name__ == "__main__":
