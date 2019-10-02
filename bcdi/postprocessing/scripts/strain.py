@@ -41,7 +41,7 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 978  # spec scan number
+scan = 1038  # spec scan number
 
 datadir = 'D:/data/HC3207/SN' + str(scan) + "/pynxraw/"
 
@@ -62,7 +62,7 @@ plot_margin = (60, 30, 30)  # (z, y, x) margin outside the support in each direc
 ############################################
 # parameters related to strain calculation #
 ############################################
-isosurface_strain = 0.4  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.43  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
@@ -114,7 +114,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
+roll_modes = (0, 1, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 ############################################
 # setup for phase averaging or apodization #
 ############################################
@@ -368,12 +368,11 @@ elif centering_method is 'max_com':
 #########################################
 #  plot amp & phase, save support & vti #
 #########################################
+gu.multislices_plot(abs(avg_obj), width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
+                    sum_frames=False, invert_yaxis=False, plot_colorbar=True, vmin=0, vmax=abs(avg_obj).max(),
+                    title='Amp before orthogonalization')
 if debug:
     phase, _ = pu.unwrap(avg_obj, support_threshold=0.05, debugging=True)
-
-    gu.multislices_plot(abs(avg_obj), width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                        sum_frames=False, invert_yaxis=False, plot_colorbar=True, vmin=0, vmax=abs(avg_obj).max(),
-                        title='Amp before orthogonalization')
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         sum_frames=False, invert_yaxis=False, plot_colorbar=True,
                         title='Unwrapped phase before orthogonalization')
