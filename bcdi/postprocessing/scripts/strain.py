@@ -41,7 +41,7 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 936  # spec scan number
+scan = 966  # spec scan number
 
 datadir = 'D:/data/HC3207/SN' + str(scan) + "/pynxraw/"
 
@@ -62,13 +62,13 @@ plot_margin = (60, 30, 30)  # (z, y, x) margin outside the support in each direc
 ############################################
 # parameters related to strain calculation #
 ############################################
-isosurface_strain = 0.36  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.55  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = "_test_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = "_unwrap_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
@@ -689,20 +689,20 @@ pixel_spacing = tick_spacing / voxel_size
 print('Phase extent before and after thresholding:', phase.max()-phase.min(),
       phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min())
 piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
+print('phase.max() = ', phase[np.nonzero(bulk)].max(), ', at coordinates ', piz, piy, pix)
 strain[bulk == 0] = np.nan
 phase[bulk == 0] = np.nan
 if True:
-    plt.figure()
-    plt.imshow(phase[piz, :, :], cmap=my_cmap)
-    plt.colorbar()
-    plt.title('Phase at maximum')
-    ax = plt.gca()
-    ax.invert_yaxis()
+    gu.combined_plots((phase[piz, :, :], phase[:, piy, :], phase[:, :, pix]), tuple_sum_frames=False, tuple_sum_axis=0,
+                      tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=True, tuple_vmin=np.nan,
+                      tuple_vmax=np.nan, tuple_title=('phase at max in xy', 'phase at max in xz', 'phase at max in yz'),
+                      tuple_scale='linear', cmap=my_cmap, pixel_spacing=pixel_spacing, is_orthogonal=True,
+                      reciprocal_space=False)
 
 # bulk support
 fig, _, _ = gu.multislices_plot(bulk, sum_frames=False, invert_yaxis=True, title='Orthogonal bulk', vmin=0, vmax=1,
                                 tick_direction=tick_direction, tick_width=tick_width, tick_length=tick_length,
-                                pixel_spacing=pixel_spacing)
+                                pixel_spacing=pixel_spacing, is_orthogonal=True, reciprocal_space=False)
 fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
 fig.text(0.60, 0.40, "Bulk - isosurface=" + str('{:.2f}'.format(isosurface_strain)), size=20)
 fig.text(0.60, 0.35, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
@@ -714,7 +714,8 @@ if save:
 # amplitude
 fig, _, _ = gu.multislices_plot(amp, sum_frames=False, invert_yaxis=True, title='Normalized orthogonal amp', vmin=0,
                                 vmax=1, tick_direction=tick_direction, tick_width=tick_width, tick_length=tick_length,
-                                pixel_spacing=pixel_spacing, plot_colorbar=True)
+                                pixel_spacing=pixel_spacing, plot_colorbar=True, is_orthogonal=True,
+                                reciprocal_space=False)
 fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
 fig.text(0.60, 0.40, "Voxel size=" + str('{:.2f}'.format(voxel_size)) + "nm", size=20)
 fig.text(0.60, 0.35, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
@@ -732,7 +733,7 @@ if save:
 fig, _, _ = gu.multislices_plot(phase, sum_frames=False, invert_yaxis=True, title='Orthogonal displacement',
                                 vmin=-phase_range, vmax=phase_range, tick_direction=tick_direction, cmap=my_cmap,
                                 tick_width=tick_width, tick_length=tick_length, pixel_spacing=pixel_spacing,
-                                plot_colorbar=True)
+                                plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
 fig.text(0.60, 0.30, "Scan " + str(scan), size=20)
 fig.text(0.60, 0.25, "Voxel size=" + str('{:.2f}'.format(voxel_size)) + "nm", size=20)
 fig.text(0.60, 0.20, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
@@ -748,7 +749,7 @@ if save:
 fig, _, _ = gu.multislices_plot(strain, sum_frames=False, invert_yaxis=True, title='Orthogonal strain',
                                 vmin=-strain_range, vmax=strain_range, tick_direction=tick_direction,
                                 tick_width=tick_width, tick_length=tick_length, plot_colorbar=True, cmap=my_cmap,
-                                pixel_spacing=pixel_spacing)
+                                pixel_spacing=pixel_spacing, is_orthogonal=True, reciprocal_space=False)
 fig.text(0.60, 0.30, "Scan " + str(scan), size=20)
 fig.text(0.60, 0.25, "Voxel size=" + str('{:.2f}'.format(voxel_size)) + "nm", size=20)
 fig.text(0.60, 0.20, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
