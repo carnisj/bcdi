@@ -41,7 +41,7 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 966  # spec scan number
+scan = 978  # spec scan number
 
 datadir = 'D:/data/HC3207/SN' + str(scan) + "/pynxraw/"
 
@@ -62,7 +62,7 @@ plot_margin = (60, 30, 30)  # (z, y, x) margin outside the support in each direc
 ############################################
 # parameters related to strain calculation #
 ############################################
-isosurface_strain = 0.55  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.4  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
@@ -270,7 +270,7 @@ gc.collect()
 ################
 phase, extent_phase = pu.unwrap(avg_obj, support_threshold=0.05, debugging=debug)
 
-print('Extent of the phase ~ ', extent_phase, '(rad)')
+print('Extent of the phase over an extended support (ceil(phase range))~ ', int(extent_phase), '(rad)')
 phase = pru.wrap(phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
