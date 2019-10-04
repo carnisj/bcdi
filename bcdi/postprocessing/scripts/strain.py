@@ -41,7 +41,7 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 1038  # spec scan number
+scan = 1012  # spec scan number
 
 datadir = 'D:/data/HC3207/SN' + str(scan) + "/pynxraw/"
 
@@ -59,12 +59,14 @@ keep_size = False  # set to True to keep the initial array size for orthogonaliz
 fix_voxel = 6.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 plot_margin = (60, 30, 30)  # (z, y, x) margin outside the support in each direction, can be negative
 # useful to avoid cutting the object during the orthogonalization
-############################################
-# parameters related to strain calculation #
-############################################
-isosurface_strain = 0.43  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+#############################################################
+# parameters related to displacement and strain calculation #
+#############################################################
+isosurface_strain = 0.36  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
+offset_origin = []  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
+offset_method = 'COM'  # 'COM' or 'mean', method for removing the offset in the phase
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
@@ -114,7 +116,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, 1, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
+roll_modes = (0, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 ############################################
 # setup for phase averaging or apodization #
 ############################################
@@ -129,9 +131,9 @@ alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
 ############################################
 align_crystal = True  # if True rotates the crystal to align it along q
 ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
-align_inplane = False  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
+align_inplane = True  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
 ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
-inplane_normal = np.array([1, 0, -0.08])  # facet normal to align with ref_axis_inplane (y should be 0)
+inplane_normal = np.array([1, 0, -0.1])  # facet normal to align with ref_axis_inplane (y should be 0)
 strain_range = 0.003  # for plots
 phase_range = np.pi  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
@@ -289,10 +291,11 @@ if debug:
                         invert_yaxis=False, plot_colorbar=True, title='Phase after ramp removal')
 
 #######################################
-# phase offset removal (at COM value) #
+# phase offset removal (COM then mean) #
 #######################################
 support = np.zeros(amp.shape)
 support[amp > isosurface_strain*amp.max()] = 1
+
 zcom, ycom, xcom = center_of_mass(support)
 print("COM at (z, y, x): (", str('{:.2f}'.format(zcom)), ',', str('{:.2f}'.format(ycom)), ',',
       str('{:.2f}'.format(xcom)), ')')
@@ -554,11 +557,28 @@ if correct_refraction or correct_absorption:
 amp, phase, _, _, _ = pu.remove_ramp(amp=amp, phase=phase, initial_shape=original_size, method=phase_ramp_removal,
                                      amplitude_threshold=isosurface_strain, gradient_threshold=threshold_gradient)
 
-support = np.zeros(amp.shape)
-support[amp > isosurface_strain*amp.max()] = 1  # better to use the support here in case of defects (impact on the mean)
-phase = phase - phase[support == 1].mean()
-del support
-gc.collect()
+if len(offset_origin) == 0:  # use offset_method to remove the phase offset
+    support = np.zeros(amp.shape)
+    support[amp > isosurface_strain*amp.max()] = 1
+    if offset_method == 'COM':
+        zcom, ycom, xcom = center_of_mass(support)
+        print("Orthogonal COM in pixels (z, y, x): (", int(zcom), ',', int(ycom), ',', int(xcom), ')')
+        print("Orthogonal Phase offset at COM(amp) of:",
+              str('{:.2f}'.format(phase[int(zcom), int(ycom), int(xcom)])), "rad")
+
+        phase = phase - phase[int(zcom), int(ycom), int(xcom)] + phase_offset
+
+    elif offset_method == 'mean':
+        phase = phase - phase[support == 1].mean() + phase_offset
+    else:
+        sys.exit('Invalid setting for parameter "offset_method"')
+
+    del support
+    gc.collect()
+else:
+    if len(offset_origin) != 3:
+        sys.exit('Invalid setting for parameter "offset_origin", [z,y,x] pixel position expected')
+    phase = phase - phase[offset_origin[0], offset_origin[1], offset_origin[2]] + phase_offset
 
 phase = pru.wrap(obj=phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 if True:
