@@ -41,9 +41,9 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 1012  # spec scan number
+scan = 1  # spec scan number
 
-datadir = 'D:/data/HC3207/SN' + str(scan) + "/pynxraw/test/"
+datadir = 'D:/data/PtRh/S' + str(scan) + "/pynxraw/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
@@ -51,18 +51,18 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [100, 400, 512]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [100, 640, 700]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-binning = (1, 1, 1)  # binning factor during phasing
+binning = (1, 2, 2)  # binning factor during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
-fix_voxel = 6.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
+fix_voxel = 3.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 plot_margin = (60, 30, 30)  # (z, y, x) margin outside the support in each direction, can be negative
 # useful to avoid cutting the object during the orthogonalization
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-isosurface_strain = 0.43  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.6  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 offset_origin = []  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
@@ -78,14 +78,14 @@ beamline = "ID01"  # name of the beamline, used for data loading and normalizati
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 0.86180  # sample to detector distance in m
-pixel_size = 55e-6  # detector pixel size in m
+sdd = 0.85  # sample to detector distance in m
+pixel_size = 75e-6  # detector pixel size in m
 energy = 8994  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # beam along z
-outofplane_angle = 35.0502  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 3.5646  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 35.978  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 0  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.010  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.02  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 dispersion = 4.1184E-05  # delta
@@ -131,11 +131,11 @@ alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
 ############################################
 align_crystal = True  # if True rotates the crystal to align it along q
 ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
-align_inplane = True  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
+align_inplane = False  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
 ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
 inplane_normal = np.array([1, 0, -0.1])  # facet normal to align with ref_axis_inplane (y should be 0)
-strain_range = 0.003  # for plots
-phase_range = np.pi  # for plots
+strain_range = 0.004  # for plots
+phase_range = np.pi/3  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
 tick_spacing = 50  # for plots, in nm
 tick_direction = 'inout'  # 'out', 'in', 'inout'
@@ -300,6 +300,13 @@ zcom, ycom, xcom = center_of_mass(support)
 print("COM at (z, y, x): (", str('{:.2f}'.format(zcom)), ',', str('{:.2f}'.format(ycom)), ',',
       str('{:.2f}'.format(xcom)), ')')
 print("Phase offset at COM(amp) of:", str('{:.2f}'.format(phase[int(zcom), int(ycom), int(xcom)])), "rad")
+
+if debug:
+    gu.combined_plots((phase[int(zcom), :, :], phase[:, int(ycom), :], phase[:, :, int(xcom)]), tuple_sum_frames=False,
+                      tuple_sum_axis=0, tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=True,
+                      tuple_vmin=np.nan, tuple_vmax=np.nan,
+                      tuple_title=('phase at COM in xy', 'phase at COM in xz', 'phase at COM in yz'),
+                      tuple_scale='linear', cmap=my_cmap, is_orthogonal=False, reciprocal_space=False)
 
 phase = phase - phase[int(zcom), int(ycom), int(xcom)]
 
