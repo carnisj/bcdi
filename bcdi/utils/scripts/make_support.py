@@ -22,12 +22,12 @@ In reciprocal space, the following convetion is used: qx downtream, qz vertical 
 
 """
 
-root_folder = "D:/data/HC3207/SN1012/pynxraw/"  # "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/"
-support_threshold = 0.1  # in % of the normalized absolute value
-original_shape = [100, 400, 512]  # shape of the array used for phasing and finding the support
-binning_original = (1, 1, 1)  # binning that was used in PyNX during phasing
-output_shape = [100, 400, 512]  # shape of the array for later phasing
-binning_output = (1, 1, 1)  # binning that will be used in PyNX for later phasing
+root_folder = "D:/data/PtRh/S1/pynxraw/"  # "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/"
+support_threshold = 0.05  # in % of the normalized absolute value
+original_shape = [100, 320, 350]  # shape of the array used for phasing and finding the support (after binning_original)
+binning_original = (1, 2, 2)  # binning that was used in PyNX during phasing
+output_shape = [100, 640, 700]  # shape of the array for later phasing (before binning_output)
+binning_output = (1, 2, 2)  # binning that will be used in PyNX for later phasing
 reload_support = False  # if True, will load the support and skip masking
 is_ortho = False  # True if the data is already orthogonalized
 roll_modes = (0, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)

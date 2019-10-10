@@ -80,6 +80,11 @@ qz_offset = 0  # offset of the projection plane in the vertical direction (0 = e
 ######################################
 beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+
+custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
+custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
+
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ''
@@ -150,7 +155,8 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                                beam_direction=beam_direction, sample_inplane=sample_inplane,
                                sample_outofplane=sample_outofplane, sample_offsets=(offset_chi, offset_phi, offset_eta),
-                               offset_inplane=offset_inplane)
+                               offset_inplane=offset_inplane, custom_scan=custom_scan, custom_images=custom_images,
+                               custom_monitor=custom_monitor)
 
 #############################################
 # Initialize geometry for orthogonalization #

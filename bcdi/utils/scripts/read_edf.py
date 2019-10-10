@@ -9,11 +9,11 @@ from tkinter import filedialog
 from matplotlib.colors import LinearSegmentedColormap
 import os
 
-img = 11403
+img = 8758
 centering = 1  # 0 max, 1 center of mass
-savedir = "D:/data/PtRh/S1/"
-datadir = "D:/data/PtRh/S1/data/"
-ccdfiletmp = os.path.join(datadir, "BCDI_eiger2M_%05d.edf")   # template for the CCD file names
+savedir = "D:/data/PtRh/detector_calibration/"
+datadir = "D:/data/PtRh/detector_calibration/"
+ccdfiletmp = os.path.join(datadir, "BCDI_eiger2M_%05d.edf.gz")   # template for the CCD file names
 save = 1  # 1 to save image
 photon_threshold = 0
 comment = str(img)
