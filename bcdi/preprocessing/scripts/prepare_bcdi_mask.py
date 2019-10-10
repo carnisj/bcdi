@@ -83,11 +83,15 @@ save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
-# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+beamline = 'custom'  # name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'custom'
+# 'custom' is for a stack of images acquired without scan, e.g. with ct in a macro
+custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the 'custom' beamline
+custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the 'custom' beamline
+
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'sample10'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -203,7 +207,8 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 ####################
 setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                                beam_direction=beam_direction, sample_inplane=sample_inplane,
-                               sample_outofplane=sample_outofplane, offset_inplane=offset_inplane)
+                               sample_outofplane=sample_outofplane, offset_inplane=offset_inplane,
+                               custom_images=custom_images, custom_monitor=custom_monitor)
 
 #############################################
 # Initialize geometry for orthogonalization #

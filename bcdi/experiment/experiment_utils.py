@@ -395,7 +395,8 @@ class SetupPreprocessing(object):
     Class to handle the experimental geometry for preprocessing.
     """
     def __init__(self, beamline, rocking_angle, distance=1, energy=8000, direct_beam=(0, 0), beam_direction=(1, 0, 0),
-                 sample_inplane=(1, 0, 0), sample_outofplane=(0, 0, 1), sample_offsets=(0, 0, 0), offset_inplane=0):
+                 sample_inplane=(1, 0, 0), sample_outofplane=(0, 0, 1), sample_offsets=(0, 0, 0), offset_inplane=0,
+                 **kwargs):
         """
         Initialize parameters of the experiment.
 
@@ -411,7 +412,26 @@ class SetupPreprocessing(object):
          (outboard). This corresponds to (chi, phi, incident angle) in a standard diffractometer.
         :param offset_inplane: outer angle offset as defined by xrayutilities detector calibration
         """
+        for k in kwargs.keys():
+            if k in ['custom_images']:
+                custom_images = kwargs['custom_images']
+            elif k in ['custom_monitor']:
+                custom_monitor = kwargs['custom_monitor']
+            else:
+                raise Exception("unknown keyword argument given: allowed is"
+                                "'custom_images', 'custom_monitor'")
+        try:
+            custom_images
+        except NameError:  # custom_images not declared
+            custom_images = []
+        try:
+            custom_monitor
+        except NameError:  # custom_monitor not declared
+            custom_monitor = []
+
         self.beamline = beamline  # string
+        self.custom_images = custom_images
+        self.custom_monitor = custom_monitor
         self.energy = energy  # in eV
         self.wavelength = 12.398 * 1e-7 / energy  # in m
         self.rocking_angle = rocking_angle  # string

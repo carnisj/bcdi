@@ -904,8 +904,8 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
         except NameError:
             raise TypeError("Parameter 'follow_bragg' not provided, defaulting to False")
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
-                                                          beamline=setup.beamline, flatfield=flatfield,
-                                                          hotpixels=hotpixels, debugging=debugging)
+                                                          setup=setup, flatfield=flatfield, hotpixels=hotpixels,
+                                                          debugging=debugging)
     # normalize by the incident X-ray beam intensity
     if normalize:
         rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
@@ -1075,36 +1075,25 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
     return data, mask3d, monitor, frames_logical
 
 
-def load_custom_data(ccdn, detector, flatfield, hotpixels, debugging=False, **kwargs):
+def load_custom_data(custom_images, custom_monitor, detector, flatfield, hotpixels, debugging=False):
     """
     Load a dataset measured without a scan, such as a set of images measured in a macro.
 
-    :param ccdn: the list of image numbers
+    :param custom_images: the list of image numbers
+    :param custom_monitor: list of monitor values for normalization
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
     :param debugging: set to True to see plots
     :return:
     """
-    for k in kwargs.keys():
-        if k in ['monitor']:
-            monitor = kwargs['monitor']
-        else:
-            raise Exception("unknown keyword argument given: allowed is"
-                            "'monitor'")
-    try:
-        monitor
-    except NameError:  # monitor not declared
-        print('No monitor data provided')
-        monitor = np.ones(len(ccdn))
-
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-    nb_img = len(ccdn)
+    nb_img = len(custom_images)
     data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
 
     for idx in range(nb_img):
-        i = int(ccdn[idx])
+        i = int(custom_images[idx])
         e = fabio.open(ccdfiletmp % i)
         ccdraw = e.data
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
@@ -1126,17 +1115,17 @@ def load_custom_data(ccdn, detector, flatfield, hotpixels, debugging=False, **kw
 
     frames_logical = np.ones(nb_img)
 
-    return data, mask3d, monitor, frames_logical
+    return data, mask3d, custom_monitor, frames_logical
 
 
-def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixels=None, debugging=False):
+def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, debugging=False):
     """
     Load data, apply filters and concatenate it for phasing.
 
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param scan_number: the scan number to load
     :param detector: the detector object: Class experiment_utils.Detector()
-    :param beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL', 'custom'
+    :param setup: the experimental setup: Class SetupPreprocessing()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param debugging: set to True to see plots
@@ -1151,18 +1140,23 @@ def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixel
     if hotpixels is None:
         hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
-    if beamline == 'ID01':
+    if setup.beamline == 'ID01':
         data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
                                                                debugging=debugging)
-    elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
-        data, mask3d, monitor, frames_logical = load_sixs_data(logfile, beamline, detector, flatfield, hotpixels,
+    elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
+        data, mask3d, monitor, frames_logical = load_sixs_data(logfile, setup.beamline, detector, flatfield, hotpixels,
                                                                debugging=debugging)
-    elif beamline == 'CRISTAL':
+    elif setup.beamline == 'CRISTAL':
         data, mask3d, monitor, frames_logical = load_cristal_data(logfile, detector, flatfield, hotpixels,
                                                                   debugging=debugging)
-    elif beamline == 'P10':
+    elif setup.beamline == 'P10':
         data, mask3d, monitor, frames_logical = load_p10_data(logfile, detector, flatfield, hotpixels,
                                                               debugging=debugging)
+    elif setup.beamline == 'custom':
+        data, mask3d, monitor, frames_logical = load_custom_data(custom_images=setup.custom_images,
+                                                                 custom_monitor=setup.custom_monitor,
+                                                                 detector=detector, flatfield=flatfield,
+                                                                 hotpixels=hotpixels, debugging=False)
     else:
         raise ValueError('Wrong value for "rocking_angle" parameter')
 
