@@ -107,7 +107,7 @@ roi_detector = [y_bragg - 350, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # [
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'BCDI_eiger2M_%05d.edf.gz'
+template_imagefile = 'BCDI_eiger2M_%05d.edf'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'

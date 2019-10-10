@@ -34,7 +34,8 @@ the second axis of the 3D array (to be modified).
 Input: a reconstruction .npz file with fields: 'amp' and 'strain' 
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
-# TODO: include surface estimation for the facets
+# TODO: include surface estimation for the facets, think about upsampling the reconstruction to make
+#  the smoothing more efficient
 scan = 2227  # spec scan number
 datadir = 'D:/data/PtRh/Ar(103x98x157)/'
 # datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"

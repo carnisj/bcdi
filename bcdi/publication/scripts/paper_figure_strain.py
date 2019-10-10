@@ -30,13 +30,13 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 """
 
 
-scan = 981  # spec scan number
-datadir = 'D:/data/HC3207/SN' + str(scan)+"/pynxraw/"
+scan = 1012  # spec scan number
+datadir = 'D:/data/HC3207/SN' + str(scan)+"/pynxraw/test/"
 savedir = 'D:/data/HC3207/Figures/'
 comment = '_SN' + str(scan)   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 
-voxel_size = 5.0  # in nm
+voxel_size = 6.0  # in nm
 tick_spacing = 50  # for plots, in nm
 field_of_view = 400  # in nm, can be larger than the total width (the array will be padded)
 
@@ -44,7 +44,7 @@ tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 
-strain_range = 0.001  # for plots
+strain_range = 0.0015  # for plots
 phase_range = np.pi  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
 
@@ -91,7 +91,7 @@ amp = npzfile['amp']
 bulk = npzfile['bulk']  # bulk is the amplitude minus the surface voxel layer were the strain is not defined
 
 amp = amp / amp.max()  # normalize amplitude
-amp[amp < 0.01] = 0
+amp[amp < 0.03] = 0
 support = np.zeros(amp.shape)
 support[np.nonzero(amp)] = 1
 

@@ -1073,7 +1073,7 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
 
 def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixels=None, debugging=False):
     """
-    Load ID01 data, apply filters and concatenate it for phasing.
+    Load data, apply filters and concatenate it for phasing.
 
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param scan_number: the scan number to load

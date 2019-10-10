@@ -9,22 +9,15 @@ from tkinter import filedialog
 from matplotlib.colors import LinearSegmentedColormap
 import os
 
-img = 24503
+img = 11403
 centering = 1  # 0 max, 1 center of mass
-savedir = "C:/Users/carnis/Work Folders/Documents/data/MA4162/S324det/"
-# savedir = "C:/Users/carnis/Work Folders/Documents/data/HS4670/S"+str(scan)+"/"
-# savedir = "C:/Users/carnis/Work Folders/Documents/data/HC3207/ID01/SN"+str(scan)+"/"
-# savedir = "C:/users/CARNIS/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/"
-# savedir = "C:/users/CARNIS/Work Folders/Documents/data/HC2277/S"+str(scan)+"det/"
-# savedir = "C:/users/CARNIS/Work Folders/Documents/data/inhouse26082017/GaAs/S"+str(scan)+"/"
-# savedir = 'Z:/carnis/CDI/Lucas/S'+str(scan)+"/"
-# datadir = savedir+"data/"
-datadir = "C:/Users/carnis/Work Folders/Documents/data/MA4162/S324det/data/"
-ccdfiletmp = os.path.join(datadir, "data_mpx4_%05d.edf.gz")   # template for the CCD file names
+savedir = "D:/data/PtRh/S1/"
+datadir = "D:/data/PtRh/S1/data/"
+ccdfiletmp = os.path.join(datadir, "BCDI_eiger2M_%05d.edf")   # template for the CCD file names
 save = 1  # 1 to save image
-photon_threshold = 50
+photon_threshold = 0
 comment = str(img)
-region = [0, 516, 0, 516]  # [130, 200, 278, 347]  # Maxipix [0, 516, 0, 516]  # Eiger2M [0, 2164, 0, 1030]
+region = [0, 2164, 0, 1030]  # [130, 200, 278, 347]  # Maxipix [0, 516, 0, 516]  # Eiger2M [0, 2164, 0, 1030]
 normalize_method = 0  # 1 to normalize using max, 2 to normalize the data using filter, 0 otherwise
 logscale = 1  # 1 for log scale
 # ####### below is useful only if you want to normalize with filter (normalize_method = 2) ############

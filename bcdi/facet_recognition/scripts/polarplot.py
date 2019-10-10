@@ -38,7 +38,7 @@ And qx, qz, qy = mygridder.xaxis, mygridder.yaxis, mygridder.zaxis
 @author: CARNIS
 """
 
-scan = 1038    # spec scan number
+scan = 966    # spec scan number
 root_folder = "D:/data/HC3207/"
 sample_name = "SN"  # "S"  #
 comment = ""
@@ -47,15 +47,15 @@ filtered_data = False  # set to True if the data is already a 3D array, False ot
 # Should be the same shape as in specfile, before orthogonalization
 radius_mean = 0.034  # q from Bragg peak
 dr = 0.001        # delta_q
-offset_eta = -1  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
+offset_eta = -2  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
-offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
+offset_phi = -1.5     # positive make diff pattern rotate clockwise (phi rotation around Qz)
 # will rotate peaks counterclockwise in the pole figure
-offset_chi = 2  # positive make diff pattern rotate clockwise (chi rotation around Qx)
+offset_chi = +3  # positive make diff pattern rotate clockwise (chi rotation around Qx)
 # will shift peaks upwards in the pole figure
-range_min = 500  # low limit for the colorbar in polar plots, every below will be set to nan
-range_max = 1600  # high limit for the colorbar in polar plots
-range_step = 500  # step for color change in polar plots
+range_min = 700  # low limit for the colorbar in polar plots, every below will be set to nan
+range_max = 4800  # high limit for the colorbar in polar plots
+range_step = 1000  # step for color change in polar plots
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
 ###################################################################################################
@@ -70,8 +70,9 @@ pad_size = 3  # int >= 1, will pad to get this number times the initial array si
 # various options #
 ###################
 flag_medianfilter = False  # set to True for applying med2filter [3,3]
-flag_plotplanes = True    # if True, plot red dotted circle with plane index
-photon_threshold = 0  # photon threshold in detector counts
+flag_plotplanes = True  # if True, plot red dotted circle with plane index
+flag_plottext = False  # if True, will plot plane indices and angles in the figure
+photon_threshold = 1  # photon threshold in detector counts
 normalize_flux = True  # will normalize the intensity by the default monitor.
 debug = False  # True to show more plots, False otherwise
 qz_offset = 0  # offset of the projection plane in the vertical direction (0 = equatorial plane)
@@ -121,14 +122,21 @@ cch2 = -16.47  # cch2 parameter from xrayutilities 2D detector calibration, dete
 detrot = -0.385  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 237.2  # tiltazimuth parameter from xrayutilities 2D detector calibration
 tilt = 1.316  # tilt parameter from xrayutilities 2D detector calibration
-
-
+##################################################################################################
+# calculate theoretical angles between the measured reflection and other planes - only for cubic #
+##################################################################################################
+planes = dict()  # create dictionnary
+planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
+planes['1 -2 1'] = fu.plane_angle_cubic(reflection, np.array([1, -2, 1]))
 ###################
 # define colormap #
 ###################
 bad_color = '1.0'  # white background
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
+##################################
+# end of user-defined parameters #
+##################################
 
 #######################
 # Initialize detector #
@@ -500,12 +508,6 @@ int_grid_top = int_grid_top / int_grid_top[int_grid_top > 0].max() * 10000  # no
 int_grid_bottom = int_grid_bottom / int_grid_bottom[int_grid_bottom > 0].max() * 10000  # normalize for easier plotting
 int_grid_top[np.isnan(int_grid_top)] = 0
 int_grid_bottom[np.isnan(int_grid_bottom)] = 0
-##################################################################################################
-# calculate theoretical angles between the measured reflection and other planes - only for cubic #
-##################################################################################################
-planes = dict()  # create dictionnary
-planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
-planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
 
 #########################################
 # create top projection from South pole #
@@ -531,9 +533,11 @@ for ii in range(10, 90, 20):
                         radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
                         color='grey', fill=False, linestyle='dotted', linewidth=0.5)
     myax0.add_artist(circle)
-for ii in range(10, 95, 20):
-    myax0.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
-               str(ii) + '$^\circ$', fontsize=12, color='k', fontweight='bold')
+
+if flag_plottext:
+    for ii in range(10, 95, 20):
+        myax0.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
+                   str(ii) + '$^\circ$', fontsize=18, color='k', fontweight='bold')
 circle = plt.Circle((0, 0), 90, color='k', fill=False, linewidth=1)
 myax0.add_artist(circle)
 
@@ -553,12 +557,13 @@ if flag_plotplanes:
                             (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
                             color='r', fill=False, linestyle='dotted', linewidth=2)
         myax0.add_artist(circle)
-        myax0.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                   (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                   np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                   (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                   key, fontsize=14, color='k', fontweight='bold')
-        indx = indx + 5
+        if flag_plottext:
+            myax0.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                       np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                       key, fontsize=20, color='k', fontweight='bold')
+            indx = indx + 5
         print(key + ": ", str('{:.2f}'.format(value)))
 myax0.set_title('Top projection\nfrom South pole S' + str(scan)+'\n')
 if reconstructed_data == 0:
@@ -592,9 +597,10 @@ for ii in range(10, 90, 20):
                         radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
                         color='grey', fill=False, linestyle='dotted', linewidth=0.5)
     myax1.add_artist(circle)
-for ii in range(10, 95, 20):
-    myax1.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
-               str(ii) + '$^\circ$', fontsize=10, color='k', fontweight='bold')
+if flag_plottext:
+    for ii in range(10, 95, 20):
+        myax1.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
+                   str(ii) + '$^\circ$', fontsize=18, color='k', fontweight='bold')
 circle = plt.Circle((0, 0), 90, color='k', fill=False, linewidth=1)
 myax1.add_artist(circle)
 
@@ -614,12 +620,13 @@ if flag_plotplanes:
                             (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
                             color='r', fill=False, linestyle='dotted', linewidth=2)
         myax1.add_artist(circle)
-        myax1.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                   (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                   np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                   (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                   key, fontsize=14, color='k', fontweight='bold')
-        indx = indx + 5
+        if flag_plottext:
+            myax1.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                       np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                       key, fontsize=20, color='k', fontweight='bold')
+            indx = indx + 5
         print(key + ": ", str('{:.2f}'.format(value)))
 plt.title('Bottom projection\nfrom North pole S' + str(scan) + '\n')
 # save figure

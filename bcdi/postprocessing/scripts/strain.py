@@ -43,7 +43,7 @@ or data[z, y, x] for real space
 
 scan = 1012  # spec scan number
 
-datadir = 'D:/data/HC3207/SN' + str(scan) + "/pynxraw/"
+datadir = 'D:/data/HC3207/SN' + str(scan) + "/pynxraw/test/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
@@ -62,15 +62,15 @@ plot_margin = (60, 30, 30)  # (z, y, x) margin outside the support in each direc
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-isosurface_strain = 0.36  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.43  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 offset_origin = []  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
-offset_method = 'COM'  # 'COM' or 'mean', method for removing the offset in the phase
+offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the phase
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = "_unwrap_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = "_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
