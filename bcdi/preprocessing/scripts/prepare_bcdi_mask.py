@@ -106,7 +106,7 @@ x_bragg = 451  # horizontal pixel number of the Bragg peak
 y_bragg = 1450
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
-roi_detector = [y_bragg - 350, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # [0, 256, 0, 256]
+roi_detector = [y_bragg - 296, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # [0, 256, 0, 256]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
@@ -213,16 +213,20 @@ setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=r
 #############################################
 # Initialize geometry for orthogonalization #
 #############################################
-qconv, offsets = pru.init_qconversion(setup)
-detector.offsets = offsets
-hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x downstream, y outboard, z vertical
-# first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
-cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
-cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
-hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
-                     Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize_y,
-                     pwidth2=detector.pixelsize_x, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
-# first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
+if beamline == 'custom':
+    print('no orthogonalization possible for the "custom" option')
+    use_rawdata = True
+elif not use_rawdata:
+    qconv, offsets = pru.init_qconversion(setup)
+    detector.offsets = offsets
+    hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x downstream, y outboard, z vertical
+    # first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
+    cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
+    cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
+    hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
+                         Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize_y,
+                         pwidth2=detector.pixelsize_x, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
+    # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
 ############################################
 # Initialize values for callback functions #
