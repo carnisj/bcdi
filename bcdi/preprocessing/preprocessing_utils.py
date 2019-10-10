@@ -711,7 +711,8 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
     elif beamline == 'SIXS_2019':  # no specfile, load directly the dataset
         import bcdi.preprocessing.ReadNxs3 as ReadNxs3
 
-        logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number,alias_dict=filename)
+        logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number,
+                                   alias_dict=filename)
 
     elif beamline == 'ID01':  # load spec file
         from silx.io.specfile import SpecFile
@@ -843,7 +844,7 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
      - the monitor values for normalization
     """
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
-                                                          beamline=setup.beamline, flatfield=flatfield,
+                                                          setup=setup, flatfield=flatfield,
                                                           hotpixels=hotpixels, debugging=debugging)
 
     rawdata = beamstop_correction(data=rawdata, detector=detector, setup=setup, debugging=debugging)
@@ -1904,8 +1905,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
     """
     if frames_logical is None:  # retrieve the raw data length, then len(frames_logical) may be different from nb_frames
         # TODO: create a function which does not load the data but use the specfile
-        _, _, _, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
-                                            beamline=setup.beamline)
+        _, _, _, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector, setup=setup)
 
     if follow_bragg and setup.beamline != 'ID01':
         raise ValueError('Energy scan implemented only for ID01 beamline')
