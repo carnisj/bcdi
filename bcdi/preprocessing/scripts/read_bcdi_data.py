@@ -83,7 +83,7 @@ else:
 flatfield = pru.load_flatfield(flatfield_file)
 hotpix_array = pru.load_hotpixels(hotpixels_file)
 
-logfile = pru.create_logfile(beamline=beamline, detector=detector, scan_number=scan, root_folder=root_folder,
+logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
                              filename=specfile_name)
 
 data, mask, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number=scan, detector=detector,
