@@ -687,7 +687,7 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
     """
     Create the logfile used in gridmap().
 
-    :param beamline: 'ID01' or 'SIXS' or 'CRISTAL' or 'P10'
+    :param beamline: 'ID01', 'SIXS', 'CRISTAL', 'P10', 'custom'
     :param detector: the detector object: Class experiment_utils.Detector()
     :param scan_number: the scan number to load
     :param root_folder: the root directory of the experiment, where is the specfile/.fio file
@@ -716,6 +716,10 @@ def create_logfile(beamline, detector, scan_number, root_folder, filename):
     elif beamline == 'ID01':  # load spec file
         from silx.io.specfile import SpecFile
         logfile = SpecFile(root_folder + filename + '.spec')
+
+    elif beamline == 'custom':  # no log file in that case
+        logfile = ''
+
     else:
         raise ValueError('Incorrect value for beamline parameter')
 
@@ -1071,6 +1075,60 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
     return data, mask3d, monitor, frames_logical
 
 
+def load_custom_data(ccdn, detector, flatfield, hotpixels, debugging=False, **kwargs):
+    """
+    Load a dataset measured without a scan, such as a set of images measured in a macro.
+
+    :param ccdn: the list of image numbers
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param flatfield: the 2D flatfield array
+    :param hotpixels: the 2D hotpixels array
+    :param debugging: set to True to see plots
+    :return:
+    """
+    for k in kwargs.keys():
+        if k in ['monitor']:
+            monitor = kwargs['monitor']
+        else:
+            raise Exception("unknown keyword argument given: allowed is"
+                            "'monitor'")
+    try:
+        monitor
+    except NameError:  # monitor not declared
+        print('No monitor data provided')
+        monitor = np.ones(len(ccdn))
+
+    mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+    nb_img = len(ccdn)
+    data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+    ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
+
+    for idx in range(nb_img):
+        i = int(ccdn[idx])
+        e = fabio.open(ccdfiletmp % i)
+        ccdraw = e.data
+        ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
+        if detector.name == "Eiger2M":
+            ccdraw, mask_2d = mask_eiger(data=ccdraw, mask=mask_2d)
+        elif detector.name == "Maxipix":
+            ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
+        else:
+            raise ValueError('Detector ', detector.name, 'not supported for ID01')
+        ccdraw = flatfield * ccdraw
+        ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        data[idx, :, :] = ccdraw
+
+    mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
+    mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
+    mask3d[np.isnan(data)] = 1
+    data[np.isnan(data)] = 0
+
+    frames_logical = np.ones(nb_img)
+
+    return data, mask3d, monitor, frames_logical
+
+
 def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixels=None, debugging=False):
     """
     Load data, apply filters and concatenate it for phasing.
@@ -1078,7 +1136,7 @@ def load_data(logfile, scan_number, detector, beamline, flatfield=None, hotpixel
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param scan_number: the scan number to load
     :param detector: the detector object: Class experiment_utils.Detector()
-    :param beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL'
+    :param beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL', 'custom'
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param debugging: set to True to see plots
