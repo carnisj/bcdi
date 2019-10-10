@@ -106,7 +106,7 @@ x_bragg = 451  # horizontal pixel number of the Bragg peak
 y_bragg = 1450
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
-roi_detector = [y_bragg - 296, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # [0, 256, 0, 256]
+roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
