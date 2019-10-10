@@ -412,10 +412,10 @@ class SetupPreprocessing(object):
          (outboard). This corresponds to (chi, phi, incident angle) in a standard diffractometer.
         :param offset_inplane: outer angle offset as defined by xrayutilities detector calibration
         :param kwargs:
-         - 'custom_scan' = True for a stack of images acquired without scan, e.g. with ct in a macro
-          (no info in spec file)
+         - 'custom_scan' = True for a stack of images acquired without scan, (no motor data in the spec file)
          - 'custom_images' = list of image numbers for the custom_scan
          - 'custom_monitor' = list of monitor values for normalization for the custom_scan
+         - 'custom_motors' = dictionnary of motors values during the scan
         """
         for k in kwargs.keys():
             if k in ['custom_scan']:
@@ -424,9 +424,11 @@ class SetupPreprocessing(object):
                 custom_images = kwargs['custom_images']
             elif k in ['custom_monitor']:
                 custom_monitor = kwargs['custom_monitor']
+            elif k in ['custom_motors']:
+                custom_motors = kwargs['custom_motors']
             else:
                 raise Exception("unknown keyword argument given: allowed is"
-                                "'custom_images', 'custom_monitor'")
+                                "'custom_images', 'custom_monitor', 'custom_motors'")
         try:
             custom_scan
         except NameError:  # custom_scan not declared
@@ -439,11 +441,16 @@ class SetupPreprocessing(object):
             custom_monitor
         except NameError:  # custom_monitor not declared
             custom_monitor = []
+        try:
+            custom_motors
+        except NameError:  # custom_motors not declared
+            custom_motors = {}
 
         self.beamline = beamline  # string
         self.custom_scan = custom_scan  # boolean
         self.custom_images = custom_images  # list
         self.custom_monitor = custom_monitor  # list
+        self.custom_motors = custom_motors  # dictionnary
         self.energy = energy  # in eV
         self.wavelength = 12.398 * 1e-7 / energy  # in m
         self.rocking_angle = rocking_angle  # string

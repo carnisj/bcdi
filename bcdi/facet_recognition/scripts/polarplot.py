@@ -84,6 +84,11 @@ beamline = 'ID01'  # name of the beamline, used for data loading and normalizati
 custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
+custom_motors = {"eta": 17.989, "phi": 0, "nu": 0, "delta": 35.978}
+# ID01: eta, phi, nu, delta
+# CRISTAL: mgomega, gamma, delta
+# P10: om, phi, chi, mu, gamma, delta
+# SIXS: beta, mu, gamma, delta
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
@@ -156,7 +161,7 @@ setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=r
                                beam_direction=beam_direction, sample_inplane=sample_inplane,
                                sample_outofplane=sample_outofplane, sample_offsets=(offset_chi, offset_phi, offset_eta),
                                offset_inplane=offset_inplane, custom_scan=custom_scan, custom_images=custom_images,
-                               custom_monitor=custom_monitor)
+                               custom_monitor=custom_monitor, custom_motors=custom_motors)
 
 #############################################
 # Initialize geometry for orthogonalization #
