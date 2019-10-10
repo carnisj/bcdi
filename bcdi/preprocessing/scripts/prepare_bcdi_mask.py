@@ -40,8 +40,8 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [11]  # list or array of scan numbers
-root_folder = "D:/data/test/"
+scans = [1]  # list or array of scan numbers
+root_folder = "D:/data/PtRh/"
 sample_name = "S"  # "SN"  #
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -59,17 +59,17 @@ fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg] consid
 fix_size = []  # crop the array to predefined size considering the full detector,
 # leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop]. ROI will be defaulted to []
 ###########################
-center_fft = 'crop_sym_ZYX'
+center_fft = 'do_nothing'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'do_nothing'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
 # used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'
 ###########################
-normalize_flux = True  # will normalize the intensity by the default monitor.
+normalize_flux = False  # will normalize the intensity by the default monitor.
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
-flag_medianfilter = 'skip'
+flag_medianfilter = 'interp_isolated'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -87,7 +87,7 @@ beamline = 'ID01'  # name of the beamline, used for data loading and normalizati
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'l5'
+specfile_name = 'sample10'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -97,16 +97,17 @@ specfile_name = 'l5'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1495  # horizontal pixel number of the Bragg peak
+detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+x_bragg = 451  # horizontal pixel number of the Bragg peak
+y_bragg = 1450
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
-roi_detector = []  # [0, 256, 0, 256]
+roi_detector = [y_bragg - 350, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # [0, 256, 0, 256]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+template_imagefile = 'BCDI_eiger2M_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -116,8 +117,8 @@ template_imagefile = 'data_mpx4_%05d.edf.gz'
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
-sdd = 5.1  # sample to detector distance in m, not important if you use raw data
-energy = 8700  # x-ray energy in eV, not important if you use raw data
+sdd = 0.85  # sample to detector distance in m, not important if you use raw data
+energy = 9000  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
@@ -214,8 +215,8 @@ hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x d
 cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
 cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
 hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
-                     Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize,
-                     pwidth2=detector.pixelsize, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
+                     Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize_y,
+                     pwidth2=detector.pixelsize_x, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
 # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
 ############################################
