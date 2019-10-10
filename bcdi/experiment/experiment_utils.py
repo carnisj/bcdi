@@ -411,15 +411,26 @@ class SetupPreprocessing(object):
         :param sample_offsets: tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
          (outboard). This corresponds to (chi, phi, incident angle) in a standard diffractometer.
         :param offset_inplane: outer angle offset as defined by xrayutilities detector calibration
+        :param kwargs:
+         - 'custom_scan' = True for a stack of images acquired without scan, e.g. with ct in a macro
+          (no info in spec file)
+         - 'custom_images' = list of image numbers for the custom_scan
+         - 'custom_monitor' = list of monitor values for normalization for the custom_scan
         """
         for k in kwargs.keys():
-            if k in ['custom_images']:
+            if k in ['custom_scan']:
+                custom_scan = kwargs['custom_scan']
+            elif k in ['custom_images']:
                 custom_images = kwargs['custom_images']
             elif k in ['custom_monitor']:
                 custom_monitor = kwargs['custom_monitor']
             else:
                 raise Exception("unknown keyword argument given: allowed is"
                                 "'custom_images', 'custom_monitor'")
+        try:
+            custom_scan
+        except NameError:  # custom_scan not declared
+            custom_scan = False
         try:
             custom_images
         except NameError:  # custom_images not declared
@@ -430,8 +441,9 @@ class SetupPreprocessing(object):
             custom_monitor = []
 
         self.beamline = beamline  # string
-        self.custom_images = custom_images
-        self.custom_monitor = custom_monitor
+        self.custom_scan = custom_scan  # boolean
+        self.custom_images = custom_images  # list
+        self.custom_monitor = custom_monitor  # list
         self.energy = energy  # in eV
         self.wavelength = 12.398 * 1e-7 / energy  # in m
         self.rocking_angle = rocking_angle  # string

@@ -83,11 +83,12 @@ save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'custom'  # name of the beamline, used for data loading and normalization by monitor
-# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'custom'
-# 'custom' is for a stack of images acquired without scan, e.g. with ct in a macro
-custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the 'custom' beamline
-custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the 'custom' beamline
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+
+custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
+custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
@@ -103,7 +104,7 @@ specfile_name = ''
 #############################################################
 detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 451  # horizontal pixel number of the Bragg peak
-y_bragg = 1450
+y_bragg = 1450  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
@@ -121,7 +122,7 @@ template_imagefile = 'BCDI_eiger2M_%05d.edf'
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
-sdd = 0.85  # sample to detector distance in m, not important if you use raw data
+sdd = 0.865  # sample to detector distance in m, not important if you use raw data
 energy = 9000  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
@@ -208,12 +209,12 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                                beam_direction=beam_direction, sample_inplane=sample_inplane,
                                sample_outofplane=sample_outofplane, offset_inplane=offset_inplane,
-                               custom_images=custom_images, custom_monitor=custom_monitor)
+                               custom_scan=custom_scan, custom_images=custom_images, custom_monitor=custom_monitor)
 
 #############################################
 # Initialize geometry for orthogonalization #
 #############################################
-if beamline == 'custom':
+if custom_scan:
     print('no orthogonalization possible for the "custom" option')
     use_rawdata = True
 elif not use_rawdata:
@@ -327,7 +328,7 @@ for scan_nb in range(len(scans)):
         flatfield = pru.load_flatfield(flatfield_file)
         hotpix_array = pru.load_hotpixels(hotpixels_file)
 
-        logfile = pru.create_logfile(beamline=setup.beamline, detector=detector, scan_number=scans[scan_nb],
+        logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
                                      root_folder=root_folder, filename=specfile_name)
 
         if use_rawdata:

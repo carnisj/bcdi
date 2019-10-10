@@ -35,25 +35,24 @@ In arrays, when plotting the first parameter is the row (vertical axis) and the 
 Therefore the data structure is data[qx, qz, qy]
 Hence the gridder is mygridder(myqx, myqz, myqy, rawdata)
 And qx, qz, qy = mygridder.xaxis, mygridder.yaxis, mygridder.zaxis
-@author: CARNIS
 """
 
-scan = 966    # spec scan number
-root_folder = "D:/data/HC3207/"
-sample_name = "SN"  # "S"  #
+scan = 1    # spec scan number
+root_folder = "D:/data/PtRh/"
+sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
-filtered_data = False  # set to True if the data is already a 3D array, False otherwise
+filtered_data = True  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile, before orthogonalization
 radius_mean = 0.034  # q from Bragg peak
 dr = 0.001        # delta_q
-offset_eta = -2  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
+offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
-offset_phi = -1.5     # positive make diff pattern rotate clockwise (phi rotation around Qz)
+offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
 # will rotate peaks counterclockwise in the pole figure
-offset_chi = +3  # positive make diff pattern rotate clockwise (chi rotation around Qx)
+offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation around Qx)
 # will shift peaks upwards in the pole figure
-range_min = 700  # low limit for the colorbar in polar plots, every below will be set to nan
+range_min = 0  # low limit for the colorbar in polar plots, every below will be set to nan
 range_max = 4800  # high limit for the colorbar in polar plots
 range_step = 1000  # step for color change in polar plots
 ###################################################################################################
@@ -83,7 +82,7 @@ beamline = 'ID01'  # name of the beamline, used for data loading and normalizati
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'align2'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -95,13 +94,15 @@ specfile_name = 'align2'
 #############################################################
 detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 424  # horizontal pixel number of the Bragg peak
-roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
+y_bragg = 1450  # vertical pixel number of the Bragg peak
+# roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
+roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'align_eiger2M_%05d.edf.gz'
+template_imagefile = 'BCDI_eiger2M_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -185,7 +186,7 @@ if not reconstructed_data:
     comment = comment + "_diffpattern"
     flatfield = pru.load_flatfield(flatfield_file)
     hotpix_array = pru.load_hotpixels(hotpixels_file)
-    logfile = pru.create_logfile(beamline=setup.beamline, detector=detector, scan_number=scan,
+    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan,
                                  root_folder=root_folder, filename=specfile_name)
 
     q_values, _, data, _, _, _, _ = \

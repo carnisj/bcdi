@@ -683,43 +683,42 @@ def check_pixels(data, mask, debugging=False):
     return data, mask
 
 
-def create_logfile(beamline, detector, scan_number, root_folder, filename):
+def create_logfile(setup, detector, scan_number, root_folder, filename):
     """
     Create the logfile used in gridmap().
 
-    :param beamline: 'ID01', 'SIXS', 'CRISTAL', 'P10', 'custom'
+    :param setup: the experimental setup: Class SetupPreprocessing()
     :param detector: the detector object: Class experiment_utils.Detector()
     :param scan_number: the scan number to load
     :param root_folder: the root directory of the experiment, where is the specfile/.fio file
     :param filename: the file name to load, or the path of 'alias_dict.txt' for SIXS
     :return: logfile
     """
-    if beamline == 'CRISTAL':  # no specfile, load directly the dataset
+    if setup.custom_scan:  # no log file in that case
+        logfile = ''
+    elif setup.beamline == 'CRISTAL':  # no specfile, load directly the dataset
         import h5py
         ccdfiletmp = os.path.join(detector.datadir + detector.template_imagefile % scan_number)
         logfile = h5py.File(ccdfiletmp, 'r')
 
-    elif beamline == 'P10':  # load .fio file
+    elif setup.beamline == 'P10':  # load .fio file
         logfile = root_folder + filename + '/' + filename + '.fio'
 
-    elif beamline == 'SIXS_2018':  # no specfile, load directly the dataset
+    elif setup.beamline == 'SIXS_2018':  # no specfile, load directly the dataset
         import bcdi.preprocessing.nxsReady as nxsReady
 
         logfile = nxsReady.DataSet(longname=detector.datadir + detector.template_imagefile % scan_number,
                                    shortname=detector.template_imagefile % scan_number, alias_dict=filename,
                                    scan="SBS")
-    elif beamline == 'SIXS_2019':  # no specfile, load directly the dataset
+    elif setup.beamline == 'SIXS_2019':  # no specfile, load directly the dataset
         import bcdi.preprocessing.ReadNxs3 as ReadNxs3
 
         logfile = ReadNxs3.DataSet(directory=detector.datadir, filename=detector.template_imagefile % scan_number,
                                    alias_dict=filename)
 
-    elif beamline == 'ID01':  # load spec file
+    elif setup.beamline == 'ID01':  # load spec file
         from silx.io.specfile import SpecFile
         logfile = SpecFile(root_folder + filename + '.spec')
-
-    elif beamline == 'custom':  # no log file in that case
-        logfile = ''
 
     else:
         raise ValueError('Incorrect value for beamline parameter')
@@ -1141,7 +1140,12 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     if hotpixels is None:
         hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
-    if setup.beamline == 'ID01':
+    if setup.custom_scan:
+        data, mask3d, monitor, frames_logical = load_custom_data(custom_images=setup.custom_images,
+                                                                 custom_monitor=setup.custom_monitor,
+                                                                 detector=detector, flatfield=flatfield,
+                                                                 hotpixels=hotpixels, debugging=False)
+    elif setup.beamline == 'ID01':
         data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
                                                                debugging=debugging)
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
@@ -1153,13 +1157,8 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     elif setup.beamline == 'P10':
         data, mask3d, monitor, frames_logical = load_p10_data(logfile, detector, flatfield, hotpixels,
                                                               debugging=debugging)
-    elif setup.beamline == 'custom':
-        data, mask3d, monitor, frames_logical = load_custom_data(custom_images=setup.custom_images,
-                                                                 custom_monitor=setup.custom_monitor,
-                                                                 detector=detector, flatfield=flatfield,
-                                                                 hotpixels=hotpixels, debugging=False)
     else:
-        raise ValueError('Wrong value for "rocking_angle" parameter')
+        raise ValueError('Wrong value for "beamline" parameter')
 
     # remove indices where frames_logical=0
     nbz, nby, nbx = data.shape
