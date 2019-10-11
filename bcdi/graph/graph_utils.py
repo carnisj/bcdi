@@ -640,11 +640,13 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
         title = title + ' sum'
     if reciprocal_space:
         if is_orthogonal:
+            invert_yaxis = True
             slice_names = (' QyQz', ' QyQx', ' QzQx')
         else:  # detector frame
             slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
     else:
         if is_orthogonal:
+            invert_yaxis = True
             slice_names = (' xy', ' xz', ' yz')
         else:  # detector frame
             slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
