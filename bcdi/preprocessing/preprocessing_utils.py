@@ -1151,6 +1151,9 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
                                                                  custom_monitor=setup.custom_monitor,
                                                                  detector=detector, flatfield=flatfield,
                                                                  hotpixels=hotpixels, debugging=False)
+    elif setup.filtered_data:
+        data, mask3d, monitor, frames_logical = load_filtered_data(detector=detector)
+
     elif setup.beamline == 'ID01':
         data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
                                                                debugging=debugging)
@@ -1183,6 +1186,36 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
             nb_overlap = nb_overlap + 1
 
     return newdata, newmask, monitor, frames_logical
+
+
+def load_filtered_data(detector):
+    """
+    Load a filtered dataset and the corresponding mask.
+
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :return: the data and the mask array
+    """
+    import tkinter as tk
+    from tkinter import filedialog
+
+    root = tk.Tk()
+    root.withdraw()
+
+    file_path = filedialog.askopenfilename(initialdir=detector.datadir, title="Select data file",
+                                           filetypes=[("NPZ", "*.npz")])
+    data = np.load(file_path)
+    npz_key = data.files
+    data = data[npz_key[0]]
+    file_path = filedialog.askopenfilename(initialdir=detector.datadir, title="Select mask file",
+                                           filetypes=[("NPZ", "*.npz")])
+    mask = np.load(file_path)
+    npz_key = mask.files
+    mask = mask[npz_key[0]]
+
+    monitor = np.ones(data.shape[0])
+    frames_logical = np.ones(data.shape[0])
+
+    return data, mask, monitor, frames_logical
 
 
 def load_flatfield(flatfield_file):
