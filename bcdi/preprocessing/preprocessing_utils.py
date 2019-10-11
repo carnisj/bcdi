@@ -948,6 +948,12 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
         gridder(qx, qz, qy, rawdata)
 
         q_values = [gridder.xaxis, gridder.yaxis, gridder.zaxis]
+        fig, _, _ = gu.contour_slices(gridder.data, (gridder.xaxis, gridder.yaxis, gridder.zaxis), sum_frames=False,
+                                      title='Regridded data',
+                                      levels=np.linspace(0, int(np.log10(gridder.data.max())), 150, endpoint=False),
+                                      plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+        fig.savefig(detector.savedir + 'reciprocal_space_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + '.png')
+        plt.close(fig)
 
         return q_values, rawdata, gridder.data, rawmask, mask, frames_logical, monitor
 
