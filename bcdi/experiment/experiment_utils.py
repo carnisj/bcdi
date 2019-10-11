@@ -422,7 +422,7 @@ class SetupPreprocessing(object):
         for k in kwargs.keys():
             if k in ['filtered_data']:
                 filtered_data = kwargs['filtered_data']
-            if k in ['is_orthogonal']:
+            elif k in ['is_orthogonal']:
                 is_orthogonal = kwargs['is_orthogonal']
             elif k in ['custom_scan']:
                 custom_scan = kwargs['custom_scan']
