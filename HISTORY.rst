@@ -1,5 +1,6 @@
 Version 0.0.7
 -------------
+* Feature: add the possibility to pre-process data acquired without scans, e.g. in a macro (no spec file)
 
 * Feature: in strain.py, implement phase unwrapping so that the phase range can be larger than 2*pi
 
