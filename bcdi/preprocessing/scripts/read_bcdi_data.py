@@ -24,18 +24,29 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 936
-root_folder = "D:/data/HC3207/"
-sample_name = "SN"  # "S"
+scan = 1
+root_folder = "D:/data/PtRh/"
+sample_name = "S"  # "S"
 save_mask = False  # set to True to save the mask
-fit_rockingcurve = False  # set to True if you want a fit of the rocking curve
+fit_rockingcurve = True  # set to True if you want a fit of the rocking curve
 ######################################
 # define beamline related parameters #
 ######################################
 beamline = 'ID01'  # name of the beamlis[scan_nb]ne, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+
+
+custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
+custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
+custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
+# ID01: eta, phi, nu, delta
+# CRISTAL: mgomega, gamma, delta
+# P10: om, phi, chi, mu, gamma, delta
+# SIXS: beta, mu, gamma, delta
+
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = 'align2'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -50,7 +61,7 @@ bragg_position = []  # Bragg peak position [vertical, horizontal], leave it as [
 peak_method = 'max'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = 'align_eiger2M_%05d.edf.gz'
+template_imagefile = 'BCDI_eiger2M_%05d.edf'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -65,7 +76,8 @@ template_imagefile = 'align_eiger2M_%05d.edf.gz'
 #################################################
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile)
 
-setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle)
+setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, custom_scan=custom_scan,
+                               custom_images=custom_images, custom_monitor=custom_monitor, custom_motors=custom_motors)
 
 if setup.beamline == 'P10':
     specfile_name = specfile_name % scan
@@ -87,7 +99,7 @@ logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, r
                              filename=specfile_name)
 
 data, mask, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number=scan, detector=detector,
-                                                    beamline=beamline, flatfield=flatfield, hotpixels=hotpix_array,
+                                                    setup=setup, flatfield=flatfield, hotpixels=hotpix_array,
                                                     debugging=False)
 
 numz, numy, numx = data.shape

@@ -69,7 +69,7 @@ normalize_flux = False  # will normalize the intensity by the default monitor.
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
-flag_medianfilter = 'interp_isolated'
+flag_medianfilter = 'skip'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -78,7 +78,7 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 ###########################
 reload_previous = False  # set to 1 to resume a previous masking (load data and mask)
 ###########################
-use_rawdata = True  # 0 for using data orthogonalized by xrayutilities/ 1 for using data in detector reference frame
+use_rawdata = False  # 0 for using data orthogonalized by xrayutilities/ 1 for using data in detector reference frame
 save_to_mat = False  # set to 1 to save also in .mat format
 ######################################
 # define beamline related parameters #
@@ -89,6 +89,11 @@ beamline = 'ID01'  # name of the beamline, used for data loading and normalizati
 custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
+custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
+# ID01: eta, phi, nu, delta
+# CRISTAL: mgomega, gamma, delta
+# P10: om, phi, chi, mu, gamma, delta
+# SIXS: beta, mu, gamma, delta
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
@@ -127,12 +132,12 @@ energy = 9000  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = 0  # outer detector angle offset, not important if you use raw data
-cch1 = 71.61  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-cch2 = 1656.65  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-detrot = -0.897  # detrot parameter from xrayutilities 2D detector calibration
-tiltazimuth = 28.4  # tiltazimuth parameter from xrayutilities 2D detector calibration
-tilt = 3.772  # tilt parameter from xrayutilities 2D detector calibration
+offset_inplane = -0.5  # outer detector angle offset, not important if you use raw data
+cch1 = 1273.5  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch2 = 390.8  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
+tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
+tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -209,15 +214,13 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                                beam_direction=beam_direction, sample_inplane=sample_inplane,
                                sample_outofplane=sample_outofplane, offset_inplane=offset_inplane,
-                               custom_scan=custom_scan, custom_images=custom_images, custom_monitor=custom_monitor)
+                               custom_scan=custom_scan, custom_images=custom_images,
+                               custom_monitor=custom_monitor, custom_motors=custom_motors)
 
 #############################################
 # Initialize geometry for orthogonalization #
 #############################################
-if custom_scan:
-    print('no orthogonalization possible for the "custom" option')
-    use_rawdata = True
-elif not use_rawdata:
+if not use_rawdata:
     qconv, offsets = pru.init_qconversion(setup)
     detector.offsets = offsets
     hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x downstream, y outboard, z vertical

@@ -40,6 +40,16 @@ peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 ######################################
 beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+
+custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
+custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
+custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
+# ID01: eta, phi, nu, delta
+# CRISTAL: mgomega, gamma, delta
+# P10: om, phi, chi, mu, gamma, delta
+# SIXS: beta, mu, gamma, delta
+
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
@@ -59,7 +69,7 @@ roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # A
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = 'BCDI_eiger2M_%05d.edf.gz'
+template_imagefile = 'BCDI_eiger2M_%05d.edf'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -92,7 +102,8 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 # Initialize setup #
 ####################
 setup_pre = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, distance=sdd, energy=energy,
-                                   beam_direction=beam_direction)
+                                   beam_direction=beam_direction, custom_scan=custom_scan, custom_images=custom_images,
+                                   custom_monitor=custom_monitor, custom_motors=custom_motors)
 
 if setup_pre.beamline != 'P10':
     homedir = root_folder + sample_name + str(scan) + '/'
@@ -107,7 +118,8 @@ else:
 print('\nScan', scan)
 print('Setup: ', setup_pre.beamline)
 print('Detector: ', detector.name)
-print('Pixel Size: ', detector.pixelsize, 'm')
+print('Horizontal pixel size: ', detector.pixelsize_x, 'm')
+print('Vertical pixel size: ', detector.pixelsize_y, 'm')
 print('Scan type: ', setup_pre.rocking_angle)
 print('Sample to detector distance: ', setup_pre.distance, 'm')
 print('Energy:', setup_pre.energy, 'ev')
@@ -117,7 +129,7 @@ print('Energy:', setup_pre.energy, 'ev')
 flatfield = pru.load_flatfield(flatfield_file)
 hotpix_array = pru.load_hotpixels(hotpixels_file)
 
-logfile = pru.create_logfile(beamline=setup_pre.beamline, detector=detector, scan_number=scan,
+logfile = pru.create_logfile(setup=setup_pre, detector=detector, scan_number=scan,
                              root_folder=root_folder, filename=specfile_name)
 
 if filtered_data == 0:
@@ -125,6 +137,7 @@ if filtered_data == 0:
         pru.gridmap(logfile=logfile, scan_number=scan, detector=detector, setup=setup_pre,
                     flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=False,
                     debugging=False, orthogonalize=False)
+    # TODO: implement normalization by monitor
 else:
     root = tk.Tk()
     root.withdraw()
@@ -144,8 +157,8 @@ tilt, grazing, inplane, outofplane = pru.motor_values(frames_logical, logfile, s
 setup_post = exp.SetupPostprocessing(beamline=setup_pre.beamline, energy=setup_pre.energy,
                                      outofplane_angle=outofplane, inplane_angle=inplane, tilt_angle=tilt,
                                      rocking_angle=setup_pre.rocking_angle, grazing_angle=grazing,
-                                     distance=setup_pre.distance, pixel_x=detector.pixelsize,
-                                     pixel_y=detector.pixelsize)
+                                     distance=setup_pre.distance, pixel_x=detector.pixelsize_x,
+                                     pixel_y=detector.pixelsize_y)
 
 nb_frames = len(tilt)
 if numz != nb_frames:
@@ -206,8 +219,8 @@ bragg_x = detector.roi[2] + x0  # convert it in full detector pixel
 bragg_y = detector.roi[0] + y0  # convert it in full detector pixel
 
 x_direct_0 = directbeam_x + setup_post.rotation_direction() *\
-             (direct_inplane*np.pi/180*sdd/detector.pixelsize)  # rotation_direction is +1 or -1
-y_direct_0 = directbeam_y - direct_outofplane*np.pi/180*sdd/detector.pixelsize   # outofplane is always clockwise
+             (direct_inplane*np.pi/180*sdd/detector.pixelsize_x)  # rotation_direction is +1 or -1
+y_direct_0 = directbeam_y - direct_outofplane*np.pi/180*sdd/detector.pixelsize_y   # outofplane is always clockwise
 
 print("\nDirect beam at (gam=", str(direct_inplane), "del=", str(direct_outofplane),
       ") = (X, Y): ", directbeam_x, directbeam_y)
@@ -216,8 +229,8 @@ print("Bragg peak at (gam=", str(inplane), "del=", str(outofplane), ") = (X, Y):
       str('{:.2f}'.format(bragg_x)), str('{:.2f}'.format(bragg_y)))
 
 bragg_inplane = inplane + setup_post.rotation_direction() *\
-                (detector.pixelsize*(bragg_x-x_direct_0)/sdd*180/np.pi)  # rotation_direction is +1 or -1
-bragg_outofplane = outofplane - detector.pixelsize*(bragg_y-y_direct_0)/sdd*180/np.pi   # outofplane is always clockwise
+                (detector.pixelsize_x*(bragg_x-x_direct_0)/sdd*180/np.pi)  # rotation_direction is +1 or -1
+bragg_outofplane = outofplane - detector.pixelsize_y*(bragg_y-y_direct_0)/sdd*180/np.pi  # outofplane always clockwise
 
 print("\nBragg angles before correction = (gam, del): ", str('{:.4f}'.format(inplane)),
       str('{:.4f}'.format(outofplane)))
@@ -247,8 +260,8 @@ temperature = pu.bragg_temperature(spacing=dist_plane, reflection=reflection, sp
 # calculate voxel sizes #
 #########################
 dz_realspace = setup_post.wavelength * 1e9 / (nb_frames * d_rocking_angle * np.pi / 180)  # in nm
-dy_realspace = setup_post.wavelength * 1e9 * sdd / (numy * detector.pixelsize)  # in nm
-dx_realspace = setup_post.wavelength * 1e9 * sdd / (numx * detector.pixelsize)  # in nm
+dy_realspace = setup_post.wavelength * 1e9 * sdd / (numy * detector.pixelsize_y)  # in nm
+dx_realspace = setup_post.wavelength * 1e9 * sdd / (numx * detector.pixelsize_x)  # in nm
 print('Real space voxel size (z, y, x): ', str('{:.2f}'.format(dz_realspace)), 'nm',
       str('{:.2f}'.format(dy_realspace)), 'nm', str('{:.2f}'.format(dx_realspace)), 'nm')
 
