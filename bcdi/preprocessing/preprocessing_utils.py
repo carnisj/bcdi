@@ -920,7 +920,24 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
 
     if not orthogonalize:
         return [], rawdata, [], rawmask, [], frames_logical, monitor
+
+    elif setup.is_orthogonal:
+        # load q values, the data is already orthogonalized
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.askopenfilename(title="Select the file containing QxQzQy",
+                                               initialdir=detector.datadir, filetypes=[("NPZ", "*.npz")])
+        npzfile = np.load(file_path)
+        q_values = [npzfile['qx'], npzfile['qz'], npzfile['qy']]
+        return q_values, [], rawdata, [], rawmask, frames_logical, monitor
+
     else:
+        if setup.filtered_data:
+            print('Trying to orthogonalize a filtered data, the corresponding detector ROI should be provided\n'
+                  'otherwise q values will be wrong.')
         nbz, nby, nbx = rawdata.shape
         qx, qz, qy, frames_logical = \
             regrid(logfile=logfile, nb_frames=rawdata.shape[0], scan_number=scan_number, detector=detector,

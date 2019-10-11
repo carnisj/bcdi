@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import hdf5plugin  # for P10, should be imported before h5py or PyTables
+import pathlib
 import numpy as np
 import xrayutilities as xu
 import scipy.signal  # for medfilt2d
@@ -43,9 +44,10 @@ sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
 filtered_data = True  # set to True if the data is already a 3D array, False otherwise
+is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
 # Should be the same shape as in specfile, before orthogonalization
-radius_mean = 0.034  # q from Bragg peak
-dr = 0.001        # delta_q
+radius_mean = 0.04  # q from Bragg peak
+dr = 0.002        # delta_q
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
@@ -84,7 +86,7 @@ beamline = 'ID01'  # name of the beamline, used for data loading and normalizati
 custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
-custom_motors = {"eta": 17.989, "phi": 0, "nu": 0, "delta": 35.978}
+custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 35.978}
 # ID01: eta, phi, nu, delta
 # CRISTAL: mgomega, gamma, delta
 # P10: om, phi, chi, mu, gamma, delta
@@ -103,7 +105,7 @@ specfile_name = ''
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 424  # horizontal pixel number of the Bragg peak
+x_bragg = 451  # horizontal pixel number of the Bragg peak
 y_bragg = 1450  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
@@ -111,8 +113,8 @@ roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # A
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
-flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'BCDI_eiger2M_%05d.edf.gz'
+flatfield_file = root_folder + "flatfield_eiger.npz"  #
+template_imagefile = 'BCDI_eiger2M_%05d.edf'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -122,23 +124,23 @@ template_imagefile = 'BCDI_eiger2M_%05d.edf.gz'
 # define parameters for xrayutilities, used for orthogonalization #
 ###################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
-sdd = 0.86180  # sample to detector distance in m, not important if you use raw data
+sdd = 0.865  # sample to detector distance in m, not important if you use raw data
 energy = 9000  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = -2.5292  # outer detector angle offset, not important if you use raw data
-cch1 = 1272.57  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-cch2 = -16.47  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-detrot = -0.385  # detrot parameter from xrayutilities 2D detector calibration
-tiltazimuth = 237.2  # tiltazimuth parameter from xrayutilities 2D detector calibration
-tilt = 1.316  # tilt parameter from xrayutilities 2D detector calibration
+offset_inplane = -0.5  # outer detector angle offset, not important if you use raw data
+cch1 = 1273.5  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch2 = 390.8  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
+tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
+tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
 ##################################################################################################
 # calculate theoretical angles between the measured reflection and other planes - only for cubic #
 ##################################################################################################
 planes = dict()  # create dictionnary
 planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-planes['1 -2 1'] = fu.plane_angle_cubic(reflection, np.array([1, -2, 1]))
+planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
 ###################
 # define colormap #
 ###################
@@ -161,7 +163,8 @@ setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=r
                                beam_direction=beam_direction, sample_inplane=sample_inplane,
                                sample_outofplane=sample_outofplane, sample_offsets=(offset_chi, offset_phi, offset_eta),
                                offset_inplane=offset_inplane, custom_scan=custom_scan, custom_images=custom_images,
-                               custom_monitor=custom_monitor, custom_motors=custom_motors)
+                               custom_monitor=custom_monitor, custom_motors=custom_motors, filtered_data=filtered_data,
+                               is_orthogonal=is_orthogonal)
 
 #############################################
 # Initialize geometry for orthogonalization #
@@ -173,8 +176,8 @@ hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x d
 cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
 cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
 hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
-                     Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize,
-                     pwidth2=detector.pixelsize, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
+                     Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize_y,
+                     pwidth2=detector.pixelsize_x, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
 # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
 #############
@@ -193,8 +196,9 @@ else:
     template_imagefile = specfile_name + template_imagefile
     detector.template_imagefile = template_imagefile
 
+detector.savedir = homedir
+
 if not reconstructed_data:
-    comment = comment + "_diffpattern"
     flatfield = pru.load_flatfield(flatfield_file)
     hotpix_array = pru.load_hotpixels(hotpixels_file)
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan,
