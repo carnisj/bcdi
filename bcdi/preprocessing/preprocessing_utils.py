@@ -1590,13 +1590,18 @@ def motor_positions_cristal(logfile, setup):
     if setup.rocking_angle != 'outofplane':
         raise ValueError('Only out of plane rocking curve implemented for CRISTAL')
 
-    group_key = list(logfile.keys())[0]
+    if not setup.custom_scan:
+        group_key = list(logfile.keys())[0]
 
-    mgomega = logfile['/' + group_key + '/scan_data/actuator_1_1'][:] / 1e6  # mgomega is scanned
+        mgomega = logfile['/' + group_key + '/scan_data/actuator_1_1'][:] / 1e6  # mgomega is scanned
 
-    delta = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-DELTA/position'][:]
+        delta = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-DELTA/position'][:]
 
-    gamma = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-GAMMA/position'][:]
+        gamma = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-GAMMA/position'][:]
+    else:
+        mgomega = setup.custom_motors["mgomega"] / 1e6
+        delta = setup.custom_motors["delta"]
+        gamma = setup.custom_motors["gamma"]
 
     return mgomega, gamma, delta
 
@@ -1613,46 +1618,54 @@ def motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bra
     :param setup: the experimental setup: Class SetupPreprocessing()
     :return: (eta, chi, phi, nu, delta, energy) motor positions
     """
-    motor_names = logfile[str(scan_number) + '.1'].motor_names  # positioners
-    motor_positions = logfile[str(scan_number) + '.1'].motor_positions  # positioners
-    labels = logfile[str(scan_number) + '.1'].labels  # motor scanned
-    labels_data = logfile[str(scan_number) + '.1'].data  # motor scanned
-
     energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
 
-    if follow_bragg:
-        delta = list(labels_data[labels.index('del'), :])  # scanned
-    else:
-        delta = motor_positions[motor_names.index('del')]  # positioner
-    nu = motor_positions[motor_names.index('nu')]  # positioner
-    chi = 0
+    if not setup.custom_scan:
+        motor_names = logfile[str(scan_number) + '.1'].motor_names  # positioners
+        motor_positions = logfile[str(scan_number) + '.1'].motor_positions  # positioners
+        labels = logfile[str(scan_number) + '.1'].labels  # motor scanned
+        labels_data = logfile[str(scan_number) + '.1'].data  # motor scanned
 
-    if setup.rocking_angle == "outofplane":
-        eta = labels_data[labels.index('eta'), :]
-        phi = motor_positions[motor_names.index('phi')]
-    elif setup.rocking_angle == "inplane":
-        phi = labels_data[labels.index('phi'), :]
-        eta = motor_positions[motor_names.index('eta')]
-    elif setup.rocking_angle == "energy":
-        raw_energy = list(labels_data[labels.index('energy'), :])  # in kev, scanned
-        phi = motor_positions[motor_names.index('phi')]  # positioner
-        eta = motor_positions[motor_names.index('eta')]  # positioner
-        if follow_bragg == 1:
+        if follow_bragg:
             delta = list(labels_data[labels.index('del'), :])  # scanned
+        else:
+            delta = motor_positions[motor_names.index('del')]  # positioner
+        nu = motor_positions[motor_names.index('nu')]  # positioner
+        chi = 0
 
-        nb_overlap = 0
-        energy = raw_energy[:]
-        for idx in range(len(raw_energy) - 1):
-            if raw_energy[idx + 1] == raw_energy[idx]:  # duplicate energy when undulator gap is changed
-                frames_logical[idx + 1] = 0
-                energy.pop(idx - nb_overlap)
-                if follow_bragg == 1:
-                    delta.pop(idx - nb_overlap)
-                nb_overlap = nb_overlap + 1
-        energy = np.array(energy) * 1000.0 - 6  # switch to eV, 6 eV of difference at ID01
+        if setup.rocking_angle == "outofplane":
+            eta = labels_data[labels.index('eta'), :]
+            phi = motor_positions[motor_names.index('phi')]
+        elif setup.rocking_angle == "inplane":
+            phi = labels_data[labels.index('phi'), :]
+            eta = motor_positions[motor_names.index('eta')]
+        elif setup.rocking_angle == "energy":
+            raw_energy = list(labels_data[labels.index('energy'), :])  # in kev, scanned
+            phi = motor_positions[motor_names.index('phi')]  # positioner
+            eta = motor_positions[motor_names.index('eta')]  # positioner
+            if follow_bragg == 1:
+                delta = list(labels_data[labels.index('del'), :])  # scanned
+
+            nb_overlap = 0
+            energy = raw_energy[:]
+            for idx in range(len(raw_energy) - 1):
+                if raw_energy[idx + 1] == raw_energy[idx]:  # duplicate energy when undulator gap is changed
+                    frames_logical[idx + 1] = 0
+                    energy.pop(idx - nb_overlap)
+                    if follow_bragg == 1:
+                        delta.pop(idx - nb_overlap)
+                    nb_overlap = nb_overlap + 1
+            energy = np.array(energy) * 1000.0 - 6  # switch to eV, 6 eV of difference at ID01
+
+        else:
+            raise ValueError('Invalid rocking angle ', setup.rocking_angle, 'for ID01')
 
     else:
-        raise ValueError('Invalid rocking angle ', setup.rocking_angle, 'for ID01')
+        eta = setup.custom_motors["eta"]
+        chi = 0
+        phi = setup.custom_motors["phi"]
+        delta = setup.custom_motors["delta"]
+        nu = setup.custom_motors["nu"]
 
     return eta, chi, phi, nu, delta, energy, frames_logical
 
@@ -1665,54 +1678,62 @@ def motor_positions_p10(logfile, setup):
     :param setup: the experimental setup: Class SetupPreprocessing()
     :return: (om, phi, chi, mu, gamma, delta) motor positions
     """
+    if not setup.custom_scan:
+        fio = open(logfile, 'r')
+        if setup.rocking_angle == "outofplane":
+            om = []
+        elif setup.rocking_angle == "inplane":
+            phi = []
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
 
-    fio = open(logfile, 'r')
-    if setup.rocking_angle == "outofplane":
-        om = []
-    elif setup.rocking_angle == "inplane":
-        phi = []
+        fio_lines = fio.readlines()
+        for line in fio_lines:
+            this_line = line.strip()
+            words = this_line.split()
+
+            if 'Col' in words and 'om' in words:  # om scanned, template = ' Col 0 om DOUBLE\n'
+                index_om = int(words[1]) - 1  # python index starts at 0
+            if 'om' in words and '=' in words and setup.rocking_angle == "inplane":  # om is a positioner
+                om = float(words[2])
+
+            if 'Col' in words and ('phi' in words or 'sprz' in words):  # phi scanned, template = ' Col 0 phi DOUBLE\n'
+                index_phi = int(words[1]) - 1  # python index starts at 0
+            if 'phi' in words and '=' in words and setup.rocking_angle == "outofplane":  # phi is a positioner
+                phi = float(words[2])
+
+            if 'chi' in words and '=' in words:  # template for positioners: 'chi = 90.0\n'
+                chi = float(words[2])
+            if 'del' in words and '=' in words:  # template for positioners: 'del = 30.05\n'
+                delta = float(words[2])
+            if 'gam' in words and '=' in words:  # template for positioners: 'gam = 4.05\n'
+                gamma = float(words[2])
+            if 'mu' in words and '=' in words:  # template for positioners: 'mu = 0.0\n'
+                mu = float(words[2])
+
+            try:
+                float(words[0])  # if this does not fail, we are reading data
+                if setup.rocking_angle == "outofplane":
+                    om.append(float(words[index_om]))
+                else:  # phi
+                    phi.append(float(words[index_phi]))
+            except ValueError:  # first word is not a number, skip this line
+                continue
+
+        if setup.rocking_angle == "outofplane":
+            om = np.asarray(om, dtype=float)
+        else:  # phi
+            phi = np.asarray(phi, dtype=float)
+
+        fio.close()
+
     else:
-        raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    fio_lines = fio.readlines()
-    for line in fio_lines:
-        this_line = line.strip()
-        words = this_line.split()
-
-        if 'Col' in words and 'om' in words:  # om is scanned, template = ' Col 0 om DOUBLE\n'
-            index_om = int(words[1]) - 1  # python index starts at 0
-        if 'om' in words and '=' in words and setup.rocking_angle == "inplane":  # om is a positioner
-            om = float(words[2])
-
-        if 'Col' in words and ('phi' in words or 'sprz' in words):  # phi is scanned, template = ' Col 0 phi DOUBLE\n'
-            index_phi = int(words[1]) - 1  # python index starts at 0
-        if 'phi' in words and '=' in words and setup.rocking_angle == "outofplane":  # phi is a positioner
-            phi = float(words[2])
-
-        if 'chi' in words and '=' in words:  # template for positioners: 'chi = 90.0\n'
-            chi = float(words[2])
-        if 'del' in words and '=' in words:  # template for positioners: 'del = 30.05\n'
-            delta = float(words[2])
-        if 'gam' in words and '=' in words:  # template for positioners: 'gam = 4.05\n'
-            gamma = float(words[2])
-        if 'mu' in words and '=' in words:  # template for positioners: 'mu = 0.0\n'
-            mu = float(words[2])
-
-        try:
-            float(words[0])  # if this does not fail, we are reading data
-            if setup.rocking_angle == "outofplane":
-                om.append(float(words[index_om]))
-            else:  # phi
-                phi.append(float(words[index_phi]))
-        except ValueError:  # first word is not a number, skip this line
-            continue
-
-    if setup.rocking_angle == "outofplane":
-        om = np.asarray(om, dtype=float)
-    else:  # phi
-        phi = np.asarray(phi, dtype=float)
-
-    fio.close()
+        om = setup.custom_motors["om"]
+        chi = setup.custom_motors["chi"]
+        phi = setup.custom_motors["phi"]
+        delta = setup.custom_motors["delta"]
+        gamma = setup.custom_motors["gamma"]
+        mu = setup.custom_motors["mu"]
     return om, phi, chi, mu, gamma, delta
 
 
@@ -1726,24 +1747,29 @@ def motor_positions_sixs(logfile, frames_logical, setup):
     :param setup: the experimental setup: Class SetupPreprocessing()
     :return: (beta, mgomega, gamma, delta) motor positions and updated frames_logical
     """
-    delta = logfile.delta[0]  # not scanned
-    gamma = logfile.gamma[0]  # not scanned
-    if setup.beamline == 'SIXS_2018':
-        beta = logfile.basepitch[0]  # not scanned
-    elif setup.beamline == 'SIXS_2019':  # data recorder changed after 11/03/2019
-        beta = logfile.beta[0]  # not scanned
-    else:
-        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
-    temp_mu = logfile.mu[:]
-
-    mu = np.zeros((frames_logical != 0).sum())  # first frame is duplicated for SIXS_2018
-    nb_overlap = 0
-    for idx in range(len(frames_logical)):
-        if frames_logical[idx]:
-            mu[idx - nb_overlap] = temp_mu[idx]
+    if not setup.custom_scan:
+        delta = logfile.delta[0]  # not scanned
+        gamma = logfile.gamma[0]  # not scanned
+        if setup.beamline == 'SIXS_2018':
+            beta = logfile.basepitch[0]  # not scanned
+        elif setup.beamline == 'SIXS_2019':  # data recorder changed after 11/03/2019
+            beta = logfile.beta[0]  # not scanned
         else:
-            nb_overlap = nb_overlap + 1
+            raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
+        temp_mu = logfile.mu[:]
 
+        mu = np.zeros((frames_logical != 0).sum())  # first frame is duplicated for SIXS_2018
+        nb_overlap = 0
+        for idx in range(len(frames_logical)):
+            if frames_logical[idx]:
+                mu[idx - nb_overlap] = temp_mu[idx]
+            else:
+                nb_overlap = nb_overlap + 1
+    else:
+        beta = setup.custom_motors["beta"]
+        delta = setup.custom_motors["delta"]
+        gamma = setup.custom_motors["gamma"]
+        mu = setup.custom_motors["mu"]
     return beta, mu, gamma, delta, frames_logical
 
 
