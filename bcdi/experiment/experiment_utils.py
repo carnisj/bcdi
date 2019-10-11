@@ -412,13 +412,19 @@ class SetupPreprocessing(object):
          (outboard). This corresponds to (chi, phi, incident angle) in a standard diffractometer.
         :param offset_inplane: outer angle offset as defined by xrayutilities detector calibration
         :param kwargs:
+         - 'filtered_data' = True when the data is a 3D npy/npz array already cleaned up
+         - 'is_orthogonal' = True if 'filtered_data' is already orthogonalized
          - 'custom_scan' = True for a stack of images acquired without scan, (no motor data in the spec file)
          - 'custom_images' = list of image numbers for the custom_scan
          - 'custom_monitor' = list of monitor values for normalization for the custom_scan
          - 'custom_motors' = dictionnary of motors values during the scan
         """
         for k in kwargs.keys():
-            if k in ['custom_scan']:
+            if k in ['filtered_data']:
+                filtered_data = kwargs['filtered_data']
+            if k in ['is_orthogonal']:
+                is_orthogonal = kwargs['is_orthogonal']
+            elif k in ['custom_scan']:
                 custom_scan = kwargs['custom_scan']
             elif k in ['custom_images']:
                 custom_images = kwargs['custom_images']
@@ -429,6 +435,14 @@ class SetupPreprocessing(object):
             else:
                 raise Exception("unknown keyword argument given: allowed is"
                                 "'custom_images', 'custom_monitor', 'custom_motors'")
+        try:
+            filtered_data
+        except NameError:  # filtered_data not declared
+            filtered_data = False
+        try:
+            is_orthogonal
+        except NameError:  # is_orthogonal not declared
+            is_orthogonal = False
         try:
             custom_scan
         except NameError:  # custom_scan not declared
@@ -447,6 +461,8 @@ class SetupPreprocessing(object):
             custom_motors = {}
 
         self.beamline = beamline  # string
+        self.filtered_data = filtered_data  # boolean
+        self.is_orthogonal = is_orthogonal
         self.custom_scan = custom_scan  # boolean
         self.custom_images = custom_images  # list
         self.custom_monitor = custom_monitor  # list
