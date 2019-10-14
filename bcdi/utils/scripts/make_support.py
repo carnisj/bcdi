@@ -28,7 +28,9 @@ original_shape = [100, 320, 350]  # shape of the array used for phasing and find
 binning_original = (1, 2, 2)  # binning that was used in PyNX during phasing
 output_shape = [100, 640, 700]  # shape of the array for later phasing (before binning_output)
 binning_output = (1, 2, 2)  # binning that will be used in PyNX for later phasing
-reload_support = False  # if True, will load the support and skip masking
+skip_masking = False  # if True, will skip thresholding and masking
+reload_support = True  # if True, will load the support which shape is assumed to be the shape after binning_output
+# it is usefull to redo some masking without interpolating again.
 is_ortho = False  # True if the data is already orthogonalized
 roll_modes = (0, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 roll_centering = (0, 0, 0)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
@@ -85,9 +87,14 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the reconstruction",
                                        filetypes=[("HDF5", "*.h5"), ("NPZ", "*.npz"), ("CXI", "*.cxi")])
 data, _ = pu.load_reconstruction(file_path)
-binned_shape = [int(original_shape[idx] * binning_original[idx]) for idx in range(0, len(binning_original))]
+
+if reload_support:
+    binned_shape = [int(output_shape[idx] / binning_output[idx]) for idx in range(0, len(binning_output))]
+else:
+    binned_shape = [int(original_shape[idx] * binning_original[idx]) for idx in range(0, len(binning_original))]
 nz, ny, nx = binned_shape
-if not reload_support:
+
+if not skip_masking:
 
     data = np.roll(data, roll_modes, axis=(0, 1, 2))
 
