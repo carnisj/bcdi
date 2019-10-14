@@ -89,7 +89,6 @@ file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the
 data, _ = pu.load_reconstruction(file_path)
 
 if reload_support:
-    is_ortho = True  # support has been orthogonalized already
     binned_shape = [int(output_shape[idx] / binning_output[idx]) for idx in range(0, len(binning_output))]
 else:
     binned_shape = [int(original_shape[idx] * binning_original[idx]) for idx in range(0, len(binning_original))]
