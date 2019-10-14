@@ -18,11 +18,11 @@ helptext = """
 Create a support from a reconstruction, using the indicated threshold.
 The support can be cropped/padded to a desired shape.
 In real space the CXI convention is used: z downstream, y vertical up, x outboard.
-In reciprocal space, the following convetion is used: qx downtream, qz vertical up, qy outboard
+In reciprocal space, the following convention is used: qx downtream, qz vertical up, qy outboard
 
 """
 
-root_folder = "D:/data/PtRh/S1/pynxraw/"  # "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/"
+root_folder = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/830_1000_830_1_1_1/"
 support_threshold = 0.1  # in % of the normalized absolute value
 original_shape = [564, 800, 564]  # shape of the array used for phasing and finding the support (after binning_original)
 binning_original = (2, 2, 2)  # binning that was used in PyNX during phasing
@@ -187,7 +187,7 @@ plt.close(fig)
 # rescale the support if needed #
 #################################
 nbz, nby, nbx = output_shape
-if (nbz != nz) or (nby != ny) or (nbx != nx):
+if ((nbz != nz) or (nby != ny) or (nbx != nx)) and not reload_support:
     print('Interpolating the support to match the output shape of', output_shape)
     if is_ortho:
         # load the original q values to calculate actual real space voxel sizes
