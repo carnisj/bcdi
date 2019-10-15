@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Template for making figure for paper about simulations
-Open the simulated amp_dist_strain.npz file and the reconstructed amp_dist_strain.npz, and plot difference maps
-"""
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
@@ -15,6 +18,12 @@ from scipy.signal import convolve
 import matplotlib.ticker as ticker
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 from bcdi.utils import image_registration as reg
+
+helptext = """
+Template for making figure for paper about simulations
+Open the simulated amp_dist_strain.npz file and the reconstructed amp_dist_strain.npz, and plot difference maps
+"""
+
 
 scan = 2227  # spec scan number
 datadir = "G:/review paper/BCDI_isosurface/S"+str(scan)+"/simu/crop400phase/no_apodization/avg1/"

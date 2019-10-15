@@ -1,14 +1,23 @@
 # -*- coding: utf-8 -*-
-"""
-Template for making figure for paper
-Open an npz file (3D diffraction pattern) and save individual figures
-"""
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import tkinter as tk
 from tkinter import filedialog
 from scipy.ndimage.measurements import center_of_mass
+
+helptext = """
+Template for making figure for paper
+Open an npz file (3D diffraction pattern) and save individual figures
+"""
+
 
 scan = 978  # spec scan number
 datadir = "C:/Users/carnis/Work Folders/Documents/data/HC3207/SN"+str(scan)+"/pynxraw/"
