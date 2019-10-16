@@ -68,25 +68,78 @@ amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
 print("Cropped/padded data size: (", numz, ',', numy, ',', numx, ')')
 
-###################################
-# plot 3D isosurface using mayavi #
-###################################
+plt.ion()
+##################################
+# plot 3D isosurface (side view) #
+##################################
 grid_qx, grid_qz, grid_qy = np.mgrid[0:2*z_pixel_FOV*voxel_size:voxel_size,
                                      0:2*y_pixel_FOV*voxel_size:voxel_size,
                                      0:2*x_pixel_FOV*voxel_size:voxel_size]
 extent = [0, 2*z_pixel_FOV*voxel_size, 0, 2*y_pixel_FOV*voxel_size, 0, 2*x_pixel_FOV*voxel_size]
 # in CXI convention, z is downstream, y vertical and x outboard
 
-mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+sidefig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
 mlab.contour3d(grid_qx, grid_qz, grid_qy,
                amp[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
                    numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
                    numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
                contours=[threshold_isosurface], color=(0.7, 0.7, 0.7))
-mlab.outline(extent=extent, line_width=2.0)
+mlab.view(azimuth=180, elevation=90, distance=3*field_of_view[0])  # azimut is the rotation around z axis of mayavi (x)
+mlab.roll(0)
+# mlab.outline(extent=extent, line_width=2.0)
 ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=int(1+field_of_view[0]/tick_spacing))
+mlab.savefig(homedir + 'S' + str(scan) + '-sideview_labels.png', figure=sidefig)
 ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
-# mlab.axes(xlabel='x', ylabel='y', zlabel='z',ranges=(1000,1100,1200),nb_labels=5)
-# mlab.axes(ranges=[-0.1, 0.05, 2.71, 2.83, 0.05, 0.19], nb_labels=3, xlabel='z', ylabel='y', zlabel='x')  #
-mlab.show()
+mlab.savefig(homedir + 'S' + str(scan) + '-sideview.png', figure=sidefig)
+mlab.close(sidefig)
+
+##################################
+# plot 3D isosurface (front view) #
+##################################
+grid_qx, grid_qz, grid_qy = np.mgrid[0:2*z_pixel_FOV*voxel_size:voxel_size,
+                                     0:2*y_pixel_FOV*voxel_size:voxel_size,
+                                     0:2*x_pixel_FOV*voxel_size:voxel_size]
+extent = [0, 2*z_pixel_FOV*voxel_size, 0, 2*y_pixel_FOV*voxel_size, 0, 2*x_pixel_FOV*voxel_size]
+# in CXI convention, z is downstream, y vertical and x outboard
+
+frontfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+mlab.contour3d(grid_qx, grid_qz, grid_qy,
+               amp[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
+                   numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
+                   numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
+               contours=[threshold_isosurface], color=(0.7, 0.7, 0.7))
+mlab.view(azimuth=0, elevation=180, distance=3*field_of_view[0])  # azimut is the rotation around z axis of mayavi (x)
+mlab.roll(0)
+# mlab.outline(extent=extent, line_width=2.0)
+ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=int(1+field_of_view[0]/tick_spacing))
+mlab.savefig(homedir + 'S' + str(scan) + '-frontview_labels.png', figure=frontfig)
+ax.label_text_property.opacity = 0.0
+ax.title_text_property.opacity = 0.0
+mlab.savefig(homedir + 'S' + str(scan) + '-frontview.png', figure=frontfig)
+mlab.close(frontfig)
+
+####################################
+# plot 3D isosurface (tilted view) #
+####################################
+grid_qx, grid_qz, grid_qy = np.mgrid[0:2*z_pixel_FOV*voxel_size:voxel_size,
+                                     0:2*y_pixel_FOV*voxel_size:voxel_size,
+                                     0:2*x_pixel_FOV*voxel_size:voxel_size]
+extent = [0, 2*z_pixel_FOV*voxel_size, 0, 2*y_pixel_FOV*voxel_size, 0, 2*x_pixel_FOV*voxel_size]
+# in CXI convention, z is downstream, y vertical and x outboard
+
+tiltfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+mlab.contour3d(grid_qx, grid_qz, grid_qy,
+               amp[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
+                   numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
+                   numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
+               contours=[threshold_isosurface], color=(0.7, 0.7, 0.7))
+mlab.view(azimuth=150, elevation=70, distance=3*field_of_view[0])  # azimut is the rotation around z axis of mayavi (x)
+mlab.roll(0)
+# mlab.outline(extent=extent, line_width=2.0)
+ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=int(1+field_of_view[0]/tick_spacing))
+mlab.savefig(homedir + 'S' + str(scan) + '-tiltview_labels.png', figure=tiltfig)
+ax.label_text_property.opacity = 0.0
+ax.title_text_property.opacity = 0.0
+mlab.savefig(homedir + 'S' + str(scan) + '-tiltview.png', figure=tiltfig)
+mlab.close(tiltfig)
