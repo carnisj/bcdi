@@ -44,7 +44,7 @@ root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2"  # "S"
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (2, 2, 2)  # binning that will be used for phasing
+binning = [2, 2, 2]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
@@ -184,6 +184,13 @@ def press_key(event):
         pass
 
 
+#########################
+# check some parameters #
+#########################
+if not use_rawdata:
+    print('Defaulting binning along the stacking dimension to 1 for orthogonalized data')
+    binning[0] = 1
+    
 #######################
 # Initialize detector #
 #######################
