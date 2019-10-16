@@ -737,7 +737,7 @@ def find_outlier_pixels(data,tolerance=3,worry_about_edges=True):
 
     return hot_pixels,fixed_image
 
-			
+"""			
 #datapath = '/data/id01/inhouse/otherlightsources/2019_sixs/results/S263/pynxraw/S263_pynx_norm_128_252_224.npz'
 #data = np.load(datapath)['data']
 
@@ -769,7 +769,7 @@ print(data.shape,hotpix.shape)
 maskMaker = maskMaker(data,mask=mask,hotpix=hotpix)
 
 maskInteraction = maskInteraction(data,mask=mask,hotpix=hotpix,flag_aliens=True, mask_zero_event = False)
-
+"""
 """
 # save the data 
 outpath = '20190704_hotpixels.h5'
