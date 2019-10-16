@@ -1056,6 +1056,7 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
     else:
         try:
             data = logfile.mpx_image[:]
+            monitor = logfile.imon0[:] # fix from MD and NL ??
         except:
             data = logfile.maxpix[:]
             monitor = logfile.imon0[:]
