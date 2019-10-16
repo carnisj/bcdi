@@ -499,30 +499,53 @@ class Detector(object):
         :param binning: binning of the 3D dataset (stacking dimension, detector vertical axis, detector horizontal axis)
         :param kwargs:
          - 'is_series' = boolean, True is the measurement is a series at P10 beamline
+         - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
         """
         for k in kwargs.keys():
             if k in ['is_series']:
                 self.is_series = kwargs['is_series']
+            elif k in ['nb_pixel_x']:
+                nb_pixel_x = kwargs['nb_pixel_x']
+            elif k in ['nb_pixel_y']:
+                nb_pixel_y = kwargs['nb_pixel_y']
             else:
                 raise Exception("unknown keyword argument given:", k)
 
         self.name = name  # string
         self.offsets = ()
         if name == 'Maxipix':
-            self.nb_pixel_x = 516
-            self.nb_pixel_y = 516
+            try:
+                self.nb_pixel_x = nb_pixel_x
+            except NameError:  # nb_pixel_x not declared
+                self.nb_pixel_x = 516
+            try:
+                self.nb_pixel_y = nb_pixel_y
+            except NameError:  # nb_pixel_y not declared
+                self.nb_pixel_y = 516
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'mpx4inr'
         elif name == 'Eiger2M':
-            self.nb_pixel_x = 1030
-            self.nb_pixel_y = 2164  # 1614 now since one quadrant is dead
+            try:
+                self.nb_pixel_x = nb_pixel_x
+            except NameError:  # nb_pixel_x not declared
+                self.nb_pixel_x = 1030
+            try:
+                self.nb_pixel_y = nb_pixel_y
+            except NameError:  # nb_pixel_y not declared
+                self.nb_pixel_y = 2164
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = 'ei2minr'
         elif name == 'Eiger4M':
-            self.nb_pixel_x = 2070
-            self.nb_pixel_y = 2167
+            try:
+                self.nb_pixel_x = nb_pixel_x
+            except NameError:  # nb_pixel_x not declared
+                self.nb_pixel_x = 2070
+            try:
+                self.nb_pixel_y = nb_pixel_y
+            except NameError:  # nb_pixel_y not declared
+                self.nb_pixel_y = 2167
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = ''  # unused
