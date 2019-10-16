@@ -200,7 +200,6 @@ try:
 except NameError:  # nb_pixel_x not declared
     pass
 try:
-    nb_pixel_y
     kwargs['nb_pixel_y'] = nb_pixel_y
 except NameError:  # nb_pixel_y not declared
     pass
