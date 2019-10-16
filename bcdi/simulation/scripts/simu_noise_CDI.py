@@ -290,21 +290,6 @@ def update_coords(mygrid, wavelength, outofplane, inplane, tilt, myrocking_angle
     return out_z, out_y, out_x, transfer_matrix
 
 
-def plane_angle(ref_plane, plane):
-    """
-    Calculate the angle between two crystallographic planes in cubic materials
-    :param ref_plane: measured reflection
-    :param plane: plane for which angle should be calculated
-    :return: the angle in degrees
-    """
-    if np.array_equal(ref_plane, plane):
-        my_angle = 0.0
-    else:
-        my_angle = 180/np.pi*np.arccos(sum(np.multiply(ref_plane, plane)) /
-                                       (np.linalg.norm(ref_plane)*np.linalg.norm(plane)))
-    return my_angle
-
-
 ###################
 # define colormap #
 ###################
@@ -461,7 +446,7 @@ else:
         ref_axis_outplane = "y"
         myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
     print('Q aligned along ', ref_axis_outplane, ":", myaxis)
-    angle = plane_angle(np.array([q[2], q[1], q[0]])/np.linalg.norm(q), myaxis)
+    angle = pru.plane_angle(np.array([q[2], q[1], q[0]])/np.linalg.norm(q), myaxis)
     print("Angle between q and", ref_axis_outplane, "=", angle, "deg")
     print("Angle with y in zy plane", np.arctan(q[0]/q[1])*180/np.pi, "deg")
     print("Angle with y in xy plane", np.arctan(-q[2]/q[1])*180/np.pi, "deg")
