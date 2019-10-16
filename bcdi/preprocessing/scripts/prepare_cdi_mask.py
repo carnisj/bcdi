@@ -44,7 +44,7 @@ root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2"  # "S"
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (2, 2, 2)  # binning that will be used for phasing
+binning = [2, 2, 2]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
@@ -184,11 +184,32 @@ def press_key(event):
         pass
 
 
+#########################
+# check some parameters #
+#########################
+if not use_rawdata:
+    print('Defaulting binning along the stacking dimension to 1 for orthogonalized data')
+    binning[0] = 1
+
 #######################
 # Initialize detector #
 #######################
+kwargs = dict()  # create dictionnary
+try:
+    kwargs['nb_pixel_x'] = nb_pixel_x
+except NameError:  # nb_pixel_x not declared
+    pass
+try:
+    kwargs['nb_pixel_y'] = nb_pixel_y
+except NameError:  # nb_pixel_y not declared
+    pass
+try:
+    kwargs['is_series'] = is_series
+except NameError:  # is_series not declared
+    pass
+
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
-                        binning=binning, is_series=is_series)
+                        binning=binning, **kwargs)
 
 ####################
 # Initialize setup #

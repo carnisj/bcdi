@@ -8,7 +8,6 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
 from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
@@ -108,9 +107,9 @@ if flag_strain:
 numz, numy, numx = amp.shape
 print("Initial data size: (", numz, ',', numy, ',', numx, ')')
 
-#############################
-#  pad arrays to obtain the desired field of view
-#############################
+###################################################
+#  pad arrays to obtain the desired field of view #
+###################################################
 pixel_spacing = tick_spacing / voxel_size
 pixel_FOV = int(np.rint((field_of_view / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 new_shape = [max(numz, 2*pixel_FOV), max(numy, 2*pixel_FOV), max(numx, 2*pixel_FOV)]
@@ -122,9 +121,9 @@ bulk = pu.crop_pad(array=bulk, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
 print("Cropped/padded data size: (", numz, ',', numy, ',', numx, ')')
 
-#############################
-# center arrays based on the support
-#############################
+######################################
+# center arrays based on the support #
+######################################
 zcom, ycom, xcom = center_of_mass(support)
 zcom, ycom, xcom = [int(np.rint(zcom)), int(np.rint(ycom)), int(np.rint(xcom))]
 support = np.roll(support, (numz//2-zcom, numy//2-ycom, numx//2-xcom), axis=(0, 1, 2))

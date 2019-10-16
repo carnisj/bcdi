@@ -1819,8 +1819,6 @@ def motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bra
             raw_energy = list(labels_data[labels.index('energy'), :])  # in kev, scanned
             phi = motor_positions[motor_names.index('phi')]  # positioner
             eta = motor_positions[motor_names.index('eta')]  # positioner
-            if follow_bragg == 1:
-                delta = list(labels_data[labels.index('del'), :])  # scanned
 
             nb_overlap = 0
             energy = raw_energy[:]
