@@ -190,12 +190,27 @@ def press_key(event):
 if not use_rawdata:
     print('Defaulting binning along the stacking dimension to 1 for orthogonalized data')
     binning[0] = 1
-    
+
 #######################
 # Initialize detector #
 #######################
+kwargs = dict()  # create dictionnary
+try:
+    kwargs['nb_pixel_x'] = nb_pixel_x
+except NameError:  # nb_pixel_x not declared
+    pass
+try:
+    nb_pixel_y
+    kwargs['nb_pixel_y'] = nb_pixel_y
+except NameError:  # nb_pixel_y not declared
+    pass
+try:
+    kwargs['is_series'] = is_series
+except NameError:  # is_series not declared
+    pass
+
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
-                        binning=binning, is_series=is_series)
+                        binning=binning, **kwargs)
 
 ####################
 # Initialize setup #

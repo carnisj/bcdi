@@ -40,8 +40,8 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [1]  # list or array of scan numbers
-root_folder = "D:/data/PtRh/"
+scans = [423]  # list or array of scan numbers
+root_folder = "D:/data/bug_energie/"
 sample_name = "S"  # "SN"  #
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -65,7 +65,7 @@ center_fft = 'do_nothing'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
 # used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'
 ###########################
-normalize_flux = False  # will normalize the intensity by the default monitor.
+normalize_flux = True  # will normalize the intensity by the default monitor.
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
@@ -86,18 +86,19 @@ save_to_mat = False  # set to 1 to save also in .mat format
 beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
-custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
-custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
+custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_images = []  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
-custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
+custom_motors = {}
+# {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
 # ID01: eta, phi, nu, delta
 # CRISTAL: mgomega, gamma, delta
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 
-rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
-follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = ''
+rocking_angle = "energy"  # "outofplane" or "inplane" or "energy"
+follow_bragg = True  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
+specfile_name = '2018_11_07_101509fw2-6'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -108,16 +109,18 @@ specfile_name = ''
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+nb_pixel_y = 1614  # 1 tile broken on the Eiger2M
 x_bragg = 451  # horizontal pixel number of the Bragg peak
 y_bragg = 1450  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
-roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
+# roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
+roi_detector = []
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'BCDI_eiger2M_%05d.edf'
+template_imagefile = 'data_eiger2M_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -127,12 +130,12 @@ template_imagefile = 'BCDI_eiger2M_%05d.edf'
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
-sdd = 0.865  # sample to detector distance in m, not important if you use raw data
+sdd = 1.3  # in m, sample to detector distance in m, not important if you use raw data
 energy = 9000  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = -0.5  # outer detector angle offset, not important if you use raw data
+offset_inplane = 0  # outer detector angle offset, not important if you use raw data
 cch1 = 1273.5  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
 cch2 = 390.8  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
@@ -205,8 +208,23 @@ def press_key(event):
 #######################
 # Initialize detector #
 #######################
+kwargs = dict()  # create dictionnary
+try:
+    kwargs['nb_pixel_x'] = nb_pixel_x
+except NameError:  # nb_pixel_x not declared
+    pass
+try:
+    nb_pixel_y
+    kwargs['nb_pixel_y'] = nb_pixel_y
+except NameError:  # nb_pixel_y not declared
+    pass
+try:
+    kwargs['is_series'] = is_series
+except NameError:  # is_series not declared
+    pass
+
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
-                        binning=binning)
+                        binning=binning, **kwargs)
 
 ####################
 # Initialize setup #
