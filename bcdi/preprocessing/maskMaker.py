@@ -173,7 +173,8 @@ class maskInteraction(maskMaker):
 		super(maskInteraction,self).__init__(data2mask, 
 											mask = mask, 
 											flatfield = flatfield, 
-											hotpix = hotpix)
+											hotpix = hotpix,
+											aliens = aliens)
 		self.xy = xy
 		self.xywidth = []
 		self.xyflag = []
@@ -230,9 +231,11 @@ class maskInteraction(maskMaker):
 			
 			# remove aliens						
 			if self.flag_aliens:
-				print("remove_aliens")		
+				print("remove_aliens")
+				#print(self.aliens.sum(),self.mask.shape,self.aliens.shape,self.hotpix.shape)		
 				self.mask = self.aliens+self.hotpix
 				self.mask[self.mask>0] = 1
+				print(self.aliens.sum(),self.mask.shape)						
 				for self.dim,data in zip([0,1,2],[self.tmpdata[self.idx,:,:],self.tmpdata[:,self.idx,:],self.tmpdata[:,:,self.idx]]):
 					#for self.dim,data in zip([0],[self.tmpdata[self.idx,:,:]]):
 					keypress = self.press_key2mask3D
@@ -299,6 +302,7 @@ class maskInteraction(maskMaker):
 				
 		plt.title(self.fig_title)
 		plt.imshow(self.plotdata,norm=LogNorm(vmin = self.vmin, vmax = self.vmax))#, self.vmin, self.vmax)
+		plt.imshow(self.tmpmask,cmap = plt.cm.gray, alpha=0.1)
 		ax = plt.gca()
 		ax.set_xlim( self.ax_xlim )
 		ax.set_ylim( self.ax_ylim )
@@ -488,7 +492,7 @@ class maskInteraction(maskMaker):
 		"""
 		key = event.key
 		title = " Frame: %i/%i scroll to zoom, hold mouse to multimask \n"
-		title += "m mask ; b unmask ; q quit ; u next frame ; z previous frame\n"
+		title += "m mask ; b unmask ; q quit ; u next frame ; y previous frame\n"
 		title += "j load last mask ; k restart current mask " #right darker ; left brighter"
 		self.update_fig_title(title)
 
@@ -503,7 +507,7 @@ class maskInteraction(maskMaker):
 			self.update_fig_title(title%(self.idx+1,self.d2ms[self.dim]))
 			self.update_fig2mask()
 			
-		elif key == 'z':
+		elif key == 'y':
 			self.idx -= 1
 			if self.idx <= 0:
 				self.idx = self.d2ms[self.dim]-1
