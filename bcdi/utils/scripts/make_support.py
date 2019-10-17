@@ -22,19 +22,21 @@ In reciprocal space, the following convention is used: qx downtream, qz vertical
 
 """
 
-root_folder = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/830_1000_830_1_1_1/"
+root_folder = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/564_800_564/"
 support_threshold = 0.1  # in % of the normalized absolute value
-original_shape = [564, 800, 564]  # shape of the array used for phasing and finding the support (after binning_original)
+original_shape = [280, 400, 280]  # shape of the array used for phasing and finding the support (after binning_original)
 binning_original = (2, 2, 2)  # binning that was used in PyNX during phasing
-output_shape = [800, 1000, 800]  # shape of the array for later phasing (before binning_output)
+output_shape = [560, 800, 560]  # shape of the array for later phasing (before binning_output)
 binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
 skip_masking = False  # if True, will skip thresholding and masking
-reload_support = True  # if True, will load the support which shape is assumed to be the shape after binning_output
+filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
+reload_support = False  # if True, will load the support which shape is assumed to be the shape after binning_output
 # it is usefull to redo some masking without interpolating again.
 is_ortho = True  # True if the data is already orthogonalized
-roll_modes = (0, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
+roll_modes = (-1, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 roll_centering = (0, 0, 0)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
+comment = ''  # should start with _
 ##############################################################################
 # parameters used when (original_shape != output_shape) and (is_ortho=False) #
 ##############################################################################
@@ -87,12 +89,8 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the reconstruction",
                                        filetypes=[("HDF5", "*.h5"), ("NPZ", "*.npz"), ("CXI", "*.cxi")])
 data, _ = pu.load_reconstruction(file_path)
-
-if reload_support:
-    binned_shape = [int(output_shape[idx] / binning_output[idx]) for idx in range(0, len(binning_output))]
-else:
-    binned_shape = [int(original_shape[idx] * binning_original[idx]) for idx in range(0, len(binning_original))]
-nz, ny, nx = binned_shape
+mask = np.zeros(data.shape)
+nz, ny, nx = data.shape
 
 if not skip_masking:
 
@@ -101,11 +99,6 @@ if not skip_masking:
     data = abs(data)  # take the real part
     data = data / data.max()  # normalize
     data[data < support_threshold] = 0
-
-    # go back to original shape before binning
-    data = pu.crop_pad(data, binned_shape)
-    mask = np.zeros(data.shape)
-    print('Data shape after considering original binning and shape:', data.shape)
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, vmax=1,
                                     title='Support before masking', invert_yaxis=True, is_orthogonal=True,
@@ -165,22 +158,48 @@ if not skip_masking:
     del dim, width, fig_mask, original_data
     data[np.nonzero(data)] = 1
 
+############################################
+# plot the support with the original shape #
+############################################
+fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0, invert_yaxis=True,
+                                title='Support after masking\n', is_orthogonal=True, reciprocal_space=False)
+cid = plt.connect('close_event', close_event)
+fig.waitforbuttonpress()
+plt.disconnect(cid)
+plt.close(fig)
+
+##################
+# apply a filter #
+##################
+if filter_name != 'do_nothing':
+
+    comment = comment + '_' + filter_name
+    data = pu.filter_3d(data, filter_name=filter_name, sigma=3)
+    fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0, invert_yaxis=True,
+                                    title='Support after filtering\n', is_orthogonal=True, reciprocal_space=False)
+    cid = plt.connect('close_event', close_event)
+    fig.waitforbuttonpress()
+    plt.disconnect(cid)
+    plt.close(fig)
+
+############################################
+# go back to original shape before binning #
+############################################
+if reload_support:
+    binned_shape = [int(output_shape[idx] / binning_output[idx]) for idx in range(0, len(binning_output))]
+else:
+    binned_shape = [int(original_shape[idx] * binning_original[idx]) for idx in range(0, len(binning_original))]
+nz, ny, nx = binned_shape
+
+data = pu.crop_pad(data, binned_shape)
+print('Data shape after considering original binning and shape:', data.shape)
+
 ######################
 # center the support #
 ######################
 data = pu.center_com(data)
 # Use user-defined roll when the center by COM is not optimal
 data = np.roll(data, roll_centering, axis=(0, 1, 2))
-
-############################################
-# plot the support with the original shape #
-############################################
-fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, invert_yaxis=True,
-                                title='Support after masking\n', is_orthogonal=True, reciprocal_space=True)
-cid = plt.connect('close_event', close_event)
-fig.waitforbuttonpress()
-plt.disconnect(cid)
-plt.close(fig)
 
 #################################
 # rescale the support if needed #
@@ -261,7 +280,7 @@ else:  # no need for interpolation
 ##########################################
 fig, _, _ = gu.multislices_plot(new_support, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                 invert_yaxis=True, title='Support after interpolation\n', is_orthogonal=True,
-                                reciprocal_space=True)
+                                reciprocal_space=False)
 
 ##########################################################################
 # crop the new support to accomodate the binning factor in later phasing #
@@ -274,7 +293,8 @@ print('Final shape after accomodating for later binning:', binned_shape)
 # save support with the new shape #
 ###################################
 filename = 'support_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) +\
-           '_bin_' + str(binning_output[0]) + '_' + str(binning_output[1]) + '_' + str(binning_output[2]) + '.npz'
+           '_bin_' + str(binning_output[0]) + '_' + str(binning_output[1]) + '_' + str(binning_output[2]) +\
+           comment + '.npz'
 np.savez_compressed(root_folder+filename, obj=new_support)
 
 plt.ioff()
