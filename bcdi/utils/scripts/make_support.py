@@ -28,7 +28,7 @@ original_shape = [280, 400, 280]  # shape of the array used for phasing and find
 binning_original = (2, 2, 2)  # binning that was used in PyNX during phasing
 output_shape = [560, 800, 560]  # shape of the array for later phasing (before binning_output)
 binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
-skip_masking = False  # if True, will skip thresholding and masking
+skip_masking = True  # if True, will skip thresholding and masking
 filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
 reload_support = False  # if True, will load the support which shape is assumed to be the shape after binning_output
 # it is usefull to redo some masking without interpolating again.
@@ -89,14 +89,13 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the reconstruction",
                                        filetypes=[("HDF5", "*.h5"), ("NPZ", "*.npz"), ("CXI", "*.cxi")])
 data, _ = pu.load_reconstruction(file_path)
+data = abs(data)  # take the real part
 mask = np.zeros(data.shape)
 nz, ny, nx = data.shape
 
 if not skip_masking:
 
     data = np.roll(data, roll_modes, axis=(0, 1, 2))
-
-    data = abs(data)  # take the real part
     data = data / data.max()  # normalize
     data[data < support_threshold] = 0
 
@@ -156,12 +155,11 @@ if not skip_masking:
     plt.show()
 
     del dim, width, fig_mask, original_data
-    data[np.nonzero(data)] = 1
 
 ############################################
 # plot the support with the original shape #
 ############################################
-fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0, invert_yaxis=True,
+fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, invert_yaxis=True,
                                 title='Support after masking\n', is_orthogonal=True, reciprocal_space=False)
 cid = plt.connect('close_event', close_event)
 fig.waitforbuttonpress()
@@ -175,13 +173,16 @@ if filter_name != 'do_nothing':
 
     comment = comment + '_' + filter_name
     data = pu.filter_3d(data, filter_name=filter_name, sigma=3)
-    fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0, invert_yaxis=True,
+    fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, invert_yaxis=True,
                                     title='Support after filtering\n', is_orthogonal=True, reciprocal_space=False)
     cid = plt.connect('close_event', close_event)
     fig.waitforbuttonpress()
     plt.disconnect(cid)
     plt.close(fig)
 
+data = data / data.max()  # normalize
+data[data < support_threshold] = 0
+data[np.nonzero(data)] = 1  # change data into a support
 ############################################
 # go back to original shape before binning #
 ############################################
@@ -197,7 +198,7 @@ print('Data shape after considering original binning and shape:', data.shape)
 ######################
 # center the support #
 ######################
-data = pu.center_com(data)
+# data = pu.center_com(data)
 # Use user-defined roll when the center by COM is not optimal
 data = np.roll(data, roll_centering, axis=(0, 1, 2))
 
@@ -278,7 +279,7 @@ else:  # no need for interpolation
 ##########################################
 # plot the support with the output shape #
 ##########################################
-fig, _, _ = gu.multislices_plot(new_support, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+fig, _, _ = gu.multislices_plot(new_support, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                                 invert_yaxis=True, title='Support after interpolation\n', is_orthogonal=True,
                                 reciprocal_space=False)
 

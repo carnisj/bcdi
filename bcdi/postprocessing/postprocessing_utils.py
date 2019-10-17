@@ -574,6 +574,8 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
      - 'sigma': sigma of the gaussian kernel
     :return:
     """
+    from scipy.signal import convolve
+
     if array.ndim == 3:
         ndim = 3
     elif array.ndim == 2:
@@ -599,7 +601,7 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
     else:
         raise ValueError('Only the gaussian_kernel is implemented up to now.')
 
-    array = array - np.convolve(array, kernel, mode='same')
+    array = array - convolve(array, kernel, mode='same')
 
     return array
 
