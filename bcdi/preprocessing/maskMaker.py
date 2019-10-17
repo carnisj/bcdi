@@ -173,7 +173,8 @@ class maskInteraction(maskMaker):
 		super(maskInteraction,self).__init__(data2mask, 
 											mask = mask, 
 											flatfield = flatfield, 
-											hotpix = hotpix)
+											hotpix = hotpix,
+											aliens = aliens)
 		self.xy = xy
 		self.xywidth = []
 		self.xyflag = []
@@ -230,9 +231,11 @@ class maskInteraction(maskMaker):
 			
 			# remove aliens						
 			if self.flag_aliens:
-				print("remove_aliens")		
+				print("remove_aliens")
+				#print(self.aliens.sum(),self.mask.shape,self.aliens.shape,self.hotpix.shape)		
 				self.mask = self.aliens+self.hotpix
 				self.mask[self.mask>0] = 1
+				print(self.aliens.sum(),self.mask.shape)						
 				for self.dim,data in zip([0,1,2],[self.tmpdata[self.idx,:,:],self.tmpdata[:,self.idx,:],self.tmpdata[:,:,self.idx]]):
 					#for self.dim,data in zip([0],[self.tmpdata[self.idx,:,:]]):
 					keypress = self.press_key2mask3D
