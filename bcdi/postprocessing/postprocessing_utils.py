@@ -562,11 +562,11 @@ def crop_pad_1d(array, output_length, zero_padding=False):
     return newobj
 
 
-def filter_3d(array, filtername='gaussian_highpass', kernel_length=21, debugging=False, **kwargs):
+def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debugging=False, **kwargs):
     """
 
     :param array: 2D or 3D array to be filtered
-    :param filtername: name of the filter, 'gaussian_highpass'
+    :param filter_name: name of the filter, 'gaussian_highpass'
     :param kernel_length: length in pixels of the filtering kernel
     :param debugging: True to see a plot of the kernel
     :param kwargs:
@@ -586,7 +586,7 @@ def filter_3d(array, filtername='gaussian_highpass', kernel_length=21, debugging
         else:
             raise Exception("unknown keyword argument given: allowed is 'sigma'")
 
-    if filtername == 'gaussian_highpass':
+    if filter_name == 'gaussian_highpass':
         try:
             sigma
         except NameError:  # sigma not declared
@@ -1526,6 +1526,6 @@ def unwrap(obj, support_threshold, debugging=True):
     return phase_unwrapped, extent_phase
 
 
-if __name__ == "__main__":
-    gaussian_kernel(ndim=3, debugging=True)
-    plt.show()
+# if __name__ == "__main__":
+#     gaussian_kernel(ndim=3, debugging=True)
+#     plt.show()
