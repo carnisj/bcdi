@@ -562,6 +562,47 @@ def crop_pad_1d(array, output_length, zero_padding=False):
     return newobj
 
 
+def filter_3d(array, filtername='gaussian_highpass', kernel_length=21, debugging=False, **kwargs):
+    """
+
+    :param array: 2D or 3D array to be filtered
+    :param filtername: name of the filter, 'gaussian_highpass'
+    :param kernel_length: length in pixels of the filtering kernel
+    :param debugging: True to see a plot of the kernel
+    :param kwargs:
+     - 'sigma': sigma of the gaussian kernel
+    :return:
+    """
+    if array.ndim == 3:
+        ndim = 3
+    elif array.ndim == 2:
+        ndim = 2
+    else:
+        raise ValueError('data should be a 2D or a 3D array')
+
+    for k in kwargs.keys():
+        if k in ['sigma']:
+            sigma = kwargs['sigma']
+        else:
+            raise Exception("unknown keyword argument given: allowed is 'sigma'")
+
+    if filtername == 'gaussian_highpass':
+        try:
+            sigma
+        except NameError:  # sigma not declared
+            print('defaulting sigma to 3')
+            sigma = 3
+
+        kernel = gaussian_kernel(ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging)
+
+    else:
+        raise ValueError('Only the gaussian_kernel is implemented up to now.')
+
+    array = array - np.convolve(array, kernel, mode='same')
+
+    return array
+
+
 def find_bulk(amp, support_threshold, method='threshold', width_z=np.nan, width_y=np.nan, width_x=np.nan,
               debugging=False):
     """
@@ -707,6 +748,49 @@ def flip_reconstruction(obj, debugging=False):
         gu.multislices_plot(abs(flipped_obj), vmin=0, sum_frames=False, invert_yaxis=True, plot_colorbar=True,
                             title='Flipped object')
     return flipped_obj
+
+
+def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
+    """
+    Generate 2D or 3D Gaussian kernels
+
+    :param ndim: number of dimensions of the kernel, 2 or 3
+    :param kernel_length: length in pixels of the filtering kernel
+    :param sigma: sigma of the gaussian pdf
+    :param debugging: True to see plots
+    :return: a 2D or 3D Gaussian kernel
+    """
+
+    from scipy.stats import norm
+    half_range = kernel_length // 2
+    kernel_1d = norm.pdf(np.arange(-half_range, half_range + 1, 1), 0, sigma)
+
+    if ndim == 2:
+        kernel = np.ones((kernel_length, kernel_length))
+        for idy in range(kernel_length):
+            kernel[idy, :] = kernel_1d[idy] * kernel_1d
+
+        if debugging:
+            plt.imshow(kernel)
+            plt.colorbar()
+            plt.title('Gaussian kernel')
+
+    elif ndim == 3:
+        kernel_2d = np.ones((kernel_length, kernel_length))
+        kernel = np.ones((kernel_length, kernel_length, kernel_length))
+        for idz in range(kernel_length):
+            kernel_2d[idz, :] = kernel_1d[idz] * kernel_1d
+            for idy in range(kernel_length):
+                kernel[idz, idy] = kernel_2d[idz, idy] * kernel_1d
+
+        if debugging:
+            plt.imshow(kernel[half_range, :, :])
+            plt.colorbar()
+            plt.title('Central slice of the Gaussian kernel')
+    else:
+        raise ValueError('This function generates only 2D or 3D kernels')
+
+    return kernel
 
 
 def get_opticalpath(support, direction, k, width_z=np.nan, width_y=np.nan, width_x=np.nan,
@@ -1442,4 +1526,6 @@ def unwrap(obj, support_threshold, debugging=True):
     return phase_unwrapped, extent_phase
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
+    gaussian_kernel(ndim=3, debugging=True)
+    plt.show()
