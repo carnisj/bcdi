@@ -36,6 +36,7 @@ is_ortho = True  # True if the data is already orthogonalized
 roll_modes = (-1, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 roll_centering = (0, 0, 0)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
+save_fig = True  # if True, will save the figure of the final support
 comment = ''  # should start with _
 ##############################################################################
 # parameters used when (original_shape != output_shape) and (is_ortho=False) #
@@ -282,6 +283,11 @@ else:  # no need for interpolation
 fig, _, _ = gu.multislices_plot(new_support, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                                 invert_yaxis=True, title='Support after interpolation\n', is_orthogonal=True,
                                 reciprocal_space=False)
+filename = 'support_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) +\
+           '_bin_' + str(binning_output[0]) + '_' + str(binning_output[1]) + '_' + str(binning_output[2]) + comment
+
+if save_fig:
+    fig.savefig(root_folder + filename + '.png')
 
 ##########################################################################
 # crop the new support to accomodate the binning factor in later phasing #
@@ -293,10 +299,7 @@ print('Final shape after accomodating for later binning:', binned_shape)
 ###################################
 # save support with the new shape #
 ###################################
-filename = 'support_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) +\
-           '_bin_' + str(binning_output[0]) + '_' + str(binning_output[1]) + '_' + str(binning_output[2]) +\
-           comment + '.npz'
-np.savez_compressed(root_folder+filename, obj=new_support)
+np.savez_compressed(root_folder + filename + '.npz', obj=new_support)
 
 plt.ioff()
 plt.show()
