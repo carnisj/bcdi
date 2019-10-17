@@ -173,9 +173,10 @@ plt.close(fig)
 if filter_name != 'do_nothing':
 
     comment = comment + '_' + filter_name
-    data = pu.filter_3d(data, filter_name=filter_name, sigma=3)
-    fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, invert_yaxis=True,
-                                    title='Support after filtering\n', is_orthogonal=True, reciprocal_space=False)
+    data = pu.filter_3d(data, filter_name=filter_name, sigma=1, debugging=True)
+    fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
+                                    invert_yaxis=True, title='Support after filtering\n', is_orthogonal=True,
+                                    reciprocal_space=False)
     cid = plt.connect('close_event', close_event)
     fig.waitforbuttonpress()
     plt.disconnect(cid)
