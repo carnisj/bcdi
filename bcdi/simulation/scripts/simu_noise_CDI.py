@@ -126,24 +126,8 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
     print('New voxel sizes (z, y, x) after cropping: (', str('{:.2f}'.format(voxelsizez_crop)), 'nm,',
           str('{:.2f}'.format(voxelsizey_crop)), 'nm,', str('{:.2f}'.format(voxelsizex_crop)), 'nm )')
     if debugging:
-        plt.figure(figsize=(18, 15))
-        plt.subplot(2, 2, 1)
-        plt.imshow(abs(myobj).sum(axis=2), cmap=my_cmap)
-        plt.colorbar()
-        plt.axis('scaled')
-        plt.title('Sum(ortho_obj) in YZ')
-        plt.subplot(2, 2, 2)
-        plt.imshow(abs(myobj).sum(axis=1), cmap=my_cmap)
-        plt.colorbar()
-        plt.axis('scaled')
-        plt.title('Sum(ortho_obj) in XZ')
-        plt.subplot(2, 2, 3)
-        plt.imshow(abs(myobj).sum(axis=0), cmap=my_cmap)
-        plt.gca().invert_yaxis()
-        plt.colorbar()
-        plt.axis('scaled')
-        plt.title('Sum(ortho_obj) in XY')
-        plt.pause(0.1)
+        gu.multislices_plot(abs(myobj), sum_frames=True, plot_colorbar=False,
+                            invert_yaxis=True, cmap=my_cmap, title='ortho_obj')
 
     myz, myy, myx = np.meshgrid(np.arange(0, nz, 1), np.arange(0, ny, 1), np.arange(0, nx, 1),
                                 indexing='ij')
@@ -178,38 +162,7 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
     if debugging:
         gu.multislices_plot(abs(detector_obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
                             title='Object interpolated in detector frame')
-
-    # myz, myy, myx = np.meshgrid(np.arange(-nz//2, nz//2, 1)*voxel_size, np.arange(-ny//2, ny//2, 1)*voxel_size,
-    #                             np.arange(-nx//2, nx//2, 1)*voxel_size, indexing='ij')
-    # ortho_imatrix = np.linalg.inv(ortho_matrix)
-    # new_x = ortho_imatrix[0, 0] * myx + ortho_imatrix[0, 1] * myy + ortho_imatrix[0, 2] * myz
-    # new_y = ortho_imatrix[1, 0] * myx + ortho_imatrix[1, 1] * myy + ortho_imatrix[1, 2] * myz
-    # new_z = ortho_imatrix[2, 0] * myx + ortho_imatrix[2, 1] * myy + ortho_imatrix[2, 2] * myz
-    # del myx, myy, myz
-    # rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2), np.arange(-ny//2, ny//2),
-    #                                np.arange(-nx//2, nx//2)), detector_obj, method='linear',
-    #                               bounds_error=False, fill_value=0)
-    # ortho_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-    #                                 new_x.reshape((1, new_z.size)))).transpose())
-    # ortho_obj = ortho_obj.reshape((nz, ny, nx)).astype(detector_obj.dtype)
-    # if debugging:
-    #     plt.figure(figsize=(18, 15))
-    #     plt.subplot(2, 2, 1)
-    #     plt.imshow(abs(ortho_obj).sum(axis=2), cmap=my_cmap)
-    #     plt.colorbar()
-    #     plt.axis('scaled')
-    #     plt.title('Sum(ortho_obj) in YZ')
-    #     plt.subplot(2, 2, 2)
-    #     plt.imshow(abs(ortho_obj).sum(axis=1), cmap=my_cmap)
-    #     plt.colorbar()
-    #     plt.axis('scaled')
-    #     plt.title('Sum(ortho_obj) in XZ')
-    #     plt.subplot(2, 2, 3)
-    #     plt.imshow(abs(ortho_obj).sum(axis=0), cmap=my_cmap)
-    #     plt.colorbar()
-    #     plt.axis('scaled')
-    #     plt.title('Sum(ortho_obj) in XY')
-    #     plt.pause(0.1)
+        
     return detector_obj, voxelsize_z, voxelsize_y, voxelsize_x
 
 
@@ -288,21 +241,6 @@ def update_coords(mygrid, wavelength, outofplane, inplane, tilt, myrocking_angle
     out_z = transfer_matrix[2, 0] * mygrid[2] + transfer_matrix[2, 1] * mygrid[1] + transfer_matrix[2, 2] * mygrid[0]
 
     return out_z, out_y, out_x, transfer_matrix
-
-
-def plane_angle(ref_plane, plane):
-    """
-    Calculate the angle between two crystallographic planes in cubic materials
-    :param ref_plane: measured reflection
-    :param plane: plane for which angle should be calculated
-    :return: the angle in degrees
-    """
-    if np.array_equal(ref_plane, plane):
-        my_angle = 0.0
-    else:
-        my_angle = 180/np.pi*np.arccos(sum(np.multiply(ref_plane, plane)) /
-                                       (np.linalg.norm(ref_plane)*np.linalg.norm(plane)))
-    return my_angle
 
 
 ###################
@@ -461,7 +399,7 @@ else:
         ref_axis_outplane = "y"
         myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
     print('Q aligned along ', ref_axis_outplane, ":", myaxis)
-    angle = plane_angle(np.array([q[2], q[1], q[0]])/np.linalg.norm(q), myaxis)
+    angle = pru.plane_angle(np.array([q[2], q[1], q[0]])/np.linalg.norm(q), myaxis)
     print("Angle between q and", ref_axis_outplane, "=", angle, "deg")
     print("Angle with y in zy plane", np.arctan(q[0]/q[1])*180/np.pi, "deg")
     print("Angle with y in xy plane", np.arctan(-q[2]/q[1])*180/np.pi, "deg")
