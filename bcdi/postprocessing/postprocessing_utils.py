@@ -564,6 +564,7 @@ def crop_pad_1d(array, output_length, zero_padding=False):
 
 def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debugging=False, **kwargs):
     """
+    Apply a filter to the array by convoluting with a filtering kernel.
 
     :param array: 2D or 3D array to be filtered
     :param filter_name: name of the filter, 'gaussian_highpass'
