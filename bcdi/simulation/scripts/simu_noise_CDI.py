@@ -17,7 +17,9 @@ import gc
 import os
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 
@@ -30,19 +32,22 @@ parameters: detector size, detector distance, presence/width of a detector gap, 
 The provided reconstruction is expected to be orthogonalized, in the laboratory frame. """
 
 scan = 2227  # spec scan number
-datadir = "D:/data/BCDI_isosurface/S"+str(scan)+"/test/"
-# "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/crop400phase/new/"
+datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/test/"
+# "D:/data/BCDI_isosurface/S"+str(scan)+"/test/"
+#
 
 original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
 simulated_sdd = 0.50678  # in m, sample to detector distance for the simulated diffraction pattern
-en = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
+energy = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
 photon_number = 5e7  # total number of photons in the array, usually around 5e7
 orthogonal_frame = False  # set to False to interpolate the diffraction pattern in the detector frame
 rotate_crystal = True  # if True, the crystal will be rotated as it was during the experiment
 support_threshold = 0.24  # threshold for support determination
-setup = "ID01"  # only "ID01"
+beamline = "ID01"  # name of the beamline, used for orthogonalisation
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+beam_direction = np.array([1, 0, 0])  # incident beam along z
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 outofplane_angle = 35.3240  # detector delta ID01
 inplane_angle = -1.6029  # detector nu ID01
@@ -74,169 +79,9 @@ save_data = True  # if True save data as npz and VTK
 comment = ""  # should start with _
 if not set_gap:
     comment = comment + "_nogap"
-######################################
-
-
-def mask3d_maxipix(mydata, mymask, start_pixel, width_gap):
-    mydata[:, :, start_pixel:start_pixel+width_gap] = 0
-    mydata[:, start_pixel:start_pixel+width_gap, :] = 0
-
-    mymask[:, :, start_pixel:start_pixel+width_gap] = 1
-    mymask[:, start_pixel:start_pixel+width_gap, :] = 1
-    return mydata, mymask
-
-
-def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, mygrazing_angle, distance, pixel_x,
-                   pixel_y, geometry, voxelsize, debugging=True, **kwargs):
-    """
-    Interpolate orthogonal myobj back into the non-orthogonal detector frame
-
-    :param myobj: real space object, in a non-orthogonal frame (output of phasing program)
-    :param energy: in eV
-    :param outofplane: in degrees
-    :param inplane: in degrees  (also called inplane_angle depending on the diffractometer)
-    :param tilt: angular step during the rocking curve, in degrees (ID01 geometry: eta)
-    :param myrocking_angle: name of the angle which is tilted during the rocking curve
-    :param mygrazing_angle: in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-    :param distance: sample to detector distance, in meters
-    :param pixel_x: horizontal pixel size, in meters
-    :param pixel_y: vertical pixel size, in meters
-    :param geometry: name of the setup 'ID01'or 'SIXS'
-    :param voxelsize: voxel size of the original object
-    :param debugging: to show plots before and after orthogonalization
-    :param kwargs:
-     - 'title': title for the debugging plots
-    :return: object interpolated on an orthogonal grid
-    """
-    global nz, ny, nx
-    for k in kwargs.keys():
-        if k in ['title']:
-            title = kwargs['title']
-        else:
-            raise Exception("unknown keyword argument given: allowed is 'title'")
-    try:
-        title
-    except NameError:  # title not declared
-        title = 'Object'
-
-    wavelength = 12.398 * 1e-7 / energy  # in m
-
-    if debugging:
-        gu.multislices_plot(abs(myobj), sum_frames=True, plot_colorbar=False,
-                            invert_yaxis=True, cmap=my_cmap, title=title+' before interpolation\n')
-
-    myz, myy, myx = np.meshgrid(np.arange(0, nz, 1), np.arange(0, ny, 1), np.arange(0, nx, 1),
-                                indexing='ij')
-    _, _, _, ortho_matrix = update_coords(mygrid=(myz, myy, myx), wavelength=wavelength,
-                                          outofplane=outofplane, inplane=inplane, tilt=tilt,
-                                          myrocking_angle=myrocking_angle, mygrazing_angle=mygrazing_angle,
-                                          distance=distance, pixel_x=pixel_x, pixel_y=pixel_y,
-                                          geometry=geometry)
-    del myz, myy, myx
-
-    ################################################
-    # interpolate the data into the detector frame #
-    ################################################
-    myz, myy, myx = np.meshgrid(np.arange(-nz//2, nz//2, 1),
-                                np.arange(-ny//2, ny//2, 1),
-                                np.arange(-nx//2, nx//2, 1), indexing='ij')
-
-    new_x = ortho_matrix[0, 0] * myx + ortho_matrix[0, 1] * myy + ortho_matrix[0, 2] * myz
-    new_y = ortho_matrix[1, 0] * myx + ortho_matrix[1, 1] * myy + ortho_matrix[1, 2] * myz
-    new_z = ortho_matrix[2, 0] * myx + ortho_matrix[2, 1] * myy + ortho_matrix[2, 2] * myz
-    del myx, myy, myz
-    # la partie rgi est sure: c'est la taille de l'objet orthogonal de depart
-    rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2)*voxelsize,
-                                   np.arange(-ny//2, ny//2)*voxelsize,
-                                   np.arange(-nx//2, nx//2)*voxelsize),
-                                  myobj, method='linear', bounds_error=False, fill_value=0)
-    detector_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                      new_x.reshape((1, new_z.size)))).transpose())
-    detector_obj = detector_obj.reshape((nz, ny, nx)).astype(myobj.dtype)
-
-    if debugging:
-        gu.multislices_plot(abs(detector_obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
-                            title=title+' interpolated in detector frame\n')
-        
-    return detector_obj
-
-
-def update_coords(mygrid, wavelength, outofplane, inplane, tilt, myrocking_angle, mygrazing_angle, distance,
-                  pixel_x, pixel_y, geometry):
-    """
-    calculate the pixel non-orthogonal coordinates in the orthogonal reference frame
-    :param mygrid: grid corresponding to the real object size
-    :param wavelength: in m
-    :param outofplane: in degrees
-    :param inplane: in degrees  (also called inplane_angle depending on the diffractometer)
-    :param tilt: angular step during the rocking curve, in degrees
-    :param myrocking_angle: name of the motor which is tilted during the rocking curve
-    :param mygrazing_angle: in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-    :param distance: sample to detector distance, in meters
-    :param pixel_x: horizontal pixel size, in meters
-    :param pixel_y: vertical pixel size, in meters
-    :param geometry: name of the setup 'ID01'or 'SIXS'
-    :return: coordinates of the non-orthogonal grid in the orthogonal reference grid
-    """
-    wavelength = wavelength * 1e9  # convert to nm
-    distance = distance * 1e9  # convert to nm
-    lambdaz = wavelength * distance
-    pixel_x = pixel_x * 1e9  # convert to nm
-    pixel_y = pixel_y * 1e9  # convert to nm
-    mymatrix = np.zeros((3, 3))
-    outofplane = np.radians(outofplane)
-    inplane = np.radians(inplane)
-    tilt = np.radians(tilt)
-    mygrazing_angle = np.radians(mygrazing_angle)
-    nbz, nby, nbx = mygrid[0].shape
-
-    if geometry == 'ID01':
-        print('using ESRF ID01 geometry')
-        if myrocking_angle == "outofplane":
-            print('rocking angle is eta')
-            # rocking eta angle clockwise around x (phi does not matter, above eta)
-            mymatrix[:, 0] = 2*np.pi*nbx / lambdaz * np.array([pixel_x*np.cos(inplane),
-                                                               0,
-                                                               pixel_x*np.sin(inplane)])
-            mymatrix[:, 1] = 2*np.pi*nby / lambdaz * np.array([-pixel_y*np.sin(inplane)*np.sin(outofplane),
-                                                              -pixel_y*np.cos(outofplane),
-                                                              pixel_y*np.cos(inplane)*np.sin(outofplane)])
-            mymatrix[:, 2] = 2*np.pi*nbz / lambdaz * np.array([0,
-                                                               tilt*distance*(1-np.cos(inplane)*np.cos(outofplane)),
-                                                               tilt*distance*np.sin(outofplane)])
-        elif myrocking_angle == "inplane" and mygrazing_angle == 0:
-            print('rocking angle is phi, eta=0')
-            # rocking phi angle clockwise around y, assuming incident angle eta is zero (eta below phi)
-            mymatrix[:, 0] = 2*np.pi*nbx / lambdaz * np.array([pixel_x*np.cos(inplane),
-                                                               0,
-                                                               pixel_x*np.sin(inplane)])
-            mymatrix[:, 1] = 2*np.pi*nby / lambdaz * np.array([-pixel_y*np.sin(inplane)*np.sin(outofplane),
-                                                               -pixel_y*np.cos(outofplane),
-                                                               pixel_y*np.cos(inplane)*np.sin(outofplane)])
-            mymatrix[:, 2] = 2*np.pi*nbz / lambdaz * np.array([-tilt*distance*(1-np.cos(inplane)*np.cos(outofplane)),
-                                                               0,
-                                                               tilt*distance*np.sin(inplane)*np.cos(outofplane)])
-        elif myrocking_angle == "inplane" and mygrazing_angle != 0:
-            print('rocking angle is phi, with eta non zero')
-            # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
-            mymatrix[:, 0] = 2*np.pi*nbx / lambdaz * np.array([pixel_x*np.cos(inplane),
-                                                               0,
-                                                               pixel_x*np.sin(inplane)])
-            mymatrix[:, 1] = 2*np.pi*nby / lambdaz * np.array([-pixel_y*np.sin(inplane)*np.sin(outofplane),
-                                                               -pixel_y*np.cos(outofplane),
-                                                               pixel_y*np.cos(inplane)*np.sin(outofplane)])
-            mymatrix[:, 2] = 2*np.pi*nbz / lambdaz * tilt * distance * \
-                np.array([(np.sin(mygrazing_angle)*np.sin(outofplane) +
-                          np.cos(mygrazing_angle)*(np.cos(inplane)*np.cos(outofplane)-1)),
-                          np.sin(mygrazing_angle)*np.sin(inplane)*np.sin(outofplane),
-                          np.cos(mygrazing_angle)*np.sin(inplane)*np.cos(outofplane)])
-    transfer_matrix = 2*np.pi * np.linalg.inv(mymatrix).transpose()   # to go to orthogonal laboratory frame
-    out_x = transfer_matrix[0, 0] * mygrid[2] + transfer_matrix[0, 1] * mygrid[1] + transfer_matrix[0, 2] * mygrid[0]
-    out_y = transfer_matrix[1, 0] * mygrid[2] + transfer_matrix[1, 1] * mygrid[1] + transfer_matrix[1, 2] * mygrid[0]
-    out_z = transfer_matrix[2, 0] * mygrid[2] + transfer_matrix[2, 1] * mygrid[1] + transfer_matrix[2, 2] * mygrid[0]
-
-    return out_z, out_y, out_x, transfer_matrix
-
+##################################
+# end of user-defined parameters #
+##################################
 
 ###################
 # define colormap #
@@ -244,6 +89,14 @@ def update_coords(mygrid, wavelength, outofplane, inplane, tilt, myrocking_angle
 bad_color = '1.0'  # white background
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
+
+################
+# define setup #
+################
+setup = exp.SetupPostprocessing(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle,
+                                inplane_angle=inplane_angle, tilt_angle=tilt_angle, rocking_angle=rocking_angle,
+                                grazing_angle=grazing_angle, distance=original_sdd, pixel_x=pixel_size,
+                                pixel_y=pixel_size)
 
 #########################
 # load a reconstruction #
@@ -273,16 +126,8 @@ nz, ny, nx = amp.shape
 ##########################################################
 # calculate q for later regridding in the detector frame #
 ##########################################################
-wave = 12.398 * 1e-7 / en  # wavelength in m
-kin = 2*np.pi/wave * np.array([1, 0, 0])  # z downstream, y vertical, x outboard
-if setup == 'ID01':
-    # nu is clockwise
-    kout = 2 * np.pi / wave * np.array([np.cos(np.pi*inplane_angle/180)*np.cos(np.pi*outofplane_angle/180),  # z
-                                       np.sin(np.pi*outofplane_angle/180),  # y
-                                       -np.sin(np.pi*inplane_angle/180)*np.cos(np.pi*outofplane_angle/180)])  # x
-else:
-    print('Back rotation not yet implemented for other beamlines')
-    sys.exit()
+kin = 2*np.pi/setup.wavelength * beam_direction  # in laboratory frame z downstream, y vertical, x outboard
+kout = setup.exit_wavevector()  # in laboratory frame z downstream, y vertical, x outboard
 q = kout - kin
 Qnorm = np.linalg.norm(q)
 q = q / Qnorm
@@ -474,20 +319,15 @@ else:
 ###################################################
 if not orthogonal_frame:
     if debug:
-        original_obj = detector_frame(myobj=original_obj, energy=en, outofplane=outofplane_angle, inplane=inplane_angle,
-                                      tilt=tilt_angle, myrocking_angle=rocking_angle, mygrazing_angle=grazing_angle,
-                                      distance=original_sdd, pixel_x=pixel_size, pixel_y=pixel_size, geometry=setup,
-                                      voxelsize=voxel_size, debugging=debug, title='Original object')
+        original_obj = setup.detector_frame(obj=original_obj, voxelsize=voxel_size, debugging=debug,
+                                            title='Original object')
         data = fftshift(abs(fftn(original_obj)) ** 2)
         gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
                             cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding\n')
         del original_obj, data
         gc.collect()
 
-    obj = detector_frame(myobj=obj, energy=en, outofplane=outofplane_angle, inplane=inplane_angle, tilt=tilt_angle,
-                         myrocking_angle=rocking_angle, mygrazing_angle=grazing_angle, distance=original_sdd,
-                         pixel_x=pixel_size, pixel_y=pixel_size, geometry=setup, voxelsize=voxel_size, debugging=True,
-                         title='Rescaled object')
+    obj = setup.detector_frame(obj=obj, voxelsize=voxel_size, debugging=debug, title='Rescaled object')
 
     #################################################################
     # uncomment this if you want to save the non-orthogonal support #
@@ -579,6 +419,7 @@ else:
     simu_data = data
 del data
 gc.collect()
+
 #######################################################
 # convert into photons and apply the photon threshold #
 #######################################################
@@ -606,7 +447,7 @@ else:
 # add detector gaps #
 #####################
 if set_gap:
-    simu_data, mask = mask3d_maxipix(simu_data, mask, start_pixel=gap_pixel_start, width_gap=gap_width)
+    simu_data, mask = pu.gap_detector(data=simu_data, mask=mask, start_pixel=gap_pixel_start, width_gap=gap_width)
 
 gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
                     cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='After rounding')
