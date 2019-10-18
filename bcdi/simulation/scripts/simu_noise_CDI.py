@@ -37,7 +37,7 @@ datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/test/"
 #
 
 original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
-simulated_sdd = 0.50678  # in m, sample to detector distance for the simulated diffraction pattern
+simulated_sdd = 0.50678*4/3  # in m, sample to detector distance for the simulated diffraction pattern
 energy = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
@@ -55,13 +55,13 @@ grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta
 tilt_angle = 0.0102  # angular step size for rocking angle, eta ID01
 pixel_size = 55e-6  # detector pixel size in m
 
-set_gap = False  # set to True if you want to use the detector gap in the simulation (updates the mask)
+set_gap = True  # set to True if you want to use the detector gap in the simulation (updates the mask)
 gap_width = 6  # number of pixels to mask
-gap_pixel_start = 650
+gap_pixel_start = 550
 
-flat_phase = True  # set to True to use a phase flat (0 everywhere)
+flat_phase = False  # set to True to use a phase flat (0 everywhere)
 
-include_noise = False  # set to True to include poisson noise on the data
+include_noise = True  # set to True to include poisson noise on the data
 
 original_size = [400, 400, 400]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
@@ -146,6 +146,7 @@ support = np.ones((nz, ny, nx))
 if flat_phase:
     phase = np.zeros((nz, ny, nx))
 else:
+    comment = comment + '_phase'
     # model for paper about artefacts in BCDI
     oscillation_period = 100  # in pixels
     z, y, x = np.meshgrid(np.cos(np.arange(-nz // 2, nz // 2, 1)*2*np.pi/oscillation_period),
