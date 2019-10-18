@@ -401,7 +401,7 @@ gc.collect()
 gc.collect()
 comment = comment + '_prtf'
 set_gap = 0  # gap is valid only in the detector frame
-print('Original voxel size', voxel_size, 'nm')
+print('\nOriginal voxel size', voxel_size, 'nm')
 dqz = 2 * np.pi / (nz * voxel_size * 10)  # in inverse angstroms
 dqy = 2 * np.pi / (ny * voxel_size * 10)  # in inverse angstroms
 dqx = 2 * np.pi / (nx * voxel_size * 10)  # in inverse angstroms
@@ -490,30 +490,32 @@ if not orthogonal_frame:
 ##############################################################
 # pad the array (after interpolation because of memory cost) #
 ##############################################################
-nz1, ny1, nx1 = pad_size
-if nz1 < nz or ny1 < ny or nx1 < nx:
+nz_pad, ny_pad, nx_pad = pad_size
+if nz_pad < nz or ny_pad < ny or nx_pad < nx:
     print('Pad size smaller than initial array size')
     sys.exit()
 
-newobj = np.zeros((nz1, ny1, nx1), dtype=complex)
-newobj[(nz1-nz)//2:(nz1+nz)//2, (ny1-ny)//2:(ny1+ny)//2, (nx1-nx)//2:(nx1+nx)//2] = obj
-nz1, ny1, nx1 = newobj.shape
-print("Padded data size: (", nz1, ',', ny1, ',', nx1, ')')
-comment = comment + "_pad_" + str(nz1) + "," + str(ny1) + "," + str(nx1)
+newobj = np.zeros((nz_pad, ny_pad, nx_pad), dtype=complex)
+newobj[(nz_pad-nz)//2:(nz_pad+nz)//2, (ny_pad-ny)//2:(ny_pad+ny)//2, (nx_pad-nx)//2:(nx_pad+nx)//2] = obj
 
-###########################################################
-# calculate the diffraction pattern and add detector gaps #
-###########################################################
+nz_pad, ny_pad, nx_pad = newobj.shape
+print("Padded data size: (", nz_pad, ',', ny_pad, ',', nx_pad, ')')
+comment = comment + "_pad_" + str(nz_pad) + "," + str(ny_pad) + "," + str(nx_pad)
+
+#####################################
+# calculate the diffraction pattern #
+#####################################
 data = fftshift(abs(fftn(newobj))**2)
-data = data / data.sum() * photon_number  # convert into photon number
 
 #################################################################################
 # interpolate the diffraction pattern to accomodate change in detector distance #
 #################################################################################
-print('Current detector pixel size', pixel_size, '')
+print('Current detector pixel size', pixel_size, 'm')
 new_pixelsize = pixel_size / (simulated_sdd / original_sdd)
-print('New detector pixel size to compensate the change in detector distance', pixel_size, '')
+print('New detector pixel size to compensate the change in detector distance', pixel_size, 'm')
 # if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
+# the 3D dataset is a stack along the first axis of 2D detector images
+
 # TODO: regrid the diffraction pattern considering the new pixel size (but array keeps its shape)
 # dqz = 2 * np.pi / (pad_size[0] * new_pixelsize * 10)  # in inverse angstroms
 # dqy = 2 * np.pi / (pad_size[1] * new_pixelsize * 10)  # in inverse angstroms
@@ -521,10 +523,12 @@ print('New detector pixel size to compensate the change in detector distance', p
 # print('New reciprocal space resolution (z, y, x) after moving detector: (', str('{:.5f}'.format(dqz)), 'A-1,',
 #       str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
 
-##############################
-# apply the photon threshold #
-##############################
-mask = np.zeros((nz1, ny1, nx1))
+#######################################################
+# convert into photons and apply the photon threshold #
+#######################################################
+data = data / data.sum() * photon_number  # convert into photon number
+
+mask = np.zeros((nz_pad, ny_pad, nx_pad))
 mask[data <= photon_threshold] = 1
 data[data <= photon_threshold] = 0
 
@@ -542,6 +546,9 @@ if include_noise:
 else:
     data = np.rint(data).astype(int)
 
+#####################
+# add detector gaps #
+#####################
 if set_gap:
     data, mask = mask3d_maxipix(data, mask, start_pixel=gap_pixel_start, width_gap=gap_width)
 
@@ -554,9 +561,9 @@ myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
 if save_fig:
     myfig.savefig(datadir + 'S' + str(scan) + '_diff_' + str('{:.0e}'.format(photon_number))+comment + '_sum.png')
 
-###############
-# crop arrays #
-###############
+#################################################
+# crop arrays to obtain the final detector size #
+#################################################
 voxelsizez_crop = 2 * np.pi / (crop_size[0] * dqz * 10)  # in nm
 voxelsizey_crop = 2 * np.pi / (crop_size[1] * dqy * 10)  # in nm
 voxelsizex_crop = 2 * np.pi / (crop_size[2] * dqx * 10)  # in nm
@@ -564,16 +571,28 @@ print('Real-space voxel sizes (z, y, x) after cropping: (', str('{:.2f}'.format(
       str('{:.2f}'.format(voxelsizey_crop)), 'nm,', str('{:.2f}'.format(voxelsizex_crop)), 'nm )')
 
 nz, ny, nx = data.shape
-nz1, ny1, nx1 = crop_size
-if nz < nz1 or ny < ny1 or nx < nx1:
+nz_crop, ny_crop, nx_crop = crop_size
+if nz < nz_crop or ny < ny_crop or nx < nx_crop:
     print('Crop size larger than initial array size')
     sys.exit()
-data = data[(nz - nz1) // 2:(nz + nz1) // 2, (ny - ny1) // 2:(ny + ny1) // 2, (nx - nx1) // 2:(nx + nx1) // 2]
-mask = mask[(nz - nz1) // 2:(nz + nz1) // 2, (ny - ny1) // 2:(ny + ny1) // 2, (nx - nx1) // 2:(nx + nx1) // 2]
+data = data[(nz - nz_crop) // 2:(nz + nz_crop) // 2,
+            (ny - ny_crop) // 2:(ny + ny_crop) // 2,
+            (nx - nx_crop) // 2:(nx + nx_crop) // 2]
+mask = mask[(nz - nz_crop) // 2:(nz + nz_crop) // 2,
+            (ny - ny_crop) // 2:(ny + ny_crop) // 2,
+            (nx - nx_crop) // 2:(nx + nx_crop) // 2]
+
+##########################################################
+# crop arrays to fulfill FFT requirements during phasing #
+##########################################################
 nz, ny, nx = data.shape
-nz1, ny1, nx1 = pru.smaller_primes((nz, ny, nx), maxprime=7, required_dividers=(2,))
-data = data[(nz - nz1) // 2:(nz + nz1) // 2, (ny - ny1) // 2:(ny + ny1) // 2, (nx - nx1) // 2:(nx + nx1) // 2]
-mask = mask[(nz - nz1) // 2:(nz + nz1) // 2, (ny - ny1) // 2:(ny + ny1) // 2, (nx - nx1) // 2:(nx + nx1) // 2]
+nz_crop, ny_crop, nx_crop = pru.smaller_primes((nz, ny, nx), maxprime=7, required_dividers=(2,))
+data = data[(nz - nz_crop) // 2:(nz + nz_crop) // 2,
+            (ny - ny_crop) // 2:(ny + ny_crop) // 2,
+            (nx - nx_crop) // 2:(nx + nx_crop) // 2]
+mask = mask[(nz - nz_crop) // 2:(nz + nz_crop) // 2,
+            (ny - ny_crop) // 2:(ny + ny_crop) // 2,
+            (nx - nx_crop) // 2:(nx + nx_crop) // 2]
 nz, ny, nx = data.shape
 print("cropped FFT data size:", data.shape)
 print("Total number of photons:", data.sum())
