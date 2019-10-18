@@ -40,6 +40,7 @@ voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in e
 photon_threshold = 0  # 0.75
 photon_number = 5e7  # total number of photons in the array, usually around 5e7
 orthogonal_frame = False  # set to False to interpolate the diffraction pattern in the detector frame
+rotate_crystal = True  # if True, the crystal will be rotated as it was during the experiment
 support_threshold = 0.24  # threshold for support determination
 setup = "ID01"  # only "ID01"
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
@@ -83,7 +84,7 @@ def mask3d_maxipix(mydata, mymask, start_pixel, width_gap):
 
 
 def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, mygrazing_angle, distance, pixel_x,
-                   pixel_y, geometry, voxelsize, debugging=True):
+                   pixel_y, geometry, voxelsize, debugging=True, **kwargs):
     """
     Interpolate orthogonal myobj back into the non-orthogonal detector frame
 
@@ -100,16 +101,27 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
     :param geometry: name of the setup 'ID01'or 'SIXS'
     :param voxelsize: voxel size of the original object
     :param debugging: to show plots before and after orthogonalization
+    :param kwargs:
+     - 'title': title for the debugging plots
     :return: object interpolated on an orthogonal grid
     """
     global nz, ny, nx
+    for k in kwargs.keys():
+        if k in ['title']:
+            title = kwargs['title']
+        else:
+            raise Exception("unknown keyword argument given: allowed is 'title'")
+    try:
+        title
+    except NameError:  # title not declared
+        title = 'Object '
 
     wavelength = 12.398 * 1e-7 / energy  # in m
     # TODO: check this when nx != ny != nz
 
     if debugging:
         gu.multislices_plot(abs(myobj), sum_frames=True, plot_colorbar=False,
-                            invert_yaxis=True, cmap=my_cmap, title='Orthogonal object before interpolation')
+                            invert_yaxis=True, cmap=my_cmap, title=title+'before interpolation\n')
 
     myz, myy, myx = np.meshgrid(np.arange(0, nz, 1), np.arange(0, ny, 1), np.arange(0, nx, 1),
                                 indexing='ij')
@@ -143,7 +155,7 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
 
     if debugging:
         gu.multislices_plot(abs(detector_obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
-                            title='Object interpolated in detector frame')
+                            title=title+'interpolated in detector frame\n')
         
     return detector_obj
 
@@ -289,7 +301,7 @@ else:
 if debug:
     gu.multislices_plot(phase, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
                         vmin=-phase_range, vmax=phase_range,
-                        invert_yaxis=True, cmap=my_cmap, title='Phase before wrapping')
+                        invert_yaxis=True, cmap=my_cmap, title='Phase before wrapping\n')
 
 phase = pru.wrap(phase, start_angle=-np.pi, range_angle=2*np.pi)
 
@@ -327,7 +339,7 @@ if debug:
                         vmin=-strain_range, vmax=strain_range, invert_yaxis=True, cmap=my_cmap, title='surface strain')
 
     gu.multislices_plot(support, sum_frames=True, plot_colorbar=False, invert_yaxis=True, cmap=my_cmap,
-                        title='Orthogonal support')
+                        title='Orthogonal support\n')
 
     if not flat_phase:
         gu.multislices_plot(phase, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
@@ -358,11 +370,37 @@ if debug:
 
 del strain, bulk
 
+##############################################################################
+# rotate the object to have q in the same direction as during the experiment #
+##############################################################################
+if rotate_crystal:
+    if ref_axis_outplane == "x":
+        myaxis = np.array([1, 0, 0])  # must be in [x, y, z] order
+    elif ref_axis_outplane == "y":
+        myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
+    elif ref_axis_outplane == "z":
+        myaxis = np.array([0, 0, 1])  # must be in [x, y, z] order
+    else:
+        ref_axis_outplane = "y"
+        myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
+    print('Q aligned along ', ref_axis_outplane, ":", myaxis)
+    angle = pu.plane_angle(np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), myaxis)
+    print("Angle between q and", ref_axis_outplane, "=", angle, "deg")
+    print("Angle with y in zy plane", np.arctan(q[0] / q[1]) * 180 / np.pi, "deg")
+    print("Angle with y in xy plane", np.arctan(-q[2] / q[1]) * 180 / np.pi, "deg")
+    print("Angle with z in xz plane", 180 + np.arctan(q[2] / q[0]) * 180 / np.pi, "deg")
+    support = pu.rotate_crystal(support, axis_to_align=myaxis,
+                                reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), debugging=False)
+    phase = pu.rotate_crystal(phase, axis_to_align=myaxis,
+                              reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), debugging=True)
+
+original_obj = support * np.exp(1j * phase)
+del phase, support
+gc.collect()
+
 ##################################################################################################
 # compensate padding in order to keep reciprocal space resolution (detector pixel size) constant #
 ##################################################################################################
-original_obj = support * np.exp(1j * phase)
-del phase, support
 gc.collect()
 comment = comment + '_prtf'
 set_gap = 0  # gap is valid only in the detector frame
@@ -418,67 +456,35 @@ obj = obj.reshape((nz, ny, nx)).astype(original_obj.dtype)
 
 if debug:
     gu.multislices_plot(abs(obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
-                        title='Orthogonal support interpolated for padding compensation')
+                        title='Orthogonal support interpolated for padding compensation\n')
     if orthogonal_frame:
         data = fftshift(abs(fftn(original_obj)) ** 2)
         data = data / data.sum() * photon_number  # convert into photon number
         gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
-                            cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding')
+                            cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding\n')
 else:
     del original_obj
     gc.collect()
 
-######################################################################
-# rotate the object to have q in the same direction as in experiment #
-######################################################################
+###################################################
+# interpolate the object back into detector frame #
+###################################################
 if not orthogonal_frame:
-    support = abs(obj)
-    phase = np.angle(obj)
-    del obj
+    original_obj = detector_frame(myobj=original_obj, energy=en, outofplane=outofplane_angle, inplane=inplane_angle,
+                                  tilt=tilt_angle, myrocking_angle=rocking_angle, mygrazing_angle=grazing_angle,
+                                  distance=original_sdd, pixel_x=pixel_size, pixel_y=pixel_size, geometry=setup,
+                                  voxelsize=voxel_size, debugging=debug, title='Original object')
+    data = fftshift(abs(fftn(original_obj)) ** 2)
+    data = data / data.sum() * photon_number  # convert into photon number
+    gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
+                        cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding\n')
+    del original_obj, data
     gc.collect()
-
-    if ref_axis_outplane == "x":
-        myaxis = np.array([1, 0, 0])  # must be in [x, y, z] order
-    elif ref_axis_outplane == "y":
-        myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
-    elif ref_axis_outplane == "z":
-        myaxis = np.array([0, 0, 1])  # must be in [x, y, z] order
-    else:
-        ref_axis_outplane = "y"
-        myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
-    print('Q aligned along ', ref_axis_outplane, ":", myaxis)
-    angle = pu.plane_angle(np.array([q[2], q[1], q[0]])/np.linalg.norm(q), myaxis)
-    print("Angle between q and", ref_axis_outplane, "=", angle, "deg")
-    print("Angle with y in zy plane", np.arctan(q[0]/q[1])*180/np.pi, "deg")
-    print("Angle with y in xy plane", np.arctan(-q[2]/q[1])*180/np.pi, "deg")
-    print("Angle with z in xz plane", 180+np.arctan(q[2]/q[0])*180/np.pi, "deg")
-    support = pu.rotate_crystal(support, axis_to_align=myaxis,
-                                reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), debugging=False)
-    phase = pu.rotate_crystal(phase, axis_to_align=myaxis,
-                              reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), debugging=True)
-
-    obj = support * np.exp(1j * phase)
-    del phase, support
-    gc.collect()
-
-    #############################################
-    # transform object back into detector frame #
-    #############################################
-    if debug:
-        original_obj = detector_frame(myobj=original_obj, energy=en, outofplane=outofplane_angle, inplane=inplane_angle,
-                                      tilt=tilt_angle, myrocking_angle=rocking_angle, mygrazing_angle=grazing_angle,
-                                      distance=original_sdd, pixel_x=pixel_size, pixel_y=pixel_size, geometry=setup,
-                                      voxelsize=voxel_size, debugging=True)
-        data = fftshift(abs(fftn(original_obj)) ** 2)
-        data = data / data.sum() * photon_number  # convert into photon number
-        gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
-                            cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding')
-        del original_obj, data
-        gc.collect()
 
     obj = detector_frame(myobj=obj, energy=en, outofplane=outofplane_angle, inplane=inplane_angle, tilt=tilt_angle,
                          myrocking_angle=rocking_angle, mygrazing_angle=grazing_angle, distance=original_sdd,
-                         pixel_x=pixel_size, pixel_y=pixel_size, geometry=setup, voxelsize=voxel_size, debugging=True)
+                         pixel_x=pixel_size, pixel_y=pixel_size, geometry=setup, voxelsize=voxel_size, debugging=True,
+                         title='Rescaled object')
 
     #################################################################
     # uncomment this if you want to save the non-orthogonal support #
@@ -490,9 +496,9 @@ if not orthogonal_frame:
     # support[np.nonzero(support)] = 1
     # np.savez_compressed(datadir + 'S' + str(scan) + 'support_nonortho400.npz', obj=support)
 
-############################################################
-# pad the array after interpolation because of memory cost #
-############################################################
+##############################################################
+# pad the array (after interpolation because of memory cost) #
+##############################################################
 nz1, ny1, nx1 = pad_size
 if nz1 < nz or ny1 < ny or nx1 < nx:
     print('Pad size smaller than initial array size')
@@ -532,7 +538,7 @@ mask[data <= photon_threshold] = 1
 data[data <= photon_threshold] = 0
 
 gu.multislices_plot(data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
-                    cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT after padding')
+                    cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT after padding\n')
 if save_fig:
     plt.savefig(datadir + 'S' + str(scan) + '_diff_float_' + str('{:.0e}'.format(photon_number))+comment + '_sum.png')
 
