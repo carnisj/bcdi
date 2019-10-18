@@ -37,7 +37,7 @@ datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/test/"
 #
 
 original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
-simulated_sdd = 0.50678*4/3  # in m, sample to detector distance for the simulated diffraction pattern
+simulated_sdd = 0.50678*5/3  # in m, sample to detector distance for the simulated diffraction pattern
 energy = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
@@ -370,11 +370,15 @@ gc.collect()
 # interpolate the diffraction pattern to accomodate change in detector distance #
 #################################################################################
 comment = comment + '_sdd_' + str(simulated_sdd)
-print('\nCurrent detector pixel size', pixel_size, 'm')
+print('\nCurrent detector pixel size', pixel_size*1e6, 'um')
 print('New detector pixel size to compensate the change in detector distance',
-      str('{:.5f}'.format(pixel_size * original_sdd / simulated_sdd)), 'm')
+      str('{:.5f}'.format(pixel_size*1e6 * original_sdd / simulated_sdd)), 'um')
 # if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
 # the 3D dataset is a stack along the first axis of 2D detector images
+
+dqz = 2 * np.pi / (nz * voxel_size * 10)  # in inverse angstroms
+dqy = 2 * np.pi / (ny * voxel_size * 10)  # in inverse angstroms
+dqx = 2 * np.pi / (nx * voxel_size * 10)  # in inverse angstroms
 
 print('Reciprocal space resolution before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz)), 'A-1,',
       str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
@@ -512,9 +516,11 @@ myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plo
                                   title='Masked intensity')
 myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
 myfig.text(0.60, 0.25, "Crop size =" + str(crop_size), size=20)
-myfig.text(0.60, 0.20, "Detector distance =" + str(simulated_sdd), size=20)
+myfig.text(0.60, 0.20, "Detector distance =" + str('{:.5f}'.format(simulated_sdd)), size=20)
+myfig.text(0.60, 0.15, "Voxel size =" + str('{:.2f}'.format(voxelsizez_crop)) + ', ' +
+           str('{:.2f}'.format(voxelsizey_crop)) + ', ' + str('{:.2f}'.format(voxelsizex_crop)), size=20)
 if set_gap:
-    myfig.text(0.60, 0.15, "Gap width =" + str(gap_width) + "pixels", size=20)
+    myfig.text(0.60, 0.10, "Gap width =" + str(gap_width) + "pixels", size=20)
 if save_fig:
     myfig.savefig(datadir + 'S' + str(scan) + '_diff_' + str('{:.0e}'.format(photon_number))+comment + '_center.png')
 
@@ -523,9 +529,11 @@ myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=True,  scale='log', plot
                                   title='Masked intensity')
 myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
 myfig.text(0.60, 0.25, "Crop size =" + str(crop_size), size=20)
-myfig.text(0.60, 0.20, "Detector distance =" + str(simulated_sdd), size=20)
+myfig.text(0.60, 0.20, "Detector distance =" + str('{:.5f}'.format(simulated_sdd)), size=20)
+myfig.text(0.60, 0.15, "Voxel size =" + str('{:.2f}'.format(voxelsizez_crop)) + ', ' +
+           str('{:.2f}'.format(voxelsizey_crop)) + ', ' + str('{:.2f}'.format(voxelsizex_crop)), size=20)
 if set_gap:
-    myfig.text(0.60, 0.15, "Gap width =" + str(gap_width) + "pixels", size=20)
+    myfig.text(0.60, 0.10, "Gap width =" + str(gap_width) + "pixels", size=20)
 if save_fig:
     myfig.savefig(datadir + 'S' + str(scan) + '_diff_' + str('{:.0e}'.format(photon_number))+comment + '_sum.png')
 plt.show()
