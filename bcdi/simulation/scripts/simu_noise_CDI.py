@@ -37,7 +37,7 @@ datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/test/"
 #
 
 original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
-simulated_sdd = 0.50678*5/3  # in m, sample to detector distance for the simulated diffraction pattern
+simulated_sdd = 0.50678  # in m, sample to detector distance for the simulated diffraction pattern
 energy = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
@@ -59,9 +59,9 @@ set_gap = True  # set to True if you want to use the detector gap in the simulat
 gap_width = 6  # number of pixels to mask
 gap_pixel_start = 550
 
-flat_phase = False  # set to True to use a phase flat (0 everywhere)
+flat_phase = True  # set to True to use a phase flat (0 everywhere)
 
-include_noise = True  # set to True to include poisson noise on the data
+include_noise = False  # set to True to include poisson noise on the data
 
 original_size = [400, 400, 400]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
@@ -77,8 +77,7 @@ debug = False  # True to see all plots
 save_fig = True  # if True save figures
 save_data = True  # if True save data as npz and VTK
 comment = ""  # should start with _
-if not set_gap:
-    comment = comment + "_nogap"
+
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -454,7 +453,9 @@ else:
 if set_gap:
     comment = comment + '_gap' + str(gap_pixel_start)
     simu_data, mask = pu.gap_detector(data=simu_data, mask=mask, start_pixel=gap_pixel_start, width_gap=gap_width)
-
+else:
+    comment = comment + "_nogap"
+    
 gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
                     cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='After rounding')
 
