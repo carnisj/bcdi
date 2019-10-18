@@ -74,7 +74,7 @@ comment = "_angles_" + isosurface_method + "_iso_" + str(isosurface_strain)  # s
 #################################
 # define the experimental setup #
 #################################
-beamline = "ID01"  # name of the beamline, used for data loading and normalization by monitor
+beamline = "ID01"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
