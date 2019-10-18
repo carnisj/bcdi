@@ -34,7 +34,7 @@ datadir = "D:/data/BCDI_isosurface/S"+str(scan)+"/test/"
 # "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/crop400phase/new/"
 
 original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
-simulated_sdd = 0.50678*2  # in m, sample to detector distance for the simulated diffraction pattern
+simulated_sdd = 0.50678  # in m, sample to detector distance for the simulated diffraction pattern
 en = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
@@ -120,7 +120,6 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
         title = 'Object'
 
     wavelength = 12.398 * 1e-7 / energy  # in m
-    # TODO: check this when nx != ny != nz
 
     if debugging:
         gu.multislices_plot(abs(myobj), sum_frames=True, plot_colorbar=False,
@@ -138,7 +137,6 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
     ################################################
     # interpolate the data into the detector frame #
     ################################################
-    # TODO: divide this in two parts: compensate pixel size change then put in detector frame?
     myz, myy, myx = np.meshgrid(np.arange(-nz//2, nz//2, 1),
                                 np.arange(-ny//2, ny//2, 1),
                                 np.arange(-nx//2, nx//2, 1), indexing='ij')
@@ -552,8 +550,8 @@ dqz_simu, dqy_simu, dqx_simu = dqz*original_sdd/simulated_sdd,\
                                dqx*original_sdd/simulated_sdd
 
 if original_sdd != simulated_sdd:
-    print('Reciprocal space resolution after detector distance change (z, y, x): (', str('{:.5f}'.format(dqz_simu)), 'A-1,',
-          str('{:.5f}'.format(dqy_simu)), 'A-1,', str('{:.5f}'.format(dqx_simu)), 'A-1 )')
+    print('Reciprocal space resolution after detector distance change (z, y, x): (', str('{:.5f}'.format(dqz_simu)),
+          'A-1,', str('{:.5f}'.format(dqy_simu)), 'A-1,', str('{:.5f}'.format(dqx_simu)), 'A-1 )')
     print('q range after detector distance change (z, y, x): (', str('{:.5f}'.format(dqz_simu*nz)), 'A-1,',
           str('{:.5f}'.format(dqy_simu*ny)), 'A-1,', str('{:.5f}'.format(dqx_simu*nx)), 'A-1 )')
     voxelsize_z = 2 * np.pi / (nz * dqz_simu * 10)  # in nm
@@ -577,8 +575,10 @@ if original_sdd != simulated_sdd:
     gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
                         cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
                         title='FFT for simulated detector distance\n')
-    del data
-    gc.collect()
+else:
+    simu_data = data
+del data
+gc.collect()
 #######################################################
 # convert into photons and apply the photon threshold #
 #######################################################
@@ -611,8 +611,9 @@ if set_gap:
 gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
                     cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='After rounding')
 
-myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=True,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
-                                  cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='Masked intensity')
+myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=True,  scale='log', plot_colorbar=True, vmin=-1,
+                                  invert_yaxis=False, cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
+                                  title='Masked intensity')
 myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
 if save_fig:
     myfig.savefig(datadir + 'S' + str(scan) + '_diff_' + str('{:.0e}'.format(photon_number))+comment + '_sum.png')
