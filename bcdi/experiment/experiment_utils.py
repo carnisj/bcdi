@@ -110,8 +110,68 @@ class SetupPostprocessing(object):
             raise ValueError('setup parameter: ', self.beamline, 'not defined')
         return kout
 
+    def detector_frame(self, obj, voxelsize, width_z=np.nan, width_y=np.nan, width_x=np.nan,
+                       debugging=False, **kwargs):
+        """
+        Interpolate the orthogonal object back into the non-orthogonal detector frame
+
+        :param obj: real space object, in the orthogonal laboratory frame
+        :param voxelsize: voxel size of the original object
+        :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+        :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+        :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :param debugging: True to show plots before and after interpolation
+        :param kwargs:
+         - 'title': title for the debugging plots
+        :return: object interpolated on an orthogonal grid
+        """
+        for k in kwargs.keys():
+            if k in ['title']:
+                title = kwargs['title']
+            else:
+                raise Exception("unknown keyword argument given: allowed is 'title'")
+        try:
+            title
+        except NameError:  # title not declared
+            title = 'Object'
+
+        nbz, nby, nbx = obj.shape
+
+        if debugging:
+            gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                invert_yaxis=True, title=title + ' before interpolation\n')
+
+        ortho_matrix = self.update_coords(array_shape=(nbz, nby, nbx), tilt_angle=self.tilt_angle,
+                                          pixel_x=self.pixel_x, pixel_y=self.pixel_y)
+
+        ################################################
+        # interpolate the data into the detector frame #
+        ################################################
+        myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1),
+                                    np.arange(-nby // 2, nby // 2, 1),
+                                    np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
+
+        new_x = ortho_matrix[0, 0] * myx + ortho_matrix[0, 1] * myy + ortho_matrix[0, 2] * myz
+        new_y = ortho_matrix[1, 0] * myx + ortho_matrix[1, 1] * myy + ortho_matrix[1, 2] * myz
+        new_z = ortho_matrix[2, 0] * myx + ortho_matrix[2, 1] * myy + ortho_matrix[2, 2] * myz
+        del myx, myy, myz
+        # la partie rgi est sure: c'est la taille de l'objet orthogonal de depart
+        rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2) * voxelsize,
+                                       np.arange(-nby // 2, nby // 2) * voxelsize,
+                                       np.arange(-nbx // 2, nbx // 2) * voxelsize),
+                                      obj, method='linear', bounds_error=False, fill_value=0)
+        detector_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                           new_x.reshape((1, new_z.size)))).transpose())
+        detector_obj = detector_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
+
+        if debugging:
+            gu.multislices_plot(abs(detector_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                invert_yaxis=True, title=title + ' interpolated in detector frame\n')
+
+        return detector_obj
+
     def orthogonalize(self, obj, initial_shape=(), voxel_size=np.nan, width_z=np.nan, width_y=np.nan,
-                      width_x=np.nan, debugging=0):
+                      width_x=np.nan, debugging=False, **kwargs):
         """
         Interpolate obj on the orthogonal reference frame defined by the setup.
 
@@ -121,15 +181,27 @@ class SetupPostprocessing(object):
         :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
         :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
         :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-        :param debugging: 1 to show plots
+        :param debugging: True to show plots before and after interpolation
+        :param kwargs:
+         - 'title': title for the debugging plots
         :return: object interpolated on an orthogonal grid
         """
+        for k in kwargs.keys():
+            if k in ['title']:
+                title = kwargs['title']
+            else:
+                raise Exception("unknown keyword argument given: allowed is 'title'")
+        try:
+            title
+        except NameError:  # title not declared
+            title = 'Object'
+
         if len(initial_shape) == 0:
             initial_shape = obj.shape
 
-        if debugging == 1:
+        if debugging:
             gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, title='Non orthogonal object')
+                                invert_yaxis=True, title=title+' in detector frame')
 
         tilt_sign = np.sign(self.tilt_angle)
         wavelength = 12.398 * 1e-7 / self.energy  # in m
@@ -191,9 +263,9 @@ class SetupPostprocessing(object):
                                         new_x.reshape((1, new_z.size)))).transpose())
         ortho_obj = ortho_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
 
-        if debugging == 1:
+        if debugging:
             gu.multislices_plot(abs(ortho_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, title='Orthogonal object')
+                                invert_yaxis=True, title=title+' in the orthogonal laboratory frame')
         return ortho_obj, voxel
 
     def update_coords(self, array_shape, tilt_angle, pixel_x, pixel_y):
