@@ -30,15 +30,16 @@ parameters: detector size, detector distance, presence/width of a detector gap, 
 The provided reconstruction is expected to be orthogonalized, in the laboratory frame. """
 
 scan = 2227  # spec scan number
-datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/crop400phase/new/"
+datadir = "D:/data/BCDI_isosurface/S"+str(scan)+"/test/"
+# "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/crop400phase/new/"
 
-sdd = 0.50678  # 1.0137  # sample to detector distance in m
-sdd_factor = 2  # put the detector sdd_factor*sdd from the sample
+original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
+simulated_sdd = 2  # in m, sample to detector distance for the simulated diffraction pattern
 en = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
 photon_number = 5e7  # total number of photons in the array, usually around 5e7
-orthogonal_frame = False  # set to False to interpolate the diffraction pattern in the detector frame
+orthogonal_frame = True  # set to False to interpolate the diffraction pattern in the detector frame
 support_threshold = 0.24  # threshold for support determination
 setup = "ID01"  # only "ID01"
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
@@ -56,7 +57,7 @@ flat_phase = True  # set to True to use a phase flat (0 everywhere)
 
 include_noise = False  # set to True to include poisson noise on the data
 
-pad_size = [1000, 1000, 1000]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
+pad_size = [700, 700, 700]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
 # if only a number (e.g. 3), will pad to get three times the initial array size  # ! max size ~ [800, 800, 800]
 crop_size = [400, 400, 400]  # will crop the array to this size
 
@@ -106,21 +107,34 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
 
     wavelength = 12.398 * 1e-7 / energy  # in m
     # TODO: check this when nx != ny != nz
+
+    print('Original voxel size', voxel_size, 'nm')
     dqz = 2 * np.pi / (nz * voxel_size * 10)  # in inverse angstroms
     dqy = 2 * np.pi / (ny * voxel_size * 10)  # in inverse angstroms
     dqx = 2 * np.pi / (nx * voxel_size * 10)  # in inverse angstroms
     print('Original reciprocal space resolution (z, y, x): (', str('{:.5f}'.format(dqz)), 'A-1,',
           str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
+    print('Original q range (z, y, x): (', str('{:.5f}'.format(dqz*nz)), 'A-1,',
+          str('{:.5f}'.format(dqy*ny)), 'A-1,', str('{:.5f}'.format(dqx*nx)), 'A-1 )\n')
+
+    dqz = 2 * np.pi / (nbz * voxel_size * 10)  # in inverse angstroms
+    dqy = 2 * np.pi / (nby * voxel_size * 10)  # in inverse angstroms
+    dqx = 2 * np.pi / (nbx * voxel_size * 10)  # in inverse angstroms
+    print('New reciprocal space resolution (z, y, x) after padding: (', str('{:.5f}'.format(dqz)), 'A-1,',
+          str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
+    print('New q range after padding (z, y, x): (', str('{:.5f}'.format(dqz*pad_size[0])), 'A-1,',
+          str('{:.5f}'.format(dqy*pad_size[1])), 'A-1,', str('{:.5f}'.format(dqx*pad_size[2])), 'A-1 )\n')
+
     voxelsize_z = 2 * np.pi / (nbz * dqz * 10)  # in nm
     voxelsize_y = 2 * np.pi / (nby * dqy * 10)  # in nm
     voxelsize_x = 2 * np.pi / (nbx * dqx * 10)  # in nm
     print('New voxel sizes (z, y, x) after padding: (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
           str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm )')
-    dqz = 2 * np.pi / (nbz * voxelsize_z * 10)  # in inverse angstroms
-    dqy = 2 * np.pi / (nby * voxelsize_y * 10)  # in inverse angstroms
-    dqx = 2 * np.pi / (nbx * voxelsize_x * 10)  # in inverse angstroms
-    print('New reciprocal space resolution (z, y, x) after padding: (', str('{:.5f}'.format(dqz)), 'A-1,',
-          str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
+    print('Padding should have no effect on real-space voxel size.')
+
+    print('Interpolating the object to keep the q resolution constant (i.e. the detector pixel size constant).')
+    print('Thus we compensate by multiplicating the voxel size by pad_size / original_size')
+
     voxelsizez_crop = 2 * np.pi / (numbz * dqz * 10)  # in nm
     voxelsizey_crop = 2 * np.pi / (numby * dqy * 10)  # in nm
     voxelsizex_crop = 2 * np.pi / (numbx * dqx * 10)  # in nm
@@ -139,10 +153,10 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
                                           geometry=geometry)
     del myz, myy, myx
 
-    ############################
-    # Vincent's method using inverse transformation
-    ############################
-
+    ################################################
+    # interpolate the data into the detector frame #
+    ################################################
+    # TODO: divide this in two parts: compensate pixel size change then put in detector frame?
     myz, myy, myx = np.meshgrid(np.arange(-nz//2, nz//2, 1),
                                 np.arange(-ny//2, ny//2, 1),
                                 np.arange(-nx//2, nx//2, 1), indexing='ij')
@@ -345,8 +359,8 @@ if debug:
     gu.multislices_plot(surface, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
                         vmin=-strain_range, vmax=strain_range, invert_yaxis=True, cmap=my_cmap, title='surface strain')
 
-    gu.multislices_plot(support, sum_frames=True, plot_colorbar=False, width_z=200, width_y=200, width_x=200,
-                        invert_yaxis=True, cmap=my_cmap, title='Orthogonal support')
+    gu.multislices_plot(support, sum_frames=True, plot_colorbar=False, invert_yaxis=True, cmap=my_cmap,
+                        title='Orthogonal support')
 
     if not flat_phase:
         gu.multislices_plot(phase, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
@@ -381,28 +395,71 @@ del strain, bulk
 # keep the orthogonal object or interpolate it in the non-orthogonal detector frame #
 #####################################################################################
 if orthogonal_frame:
-    obj = support * np.exp(1j * phase)
+    original_obj = support * np.exp(1j * phase)
     del phase, support
     gc.collect()
     comment = comment + '_prtf'
     set_gap = 0  # gap is valid only in the detector frame
-    print('Original voxel size', voxel_size)
+    print('Original voxel size', voxel_size, 'nm')
     dqz = 2 * np.pi / (nz * voxel_size * 10)  # in inverse angstroms
     dqy = 2 * np.pi / (ny * voxel_size * 10)  # in inverse angstroms
     dqx = 2 * np.pi / (nx * voxel_size * 10)  # in inverse angstroms
     print('Original reciprocal space resolution (z, y, x): (', str('{:.5f}'.format(dqz)), 'A-1,',
           str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
+    print('Original q range (z, y, x): (', str('{:.5f}'.format(dqz*nz)), 'A-1,',
+          str('{:.5f}'.format(dqy*ny)), 'A-1,', str('{:.5f}'.format(dqx*nx)), 'A-1 )\n')
+
+    dqz = 2 * np.pi / (pad_size[0] * voxel_size * 10)  # in inverse angstroms
+    dqy = 2 * np.pi / (pad_size[1] * voxel_size * 10)  # in inverse angstroms
+    dqx = 2 * np.pi / (pad_size[2] * voxel_size * 10)  # in inverse angstroms
+    print('New reciprocal space resolution (z, y, x) after padding: (', str('{:.5f}'.format(dqz)), 'A-1,',
+          str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
+    print('New q range after padding (z, y, x): (', str('{:.5f}'.format(dqz*pad_size[0])), 'A-1,',
+          str('{:.5f}'.format(dqy*pad_size[1])), 'A-1,', str('{:.5f}'.format(dqx*pad_size[2])), 'A-1 )\n')
+
     voxelsize_z = 2 * np.pi / (pad_size[0] * dqz * 10)  # in nm
     voxelsize_y = 2 * np.pi / (pad_size[1] * dqy * 10)  # in nm
     voxelsize_x = 2 * np.pi / (pad_size[2] * dqx * 10)  # in nm
     print('New voxel sizes (z, y, x) after padding: (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
           str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm )')
-    dqz = 2 * np.pi / (pad_size[0] * voxelsize_z * 10)  # in inverse angstroms
-    dqy = 2 * np.pi / (pad_size[1] * voxelsize_y * 10)  # in inverse angstroms
-    dqx = 2 * np.pi / (pad_size[2] * voxelsize_x * 10)  # in inverse angstroms
-    print('New reciprocal space resolution (z, y, x) after padding: (', str('{:.5f}'.format(dqz)), 'A-1,',
-          str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
-# TODO: need to interpolate the object in order to keep the voxel size constant
+    print('Padding should have no effect on real-space voxel size.')
+
+    print('Interpolating the object to keep the q resolution constant (i.e. the detector pixel size constant).')
+    print('Thus we compensate by multiplicating the voxel size by pad_size / original_size\n')
+
+    voxelsizez_crop = 2 * np.pi / (crop_size[0] * dqz * 10)  # in nm
+    voxelsizey_crop = 2 * np.pi / (crop_size[1] * dqy * 10)  # in nm
+    voxelsizex_crop = 2 * np.pi / (crop_size[2] * dqx * 10)  # in nm
+    print('New voxel sizes (z, y, x) after cropping: (', str('{:.2f}'.format(voxelsizez_crop)), 'nm,',
+          str('{:.2f}'.format(voxelsizey_crop)), 'nm,', str('{:.2f}'.format(voxelsizex_crop)), 'nm )')
+
+    ###########################################################################################
+    # interpolate the object in order to keep the q resolution (detector pixel size) constant #
+    ###########################################################################################
+    newz, newy, newx = np.meshgrid(np.arange(-nz//2, nz//2, 1)*voxel_size,
+                                   np.arange(-ny//2, ny//2, 1)*voxel_size,
+                                   np.arange(-nx//2, nx//2, 1)*voxel_size, indexing='ij')
+
+    rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2)*voxel_size*pad_size[0]/nz,
+                                   np.arange(-ny//2, ny//2)*voxel_size*pad_size[1]/ny,
+                                   np.arange(-nx//2, nx//2)*voxel_size*pad_size[2]/nx),
+                                  original_obj, method='linear', bounds_error=False, fill_value=0)
+    obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
+                              newx.reshape((1, newz.size)))).transpose())
+    obj = obj.reshape((nz, ny, nx)).astype(original_obj.dtype)
+
+    if debug:
+        gu.multislices_plot(abs(obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
+                            title='Orthogonal support interpolated for padding compensation')
+
+        data = fftshift(abs(fftn(original_obj)) ** 2)
+        data = data / data.sum() * photon_number  # convert into photon number
+        gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
+                            cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding')
+
+    del original_obj
+    gc.collect()
+
 else:
     ######################################################################
     # rotate the object to have q in the same direction as in experiment #
@@ -437,7 +494,7 @@ else:
 
     obj, _, _, _ = detector_frame(myobj=obj, energy=en, outofplane=outofplane_angle,
                                   inplane=inplane_angle, tilt=tilt_angle, myrocking_angle=rocking_angle,
-                                  mygrazing_angle=grazing_angle, distance=sdd, pixel_x=pixel_size,
+                                  mygrazing_angle=grazing_angle, distance=original_sdd, pixel_x=pixel_size,
                                   pixel_y=pixel_size, geometry=setup, debugging=True)
     if debug:
 
@@ -482,7 +539,7 @@ data = data / data.sum() * photon_number  # convert into photon number
 # interpolate the diffraction pattern to accomodate change in detector distance #
 #################################################################################
 print('Current pixel size', pixel_size)
-new_pixelsize = pixel_size / sdd_factor
+new_pixelsize = pixel_size / (simulated_sdd / original_sdd)
 # if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
 # TODO: regrid the diffraction pattern considering the new pixel size (but array keeps its shape)
 dqz = 2 * np.pi / (pad_size[0] * new_pixelsize * 10)  # in inverse angstroms
@@ -499,7 +556,7 @@ mask[data <= photon_threshold] = 1
 data[data <= photon_threshold] = 0
 
 gu.multislices_plot(data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
-                    cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='After padding')
+                    cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT after padding')
 if save_fig:
     plt.savefig(datadir + 'S' + str(scan) + '_diff_float_' + str('{:.0e}'.format(photon_number))+comment + '_sum.png')
 
