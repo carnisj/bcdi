@@ -298,7 +298,7 @@ else:
                           np.cos(np.arange(-nx // 2, nx // 2, 1)*2*np.pi/oscillation_period), indexing='ij')
     phase = z + y + x
 
-if debug:
+if debug and not flat_phase:
     gu.multislices_plot(phase, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
                         vmin=-phase_range, vmax=phase_range,
                         invert_yaxis=True, cmap=my_cmap, title='Phase before wrapping\n')
@@ -329,7 +329,7 @@ surface[coordination_matrix > 23] = 0  # remove the bulk 22
 bulk = support - surface
 bulk[np.nonzero(bulk)] = 1
 
-if debug:
+if debug and not flat_phase:
     gu.multislices_plot(surface, sum_frames=False, plot_colorbar=False, width_z=200, width_y=200, width_x=200,
                         vmin=0, vmax=1, invert_yaxis=True, cmap=my_cmap, title='surface')
 
@@ -341,32 +341,29 @@ if debug:
     gu.multislices_plot(support, sum_frames=True, plot_colorbar=False, invert_yaxis=True, cmap=my_cmap,
                         title='Orthogonal support\n')
 
-    if not flat_phase:
-        gu.multislices_plot(phase, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
-                            vmin=-phase_range, vmax=phase_range, invert_yaxis=True, cmap=my_cmap,
-                            title='Orthogonal phase')
+    gu.multislices_plot(phase, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
+                        vmin=-phase_range, vmax=phase_range, invert_yaxis=True, cmap=my_cmap,
+                        title='Orthogonal phase')
 
-        strain[bulk == 0] = 0  # for easier visualization
-        if save_fig:
-            plt.savefig(
-                datadir + 'S' + str(scan) + '_phase_' + str('{:.0e}'.format(photon_number)) + comment + '.png')
-        if save_data:
-            np.savez_compressed(datadir + 'S' + str(scan) + '_amp-phase-strain_SIMU' + comment,
-                                amp=support, phase=phase, bulk=bulk, strain=strain)
+    strain[bulk == 0] = 0  # for easier visualization
+    if save_fig:
+        plt.savefig(datadir + 'S' + str(scan) + '_phase_' + str('{:.0e}'.format(photon_number)) + comment + '.png')
+    if save_data:
+        np.savez_compressed(datadir + 'S' + str(scan) + '_amp-phase-strain_SIMU' + comment,
+                            amp=support, phase=phase, bulk=bulk, strain=strain)
 
-            # save amp & phase to VTK
-            # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
-            gu.save_to_vti(filename=os.path.join(datadir, "S" + str(scan) +
-                                                 "_amp-phase-strain_SIMU" + comment + ".vti"),
-                           voxel_size=(voxel_size, voxel_size, voxel_size), tuple_array=(support, bulk, phase, strain),
-                           tuple_fieldnames=('amp', 'bulk', 'phase', 'strain'), amplitude_threshold=0.01)
+        # save amp & phase to VTK
+        # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
+        gu.save_to_vti(filename=os.path.join(datadir, "S" + str(scan) +
+                                             "_amp-phase-strain_SIMU" + comment + ".vti"),
+                       voxel_size=(voxel_size, voxel_size, voxel_size), tuple_array=(support, bulk, phase, strain),
+                       tuple_fieldnames=('amp', 'bulk', 'phase', 'strain'), amplitude_threshold=0.01)
 
-        gu.multislices_plot(strain, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
-                            vmin=-strain_range, vmax=strain_range, invert_yaxis=True, cmap=my_cmap,
-                            title='strain')
-        if save_fig:
-            plt.savefig(
-                datadir + 'S' + str(scan) + '_strain_' + str('{:.0e}'.format(photon_number)) + comment + '.png')
+    gu.multislices_plot(strain, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
+                        vmin=-strain_range, vmax=strain_range, invert_yaxis=True, cmap=my_cmap,
+                        title='strain')
+    if save_fig:
+        plt.savefig(datadir + 'S' + str(scan) + '_strain_' + str('{:.0e}'.format(photon_number)) + comment + '.png')
 
 del strain, bulk
 
@@ -390,9 +387,9 @@ if rotate_crystal:
     print("Angle with y in xy plane", np.arctan(-q[2] / q[1]) * 180 / np.pi, "deg")
     print("Angle with z in xz plane", 180 + np.arctan(q[2] / q[0]) * 180 / np.pi, "deg")
     support = pu.rotate_crystal(support, axis_to_align=myaxis,
-                                reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), debugging=False)
+                                reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), debugging=True)
     phase = pu.rotate_crystal(phase, axis_to_align=myaxis,
-                              reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), debugging=True)
+                              reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), debugging=False)
 
 original_obj = support * np.exp(1j * phase)
 del phase, support
@@ -430,12 +427,6 @@ print('Padding has no effect on real-space voxel size.\n')
 
 print('Interpolating the object to keep the q resolution constant (i.e. the detector pixel size constant).')
 print('Multiplication factor for the voxel size:  pad_size/original_size')
-
-# voxelsizez_crop = 2 * np.pi / (crop_size[0] * dqz * 10)  # in nm
-# voxelsizey_crop = 2 * np.pi / (crop_size[1] * dqy * 10)  # in nm
-# voxelsizex_crop = 2 * np.pi / (crop_size[2] * dqx * 10)  # in nm
-# print('New voxel sizes (z, y, x) after cropping: (', str('{:.2f}'.format(voxelsizez_crop)), 'nm,',
-#       str('{:.2f}'.format(voxelsizey_crop)), 'nm,', str('{:.2f}'.format(voxelsizex_crop)), 'nm )')
 
 ###########################################################################################
 # interpolate the object in order to keep the q resolution (detector pixel size) constant #
@@ -566,6 +557,12 @@ if save_fig:
 ###############
 # crop arrays #
 ###############
+# voxelsizez_crop = 2 * np.pi / (crop_size[0] * dqz * 10)  # in nm
+# voxelsizey_crop = 2 * np.pi / (crop_size[1] * dqy * 10)  # in nm
+# voxelsizex_crop = 2 * np.pi / (crop_size[2] * dqx * 10)  # in nm
+# print('New voxel sizes (z, y, x) after cropping: (', str('{:.2f}'.format(voxelsizez_crop)), 'nm,',
+#       str('{:.2f}'.format(voxelsizey_crop)), 'nm,', str('{:.2f}'.format(voxelsizex_crop)), 'nm )')
+
 nz, ny, nx = data.shape
 nz1, ny1, nx1 = crop_size
 if nz < nz1 or ny < ny1 or nx < nx1:
