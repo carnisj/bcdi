@@ -68,7 +68,7 @@ original_size = [400, 400, 400]  # size of the FFT array before binning. It will
 binning = (1, 1, 1)  # binning factor during phasing
 pad_size = [1000, 1000, 1000]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
 # if only a number (e.g. 3), will pad to get three times the initial array size  # ! max size ~ [800, 800, 800]
-crop_size = [400, 400, 400]  # will crop the array to this size
+crop_size = [300, 300, 300]  # will crop the array to this size
 
 ref_axis_outplane = "y"  # "y"  # "z"  # q is supposed to be aligned along that axis before rotating back (nexus)
 phase_range = np.pi  # for plots
@@ -254,9 +254,6 @@ gc.collect()
 ##################################################################################################
 # compensate padding in order to keep reciprocal space resolution (detector pixel size) constant #
 ##################################################################################################
-gc.collect()
-comment = comment + '_prtf'
-set_gap = 0  # gap is valid only in the detector frame
 print('\nOriginal voxel size', voxel_size, 'nm')
 dqz = 2 * np.pi / (nz * voxel_size * 10)  # in inverse angstroms
 dqy = 2 * np.pi / (ny * voxel_size * 10)  # in inverse angstroms
