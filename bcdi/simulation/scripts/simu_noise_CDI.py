@@ -375,10 +375,6 @@ print('New detector pixel size to compensate the change in detector distance',
 # if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
 # the 3D dataset is a stack along the first axis of 2D detector images
 
-dqz = 2 * np.pi / (nz * voxel_size * 10)  # in inverse angstroms
-dqy = 2 * np.pi / (ny * voxel_size * 10)  # in inverse angstroms
-dqx = 2 * np.pi / (nx * voxel_size * 10)  # in inverse angstroms
-
 print('Reciprocal space resolution before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz)), 'A-1,',
       str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
 print('q range before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz*nz)), 'A-1,',
@@ -455,7 +451,7 @@ if set_gap:
     simu_data, mask = pu.gap_detector(data=simu_data, mask=mask, start_pixel=gap_pixel_start, width_gap=gap_width)
 else:
     comment = comment + "_nogap"
-    
+
 gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
                     cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='After rounding')
 
