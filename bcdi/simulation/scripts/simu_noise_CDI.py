@@ -524,11 +524,11 @@ myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=True,  scale='log', plot
                                   title='Masked intensity')
 myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
 myfig.text(0.60, 0.25, "Crop size =" + str(crop_size), size=20)
-myfig.text(0.60, 0.20, "Detector distance =" + str('{:.5f}'.format(simulated_sdd)), size=20)
+myfig.text(0.60, 0.20, "Detector distance =" + str('{:.5f}'.format(simulated_sdd)) + " m", size=20)
 myfig.text(0.60, 0.15, "Voxel size =" + str('{:.2f}'.format(voxelsizez_crop)) + ', ' +
-           str('{:.2f}'.format(voxelsizey_crop)) + ', ' + str('{:.2f}'.format(voxelsizex_crop)), size=20)
+           str('{:.2f}'.format(voxelsizey_crop)) + ', ' + str('{:.2f}'.format(voxelsizex_crop)) + " nm", size=20)
 if set_gap:
-    myfig.text(0.60, 0.10, "Gap width =" + str(gap_width) + "pixels", size=20)
+    myfig.text(0.60, 0.10, "Gap width =" + str(gap_width) + " pixels", size=20)
 if save_fig:
     myfig.savefig(datadir + 'S' + str(scan) + '_diff_' + str('{:.0e}'.format(photon_number))+comment + '_sum.png')
 plt.show()
