@@ -34,7 +34,7 @@ datadir = "D:/data/BCDI_isosurface/S"+str(scan)+"/test/"
 # "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/crop400phase/new/"
 
 original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
-simulated_sdd = 1  # in m, sample to detector distance for the simulated diffraction pattern
+simulated_sdd = 0.50678*2  # in m, sample to detector distance for the simulated diffraction pattern
 en = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
@@ -58,17 +58,20 @@ flat_phase = True  # set to True to use a phase flat (0 everywhere)
 
 include_noise = False  # set to True to include poisson noise on the data
 
-pad_size = [700, 700, 700]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
+original_size = [400, 400, 400]  # size of the FFT array before binning. It will be modify to take into account binning
+# during phasing automatically. Leave it to () if the shape did not change.
+binning = (1, 1, 1)  # binning factor during phasing
+pad_size = [500, 500, 500]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
 # if only a number (e.g. 3), will pad to get three times the initial array size  # ! max size ~ [800, 800, 800]
-crop_size = [400, 400, 400]  # will crop the array to this size
+crop_size = [300, 300, 300]  # will crop the array to this size
 
 ref_axis_outplane = "y"  # "y"  # "z"  # q is supposed to be aligned along that axis before rotating back (nexus)
 phase_range = np.pi  # for plots
 strain_range = 0.001  # for plots
-debug = True  # True to see all plots
+debug = False  # True to see all plots
 save_fig = True  # if True save figures
 save_data = True  # if True save data as npz and VTK
-comment = "_coord23_iso0.24"  # should start with _
+comment = ""  # should start with _
 if not set_gap:
     comment = comment + "_nogap"
 ######################################
@@ -114,14 +117,14 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
     try:
         title
     except NameError:  # title not declared
-        title = 'Object '
+        title = 'Object'
 
     wavelength = 12.398 * 1e-7 / energy  # in m
     # TODO: check this when nx != ny != nz
 
     if debugging:
         gu.multislices_plot(abs(myobj), sum_frames=True, plot_colorbar=False,
-                            invert_yaxis=True, cmap=my_cmap, title=title+'before interpolation\n')
+                            invert_yaxis=True, cmap=my_cmap, title=title+' before interpolation\n')
 
     myz, myy, myx = np.meshgrid(np.arange(0, nz, 1), np.arange(0, ny, 1), np.arange(0, nx, 1),
                                 indexing='ij')
@@ -155,7 +158,7 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
 
     if debugging:
         gu.multislices_plot(abs(detector_obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
-                            title=title+'interpolated in detector frame\n')
+                            title=title+' interpolated in detector frame\n')
         
     return detector_obj
 
@@ -252,13 +255,22 @@ root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir, filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
-
 amp = npzfile['amp']
-nz, ny, nx = amp.shape
-print("Initial data size: (", nz, ',', ny, ',', nx, ')')
+gu.multislices_plot(amp, sum_frames=False, plot_colorbar=False, vmin=0, vmax=1, invert_yaxis=True, cmap=my_cmap,
+                    title='Input amplitude')
 
-gu.multislices_plot(amp, sum_frames=False, plot_colorbar=False, width_z=200, width_y=200, width_x=200,
-                    vmin=0, vmax=1, invert_yaxis=True, cmap=my_cmap, title='Amp')
+#################################
+# pad data to the original size #
+#################################
+print("Initial data size:", amp.shape)
+if len(original_size) == 0:
+    original_size = amp.shape
+print("FFT size before accounting for binning", original_size)
+original_size = tuple([original_size[index] // binning[index] for index in range(len(binning))])
+print("Binning used during phasing:", binning)
+print("Padding back to original FFT size", original_size, '\n')
+amp = pu.crop_pad(array=amp, output_shape=original_size)
+nz, ny, nx = amp.shape
 
 ##########################################################
 # calculate q for later regridding in the detector frame #
@@ -280,7 +292,7 @@ Qnorm = Qnorm * 1e-10  # switch to angstroms
 planar_dist = 2*np.pi/Qnorm  # Qnorm should be in angstroms
 print("Wavevector transfer [z, y, x]:", q*Qnorm)
 print("Wavevector transfer: (angstroms)", str('{:.4f}'.format(Qnorm)))
-print("Atomic plane distance: (angstroms)", str('{:.4f}'.format(planar_dist)), "angstroms")
+print("Interplanar distance: (angstroms)", str('{:.4f}'.format(planar_dist)), "angstroms")
 planar_dist = planar_dist / 10  # switch to nm
 
 #########################################
@@ -371,6 +383,7 @@ del strain, bulk
 # rotate the object to have q in the same direction as during the experiment #
 ##############################################################################
 if rotate_crystal:
+    print('\nRotating the crystal to match experimental conditions')
     if ref_axis_outplane == "x":
         myaxis = np.array([1, 0, 0])  # must be in [x, y, z] order
     elif ref_axis_outplane == "y":
@@ -436,9 +449,10 @@ newz, newy, newx = np.meshgrid(np.arange(-nz//2, nz//2, 1)*voxel_size,
                                np.arange(-nx//2, nx//2, 1)*voxel_size, indexing='ij')
 
 print('Voxel size for keeping pixel detector size constant', voxel_size*pad_size[0]/nz, 'nm\n')
+
 rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2)*voxel_size*pad_size[0]/nz,
-                               np.arange(-ny//2, ny//2)*voxel_size*pad_size[1]/nz,
-                               np.arange(-nx//2, nx//2)*voxel_size*pad_size[2]/nz),
+                               np.arange(-ny//2, ny//2)*voxel_size*pad_size[1]/ny,
+                               np.arange(-nx//2, nx//2)*voxel_size*pad_size[2]/nx),
                               original_obj, method='linear', bounds_error=False, fill_value=0)
 
 obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
@@ -461,16 +475,16 @@ else:
 # interpolate the object back into detector frame #
 ###################################################
 if not orthogonal_frame:
-    original_obj = detector_frame(myobj=original_obj, energy=en, outofplane=outofplane_angle, inplane=inplane_angle,
-                                  tilt=tilt_angle, myrocking_angle=rocking_angle, mygrazing_angle=grazing_angle,
-                                  distance=original_sdd, pixel_x=pixel_size, pixel_y=pixel_size, geometry=setup,
-                                  voxelsize=voxel_size, debugging=debug, title='Original object')
-    data = fftshift(abs(fftn(original_obj)) ** 2)
-    data = data / data.sum() * photon_number  # convert into photon number
-    gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
-                        cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding\n')
-    del original_obj, data
-    gc.collect()
+    if debug:
+        original_obj = detector_frame(myobj=original_obj, energy=en, outofplane=outofplane_angle, inplane=inplane_angle,
+                                      tilt=tilt_angle, myrocking_angle=rocking_angle, mygrazing_angle=grazing_angle,
+                                      distance=original_sdd, pixel_x=pixel_size, pixel_y=pixel_size, geometry=setup,
+                                      voxelsize=voxel_size, debugging=debug, title='Original object')
+        data = fftshift(abs(fftn(original_obj)) ** 2)
+        gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
+                            cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding\n')
+        del original_obj, data
+        gc.collect()
 
     obj = detector_frame(myobj=obj, energy=en, outofplane=outofplane_angle, inplane=inplane_angle, tilt=tilt_angle,
                          myrocking_angle=rocking_angle, mygrazing_angle=grazing_angle, distance=original_sdd,
@@ -495,45 +509,87 @@ if nz_pad < nz or ny_pad < ny or nx_pad < nx:
     print('Pad size smaller than initial array size')
     sys.exit()
 
-newobj = np.zeros((nz_pad, ny_pad, nx_pad), dtype=complex)
-newobj[(nz_pad-nz)//2:(nz_pad+nz)//2, (ny_pad-ny)//2:(ny_pad+ny)//2, (nx_pad-nx)//2:(nx_pad+nx)//2] = obj
+newobj = pu.crop_pad(obj, pad_size)
 
-nz_pad, ny_pad, nx_pad = newobj.shape
-print("Padded data size: (", nz_pad, ',', ny_pad, ',', nx_pad, ')')
-comment = comment + "_pad_" + str(nz_pad) + "," + str(ny_pad) + "," + str(nx_pad)
+nz, ny, nx = newobj.shape
+print("Padded data size: (", nz, ',', ny, ',', nx, ')')
+comment = comment + "_pad_" + str(nz) + "," + str(ny) + "," + str(nx)
+del obj
+gc.collect()
 
 #####################################
 # calculate the diffraction pattern #
 #####################################
 data = fftshift(abs(fftn(newobj))**2)
+gu.multislices_plot(data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
+                    cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
+                    title='FFT for initial detector distance\n')
+del newobj
+gc.collect()
 
 #################################################################################
 # interpolate the diffraction pattern to accomodate change in detector distance #
 #################################################################################
-print('Current detector pixel size', pixel_size, 'm')
-new_pixelsize = pixel_size / (simulated_sdd / original_sdd)
-print('New detector pixel size to compensate the change in detector distance', pixel_size, 'm')
+comment = comment + '_sdd_' + str(simulated_sdd)
+print('\nCurrent detector pixel size', pixel_size, 'm')
+print('New detector pixel size to compensate the change in detector distance',
+      str('{:.5f}'.format(pixel_size * original_sdd / simulated_sdd)), 'm')
 # if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
 # the 3D dataset is a stack along the first axis of 2D detector images
 
-# TODO: regrid the diffraction pattern considering the new pixel size (but array keeps its shape)
-# dqz = 2 * np.pi / (pad_size[0] * new_pixelsize * 10)  # in inverse angstroms
-# dqy = 2 * np.pi / (pad_size[1] * new_pixelsize * 10)  # in inverse angstroms
-# dqx = 2 * np.pi / (pad_size[2] * new_pixelsize * 10)  # in inverse angstroms
-# print('New reciprocal space resolution (z, y, x) after moving detector: (', str('{:.5f}'.format(dqz)), 'A-1,',
-#       str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
+print('Reciprocal space resolution before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz)), 'A-1,',
+      str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
+print('q range before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz*nz)), 'A-1,',
+      str('{:.5f}'.format(dqy*ny)), 'A-1,', str('{:.5f}'.format(dqx*nx)), 'A-1 )')
+voxelsize_z = 2 * np.pi / (nz * dqz * 10)  # in nm
+voxelsize_y = 2 * np.pi / (ny * dqy * 10)  # in nm
+voxelsize_x = 2 * np.pi / (nx * dqx * 10)  # in nm
+print('Voxel sizes before detector distance change (z, y, x): (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
+      str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm)\n')
 
+dqz_simu, dqy_simu, dqx_simu = dqz*original_sdd/simulated_sdd,\
+                               dqy*original_sdd/simulated_sdd,\
+                               dqx*original_sdd/simulated_sdd
+
+if original_sdd != simulated_sdd:
+    print('Reciprocal space resolution after detector distance change (z, y, x): (', str('{:.5f}'.format(dqz_simu)), 'A-1,',
+          str('{:.5f}'.format(dqy_simu)), 'A-1,', str('{:.5f}'.format(dqx_simu)), 'A-1 )')
+    print('q range after detector distance change (z, y, x): (', str('{:.5f}'.format(dqz_simu*nz)), 'A-1,',
+          str('{:.5f}'.format(dqy_simu*ny)), 'A-1,', str('{:.5f}'.format(dqx_simu*nx)), 'A-1 )')
+    voxelsize_z = 2 * np.pi / (nz * dqz_simu * 10)  # in nm
+    voxelsize_y = 2 * np.pi / (ny * dqy_simu * 10)  # in nm
+    voxelsize_x = 2 * np.pi / (nx * dqx_simu * 10)  # in nm
+    print('Voxel sizes after detector distance change (z, y, x): (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
+          str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm)\n')
+
+    newz, newy, newx = np.meshgrid(np.arange(-nz//2, nz//2, 1)*dqz,
+                                   np.arange(-ny//2, ny//2, 1)*dqy,
+                                   np.arange(-nx//2, nx//2, 1)*dqx, indexing='ij')
+
+    rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2)*dqz*simulated_sdd/original_sdd,
+                                   np.arange(-ny//2, ny//2)*dqy*simulated_sdd/original_sdd,
+                                   np.arange(-nx//2, nx//2)*dqx*simulated_sdd/original_sdd),
+                                  data, method='linear', bounds_error=False, fill_value=0)
+
+    simu_data = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
+                                   newx.reshape((1, newz.size)))).transpose())
+    simu_data = simu_data.reshape((nz, ny, nx)).astype(data.dtype)
+    gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
+                        cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
+                        title='FFT for simulated detector distance\n')
+    del data
+    gc.collect()
 #######################################################
 # convert into photons and apply the photon threshold #
 #######################################################
-data = data / data.sum() * photon_number  # convert into photon number
+simu_data = simu_data / simu_data.sum() * photon_number  # convert into photon number
 
-mask = np.zeros((nz_pad, ny_pad, nx_pad))
-mask[data <= photon_threshold] = 1
-data[data <= photon_threshold] = 0
+mask = np.zeros((nz, ny, nx))
+mask[simu_data <= photon_threshold] = 1
+simu_data[simu_data <= photon_threshold] = 0
 
-gu.multislices_plot(data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
-                    cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT after padding\n')
+gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
+                    cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT converted into photons\n')
 if save_fig:
     plt.savefig(datadir + 'S' + str(scan) + '_diff_float_' + str('{:.0e}'.format(photon_number))+comment + '_sum.png')
 
@@ -541,21 +597,21 @@ if save_fig:
 # include Poisson noise #
 #########################
 if include_noise:
-    data = np.rint(poisson(data)).astype(int)
+    simu_data = np.rint(poisson(simu_data)).astype(int)
     comment = comment + "_noise"
 else:
-    data = np.rint(data).astype(int)
+    simu_data = np.rint(simu_data).astype(int)
 
 #####################
 # add detector gaps #
 #####################
 if set_gap:
-    data, mask = mask3d_maxipix(data, mask, start_pixel=gap_pixel_start, width_gap=gap_width)
+    simu_data, mask = mask3d_maxipix(simu_data, mask, start_pixel=gap_pixel_start, width_gap=gap_width)
 
-gu.multislices_plot(data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
+gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
                     cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='After rounding')
 
-myfig, _, _ = gu.multislices_plot(data, sum_frames=True,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
+myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=True,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
                                   cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='Masked intensity')
 myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
 if save_fig:
@@ -564,46 +620,41 @@ if save_fig:
 #################################################
 # crop arrays to obtain the final detector size #
 #################################################
-voxelsizez_crop = 2 * np.pi / (crop_size[0] * dqz * 10)  # in nm
-voxelsizey_crop = 2 * np.pi / (crop_size[1] * dqy * 10)  # in nm
-voxelsizex_crop = 2 * np.pi / (crop_size[2] * dqx * 10)  # in nm
+voxelsizez_crop = 2 * np.pi / (crop_size[0] * dqz_simu * 10)  # in nm
+voxelsizey_crop = 2 * np.pi / (crop_size[1] * dqy_simu * 10)  # in nm
+voxelsizex_crop = 2 * np.pi / (crop_size[2] * dqx_simu * 10)  # in nm
 print('Real-space voxel sizes (z, y, x) after cropping: (', str('{:.2f}'.format(voxelsizez_crop)), 'nm,',
       str('{:.2f}'.format(voxelsizey_crop)), 'nm,', str('{:.2f}'.format(voxelsizex_crop)), 'nm )')
 
-nz, ny, nx = data.shape
+nz, ny, nx = simu_data.shape
 nz_crop, ny_crop, nx_crop = crop_size
 if nz < nz_crop or ny < ny_crop or nx < nx_crop:
     print('Crop size larger than initial array size')
     sys.exit()
-data = data[(nz - nz_crop) // 2:(nz + nz_crop) // 2,
-            (ny - ny_crop) // 2:(ny + ny_crop) // 2,
-            (nx - nx_crop) // 2:(nx + nx_crop) // 2]
-mask = mask[(nz - nz_crop) // 2:(nz + nz_crop) // 2,
-            (ny - ny_crop) // 2:(ny + ny_crop) // 2,
-            (nx - nx_crop) // 2:(nx + nx_crop) // 2]
+
+simu_data = pu.crop_pad(simu_data, crop_size)
+mask = pu.crop_pad(mask, crop_size)
 
 ##########################################################
 # crop arrays to fulfill FFT requirements during phasing #
 ##########################################################
-nz, ny, nx = data.shape
+nz, ny, nx = simu_data.shape
 nz_crop, ny_crop, nx_crop = pru.smaller_primes((nz, ny, nx), maxprime=7, required_dividers=(2,))
-data = data[(nz - nz_crop) // 2:(nz + nz_crop) // 2,
-            (ny - ny_crop) // 2:(ny + ny_crop) // 2,
-            (nx - nx_crop) // 2:(nx + nx_crop) // 2]
-mask = mask[(nz - nz_crop) // 2:(nz + nz_crop) // 2,
-            (ny - ny_crop) // 2:(ny + ny_crop) // 2,
-            (nx - nx_crop) // 2:(nx + nx_crop) // 2]
-nz, ny, nx = data.shape
-print("cropped FFT data size:", data.shape)
-print("Total number of photons:", data.sum())
+
+simu_data = pu.crop_pad(simu_data, (nz_crop, ny_crop, nx_crop))
+mask = pu.crop_pad(mask, (nz_crop, ny_crop, nx_crop))
+
+nz, ny, nx = simu_data.shape
+print("cropped FFT data size:", simu_data.shape)
+print("Total number of photons:", simu_data.sum())
 comment = comment + "_crop_" + str(nz) + "," + str(ny) + "," + str(nx)
 
 ##############
 # save files #
 ##############
 if save_data:
-    np.savez_compressed(datadir + 'S' + str(scan) + '_diff_' + str('{:.0e}'.format(photon_number))+comment, data=data)
-    np.savez_compressed(datadir + 'S' + str(scan) + '_mask_' + str('{:.0e}'.format(photon_number))+comment, mask=mask)
+    np.savez_compressed(datadir+'S'+str(scan)+'_diff_' + str('{:.0e}'.format(photon_number))+comment, data=simu_data)
+    np.savez_compressed(datadir+'S'+str(scan)+'_mask_' + str('{:.0e}'.format(photon_number))+comment, mask=mask)
 
 #####################################
 # plot mask and diffraction pattern #
@@ -613,25 +664,25 @@ if debug:
     gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=False, invert_yaxis=False,
                         cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='Mask')
 
-myfig, _, _ = gu.multislices_plot(data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
-                                  cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='Masked intensity')
+myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1,
+                                  invert_yaxis=False, cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
+                                  title='Masked intensity')
 myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
 myfig.text(0.60, 0.25, "Crop size =" + str(crop_size), size=20)
-# myfig.text(0.60, 0.20, "New tilt angle =" + str('{:.4f}'.format(tilt_crop)) + "deg", size=20)
-# myfig.text(0.60, 0.15, "New detector pixel size y =" + str('{:.2f}'.format(pixel_crop_y * 1e6)) + "um", size=20)
-# myfig.text(0.60, 0.10, "New detector pixel size x =" + str('{:.2f}'.format(pixel_crop_x * 1e6)) + "um", size=20)
+myfig.text(0.60, 0.20, "Detector distance =" + str(simulated_sdd), size=20)
+if set_gap:
+    myfig.text(0.60, 0.15, "Gap width =" + str(gap_width) + "pixels", size=20)
 if save_fig:
     myfig.savefig(datadir + 'S' + str(scan) + '_diff_' + str('{:.0e}'.format(photon_number))+comment + '_center.png')
 
-myfig, _, _ = gu.multislices_plot(data, sum_frames=True,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
-                                  cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='Masked intensity')
+myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=True,  scale='log', plot_colorbar=True, vmin=-1,
+                                  invert_yaxis=False, cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
+                                  title='Masked intensity')
 myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
 myfig.text(0.60, 0.25, "Crop size =" + str(crop_size), size=20)
+myfig.text(0.60, 0.20, "Detector distance =" + str(simulated_sdd), size=20)
 if set_gap:
-    myfig.text(0.60, 0.20, "Gap width =" + str(gap_width) + "pixels", size=20)
-# myfig.text(0.60, 0.20, "New tilt angle =" + str('{:.4f}'.format(tilt_crop)) + "deg", size=20)
-# myfig.text(0.60, 0.15, "New detector pixel size y =" + str('{:.2f}'.format(pixel_crop_y * 1e6)) + "um", size=20)
-# myfig.text(0.60, 0.10, "New detector pixel size x =" + str('{:.2f}'.format(pixel_crop_x * 1e6)) + "um", size=20)
+    myfig.text(0.60, 0.15, "Gap width =" + str(gap_width) + "pixels", size=20)
 if save_fig:
     myfig.savefig(datadir + 'S' + str(scan) + '_diff_' + str('{:.0e}'.format(photon_number))+comment + '_sum.png')
 plt.show()
