@@ -171,9 +171,9 @@ class SetupPostprocessing(object):
         ortho_matrix = self.update_coords(array_shape=(nbz, nby, nbx), tilt_angle=tilt,
                                           pixel_x=pixel_x, pixel_y=pixel_y)
 
-        ############################
-        # Vincent Favre-Nicolin's method using inverse transformation
-        ############################
+        ###############################################################
+        # Vincent Favre-Nicolin's method using inverse transformation #
+        ###############################################################
         myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * voxel,
                                     np.arange(-nby // 2, nby // 2, 1) * voxel,
                                     np.arange(-nbx // 2, nbx // 2, 1) * voxel, indexing='ij')
