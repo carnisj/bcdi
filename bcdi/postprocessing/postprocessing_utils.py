@@ -753,6 +753,29 @@ def flip_reconstruction(obj, debugging=False):
     return flipped_obj
 
 
+def gap_detector(data, mask, start_pixel, width_gap):
+    """
+    Reproduce a detector gap in reciprocal space data and mask
+
+    :param data: the 3D reciprocal space data
+    :param mask: the corresponding 3D mask
+    :param start_pixel: pixel number where the gap starts
+    :param width_gap: width of the gap in pixels
+    :return: data and mask array with a gap
+    """
+    if data.ndim != 3 or mask.ndim != 3:
+        raise ValueError('data and mask should be 3d arrays')
+    if data.shape != mask.shape:
+        raise ValueError('data and mask should have the same shape')
+
+    data[:, :, start_pixel:start_pixel + width_gap] = 0
+    data[:, start_pixel:start_pixel + width_gap, :] = 0
+
+    mask[:, :, start_pixel:start_pixel + width_gap] = 1
+    mask[:, start_pixel:start_pixel + width_gap, :] = 1
+    return data, mask
+
+
 def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     """
     Generate 2D or 3D Gaussian kernels
