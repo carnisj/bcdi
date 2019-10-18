@@ -66,9 +66,9 @@ include_noise = True  # set to True to include poisson noise on the data
 original_size = [400, 400, 400]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor during phasing
-pad_size = [500, 500, 500]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
+pad_size = [1000, 1000, 1000]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
 # if only a number (e.g. 3), will pad to get three times the initial array size  # ! max size ~ [800, 800, 800]
-crop_size = [300, 300, 300]  # will crop the array to this size
+crop_size = [400, 400, 400]  # will crop the array to this size
 
 ref_axis_outplane = "y"  # "y"  # "z"  # q is supposed to be aligned along that axis before rotating back (nexus)
 phase_range = np.pi  # for plots
@@ -369,7 +369,7 @@ gc.collect()
 #################################################################################
 # interpolate the diffraction pattern to accomodate change in detector distance #
 #################################################################################
-comment = comment + '_sdd_' + str(simulated_sdd)
+comment = comment + '_sdd_' + str('{:.2f}'.format(simulated_sdd))
 print('\nCurrent detector pixel size', pixel_size*1e6, 'um')
 print('New detector pixel size to compensate the change in detector distance',
       str('{:.5f}'.format(pixel_size*1e6 * original_sdd / simulated_sdd)), 'um')
@@ -452,6 +452,7 @@ else:
 # add detector gaps #
 #####################
 if set_gap:
+    comment = comment + '_gap' + str(gap_pixel_start)
     simu_data, mask = pu.gap_detector(data=simu_data, mask=mask, start_pixel=gap_pixel_start, width_gap=gap_width)
 
 gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
