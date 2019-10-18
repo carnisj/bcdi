@@ -83,7 +83,7 @@ def mask3d_maxipix(mydata, mymask, start_pixel, width_gap):
 
 
 def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, mygrazing_angle, distance, pixel_x,
-                   pixel_y, geometry, debugging=True):
+                   pixel_y, geometry, voxelsize, debugging=True):
     """
     Interpolate orthogonal myobj back into the non-orthogonal detector frame
 
@@ -98,6 +98,7 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
     :param pixel_x: horizontal pixel size, in meters
     :param pixel_y: vertical pixel size, in meters
     :param geometry: name of the setup 'ID01'or 'SIXS'
+    :param voxelsize: voxel size of the original object
     :param debugging: to show plots before and after orthogonalization
     :return: object interpolated on an orthogonal grid
     """
@@ -108,7 +109,7 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
 
     if debugging:
         gu.multislices_plot(abs(myobj), sum_frames=True, plot_colorbar=False,
-                            invert_yaxis=True, cmap=my_cmap, title='ortho_obj')
+                            invert_yaxis=True, cmap=my_cmap, title='Orthogonal object before interpolation')
 
     myz, myy, myx = np.meshgrid(np.arange(0, nz, 1), np.arange(0, ny, 1), np.arange(0, nx, 1),
                                 indexing='ij')
@@ -132,9 +133,9 @@ def detector_frame(myobj, energy, outofplane, inplane, tilt, myrocking_angle, my
     new_z = ortho_matrix[2, 0] * myx + ortho_matrix[2, 1] * myy + ortho_matrix[2, 2] * myz
     del myx, myy, myz
     # la partie rgi est sure: c'est la taille de l'objet orthogonal de depart
-    rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2)*voxel_size,
-                                   np.arange(-ny//2, ny//2)*voxel_size,
-                                   np.arange(-nx//2, nx//2)*voxel_size),
+    rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2)*voxelsize,
+                                   np.arange(-ny//2, ny//2)*voxelsize,
+                                   np.arange(-nx//2, nx//2)*voxelsize),
                                   myobj, method='linear', bounds_error=False, fill_value=0)
     detector_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                       new_x.reshape((1, new_z.size)))).transpose())
@@ -387,10 +388,10 @@ voxelsize_y = 2 * np.pi / (pad_size[1] * dqy * 10)  # in nm
 voxelsize_x = 2 * np.pi / (pad_size[2] * dqx * 10)  # in nm
 print('New voxel sizes (z, y, x) after padding: (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
       str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm )')
-print('Padding should have no effect on real-space voxel size.')
+print('Padding has no effect on real-space voxel size.\n')
 
 print('Interpolating the object to keep the q resolution constant (i.e. the detector pixel size constant).')
-print('Thus we compensate by multiplicating the voxel size by pad_size / original_size\n')
+print('Multiplication factor for the voxel size:  pad_size/original_size')
 
 # voxelsizez_crop = 2 * np.pi / (crop_size[0] * dqz * 10)  # in nm
 # voxelsizey_crop = 2 * np.pi / (crop_size[1] * dqy * 10)  # in nm
@@ -405,11 +406,10 @@ newz, newy, newx = np.meshgrid(np.arange(-nz//2, nz//2, 1)*voxel_size,
                                np.arange(-ny//2, ny//2, 1)*voxel_size,
                                np.arange(-nx//2, nx//2, 1)*voxel_size, indexing='ij')
 
-voxel_size = voxel_size*pad_size[0]/nz
-print('Voxel size for keeping pixel detector size constant', voxel_size, 'nm')
-rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2)*voxel_size,
-                               np.arange(-ny//2, ny//2)*voxel_size,
-                               np.arange(-nx//2, nx//2)*voxel_size),
+print('Voxel size for keeping pixel detector size constant', voxel_size*pad_size[0]/nz, 'nm\n')
+rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2)*voxel_size*pad_size[0]/nz,
+                               np.arange(-ny//2, ny//2)*voxel_size*pad_size[1]/nz,
+                               np.arange(-nx//2, nx//2)*voxel_size*pad_size[2]/nz),
                               original_obj, method='linear', bounds_error=False, fill_value=0)
 
 obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
@@ -424,9 +424,9 @@ if debug:
         data = data / data.sum() * photon_number  # convert into photon number
         gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
                             cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding')
-
-del original_obj
-gc.collect()
+else:
+    del original_obj
+    gc.collect()
 
 ######################################################################
 # rotate the object to have q in the same direction as in experiment #
@@ -464,23 +464,22 @@ if not orthogonal_frame:
     #############################################
     # transform object back into detector frame #
     #############################################
-
-    obj = detector_frame(myobj=obj, energy=en, outofplane=outofplane_angle, inplane=inplane_angle, tilt=tilt_angle,
-                         myrocking_angle=rocking_angle, mygrazing_angle=grazing_angle, distance=original_sdd,
-                         pixel_x=pixel_size, pixel_y=pixel_size, geometry=setup, debugging=True)
     if debug:
-
-        gu.multislices_plot(abs(obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
-                            title='Support in detector frame')
-
-        gu.multislices_plot(np.angle(obj), sum_frames=False, plot_colorbar=True,
-                            vmin=-phase_range, vmax=phase_range, invert_yaxis=True, cmap=my_cmap,
-                            title='Phase in detector frame')
-
-        data = fftshift(abs(fftn(obj)) ** 2)
+        original_obj = detector_frame(myobj=original_obj, energy=en, outofplane=outofplane_angle, inplane=inplane_angle,
+                                      tilt=tilt_angle, myrocking_angle=rocking_angle, mygrazing_angle=grazing_angle,
+                                      distance=original_sdd, pixel_x=pixel_size, pixel_y=pixel_size, geometry=setup,
+                                      voxelsize=voxel_size, debugging=True)
+        data = fftshift(abs(fftn(original_obj)) ** 2)
         data = data / data.sum() * photon_number  # convert into photon number
         gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
                             cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding')
+        del original_obj, data
+        gc.collect()
+
+    obj = detector_frame(myobj=obj, energy=en, outofplane=outofplane_angle, inplane=inplane_angle, tilt=tilt_angle,
+                         myrocking_angle=rocking_angle, mygrazing_angle=grazing_angle, distance=original_sdd,
+                         pixel_x=pixel_size, pixel_y=pixel_size, geometry=setup, voxelsize=voxel_size, debugging=True)
+
     #################################################################
     # uncomment this if you want to save the non-orthogonal support #
     # in that case pad_size and crop_size should be identical       #
