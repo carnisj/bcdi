@@ -41,9 +41,9 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 1  # spec scan number
+scan = 936  # spec scan number
 
-datadir = 'D:/data/PtRh/S' + str(scan) + "/pynxraw/"
+datadir = 'D:/data/HC3207/SN' + str(scan) + "/test/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
@@ -51,18 +51,18 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [100, 640, 700]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [100, 400, 512]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-binning = (1, 2, 2)  # binning factor during phasing
+binning = (1, 1, 1)  # binning factor during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
-fix_voxel = 3.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
+fix_voxel = 6.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 plot_margin = (60, 30, 30)  # (z, y, x) margin outside the support in each direction, can be negative
 # useful to avoid cutting the object during the orthogonalization
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-isosurface_strain = 0.6  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.3  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 offset_origin = []  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
@@ -70,7 +70,7 @@ offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = "_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = "_angles_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
@@ -78,14 +78,14 @@ beamline = "ID01"  # name of the beamline, used for data loading and normalizati
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 0.85  # sample to detector distance in m
-pixel_size = 75e-6  # detector pixel size in m
+sdd = 0.8618  # sample to detector distance in m
+pixel_size = 55e-6  # detector pixel size in m
 energy = 8994  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # beam along z
-outofplane_angle = 35.978  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 0  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 35.1012  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 3.5457  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.02  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 dispersion = 4.1184E-05  # delta
@@ -131,9 +131,9 @@ alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
 ############################################
 align_crystal = True  # if True rotates the crystal to align it along q
 ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
-align_inplane = False  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
+align_inplane = True  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
 ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
-inplane_normal = np.array([1, 0, -0.1])  # facet normal to align with ref_axis_inplane (y should be 0)
+inplane_normal = np.array([1, 0, -0.16])  # facet normal to align with ref_axis_inplane (y should be 0)
 strain_range = 0.004  # for plots
 phase_range = np.pi/3  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
@@ -172,8 +172,6 @@ my_cmap = colormap.cmap
 ####################################
 pixel_size = pixel_size * binning[1]
 tilt_angle = tilt_angle * binning[0]
-original_size = tuple([original_size[index] // binning[index] for index in range(len(binning))])
-
 
 if binning[1] != binning[2]:
     print('Binning size different for each detector direction - not yet implemented')
@@ -195,18 +193,21 @@ nbfiles = len(file_path)
 plt.ion()
 
 obj, extension = pu.load_reconstruction(file_path[0])
-
+# obj[0:40,:,:] = 0
+# obj[65:,:,:] = 0
 if extension == '.h5':
     comment = comment + '_mode'
 
-if len(original_size) != 0:
-    print("Original FFT window size: ", original_size)
-    print("Padding back to original FFT size")
-    obj = pu.crop_pad(array=obj, output_shape=original_size)
-else:
-    original_size = obj.shape
 nz, ny, nx = obj.shape
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
+if len(original_size) == 0:
+    original_size = obj.shape
+print("FFT size before accounting for binning", original_size)
+original_size = tuple([original_size[index] // binning[index] for index in range(len(binning))])
+print("Binning used during phasing:", binning)
+print("Padding back to original FFT size", original_size)
+obj = pu.crop_pad(array=obj, output_shape=original_size)
+nz, ny, nx = obj.shape
 
 ###########################################################################
 # define range for orthogonalization and plotting - speed up calculations #
@@ -240,7 +241,8 @@ print('\nAveraging using', nbfiles, 'candidate reconstructions')
 for ii in sorted_obj:
     obj, extension = pu.load_reconstruction(file_path[ii])
     print('\nOpening ', file_path[ii])
-
+    # obj[0:40, :, :] = 0
+    # obj[65:, :, :] = 0
     if flip_reconstruction:
         obj = pu.flip_reconstruction(obj, debugging=True)
 
