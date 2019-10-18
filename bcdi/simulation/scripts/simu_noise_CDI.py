@@ -33,6 +33,7 @@ scan = 2227  # spec scan number
 datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/crop400phase/new/"
 
 sdd = 0.50678  # 1.0137  # sample to detector distance in m
+sdd_factor = 2  # put the detector sdd_factor*sdd from the sample
 en = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
@@ -385,6 +386,23 @@ if orthogonal_frame:
     gc.collect()
     comment = comment + '_prtf'
     set_gap = 0  # gap is valid only in the detector frame
+    print('Original voxel size', voxel_size)
+    dqz = 2 * np.pi / (nz * voxel_size * 10)  # in inverse angstroms
+    dqy = 2 * np.pi / (ny * voxel_size * 10)  # in inverse angstroms
+    dqx = 2 * np.pi / (nx * voxel_size * 10)  # in inverse angstroms
+    print('Original reciprocal space resolution (z, y, x): (', str('{:.5f}'.format(dqz)), 'A-1,',
+          str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
+    voxelsize_z = 2 * np.pi / (pad_size[0] * dqz * 10)  # in nm
+    voxelsize_y = 2 * np.pi / (pad_size[1] * dqy * 10)  # in nm
+    voxelsize_x = 2 * np.pi / (pad_size[2] * dqx * 10)  # in nm
+    print('New voxel sizes (z, y, x) after padding: (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
+          str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm )')
+    dqz = 2 * np.pi / (pad_size[0] * voxelsize_z * 10)  # in inverse angstroms
+    dqy = 2 * np.pi / (pad_size[1] * voxelsize_y * 10)  # in inverse angstroms
+    dqx = 2 * np.pi / (pad_size[2] * voxelsize_x * 10)  # in inverse angstroms
+    print('New reciprocal space resolution (z, y, x) after padding: (', str('{:.5f}'.format(dqz)), 'A-1,',
+          str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
+# TODO: need to interpolate the object in order to keep the voxel size constant
 else:
     ######################################################################
     # rotate the object to have q in the same direction as in experiment #
@@ -459,6 +477,19 @@ comment = comment + "_pad_" + str(nz1) + "," + str(ny1) + "," + str(nx1)
 ###########################################################
 data = fftshift(abs(fftn(newobj))**2)
 data = data / data.sum() * photon_number  # convert into photon number
+
+#################################################################################
+# interpolate the diffraction pattern to accomodate change in detector distance #
+#################################################################################
+print('Current pixel size', pixel_size)
+new_pixelsize = pixel_size / sdd_factor
+# if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
+# TODO: regrid the diffraction pattern considering the new pixel size (but array keeps its shape)
+dqz = 2 * np.pi / (pad_size[0] * new_pixelsize * 10)  # in inverse angstroms
+dqy = 2 * np.pi / (pad_size[1] * new_pixelsize * 10)  # in inverse angstroms
+dqx = 2 * np.pi / (pad_size[2] * new_pixelsize * 10)  # in inverse angstroms
+print('New reciprocal space resolution (z, y, x) after moving detector: (', str('{:.5f}'.format(dqz)), 'A-1,',
+      str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
 
 ##############################
 # apply the photon threshold #
