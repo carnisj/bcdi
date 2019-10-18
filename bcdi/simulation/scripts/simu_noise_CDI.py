@@ -410,17 +410,17 @@ print('Original reciprocal space resolution (z, y, x): (', str('{:.5f}'.format(d
 print('Original q range (z, y, x): (', str('{:.5f}'.format(dqz*nz)), 'A-1,',
       str('{:.5f}'.format(dqy*ny)), 'A-1,', str('{:.5f}'.format(dqx*nx)), 'A-1 )\n')
 
-dqz = 2 * np.pi / (pad_size[0] * voxel_size * 10)  # in inverse angstroms
-dqy = 2 * np.pi / (pad_size[1] * voxel_size * 10)  # in inverse angstroms
-dqx = 2 * np.pi / (pad_size[2] * voxel_size * 10)  # in inverse angstroms
-print('New reciprocal space resolution (z, y, x) after padding: (', str('{:.5f}'.format(dqz)), 'A-1,',
-      str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
-print('New q range after padding (z, y, x): (', str('{:.5f}'.format(dqz*pad_size[0])), 'A-1,',
-      str('{:.5f}'.format(dqy*pad_size[1])), 'A-1,', str('{:.5f}'.format(dqx*pad_size[2])), 'A-1 )\n')
+dqz_pad = 2 * np.pi / (pad_size[0] * voxel_size * 10)  # in inverse angstroms
+dqy_pad = 2 * np.pi / (pad_size[1] * voxel_size * 10)  # in inverse angstroms
+dqx_pad = 2 * np.pi / (pad_size[2] * voxel_size * 10)  # in inverse angstroms
+print('New reciprocal space resolution (z, y, x) after padding: (', str('{:.5f}'.format(dqz_pad)), 'A-1,',
+      str('{:.5f}'.format(dqy_pad)), 'A-1,', str('{:.5f}'.format(dqx_pad)), 'A-1 )')
+print('New q range after padding (z, y, x): (', str('{:.5f}'.format(dqz_pad*pad_size[0])), 'A-1,',
+      str('{:.5f}'.format(dqy_pad*pad_size[1])), 'A-1,', str('{:.5f}'.format(dqx_pad*pad_size[2])), 'A-1 )\n')
 
-voxelsize_z = 2 * np.pi / (pad_size[0] * dqz * 10)  # in nm
-voxelsize_y = 2 * np.pi / (pad_size[1] * dqy * 10)  # in nm
-voxelsize_x = 2 * np.pi / (pad_size[2] * dqx * 10)  # in nm
+voxelsize_z = 2 * np.pi / (pad_size[0] * dqz_pad * 10)  # in nm
+voxelsize_y = 2 * np.pi / (pad_size[1] * dqy_pad * 10)  # in nm
+voxelsize_x = 2 * np.pi / (pad_size[2] * dqx_pad * 10)  # in nm
 print('New voxel sizes (z, y, x) after padding: (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
       str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm )')
 print('Padding has no effect on real-space voxel size.\n')
@@ -515,11 +515,11 @@ new_pixelsize = pixel_size / (simulated_sdd / original_sdd)
 print('New detector pixel size to compensate the change in detector distance', pixel_size, '')
 # if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
 # TODO: regrid the diffraction pattern considering the new pixel size (but array keeps its shape)
-dqz = 2 * np.pi / (pad_size[0] * new_pixelsize * 10)  # in inverse angstroms
-dqy = 2 * np.pi / (pad_size[1] * new_pixelsize * 10)  # in inverse angstroms
-dqx = 2 * np.pi / (pad_size[2] * new_pixelsize * 10)  # in inverse angstroms
-print('New reciprocal space resolution (z, y, x) after moving detector: (', str('{:.5f}'.format(dqz)), 'A-1,',
-      str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
+# dqz = 2 * np.pi / (pad_size[0] * new_pixelsize * 10)  # in inverse angstroms
+# dqy = 2 * np.pi / (pad_size[1] * new_pixelsize * 10)  # in inverse angstroms
+# dqx = 2 * np.pi / (pad_size[2] * new_pixelsize * 10)  # in inverse angstroms
+# print('New reciprocal space resolution (z, y, x) after moving detector: (', str('{:.5f}'.format(dqz)), 'A-1,',
+#       str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
 
 ##############################
 # apply the photon threshold #
@@ -557,11 +557,11 @@ if save_fig:
 ###############
 # crop arrays #
 ###############
-# voxelsizez_crop = 2 * np.pi / (crop_size[0] * dqz * 10)  # in nm
-# voxelsizey_crop = 2 * np.pi / (crop_size[1] * dqy * 10)  # in nm
-# voxelsizex_crop = 2 * np.pi / (crop_size[2] * dqx * 10)  # in nm
-# print('New voxel sizes (z, y, x) after cropping: (', str('{:.2f}'.format(voxelsizez_crop)), 'nm,',
-#       str('{:.2f}'.format(voxelsizey_crop)), 'nm,', str('{:.2f}'.format(voxelsizex_crop)), 'nm )')
+voxelsizez_crop = 2 * np.pi / (crop_size[0] * dqz * 10)  # in nm
+voxelsizey_crop = 2 * np.pi / (crop_size[1] * dqy * 10)  # in nm
+voxelsizex_crop = 2 * np.pi / (crop_size[2] * dqx * 10)  # in nm
+print('Real-space voxel sizes (z, y, x) after cropping: (', str('{:.2f}'.format(voxelsizez_crop)), 'nm,',
+      str('{:.2f}'.format(voxelsizey_crop)), 'nm,', str('{:.2f}'.format(voxelsizex_crop)), 'nm )')
 
 nz, ny, nx = data.shape
 nz1, ny1, nx1 = crop_size
