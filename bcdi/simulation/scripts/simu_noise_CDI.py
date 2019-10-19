@@ -37,7 +37,7 @@ datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/test/"
 #
 
 original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
-simulated_sdd = 0.50678  # in m, sample to detector distance for the simulated diffraction pattern
+simulated_sdd = 0.50678*2/3  # in m, sample to detector distance for the simulated diffraction pattern
 energy = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
@@ -68,7 +68,7 @@ original_size = [400, 400, 400]  # size of the FFT array before binning. It will
 binning = (1, 1, 1)  # binning factor during phasing
 pad_size = [1000, 1000, 1000]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
 # if only a number (e.g. 3), will pad to get three times the initial array size  # ! max size ~ [800, 800, 800]
-crop_size = [300, 300, 300]  # will crop the array to this size
+crop_size = [400, 400, 400]  # will crop the array to this size
 
 ref_axis_outplane = "y"  # "y"  # "z"  # q is supposed to be aligned along that axis before rotating back (nexus)
 phase_range = np.pi  # for plots
@@ -220,7 +220,8 @@ if debug and not flat_phase:
     if save_fig:
         plt.savefig(datadir + 'S' + str(scan) + '_strain_' + str('{:.0e}'.format(photon_number)) + comment + '.png')
 
-del strain, bulk
+del strain, bulk, surface, coordination_matrix
+gc.collect()
 
 ##############################################################################
 # rotate the object to have q in the same direction as during the experiment #
@@ -297,6 +298,9 @@ rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2)*voxel_size*pad_size[0]/n
 
 obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
                           newx.reshape((1, newz.size)))).transpose())
+del newx, newy, newz, rgi
+gc.collect()
+
 obj = obj.reshape((nz, ny, nx)).astype(original_obj.dtype)
 
 if debug:
@@ -408,12 +412,17 @@ if original_sdd != simulated_sdd:
 
     simu_data = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
                                    newx.reshape((1, newz.size)))).transpose())
+    del newx, newy, newz, rgi
+    gc.collect()
+
     simu_data = simu_data.reshape((nz, ny, nx)).astype(data.dtype)
+
     gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
                         cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
                         title='FFT for simulated detector distance\n')
 else:
     simu_data = data
+
 del data
 gc.collect()
 
