@@ -38,6 +38,9 @@ datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/test/"
 
 original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
 simulated_sdd = 0.50678*2/3  # in m, sample to detector distance for the simulated diffraction pattern
+sdd_change_mode = 'real_space'  # 'real_space' or 'reciprocal_space', to accomodate for the detector distance change
+# in real_space, it will interpolate the support
+# if 'reciprocal_space', it will interpolate the diffraction calculated on pad_size
 energy = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
@@ -296,23 +299,96 @@ rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2)*voxel_size*pad_size[0]/n
                                np.arange(-nx//2, nx//2)*voxel_size*pad_size[2]/nx),
                               original_obj, method='linear', bounds_error=False, fill_value=0)
 
-obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
-                          newx.reshape((1, newz.size)))).transpose())
+pad_obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
+                             newx.reshape((1, newz.size)))).transpose())
 del newx, newy, newz, rgi
 gc.collect()
 
-obj = obj.reshape((nz, ny, nx)).astype(original_obj.dtype)
+pad_obj = pad_obj.reshape((nz, ny, nx)).astype(original_obj.dtype)
 
 if debug:
-    gu.multislices_plot(abs(obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
+    gu.multislices_plot(abs(pad_obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
                         title='Orthogonal support interpolated for padding compensation\n')
     if orthogonal_frame:
         data = fftshift(abs(fftn(original_obj)) ** 2)
         data = data / data.sum() * photon_number  # convert into photon number
         gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
                             cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding\n')
+        del original_obj, data
+        gc.collect()
 else:
     del original_obj
+    gc.collect()
+
+#####################################################################
+# interpolate the object to accomodate for detector distance change #
+#####################################################################
+comment = comment + '_sdd_' + str('{:.2f}'.format(simulated_sdd))
+
+print('\nCurrent detector pixel size', pixel_size * 1e6, 'um')
+print('New detector pixel size to compensate the change in detector distance',
+      str('{:.5f}'.format(pixel_size * 1e6 * original_sdd / simulated_sdd)), 'um')
+# if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
+# the 3D dataset is a stack along the first axis of 2D detector images
+
+print('Reciprocal space resolution before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz)), 'A-1,',
+      str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
+print('q range before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz * nz)), 'A-1,',
+      str('{:.5f}'.format(dqy * ny)), 'A-1,', str('{:.5f}'.format(dqx * nx)), 'A-1 )')
+voxelsize_z = 2 * np.pi / (nz * dqz * 10)  # in nm
+voxelsize_y = 2 * np.pi / (ny * dqy * 10)  # in nm
+voxelsize_x = 2 * np.pi / (nx * dqx * 10)  # in nm
+print('Voxel sizes before detector distance change (z, y, x): (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
+      str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm)\n')
+
+factor_sdd = original_sdd / simulated_sdd
+dqz_simu, dqy_simu, dqx_simu = dqz * factor_sdd, dqy * factor_sdd, dqx * factor_sdd
+
+if (sdd_change_mode == 'real_space') and (original_sdd != simulated_sdd):
+    print('Reciprocal space resolution after detector distance change (z, y, x): (', str('{:.5f}'.format(dqz_simu)),
+          'A-1,', str('{:.5f}'.format(dqy_simu)), 'A-1,', str('{:.5f}'.format(dqx_simu)), 'A-1 )')
+    print('q range after detector distance change (z, y, x): (', str('{:.5f}'.format(dqz_simu*nz)), 'A-1,',
+          str('{:.5f}'.format(dqy_simu*ny)), 'A-1,', str('{:.5f}'.format(dqx_simu*nx)), 'A-1 )')
+    voxelsize_z = 2 * np.pi / (nz * dqz_simu * 10)  # in nm
+    voxelsize_y = 2 * np.pi / (ny * dqy_simu * 10)  # in nm
+    voxelsize_x = 2 * np.pi / (nx * dqx_simu * 10)  # in nm
+    print('Voxel sizes after detector distance change (z, y, x): (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
+          str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm)\n')
+
+    newz, newy, newx = np.meshgrid(np.arange(-nz // 2, nz // 2, 1) * voxel_size,
+                                   np.arange(-ny // 2, ny // 2, 1) * voxel_size,
+                                   np.arange(-nx // 2, nx // 2, 1) * voxel_size, indexing='ij')
+
+    rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2) * voxel_size * nz * factor_sdd,
+                                   np.arange(-ny // 2, ny // 2) * voxel_size * ny * factor_sdd,
+                                   np.arange(-nx // 2, nx // 2) * voxel_size * nx * factor_sdd),
+                                  pad_obj, method='linear', bounds_error=False, fill_value=0)
+
+    obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
+                              newx.reshape((1, newz.size)))).transpose())
+    del newx, newy, newz, rgi
+    gc.collect()
+
+    obj = obj.reshape((nz, ny, nx)).astype(original_obj.dtype)
+
+    if debug:
+        gu.multislices_plot(abs(obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
+                            title='Orthogonal support interpolated for padding compensation\n')
+        if orthogonal_frame:
+            data = fftshift(abs(fftn(pad_obj)) ** 2)
+            data = data / data.sum() * photon_number  # convert into photon number
+            gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5,
+                                invert_yaxis=False, cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
+                                title='FFT after padding\n')
+            del pad_obj, data
+            gc.collect()
+
+    else:
+        del pad_obj
+        gc.collect()
+else:
+    obj = pad_obj
+    del pad_obj
     gc.collect()
 
 ###################################################
@@ -327,6 +403,14 @@ if not orthogonal_frame:
                             cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding\n')
         del original_obj, data
         gc.collect()
+
+        if sdd_change_mode == 'real_space':
+            obj = setup.detector_frame(obj=pad_obj, voxelsize=voxel_size, debugging=debug, title='Padded object')
+            data = fftshift(abs(fftn(pad_obj)) ** 2)
+            gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
+                                cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT before padding\n')
+            del pad_obj, data
+            gc.collect()
 
     obj = setup.detector_frame(obj=obj, voxelsize=voxel_size, debugging=debug, title='Rescaled object')
 
@@ -369,28 +453,7 @@ gc.collect()
 #################################################################################
 # interpolate the diffraction pattern to accomodate change in detector distance #
 #################################################################################
-comment = comment + '_sdd_' + str('{:.2f}'.format(simulated_sdd))
-print('\nCurrent detector pixel size', pixel_size*1e6, 'um')
-print('New detector pixel size to compensate the change in detector distance',
-      str('{:.5f}'.format(pixel_size*1e6 * original_sdd / simulated_sdd)), 'um')
-# if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
-# the 3D dataset is a stack along the first axis of 2D detector images
-
-print('Reciprocal space resolution before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz)), 'A-1,',
-      str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
-print('q range before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz*nz)), 'A-1,',
-      str('{:.5f}'.format(dqy*ny)), 'A-1,', str('{:.5f}'.format(dqx*nx)), 'A-1 )')
-voxelsize_z = 2 * np.pi / (nz * dqz * 10)  # in nm
-voxelsize_y = 2 * np.pi / (ny * dqy * 10)  # in nm
-voxelsize_x = 2 * np.pi / (nx * dqx * 10)  # in nm
-print('Voxel sizes before detector distance change (z, y, x): (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
-      str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm)\n')
-
-dqz_simu, dqy_simu, dqx_simu = dqz*original_sdd/simulated_sdd,\
-                               dqy*original_sdd/simulated_sdd,\
-                               dqx*original_sdd/simulated_sdd
-
-if original_sdd != simulated_sdd:
+if (sdd_change_mode == 'reciprocal_space') and (original_sdd != simulated_sdd):
     print('Reciprocal space resolution after detector distance change (z, y, x): (', str('{:.5f}'.format(dqz_simu)),
           'A-1,', str('{:.5f}'.format(dqy_simu)), 'A-1,', str('{:.5f}'.format(dqx_simu)), 'A-1 )')
     print('q range after detector distance change (z, y, x): (', str('{:.5f}'.format(dqz_simu*nz)), 'A-1,',
