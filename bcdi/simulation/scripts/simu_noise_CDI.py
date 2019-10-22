@@ -363,7 +363,7 @@ gc.collect()
 
 obj = obj.reshape((nz_interp, ny_interp, nx_interp)).astype(original_obj.dtype)
 
-if True:
+if debug:
     gu.multislices_plot(abs(obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
                         title='Orthogonal support interpolated for \npadding & detector distance change compensation\n')
     if orthogonal_frame:
