@@ -291,8 +291,8 @@ print('Multiplication factor for the real-space voxel size:  pad_size/original_s
 # compensate change in detector distance
 comment = comment + '_sdd_' + str('{:.2f}'.format(simulated_sdd))
 print('\nCurrent detector pixel size', pixel_size * 1e6, 'um')
-print('New detector pixel size to compensate the change in detector distance',
-      str('{:.5f}'.format(pixel_size * 1e6 * original_sdd / simulated_sdd)), 'um')
+print('Detector pixel size to compensate the change in detector distance',
+      str('{:.2f}'.format(pixel_size * 1e6 * original_sdd / simulated_sdd)), 'um')
 print('Reciprocal space resolution before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz)), 'A-1,',
       str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
 print('q range before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz * nz)), 'A-1,',
@@ -322,7 +322,7 @@ newz, newy, newx = np.meshgrid(np.arange(-nz//2, nz//2, 1)*voxel_size,
                                np.arange(-nx//2, nx//2, 1)*voxel_size, indexing='ij')
 
 if sdd_change_mode == 'real_space':
-    print('Interpolating the object to accomodate the change in detector distance.')
+    print('Interpolating the real-space object to accomodate the change in detector distance.')
     print('Multiplication factor for the real-space voxel size:  original_sdd / simulated_sdd\n')
     # if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
     # hence the q range is two times smaller and the real-space voxel size two times larger
@@ -332,7 +332,7 @@ if sdd_change_mode == 'real_space':
          np.arange(-ny // 2, ny // 2) * voxel_size * pad_size[1]/ny * original_sdd / simulated_sdd,
          np.arange(-nx // 2, nx // 2) * voxel_size * pad_size[2]/nx * original_sdd / simulated_sdd),
         original_obj, method='linear', bounds_error=False, fill_value=0)
-    
+
 else:  # 'reciprocal_space'
     rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2) * voxel_size * pad_size[0]/nz,
                                    np.arange(-ny // 2, ny // 2) * voxel_size * pad_size[1]/ny,
