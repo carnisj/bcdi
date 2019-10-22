@@ -46,7 +46,7 @@ energy = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
 photon_number = 5e7  # total number of photons in the array, usually around 5e7
-pad_ortho = False  # True to pad before interpolating into detector frame, False after (saves memory)
+pad_ortho = True  # True to pad before interpolating into detector frame, False after (saves memory)
 # True is the only choice if the compensated object is larger than the initial array shape
 orthogonal_frame = False  # set to False to interpolate the diffraction pattern in the detector frame
 rotate_crystal = True  # if True, the crystal will be rotated as it was during the experiment
@@ -82,7 +82,7 @@ strain_range = 0.001  # for plots
 debug = False  # True to see all plots
 save_fig = True  # if True save figures
 save_data = True  # if True save data as npz and VTK
-comment = "_realspace"  # should start with _
+comment = "_padbefore"  # should start with _
 
 ##################################
 # end of user-defined parameters #
@@ -325,6 +325,10 @@ if pad_ortho:  # pad before interpolating into detector frame
     nz_interp = pad_size[0]
     ny_interp = pad_size[1]
     nx_interp = pad_size[2]
+    if pad_size[0] < nz or pad_size[1] < ny or pad_size[2] < nx:
+        print('Pad size smaller than initial array size')
+        sys.exit()
+    original_obj = pu.crop_pad(original_obj, pad_size)
 else:  # pad after interpolating into detector frame - saves memory
     nz_interp = nz
     ny_interp = ny
