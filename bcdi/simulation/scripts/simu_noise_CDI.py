@@ -424,7 +424,9 @@ gc.collect()
 
 gu.multislices_plot(abs(newobj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
                     title='Support before FFT calculation')
-
+if save_fig:
+    plt.savefig(datadir + 'S' + str(scan) + '_support_before_FFT' + comment + '_sum.png')
+    
 #####################################
 # calculate the diffraction pattern #
 #####################################
