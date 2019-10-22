@@ -32,13 +32,14 @@ parameters: detector size, detector distance, presence/width of a detector gap, 
 The provided reconstruction is expected to be orthogonalized, in the laboratory frame. """
 
 scan = 2227  # spec scan number
-datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/test/"
-# "D:/data/BCDI_isosurface/S"+str(scan)+"/test/"
+datadir = "D:/data/BCDI_isosurface/S"+str(scan)+"/test/"
+# "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/test/"
+#
 #
 
 original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
-simulated_sdd = 0.50678*2/3  # in m, sample to detector distance for the simulated diffraction pattern
-sdd_change_mode = 'real_space'  # 'real_space' or 'reciprocal_space', to accomodate for the detector distance change
+simulated_sdd = 0.50678*2  # in m, sample to detector distance for the simulated diffraction pattern
+sdd_change_mode = 'real_space'  # 'real_space' or 'reciprocal_space', for compensating the detector distance change
 # in real_space, it will interpolate the support
 # if 'reciprocal_space', it will interpolate the diffraction calculated on pad_size
 energy = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
@@ -69,9 +70,9 @@ include_noise = False  # set to True to include poisson noise on the data
 original_size = [400, 400, 400]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor during phasing
-pad_size = [1000, 1000, 1000]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
+pad_size = [500, 500, 500]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
 # if only a number (e.g. 3), will pad to get three times the initial array size  # ! max size ~ [800, 800, 800]
-crop_size = [400, 400, 400]  # will crop the array to this size
+crop_size = [300, 300, 300]  # will crop the array to this size
 
 ref_axis_outplane = "y"  # "y"  # "z"  # q is supposed to be aligned along that axis before rotating back (nexus)
 phase_range = np.pi  # for plots
@@ -79,7 +80,7 @@ strain_range = 0.001  # for plots
 debug = False  # True to see all plots
 save_fig = True  # if True save figures
 save_data = True  # if True save data as npz and VTK
-comment = ""  # should start with _
+comment = "_realspace"  # should start with _
 
 ##################################
 # end of user-defined parameters #
@@ -165,6 +166,10 @@ phase = pru.wrap(phase, start_angle=-np.pi, range_angle=2*np.pi)
 
 support[abs(amp) < support_threshold * abs(amp).max()] = 0
 del amp
+
+volume = support.sum()*voxel_size**3  # in nm3
+print('estimated volume', volume, ' nm3')
+
 phase[support == 0] = 0
 
 if ref_axis_outplane == "x":
@@ -270,29 +275,26 @@ print('Original q range (z, y, x): (', str('{:.5f}'.format(dqz*nz)), 'A-1,',
 dqz_pad = 2 * np.pi / (pad_size[0] * voxel_size * 10)  # in inverse angstroms
 dqy_pad = 2 * np.pi / (pad_size[1] * voxel_size * 10)  # in inverse angstroms
 dqx_pad = 2 * np.pi / (pad_size[2] * voxel_size * 10)  # in inverse angstroms
-print('New reciprocal space resolution (z, y, x) after padding: (', str('{:.5f}'.format(dqz_pad)), 'A-1,',
+print('Reciprocal space resolution (z, y, x) after padding: (', str('{:.5f}'.format(dqz_pad)), 'A-1,',
       str('{:.5f}'.format(dqy_pad)), 'A-1,', str('{:.5f}'.format(dqx_pad)), 'A-1 )')
-print('New q range after padding (z, y, x): (', str('{:.5f}'.format(dqz_pad*pad_size[0])), 'A-1,',
+print('q range after padding (z, y, x): (', str('{:.5f}'.format(dqz_pad*pad_size[0])), 'A-1,',
       str('{:.5f}'.format(dqy_pad*pad_size[1])), 'A-1,', str('{:.5f}'.format(dqx_pad*pad_size[2])), 'A-1 )\n')
 
 voxelsize_z = 2 * np.pi / (pad_size[0] * dqz_pad * 10)  # in nm
 voxelsize_y = 2 * np.pi / (pad_size[1] * dqy_pad * 10)  # in nm
 voxelsize_x = 2 * np.pi / (pad_size[2] * dqx_pad * 10)  # in nm
-print('New voxel sizes (z, y, x) after padding: (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
+print('Real-space voxel sizes (z, y, x) after padding: (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
       str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm )')
 print('Padding has no effect on real-space voxel size.\n')
 
 print('Interpolating the object to keep the q resolution constant (i.e. the detector pixel size constant).')
-print('Multiplication factor for the voxel size:  pad_size/original_size')
+print('Multiplication factor for the Real-space voxel size:  pad_size/original_size')
 
-###########################################################################################
-# interpolate the object in order to keep the q resolution (detector pixel size) constant #
-###########################################################################################
 newz, newy, newx = np.meshgrid(np.arange(-nz//2, nz//2, 1)*voxel_size,
                                np.arange(-ny//2, ny//2, 1)*voxel_size,
                                np.arange(-nx//2, nx//2, 1)*voxel_size, indexing='ij')
 
-print('Voxel size for keeping pixel detector size constant', voxel_size*pad_size[0]/nz, 'nm\n')
+print('Real-space voxel size for keeping pixel detector size constant', voxel_size*pad_size[0]/nz, 'nm\n')
 
 rgi = RegularGridInterpolator((np.arange(-nz//2, nz//2)*voxel_size*pad_size[0]/nz,
                                np.arange(-ny//2, ny//2)*voxel_size*pad_size[1]/ny,
@@ -338,8 +340,8 @@ print('q range before detector distance change (z, y, x): (', str('{:.5f}'.forma
 voxelsize_z = 2 * np.pi / (nz * dqz * 10)  # in nm
 voxelsize_y = 2 * np.pi / (ny * dqy * 10)  # in nm
 voxelsize_x = 2 * np.pi / (nx * dqx * 10)  # in nm
-print('Voxel sizes before detector distance change (z, y, x): (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
-      str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm)\n')
+print('Real-space voxel sizes before detector distance change (z, y, x): (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
+      str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm )\n')
 
 factor_sdd = original_sdd / simulated_sdd
 dqz_simu, dqy_simu, dqx_simu = dqz * factor_sdd, dqy * factor_sdd, dqx * factor_sdd
@@ -352,16 +354,16 @@ if (sdd_change_mode == 'real_space') and (original_sdd != simulated_sdd):
     voxelsize_z = 2 * np.pi / (nz * dqz_simu * 10)  # in nm
     voxelsize_y = 2 * np.pi / (ny * dqy_simu * 10)  # in nm
     voxelsize_x = 2 * np.pi / (nx * dqx_simu * 10)  # in nm
-    print('Voxel sizes after detector distance change (z, y, x): (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
-          str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm)\n')
+    print('Real-space voxel sizes after detector distance change (z, y, x): (', str('{:.2f}'.format(voxelsize_z)),
+          'nm,', str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm )\n')
 
     newz, newy, newx = np.meshgrid(np.arange(-nz // 2, nz // 2, 1) * voxel_size,
                                    np.arange(-ny // 2, ny // 2, 1) * voxel_size,
                                    np.arange(-nx // 2, nx // 2, 1) * voxel_size, indexing='ij')
 
-    rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2) * voxel_size * nz * factor_sdd,
-                                   np.arange(-ny // 2, ny // 2) * voxel_size * ny * factor_sdd,
-                                   np.arange(-nx // 2, nx // 2) * voxel_size * nx * factor_sdd),
+    rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2) * voxel_size * factor_sdd,
+                                   np.arange(-ny // 2, ny // 2) * voxel_size * factor_sdd,
+                                   np.arange(-nx // 2, nx // 2) * voxel_size * factor_sdd),
                                   pad_obj, method='linear', bounds_error=False, fill_value=0)
 
     obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
@@ -369,11 +371,11 @@ if (sdd_change_mode == 'real_space') and (original_sdd != simulated_sdd):
     del newx, newy, newz, rgi
     gc.collect()
 
-    obj = obj.reshape((nz, ny, nx)).astype(original_obj.dtype)
+    obj = obj.reshape((nz, ny, nx)).astype(pad_obj.dtype)
 
     if debug:
         gu.multislices_plot(abs(obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
-                            title='Orthogonal support interpolated for padding compensation\n')
+                            title='Orthogonal support interpolated for detector distance change\n')
         if orthogonal_frame:
             data = fftshift(abs(fftn(pad_obj)) ** 2)
             data = data / data.sum() * photon_number  # convert into photon number
@@ -461,8 +463,8 @@ if (sdd_change_mode == 'reciprocal_space') and (original_sdd != simulated_sdd):
     voxelsize_z = 2 * np.pi / (nz * dqz_simu * 10)  # in nm
     voxelsize_y = 2 * np.pi / (ny * dqy_simu * 10)  # in nm
     voxelsize_x = 2 * np.pi / (nx * dqx_simu * 10)  # in nm
-    print('Voxel sizes after detector distance change (z, y, x): (', str('{:.2f}'.format(voxelsize_z)), 'nm,',
-          str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm)\n')
+    print('Real-space voxel sizes after detector distance change (z, y, x): (', str('{:.2f}'.format(voxelsize_z)),
+          'nm,', str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm )\n')
 
     newz, newy, newx = np.meshgrid(np.arange(-nz//2, nz//2, 1)*dqz,
                                    np.arange(-ny//2, ny//2, 1)*dqy,
@@ -583,11 +585,12 @@ myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plo
                                   title='Masked intensity')
 myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
 myfig.text(0.60, 0.25, "Crop size =" + str(crop_size), size=20)
-myfig.text(0.60, 0.20, "Detector distance =" + str('{:.5f}'.format(simulated_sdd)), size=20)
+myfig.text(0.60, 0.20, "Detector distance =" + str('{:.5f}'.format(simulated_sdd)) + " m", size=20)
 myfig.text(0.60, 0.15, "Voxel size =" + str('{:.2f}'.format(voxelsizez_crop)) + ', ' +
-           str('{:.2f}'.format(voxelsizey_crop)) + ', ' + str('{:.2f}'.format(voxelsizex_crop)), size=20)
+           str('{:.2f}'.format(voxelsizey_crop)) + ', ' + str('{:.2f}'.format(voxelsizex_crop)) + " nm", size=20)
+myfig.text(0.60, 0.10, "Volume =" + str(volume) + " nm3", size=20)
 if set_gap:
-    myfig.text(0.60, 0.10, "Gap width =" + str(gap_width) + "pixels", size=20)
+    myfig.text(0.60, 0.05, "Gap width =" + str(gap_width) + " pixels", size=20)
 if save_fig:
     myfig.savefig(datadir + 'S' + str(scan) + '_diff_' + str('{:.0e}'.format(photon_number))+comment + '_center.png')
 
@@ -599,8 +602,9 @@ myfig.text(0.60, 0.25, "Crop size =" + str(crop_size), size=20)
 myfig.text(0.60, 0.20, "Detector distance =" + str('{:.5f}'.format(simulated_sdd)) + " m", size=20)
 myfig.text(0.60, 0.15, "Voxel size =" + str('{:.2f}'.format(voxelsizez_crop)) + ', ' +
            str('{:.2f}'.format(voxelsizey_crop)) + ', ' + str('{:.2f}'.format(voxelsizex_crop)) + " nm", size=20)
+myfig.text(0.60, 0.10, "Volume =" + str(volume) + " nm3", size=20)
 if set_gap:
-    myfig.text(0.60, 0.10, "Gap width =" + str(gap_width) + " pixels", size=20)
+    myfig.text(0.60, 0.05, "Gap width =" + str(gap_width) + " pixels", size=20)
 if save_fig:
     myfig.savefig(datadir + 'S' + str(scan) + '_diff_' + str('{:.0e}'.format(photon_number))+comment + '_sum.png')
 plt.show()
