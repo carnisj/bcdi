@@ -46,8 +46,8 @@ energy = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
 photon_number = 5e7  # total number of photons in the array, usually around 5e7
-pad_ortho = True  # True to pad before interpolating into detector frame, False after (saves memory)
-# True is the only choice if the compensated object is larger than the initial array shape
+pad_ortho = False  # True to pad before interpolating into detector frame, False after (saves memory)
+# True is the only choice if the compensated object is larger than the original array shape (it gets truncated)
 orthogonal_frame = False  # set to False to interpolate the diffraction pattern in the detector frame
 rotate_crystal = True  # if True, the crystal will be rotated as it was during the experiment
 support_threshold = 0.24  # threshold for support determination
@@ -82,7 +82,7 @@ strain_range = 0.001  # for plots
 debug = False  # True to see all plots
 save_fig = True  # if True save figures
 save_data = True  # if True save data as npz and VTK
-comment = "_padbefore"  # should start with _
+comment = ""  # should start with _
 
 ##################################
 # end of user-defined parameters #
@@ -345,15 +345,15 @@ if sdd_change_mode == 'real_space':
     # hence the q range is two times smaller and the real-space voxel size two times larger
 
     rgi = RegularGridInterpolator(
-        (np.arange(-nz_interp // 2, nz_interp // 2) * voxel_size * pad_size[0]/nz * original_sdd / simulated_sdd,
-         np.arange(-ny_interp // 2, ny_interp // 2) * voxel_size * pad_size[1]/ny * original_sdd / simulated_sdd,
-         np.arange(-nx_interp // 2, nx_interp // 2) * voxel_size * pad_size[2]/nx * original_sdd / simulated_sdd),
+        (np.arange(-nz_interp // 2, nz_interp // 2)*voxel_size*pad_size[0]/nz_interp*original_sdd/simulated_sdd,
+         np.arange(-ny_interp // 2, ny_interp // 2)*voxel_size*pad_size[1]/ny_interp*original_sdd/simulated_sdd,
+         np.arange(-nx_interp // 2, nx_interp // 2)*voxel_size*pad_size[2]/nx_interp*original_sdd/simulated_sdd),
         original_obj, method='linear', bounds_error=False, fill_value=0)
 
 else:  # 'reciprocal_space'
-    rgi = RegularGridInterpolator((np.arange(-nz_interp // 2, nz_interp // 2) * voxel_size * pad_size[0]/nz,
-                                   np.arange(-ny_interp // 2, ny_interp // 2) * voxel_size * pad_size[1]/ny,
-                                   np.arange(-nx_interp // 2, nx_interp // 2) * voxel_size * pad_size[2]/nx),
+    rgi = RegularGridInterpolator((np.arange(-nz_interp // 2, nz_interp // 2) * voxel_size * pad_size[0]/nz_interp,
+                                   np.arange(-ny_interp // 2, ny_interp // 2) * voxel_size * pad_size[1]/ny_interp,
+                                   np.arange(-nx_interp // 2, nx_interp // 2) * voxel_size * pad_size[2]/nx_interp),
                                   original_obj, method='linear', bounds_error=False, fill_value=0)
 
 obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
