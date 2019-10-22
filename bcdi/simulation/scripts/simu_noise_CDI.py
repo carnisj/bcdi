@@ -38,7 +38,7 @@ datadir = "D:/data/BCDI_isosurface/S"+str(scan)+"/test/"
 #
 
 original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
-simulated_sdd = 0.50678  # in m, sample to detector distance for the simulated diffraction pattern
+simulated_sdd = 2/3*0.50678  # in m, sample to detector distance for the simulated diffraction pattern
 sdd_change_mode = 'real_space'  # 'real_space' or 'reciprocal_space', for compensating the detector distance change
 # in real_space, it will interpolate the support
 # if 'reciprocal_space', it will interpolate the diffraction calculated on pad_size
@@ -46,6 +46,8 @@ energy = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
 photon_number = 5e7  # total number of photons in the array, usually around 5e7
+pad_ortho = False  # True to pad before interpolating into detector frame, False after (saves memory)
+# True is the only choice if the compensated object is larger than the initial array shape
 orthogonal_frame = False  # set to False to interpolate the diffraction pattern in the detector frame
 rotate_crystal = True  # if True, the crystal will be rotated as it was during the experiment
 support_threshold = 0.24  # threshold for support determination
@@ -317,9 +319,20 @@ print('Real-space voxel sizes after detector distance change (z, y, x): (', str(
       'nm,', str('{:.2f}'.format(voxelsize_y)), 'nm,', str('{:.2f}'.format(voxelsize_x)), 'nm )\n')
 
 # interpolate the support
-newz, newy, newx = np.meshgrid(np.arange(-nz//2, nz//2, 1)*voxel_size,
-                               np.arange(-ny//2, ny//2, 1)*voxel_size,
-                               np.arange(-nx//2, nx//2, 1)*voxel_size, indexing='ij')
+if pad_ortho:  # pad before interpolating into detector frame
+    # this is the only choice if the compensated object is larger than the initial array shape
+    print("Padding to data size: ", pad_size)
+    nz_interp = pad_size[0]
+    ny_interp = pad_size[1]
+    nx_interp = pad_size[2]
+else:  # pad after interpolating into detector frame - saves memory
+    nz_interp = nz
+    ny_interp = ny
+    nx_interp = nx
+
+newz, newy, newx = np.meshgrid(np.arange(-nz_interp//2, nz_interp//2, 1)*voxel_size,
+                               np.arange(-ny_interp//2, ny_interp//2, 1)*voxel_size,
+                               np.arange(-nx_interp//2, nx_interp//2, 1)*voxel_size, indexing='ij')
 
 if sdd_change_mode == 'real_space':
     print('Interpolating the real-space object to accomodate the change in detector distance.')
@@ -328,15 +341,15 @@ if sdd_change_mode == 'real_space':
     # hence the q range is two times smaller and the real-space voxel size two times larger
 
     rgi = RegularGridInterpolator(
-        (np.arange(-nz // 2, nz // 2) * voxel_size * pad_size[0]/nz * original_sdd / simulated_sdd,
-         np.arange(-ny // 2, ny // 2) * voxel_size * pad_size[1]/ny * original_sdd / simulated_sdd,
-         np.arange(-nx // 2, nx // 2) * voxel_size * pad_size[2]/nx * original_sdd / simulated_sdd),
+        (np.arange(-nz_interp // 2, nz_interp // 2) * voxel_size * pad_size[0]/nz * original_sdd / simulated_sdd,
+         np.arange(-ny_interp // 2, ny_interp // 2) * voxel_size * pad_size[1]/ny * original_sdd / simulated_sdd,
+         np.arange(-nx_interp // 2, nx_interp // 2) * voxel_size * pad_size[2]/nx * original_sdd / simulated_sdd),
         original_obj, method='linear', bounds_error=False, fill_value=0)
 
 else:  # 'reciprocal_space'
-    rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2) * voxel_size * pad_size[0]/nz,
-                                   np.arange(-ny // 2, ny // 2) * voxel_size * pad_size[1]/ny,
-                                   np.arange(-nx // 2, nx // 2) * voxel_size * pad_size[2]/nx),
+    rgi = RegularGridInterpolator((np.arange(-nz_interp // 2, nz_interp // 2) * voxel_size * pad_size[0]/nz,
+                                   np.arange(-ny_interp // 2, ny_interp // 2) * voxel_size * pad_size[1]/ny,
+                                   np.arange(-nx_interp // 2, nx_interp // 2) * voxel_size * pad_size[2]/nx),
                                   original_obj, method='linear', bounds_error=False, fill_value=0)
 
 obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
@@ -344,9 +357,9 @@ obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.si
 del newx, newy, newz, rgi
 gc.collect()
 
-obj = obj.reshape((nz, ny, nx)).astype(original_obj.dtype)
+obj = obj.reshape((nz_interp, ny_interp, nx_interp)).astype(original_obj.dtype)
 
-if debug:
+if True:
     gu.multislices_plot(abs(obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
                         title='Orthogonal support interpolated for \npadding & detector distance change compensation\n')
     if orthogonal_frame:
@@ -391,15 +404,16 @@ if not orthogonal_frame:
 ##############################################################
 # pad the array (after interpolation because of memory cost) #
 ##############################################################
-nz_pad, ny_pad, nx_pad = pad_size
-if nz_pad < nz or ny_pad < ny or nx_pad < nx:
-    print('Pad size smaller than initial array size')
-    sys.exit()
-
-newobj = pu.crop_pad(obj, pad_size)
+if not pad_ortho:
+    print("Padding to data size: ", pad_size)
+    if pad_size[0] < nz or pad_size[1] < ny or pad_size[2] < nx:
+        print('Pad size smaller than initial array size')
+        sys.exit()
+    newobj = pu.crop_pad(obj, pad_size)
+else:
+    newobj = obj
 
 nz, ny, nx = newobj.shape
-print("Padded data size: (", nz, ',', ny, ',', nx, ')')
 comment = comment + "_pad_" + str(nz) + "," + str(ny) + "," + str(nx)
 del obj
 gc.collect()
