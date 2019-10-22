@@ -321,7 +321,7 @@ print('Real-space voxel sizes after detector distance change (z, y, x): (', str(
 # interpolate the support
 if pad_ortho:  # pad before interpolating into detector frame
     # this is the only choice if the compensated object is larger than the initial array shape
-    print("Padding to data size: ", pad_size)
+    print("Padding to data size: ", pad_size, " before interpolating into the detector frame")
     nz_interp = pad_size[0]
     ny_interp = pad_size[1]
     nx_interp = pad_size[2]
@@ -409,7 +409,7 @@ if not orthogonal_frame:
 # pad the array (after interpolation because of memory cost) #
 ##############################################################
 if not pad_ortho:
-    print("Padding to data size: ", pad_size)
+    print("Padding to data size: ", pad_size, " after interpolating into the detector frame")
     if pad_size[0] < nz or pad_size[1] < ny or pad_size[2] < nx:
         print('Pad size smaller than initial array size')
         sys.exit()
@@ -422,13 +422,16 @@ comment = comment + "_pad_" + str(nz) + "," + str(ny) + "," + str(nx)
 del obj
 gc.collect()
 
+gu.multislices_plot(abs(newobj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
+                    title='Support before FFT calculation')
+
 #####################################
 # calculate the diffraction pattern #
 #####################################
 data = fftshift(abs(fftn(newobj))**2)
 gu.multislices_plot(data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
                     cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
-                    title='FFT for initial detector distance\n')
+                    title='FFT on the padded object\n')
 del newobj
 gc.collect()
 
@@ -499,7 +502,7 @@ else:
     comment = comment + "_nogap"
 
 gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
-                    cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='After rounding')
+                    cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT after rounding')
 
 myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=True,  scale='log', plot_colorbar=True, vmin=-1,
                                   invert_yaxis=False, cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
