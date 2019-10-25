@@ -940,8 +940,8 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         return q_values, rawdata, gridder.data, rawmask, mask, frames_logical, monitor
 
 
-def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False,
-             normalize=False, correct_curvature=False, debugging=False):
+def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
+             orthogonalize=False, normalize=False, correct_curvature=False, debugging=False):
     """
     Load the forward CDI data, apply filters and optionally regrid it for phasing.
 
@@ -952,6 +952,7 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
+    :param background: the 2D background array to subtract to the data
     :param orthogonalize: if True will regrid the data and the mask on an orthogonal frame
     :param normalize: set to True to normalize the diffracted intensity by the incident X-ray beam intensity
     :param correct_curvature: if True, will correct for the curvature of the Ewald sphere
@@ -963,8 +964,8 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
      - the monitor values for normalization
     """
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
-                                                          setup=setup, flatfield=flatfield,
-                                                          hotpixels=hotpixels, debugging=debugging)
+                                                          setup=setup, flatfield=flatfield, hotpixels=hotpixels,
+                                                          background=background, debugging=debugging)
 
     rawdata = beamstop_correction(data=rawdata, detector=detector, setup=setup, debugging=debugging)
 
@@ -1171,7 +1172,25 @@ def init_qconversion(setup):
     return qconv, offsets
 
 
-def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
+def load_background(background_file):
+    """
+    Load a background file.
+
+    :param background_file: the path of the background file
+    :return: a 2D background
+    """
+    if background_file != "":
+        background = np.load(background_file)
+        npz_key = background.files
+        background = background[npz_key[0]]
+        if background.ndim != 2:
+            raise ValueError('background should be a 2D array')
+    else:
+        background = None
+    return background
+
+
+def load_cristal_data(logfile, detector, flatfield, hotpixels, background, debugging=False):
     """
     Load CRISTAL data, apply filters and concatenate it for phasing. The address of dataset and monitor in the h5 file
      may have to be modified.
@@ -1180,6 +1199,7 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
+    :param background: the 2D background array to subtract to the data
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1196,6 +1216,7 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
+        ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Maxipix":
             ccdraw, mask_2d = mask_maxipix(ccdraw, mask_2d)
@@ -1218,7 +1239,7 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, debugging=False):
     return data, mask3d, monitor, frames_logical
 
 
-def load_custom_data(custom_images, custom_monitor, detector, flatfield, hotpixels, debugging=False):
+def load_custom_data(custom_images, custom_monitor, detector, flatfield, hotpixels, background, debugging=False):
     """
     Load a dataset measured without a scan, such as a set of images measured in a macro.
 
@@ -1227,6 +1248,7 @@ def load_custom_data(custom_images, custom_monitor, detector, flatfield, hotpixe
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
+    :param background: the 2D background array to subtract to the data
     :param debugging: set to True to see plots
     :return:
     """
@@ -1239,6 +1261,7 @@ def load_custom_data(custom_images, custom_monitor, detector, flatfield, hotpixe
         i = int(custom_images[idx])
         e = fabio.open(ccdfiletmp % i)
         ccdraw = e.data
+        ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Eiger2M":
             ccdraw, mask_2d = mask_eiger(data=ccdraw, mask=mask_2d)
@@ -1261,7 +1284,7 @@ def load_custom_data(custom_images, custom_monitor, detector, flatfield, hotpixe
     return data, mask3d, custom_monitor, frames_logical
 
 
-def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, debugging=False):
+def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None, debugging=False):
     """
     Load data, apply filters and concatenate it for phasing.
 
@@ -1271,6 +1294,7 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
+    :param background: the 2D background array to subtract to the data
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1282,26 +1306,35 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         flatfield = np.ones((detector.nb_pixel_y, detector.nb_pixel_x))
     if hotpixels is None:
         hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+    if background is None:
+        background = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
     if setup.custom_scan and not setup.filtered_data:
         data, mask3d, monitor, frames_logical = load_custom_data(custom_images=setup.custom_images,
                                                                  custom_monitor=setup.custom_monitor,
                                                                  detector=detector, flatfield=flatfield,
-                                                                 hotpixels=hotpixels, debugging=False)
+                                                                 hotpixels=hotpixels, background=background,
+                                                                 debugging=False)
     elif setup.filtered_data:
         data, mask3d, monitor, frames_logical = load_filtered_data(detector=detector)
 
     elif setup.beamline == 'ID01':
-        data, mask3d, monitor, frames_logical = load_id01_data(logfile, scan_number, detector, flatfield, hotpixels,
+        data, mask3d, monitor, frames_logical = load_id01_data(logfile=logfile, scan_number=scan_number,
+                                                               detector=detector, flatfield=flatfield,
+                                                               hotpixels=hotpixels, background=background,
                                                                debugging=debugging)
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
-        data, mask3d, monitor, frames_logical = load_sixs_data(logfile, setup.beamline, detector, flatfield, hotpixels,
+        data, mask3d, monitor, frames_logical = load_sixs_data(logfile=logfile, beamline=setup.beamline,
+                                                               detector=detector, flatfield=flatfield,
+                                                               hotpixels=hotpixels, background=background,
                                                                debugging=debugging)
     elif setup.beamline == 'CRISTAL':
-        data, mask3d, monitor, frames_logical = load_cristal_data(logfile, detector, flatfield, hotpixels,
-                                                                  debugging=debugging)
+        data, mask3d, monitor, frames_logical = load_cristal_data(logfile=logfile, detector=detector,
+                                                                  flatfield=flatfield, hotpixels=hotpixels,
+                                                                  background=background, debugging=debugging)
     elif setup.beamline == 'P10':
-        data, mask3d, monitor, frames_logical = load_p10_data(logfile, detector, flatfield, hotpixels,
+        data, mask3d, monitor, frames_logical = load_p10_data(logfile=logfile, detector=detector, flatfield=flatfield,
+                                                              hotpixels=hotpixels, background=background,
                                                               debugging=debugging)
     else:
         raise ValueError('Wrong value for "beamline" parameter')
@@ -1394,7 +1427,7 @@ def load_hotpixels(hotpixels_file):
     return hotpixels
 
 
-def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, debugging=False):
+def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, background, debugging=False):
     """
     Load ID01 data, apply filters and concatenate it for phasing.
 
@@ -1403,6 +1436,7 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, debuggi
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
+    :param background: the 2D background array to subtract to the data
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1433,6 +1467,7 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, debuggi
         i = int(ccdn[idx])
         e = fabio.open(ccdfiletmp % i)
         ccdraw = e.data
+        ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Eiger2M":
             ccdraw, mask_2d = mask_eiger(data=ccdraw, mask=mask_2d)
@@ -1455,7 +1490,7 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, debuggi
     return data, mask3d, monitor, frames_logical
 
 
-def load_p10_data(logfile, detector, flatfield, hotpixels, debugging=False):
+def load_p10_data(logfile, detector, flatfield, hotpixels, background, debugging=False):
     """
     Load P10 data, apply filters and concatenate it for phasing.
 
@@ -1463,6 +1498,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, debugging=False):
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
+    :param background: the 2D background array to subtract to the data
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1498,7 +1534,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, debugging=False):
                     tmp_data = h5file['entry']['data'][data_path][idx]
                 except OSError:
                     raise OSError('hdf5plugin is not installed')
-
+                tmp_data = tmp_data - background
                 ccdraw, mask2d = remove_hotpixels(data=tmp_data, mask=mask_2d, hotpixels=hotpixels)
                 if detector.name == "Eiger4M":
                     ccdraw, mask_2d = mask_eiger4m(data=ccdraw, mask=mask_2d)
@@ -1546,7 +1582,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, debugging=False):
     return data, mask3d, monitor, frames_logical
 
 
-def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=False):
+def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background, debugging=False):
     """
     Load SIXS data, apply filters and concatenate it for phasing.
 
@@ -1555,6 +1591,7 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
+    :param background: the 2D background array to subtract to the data
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1594,6 +1631,7 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, debugging=
     nb_img = data.shape[0]
     for idx in range(nb_img):
         ccdraw = data[idx, :, :]
+        ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Maxipix":
             ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
