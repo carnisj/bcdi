@@ -967,6 +967,9 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
                                                           background=background, debugging=debugging)
 
+    print((rawdata < 0).sum(), ' negative data points set to 0')  # can happen when subtracting a background
+    rawdata[rawdata < 0] = 0
+
     rawdata = beamstop_correction(data=rawdata, detector=detector, setup=setup, debugging=debugging)
 
     # normalize by the incident X-ray beam intensity
@@ -1027,6 +1030,10 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
                                                           debugging=debugging)
+
+    print((rawdata < 0).sum(), ' negative data points set to 0')  # can happen when subtracting a background
+    rawdata[rawdata < 0] = 0
+
     # normalize by the incident X-ray beam intensity
     if normalize:
         rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
