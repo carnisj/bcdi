@@ -61,46 +61,46 @@ class supportMaker(object):
 	A masking class for support creation
 	
 	:param : rawdata
-	:param : mask previously defined to improve, pixels to mask = 1
-	:param : flatfield if available
-	:param : hotpix array / list of points ((dim0,..dimn),(dim0,..dimn),...)if available
+	:param : x-ray wavelength 
+	:param : detector_distance - sample to detector (m)
+	:param : detector_pixel_size - 2D (m)
+	:param : ang_step (degrees)
+	:param : braggAng (degrees)
+	:param : planes = array of planes [x,y,z]
+	:param : planesDist = array of plane distance to origin (m)
+	:param : voxel_size = set the voxel size to some arbitrary size, np.array([x,y,z]) (m) 
 	
 	"""
 	def __init__(self, rawdata, wavelength = None, detector_distance = None, 
 						detector_pixel_size = None, ang_step = None, braggAng = None, 
-						planes = None, planesDist = None):
+						planes = None, planesDist = None, voxel_size = None):
 		# set all parameters
 
 		self.rawdata = rawdata	
-		self.wavelength = wavelength, 
-		self.detDist = detector_distance, 
-		self.detector_pixel_size = detector_pixel_size,
-		self.braggAng = braggAng,
+		self.wavelength = wavelength
+		self.detDist = detector_distance
+		self.detector_pixel_size = detector_pixel_size
+		self.braggAng = braggAng
 		self.ang_step = ang_step
 		
 		# create the support
 		self.set_support(rawdata)
-		self.set_voxel_size(wavelength, detector_distance, detector_pixel_size, ang_step, braggAng)
+		if voxel_size is None:
+			self.calc_voxel_size(wavelength, detector_distance, detector_pixel_size, ang_step, braggAng)
+		else:
+			self.set_voxel_size(voxel_size)
+		
+		print("voxel_size: ", self.vox_size)	
 		self.set_planes(planes,planesDist)
 		self.support = MakePoly(self.support.shape, self.scaled_planes)
+		
 
 	def set_support(self, rawdata):
 		self.support = np.zeros_like(rawdata)
+		
+	def set_voxel_size(self, voxel_size):
+		self.vox_size = voxel_size
 
-	def set_voxel_size(self, wavelength = None, detDist = None, pixel_size = None, ang_step = None, braggAng = None):
-		ss = self.support.shape
-		
-		# calculate the angular dimension first
-		q = 4*np.pi*np.sin(np.deg2rad(braggAng))/wavelength
-		deltaQ = q*np.deg2rad(ang_step)*ss[0]
-		a = np.pi*2/deltaQ
-		
-		# add the detector dimensions - don't forget to reverse - but pixels tend to be symmetric
-		pixel_size.reverse()
-		self.vox_size = np.r_[a,wavelength*detDist/(np.array(ss[1:])*np.array(pixel_size))]
-		
-		print("Voxel dimensions: ", self.vox_size*1e9, " (nm)")
-		
 	def set_planes(self,planes_list,plane_distance_origin_list):
 		
 		if len(planes_list)!=len(plane_distance_origin_list):
@@ -123,7 +123,9 @@ class supportMaker(object):
 		self.scaled_planes = self.planes*sf
 		
 		print(self.planesDist.reshape(1,self.planes.shape[0]))
-		print('\n###',self.scaled_planes,sf,self.planes)
+		print('\n###',self.scaled_planes)
+		print('\n### scale factor:',sf)
+		print('\n###',self.planes)
 		print('\n###',self.rawdata.shape)
 			
 	def get_support(self,):
@@ -134,7 +136,23 @@ class supportMaker(object):
 	
 	def get_planesDist(self,):
 		return self.planesDist
+
+	def calc_voxel_size(self, wavelength = None, detDist = None, pixel_size = None, ang_step = None, braggAng = None):
+		# use the experiment parameters to determine the voxel size		
+		ss = self.support.shape
 		
+		# calculate the angular dimension first
+		q = 4*np.pi*np.sin(np.deg2rad(braggAng))/wavelength
+		deltaQ = q*np.deg2rad(ang_step)*ss[0]
+		a = np.pi*2/deltaQ
+		
+		# add the detector dimensions - don't forget to reverse - but pixels tend to be symmetric
+		pixel_size.reverse()
+		self.vox_size = np.r_[a,wavelength*detDist/(np.array(ss[1:])*np.array(pixel_size))]
+		
+		print("Voxel dimensions: ", self.vox_size*1e9, " (nm)")
+		
+	
 def generatePlanesCuboid(x,y,z):
 	planes = 	np.array([
 				[1,0,0],
@@ -169,11 +187,11 @@ outf.close()
 """
 
 # cuboid
-planes, planesDist= generatePlanesCuboid(800,800,100
+planes, planesDist= generatePlanesCuboid(800,800,100)
 
 #tetrahedra
 
-planes = 	np.array([
+planes = np.array([
 			[1,1,1],
 			[-1,1,-1],
 			[1,-1,-1],
@@ -189,16 +207,16 @@ planesDist = np.array([
 
 #equilateral prism
 planes = 	np.array([
-			[-1,np.sqrt(3),0],
-			[1,np.sqrt(3),0],
+			[-1,np.sqrt(3)/2.,0],
+			[1,np.sqrt(3)/2.,0],
 			[0,-1,0],
 			[0,0,1],
 			[0,0,-1],
 			])
 planesDist = np.array([
-			[350],
-			[350],
-			[350],
+			[150],
+			[150],
+			[150],
 			[50],
 			[50],
 			])			
@@ -206,12 +224,12 @@ planesDist = np.array([
 planesDist = planesDist*1E-9
 
 import transformations as tfs
-alpha, beta, gamma = 0,0,45
+alpha, beta, gamma = 0,18,0
 origin, xaxis, yaxis, zaxis = [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]
 
-Rx = tfs.rotation_matrix(alpha, xaxis)[:3,:3]
-Ry = tfs.rotation_matrix(beta, yaxis)[:3,:3]
-Rz = tfs.rotation_matrix(gamma, zaxis)[:3,:3]
+Rx = tfs.rotation_matrix(np.deg2rad(alpha), xaxis)[:3,:3]
+Ry = tfs.rotation_matrix(np.deg2rad(beta), yaxis)[:3,:3]
+Rz = tfs.rotation_matrix(np.deg2rad(gamma), zaxis)[:3,:3]
 
 def rot_planes(planes,rot):
 	#tfs.concatenate_matrices(Rx,Ry,Rz)
@@ -242,7 +260,9 @@ supportMaker = supportMaker(rawdata,
 							detector_pixel_size, 
 							ang_step, 
 							braggAng,
-							planes,planesDist)	
+							planes,
+							planesDist,
+							voxel_size = np.array([10,10,10])*1E-9)	
 								
 support = supportMaker.get_support()
 
