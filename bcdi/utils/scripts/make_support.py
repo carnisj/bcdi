@@ -27,8 +27,9 @@ support_threshold = 0.1  # in % of the normalized absolute value
 original_shape = [280, 400, 280]  # shape of the array used for phasing and finding the support (after binning_original)
 binning_original = (2, 2, 2)  # binning that was used in PyNX during phasing
 output_shape = [560, 800, 560]  # shape of the array for later phasing (before binning_output)
+# if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
 binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
-skip_masking = True  # if True, will skip thresholding and masking
+skip_masking = False  # if True, will skip thresholding and masking
 filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
 reload_support = False  # if True, will load the support which shape is assumed to be the shape after binning_output
 # it is usefull to redo some masking without interpolating again.
@@ -278,6 +279,7 @@ if ((nbz != nz) or (nby != ny) or (nbx != nx)) and not reload_support:
 else:  # no need for interpolation
     new_support = data
 
+new_support[np.nonzero(new_support)] = 1
 ##########################################
 # plot the support with the output shape #
 ##########################################

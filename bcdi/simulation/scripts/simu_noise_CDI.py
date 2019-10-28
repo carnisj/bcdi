@@ -32,20 +32,18 @@ parameters: detector size, detector distance, presence/width of a detector gap, 
 The provided reconstruction is expected to be orthogonalized, in the laboratory frame. """
 
 scan = 2227  # spec scan number
-datadir = "D:/data/BCDI_isosurface/S"+str(scan)+"/test/"
-# "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/test/"
-#
-#
+datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/test/"
+# "D:/data/BCDI_isosurface/S"+str(scan)+"/test/"
 
 original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
-simulated_sdd = 2/3*0.50678  # in m, sample to detector distance for the simulated diffraction pattern
+simulated_sdd = 0.50678  # in m, sample to detector distance for the simulated diffraction pattern
 sdd_change_mode = 'real_space'  # 'real_space' or 'reciprocal_space', for compensating the detector distance change
 # in real_space, it will interpolate the support
 # if 'reciprocal_space', it will interpolate the diffraction calculated on pad_size
 energy = 9000.0 - 6   # x-ray energy in eV, 6eV offset at ID01
 voxel_size = 3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
-photon_number = 5e7  # total number of photons in the array, usually around 5e7
+photon_number = 5e7 #* 1011681 / 469091 # total number of photons in the array, usually around 5e7
 pad_ortho = False  # True to pad before interpolating into detector frame, False after (saves memory)
 # True is the only choice if the compensated object is larger than the original array shape (it gets truncated)
 orthogonal_frame = False  # set to False to interpolate the diffraction pattern in the detector frame
@@ -72,9 +70,9 @@ include_noise = False  # set to True to include poisson noise on the data
 original_size = [400, 400, 400]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor during phasing
-pad_size = [500, 500, 500]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
+pad_size = [1000, 1000, 1000]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
 # if only a number (e.g. 3), will pad to get three times the initial array size  # ! max size ~ [800, 800, 800]
-crop_size = [400, 400, 400]  # will crop the array to this size
+crop_size = [300, 300, 300]  # will crop the array to this size
 
 ref_axis_outplane = "y"  # "y"  # "z"  # q is supposed to be aligned along that axis before rotating back (nexus)
 phase_range = np.pi  # for plots
@@ -424,7 +422,9 @@ gc.collect()
 
 gu.multislices_plot(abs(newobj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
                     title='Support before FFT calculation')
-
+if save_fig:
+    plt.savefig(datadir + 'S' + str(scan) + '_support_before_FFT' + comment + '_sum.png')
+    
 #####################################
 # calculate the diffraction pattern #
 #####################################
@@ -477,6 +477,11 @@ simu_data = simu_data / simu_data.sum() * photon_number  # convert into photon n
 mask = np.zeros((nz, ny, nx))
 mask[simu_data <= photon_threshold] = 1
 simu_data[simu_data <= photon_threshold] = 0
+temp_data = np.rint(simu_data).astype(int)
+filled_pixels = (temp_data != 0).sum()
+print('Number of pixels filled with non-zero intensity= ', filled_pixels)
+del temp_data
+gc.collect()
 
 gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
                     cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT converted into photons\n')
@@ -561,8 +566,9 @@ if debug:
 myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1,
                                   invert_yaxis=False, cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
                                   title='Masked intensity')
-myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
-myfig.text(0.60, 0.25, "Crop size =" + str(crop_size), size=20)
+myfig.text(0.60, 0.35, "Pad size =" + str(pad_size), size=20)
+myfig.text(0.60, 0.30, "Crop size =" + str(crop_size), size=20)
+myfig.text(0.60, 0.25, "Filled pixels =" + str(filled_pixels), size=20)
 myfig.text(0.60, 0.20, "Detector distance =" + str('{:.5f}'.format(simulated_sdd)) + " m", size=20)
 myfig.text(0.60, 0.15, "Voxel size =" + str('{:.2f}'.format(voxelsizez_crop)) + ', ' +
            str('{:.2f}'.format(voxelsizey_crop)) + ', ' + str('{:.2f}'.format(voxelsizex_crop)) + " nm", size=20)
@@ -575,8 +581,9 @@ if save_fig:
 myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=True,  scale='log', plot_colorbar=True, vmin=-1,
                                   invert_yaxis=False, cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
                                   title='Masked intensity')
-myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
-myfig.text(0.60, 0.25, "Crop size =" + str(crop_size), size=20)
+myfig.text(0.60, 0.35, "Pad size =" + str(pad_size), size=20)
+myfig.text(0.60, 0.30, "Crop size =" + str(crop_size), size=20)
+myfig.text(0.60, 0.25, "Filled pixels =" + str(filled_pixels), size=20)
 myfig.text(0.60, 0.20, "Detector distance =" + str('{:.5f}'.format(simulated_sdd)) + " m", size=20)
 myfig.text(0.60, 0.15, "Voxel size =" + str('{:.2f}'.format(voxelsizez_crop)) + ', ' +
            str('{:.2f}'.format(voxelsizey_crop)) + ', ' + str('{:.2f}'.format(voxelsizex_crop)) + " nm", size=20)

@@ -107,6 +107,7 @@ direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of t
 roi_detector = [direct_beam[0] - 50, direct_beam[0] + 50, direct_beam[1] - 50, direct_beam[1] + 50]  # V x H
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
+background_file = ''  # root_folder + 'background.npz'  #
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
 template_imagefile = '_master.h5'  # ''_data_%06d.h5'
@@ -313,6 +314,7 @@ for scan_nb in range(len(scans)):
 
         flatfield = pru.load_flatfield(flatfield_file)
         hotpix_array = pru.load_hotpixels(hotpixels_file)
+        background = pru.load_background(background_file)
 
         logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
                                      root_folder=root_folder, filename=specfile_name)
@@ -320,13 +322,15 @@ for scan_nb in range(len(scans)):
         if use_rawdata:
             q_values, data, _, mask, _, frames_logical, monitor = \
                 pru.grid_cdi(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
-                             flatfield=flatfield, hotpixels=hotpix_array, normalize=normalize_flux, debugging=debug,
+                             flatfield=flatfield, hotpixels=hotpix_array, background=background,
+                             normalize=normalize_flux, debugging=debug,
                              orthogonalize=False)
         else:
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
                 pru.grid_cdi(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
-                             flatfield=flatfield, hotpixels=hotpix_array, normalize=normalize_flux, debugging=False,
-                             correct_curvature=correct_curvature, orthogonalize=True)
+                             flatfield=flatfield, hotpixels=hotpix_array, background=background,
+                             normalize=normalize_flux, debugging=False, correct_curvature=correct_curvature,
+                             orthogonalize=True)
             if save_rawdata:
                 np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
                 if save_to_mat:

@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
-# Calculate the mean and variance of the strain, for all voxels in the support
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -10,36 +15,30 @@ import gc
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.graph.graph_utils as gu
+
+helptext = """
+Calculate the mean and variance of the strain, for all voxels in the support
+"""
 
 scan = 2227
-datadir = 'D:/data/PtRh/ArCOO2(102x92x140)/'  # "D:/review paper/BCDI_isosurface/S"+str(scan)+"/"
+datadir = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_1,01/'  # "D:/review paper/BCDI_isosurface/S"+str(scan)+"/"
 strain_range = 0.001  # for plots
-support_threshold = 0.55  # threshold for support determination
-use_bulk = True
-flag_plot = 1  # 1 to show plots of data
-######################################
-# define a colormap
-cdict = {'red':  ((0.0, 1.0, 1.0),
-                  (0.11, 0.0, 0.0),
-                  (0.36, 0.0, 0.0),
-                  (0.62, 1.0, 1.0),
-                  (0.87, 1.0, 1.0),
-                  (1.0, 0.0, 0.0)),
-         'green': ((0.0, 1.0, 1.0),
-                   (0.11, 0.0, 0.0),
-                   (0.36, 1.0, 1.0),
-                   (0.62, 1.0, 1.0),
-                   (0.87, 0.0, 0.0),
-                   (1.0, 0.0, 0.0)),
-         'blue': ((0.0, 1.0, 1.0),
-                  (0.11, 1.0, 1.0),
-                  (0.36, 1.0, 1.0),
-                  (0.62, 0.0, 0.0),
-                  (0.87, 0.0, 0.0),
-                  (1.0, 0.0, 0.0))}
-my_cmap = LinearSegmentedColormap('my_colormap', cdict, 256)
-#######################################
+support_threshold = 0.6  # threshold for support determination
+use_bulk = False
+flag_plot = True  # True to show plots of data
 
+
+###################
+# define colormap #
+###################
+bad_color = '1.0'  # white background
+colormap = gu.Colormap(bad_color=bad_color)
+my_cmap = colormap.cmap
+
+#############
+# load data #
+#############
 plt.ion()
 root = tk.Tk()
 root.withdraw()
@@ -64,70 +63,24 @@ else:  # use amplitude
 
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
 
-########################################
-# plot data
-########################################
-if flag_plot == 1:
-    plt.figure(figsize=(18, 15))
-    plt.subplot(2, 2, 1)
-    plt.imshow(bulk[:, :, nx//2], cmap=my_cmap)
-    plt.colorbar()
-    plt.axis('scaled')
-    plt.title('Amplitude at middle frame in YZ')
-    plt.subplot(2, 2, 2)
-    plt.imshow(bulk[:, ny//2, :], cmap=my_cmap)
-    plt.colorbar()
-    plt.axis('scaled')
-    plt.title('Amplitude at middle frame in XZ')
-    plt.subplot(2, 2, 3)
-    plt.imshow(bulk[nz//2, :, :], cmap=my_cmap)
-    plt.gca().invert_yaxis()
-    plt.colorbar()
-    plt.axis('scaled')
-    plt.title('Amplitude at middle frame in XY')
-    plt.pause(0.1)
-del bulk
-gc.collect()
+#############
+# plot data #
+#############
+if flag_plot and not use_bulk:
+    gu.multislices_plot(amp, sum_frames=False, invert_yaxis=True, title='Amplitude', plot_colorbar=True, cmap=my_cmap,
+                        is_orthogonal=True, reciprocal_space=False)
+    del amp
+    gc.collect()
 
 strain = npzfile['strain']
-if flag_plot == 1:
-    plt.figure(figsize=(18, 15))
-    plt.subplot(2, 2, 1)
-    plt.imshow(strain[:, :, nx//2], vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
-    plt.colorbar()
-    plt.axis('scaled')
-    plt.title("Strain at middle frame in YZ")
-    plt.subplot(2, 2, 2)
-    plt.imshow(strain[:, ny//2, :], vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
-    plt.colorbar()
-    plt.title("Strain at middle frame in XZ")
-    plt.axis('scaled')
-    plt.subplot(2, 2, 3)
-    plt.imshow(strain[nz//2, :, :], vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
-    plt.gca().invert_yaxis()
-    plt.colorbar()
-    plt.title("Strain at middle frame in XY")
-    plt.axis('scaled')
-    plt.pause(0.1)
+strain[support == 0] = 0
 
-    plt.figure(figsize=(18, 15))
-    plt.subplot(2, 2, 1)
-    plt.imshow(support[:, :, nx//2], vmin=0, vmax=1, cmap=my_cmap)
-    plt.colorbar()
-    plt.axis('scaled')
-    plt.title("Support at middle frame in YZ")
-    plt.subplot(2, 2, 2)
-    plt.imshow(support[:, ny//2, :], vmin=0, vmax=1, cmap=my_cmap)
-    plt.colorbar()
-    plt.title("Support at middle frame in XZ")
-    plt.axis('scaled')
-    plt.subplot(2, 2, 3)
-    plt.imshow(support[nz//2, :, :], vmin=0, vmax=1, cmap=my_cmap)
-    plt.gca().invert_yaxis()
-    plt.colorbar()
-    plt.title("Support at middle frame in XY")
-    plt.axis('scaled')
-    plt.pause(0.1)
+if flag_plot:
+    gu.multislices_plot(strain, sum_frames=False, invert_yaxis=True, title='Strain', plot_colorbar=True,
+                        vmin=-strain_range, vmax=strain_range, cmap=my_cmap, is_orthogonal=True, reciprocal_space=False)
+
+    gu.multislices_plot(support, sum_frames=False, invert_yaxis=True, title='Support', plot_colorbar=True,
+                        vmin=0, vmax=1, cmap=my_cmap, is_orthogonal=True, reciprocal_space=False)
 
 ########################################
 # calculate mean and variance of the strain

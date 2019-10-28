@@ -42,10 +42,10 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 2191
-root_folder = "G:/review paper/BCDI_isosurface/"  # location of the .spec or log file
+scan = 2227
+root_folder = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_0,34/'  # location of the .spec or log file
 sample_name = "S"  # "SN"  #
-comment = "_1_new"  # should start with _
+comment = "_5"  # should start with _
 ############################
 # beamline parameters #
 ############################
@@ -73,7 +73,7 @@ template_imagefile = 'data_mpx4_%05d.edf.gz'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
-sdd = 0.50678  # sample to detector distance in m
+sdd = 0.50678*2/3  # sample to detector distance in m
 energy = 8994   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
@@ -86,11 +86,11 @@ rawdata_binned = False  # set to True if the raw data and the mask loaded are al
 ###############################
 # only needed for simulations #
 ###############################
-simulation = False  # True is this is simulated data, will not load the specfile
+simulation = True  # True is this is simulated data, will not load the specfile
 bragg_angle_simu = 17.1177  # value of the incident angle at Bragg peak (eta at ID01)
 outofplane_simu = 35.3240  # detector delta @ ID01
 inplane_simu = -1.6029  # detector nu @ ID01
-tilt_simu = 0.01015  # angular step size for rocking angle, eta @ ID01
+tilt_simu = 0.0102  # angular step size for rocking angle, eta @ ID01
 ###########
 # options #
 ###########
@@ -117,7 +117,7 @@ setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, d
 print('\nScan', scan)
 print('Setup: ', setup.beamline)
 print('Detector: ', detector.name)
-print('Pixel Size: ', detector.pixelsize, 'm')
+print('Pixel Size: ', detector.pixelsize_x, 'm')
 print('Scan type: ', setup.rocking_angle)
 print('Sample to detector distance: ', setup.distance, 'm')
 print('Energy:', setup.energy, 'ev')
@@ -192,8 +192,8 @@ plt.pause(0.1)
 # calculate the q matrix respective to the COM #
 ################################################
 hxrd.Ang2Q.init_area('z-', 'y+', cch1=int(y0), cch2=int(x0), Nch1=numy, Nch2=numx,
-                     pwidth1=detector.pixelsize * binning[1],
-                     pwidth2=detector.pixelsize * binning[2],
+                     pwidth1=detector.pixelsize_y * binning[1],
+                     pwidth2=detector.pixelsize_x * binning[2],
                      distance=setup.distance)
 # first two arguments in init_area are the direction of the detector
 if simulation:
