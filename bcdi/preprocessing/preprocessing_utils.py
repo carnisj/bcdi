@@ -645,6 +645,7 @@ def check_pixels(data, mask, debugging=False):
     vardata = 1 / data.var(axis=0)  # 2D
     var_mean = vardata[vardata != np.inf].mean()
     vardata[meandata == 0] = var_mean  # pixels were data=0 (hence 1/variance=inf) are set to the mean of 1/var
+    # we do not want to mask pixels where there was trully no intensity during the scan
     if debugging:
         gu.combined_plots(tuple_array=(meandata, vardata), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
                           tuple_width_v=(np.nan, np.nan), tuple_width_h=(np.nan, np.nan), tuple_colorbar=(True, True),
@@ -658,9 +659,7 @@ def check_pixels(data, mask, debugging=False):
     var_threshold = ((nbz - 1) * mean_threshold ** 2 + (min_count - mean_threshold) ** 2) * 1 / nbz
 
     temp_mask = np.zeros((nby, nbx))
-    temp_mask[vardata == np.inf] = 1  # this includes hotpixels but also zero intensity pixels
-    #  along the whole rocking curve
-    temp_mask[data.mean(axis=0) == 0] = 0  # remove zero intensity pixels from the mask
+    temp_mask[vardata == np.inf] = 1  # this includes hotpixels since zero intensity pixels were set to var_mean
 
     vardata[vardata == np.inf] = 0
     indices_badpixels = np.nonzero(vardata > 1 / var_threshold)
