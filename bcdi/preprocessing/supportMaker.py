@@ -89,28 +89,42 @@ class supportMaker(object):
 
 	def set_voxel_size(self, wavelength = None, detDist = None, pixel_size = None, ang_step = None, braggAng = None):
 		ss = self.support.shape
+		
 		# calculate the angular dimension first
 		q = 4*np.pi*np.sin(np.deg2rad(braggAng))/wavelength
 		deltaQ = q*np.deg2rad(ang_step)*ss[0]
 		a = np.pi*2/deltaQ
+		
 		# add the detector dimensions - don't forget to reverse - but pixels tend to be symmetric
 		pixel_size.reverse()
 		self.vox_size = np.r_[a,wavelength*detDist/(np.array(ss[1:])*np.array(pixel_size))]
+		
 		print("Voxel dimensions: ", self.vox_size*1e9, " (nm)")
 		
 	def set_planes(self,planes_list,plane_distance_origin_list):
+		
 		if len(planes_list)!=len(plane_distance_origin_list):
 			print("the number of planes does not match the number of distances")
 			sys.exit()
+			
 		self.planes = np.array(planes_list)
 		self.planesDist = np.array(plane_distance_origin_list)
 		
 		# based on voxel size - scale distance to plane metres to pixels
-		d_pix = np.sqrt(np.sum(self.planes**2,axis=1))
-		#pdb.set_trace()
+		# convert existing plane distance 
+		d_pix = np.sqrt(np.sum((self.planes)**2,axis=1))
+		print('\nD_pix',d_pix)
+		
+		# convert existing plane distance to metres to user defined size with a scalefactor
 		d_m = np.sqrt(np.sum((self.vox_size*self.planes)**2,axis=1))
+		print('\nDM',d_m)
+		
 		sf = (self.planesDist.reshape(1,self.planes.shape[0])/d_m).reshape(self.planes.shape[0],1)
 		self.scaled_planes = self.planes*sf
+		
+		print(self.planesDist.reshape(1,self.planes.shape[0]))
+		print('\n###',self.scaled_planes,sf,self.planes)
+		print('\n###',self.rawdata.shape)
 			
 	def get_support(self,):
 		return self.support
@@ -121,7 +135,7 @@ class supportMaker(object):
 	def get_planesDist(self,):
 		return self.planesDist
 		
-def generatePlanesCuboid(z,y,x):
+def generatePlanesCuboid(x,y,z):
 	planes = 	np.array([
 				[1,0,0],
 				[-1,0,0],
@@ -131,12 +145,12 @@ def generatePlanesCuboid(z,y,x):
 				[0,0,-1],
 				])
 	planesDist = np.array([
-				[z/2],
-				[z/2],
-				[y/2],
-				[y/2],
 				[x/2],
 				[x/2],
+				[y/2],
+				[y/2],
+				[z/2],
+				[z/2],
 				])	
 	return 	planes, planesDist		
 """
@@ -155,25 +169,10 @@ outf.close()
 """
 
 # cuboid
-planes = 	np.array([
-			[1,0,0],
-			[-1,0,0],
-			[0,1,0],
-			[0,-1,0],
-			[0,0,1],
-			[0,0,-1],
-			])
-planesDist = np.array([
-			[50],
-			[50],
-			[100],
-			[100],
-			[200],
-			[200],
-			])
+planes, planesDist= generatePlanesCuboid(800,800,100
 
 #tetrahedra
-"""
+
 planes = 	np.array([
 			[1,1,1],
 			[-1,1,-1],
@@ -186,22 +185,98 @@ planesDist = np.array([
 			[300],
 			[300],
 			])
-			
-"""						
-planesDist = planesDist*1E-9
-rawdata = np.zeros((64,64,64))
-wavelength = 12.39842/8*1E-10 
-detector_distance = 1
-detector_pixel_size = [55e-6,55e-6]
-ang_step = 0.01
-braggAng = 10
-supportMaker = supportMaker(rawdata,wavelength, detector_distance, detector_pixel_size, ang_step, braggAng,planes,planesDist)		
+					
 
+#equilateral prism
+planes = 	np.array([
+			[-1,np.sqrt(3),0],
+			[1,np.sqrt(3),0],
+			[0,-1,0],
+			[0,0,1],
+			[0,0,-1],
+			])
+planesDist = np.array([
+			[350],
+			[350],
+			[350],
+			[50],
+			[50],
+			])			
+#planes, planesDist= generatePlanesCuboid(800,800,100)
+planesDist = planesDist*1E-9
+
+import transformations as tfs
+alpha, beta, gamma = 0,0,45
+origin, xaxis, yaxis, zaxis = [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]
+
+Rx = tfs.rotation_matrix(alpha, xaxis)[:3,:3]
+Ry = tfs.rotation_matrix(beta, yaxis)[:3,:3]
+Rz = tfs.rotation_matrix(gamma, zaxis)[:3,:3]
+
+def rot_planes(planes,rot):
+	#tfs.concatenate_matrices(Rx,Ry,Rz)
+	print(planes)
+	rp = [np.dot(rot,v) for v in planes]
+
+	npl = []
+	[npl.append(p.tolist()) for p in rp]
+	planes = np.array(npl)
+	print(planes)
+	return planes
+
+planes = rot_planes(planes,Rz)	
+planes = rot_planes(planes,Ry)
+	
+#rawdata = np.zeros((64,64,64))
+# error on filename 2x3x10 binning
+rawdata = np.load('/data/id01/inhouse/otherlightsources/2019_Diamond_I13/esrf-analysis/mask_bin3x3x10x1_sum_croppedraw.npz')['arr_0']
+print(rawdata.shape)
+wavelength = 12.39842/10.2*1E-10 
+detector_distance = 2.9
+detector_pixel_size = [10*55e-6,3*55e-6]
+ang_step = 0.004*2
+braggAng = 9
+supportMaker = supportMaker(rawdata,
+							wavelength, 
+							detector_distance, 
+							detector_pixel_size, 
+							ang_step, 
+							braggAng,
+							planes,planesDist)	
+								
+support = supportMaker.get_support()
+
+'''
+# lazy rotation
+import scipy.fftpack as fft
+from scipy.ndimage.interpolation import rotate
+
+support = supportMaker.get_support()
+#rotate around z axis
+support = rotate(support,25,(2,0),reshape=False)  # replace with Bragg angle*2
+#rotate around y axis RH about y
+#support = rotate(support,25,(1,0),reshape=False)  # replace with Bragg angle*2
+#rotate around x axis
+#support = rotate(support,25,(2,1),reshape=False)  # replace with Bragg angle*2
+
+
+support[support>=0.1] = 1
+support[support<0.1] = 0
+
+'''
+
+# save to npz
+np.savez('support.npz',support)
+
+# save 2hdf5
 import scipy.fftpack as fft
 with h5.File('support.h5','a') as outf:
-	outf['poly'] = supportMaker.get_support()
-	data1 = fft.fftn(np.complex64(supportMaker.get_support()))
-	outf['poly_fft'] = abs(data1)
+	outf['poly'] = support
+	data1 = fft.fftn(support)
+	#outf['poly_fft'] = abs(data1)
 	outf['poly_fft_shift'] = abs(fft.fftshift(data1))
+	outf['rawdata'] = rawdata
+
+#np.savez('supportFFT.npz',fft.ifftshift(fft.ifftn(support)))
 
 # contact Mark and Guillaume 
