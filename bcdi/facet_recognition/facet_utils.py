@@ -571,6 +571,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
 
     # regrid stereo_proj
     yi, xi = np.mgrid[-max_angle:max_angle:381j, -max_angle:max_angle:381j]  # vertical, horizontal
+    angular_step = yi[1, 0] - yi[0, 0]
+    nby, nbx = xi.shape
     density_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), intensity, (yi, xi), method='linear')
     density_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), intensity, (yi, xi), method='linear')
     density_top = density_top / density_top[density_top > 0].max() * 10000  # normalize for plotting
@@ -676,14 +678,18 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
 
     if debugging:
         fig = plt.figure(figsize=(15, 10))
-        fig.add_subplot(121)
+        ax0 = fig.add_subplot(121)
         plt.imshow(local_maxi_top, interpolation='nearest')
-        plt.title('local_maxi South')
+        plt.title('local_maxi South before filtering')
         plt.gca().invert_yaxis()
-        fig.add_subplot(122)
+        circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
+        ax0.add_artist(circle)
+        ax1 = fig.add_subplot(122)
         plt.imshow(local_maxi_bottom, interpolation='nearest')
-        plt.title('local_maxi North')
+        plt.title('local_maxi North before filtering')
         plt.gca().invert_yaxis()
+        circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
+        ax1.add_artist(circle)
         plt.pause(0.1)
 
     # define markers for each peak
@@ -695,20 +701,23 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
 
     if debugging:
         fig = plt.figure(figsize=(15, 10))
-        fig.add_subplot(121)
-        plt.imshow(markers_top, interpolation='nearest')
+        ax0 = fig.add_subplot(121)
+        plt.imshow(markers_top, interpolation='nearest', cmap='binary', vmin=0, vmax=1)
         plt.title('markers South')
         plt.gca().invert_yaxis()
-        fig.add_subplot(122)
-        plt.imshow(markers_bottom, interpolation='nearest')
+        circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
+        ax0.add_artist(circle)
+        ax1 = fig.add_subplot(122)
+        plt.imshow(markers_bottom, interpolation='nearest', cmap='binary', vmin=0, vmax=1)
         plt.title('markers North')
         plt.gca().invert_yaxis()
+        circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
+        ax1.add_artist(circle)
         plt.pause(0.1)
 
     # watershed segmentation
     labels_top = watershed(-distances_top, markers_top, mask=mask_top)
     labels_bottom = watershed(-markers_bottom, markers_bottom, mask=mask_bottom)
-    nby, nbx = xi.shape
     fig = plt.figure(figsize=(15, 10))
     ax0 = fig.add_subplot(121)
     plt.imshow(labels_top, cmap=cmap, interpolation='nearest')
@@ -727,7 +736,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     return labels_top, labels_bottom, stereo_proj, remove_raw
 
 
-def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.5, mu=0.53, debugging=0):
+def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33, mu=0.34, debugging=0):
     """
     Taubinsmooth: performs a back and forward Laplacian smoothing "without shrinking" of a triangulated mesh,
      as described by Gabriel Taubin (ICCV '95)
