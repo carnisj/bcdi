@@ -34,16 +34,13 @@ the second axis of the 3D array (to be modified).
 Input: a reconstruction .npz file with fields: 'amp' and 'strain' 
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
-# TODO: include surface estimation for the facets, think about upsampling the reconstruction to make
-#  the smoothing more efficient
-scan = 2227  # spec scan number
-datadir = 'D:/data/PtRh/Ar(103x98x157)/'
-# datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/simu/new_model/"
-support_threshold = 0.55  # threshold for support determination
-voxel_size = (2.95, 3.09, 1.93)  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
-savedir = datadir + "isosurface_" + str(support_threshold) + " 2.95x3.09x1.93nm3/"
-# datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"
-# datadir = "C:/Users/carnis/Work Folders/Documents/data/CH5309/data/S"+str(scan)+"/pynxraw/"
+# TODO: include surface estimation for the facets
+scan = 1  # spec scan number
+datadir = 'D:/data/PtRh/matlab_reconstructions/2019.11/ArCO-ii(83x55x120)/'
+support_threshold = 0.48  # threshold for support determination
+voxel_size = [3.64, 5.53, 2.53]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+upsampling_factor = 2  # integer, factor for upsampling the reconstruction in order to have a smoother surface
+savedir = datadir + "isosurface_" + str(support_threshold) + " 3.64x5.53x2.53nm3/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
@@ -51,14 +48,16 @@ smoothing_iterations = 5  # number of iterations in Taubin smoothing
 smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
 smooth_mu = 0.51  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
-my_min_distance = 20  # pixel separation between peaks in corner_peaks()
+my_min_distance = 50  # pixel separation between peaks in corner_peaks()
 max_distance_plane = 0.5  # in pixels, maximum allowed distance to the facet plane of a voxel
-top_part = True  # if Ture, will also update logfiles with a support cropped at z_cutoff (remove bottom part)
+top_part = False  # if True, will also update logfiles with a support cropped at z_cutoff (remove bottom part)
 z_cutoff = 75  # in pixels. If top_pat=True, will set all support pixels below this value to 0
+edges_coord = 350  # coordination threshold for isolating edges, 350 seems to work reasonably well
+corners_coord = 260  # coordination threshold for isolating corners, 260 seems to work reasonably well
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
-threshold_stereo = -1500  # -1500 # threshold for defining the background in the density estimation of normals
+threshold_stereo = -1200  # threshold for defining the background in the density estimation of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 #########################################################
 # parameters only used in the equirectangular projection #
@@ -106,6 +105,18 @@ amp = amp / amp.max()
 nz, ny, nx = amp.shape
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
 strain = npzfile['strain']
+
+#################
+# upsample data #
+#################
+if upsampling_factor > 1:
+    amp, voxel_size = fu.upsample(array=amp, upsampling_factor=upsampling_factor, voxelsizes=voxel_size,
+                                  debugging=debug)
+    strain, _ = fu.upsample(array=strain, upsampling_factor=upsampling_factor, voxelsizes=voxel_size,
+                            debugging=debug)
+    nz, ny, nx = amp.shape
+    print("Upsampled data size: (", nz, ',', ny, ',', nx, ')')
+    print("New voxel sizes: ", voxel_size)
 
 #####################################################################
 # Use marching cubes to obtain the surface mesh of these ellipsoids #
@@ -328,7 +339,7 @@ edges = pu.calc_coordination(support, kernel=np.ones((9, 9, 9)), debugging=False
 edges[support == 0] = 0
 if debug:
     gu.multislices_plot(edges, invert_yaxis=True, vmin=0, title='Coordination matrix')
-edges[edges > 350] = 0  # remove facets and bulk 350 seems to work reasonably well
+edges[edges > edges_coord] = 0  # remove facets and bulk
 edges[np.nonzero(edges)] = 1  # edge support
 gu.scatter_plot(array=np.asarray(np.nonzero(edges)).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'),
                 title='edges')
@@ -340,7 +351,7 @@ corners = pu.calc_coordination(support, kernel=np.ones((9, 9, 9)), debugging=Fal
 corners[support == 0] = 0
 if debug:
     gu.multislices_plot(corners, invert_yaxis=True, vmin=0, title='Coordination matrix')
-corners[corners > 270] = 0  # remove edges, facets and bulk 270 seems to work reasonably well
+corners[corners > corners_coord] = 0  # remove edges, facets and bulk
 corners[np.nonzero(corners)] = 1  # corner support
 gu.scatter_plot(array=np.asarray(np.nonzero(corners)).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'),
                 title='corners')
@@ -572,7 +583,7 @@ for label in updated_label:
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=3*max_distance_plane, debugging=False)
+                                    max_distance=2*max_distance_plane, debugging=False)  # 3
         # here the distance threshold is larger in order to reach voxels missed by the first plane fit
         # when rounding vertices to integer. Anyway we intersect it with the surface therefore it can not go crazy.
         plane_indices = np.nonzero(plane)
@@ -613,7 +624,7 @@ for label in updated_label:
 
     # update plane by filtering out pixels too far from the fit plane
     plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
-                                        max_distance=2*max_distance_plane)
+                                        max_distance=1*max_distance_plane)  # 2
     if stop == 1:  # no points on the plane
         print('Refined fit: no points for plane', label)
         continue
@@ -638,7 +649,7 @@ for label in updated_label:
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=2*max_distance_plane, debugging=debug)
+                                    max_distance=1*max_distance_plane, debugging=debug)  # 2
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
         iterate = iterate + 1
         if plane[plane == 1].sum() == previous_nb:

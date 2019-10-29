@@ -909,6 +909,51 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
                            '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
 
 
+def upsample(array, upsampling_factor, voxelsizes, debugging=False):
+    """
+    Upsample array using a factor of upsampling.
+
+    :param array: the real array to be upsampled
+    :param upsampling_factor: int, the upsampling factor
+    :param voxelsizes: list, the voxel sizes of array
+    :param debugging: True to see plots
+    :return: the upsampled array
+    """
+    from scipy.interpolate import RegularGridInterpolator
+
+    if array.ndim != 3:
+        raise ValueError('Expecting a 3D array as input')
+
+    if not isinstance(upsampling_factor, int):
+        raise ValueError('upsampling_factor should be an integer')
+    if debugging:
+        gu.multislices_plot(array, sum_frames=False, invert_yaxis=True, title='Array before upsampling')
+
+    nbz, nby, nbx = array.shape
+    numz, numy, numx = nbz * upsampling_factor, nby * upsampling_factor, nbx * upsampling_factor
+    newvoxelsizes = [voxsize/upsampling_factor for voxsize in voxelsizes]
+
+    newz, newy, newx = np.meshgrid(np.arange(-numz // 2, numz // 2, 1) * newvoxelsizes[0],
+                                   np.arange(-numy // 2, numy // 2, 1) * newvoxelsizes[1],
+                                   np.arange(-numx // 2, numx // 2, 1) * newvoxelsizes[2], indexing='ij')
+
+    rgi = RegularGridInterpolator(
+        (np.arange(-nbz // 2, nbz // 2)*voxelsizes[0],
+         np.arange(-nby // 2, nby // 2)*voxelsizes[1],
+         np.arange(-nbx // 2, nbx // 2)*voxelsizes[2]),
+        array, method='linear', bounds_error=False, fill_value=0)
+
+    obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
+                              newx.reshape((1, newz.size)))).transpose())
+
+    obj = obj.reshape((numz, numy, numx)).astype(array.dtype)
+
+    if debugging:
+        gu.multislices_plot(obj, sum_frames=False, invert_yaxis=True, title='Array after upsampling')
+
+    return obj, newvoxelsizes
+
+
 # if __name__ == "__main__":
 #     ref_plane = np.array([1, 1, 1])
 #     my_plane = np.array([1, 1, -1])
