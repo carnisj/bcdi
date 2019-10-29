@@ -556,7 +556,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
         for raw in remove_raw:
             stereo_proj = np.delete(stereo_proj, raw, axis=0)
             intensity = np.delete(intensity, raw, axis=0)
-
+    else:
+        remove_raw = []
     # plot the stereographic projection
     if True:
         fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=intensity,
