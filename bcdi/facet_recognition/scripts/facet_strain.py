@@ -44,7 +44,7 @@ savedir = datadir + "isosurface_" + str(support_threshold) + " 3.64x5.53x2.53nm3
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
-smoothing_iterations = 5  # number of iterations in Taubin smoothing
+smoothing_iterations = 15  # number of iterations in Taubin smoothing
 smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
 smooth_mu = 0.51  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
@@ -140,7 +140,7 @@ if debug:
 #######################################
 vertices_new, normals, areas, intensity, _ = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
-                     debugging=1)
+                     debugging=True)
 
 # Display smoothed triangular mesh
 gu.plot_3dmesh(vertices_new, faces, (nz, ny, nx), title='Mesh after Taubin smoothing')
@@ -154,14 +154,19 @@ gc.collect()
 #####################################################################
 nb_normals = normals.shape[0]
 if projection_method == 'stereographic':
-    # now it supposes that q is along the second axis vertical Y (CXI convention)
-    labels_top, labels_bottom, stereo_proj = fu.stereographic_proj(normals=normals, intensity=intensity,
-                                                                   background_threshold=threshold_stereo,
-                                                                   min_distance=my_min_distance, savedir=savedir,
-                                                                   save_txt=False, planes=planes, plot_planes=True,
-                                                                   max_angle=max_angle, voxel_size=voxel_size,
-                                                                   reflection_axis=reflection_axis, debugging=debug)
+    labels_top, labels_bottom, stereo_proj, remove_raw =\
+        fu.stereographic_proj(normals=normals, intensity=intensity, background_threshold=threshold_stereo,
+                              min_distance=my_min_distance, savedir=savedir, save_txt=False, planes=planes,
+                              plot_planes=True, max_angle=max_angle, voxel_size=voxel_size,
+                              reflection_axis=reflection_axis, debugging=debug)
+    if len(remove_raw) != 0:
+        for raw in remove_raw:
+            normals = np.delete(normals, raw, axis=0)
+            faces = np.delete(faces, raw, axis=0)
+
+    nb_normals = normals.shape[0]
     numy, numx = labels_top.shape  # identical to labels_bottom.shape
+
     if stereo_proj.shape[0] != nb_normals:
         print(projection_method, 'projection output: incompatible number of normals')
         sys.exit()
@@ -283,7 +288,7 @@ for idx in range(1, max_label+1):
     if (normals_label == idx).sum() != 0:
         updated_label.append(idx)
 
-del normals_label, coordinates
+del normals_label, coordinates, faces
 gc.collect()
 
 ###############################################

@@ -518,7 +518,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     :param planes: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
     :param plot_planes: if True, will draw circles corresponding to crystallographic planes in the pole figure
     :param debugging: show plots for debugging
-    :return:
+    :return: labels for the top and bottom projections, array of top and bottom projections, list of raws to remove
     """
     from scipy.interpolate import griddata
     from scipy import ndimage
@@ -548,7 +548,16 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     # calculate u and v from xyz
     stereo_proj = calc_stereoproj(reflection_axis=reflection_axis, normals=iso_normals, radius_mean=radius_mean,
                                   stereo_center=stereo_center)
+    # remove intensity where stereo_proj is infinite
+    list_inf = np.argwhere(np.isinf(stereo_proj))
+    if len(list_inf) != 0:
+        remove_raw = list(set(list_inf[:, 0]))  # remove duplicated raw indices
+        print('stereographic_proj() remove raws: ', remove_raw, '\n')
+        for raw in remove_raw:
+            stereo_proj = np.delete(stereo_proj, raw, axis=0)
+            intensity = np.delete(intensity, raw, axis=0)
 
+    # plot the stereographic projection
     if True:
         fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=intensity,
                                        radius_mean=radius_mean, planes=planes, title="South pole",
@@ -559,6 +568,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
                                        plot_planes=plot_planes)
         fig.savefig(savedir + 'North pole.png')
 
+    # regrid stereo_proj
     yi, xi = np.mgrid[-max_angle:max_angle:381j, -max_angle:max_angle:381j]  # vertical, horizontal
     density_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), intensity, (yi, xi), method='linear')
     density_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), intensity, (yi, xi), method='linear')
@@ -713,7 +723,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     ax1.add_artist(circle)
     plt.pause(0.1)
 
-    return labels_top, labels_bottom, stereo_proj
+    return labels_top, labels_bottom, stereo_proj, remove_raw
 
 
 def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.5, mu=0.53, debugging=0):
