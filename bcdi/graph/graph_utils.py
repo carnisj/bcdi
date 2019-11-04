@@ -733,6 +733,8 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
         else:
             raise ValueError('Wrong value for scale')
         ax1.set_title(title + slice_names[1])
+        if invert_yaxis:
+            ax1.invert_yaxis()
         plt.axis('scaled')
         if plot_colorbar:
             plt.colorbar(plt1, ax=ax1)
@@ -772,6 +774,8 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
             raise ValueError('Wrong value for scale')
 
         ax2.set_title(title + slice_names[2])
+        if invert_yaxis:
+            ax2.invert_yaxis()
         plt.axis('scaled')
 
         if plot_colorbar:
@@ -789,9 +793,11 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
     plt.ioff()
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
 
+
 def multislices_plotv2(array, sum_frames=False, width_z=np.nan, width_y=np.nan, width_x=np.nan, plot_colorbar=False,
-                     cmap=my_cmap, title='', scale='linear', invert_yaxis=False, vmin=np.nan, vmax=np.nan,
-                     tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan, reciprocal_space=False):
+                       cmap=my_cmap, title='', scale='linear', invert_yaxis=False, vmin=np.nan, vmax=np.nan,
+                       tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
+                       reciprocal_space=False):
     """
     Create a figure with three 2D imshow plots from a 3D dataset.
 
@@ -976,12 +982,10 @@ def multislices_plotv2(array, sum_frames=False, width_z=np.nan, width_y=np.nan, 
             ax2.tick_params(labelbottom='off', labelleft='off', top='on', right='on', direction=tick_direction,
                             length=tick_length, width=tick_width)
 
-
     plt.tight_layout()
     plt.pause(0.5)
     plt.ioff()
     return fig, (ax0, ax1, ax2), (plt0, plt1, plt2)
-
 
 
 def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped because of CXI convention'):
