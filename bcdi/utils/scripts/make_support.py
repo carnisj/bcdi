@@ -31,6 +31,7 @@ output_shape = [560, 800, 560]  # shape of the array for later phasing (before b
 binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
 skip_masking = False  # if True, will skip thresholding and masking
 filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
+binary_support = True  # True to save the support as an array of 0 and 1
 reload_support = False  # if True, will load the support which shape is assumed to be the shape after binning_output
 # it is usefull to redo some masking without interpolating again.
 is_ortho = True  # True if the data is already orthogonalized
@@ -185,7 +186,8 @@ if filter_name != 'do_nothing':
 
 data = data / data.max()  # normalize
 data[data < support_threshold] = 0
-data[np.nonzero(data)] = 1  # change data into a support
+if binary_support:
+    data[np.nonzero(data)] = 1  # change data into a support
 ############################################
 # go back to original shape before binning #
 ############################################
@@ -279,7 +281,8 @@ if ((nbz != nz) or (nby != ny) or (nbx != nx)) and not reload_support:
 else:  # no need for interpolation
     new_support = data
 
-new_support[np.nonzero(new_support)] = 1
+if binary_support:
+    new_support[np.nonzero(new_support)] = 1
 ##########################################
 # plot the support with the output shape #
 ##########################################
