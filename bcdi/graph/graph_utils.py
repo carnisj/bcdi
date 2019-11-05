@@ -858,7 +858,7 @@ def multislices_plotv2(array, sum_frames=False, width_z=np.nan, width_y=np.nan, 
         if np.isnan(width_x):
             width_x = nbx
 
-        fig, ((ax0, ax1, ax2)) = plt.subplots(nrows=1, ncols=3, figsize=(15, 4.5))
+        fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(15, 4.5))
 
         # axis 0
         temp_array = np.copy(array)
@@ -895,7 +895,7 @@ def multislices_plotv2(array, sum_frames=False, width_z=np.nan, width_y=np.nan, 
             ax0.invert_yaxis()
         plt.axis('scaled')
         if plot_colorbar:
-            plt.colorbar(plt0, ax=ax0,fraction=0.04, pad= 0.1)
+            plt.colorbar(plt0, ax=ax0, fraction=0.04, pad=0.1)
         if not np.isnan(pixel_spacing):
             ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
             ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -914,7 +914,7 @@ def multislices_plotv2(array, sum_frames=False, width_z=np.nan, width_y=np.nan, 
                                 int(np.rint(nbz / 2 - min(width_z, nbz) / 2)) + min(width_z, nbz),
                                 int(np.rint(nbx // 2 - min(width_x, nbx) // 2)):
                                 int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
-		"""
+        """
         if scale == 'linear':
             if np.isnan(min_value[1]):
                 min_value[1] = temp_array[~np.isnan(temp_array)].min()
@@ -934,7 +934,7 @@ def multislices_plotv2(array, sum_frames=False, width_z=np.nan, width_y=np.nan, 
         ax1.set_title(title + slice_names[1])
         plt.axis('scaled')
         if plot_colorbar:
-            plt.colorbar(plt1, ax=ax1,fraction=0.04, pad= 0.1)
+            plt.colorbar(plt1, ax=ax1, fraction=0.04, pad=0.1)
         if not np.isnan(pixel_spacing):
             ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
             ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -975,7 +975,7 @@ def multislices_plotv2(array, sum_frames=False, width_z=np.nan, width_y=np.nan, 
         plt.axis('scaled')
 
         if plot_colorbar:
-            plt.colorbar(plt2, ax=ax2,fraction=0.04, pad= 0.1)
+            plt.colorbar(plt2, ax=ax2, fraction=0.04, pad=0.1)
         if not np.isnan(pixel_spacing):
             ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
             ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -990,6 +990,7 @@ def multislices_plotv2(array, sum_frames=False, width_z=np.nan, width_y=np.nan, 
 
 def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped because of CXI convention'):
     """
+    Plot a 3D mesh defined by its vertices and faces.
 
     :param vertices: n*3 ndarray of n vertices defined by 3 positions
     :param faces: m*3 ndarray of m faces defined by 3 indices of vertices
