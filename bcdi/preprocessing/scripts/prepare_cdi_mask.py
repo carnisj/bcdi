@@ -43,8 +43,8 @@ scans = [22]  # list or array of scan numbers
 root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2"  # "S"
 comment = ''  # string, should start with "_"
-debug = False  # set to True to see plots
-binning = [2, 2, 2]  # binning that will be used for phasing
+debug = True  # set to True to see plots
+binning = [1, 1, 1]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
@@ -82,6 +82,8 @@ correct_curvature = False  # True to correcture q values for the curvature of Ew
 interpolate_qmax = False  # paramter defining the interpolation interval when use_rawdata is False
 # if True, will interpolate using the q spacing at the outer boundary of the data array
 # if False, the output data will have the same shape as the ungridded data
+fit_datarange = True  # if True, crop the final array within data range, avoiding areas at the corners of the window
+# viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
 save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_mat = False  # set to 1 to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
@@ -104,7 +106,7 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
-roi_detector = [direct_beam[0] - 50, direct_beam[0] + 50, direct_beam[1] - 50, direct_beam[1] + 50]  # V x H
+roi_detector = [direct_beam[0] - 100, direct_beam[0] + 100, direct_beam[1] - 100, direct_beam[1] + 100]  # V x H
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 background_file = ''  # root_folder + 'background.npz'  #
@@ -679,7 +681,7 @@ for scan_nb in range(len(scans)):
     if not flag_interact:
         plt.close(fig)
 
-    if not use_rawdata:
+    if not use_rawdata and fit_datarange:
         ############################################################
         # select the largest cubic array fitting inside data range #
         ############################################################
@@ -693,7 +695,7 @@ for scan_nb in range(len(scans)):
         qx = qx[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along Z
         qy = qy[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along X
         # qz (along Y) keeps the same number of pixels
-        print('Data size after taking the largest gapless area:', data.shape)
+        print('Data size after taking the largest data-defined area:', data.shape)
         # need these numbers to calculate the voxel size
 
     if detector.binning[0] != 1:
