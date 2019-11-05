@@ -36,24 +36,24 @@ Output: a log file with strain statistics by plane, a VTK file for 3D visualizat
 """
 # TODO: include surface estimation for the facets
 scan = 1  # spec scan number
-datadir = 'D:/data/PtRh/matlab_reconstructions/2019.11/ArCO-ii(83x55x120)/'
-support_threshold = 0.48  # threshold for support determination
+datadir = 'D:/data/PtRh/matlab_reconstructions/2019.11/ArCOO2(83x55x120)/'
+support_threshold = 0.52  # threshold for support determination
 voxel_size = [3.64, 5.53, 2.53]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
 upsampling_factor = 2  # integer, factor for upsampling the reconstruction in order to have a smoother surface
 savedir = datadir + "isosurface_" + str(support_threshold) + " 3.64x5.53x2.53nm3/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
-smoothing_iterations = 15  # number of iterations in Taubin smoothing
-smooth_lamda = 0.5  # lambda parameter in Taubin smoothing
-smooth_mu = 0.51  # mu parameter in Taubin smoothing
+smoothing_iterations = 30  # number of iterations in Taubin smoothing
+smooth_lamda = 0.33  # lambda parameter in Taubin smoothing
+smooth_mu = 0.34  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
-my_min_distance = 50  # pixel separation between peaks in corner_peaks()
-max_distance_plane = 0.5  # in pixels, maximum allowed distance to the facet plane of a voxel
+peak_min_distance = 25  # pixel separation between peaks in corner_peaks()
+max_distance_plane = 0.75  # in pixels, maximum allowed distance to the facet plane of a voxel
 top_part = False  # if True, will also update logfiles with a support cropped at z_cutoff (remove bottom part)
 z_cutoff = 75  # in pixels. If top_pat=True, will set all support pixels below this value to 0
-edges_coord = 350  # coordination threshold for isolating edges, 350 seems to work reasonably well
-corners_coord = 260  # coordination threshold for isolating corners, 260 seems to work reasonably well
+edges_coord = 370  # coordination threshold for isolating edges, 350 seems to work reasonably well
+corners_coord = 280  # coordination threshold for isolating corners, 260 seems to work reasonably well
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
@@ -143,8 +143,9 @@ vertices_new, normals, areas, intensity, _ = \
                      debugging=True)
 
 # Display smoothed triangular mesh
-gu.plot_3dmesh(vertices_new, faces, (nz, ny, nx), title='Mesh after Taubin smoothing')
-plt.ion()
+if debug:
+    gu.plot_3dmesh(vertices_new, faces, (nz, ny, nx), title='Mesh after Taubin smoothing')
+    plt.ion()
 
 del vertices_new
 gc.collect()
@@ -156,7 +157,7 @@ nb_normals = normals.shape[0]
 if projection_method == 'stereographic':
     labels_top, labels_bottom, stereo_proj, remove_raw =\
         fu.stereographic_proj(normals=normals, intensity=intensity, background_threshold=threshold_stereo,
-                              min_distance=my_min_distance, savedir=savedir, save_txt=False, planes=planes,
+                              min_distance=peak_min_distance, savedir=savedir, save_txt=False, planes=planes,
                               plot_planes=True, max_angle=max_angle, voxel_size=voxel_size,
                               reflection_axis=reflection_axis, debugging=debug)
     if len(remove_raw) != 0:
@@ -251,7 +252,7 @@ if projection_method == 'stereographic':
 elif projection_method == 'equirectangular':
     labels, longitude_latitude = fu.equirectangular_proj(normals=normals, intensity=intensity, bw_method=bw_method,
                                                          background_threshold=kde_threshold,
-                                                         min_distance=my_min_distance, debugging=debug)
+                                                         min_distance=peak_min_distance, debugging=debug)
     if longitude_latitude.shape[0] != nb_normals:
         print(projection_method, 'projection output: incompatible number of normals')
         sys.exit()
@@ -588,7 +589,7 @@ for label in updated_label:
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=2*max_distance_plane, debugging=False)  # 3
+                                    max_distance=2.5*max_distance_plane, debugging=False)  # 3
         # here the distance threshold is larger in order to reach voxels missed by the first plane fit
         # when rounding vertices to integer. Anyway we intersect it with the surface therefore it can not go crazy.
         plane_indices = np.nonzero(plane)
@@ -629,7 +630,7 @@ for label in updated_label:
 
     # update plane by filtering out pixels too far from the fit plane
     plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
-                                        max_distance=1*max_distance_plane)  # 2
+                                        max_distance=1.5*max_distance_plane)  # 2
     if stop == 1:  # no points on the plane
         print('Refined fit: no points for plane', label)
         continue
@@ -654,7 +655,7 @@ for label in updated_label:
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=1*max_distance_plane, debugging=debug)  # 2
+                                    max_distance=1.5*max_distance_plane, debugging=debug)  # 2
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
         iterate = iterate + 1
         if plane[plane == 1].sum() == previous_nb:
