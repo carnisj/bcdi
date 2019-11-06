@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
 from scipy.interpolate import RegularGridInterpolator
+from skimage.restoration.deconvolution import richardson_lucy
+from numpy.fft import fftn, fftshift
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -30,7 +32,9 @@ output_shape = [560, 800, 560]  # shape of the array for later phasing (before b
 # if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
 binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
 skip_masking = False  # if True, will skip thresholding and masking
+psf_iterations = 50  # perform psf_iterations iterations of Richardson-Lucy deconvolution, set 0 if unwanted
 filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
+gaussian_sigma = 3.0  # sigma of the gaussian filter
 binary_support = True  # True to save the support as an array of 0 and 1
 reload_support = False  # if True, will load the support which shape is assumed to be the shape after binning_output
 # it is usefull to redo some masking without interpolating again.
@@ -169,13 +173,21 @@ fig.waitforbuttonpress()
 plt.disconnect(cid)
 plt.close(fig)
 
+#################################
+# Richardson-Lucy deconvolution #
+#################################
+# if psf_iterations > 0:
+#     psf =
+#     diff_pattern = fftshift(abs(fftn(data))**2)
+#     richardson_lucy(diff_pattern, psf, iterations=psf_iterations, clip=False)
+
 ##################
 # apply a filter #
 ##################
 if filter_name != 'do_nothing':
 
     comment = comment + '_' + filter_name
-    data = pu.filter_3d(data, filter_name=filter_name, sigma=1, debugging=True)
+    data = pu.filter_3d(data, filter_name=filter_name, sigma=gaussian_sigma, debugging=True)
     fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                                     invert_yaxis=True, title='Support after filtering\n', is_orthogonal=True,
                                     reciprocal_space=False)
