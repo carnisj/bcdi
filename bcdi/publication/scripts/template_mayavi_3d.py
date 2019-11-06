@@ -20,7 +20,7 @@ import bcdi.postprocessing.postprocessing_utils as pu
 helptext = """
 template_mayavi_3d.py
 
-Template for making 3d isosurface figures for paper.
+Template for 3d isosurface figures of a real space CDI reconstruction for publication.
 Open an npz file (reconstruction ampdispstrain.npz) and save individual figures including a length scale.
 """
 
