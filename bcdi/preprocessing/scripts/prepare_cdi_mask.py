@@ -106,6 +106,7 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
+# this parameter is important for gridding the data onto the laboratory frame
 roi_detector = [direct_beam[0] - 100, direct_beam[0] + 100, direct_beam[1] - 100, direct_beam[1] + 100]  # V x H
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
