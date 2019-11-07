@@ -108,7 +108,7 @@ specfile_name = sample_name + '_%05d'
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = [direct_beam[0] - 100, direct_beam[0] + 100, direct_beam[1] - 100, direct_beam[1] + 100]
+roi_detector = [direct_beam[0] - 50, direct_beam[0] + 50, direct_beam[1] - 50, direct_beam[1] + 50]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
@@ -379,7 +379,7 @@ for scan_nb in range(len(scans)):
             q_values = []
         else:
             print('Gridding the data in the orthonormal laboratory frame')
-            q_values, data, mask, frames_logical = \
+            data, mask, q_values, frames_logical = \
                 pru.regrid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
                                frames_logical=frames_logical, correct_curvature=correct_curvature,
                                interpolate_qmax=interpolate_qmax, debugging=debug)
