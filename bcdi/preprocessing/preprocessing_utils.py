@@ -96,6 +96,7 @@ def beamstop_correction(data, detector, setup, debugging=False):
     :param debugging: set to True to see plots
     :return: the corrected data
     """
+    print('Applying beamstop correction')
     directbeam_y = setup.direct_beam[0] - detector.roi[0]  # vertical
     directbeam_x = setup.direct_beam[1] - detector.roi[2]  # horizontal
 
@@ -2038,6 +2039,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, deb
      - updated monitor
      - a title for plotting
     """
+    print('Data normalization by monitor')
     ndim = array.ndim
     if ndim != 3:
         raise ValueError('Array should be 3D')
