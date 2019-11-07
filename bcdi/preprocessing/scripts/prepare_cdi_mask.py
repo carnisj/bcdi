@@ -43,7 +43,7 @@ scans = [22]  # list or array of scan numbers
 root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2"  # "S"
 comment = ''  # string, should start with "_"
-debug = True  # set to True to see plots
+debug = False  # set to True to see plots
 binning = [1, 1, 1]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
@@ -335,9 +335,48 @@ for scan_nb in range(len(scans)):
                 savemat(savedir + 'S' + str(scans[scan_nb]) + '_rawdata_stack.mat',
                         {'data': np.moveaxis(data, [0, 1, 2], [-1, -3, -2])})
 
+        # intermediate masking step in the detector plane
+        masked_color = 0.1  # will appear as -1 on the plot
+        width = 0
+        max_colorbar = 5
+        flag_aliens = False
+        flag_mask = True
+        flag_pause = False  # press x to pause for pan/zoom
+        nz, ny, nx = np.shape(data)
+        original_data = np.copy(data)
+
+        # in XY
+        dim = 0
+        x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+        x, y = x.flatten(), y.flatten()
+        points = np.stack((x, y), axis=0).T
+        xy = []  # list of points for mask
+        temp_mask = np.zeros((ny, nx))
+        data[mask == 1] = masked_color / nz  # will appear as -1 on the plot
+        print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
+        fig_mask = plt.figure()
+        plt.imshow(np.log10(abs(data.sum(axis=0))), vmin=0, vmax=max_colorbar)
+        plt.title('x to pause/resume masking for pan/zoom \n'
+                  'p plot mask ; a restart ; click to select vertices\n'
+                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                  "up larger ; down smaller ; right darker ; left brighter")
+        plt.connect('key_press_event', press_key)
+        plt.connect('button_press_event', on_click)
+        fig_mask.set_facecolor(background_plot)
+        plt.show()
+        data = original_data
+
+        for idx in range(nz):
+            temp_array = mask[idx, :, :]
+            temp_array[np.nonzero(temp_mask)] = 1  # enough, numpy array is mutable hence mask will be modified
+        del temp_mask, original_data, x, y, xy, points, masked_color
+        gc.collect()
+        flag_mask = False
+
         if use_rawdata:
             q_values = []
         else:
+            print('Gridding the data in the orthonormal laboratory frame')
             q_values, data, mask, frames_logical = \
                 pru.regrid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
                                frames_logical=frames_logical, correct_curvature=correct_curvature,
@@ -388,6 +427,7 @@ for scan_nb in range(len(scans)):
             temp_mask = mask[idx, :, :]
             temp_mask[np.sum(data, axis=0) == 0] = 1  # enough, numpy array is mutable hence mask will be modified
         del temp_mask
+        gc.collect()
 
     plt.ioff()
 
@@ -462,6 +502,7 @@ for scan_nb in range(len(scans)):
         fig_mask.set_facecolor(background_plot)
         plt.show()
         del dim, fig_mask
+        gc.collect()
 
         # in XZ
         dim = 1
@@ -475,6 +516,7 @@ for scan_nb in range(len(scans)):
         fig_mask.set_facecolor(background_plot)
         plt.show()
         del dim, fig_mask
+        gc.collect()
 
         # in YZ
         dim = 2
@@ -489,6 +531,7 @@ for scan_nb in range(len(scans)):
         plt.show()
 
         del dim, width, fig_mask, original_data
+        gc.collect()
 
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                         title='Data after aliens removal\n', invert_yaxis=False,
@@ -548,6 +591,7 @@ for scan_nb in range(len(scans)):
             temp_array = mask[idx, :, :]
             temp_array[np.nonzero(temp_mask)] = 1  # enough, numpy array is mutable hence mask will be modified
         del temp_mask
+        gc.collect()
 
         # in XZ
         dim = 1
@@ -575,6 +619,7 @@ for scan_nb in range(len(scans)):
             temp_array = mask[:, idx, :]
             temp_array[np.nonzero(temp_mask)] = 1  # enough, numpy array is mutable hence mask will be modified
         del temp_mask
+        gc.collect()
 
         # in YZ
         dim = 2
@@ -601,9 +646,11 @@ for scan_nb in range(len(scans)):
             temp_array = mask[:, :, idx]
             temp_array[np.nonzero(temp_mask)] = 1  # enough, numpy array is mutable hence mask will be modified
         del temp_mask, dim
+        gc.collect()
 
         data = original_data
         del original_data, flag_pause
+        gc.collect()
 
     data[mask == 1] = 0
     flag_mask = False
