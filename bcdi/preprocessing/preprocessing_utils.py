@@ -925,51 +925,6 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         return q_values, rawdata, gridder.data, rawmask, mask, frames_logical, monitor
 
 
-def load_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
-             normalize=False, debugging=False):
-    """
-    Load the forward CDI data, apply filters and optionally regrid it for phasing.
-
-
-    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
-    :param background: the 2D background array to subtract to the data
-    :param normalize: set to True to normalize the diffracted intensity by the incident X-ray beam intensity
-    :param debugging:  set to True to see plots
-    :return:
-     - the 3D data array (in an orthonormal frame or in the detector frame) and the 3D mask array
-     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-     - the monitor values for normalization
-    """
-    rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
-                                                          setup=setup, flatfield=flatfield, hotpixels=hotpixels,
-                                                          background=background, debugging=debugging)
-
-    print((rawdata < 0).sum(), ' negative data points set to 0')  # can happen when subtracting a background
-    rawdata[rawdata < 0] = 0
-
-    rawdata = beamstop_correction(data=rawdata, detector=detector, setup=setup, debugging=debugging)
-
-    # normalize by the incident X-ray beam intensity
-    if normalize:
-        rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                                norm_to_min=True, debugging=debugging)
-
-    # bin data and mask in the detector plane if needed
-    # binning in the stacking dimension is done at the very end of the data processing
-    if (detector.binning[1] != 1) or (detector.binning[2] != 1):
-        rawdata = pu.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
-        rawmask = pu.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
-        rawmask[np.nonzero(rawmask)] = 1
-
-    return rawdata, rawmask, frames_logical, monitor
-
-
 def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False, hxrd=None,
             normalize=False, debugging=False, **kwargs):
     """
@@ -1018,6 +973,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
     if (detector.binning[1] != 1) or (detector.binning[2] != 1):
+        print('Binning the data')
         rawdata = pu.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
         rawmask = pu.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
         rawmask[np.nonzero(rawmask)] = 1
@@ -1171,6 +1127,52 @@ def load_background(background_file):
     else:
         background = None
     return background
+
+
+def load_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
+             normalize=False, debugging=False):
+    """
+    Load the forward CDI data, apply filters and optionally regrid it for phasing.
+
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param flatfield: the 2D flatfield array
+    :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
+    :param background: the 2D background array to subtract to the data
+    :param normalize: set to True to normalize the diffracted intensity by the incident X-ray beam intensity
+    :param debugging:  set to True to see plots
+    :return:
+     - the 3D data array (in an orthonormal frame or in the detector frame) and the 3D mask array
+     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+     - the monitor values for normalization
+    """
+    rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
+                                                          setup=setup, flatfield=flatfield, hotpixels=hotpixels,
+                                                          background=background, debugging=debugging)
+
+    print((rawdata < 0).sum(), ' negative data points set to 0')  # can happen when subtracting a background
+    rawdata[rawdata < 0] = 0
+
+    rawdata = beamstop_correction(data=rawdata, detector=detector, setup=setup, debugging=debugging)
+
+    # normalize by the incident X-ray beam intensity
+    if normalize:
+        rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
+                                                norm_to_min=True, debugging=debugging)
+
+    # bin data and mask in the detector plane if needed
+    # binning in the stacking dimension is done at the very end of the data processing
+    if (detector.binning[1] != 1) or (detector.binning[2] != 1):
+        print('Binning the data')
+        rawdata = pu.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        rawmask = pu.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        rawmask[np.nonzero(rawmask)] = 1
+
+    return rawdata, rawmask, frames_logical, monitor
 
 
 def load_cristal_data(logfile, detector, flatfield, hotpixels, background, debugging=False):
