@@ -337,6 +337,7 @@ for scan_nb in range(len(scans)):
 
         if flag_interact:
             # intermediate masking step in the detector plane
+            plt.ioff()
             masked_color = 0.1  # will appear as -1 on the plot
             width = 0
             max_colorbar = 5
