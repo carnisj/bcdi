@@ -87,6 +87,7 @@ fit_datarange = True  # if True, crop the final array within data range, avoidin
 save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_mat = False  # set to 1 to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
+save_asint = True  # if True, the result will be saved as an array of integers (save space)
 ######################################
 # define beamline related parameters #
 ######################################
@@ -609,9 +610,9 @@ for scan_nb in range(len(scans)):
     data[mask == 1] = 0
     flag_mask = False
 
-    #############################################
-    # mask or median filter isolated empty pixels
-    #############################################
+    ###############################################
+    # mask or median filter isolated empty pixels #
+    ###############################################
     if flag_medianfilter == 'mask_isolated' or flag_medianfilter == 'interp_isolated':
         nb_pix = 0
         for idx in range(pad_width[0], nz-pad_width[1]):  # filter only frames whith data (not padded)
@@ -632,17 +633,17 @@ for scan_nb in range(len(scans)):
     else:
         print("Skipping median filtering")
 
-    #############################################
-    # apply photon threshold
-    #############################################
+    ##########################
+    # apply photon threshold #
+    ##########################
     if photon_threshold != 0:
         mask[np.nonzero(data) == photon_threshold] = 1
         data[data <= photon_threshold] = 0
         print("Applying photon threshold")
 
-    #############################################
-    # save prepared data and mask
-    #############################################
+    ########################################
+    # check for nans / inf, convert to int #
+    ########################################
     plt.ion()
     nz, ny, nx = np.shape(data)
     print('Data size after masking:', nz, ny, nx)
@@ -657,6 +658,8 @@ for scan_nb in range(len(scans)):
     mask[np.isinf(mask)] = 1
 
     data[mask == 1] = 0
+    if save_asint:
+        data = data.astype(int)
 
     ###################################
     # plot the prepared data and mask #
