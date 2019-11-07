@@ -2365,9 +2365,9 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         dq_y = 2 * np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm
         dq_x = 2 * np.pi / lambdaz * (pixel_x * voxelsize_x)  # in 1/nm
 
-        q_z = np.arange(-directbeam_x, directbeam_x + numz, 1) * dq_z  # z* downstream
-        q_y = -1 * np.arange(-directbeam_y, directbeam_y + numy, 1) * dq_y  # y* vertical up opposite to detector Y
-        q_x = -1 * np.arange(-directbeam_x, directbeam_x + numx, 1) * dq_x  # x* outboard opposite to detector X
+        q_z = np.arange(-directbeam_x, -directbeam_x + numz, 1) * dq_z  # z* downstream
+        q_y = -1 * np.arange(-directbeam_y, -directbeam_y + numy, 1) * dq_y  # y* vertical up opposite to detector Y
+        q_x = -1 * np.arange(-directbeam_x, -directbeam_x + numx, 1) * dq_x  # x* outboard opposite to detector X
         print('q spacing for interpolation (z*,y*,x*)=', dq_z, dq_y, dq_x, ' (1/nm)')
 
         # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
