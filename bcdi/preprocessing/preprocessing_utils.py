@@ -2365,9 +2365,9 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         dq_y = 2 * np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm
         dq_x = 2 * np.pi / lambdaz * (pixel_x * voxelsize_x)  # in 1/nm
 
-        q_z = np.arange(-numz // 2, numz // 2, 1) * dq_z  # z* downstream
-        q_y = -1 * np.arange(-numy // 2, numy // 2, 1) * dq_y  # y* vertical up opposite to detector Y
-        q_x = -1 * np.arange(-numx // 2, numx // 2, 1) * dq_x  # x* outboard opposite to detector X
+        q_z = np.arange(-directbeam_x, directbeam_x + numz, 1) * dq_z  # z* downstream
+        q_y = -1 * np.arange(-directbeam_y, directbeam_y + numy, 1) * dq_y  # y* vertical up opposite to detector Y
+        q_x = -1 * np.arange(-directbeam_x, directbeam_x + numx, 1) * dq_x  # x* outboard opposite to detector X
         print('q spacing for interpolation (z*,y*,x*)=', dq_z, dq_y, dq_x, ' (1/nm)')
 
         # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
@@ -2439,7 +2439,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     newdata[np.isnan(newdata)] = 0
     newmask[np.isnan(newmask)] = 1
 
-    fig, _, _ = gu.contour_slices(newdata, (q_z, q_y, q_x), sum_frames=False, title='Regridded data',
+    fig, _, _ = gu.contour_slices(newdata, (q_z, q_y, q_x), sum_frames=True, title='Regridded data',
                                   levels=np.linspace(0, int(np.log10(newdata.max())), 150, endpoint=False),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_' + str(numz)+'_' + str(numy) + '_' + str(numx) + '_' + '.png')
