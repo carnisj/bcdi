@@ -335,43 +335,44 @@ for scan_nb in range(len(scans)):
                 savemat(savedir + 'S' + str(scans[scan_nb]) + '_rawdata_stack.mat',
                         {'data': np.moveaxis(data, [0, 1, 2], [-1, -3, -2])})
 
-        # intermediate masking step in the detector plane
-        masked_color = 0.1  # will appear as -1 on the plot
-        width = 0
-        max_colorbar = 5
-        flag_aliens = False
-        flag_mask = True
-        flag_pause = False  # press x to pause for pan/zoom
-        nz, ny, nx = np.shape(data)
-        original_data = np.copy(data)
+        if flag_interact:
+            # intermediate masking step in the detector plane
+            masked_color = 0.1  # will appear as -1 on the plot
+            width = 0
+            max_colorbar = 5
+            flag_aliens = False
+            flag_mask = True
+            flag_pause = False  # press x to pause for pan/zoom
+            nz, ny, nx = np.shape(data)
+            original_data = np.copy(data)
 
-        # in XY
-        dim = 0
-        x, y = np.meshgrid(np.arange(nx), np.arange(ny))
-        x, y = x.flatten(), y.flatten()
-        points = np.stack((x, y), axis=0).T
-        xy = []  # list of points for mask
-        temp_mask = np.zeros((ny, nx))
-        data[mask == 1] = masked_color / nz  # will appear as -1 on the plot
-        print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
-        fig_mask = plt.figure()
-        plt.imshow(np.log10(abs(data.sum(axis=0))), vmin=0, vmax=max_colorbar)
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        plt.connect('key_press_event', press_key)
-        plt.connect('button_press_event', on_click)
-        fig_mask.set_facecolor(background_plot)
-        plt.show()
-        data = original_data
+            # in XY
+            dim = 0
+            x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+            x, y = x.flatten(), y.flatten()
+            points = np.stack((x, y), axis=0).T
+            xy = []  # list of points for mask
+            temp_mask = np.zeros((ny, nx))
+            data[mask == 1] = masked_color / nz  # will appear as -1 on the plot
+            print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
+            fig_mask = plt.figure()
+            plt.imshow(np.log10(abs(data.sum(axis=0))), vmin=0, vmax=max_colorbar)
+            plt.title('x to pause/resume masking for pan/zoom \n'
+                      'p plot mask ; a restart ; click to select vertices\n'
+                      "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                      "up larger ; down smaller ; right darker ; left brighter")
+            plt.connect('key_press_event', press_key)
+            plt.connect('button_press_event', on_click)
+            fig_mask.set_facecolor(background_plot)
+            plt.show()
+            data = original_data
 
-        for idx in range(nz):
-            temp_array = mask[idx, :, :]
-            temp_array[np.nonzero(temp_mask)] = 1  # enough, numpy array is mutable hence mask will be modified
-        del temp_mask, original_data, x, y, xy, points, masked_color
-        gc.collect()
-        flag_mask = False
+            for idx in range(nz):
+                temp_array = mask[idx, :, :]
+                temp_array[np.nonzero(temp_mask)] = 1  # enough, numpy array is mutable hence mask will be modified
+            del temp_mask, original_data, x, y, xy, points, masked_color
+            gc.collect()
+            flag_mask = False
 
         if use_rawdata:
             q_values = []
