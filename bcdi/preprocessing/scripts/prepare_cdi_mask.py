@@ -324,26 +324,24 @@ for scan_nb in range(len(scans)):
         logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
                                      root_folder=root_folder, filename=specfile_name)
 
+        data, mask, frames_logical, monitor = pru.load_cdi(logfile=logfile, scan_number=scans[scan_nb],
+                                                           detector=detector, setup=setup, flatfield=flatfield,
+                                                           hotpixels=hotpix_array, background=background,
+                                                           normalize=normalize_flux, debugging=debug)
+        if save_rawdata:
+            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_rawdata_stack', data=data)
+            if save_to_mat:
+                # save to .mat, x becomes z for Matlab phasing code
+                savemat(savedir + 'S' + str(scans[scan_nb]) + '_rawdata_stack.mat',
+                        {'data': np.moveaxis(data, [0, 1, 2], [-1, -3, -2])})
+
         if use_rawdata:
-            q_values, data, _, mask, _, frames_logical, monitor = \
-                pru.grid_cdi(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
-                             flatfield=flatfield, hotpixels=hotpix_array, background=background,
-                             normalize=normalize_flux, debugging=debug,
-                             orthogonalize=False)
+            q_values = []
         else:
-            q_values, rawdata, data, _, mask, frames_logical, monitor = \
-                pru.grid_cdi(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
-                             flatfield=flatfield, hotpixels=hotpix_array, background=background,
-                             normalize=normalize_flux, debugging=False, correct_curvature=correct_curvature,
-                             orthogonalize=True)
-            if save_rawdata:
-                np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
-                if save_to_mat:
-                    # save to .mat, x becomes z for Matlab phasing code
-                    savemat(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack.mat',
-                            {'data': np.moveaxis(rawdata, [0, 1, 2], [-1, -3, -2])})
-            del rawdata
-            gc.collect()
+            q_values, data, mask, frames_logical = \
+                pru.regrid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
+                               frames_logical=frames_logical, correct_curvature=correct_curvature,
+                               interpolate_qmax=interpolate_qmax, debugging=debug)
 
     ##########################################
     # plot normalization by incident monitor #

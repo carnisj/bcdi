@@ -906,21 +906,6 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
                 rawdata = tempdata
                 rawmask = rawmask[0:rawdata.shape[0], :, :]  # truncate the mask to have the correct size
 
-        # # create the grid for interpolation
-        # qx = np.linspace(old_qx.min(), old_qx.max(), nbz, endpoint=False)  # downstream at 0 sample angles
-        # qz = np.linspace(old_qz.min(), old_qz.max(), nby, endpoint=False)  # vertical up at 0 sample angles
-        # qy = np.linspace(old_qy.min(), old_qy.max(), nbx, endpoint=False)  # outboard at 0 sample angles
-        #
-        # # interpolate the data onto the new q values
-        # rgi = RegularGridInterpolator((cdi_angle * np.pi / 180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
-        #                                np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
-        #                               data, method='linear', bounds_error=False, fill_value=np.nan)
-        # newdata = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
-        #                               y_det.reshape((1, z_interp.size)),
-        #                               x_det.reshape((1, z_interp.size)))).transpose())
-        # newdata = newdata.reshape((numz, numy, numx)).astype(data.dtype)
-
-
         gridder = xu.Gridder3D(nbz, nby, nbx)
         # convert mask to rectangular grid in reciprocal space
         gridder(qx, qz, qy, rawmask)
@@ -939,8 +924,8 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         return q_values, rawdata, gridder.data, rawmask, mask, frames_logical, monitor
 
 
-def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
-             orthogonalize=False, normalize=False, correct_curvature=False, debugging=False):
+def load_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
+             normalize=False, debugging=False):
     """
     Load the forward CDI data, apply filters and optionally regrid it for phasing.
 
@@ -952,9 +937,7 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
-    :param orthogonalize: if True will regrid the data and the mask on an orthogonal frame
     :param normalize: set to True to normalize the diffracted intensity by the incident X-ray beam intensity
-    :param correct_curvature: if True, will correct for the curvature of the Ewald sphere
     :param debugging:  set to True to see plots
     :return:
      - the 3D data array (in an orthonormal frame or in the detector frame) and the 3D mask array
@@ -983,14 +966,7 @@ def grid_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
         rawmask = pu.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
         rawmask[np.nonzero(rawmask)] = 1
 
-    if not orthogonalize:
-        return [], rawdata, [], rawmask, [], frames_logical, monitor
-    else:
-        data, mask, q_values, frames_logical = \
-            regrid_cdi(data=rawdata, mask=rawmask, logfile=logfile, detector=detector,
-                       setup=setup, frames_logical=frames_logical, correct_curvature=correct_curvature,
-                       debugging=debugging)
-        return q_values, rawdata, data, rawmask, mask, frames_logical, monitor
+    return rawdata, rawmask, frames_logical, monitor
 
 
 def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False, hxrd=None,
@@ -1612,7 +1588,7 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     else:
         try:
             data = logfile.mpx_image[:]
-            monitor = logfile.imon0[:] # fix from MD and NL ??
+            monitor = logfile.imon0[:]  # fix from MD and NL ??
         except:
             data = logfile.maxpix[:]
             monitor = logfile.imon0[:]
