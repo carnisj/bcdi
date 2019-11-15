@@ -76,10 +76,10 @@ flag_medianfilter = 'skip'
 # set to 'skip' will skip filtering
 medfilt_order = 8    # for custom median filter, number of pixels with intensity surrounding the empty pixel
 ###########################
-reload_previous = False  # set to 1 to resume a previous masking (load data and mask)
+reload_previous = False  # True to resume a previous masking (load data and mask)
 ###########################
-use_rawdata = False  # 0 for using data orthogonalized by xrayutilities/ 1 for using data in detector reference frame
-save_to_mat = False  # set to 1 to save also in .mat format
+use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
+save_to_mat = False  # True to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
@@ -115,7 +115,7 @@ y_bragg = 1450  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
-roi_detector = []
+roi_detector = [400, 1000, 350, 900]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
@@ -238,6 +238,9 @@ setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=r
 #############################################
 # Initialize geometry for orthogonalization #
 #############################################
+if rocking_angle == "energy":
+    use_rawdata = False  # you need to interpolate the data in QxQyQz for energy scans
+    print("Energy scan: defaulting use_rawdata to False")
 if not use_rawdata:
     qconv, offsets = pru.init_qconversion(setup)
     detector.offsets = offsets
@@ -269,9 +272,6 @@ if len(scans) > 1:
 if len(fix_size) != 0:
     print('"fix_size" parameter provided, roi_detector will be set to []')
     roi_detector = []
-if rocking_angle == "energy":
-    use_rawdata = False  # you need to interpolate the data in QxQyQz for energy scans
-    print("Energy scan implemented only for ID01")
 
 for scan_nb in range(len(scans)):
     plt.ion()
