@@ -1016,7 +1016,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
                         tempdata[idx-offset_frame, :, :] = (tempdata[idx-offset_frame, :, :] + rawdata[idx, :, :])/2
                 rawdata = tempdata
                 rawmask = rawmask[0:rawdata.shape[0], :, :]  # truncate the mask to have the correct size
-
+                nbz = rawdata.shape[0]
         gridder = xu.Gridder3D(nbz, nby, nbx)
         # convert mask to rectangular grid in reciprocal space
         gridder(qx, qz, qy, rawmask)
@@ -2165,6 +2165,9 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
                                       phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
             if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
                 phi = phi[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == 'energy':
+            pass
 
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
