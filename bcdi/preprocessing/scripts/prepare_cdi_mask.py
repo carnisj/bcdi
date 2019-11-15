@@ -75,17 +75,17 @@ flag_medianfilter = 'mask_isolated'
 # set to 'skip' will skip filtering
 medfilt_order = 8    # for custom median filter, number of pixels with intensity surrounding the empty pixel
 ###########################
-reload_previous = False  # set to 1 to resume a previous masking (load data and mask)
+reload_previous = False  # True to resume a previous masking (load data and mask)
 ###########################
-use_rawdata = False  # False for using regridded data / True for using data in detector reference frame
+use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
-interpolate_qmax = False  # paramter defining the interpolation interval when use_rawdata is False
+interpolate_qmax = False  # parameter defining the interpolation interval when use_rawdata is False
 # if True, will interpolate using the q spacing at the outer boundary of the data array
 # if False, the output data will have the same shape as the ungridded data
 fit_datarange = True  # if True, crop the final array within data range, avoiding areas at the corners of the window
 # viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
 save_rawdata = False  # save also the raw data when use_rawdata is False
-save_to_mat = False  # set to 1 to save also in .mat format
+save_to_mat = False  # True to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
 save_asint = True  # if True, the result will be saved as an array of integers (save space)
 ######################################
