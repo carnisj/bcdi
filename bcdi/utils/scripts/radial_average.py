@@ -51,6 +51,7 @@ npzfile = np.load(file_path)
 diff_pattern = npzfile[list(npzfile.files)[0]].astype(float)
 diff_pattern[diff_pattern < threshold] = 0
 nz, ny, nx = diff_pattern.shape
+print('Data shape:', nz, ny, nx)
 
 #############
 # load mask #
@@ -109,15 +110,14 @@ if debug:
 #################################
 print('Distance max:', distances.max(), ' (1/nm) at voxel:', np.unravel_index(abs(distances).argmax(), distances.shape))
 print('Distance:', distances[origin[0], origin[1], origin[2]], ' (1/nm) at voxel:', origin)
-nb_bins = nz // 3
+nb_bins = nz // 2
 radial_avg = np.zeros(nb_bins)
 dq = distances.max() / nb_bins  # in 1/A
 q_axis = np.linspace(0, distances.max(), endpoint=True, num=nb_bins+1)  # in pixels or 1/nm
 
 for index in range(nb_bins):
-    logical_array = np.logical_and((distances < q_axis[index+1]), (distances >= q_axis[index]))
-    temp = diff_pattern[logical_array]
-    radial_avg[index] = temp[~np.isnan(temp)].mean()
+    temp = diff_pattern[np.logical_and((distances < q_axis[index+1]), (distances >= q_axis[index]))]
+    radial_avg[index] = temp[np.logical_and((~np.isnan(temp)), (temp != 0))].mean()
 q_axis = q_axis[:-1]
 
 del diff_pattern
@@ -137,7 +137,7 @@ y_values = np.ma.array(radial_avg)
 y_values_masked = np.ma.masked_where(np.isnan(y_values), y_values)
 
 plt.figure()
-plt.plot(q_axis, np.log10(y_values_masked), '.r')
+plt.plot(q_axis, np.log10(y_values_masked), 'r')
 plt.xlabel('q (1/nm)')
 plt.ylabel('radial average (A.U.)')
 plt.savefig(root_folder + 'radial_avg.png')
