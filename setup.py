@@ -41,6 +41,7 @@ setup(name='bcdi', version='0.0.7',
                'bcdi/preprocessing/scripts/prepare_cdi_mask.py',
                'bcdi/preprocessing/scripts/prepare_bcdi_mask.py',
                'bcdi/preprocessing/scripts/read_bcdi_data.py',
+               'bcdi/preprocessing/scripts/readimage_P10.py',
                'bcdi/publication/scripts/paper_figure_diffpattern.py',
                'bcdi/publication/scripts/paper_figure_isosurface.py',
                'bcdi/publication/scripts/paper_figure_strain.py',
@@ -60,6 +61,7 @@ setup(name='bcdi', version='0.0.7',
                'bcdi/utils/scripts/parse_fio2spec.py',
                'bcdi/utils/scripts/plane_angle.py',
                'bcdi/utils/scripts/primes.py',
+               'bcdi/utils/scripts/radial_average.py',
                'bcdi/utils/scripts/read_edf.py',
                ],
       # metadata
@@ -71,7 +73,7 @@ setup(name='bcdi', version='0.0.7',
       long_description_content_type='text/x-rst',
       long_description="BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data.\n\
                         BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:\n\n\
-                        1. Pre-processing BCDI data (masking aliens, detector gaps...) before phasing.\n\
+                        1. Pre-processing BCDI and forward CDI data (masking aliens, detector gaps...) before phasing.\n\
                         2. Post-processing phased data (phase offset and phase ramp removal, averaging, apodization, ...).\n\
                         3. Data analysis on diffraction data (stereographic projection).\n\
                         4. Data analysis on phased data (resolution calculation, statistics on the retrieved strain...).\n\

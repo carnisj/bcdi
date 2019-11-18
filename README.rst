@@ -7,7 +7,7 @@ Introduction
 
 BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:
 
-* pre-processing BCDI data (masking aliens, detector gaps...) before phasing
+* pre-processing BCDI and forward CDI data (masking aliens, detector gaps...) before phasing
 
 * post-processing phased data (phase offset and phase ramp removal, averaging, apodization, ...)
 

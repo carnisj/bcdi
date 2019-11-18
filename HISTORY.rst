@@ -1,5 +1,14 @@
 Version 0.0.7
 -------------
+
+* Feature: implement MaskMaker() class for new masking features (ongoing)
+
+* Debug prepare_bcdi_mask.py for energy scans at ID01
+
+* Feature: implement utils/scripts/make_support.py, to rescale a support for phasing with a larger FFT window
+
+* Feature/refactor: implement prepare_cdi_mask.py for forward CDI, rename existing as prepare_bcdi_mask.py for Bragg CDI
+
 * Feature: add the possibility to change the detector distance in simu_noise.py
 
 * Feature: add the possibility to pre-process data acquired without scans, e.g. in a macro (no spec file)
