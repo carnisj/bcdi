@@ -363,10 +363,10 @@ for scan_nb in range(len(scans)):
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
                             normalize=normalize_flux, debugging=debug, orthogonalize=True)
 
-            np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack', data=rawdata)
+            np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_data_before_masking_stack', data=rawdata)
             if save_to_mat:
                 # save to .mat, x becomes z for Matlab phasing code
-                savemat(savedir+'S'+str(scans[scan_nb])+'_rawdata_stack.mat',
+                savemat(savedir+'S'+str(scans[scan_nb])+'_data_before_masking_stack.mat',
                         {'data': np.moveaxis(rawdata, [0, 1, 2], [-1, -3, -2])})
             del rawdata
             gc.collect()
@@ -425,7 +425,7 @@ for scan_nb in range(len(scans)):
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Data before aliens removal\n', invert_yaxis=False,
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'rawdata_S' + str(scans[scan_nb]) + '.png')
+    plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '.png')
 
     if flag_interact:
         cid = plt.connect('close_event', close_event)
@@ -436,7 +436,7 @@ for scan_nb in range(len(scans)):
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     vmax=(nz, ny, nx), title='Mask before aliens removal\n', invert_yaxis=False,
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'rawmask_S' + str(scans[scan_nb]) + '.png')
+    plt.savefig(savedir + 'mask_before_masking_S' + str(scans[scan_nb]) + '.png')
 
     if flag_interact:
         cid = plt.connect('close_event', close_event)
