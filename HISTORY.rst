@@ -1,8 +1,8 @@
 Version 0.0.7
 -------------
-* Feature: implement supportMaker() class to define a support from a set of planes (ongoing S.J. Leake)
+* Feature: implement supportMaker() class to define a support from a set of planes
 
-* Feature: implement maskMaker() class for new masking features (ongoing S.J. Leake)
+* Feature: implement maskMaker() class for easier implementation of new masking features
 
 * Debug prepare_bcdi_mask.py for energy scans at ID01
 
