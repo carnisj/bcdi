@@ -18,7 +18,7 @@ colormap = gu.Colormap()
 default_cmap = colormap.cmap
 
 
-def calc_stereoproj(reflection_axis, normals, radius_mean, stereo_center):
+def calc_stereoproj_facet(reflection_axis, normals, radius_mean, stereo_center):
     """
     Calculate the coordinates of normals in the stereographic projection depending on the reference axis
      see Nanoscale 10, 4833 (2018).
@@ -546,8 +546,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     iso_normals = iso_normals / iso_normals_length[:, np.newaxis]
 
     # calculate u and v from xyz
-    stereo_proj = calc_stereoproj(reflection_axis=reflection_axis, normals=iso_normals, radius_mean=radius_mean,
-                                  stereo_center=stereo_center)
+    stereo_proj = calc_stereoproj_facet(reflection_axis=reflection_axis, normals=iso_normals, radius_mean=radius_mean,
+                                        stereo_center=stereo_center)
     # remove intensity where stereo_proj is infinite
     list_inf = np.argwhere(np.isinf(stereo_proj))
     if len(list_inf) != 0:
@@ -571,7 +571,6 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
 
     # regrid stereo_proj
     yi, xi = np.mgrid[-max_angle:max_angle:381j, -max_angle:max_angle:381j]  # vertical, horizontal
-    angular_step = yi[1, 0] - yi[0, 0]
     nby, nbx = xi.shape
     density_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), intensity, (yi, xi), method='linear')
     density_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), intensity, (yi, xi), method='linear')
