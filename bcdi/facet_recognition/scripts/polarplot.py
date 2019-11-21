@@ -65,7 +65,7 @@ reconstructed_data = True  # set it to True if the data is a BCDI reconstruction
 # the reconstruction should be in the crystal orthogonal frame
 reflection_axis = 1  # array axis along which is aligned the measurement direction (0, 1 or 2)
 threshold_amp = 0.3  # threshold for support determination from amplitude, if reconstructed_data=1
-use_phase = False  # set to False to use only a support, True to use the compex amplitude
+use_phase = True  # set to False to use only a support, True to use the compex amplitude
 voxel_size = [5, 5, 5]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
 pad_size = 2  # int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
@@ -226,7 +226,15 @@ else:
 
     if use_phase:  # calculate the complex amplitude
         comment = comment + "_complex"
-        phase = np.load(file_path)['phase']
+        try:
+            phase = np.load(file_path)['phase']
+        except KeyError:
+            try:
+                phase = np.load(file_path)['disp']
+            except KeyError:
+                print('No field named "phase" or "disp" in the reconstruction file')
+                sys.exit()
+
         amp = amp * np.exp(1j * phase)  # amp is the complex amplitude
         del phase
         gc.collect()
