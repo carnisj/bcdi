@@ -38,16 +38,13 @@ Hence the gridder is mygridder(myqx, myqz, myqy, rawdata)
 And qx, qz, qy = mygridder.xaxis, mygridder.yaxis, mygridder.zaxis
 """
 
-scan = 142    # spec scan number
-root_folder = "D:/data/CH5309/"
+scan = 1    # spec scan number
+root_folder = "D:/data/PtRh/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
-filtered_data = True  # set to True if the data is already a 3D array, False otherwise
-is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
-# Should be the same shape as in specfile, before orthogonalization
-radius_mean = 0.020  # q from Bragg peak
-dr = 0.0002        # delta_q
+radius_mean = 0.040  # q from Bragg peak
+dr = 0.001        # delta_q
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
@@ -57,18 +54,23 @@ offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation arou
 range_min = -2000  # low limit for the colorbar in polar plots, every below will be set to nan
 range_max = 5100  # high limit for the colorbar in polar plots
 range_step = 100  # step for color change in polar plots
+#######################################################################################################
+# parameters for plotting the stereographic projection starting from the measured diffraction pattern #
+#######################################################################################################
+filtered_data = True  # set to True if the data is already a 3D array, False otherwise
+is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
 ###################################################################################################
 reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
-reflection_axis = 1  # array axis along which is aligned the measurement direction (0, 1 or 2)
-threshold_amp = 0.3  # threshold for support determination from amplitude, if reconstructed_data=1
+reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
+threshold_amp = 0.48  # threshold for support determination from amplitude, if reconstructed_data=1
 use_phase = False  # set to False to use only a support, True to use the compex amplitude
-voxel_size = [5, 5, 5]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
-pad_size = 1  # int >= 1, will pad to get this number times the initial array size
+voxel_size = [3.63, 5.31, 2.62]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
+pad_size = [4, 5, 2]  # list of three int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
-upsampling_ratio = 1  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
+upsampling_ratio = 3  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
 # it corresponds to increasing the size of the detector while keeping detector pixel size constant
 background_polarplot = 100  # everything below this value is set to np.nan in the polar plot
 ###################
@@ -141,9 +143,9 @@ tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
 # calculate theoretical angles between the measured reflection and other planes - only for cubic #
 ##################################################################################################
 planes = dict()  # create dictionnary
-planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
+# planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
 planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
+planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
 ###################
 # define colormap #
 ###################
@@ -222,7 +224,8 @@ else:
     amp = amp / abs(amp).max()  # normalize amp
     nz, ny, nx = amp.shape  # CXI convention: z downstream, y vertical up, x outboard
     print('CDI data shape', amp.shape)
-    nz1, ny1, nx1 = [value * pad_size for value in amp.shape]
+    # nz1, ny1, nx1 = [value * pad_size for value in amp.shape]
+    nz1, ny1, nx1 = np.multiply(np.asarray(amp.shape), np.asarray(pad_size))
 
     if use_phase:  # calculate the complex amplitude
         comment = comment + "_complex"
@@ -318,7 +321,7 @@ else:
     else:  # q along x
         axis_to_align = np.array([1, 0, 0])  # in order x y z for rotate_crystal()
 
-    obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]), debugging=debug)
+    obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]), debugging=True)
 
     #######################################
     # calculate the diffraction intensity #
