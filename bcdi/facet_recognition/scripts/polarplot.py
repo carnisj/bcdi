@@ -7,7 +7,6 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import hdf5plugin  # for P10, should be imported before h5py or PyTables
-import pathlib
 import numpy as np
 import xrayutilities as xu
 import scipy.signal  # for medfilt2d
