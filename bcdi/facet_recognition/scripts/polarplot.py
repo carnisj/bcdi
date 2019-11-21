@@ -47,16 +47,16 @@ reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measur
 filtered_data = True  # set to True if the data is already a 3D array, False otherwise
 is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
 # Should be the same shape as in specfile, before orthogonalization
-radius_mean = 0.030  # q from Bragg peak
-dr = 0.0005        # delta_q
+radius_mean = 0.020  # q from Bragg peak
+dr = 0.0002        # delta_q
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
 # will rotate peaks counterclockwise in the pole figure
 offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation around Qx)
 # will shift peaks upwards in the pole figure
-range_min = 100  # low limit for the colorbar in polar plots, every below will be set to nan
-range_max = 1100  # high limit for the colorbar in polar plots
+range_min = -2000  # low limit for the colorbar in polar plots, every below will be set to nan
+range_max = 5100  # high limit for the colorbar in polar plots
 range_step = 100  # step for color change in polar plots
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
@@ -65,12 +65,13 @@ reconstructed_data = True  # set it to True if the data is a BCDI reconstruction
 # the reconstruction should be in the crystal orthogonal frame
 reflection_axis = 1  # array axis along which is aligned the measurement direction (0, 1 or 2)
 threshold_amp = 0.3  # threshold for support determination from amplitude, if reconstructed_data=1
-use_phase = True  # set to False to use only a support, True to use the compex amplitude
+use_phase = False  # set to False to use only a support, True to use the compex amplitude
 voxel_size = [5, 5, 5]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
-pad_size = 2  # int >= 1, will pad to get this number times the initial array size
+pad_size = 1  # int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
-upsampling_ratio = 3  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
+upsampling_ratio = 1  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
 # it corresponds to increasing the size of the detector while keeping detector pixel size constant
+background_polarplot = 100  # everything below this value is set to np.nan in the polar plot
 ###################
 # various options #
 ###################
@@ -628,6 +629,7 @@ int_grid_bottom[np.isnan(int_grid_bottom)] = 0
 #########################################
 # create top projection from South pole #
 #########################################
+int_grid_top[int_grid_top < background_polarplot] = np.nan
 # plot the stereographic projection
 myfig0, myax0 = plt.subplots(1, 1, figsize=(15, 10), facecolor='w', edgecolor='k')
 # plot top part (projection from South pole on equator)
@@ -693,6 +695,7 @@ plt.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
 ############################################
 # create bottom projection from North pole #
 ############################################
+int_grid_bottom[int_grid_bottom < background_polarplot] = np.nan
 myfig1, myax1 = plt.subplots(1, 1, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
 plt1 = myax1.contourf(u_grid, v_grid, int_grid_bottom, range(range_min, range_max, range_step),
                       cmap=my_cmap)
