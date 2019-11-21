@@ -13,6 +13,7 @@ import xrayutilities as xu
 import scipy.signal  # for medfilt2d
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
+from scipy.interpolate import RegularGridInterpolator
 import sys
 import tkinter as tk
 from tkinter import filedialog
@@ -38,42 +39,44 @@ Hence the gridder is mygridder(myqx, myqz, myqy, rawdata)
 And qx, qz, qy = mygridder.xaxis, mygridder.yaxis, mygridder.zaxis
 """
 
-scan = 1    # spec scan number
-root_folder = "D:/data/PtRh/"
+scan = 142    # spec scan number
+root_folder = "D:/data/CH5309/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
 filtered_data = True  # set to True if the data is already a 3D array, False otherwise
 is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
 # Should be the same shape as in specfile, before orthogonalization
-radius_mean = 0.04  # q from Bragg peak
-dr = 0.002        # delta_q
+radius_mean = 0.030  # q from Bragg peak
+dr = 0.0005        # delta_q
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
 # will rotate peaks counterclockwise in the pole figure
 offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation around Qx)
 # will shift peaks upwards in the pole figure
-range_min = 0  # low limit for the colorbar in polar plots, every below will be set to nan
-range_max = 4800  # high limit for the colorbar in polar plots
-range_step = 1000  # step for color change in polar plots
+range_min = 100  # low limit for the colorbar in polar plots, every below will be set to nan
+range_max = 1100  # high limit for the colorbar in polar plots
+range_step = 100  # step for color change in polar plots
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
 ###################################################################################################
-reconstructed_data = False  # set it to True if the data is a BCDI reconstruction (real space)
+reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
-threshold_amp = 0.36  # threshold for support determination from amplitude, if reconstructed_data=1
+reflection_axis = 1  # array axis along which is aligned the measurement direction (0, 1 or 2)
+threshold_amp = 0.3  # threshold for support determination from amplitude, if reconstructed_data=1
 use_phase = False  # set to False to use only a support, True to use the compex amplitude
-voxel_size = 5  # in nm, voxel size of the CDI reconstruction, should be equal in all directions.  Put 0 if unknown
-photon_nb = 5e7  # total number of photons in the diffraction pattern calculated from CDI reconstruction
-pad_size = 3  # int >= 1, will pad to get this number times the initial array size  (avoid aliasing)
+voxel_size = [5, 5, 5]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
+pad_size = 2  # int >= 1, will pad to get this number times the initial array size
+# voxel size does not change, hence it corresponds to upsampling the diffraction pattern
+upsampling_ratio = 3  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
+# it corresponds to increasing the size of the detector while keeping detector pixel size constant
 ###################
 # various options #
 ###################
 flag_medianfilter = False  # set to True for applying med2filter [3,3]
 flag_plotplanes = True  # if True, plot red dotted circle with plane index
 flag_plottext = False  # if True, will plot plane indices and angles in the figure
-photon_threshold = 1  # photon threshold in detector counts
 normalize_flux = True  # will normalize the intensity by the default monitor.
 debug = False  # True to show more plots, False otherwise
 qz_offset = 0  # offset of the projection plane in the vertical direction (0 = equatorial plane)
@@ -111,7 +114,6 @@ y_bragg = 1450  # vertical pixel number of the Bragg peak
 roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
-photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = root_folder + "flatfield_eiger.npz"  #
 template_imagefile = 'BCDI_eiger2M_%05d.edf'
@@ -139,8 +141,9 @@ tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
 # calculate theoretical angles between the measured reflection and other planes - only for cubic #
 ##################################################################################################
 planes = dict()  # create dictionnary
+planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
 planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
+planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
 ###################
 # define colormap #
 ###################
@@ -213,11 +216,11 @@ if not reconstructed_data:
     qy = q_values[2]  # axis=2, x outboard, qy in reciprocal space
 else:
     comment = comment + "_CDI"
-    file_path = filedialog.askopenfilename(initialdir=root_folder + "pynxraw/",
+    file_path = filedialog.askopenfilename(initialdir=homedir,
                                            title="Select 3D data", filetypes=[("NPZ", "*.npz")])
     amp = np.load(file_path)['amp']
     amp = amp / abs(amp).max()  # normalize amp
-    nz, ny, nx = amp.shape  # nexus convention
+    nz, ny, nx = amp.shape  # CXI convention: z downstream, y vertical up, x outboard
     print('CDI data shape', amp.shape)
     nz1, ny1, nx1 = [value * pad_size for value in amp.shape]
 
@@ -229,33 +232,107 @@ else:
         gc.collect()
     else:
         comment = comment + "_support"
-        amp[amp > threshold_amp] = 1  # amp is a binary support
+        amp[amp < threshold_amp] = 0  # amp is a binary support
+        amp[np.nonzero(amp)] = 1  # amp is a binary support
 
-    # pad array to avoid aliasing
-    amp = pu.crop_pad(amp, (nz1, ny1, nx1))
+    gu.multislices_plot(abs(amp), sum_frames=False, reciprocal_space=False, is_orthogonal=True, title='abs(amp)')
 
-    # calculate the diffraction intensity
-    data = fftshift(abs(fftn(amp)) ** 2)
-    del amp
+    ####################################################
+    # interpolate the array with isotropic voxel sizes #
+    ####################################################
+    if len(voxel_size) == 0:
+        print('Using isotropic voxel size of 1 nm')
+        voxel_size = [1, 1, 1]  # nm
+
+    if not all(voxsize == voxel_size[0] for voxsize in voxel_size):
+        newvoxelsize = min(voxel_size)  # nm
+        # size of the original object
+        rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2, 1) * voxel_size[0],
+                                       np.arange(-ny // 2, ny // 2, 1) * voxel_size[1],
+                                       np.arange(-nx // 2, nx // 2, 1) * voxel_size[2]),
+                                      amp, method='linear', bounds_error=False, fill_value=0)
+        # points were to interpolate the object
+        new_z, new_y, new_x = np.meshgrid(np.arange(-nz // 2, nz // 2, 1) * newvoxelsize,
+                                          np.arange(-ny // 2, ny // 2, 1) * newvoxelsize,
+                                          np.arange(-nx // 2, nx // 2, 1) * newvoxelsize, indexing='ij')
+
+        obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                 new_x.reshape((1, new_z.size)))).transpose())
+        obj = obj.reshape((nz, ny, nx)).astype(amp.dtype)
+        gu.multislices_plot(abs(obj), sum_frames=False, reciprocal_space=False, is_orthogonal=True,
+                            title='obj with isotropic voxel sizes')
+    else:
+        obj = amp
+        newvoxelsize = voxel_size[0]  # nm
+    print('Original voxel sizes (nm):', str('{:.2f}'.format(voxel_size[0])), str('{:.2f}'.format(voxel_size[1])),
+          str('{:.2f}'.format(voxel_size[2])))
+    print('Output voxel sizes (nm):', str('{:.2f}'.format(newvoxelsize)), str('{:.2f}'.format(newvoxelsize)),
+          str('{:.2f}'.format(newvoxelsize)))
+
+    ####################################################
+    # pad array to improve reciprocal space resolution #
+    ####################################################
+    obj = pu.crop_pad(obj, (nz1, ny1, nx1))
+    nz, ny, nx = obj.shape
+    print('CDI data shape after padding', obj.shape)
+
+    ########################################################################
+    # upsample array to increase the size of the detector (limit aliasing) #
+    ########################################################################
+
+    if upsampling_ratio != 1:
+        # size of the original object
+        rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2, 1) * newvoxelsize,
+                                       np.arange(-ny // 2, ny // 2, 1) * newvoxelsize,
+                                       np.arange(-nx // 2, nx // 2, 1) * newvoxelsize),
+                                      obj, method='linear', bounds_error=False, fill_value=0)
+        # points were to interpolate the object
+        new_z, new_y, new_x = np.meshgrid(np.arange(-nz // 2, nz // 2, 1) * newvoxelsize/upsampling_ratio,
+                                          np.arange(-ny // 2, ny // 2, 1) * newvoxelsize/upsampling_ratio,
+                                          np.arange(-nx // 2, nx // 2, 1) * newvoxelsize/upsampling_ratio,
+                                          indexing='ij')
+
+        obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                  new_x.reshape((1, new_z.size)))).transpose())
+        obj = obj.reshape((nz, ny, nx)).astype(amp.dtype)
+        print('voxel size after upsampling (nm)', newvoxelsize/upsampling_ratio)
+
+        gu.multislices_plot(abs(obj), sum_frames=False, reciprocal_space=False, is_orthogonal=True,
+                            title='upsampled object')
+
+    #####################################################
+    # rotate array to have q along axis 1 (vertical up) #
+    #####################################################
+    if reflection_axis == 0:  # q along z
+        axis_to_align = np.array([0, 0, 1])  # in order x y z for rotate_crystal()
+    elif reflection_axis == 1:  # q along y
+        axis_to_align = np.array([0, 1, 0])  # in order x y z for rotate_crystal()
+    else:  # q along x
+        axis_to_align = np.array([1, 0, 0])  # in order x y z for rotate_crystal()
+
+    obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]), debugging=debug)
+
+    #######################################
+    # calculate the diffraction intensity #
+    #######################################
+    data = fftshift(abs(fftn(obj)) ** 2)
+    gu.multislices_plot(abs(data), scale='log', vmin=-5, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
+                        title='FFT in photons')
+    del obj
     gc.collect()
 
-    voxel_size = voxel_size * 10  # conversion in angstroms
-    if voxel_size <= 0:
-        print('Using arbitraty voxel size of 1 nm')
-        voxel_size = 10  # angstroms
-    dqx = 2 * np.pi / (voxel_size * nz1)
-    dqy = 2 * np.pi / (voxel_size * nx1)
-    dqz = 2 * np.pi / (voxel_size * ny1)
+    #############################
+    # create qx, qy, qz vectors #
+    #############################
+    dqx = 2 * np.pi / (newvoxelsize/upsampling_ratio * 10 * nz)  # qx downstream
+    dqy = 2 * np.pi / (newvoxelsize/upsampling_ratio * 10 * nx)  # qy outboard
+    dqz = 2 * np.pi / (newvoxelsize/upsampling_ratio * 10 * ny)  # qz vertical up
     print('dqx', str('{:.5f}'.format(dqx)), 'dqy', str('{:.5f}'.format(dqy)), 'dqz', str('{:.5f}'.format(dqz)))
-
-    data = data / abs(data).sum() * photon_nb  # convert into photon number
-    # create qx, qy, qz vectors
-    nz, ny, nx = data.shape
     qx = np.arange(-nz//2, nz//2) * dqx
     qy = np.arange(-nx//2, nx//2) * dqy
     qz = np.arange(-ny//2, ny//2) * dqz
 
-nz, ny, nx = data.shape  # nexus convention
+nz, ny, nx = data.shape
 if flag_medianfilter:  # apply some noise filtering
     for idx in range(nz):
         data[idx, :, :] = scipy.signal.medfilt2d(data[idx, :, :], [3, 3])
@@ -263,16 +340,13 @@ if flag_medianfilter:  # apply some noise filtering
 ###################################
 # define the center of the sphere #
 ###################################
-intensity = np.copy(data)
-intensity[intensity <= photon_threshold] = 0   # photon threshold
+qzCOM = 1/data.sum()*(qz*data.sum(axis=0).sum(axis=1)).sum()  # COM in qz
+qyCOM = 1/data.sum()*(qy*data.sum(axis=0).sum(axis=0)).sum()  # COM in qy
+qxCOM = 1/data.sum()*(qx*data.sum(axis=1).sum(axis=1)).sum()  # COM in qx
 
-qzCOM = 1/intensity.sum()*(qz*intensity.sum(axis=0).sum(axis=1)).sum()  # COM in qz
-qyCOM = 1/intensity.sum()*(qy*intensity.sum(axis=0).sum(axis=0)).sum()  # COM in qy
-qxCOM = 1/intensity.sum()*(qx*intensity.sum(axis=1).sum(axis=1)).sum()  # COM in qx
 print("Center of mass [qx, qy, qz]: [",
       str('{:.2f}'.format(qxCOM)), str('{:.2f}'.format(qyCOM)), str('{:.2f}'.format(qzCOM)), ']')
-del intensity
-gc.collect()
+
 ##########################
 # select the half sphere #
 ##########################
@@ -293,12 +367,22 @@ qz1_top = qz_top[np.newaxis, :, np.newaxis]   # broadcast array
 qz1_bottom = qz_bottom[np.newaxis, :, np.newaxis]   # broadcast array
 distances_top = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_top - (qzCOM+qz_offset))**2)
 distances_bottom = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_bottom - (qzCOM+qz_offset))**2)
+if debug:
+    gu.multislices_plot(distances_top, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
+                        title='distances_top')
+    gu.multislices_plot(distances_bottom, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
+                        title='distances_bottom')
 
 ######################################
 # define matrix of radii radius_mean #
 ######################################
 mask_top = np.logical_and((distances_top < (radius_mean+dr)), (distances_top > (radius_mean-dr)))
 mask_bottom = np.logical_and((distances_bottom < (radius_mean+dr)), (distances_bottom > (radius_mean-dr)))
+if debug:
+    gu.multislices_plot(mask_top, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
+                        title='mask_top')
+    gu.multislices_plot(mask_bottom, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
+                        title='mask_bottom')
 
 ################
 # plot 2D maps #
@@ -350,6 +434,7 @@ if reconstructed_data == 0:
     fig.text(0.60, 0.15, "offset_chi=" + str(offset_chi), size=20)
 plt.pause(0.1)
 plt.savefig(homedir + 'diffpattern' + comment + 'S' + str(scan) + '_q=' + str(radius_mean) + '.png')
+
 ####################################################################
 #  plot upper and lower part of intensity with intersecting sphere #
 ####################################################################
@@ -432,8 +517,8 @@ if debug:
 ##############
 # apply mask #
 ##############
-I_masked_top = intensity_top*mask_top
-I_masked_bottom = intensity_bottom*mask_bottom
+I_masked_top = np.multiply(intensity_top, mask_top)
+I_masked_bottom = np.multiply(intensity_bottom, mask_bottom)
 if debug:
     fig, ax = plt.subplots(figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
     plt.subplot(2, 3, 1)
@@ -503,25 +588,32 @@ if debug:
 ###############################################
 qx1_top = qx1*np.ones(intensity_top.shape)
 qy1_top = qy1*np.ones(intensity_top.shape)
+qz1_top = qz1_top*np.ones(intensity_top.shape)
 qx1_bottom = qx1*np.ones(intensity_bottom.shape)
 qy1_bottom = qy1*np.ones(intensity_bottom.shape)
-u_temp_top = (qx1_top - qxCOM)*radius_mean/(radius_mean+(qz1_top - qzCOM))  # projection from South pole
-v_temp_top = (qy1_top - qyCOM)*radius_mean/(radius_mean+(qz1_top - qzCOM))  # projection from South pole
-u_temp_bottom = (qx1_bottom - qxCOM)*radius_mean/(radius_mean+(qzCOM-qz1_bottom))  # projection from North pole
-v_temp_bottom = (qy1_bottom - qyCOM)*radius_mean/(radius_mean+(qzCOM-qz1_bottom))  # projection from North pole
-u_top = u_temp_top[mask_top]/radius_mean*90    # rescaling from radius_mean to 90
-v_top = v_temp_top[mask_top]/radius_mean*90    # rescaling from radius_mean to 90
-u_bottom = u_temp_bottom[mask_bottom]/radius_mean*90    # rescaling from radius_mean to 90
-v_bottom = v_temp_bottom[mask_bottom]/radius_mean*90    # rescaling from radius_mean to 90
+qz1_bottom = qz1_bottom*np.ones(intensity_bottom.shape)
+
+u_temp_top = np.divide((qx1_top - qxCOM)*radius_mean, (radius_mean+(qz1_top - qzCOM)))  # projection from South
+v_temp_top = np.divide((qy1_top - qyCOM)*radius_mean, (radius_mean+(qz1_top - qzCOM)))  # projection from South
+u_temp_bottom = np.divide((qx1_bottom - qxCOM)*radius_mean, (radius_mean+(qzCOM-qz1_bottom)))  # projection from North
+v_temp_bottom = np.divide((qy1_bottom - qyCOM)*radius_mean, (radius_mean+(qzCOM-qz1_bottom)))  # projection from North
+
+u_top = u_temp_top[mask_top]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
+v_top = v_temp_top[mask_top]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
+u_bottom = u_temp_bottom[mask_bottom]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
+v_bottom = v_temp_bottom[mask_bottom]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
 
 int_temp_top = I_masked_top[mask_top]
 int_temp_bottom = I_masked_bottom[mask_bottom]
-u_grid_top, v_grid_top = np.mgrid[-91:91:365j, -91:91:365j]
-u_grid_bottom, v_grid_bottom = np.mgrid[-91:91:365j, -91:91:365j]
-int_grid_top = griddata((u_top, v_top), int_temp_top, (u_grid_top, v_grid_top), method='linear')
-int_grid_bottom = griddata((u_bottom, v_bottom), int_temp_bottom, (u_grid_bottom, v_grid_bottom), method='linear')
+
+u_grid, v_grid = np.mgrid[-91:91:365j, -91:91:365j]
+
+int_grid_top = griddata((u_top, v_top), int_temp_top, (u_grid, v_grid), method='linear')
+int_grid_bottom = griddata((u_bottom, v_bottom), int_temp_bottom, (u_grid, v_grid), method='linear')
+
 int_grid_top = int_grid_top / int_grid_top[int_grid_top > 0].max() * 10000  # normalize for easier plotting
 int_grid_bottom = int_grid_bottom / int_grid_bottom[int_grid_bottom > 0].max() * 10000  # normalize for easier plotting
+
 int_grid_top[np.isnan(int_grid_top)] = 0
 int_grid_bottom[np.isnan(int_grid_bottom)] = 0
 
@@ -529,16 +621,15 @@ int_grid_bottom[np.isnan(int_grid_bottom)] = 0
 # create top projection from South pole #
 #########################################
 # plot the stereographic projection
-myfig, myax0 = plt.subplots(1, 1, figsize=(15, 10), facecolor='w', edgecolor='k')
+myfig0, myax0 = plt.subplots(1, 1, figsize=(15, 10), facecolor='w', edgecolor='k')
 # plot top part (projection from South pole on equator)
-int_grid_top[int_grid_top < 10] = -1
-plt0 = myax0.contourf(u_grid_top, v_grid_top, int_grid_top, range(range_min, range_max, range_step),
+plt0 = myax0.contourf(u_grid, v_grid, int_grid_top, range(range_min, range_max, range_step),
                       cmap=my_cmap)
 plt.colorbar(plt0, ax=myax0)
 myax0.axis('equal')
 myax0.axis('off')
 
-# # add the projection of the elevation angle, depending on the center of projection
+# add the projection of the elevation angle, depending on the center of projection
 for ii in range(15, 90, 5):
     circle = plt.Circle((0, 0),
                         radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
@@ -583,26 +674,25 @@ if flag_plotplanes:
         print(key + ": ", str('{:.2f}'.format(value)))
 myax0.set_title('Top projection\nfrom South pole S' + str(scan)+'\n')
 if reconstructed_data == 0:
-    myfig.text(0.2, 0.05, "q=" + str(radius_mean) +
-               " dq=" + str(dr) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
-               " offset_chi=" + str(offset_chi), size=20)
+    myfig0.text(0.05, 0.8, "q=" + str(radius_mean) +
+                " dq=" + str(dr) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
+                " offset_chi=" + str(offset_chi), size=20)
 
 else:
-    myfig.text(0.4, 0.8, "q=" + str(radius_mean) + " dq=" + str(dr), size=20)
+    myfig0.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dr), size=20)
 plt.pause(0.1)
 plt.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
 ############################################
 # create bottom projection from North pole #
 ############################################
-myfig, myax1 = plt.subplots(1, 1, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
-int_grid_bottom[int_grid_bottom < 10] = -1
-plt1 = myax1.contourf(u_grid_bottom, v_grid_bottom, int_grid_bottom, range(range_min, range_max, range_step),
+myfig1, myax1 = plt.subplots(1, 1, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
+plt1 = myax1.contourf(u_grid, v_grid, int_grid_bottom, range(range_min, range_max, range_step),
                       cmap=my_cmap)
 plt.colorbar(plt1, ax=myax1)
 myax1.axis('equal')
 myax1.axis('off')
 
-# # add the projection of the elevation angle, depending on the center of projection
+# add the projection of the elevation angle, depending on the center of projection
 for ii in range(15, 90, 5):
     circle = plt.Circle((0, 0),
                         radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
@@ -647,12 +737,12 @@ if flag_plotplanes:
 plt.title('Bottom projection\nfrom North pole S' + str(scan) + '\n')
 # save figure
 if reconstructed_data == 0:
-    myfig.text(0.2, 0.05, "q=" + str(radius_mean) +
-               " dq=" + str(dr) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
-               " offset_chi=" + str(offset_chi), size=20)
+    myfig1.text(0.05, 0.8, "q=" + str(radius_mean) +
+                " dq=" + str(dr) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
+                " offset_chi=" + str(offset_chi), size=20)
 
 else:
-    myfig.text(0.4, 0.8, "q=" + str(radius_mean) + " dq=" + str(dr), size=20)
+    myfig1.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dr), size=20)
 plt.pause(0.1)
 plt.savefig(homedir + 'North pole' + comment + '_S' + str(scan) + '.png')
 
@@ -661,11 +751,11 @@ plt.savefig(homedir + 'North pole' + comment + '_S' + str(scan) + '.png')
 ################################
 fichier = open(homedir + 'Poles' + comment + '_S' + str(scan) + '.dat', "w")
 # save metric coordinates in text file
-for ii in range(len(u_grid_top)):
-    for jj in range(len(v_grid_top)):
-        fichier.write(str(u_grid_top[ii, 0]) + '\t' + str(v_grid_top[0, jj]) + '\t' +
-                      str(int_grid_top[ii, jj]) + '\t' + str(u_grid_bottom[ii, 0]) + '\t' +
-                      str(v_grid_bottom[0, jj]) + '\t' + str(int_grid_bottom[ii, jj]) + '\n')
+for ii in range(len(u_grid)):
+    for jj in range(len(v_grid)):
+        fichier.write(str(u_grid[ii, 0]) + '\t' + str(v_grid[0, jj]) + '\t' +
+                      str(int_grid_top[ii, jj]) + '\t' + str(u_grid[ii, 0]) + '\t' +
+                      str(v_grid[0, jj]) + '\t' + str(int_grid_bottom[ii, jj]) + '\n')
 fichier.close()
 plt.ioff()
 plt.show()
