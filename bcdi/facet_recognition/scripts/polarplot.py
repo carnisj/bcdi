@@ -54,25 +54,25 @@ offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation arou
 range_min = -2000  # low limit for the colorbar in polar plots, every below will be set to nan
 range_max = 5100  # high limit for the colorbar in polar plots
 range_step = 100  # step for color change in polar plots
+background_polarplot = 200  # everything below this value is set to np.nan in the polar plot
 #######################################################################################################
 # parameters for plotting the stereographic projection starting from the measured diffraction pattern #
 #######################################################################################################
-filtered_data = True  # set to True if the data is already a 3D array, False otherwise
+filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
 ###################################################################################################
-reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
+reconstructed_data = False  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
 reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
 threshold_amp = 0.48  # threshold for support determination from amplitude, if reconstructed_data=1
-use_phase = False  # set to False to use only a support, True to use the compex amplitude
+use_phase = True  # set to False to use only a support, True to use the compex amplitude
 voxel_size = [3.63, 5.31, 2.62]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
-pad_size = [4, 5, 2]  # list of three int >= 1, will pad to get this number times the initial array size
+pad_size = [4, 5, 3]  # list of three int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
-upsampling_ratio = 3  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
+upsampling_ratio = 1  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
 # it corresponds to increasing the size of the detector while keeping detector pixel size constant
-background_polarplot = 100  # everything below this value is set to np.nan in the polar plot
 ###################
 # various options #
 ###################
@@ -321,7 +321,15 @@ else:
     else:  # q along x
         axis_to_align = np.array([1, 0, 0])  # in order x y z for rotate_crystal()
 
-    obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]), debugging=True)
+    if reflection_axis != 1:
+        print('Rotation object to have q along axis 1 (y vertical up)')
+        amp = pu.rotate_crystal(array=abs(obj), axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
+                                debugging=True)
+        phase = pu.rotate_crystal(array=np.angle(obj), axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
+                                  debugging=False)
+        obj = amp * np.exp(1j * phase)
+        del amp, phase
+        gc.collect()
 
     #######################################
     # calculate the diffraction intensity #
