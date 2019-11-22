@@ -518,9 +518,9 @@ def crop_pad_2d(array, output_shape, width_y=np.nan, width_x=np.nan, debugging=F
     # y
     if newy >= nby:  # pad
         temp_y = np.zeros((output_shape[0], nbx), dtype=array.dtype)
-        temp_y[(newy - nby) // 2:(newy + nby) // 2, :, :] = array
+        temp_y[(newy - nby) // 2:(newy + nby) // 2, :] = array
     else:  # crop
-        temp_y = array[(nby - newy) // 2:(newy + nby) // 2, :, :]
+        temp_y = array[(nby - newy) // 2:(newy + nby) // 2, :]
     # x
     if newx >= nbx:  # pad
         newobj = np.zeros((newy, newx), dtype=array.dtype)
