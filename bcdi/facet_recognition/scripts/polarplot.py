@@ -38,13 +38,13 @@ Hence the gridder is mygridder(myqx, myqz, myqy, rawdata)
 And qx, qz, qy = mygridder.xaxis, mygridder.yaxis, mygridder.zaxis
 """
 
-scan = 1    # spec scan number
+scan = 3    # spec scan number
 root_folder = "D:/data/PtRh/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
-radius_mean = 0.040  # q from Bragg peak
-dr = 0.001        # delta_q
+radius_mean = 0.04  # q from Bragg peak
+dr = 0.0005        # delta_q
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
@@ -54,7 +54,7 @@ offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation arou
 range_min = -2000  # low limit for the colorbar in polar plots, every below will be set to nan
 range_max = 5100  # high limit for the colorbar in polar plots
 range_step = 100  # step for color change in polar plots
-background_polarplot = 200  # everything below this value is set to np.nan in the polar plot
+background_polarplot = 50  # everything below this value is set to np.nan in the polar plot
 #######################################################################################################
 # parameters for plotting the stereographic projection starting from the measured diffraction pattern #
 #######################################################################################################
@@ -63,15 +63,15 @@ is_orthogonal = False  # True is the filtered_data is already orthogonalized, q 
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
 ###################################################################################################
-reconstructed_data = False  # set it to True if the data is a BCDI reconstruction (real space)
+reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
 reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
-threshold_amp = 0.48  # threshold for support determination from amplitude, if reconstructed_data=1
-use_phase = True  # set to False to use only a support, True to use the compex amplitude
-voxel_size = [3.63, 5.31, 2.62]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
+threshold_amp = 0.52  # threshold for support determination from amplitude, if reconstructed_data=1
+use_phase = False  # set to False to use only a support, True to use the compex amplitude
+voxel_size = [3.64, 5.53, 2.53]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
 pad_size = [4, 5, 3]  # list of three int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
-upsampling_ratio = 1  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
+upsampling_ratio = 2  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
 # it corresponds to increasing the size of the detector while keeping detector pixel size constant
 ###################
 # various options #
@@ -89,9 +89,9 @@ beamline = 'ID01'  # name of the beamline, used for data loading and normalizati
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
 custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
-custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
+custom_images = np.arange(11997, 12096, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
-custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 35.978}
+custom_motors = {"eta": np.linspace(16.989, 18.969596, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 35.978}
 # ID01: eta, phi, nu, delta
 # CRISTAL: mgomega, gamma, delta
 # P10: om, phi, chi, mu, gamma, delta
@@ -243,10 +243,15 @@ else:
         gc.collect()
     else:
         comment = comment + "_support"
-        amp[amp < threshold_amp] = 0  # amp is a binary support
-        amp[np.nonzero(amp)] = 1  # amp is a binary support
 
     gu.multislices_plot(abs(amp), sum_frames=False, reciprocal_space=False, is_orthogonal=True, title='abs(amp)')
+
+    ####################################################
+    # pad array to improve reciprocal space resolution #
+    ####################################################
+    amp = pu.crop_pad(amp, (nz1, ny1, nx1))
+    nz, ny, nx = amp.shape
+    print('CDI data shape after padding', amp.shape)
 
     ####################################################
     # interpolate the array with isotropic voxel sizes #
@@ -279,13 +284,6 @@ else:
           str('{:.2f}'.format(voxel_size[2])))
     print('Output voxel sizes (nm):', str('{:.2f}'.format(newvoxelsize)), str('{:.2f}'.format(newvoxelsize)),
           str('{:.2f}'.format(newvoxelsize)))
-
-    ####################################################
-    # pad array to improve reciprocal space resolution #
-    ####################################################
-    obj = pu.crop_pad(obj, (nz1, ny1, nx1))
-    nz, ny, nx = obj.shape
-    print('CDI data shape after padding', obj.shape)
 
     ########################################################################
     # upsample array to increase the size of the detector (limit aliasing) #
@@ -330,6 +328,17 @@ else:
         obj = amp * np.exp(1j * phase)
         del amp, phase
         gc.collect()
+
+    ###########################################
+    # normalize and apply amplitude threshold #
+    ###########################################
+    obj = obj / abs(obj).max()
+    obj[abs(obj) < threshold_amp] = 0
+    if not use_phase:
+        # phase is 0, obj is real, create a binary support
+        obj[np.nonzero(obj)] = 1
+    gu.multislices_plot(abs(obj), sum_frames=False, reciprocal_space=False, is_orthogonal=True,
+                        title='abs(object) after threshold')
 
     #######################################
     # calculate the diffraction intensity #
