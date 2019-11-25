@@ -38,7 +38,7 @@ Hence the gridder is mygridder(myqx, myqz, myqy, rawdata)
 And qx, qz, qy = mygridder.xaxis, mygridder.yaxis, mygridder.zaxis
 """
 
-scan = 3    # spec scan number
+scan = 4    # spec scan number
 root_folder = "D:/data/PtRh/"
 sample_name = "S"  # "S"  #
 comment = ""
@@ -66,8 +66,8 @@ is_orthogonal = False  # True is the filtered_data is already orthogonalized, q 
 reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
 reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
-threshold_amp = 0.52  # threshold for support determination from amplitude, if reconstructed_data=1
-use_phase = True  # set to False to use only a support, True to use the compex amplitude
+threshold_amp = 0.48  # threshold for support determination from amplitude, if reconstructed_data=1
+use_phase = False  # set to False to use only a support, True to use the compex amplitude
 phase_factor = -2*np.pi/0.22447  # 1, -1, -2*np.pi/d depending on what is in the field phase (-phase, displacement...)
 voxel_size = [3.64, 5.53, 2.53]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
 pad_size = [4, 5, 3]  # list of three int >= 1, will pad to get this number times the initial array size
@@ -416,7 +416,7 @@ if debug:
 ################
 # plot 2D maps #
 ################
-fig, ax = plt.subplots(figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
+fig, ax = plt.subplots(figsize=(20, 15), facecolor='w', edgecolor='k')
 plt.subplot(2, 2, 1)
 plt.contourf(qz, qx, xu.maplog(data.sum(axis=2)), 150, cmap=my_cmap)
 plt.plot([min(qz), max(qz)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
@@ -468,7 +468,7 @@ plt.savefig(homedir + 'diffpattern' + comment + 'S' + str(scan) + '_q=' + str(ra
 #  plot upper and lower part of intensity with intersecting sphere #
 ####################################################################
 if debug:
-    fig, ax = plt.subplots(figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
+    fig, ax = plt.subplots(figsize=(20, 15), facecolor='w', edgecolor='k')
     plt.subplot(2, 3, 1)
     plt.contourf(qz_top, qx, xu.maplog(intensity_top.sum(axis=2), 6, 1), 75, cmap=my_cmap)
     plt.plot([qzCOM, max(qz)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
@@ -549,7 +549,7 @@ if debug:
 I_masked_top = np.multiply(intensity_top, mask_top)
 I_masked_bottom = np.multiply(intensity_bottom, mask_bottom)
 if debug:
-    fig, ax = plt.subplots(figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
+    fig, ax = plt.subplots(figsize=(20, 15), facecolor='w', edgecolor='k')
     plt.subplot(2, 3, 1)
     plt.contourf(qz_top, qx, xu.maplog(I_masked_top.sum(axis=2), 5, 1), 75, cmap=my_cmap)
     circle = plt.Circle((qzCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
@@ -716,7 +716,7 @@ plt.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
 # create bottom projection from North pole #
 ############################################
 int_grid_bottom[int_grid_bottom < background_polarplot] = np.nan
-myfig1, myax1 = plt.subplots(1, 1, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
+myfig1, myax1 = plt.subplots(1, 1, figsize=(15, 10), facecolor='w', edgecolor='k')
 plt1 = myax1.contourf(u_grid, v_grid, int_grid_bottom, range(range_min, range_max, range_step),
                       cmap=my_cmap)
 plt.colorbar(plt1, ax=myax1)
