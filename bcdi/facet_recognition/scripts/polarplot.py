@@ -38,12 +38,12 @@ Hence the gridder is mygridder(myqx, myqz, myqy, rawdata)
 And qx, qz, qy = mygridder.xaxis, mygridder.yaxis, mygridder.zaxis
 """
 
-scan = 1    # spec scan number
+scan = 4    # spec scan number
 root_folder = "D:/data/PtRh/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
-radius_mean = 0.040  # q from Bragg peak
+radius_mean = 0.04  # q from Bragg peak
 dr = 0.0005        # delta_q
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
@@ -52,6 +52,7 @@ offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation a
 offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation around Qx)
 # will shift peaks upwards in the pole figure
 q_offset = [0.00, 0.00, 0.00]  # offset of the projection plane in [qx, qy, qz] (0 = equatorial plane)
+# q_offset applies only to measured diffraction pattern (not obtained from a reconstruction)
 photon_threshold = 3  # threshold applied to the measured diffraction pattern
 range_min = -2000  # low limit for the colorbar in polar plots, every below will be set to nan
 range_max = 5100  # high limit for the colorbar in polar plots
@@ -71,7 +72,7 @@ reflection_axis = 2  # array axis along which is aligned the measurement directi
 threshold_amp = 0.48  # threshold for support determination from amplitude, if reconstructed_data=1
 use_phase = True  # set to False to use only a support, True to use the compex amplitude
 phase_factor = -2*np.pi/0.22447  # 1, -1, -2*np.pi/d depending on what is in the field phase (-phase, displacement...)
-voxel_size = [3.63, 5.31, 2.62]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
+voxel_size = [3.64, 5.53, 2.53]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
 pad_size = [4, 5, 3]  # list of three int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
 upsampling_ratio = 2  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
@@ -347,9 +348,9 @@ else:
     #######################################
     # calculate the diffraction intensity #
     #######################################
-    data = fftshift(abs(fftn(obj)) ** 2)
+    data = fftshift(abs(fftn(obj)) ** 2) / (nz*ny*nx)
     gu.multislices_plot(abs(data), scale='log', vmin=-5, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
-                        title='FFT in photons')
+                        title='FFT(obj)')
     del obj
     gc.collect()
 
