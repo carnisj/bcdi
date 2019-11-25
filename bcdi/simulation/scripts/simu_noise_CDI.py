@@ -424,7 +424,13 @@ gu.multislices_plot(abs(newobj), sum_frames=True, invert_yaxis=True, cmap=my_cma
                     title='Support before FFT calculation')
 if save_fig:
     plt.savefig(datadir + 'S' + str(scan) + '_support_before_FFT' + comment + '_sum.png')
-    
+
+###########################################
+# normalize and apply amplitude threshold #
+###########################################
+obj = obj / abs(obj).max()
+obj[abs(obj) < support_threshold] = 0
+
 #####################################
 # calculate the diffraction pattern #
 #####################################
