@@ -34,7 +34,7 @@ The coordinate system follows the CXI convetion: Z downstream, Y vertical up and
 Q values follow the more classical convention: qx downstream, qz vertical up, qy outboard.
 """
 
-scan = 4    # spec scan number
+scan = 2    # spec scan number
 root_folder = "D:/data/PtRh/"
 sample_name = "S"  # "S"  #
 comment = ""
@@ -65,8 +65,9 @@ is_orthogonal = False  # True is the filtered_data is already orthogonalized, q 
 reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
 reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
-threshold_amp = 0.48  # threshold for support determination from amplitude, if reconstructed_data=1
-use_phase = True  # set to False to use only a support, True to use the compex amplitude
+threshold_amp = 0.485  # threshold for support determination from amplitude, if reconstructed_data=1
+use_phase = False  # set to False to use only a support, True to use the compex amplitude
+binary_support = True  # if True, the modulus of the reconstruction will be set to a binary support
 phase_factor = -2*np.pi/0.22447  # 1, -1, -2*np.pi/d depending on what is in the field phase (-phase, displacement...)
 voxel_size = [3.64, 5.53, 2.53]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
 pad_size = [4, 5, 3]  # list of three int >= 1, will pad to get this number times the initial array size
@@ -331,13 +332,14 @@ else:
         gc.collect()
 
     ###########################################
-    # normalize and apply amplitude threshold #
+    # normalize and apply modulus threshold #
     ###########################################
     obj = obj / abs(obj).max()
     obj[abs(obj) < threshold_amp] = 0
-    if not use_phase:
-        # phase is 0, obj is real, create a binary support
-        obj[np.nonzero(obj)] = 1
+    if not use_phase:  # phase is 0, obj is real
+        if binary_support:  # create a binary support
+            obj[np.nonzero(obj)] = 1
+            comment = comment + '_binary'
     gu.multislices_plot(abs(obj), sum_frames=False, reciprocal_space=False, is_orthogonal=True,
                         title='abs(object) after threshold')
 
