@@ -43,14 +43,15 @@ root_folder = "D:/data/PtRh/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
-radius_mean = 0.04  # q from Bragg peak
-dr = 0.0005        # delta_q
+radius_mean = 0.028  # q from Bragg peak
+dr = 0.0002        # delta_q
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
 # will rotate peaks counterclockwise in the pole figure
 offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation around Qx)
 # will shift peaks upwards in the pole figure
+q_offset = [0.001, 0.001, 0.0015]  # offset of the projection plane in [qx, qy, qz] (0 = equatorial plane)
 range_min = -2000  # low limit for the colorbar in polar plots, every below will be set to nan
 range_max = 5100  # high limit for the colorbar in polar plots
 range_step = 100  # step for color change in polar plots
@@ -63,11 +64,11 @@ is_orthogonal = False  # True is the filtered_data is already orthogonalized, q 
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
 ###################################################################################################
-reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
+reconstructed_data = False  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
 reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
 threshold_amp = 0.48  # threshold for support determination from amplitude, if reconstructed_data=1
-use_phase = False  # set to False to use only a support, True to use the compex amplitude
+use_phase = True  # set to False to use only a support, True to use the compex amplitude
 phase_factor = -2*np.pi/0.22447  # 1, -1, -2*np.pi/d depending on what is in the field phase (-phase, displacement...)
 voxel_size = [3.64, 5.53, 2.53]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
 pad_size = [4, 5, 3]  # list of three int >= 1, will pad to get this number times the initial array size
@@ -82,7 +83,6 @@ flag_plotplanes = True  # if True, plot red dotted circle with plane index
 flag_plottext = False  # if True, will plot plane indices and angles in the figure
 normalize_flux = True  # will normalize the intensity by the default monitor.
 debug = False  # True to show more plots, False otherwise
-qz_offset = 0  # offset of the projection plane in the vertical direction (0 = equatorial plane)
 ######################################
 # define beamline related parameters #
 ######################################
@@ -90,7 +90,7 @@ beamline = 'ID01'  # name of the beamline, used for data loading and normalizati
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
 custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
-custom_images = np.arange(11665, 11764, 1)  # list of image numbers for the custom_scan
+custom_images = np.arange(12264, 12363, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 custom_motors = {"eta": np.linspace(16.989, 18.969596, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 35.978}
 # ID01: eta, phi, nu, delta
@@ -369,9 +369,9 @@ if flag_medianfilter:  # apply some noise filtering
 ###################################
 # define the center of the sphere #
 ###################################
-qzCOM = 1/data.sum()*(qz*data.sum(axis=0).sum(axis=1)).sum()  # COM in qz
-qyCOM = 1/data.sum()*(qy*data.sum(axis=0).sum(axis=0)).sum()  # COM in qy
-qxCOM = 1/data.sum()*(qx*data.sum(axis=1).sum(axis=1)).sum()  # COM in qx
+qzCOM = 1/data.sum()*(qz*data.sum(axis=0).sum(axis=1)).sum() + q_offset[2]  # COM in qz
+qyCOM = 1/data.sum()*(qy*data.sum(axis=0).sum(axis=0)).sum() + q_offset[1]  # COM in qy
+qxCOM = 1/data.sum()*(qx*data.sum(axis=1).sum(axis=1)).sum() + q_offset[0]  # COM in qx
 
 print("Center of mass [qx, qy, qz]: [",
       str('{:.2f}'.format(qxCOM)), str('{:.2f}'.format(qyCOM)), str('{:.2f}'.format(qzCOM)), ']')
@@ -380,12 +380,12 @@ print("Center of mass [qx, qy, qz]: [",
 # select the half sphere #
 ##########################
 # take only the upper part of the sphere
-intensity_top = data[:, np.where(qz > (qzCOM+qz_offset))[0].min():np.where(qz > (qzCOM+qz_offset))[0].max(), :]
-qz_top = qz[np.where(qz > (qzCOM+qz_offset))[0].min():np.where(qz > (qzCOM+qz_offset))[0].max()]-qz_offset
+intensity_top = data[:, np.where(qz > qzCOM)[0].min():np.where(qz > qzCOM)[0].max(), :]
+qz_top = qz[np.where(qz > qzCOM)[0].min():np.where(qz > qzCOM)[0].max()]
 
 # take only the lower part of the sphere
-intensity_bottom = data[:, np.where(qz < (qzCOM+qz_offset))[0].min():np.where(qz < (qzCOM+qz_offset))[0].max(), :]
-qz_bottom = qz[np.where(qz < (qzCOM+qz_offset))[0].min():np.where(qz < (qzCOM+qz_offset))[0].max()]-qz_offset
+intensity_bottom = data[:, np.where(qz < qzCOM)[0].min():np.where(qz < qzCOM)[0].max(), :]
+qz_bottom = qz[np.where(qz < qzCOM)[0].min():np.where(qz < qzCOM)[0].max()]
 
 ################################################
 # create a 3D array of distances in q from COM #
@@ -394,8 +394,8 @@ qx1 = qx[:, np.newaxis, np.newaxis]  # broadcast array
 qy1 = qy[np.newaxis, np.newaxis, :]  # broadcast array
 qz1_top = qz_top[np.newaxis, :, np.newaxis]   # broadcast array
 qz1_bottom = qz_bottom[np.newaxis, :, np.newaxis]   # broadcast array
-distances_top = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_top - (qzCOM+qz_offset))**2)
-distances_bottom = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_bottom - (qzCOM+qz_offset))**2)
+distances_top = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_top - qzCOM)**2)
+distances_bottom = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_bottom - qzCOM)**2)
 if debug:
     gu.multislices_plot(distances_top, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
                         title='distances_top')
