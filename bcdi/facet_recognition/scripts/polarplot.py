@@ -44,7 +44,7 @@ sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
 radius_mean = 0.028  # q from Bragg peak
-dr = 0.0002        # delta_q
+dr = 0.001        # delta_q
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
@@ -52,6 +52,7 @@ offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation a
 offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation around Qx)
 # will shift peaks upwards in the pole figure
 q_offset = [0.001, 0.001, 0.0015]  # offset of the projection plane in [qx, qy, qz] (0 = equatorial plane)
+photon_threshold = 2  # threshold applied to the measured diffraction pattern
 range_min = -2000  # low limit for the colorbar in polar plots, every below will be set to nan
 range_max = 5100  # high limit for the colorbar in polar plots
 range_step = 100  # step for color change in polar plots
@@ -214,6 +215,7 @@ if not reconstructed_data:
         pru.gridmap(logfile=logfile, scan_number=scan, detector=detector, setup=setup,
                     flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
                     normalize=normalize_flux, debugging=debug, orthogonalize=True)
+    data[data < photon_threshold] = 0
     qx = q_values[0]  # axis=0, z downstream, qx in reciprocal space
     qz = q_values[1]  # axis=1, y vertical, qz in reciprocal space
     qy = q_values[2]  # axis=2, x outboard, qy in reciprocal space
