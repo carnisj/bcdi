@@ -27,15 +27,11 @@ import bcdi.preprocessing.preprocessing_utils as pru
 
 
 helptext = """
-xrutils_polarplot.py
-Stereographic projection of diffraction pattern, based on ESRF/ID01 geometry
-Before interpolation lower z pixel is higher qz
-After interpolation higher z pixel is higher qz
-For x and y, higher pixel means higher q
-In arrays, when plotting the first parameter is the row (vertical axis) and the second the column (horizontal axis)
-Therefore the data structure is data[qx, qz, qy]
-Hence the gridder is mygridder(myqx, myqz, myqy, rawdata)
-And qx, qz, qy = mygridder.xaxis, mygridder.yaxis, mygridder.zaxis
+Stereographic projection of a measured 3D diffraction pattern or calculated from a real-space BCDI reconstruction.
+A shell dq of reciprocal space located a radius_mean (in q) from the Bragg peak is projected onto the equatorial plane.
+
+The coordinate system follows the CXI convetion: Z downstream, Y vertical up and X outboard.
+Q values follow the more classical convention: qx downstream, qz vertical up, qy outboard.
 """
 
 scan = 4    # spec scan number
@@ -44,7 +40,7 @@ sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
 radius_mean = 0.04  # q from Bragg peak
-dr = 0.0005        # delta_q
+dq = 0.0005  # width in q of the shell to be projected
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
@@ -411,8 +407,8 @@ if debug:
 ######################################
 # define matrix of radii radius_mean #
 ######################################
-mask_top = np.logical_and((distances_top < (radius_mean+dr)), (distances_top > (radius_mean-dr)))
-mask_bottom = np.logical_and((distances_bottom < (radius_mean+dr)), (distances_bottom > (radius_mean-dr)))
+mask_top = np.logical_and((distances_top < (radius_mean+dq)), (distances_top > (radius_mean-dq)))
+mask_bottom = np.logical_and((distances_bottom < (radius_mean+dq)), (distances_bottom > (radius_mean-dq)))
 if debug:
     gu.multislices_plot(mask_top, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
                         title='mask_top')
@@ -427,9 +423,9 @@ plt.subplot(2, 2, 1)
 plt.contourf(qz, qx, xu.maplog(data.sum(axis=2)), 150, cmap=my_cmap)
 plt.plot([min(qz), max(qz)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
 plt.plot([qzCOM, qzCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-circle = plt.Circle((qzCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
 fig.gca().add_artist(circle)
-circle = plt.Circle((qzCOM, qxCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
 fig.gca().add_artist(circle)
 plt.colorbar()
 plt.xlabel(r"Q$_z$ ($1/\AA$)")
@@ -440,9 +436,9 @@ plt.subplot(2, 2, 2)
 plt.contourf(qy, qx, xu.maplog(data.sum(axis=1)), 150, cmap=my_cmap)
 plt.plot([min(qy), max(qy)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
 plt.plot([qyCOM, qyCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-circle = plt.Circle((qyCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+circle = plt.Circle((qyCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
 fig.gca().add_artist(circle)
-circle = plt.Circle((qyCOM, qxCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+circle = plt.Circle((qyCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
 fig.gca().add_artist(circle)
 plt.colorbar()
 plt.xlabel(r"Q$_y$ ($1/\AA$)")
@@ -453,9 +449,9 @@ plt.subplot(2, 2, 3)
 plt.contourf(qy, qz, xu.maplog(data.sum(axis=0)), 150, cmap=my_cmap)
 plt.plot([qyCOM, qyCOM], [min(qz), max(qz)], color='k', linestyle='-', linewidth=2)
 plt.plot([min(qy), max(qy)], [qzCOM, qzCOM], color='k', linestyle='-', linewidth=2)
-circle = plt.Circle((qyCOM, qzCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+circle = plt.Circle((qyCOM, qzCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
 fig.gca().add_artist(circle)
-circle = plt.Circle((qyCOM, qzCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+circle = plt.Circle((qyCOM, qzCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
 fig.gca().add_artist(circle)
 plt.colorbar()
 plt.xlabel(r"Q$_y$ ($1/\AA$)")
@@ -479,9 +475,9 @@ if debug:
     plt.contourf(qz_top, qx, xu.maplog(intensity_top.sum(axis=2), 6, 1), 75, cmap=my_cmap)
     plt.plot([qzCOM, max(qz)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
     plt.plot([qzCOM, qzCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_z$ ($1/\AA$)")
     plt.ylabel(r"Q$_x$ ($1/\AA$)")
@@ -491,9 +487,9 @@ if debug:
     plt.contourf(qy, qx, xu.maplog(intensity_top.sum(axis=1), 6, 1), 75, cmap=my_cmap)
     plt.plot([min(qy), max(qy)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
     plt.plot([qyCOM, qyCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_y$ ($1/\AA$)")
     plt.ylabel(r"Q$_x$ ($1/\AA$)")
@@ -503,9 +499,9 @@ if debug:
     plt.contourf(qy, qz_top, xu.maplog(intensity_top.sum(axis=0), 6, 1), 75, cmap=my_cmap)
     plt.plot([qyCOM, qyCOM], [qzCOM, max(qz)], color='k', linestyle='-', linewidth=2)
     plt.plot([min(qy), max(qy)], [qzCOM, qzCOM], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_y$ ($1/\AA$)")
     plt.ylabel(r"Q$_z$ ($1/\AA$)")
@@ -515,9 +511,9 @@ if debug:
     plt.contourf(qz_bottom, qx, xu.maplog(intensity_bottom.sum(axis=2), 6, 1), 75, cmap=my_cmap)
     plt.plot([min(qz), qzCOM], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
     plt.plot([qzCOM, qzCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_z$ ($1/\AA$)")
     plt.ylabel(r"Q$_x$ ($1/\AA$)")
@@ -527,9 +523,9 @@ if debug:
     plt.contourf(qy, qx, xu.maplog(intensity_bottom.sum(axis=1), 6, 1), 75, cmap=my_cmap)
     plt.plot([min(qy), max(qy)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
     plt.plot([qyCOM, qyCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_y$ ($1/\AA$)")
     plt.ylabel(r"Q$_x$ ($1/\AA$)")
@@ -539,9 +535,9 @@ if debug:
     plt.contourf(qy, qz_bottom, xu.maplog(intensity_bottom.sum(axis=0), 6, 1), 75, cmap=my_cmap)
     plt.plot([qyCOM, qyCOM], [min(qz), qzCOM], color='k', linestyle='-', linewidth=2)
     plt.plot([min(qy), max(qy)], [qzCOM, qzCOM], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_y$ ($1/\AA$)")
     plt.ylabel(r"Q$_z$ ($1/\AA$)")
@@ -558,9 +554,9 @@ if debug:
     fig, ax = plt.subplots(figsize=(20, 15), facecolor='w', edgecolor='k')
     plt.subplot(2, 3, 1)
     plt.contourf(qz_top, qx, xu.maplog(I_masked_top.sum(axis=2), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_z$ ($1/\AA$)")
     plt.ylabel(r"Q$_x$ ($1/\AA$)")
@@ -568,9 +564,9 @@ if debug:
     plt.axis('scaled')
     plt.subplot(2, 3, 2)
     plt.contourf(qy, qx, xu.maplog(I_masked_top.sum(axis=1), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_y$ ($1/\AA$)")
     plt.ylabel(r"Q$_x$ ($1/\AA$)")
@@ -578,9 +574,9 @@ if debug:
     plt.axis('scaled')
     plt.subplot(2, 3, 3)
     plt.contourf(qy, qz_top, xu.maplog(I_masked_top.sum(axis=0), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_y$ ($1/\AA$)")
     plt.ylabel(r"Q$_z$ ($1/\AA$)")
@@ -588,9 +584,9 @@ if debug:
     plt.axis('scaled')
     plt.subplot(2, 3, 4)
     plt.contourf(qz_bottom, qx, xu.maplog(I_masked_bottom.sum(axis=2), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_z$ ($1/\AA$)")
     plt.ylabel(r"Q$_x$ ($1/\AA$)")
@@ -598,9 +594,9 @@ if debug:
     plt.axis('scaled')
     plt.subplot(2, 3, 5)
     plt.contourf(qy, qx, xu.maplog(I_masked_bottom.sum(axis=1), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_y$ ($1/\AA$)")
     plt.ylabel(r"Q$_x$ ($1/\AA$)")
@@ -608,9 +604,9 @@ if debug:
     plt.axis('scaled')
     plt.subplot(2, 3, 6)
     plt.contourf(qy, qz_bottom, xu.maplog(I_masked_bottom.sum(axis=0), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dr, color='0', fill=False, linestyle='dotted')
+    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
     fig.gca().add_artist(circle)
     plt.xlabel(r"Q$_y$ ($1/\AA$)")
     plt.ylabel(r"Q$_z$ ($1/\AA$)")
@@ -711,11 +707,11 @@ if flag_plotplanes:
 myax0.set_title('Top projection\nfrom South pole S' + str(scan)+'\n')
 if reconstructed_data == 0:
     myfig0.text(0.05, 0.8, "q=" + str(radius_mean) +
-                " dq=" + str(dr) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
+                " dq=" + str(dq) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
                 " offset_chi=" + str(offset_chi), size=20)
 
 else:
-    myfig0.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dr), size=20)
+    myfig0.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dq), size=20)
 plt.pause(0.1)
 plt.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
 ############################################
@@ -775,11 +771,11 @@ plt.title('Bottom projection\nfrom North pole S' + str(scan) + '\n')
 # save figure
 if reconstructed_data == 0:
     myfig1.text(0.05, 0.8, "q=" + str(radius_mean) +
-                " dq=" + str(dr) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
+                " dq=" + str(dq) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
                 " offset_chi=" + str(offset_chi), size=20)
 
 else:
-    myfig1.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dr), size=20)
+    myfig1.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dq), size=20)
 plt.pause(0.1)
 plt.savefig(homedir + 'North pole' + comment + '_S' + str(scan) + '.png')
 
