@@ -39,7 +39,7 @@ root_folder = "D:/data/PtRh/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
-radius_mean = 0.04  # q from Bragg peak
+radius_mean = 0.03  # q from Bragg peak
 dq = 0.0005  # width in q of the shell to be projected
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
@@ -53,24 +53,25 @@ photon_threshold = 3  # threshold applied to the measured diffraction pattern
 range_min = -2000  # low limit for the colorbar in polar plots, every below will be set to nan
 range_max = 5100  # high limit for the colorbar in polar plots
 range_step = 100  # step for color change in polar plots
-background_polarplot = 50  # everything below this value is set to np.nan in the polar plot
+background_polarplot = 1  # everything below this value is set to np.nan in the polar plot
 #######################################################################################################
 # parameters for plotting the stereographic projection starting from the measured diffraction pattern #
 #######################################################################################################
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
+binning = [3, 3, 3]  # binning for the measured diffraction pattern in each dimension
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
 ###################################################################################################
-reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
+reconstructed_data = False  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
 reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
 threshold_amp = 0.485  # threshold for support determination from amplitude, if reconstructed_data=1
-use_phase = False  # set to False to use only a support, True to use the compex amplitude
-binary_support = True  # if True, the modulus of the reconstruction will be set to a binary support
+use_phase = True  # set to False to use only a support, True to use the compex amplitude
+binary_support = False  # if True, the modulus of the reconstruction will be set to a binary support
 phase_factor = -2*np.pi/0.22447  # 1, -1, -2*np.pi/d depending on what is in the field phase (-phase, displacement...)
 voxel_size = [3.64, 5.53, 2.53]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
-pad_size = [4, 5, 3]  # list of three int >= 1, will pad to get this number times the initial array size
+pad_size = [4, 6, 3]  # list of three int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
 upsampling_ratio = 2  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
 # it corresponds to increasing the size of the detector while keeping detector pixel size constant
@@ -89,7 +90,7 @@ beamline = 'ID01'  # name of the beamline, used for data loading and normalizati
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
 custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
-custom_images = np.arange(12264, 12363, 1)  # list of image numbers for the custom_scan
+custom_images = np.arange(11665, 11764, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 custom_motors = {"eta": np.linspace(16.989, 18.969596, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 35.978}
 # ID01: eta, phi, nu, delta
@@ -213,10 +214,23 @@ if not reconstructed_data:
         pru.gridmap(logfile=logfile, scan_number=scan, detector=detector, setup=setup,
                     flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
                     normalize=normalize_flux, debugging=debug, orthogonalize=True)
-    data[data < photon_threshold] = 0
+    nz, ny, nx = data.shape  # CXI convention: z downstream, y vertical up, x outboard
+    print('Diffraction data shape', data.shape)
     qx = q_values[0]  # axis=0, z downstream, qx in reciprocal space
     qz = q_values[1]  # axis=1, y vertical, qz in reciprocal space
     qy = q_values[2]  # axis=2, x outboard, qy in reciprocal space
+    ############
+    # bin data #
+    ############
+    qx = qx[:nz - (nz % binning[0]):binning[0]]
+    qz = qz[:ny - (ny % binning[1]):binning[1]]
+    qy = qy[:nx - (nx % binning[2]):binning[2]]
+    data = pu.bin_data(data, (binning[0], binning[1], binning[2]), debugging=False)
+    nz, ny, nx = data.shape
+    print('Diffraction data shape after binning', data.shape)
+
+    # apply photon threshold
+    data[data < photon_threshold] = 0
 else:
     comment = comment + "_CDI"
     file_path = filedialog.askopenfilename(initialdir=homedir,
