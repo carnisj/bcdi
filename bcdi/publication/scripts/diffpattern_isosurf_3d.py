@@ -31,7 +31,7 @@ sample_name = "gold2_2_00"
 comment = ""
 binning = [3, 3, 3]  # binning for the measured diffraction pattern in each dimension
 # tick_spacing = 50  # for plots, in nm
-threshold_isosurface = 3
+threshold_isosurface = 3  # log scale
 
 #############
 # load data #
@@ -71,9 +71,9 @@ data = pu.bin_data(data, (binning[0], binning[1], binning[2]), debugging=False)
 nz, ny, nx = data.shape
 print('Diffraction data shape after binning', data.shape)
 
-#################################
-# plot 3D isosurface (top view) #
-#################################
+#########################################
+# plot 3D isosurface (perspective view) #
+#########################################
 data[data == 0] = np.nan
 grid_qx, grid_qz, grid_qy = np.mgrid[qx.min():qx.max():1j * nz, qz.min():qz.max():1j * ny, qy.min():qy.max():1j*nx]
 # in CXI convention, z is downstream, y vertical and x outboard
@@ -81,14 +81,13 @@ grid_qx, grid_qz, grid_qy = np.mgrid[qx.min():qx.max():1j * nz, qz.min():qz.max(
 myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
 mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(data), contours=[threshold_isosurface], color=(0.7, 0.7, 0.7))
 
-# mlab.view(azimuth=90, elevation=90, distance=3*field_of_view[0])  # azimut is the rotation around z axis of mayavi (x)
-# mlab.roll(90)
+mlab.view(azimuth=165, elevation=135, distance=3.5*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max())
+# azimut is the rotation around z axis of mayavi (x)
+mlab.roll(0)
 
 ax = mlab.axes(line_width=2.0, nb_labels=5)
 mlab.savefig(homedir + 'S' + str(scan) + '_labels.png', figure=myfig)
-# ax.label_text_property.opacity = 0.0
-# ax.title_text_property.opacity = 0.0
-# mlab.savefig(homedir + 'S' + str(scan) + '.png', figure=myfig)
+ax.label_text_property.opacity = 0.0
+ax.title_text_property.opacity = 0.0
+mlab.savefig(homedir + 'S' + str(scan) + '.png', figure=myfig)
 mlab.show()
-
-
