@@ -2365,7 +2365,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         # map these points to (angle, Y, X), the measurement cylindrical coordinates
         angle_det = wrap(obj=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
         # angle_det in radians, located in the range [start_angle, start_angle+np.pi[
-        y_det = - y_interp  # Y axis of the detector is going down but y* is going up
+        y_det = y_interp  # flip of the detector already accounted for in q calculation
         sign_array = sign(angle=angle_det, z_coord=z_interp, x_coord=x_interp)
         x_det = np.multiply(sign_array, np.sqrt(x_interp**2 + z_interp**2))
         # if angle_det in [0, np.pi/2[ X axis of the detector is opposite to x*
