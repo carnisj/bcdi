@@ -2349,9 +2349,9 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         dqz = 2 * np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm, vertical up
         dqy = 2 * np.pi / lambdaz * (pixel_x * voxelsize_x)  # in 1/nm, outboard
 
-        qx = np.arange(-directbeam_x, -directbeam_x + numz, 1) * dqx  # downstream
-        qz = -1*np.arange(-directbeam_y, -directbeam_y + numy, 1) * dqz  # vertical up opposite to detector Y
-        qy = -1*np.arange(-directbeam_x, -directbeam_x + numx, 1) * dqy  # outboard opposite to detector X
+        qx = np.arange(-(numz-directbeam_x), -(numz-directbeam_x) + numz, 1) * dqx  # downstream
+        qz = np.arange(-(numy-directbeam_y), -(numy-directbeam_y) + numy, 1) * dqz  # vertical up opposite to detector Y
+        qy = np.arange(-(numx-directbeam_x), -(numx-directbeam_x) + numx, 1) * dqy  # outboard opposite to detector X
         print('q spacing for interpolation (z,y,x)=', dqx, dqz, dqy, ' (1/nm)')
 
         # create a set of cartesian coordinates to interpolate onto (in z y x reciprocal frame):
@@ -2390,6 +2390,10 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         newmask = newmask.reshape((numz, numy, numx)).astype(mask.dtype)
         newmask[np.nonzero(newmask)] = 1
 
+        newdata = np.flip(newdata, axis=1)
+        newdata = np.flip(newdata, axis=2)
+        newmask = np.flip(newmask, axis=1)
+        newmask = np.flip(newmask, axis=2)
 
     else:
         from scipy.interpolate import griddata
