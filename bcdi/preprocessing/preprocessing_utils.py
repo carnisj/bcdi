@@ -1019,12 +1019,12 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
                 nbz = rawdata.shape[0]
         gridder = xu.Gridder3D(nbz, nby, nbx)
         # convert mask to rectangular grid in reciprocal space
-        gridder(qx, qz, qy, rawmask)
+        gridder(qx, qz, qy, rawmask)  # qx downstream, qz vertical up, qy outboard
         mask = np.copy(gridder.data)
         # convert data to rectangular grid in reciprocal space
-        gridder(qx, qz, qy, rawdata)
+        gridder(qx, qz, qy, rawdata)  # qx downstream, qz vertical up, qy outboard
 
-        q_values = [gridder.xaxis, gridder.yaxis, gridder.zaxis]
+        q_values = [gridder.xaxis, gridder.yaxis, gridder.zaxis]  # downstream, vertical up, outboard
         fig, _, _ = gu.contour_slices(gridder.data, (gridder.xaxis, gridder.yaxis, gridder.zaxis), sum_frames=False,
                                       title='Regridded data',
                                       levels=np.linspace(0, int(np.log10(gridder.data.max())), 150, endpoint=False),
@@ -1072,6 +1072,7 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
 def init_qconversion(setup):
     """
     Initialize the qconv object from xrayutilities depending on the setup parameters
+    The convention in xrayutilities is x downstream, z vertical up, y outboard.
 
     :param setup: the experimental setup: Class SetupPreprocessing()
     :return: qconv object and offsets for motors
@@ -1083,7 +1084,7 @@ def init_qconversion(setup):
     if beamline == 'ID01':
         offsets = (0, 0, 0, offset_inplane, 0)  # eta chi phi nu del
         qconv = xu.experiment.QConversion(['y-', 'x+', 'z-'], ['z-', 'y-'], r_i=beam_direction)  # for ID01
-        # 2S+2D goniometer (ID01 goniometer, sample: eta, phi      detector: nu,del
+        # 3S+2D goniometer (ID01 goniometer, sample: eta, chi, phi      detector: nu,del
         # the vector beam_direction is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
