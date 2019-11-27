@@ -737,7 +737,7 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param anticlockwise: True if the rotation is anticlockwise
-    :return: qz, qy, qx values in the laboratory frame (downstream, vertical up, outboard).
+    :return: qx, qz, qy values in the laboratory frame (downstream, vertical up, outboard).
      Each array has the shape: nb_pixel_x * nb_pixel_y * nb_angles
     """
     wavelength = setup.wavelength * 1e9  # convert to nm
@@ -776,11 +776,11 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
         qlab1 = 2 * np.pi / wavelength * (np.sin(alpha_f) - kin[1])  # along y* vertical up
         qlab2 = 2 * np.pi / wavelength * (np.cos(alpha_f) * np.sin(two_theta) - kin[2])  # along x* outboard
 
-        qz[idx, :, :] = rotation_matrix[0, 0] * qlab0 + rotation_matrix[0, 1] * qlab1 + rotation_matrix[0, 2] * qlab2
-        qy[idx, :, :] = rotation_matrix[1, 0] * qlab0 + rotation_matrix[1, 1] * qlab1 + rotation_matrix[1, 2] * qlab2
-        qx[idx, :, :] = rotation_matrix[2, 0] * qlab0 + rotation_matrix[2, 1] * qlab1 + rotation_matrix[2, 2] * qlab2
+        qx[idx, :, :] = rotation_matrix[0, 0] * qlab0 + rotation_matrix[0, 1] * qlab1 + rotation_matrix[0, 2] * qlab2
+        qz[idx, :, :] = rotation_matrix[1, 0] * qlab0 + rotation_matrix[1, 1] * qlab1 + rotation_matrix[1, 2] * qlab2
+        qy[idx, :, :] = rotation_matrix[2, 0] * qlab0 + rotation_matrix[2, 1] * qlab1 + rotation_matrix[2, 2] * qlab2
 
-    return qz, qy, qx
+    return qx, qz, qy
 
 
 def find_bragg(data, peak_method):
@@ -892,7 +892,7 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         qx, qz, qy, frames_logical = \
             regrid(logfile=logfile, nb_frames=rawdata.shape[0], scan_number=scan_number, detector=detector,
                    setup=setup, hxrd=hxrd, frames_logical=frames_logical, follow_bragg=follow_bragg)
-        # qx, qz, qy have the same shape as the data
+        # qx, qz, qy (downstrean, vertical up, outboard) arrays have the same shape as the data
         if setup.beamline == 'ID01':
             # below is specific to ID01 energy scans where frames are duplicated for undulator gap change
             if setup.rocking_angle == 'energy':  # frames need to be removed
@@ -912,9 +912,9 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         gridder(qx, qz, qy, rawmask)
         mask = np.copy(gridder.data)
         # convert data to rectangular grid in reciprocal space
-        gridder(qx, qz, qy, rawdata)
+        gridder(qx, qz, qy, rawdata)  # qx downstream, qz vertical up, qy outboard
 
-        q_values = [gridder.xaxis, gridder.yaxis, gridder.zaxis]
+        q_values = [gridder.xaxis, gridder.yaxis, gridder.zaxis]  # qx downstream, qz vertical up, qy outboard
         fig, _, _ = gu.contour_slices(gridder.data, (gridder.xaxis, gridder.yaxis, gridder.zaxis), sum_frames=False,
                                       title='Regridded data',
                                       levels=np.linspace(0, int(np.log10(gridder.data.max())), 150, endpoint=False),
@@ -2344,14 +2344,14 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
 
     if not correct_curvature:
         # calculate q spacing and q values using above voxel sizes
-        dq_z = 2 * np.pi / lambdaz * (pixel_x * voxelsize_z)  # in 1/nm
-        dq_y = 2 * np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm
-        dq_x = 2 * np.pi / lambdaz * (pixel_x * voxelsize_x)  # in 1/nm
+        dqx = 2 * np.pi / lambdaz * (pixel_x * voxelsize_z)  # in 1/nm, downstream
+        dqz = 2 * np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm, vertical up
+        dqy = 2 * np.pi / lambdaz * (pixel_x * voxelsize_x)  # in 1/nm, outboard
 
-        q_z = np.arange(-directbeam_x, -directbeam_x + numz, 1) * dq_z  # z* downstream
-        q_y = -1 * np.arange(-directbeam_y, -directbeam_y + numy, 1) * dq_y  # y* vertical up opposite to detector Y
-        q_x = -1 * np.arange(-directbeam_x, -directbeam_x + numx, 1) * dq_x  # x* outboard opposite to detector X
-        print('q spacing for interpolation (z*,y*,x*)=', dq_z, dq_y, dq_x, ' (1/nm)')
+        qx = np.arange(-directbeam_x, -directbeam_x + numz, 1) * dqx  # downstream
+        qz = -1 * np.arange(-directbeam_y, -directbeam_y + numy, 1) * dqz  # vertical up opposite to detector Y
+        qy = -1 * np.arange(-directbeam_x, -directbeam_x + numx, 1) * dqy  # outboard opposite to detector X
+        print('q spacing for interpolation (z*,y*,x*)=', dqx, dqz, dqy, ' (1/nm)')
 
         # create a set of cartesian coordinates to interpolate onto (in z* y* x* reciprocal frame):
         # the range along z* is nbx because the frame is rotating aroung y*
@@ -2392,28 +2392,28 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     else:
         from scipy.interpolate import griddata
         # calculate exact q values for each voxel of the 3D dataset
-        old_qz, old_qy, old_qx = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
+        old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
 
         # create the grid for interpolation
-        q_z = np.linspace(old_qz.min(), old_qz.max(), numz, endpoint=False)  # z* downstream
-        q_y = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y* vertical up
-        q_x = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x* outboard
+        qx = np.linspace(old_qz.min(), old_qz.max(), numz, endpoint=False)  # z* downstream
+        qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y* vertical up
+        qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x* outboard
 
-        new_qz, new_qy, new_qx = np.meshgrid(q_z, q_y, q_x, indexing='ij')
+        new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
 
         # interpolate the data onto the new points using griddata (the original grid is not regular)
         newdata = griddata(
-            np.array([np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy), np.ndarray.flatten(old_qx)]).T,
+            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
             np.ndarray.flatten(data),
-            np.array([np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy), np.ndarray.flatten(new_qx)]).T,
+            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
             method='linear', fill_value=np.nan)
         newdata = newdata.reshape((numz, numy, numx)).astype(data.dtype)
 
         # interpolate the mask onto the new points
         newmask = griddata(
-            np.array([np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy), np.ndarray.flatten(old_qx)]).T,
+            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
             np.ndarray.flatten(mask),
-            np.array([np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy), np.ndarray.flatten(new_qx)]).T,
+            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
             method='linear', fill_value=np.nan)
         newmask = newmask.reshape((numz, numy, numx)).astype(mask.dtype)
 
@@ -2422,7 +2422,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     newdata[np.isnan(newdata)] = 0
     newmask[np.isnan(newmask)] = 1
 
-    fig, _, _ = gu.contour_slices(newdata, (q_z, q_y, q_x), sum_frames=True, title='Regridded data',
+    fig, _, _ = gu.contour_slices(newdata, (qx, qz, qy), sum_frames=True, title='Regridded data',
                                   levels=np.linspace(0, int(np.log10(newdata.max())), 150, endpoint=False),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_' + str(numz)+'_' + str(numy) + '_' + str(numx) + '_' + '.png')
@@ -2433,7 +2433,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         gu.multislices_plot(newmask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                             title='Regridded mask',
                             invert_yaxis=False, is_orthogonal=True, reciprocal_space=True)
-    return newdata, newmask, [q_z, q_y, q_x], frames_logical
+    return newdata, newmask, [qx, qz, qy], frames_logical
 
 
 def remove_hotpixels(data, mask, hotpixels=None):
