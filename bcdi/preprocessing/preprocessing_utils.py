@@ -2350,8 +2350,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         dqy = 2 * np.pi / lambdaz * (pixel_x * voxelsize_x)  # in 1/nm, outboard
 
         qx = np.arange(-directbeam_x, -directbeam_x + numz, 1) * dqx  # downstream
-        qz = np.arange(-directbeam_y, -directbeam_y + numy, 1) * dqz  # vertical up opposite to detector Y
-        qy = np.arange(-directbeam_x, -directbeam_x + numx, 1) * dqy  # outboard opposite to detector X
+        qz = -1*np.arange(-directbeam_y, -directbeam_y + numy, 1) * dqz  # vertical up opposite to detector Y
+        qy = -1*np.arange(-directbeam_x, -directbeam_x + numx, 1) * dqy  # outboard opposite to detector X
         print('q spacing for interpolation (z,y,x)=', dqx, dqz, dqy, ' (1/nm)')
 
         # create a set of cartesian coordinates to interpolate onto (in z y x reciprocal frame):
@@ -2365,11 +2365,11 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         # map these points to (angle, Y, X), the measurement cylindrical coordinates
         angle_det = wrap(obj=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
         # angle_det in radians, located in the range [start_angle, start_angle+np.pi[
-        y_det = -1 * y_interp  # y vertical up opposite to detector Y
+        y_det = y_interp
         sign_array = sign(angle=angle_det, z_coord=z_interp, x_coord=x_interp)
-        x_det = -1 * np.multiply(sign_array, np.sqrt(x_interp**2 + z_interp**2))  # x outboard up opposite to detector X
+        x_det = np.multiply(sign_array, np.sqrt(x_interp**2 + z_interp**2))
         # if angle_det in [0, np.pi/2[ X axis of the detector is opposite to x
-        # if angle_det in [0, np.pi/2[ X axis of the detector is in the same direction as x
+        # if angle_det in ]np.pi/2, np.pi[ X axis of the detector is in the same direction as x
 
         # interpolate the data onto the new points
         rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
@@ -2389,6 +2389,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
                                       x_det.reshape((1, z_interp.size)))).transpose())
         newmask = newmask.reshape((numz, numy, numx)).astype(mask.dtype)
         newmask[np.nonzero(newmask)] = 1
+
 
     else:
         from scipy.interpolate import griddata
