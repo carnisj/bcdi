@@ -18,7 +18,7 @@ sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-template_mayavi_3d.py
+realspace_isosurf_3d.py
 
 Template for 3d isosurface figures of a real space CDI reconstruction for publication.
 Open an npz file (reconstruction ampdispstrain.npz) and save individual figures including a length scale.
