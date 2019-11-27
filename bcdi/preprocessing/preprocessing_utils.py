@@ -2427,7 +2427,11 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     newmask[np.isnan(newdata)] = 1
     newdata[np.isnan(newdata)] = 0
     newmask[np.isnan(newmask)] = 1
+    
+    # apply the mask to the data
+    newdata[np.nonzero(newmask)] = 0
 
+    # plot the gridded data
     fig, _, _ = gu.contour_slices(newdata, (qx, qz, qy), sum_frames=True, title='Regridded data',
                                   levels=np.linspace(0, int(np.log10(newdata.max())), 150, endpoint=False),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
