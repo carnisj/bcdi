@@ -45,6 +45,10 @@ field_of_view = [2000, 2000, 2000]  # [z,y,x] in nm, can be larger than the tota
 # therefore it is better to use an isotropic field_of_view
 threshold_isosurface = 0.4  # threshold for the 3D isosurface plot
 threshold_modulus = 0.06  # threshold for 2D plots
+##########################
+# end of user parameters #
+##########################
+
 ###################
 # define colormap #
 ###################
@@ -135,7 +139,8 @@ amp = pu.rotate_crystal(array=amp, axis_to_align=axis_to_align, reference_axis=n
 amp[amp < threshold_modulus] = 0
 
 pixel_spacing = tick_spacing / voxel_size
-pixel_FOV = [int(np.rint((fov / voxel_size) / 2)) for fov in field_of_view]  # half-number of pixels corresponding to the FOV
+pixel_FOV = [int(np.rint((fov / voxel_size) / 2)) for fov in field_of_view]
+# half-number of pixels corresponding to the FOV
 new_shape = [max(numz, 2*pixel_FOV[0]), max(numy, 2*pixel_FOV[1]), max(numx, 2*pixel_FOV[2])]
 amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
