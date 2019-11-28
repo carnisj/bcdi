@@ -14,14 +14,15 @@ from tkinter import filedialog
 from scipy.ndimage.measurements import center_of_mass
 
 helptext = """
-Template for making figure for paper
+Template for figures of the following article: 
+Carnis et al. Scientific Reports 9, 17357 (2019) https://doi.org/10.1038/s41598-019-53774-2
 Open an npz file (3D diffraction pattern) and save individual figures
 """
 
 
 scan = 2227  # spec scan number
-datadir = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_0,34/'  # "C:/Users/carnis/Work Folders/Documents/data/HC3207/SN"+str(scan)+"/pynxraw/"
-savedir = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_0,34/'  # "C:/Users/carnis/Work Folders/Documents/data/HC3207/SN"+str(scan)+"/figures/"
+datadir = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_1,01/'  # "C:/Users/carnis/Work Folders/Documents/data/HC3207/SN"+str(scan)+"/pynxraw/"
+savedir = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_1,01/'  # "C:/Users/carnis/Work Folders/Documents/data/HC3207/SN"+str(scan)+"/figures/"
 colorbar_range = [-1, 6]  # [vmin, vmax] log scale in photon counts
 save_YZ = False  # True to save the strain in YZ plane
 save_XZ = False  # True to save the strain in XZ plane

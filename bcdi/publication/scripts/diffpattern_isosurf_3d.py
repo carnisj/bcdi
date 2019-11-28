@@ -18,25 +18,23 @@ sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-diffpattern_isosurf_3d.py
-
-Template for 3d isosurface figures of a diffraction pattern for publication.
+Template for 3d isosurface figures of a diffraction pattern.
 
 The diffraction pattern is supposed to be in an orthonormal frame and q values need to be provided.
 """
 
-scan = 515    # spec scan number
+scan = 22    # spec scan number
 root_folder = "D:/data/P10_August2019/data/"
-sample_name = "gold2_2_00"
+sample_name = "gold_2_2_2_000"
 comment = ""
 binning = [3, 3, 3]  # binning for the measured diffraction pattern in each dimension
 # tick_spacing = 50  # for plots, in nm
-threshold_isosurface = 3  # log scale
+threshold_isosurface = 5  # log scale
 
 #############
 # load data #
 #############
-homedir = root_folder + sample_name + str(scan) + '/pynx/'
+homedir = root_folder + sample_name + str(scan) + '/pynx/800_800_800_1_1_1/'
 plt.ion()
 root = tk.Tk()
 root.withdraw()

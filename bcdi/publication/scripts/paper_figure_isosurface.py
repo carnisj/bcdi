@@ -20,7 +20,8 @@ sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 from bcdi.utils import image_registration as reg
 
 helptext = """
-Template for making figure for paper about simulations
+Template for figures of the following article: 
+Carnis et al. Scientific Reports 9, 17357 (2019) https://doi.org/10.1038/s41598-019-53774-2
 Open the simulated amp_dist_strain.npz file and the reconstructed amp_dist_strain.npz, and plot difference maps
 """
 
