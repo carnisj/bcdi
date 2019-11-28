@@ -22,13 +22,14 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_August2019/data/gold2_2_00515/pynx/'
+root_folder = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/800_800_800_1_1_1/'
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for radial average
-origin = [297, 299, 297]  # position in pixels of the origin of the radial average in the array.
+origin = [np.nan, np.nan, np.nan] # [297, 299, 297]
+# position in pixels of the origin of the radial average in the array.
 # if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
-threshold = 0  # data < threshold will be set to 0
-debug = False  # True to show more plots
+threshold = 1  # data < threshold will be set to 0
+debug = True  # True to show more plots
 ##########################
 # end of user parameters #
 ##########################
@@ -110,7 +111,7 @@ if debug:
 #################################
 print('Distance max:', distances.max(), ' (1/nm) at voxel:', np.unravel_index(abs(distances).argmax(), distances.shape))
 print('Distance:', distances[origin[0], origin[1], origin[2]], ' (1/nm) at voxel:', origin)
-nb_bins = nz // 2
+nb_bins = nz // 4
 radial_avg = np.zeros(nb_bins)
 dq = distances.max() / nb_bins  # in 1/A
 q_axis = np.linspace(0, distances.max(), endpoint=True, num=nb_bins+1)  # in pixels or 1/nm
@@ -136,10 +137,14 @@ y_values = np.ma.array(radial_avg)
 # mask values below a certain threshold
 y_values_masked = np.ma.masked_where(np.isnan(y_values), y_values)
 
-plt.figure()
-plt.plot(q_axis, np.log10(y_values_masked), 'r')
+fig, ax0 = plt.subplots(1, 1)
+plt0 = ax0.plot(q_axis, np.log10(y_values_masked), 'r')
 plt.xlabel('q (1/nm)')
 plt.ylabel('radial average (A.U.)')
+plt.savefig(root_folder + 'radial_avg_labels.png')
+ax0.tick_params(labelbottom=False, labelleft=False)
+plt.xlabel('')
+plt.ylabel('')
 plt.savefig(root_folder + 'radial_avg.png')
 plt.ioff()
 plt.show()
