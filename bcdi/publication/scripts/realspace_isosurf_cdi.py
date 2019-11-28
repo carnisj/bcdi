@@ -12,10 +12,12 @@ import mayavi
 from mayavi import mlab
 import tkinter as tk
 from tkinter import filedialog
+import matplotlib.ticker as ticker
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 # sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.graph.graph_utils as gu
 
 helptext = """
 Template for 3d isosurface figures of a real space forward CDI reconstruction.
@@ -28,12 +30,30 @@ root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2_000"
 comment = ""
 
+save_YZ = True  # True to save the modulus in YZ plane
+save_XZ = True  # True to save the modulus in XZ plane
+save_XY = True  # True to save the modulus in XY plane
+grey_background = False  # True to set the background to grey in 2D plots
+tick_direction = 'in'  # 'out', 'in', 'inout'
+tick_length = 10  # in plots
+tick_width = 2  # in plots
+
 voxel_size = 9.42  # in nm, supposed isotropic
-tick_spacing = 200  # for plots, in nm
-field_of_view = [1600, 1600, 1600]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
+tick_spacing = 500  # for plots, in nm
+field_of_view = [2000, 2000, 2000]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
 # the number of labels of mlab.axes() is an integer and is be calculated as: field_of_view[0]/tick_spacing
 # therefore it is better to use an isotropic field_of_view
-threshold_isosurface = 0.5
+threshold_isosurface = 0.4  # threshold for the 3D isosurface plot
+threshold_modulus = 0.06  # threshold for 2D plots
+###################
+# define colormap #
+###################
+if grey_background:
+    bad_color = '0.7'
+else:
+    bad_color = '1.0'  # white background
+colormap = gu.Colormap(bad_color=bad_color)
+my_cmap = colormap.cmap
 
 #############
 # load data #
@@ -51,22 +71,23 @@ if obj.ndim != 3:
     print('a 3D reconstruction array is expected')
     sys.exit()
 
-amp = abs(obj) / abs(obj).max()
-amp[amp < threshold_isosurface] = 0
-
-numz, numy, numx = amp.shape
+obj = abs(obj)
+numz, numy, numx = obj.shape
 print("Initial data size: (", numz, ',', numy, ',', numx, ')')
 
-###################################################
-#  pad arrays to obtain the desired field of view #
-###################################################
+##################################################
+#  pad array to obtain the desired field of view #
+##################################################
+amp = np.copy(obj)
+amp = obj / obj.max()
+amp[amp < threshold_isosurface] = 0
 z_pixel_FOV = int(np.rint((field_of_view[0] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 y_pixel_FOV = int(np.rint((field_of_view[1] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 x_pixel_FOV = int(np.rint((field_of_view[2] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 new_shape = [max(numz, 2*z_pixel_FOV), max(numy, 2*y_pixel_FOV), max(numx, 2*x_pixel_FOV)]
 amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
-print("Cropped/padded data size: (", numz, ',', numy, ',', numx, ')')
+print("Cropped/padded data size for 3D isosurface plot: (", numz, ',', numy, ',', numx, ')')
 
 #########################################
 # plot 3D isosurface (perspective view) #
@@ -92,3 +113,72 @@ ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
 mlab.savefig(homedir + 'S' + str(scan) + '-perspective.png', figure=myfig)
 mlab.close(myfig)
+
+#################
+# plot 2D views #
+#################
+amp = obj / obj.max()
+new_shape = [int(1.2*numz), int(1.2*numy), int(1.2*numx)]
+amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
+numz, numy, numx = amp.shape
+
+print("Cropped/padded data size before rotating: (", numz, ',', numy, ',', numx, ')')
+print('Rotating object to have the crystallographic axes along array axes')
+axis_to_align = np.array([0.2, 1, 0.02])  # in order x y z for rotate_crystal()
+amp = pu.rotate_crystal(array=amp, axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
+                        debugging=True)  # out of plane alignement
+axis_to_align = np.array([1, 0, -0.1])  # in order x y z for rotate_crystal()
+amp = pu.rotate_crystal(array=amp, axis_to_align=axis_to_align, reference_axis=np.array([1, 0, 0]),
+                        debugging=True)  # inplane alignement
+
+# apply modulus threshold
+amp[amp < threshold_modulus] = 0
+
+pixel_spacing = tick_spacing / voxel_size
+pixel_FOV = [int(np.rint((fov / voxel_size) / 2)) for fov in field_of_view]  # half-number of pixels corresponding to the FOV
+new_shape = [max(numz, 2*pixel_FOV[0]), max(numy, 2*pixel_FOV[1]), max(numx, 2*pixel_FOV[2])]
+amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
+numz, numy, numx = amp.shape
+print("Cropped/padded data size for 2D plots: (", numz, ',', numy, ',', numx, ')')
+
+fig, ax0 = plt.subplots(1, 1)
+plt0 = ax0.imshow(
+    amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
+        numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1], numx // 2], vmin=0, vmax=1, cmap=my_cmap)
+
+ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                length=tick_length, width=tick_width)
+if save_YZ:
+    fig.savefig(homedir + 'amp_YZ' + comment + '.png', bbox_inches="tight")
+
+fig, ax1 = plt.subplots(1, 1)
+plt1 = ax1.imshow(
+    amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
+        numy // 2, numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=my_cmap)
+ax1.invert_yaxis()
+ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                length=tick_length, width=tick_width)
+if save_XZ:
+    fig.savefig(homedir + 'amp_XZ' + comment + '.png', bbox_inches="tight")
+
+fig, ax2 = plt.subplots(1, 1)
+plt2 = ax2.imshow(
+    amp[numz // 2, numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1],
+        numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=my_cmap)
+ax2.invert_yaxis()
+ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                length=tick_length, width=tick_width)
+
+if save_XY:
+    fig.savefig(homedir + 'amp_XY' + comment + '.png', bbox_inches="tight")
+plt.colorbar(plt2, ax=ax2)
+fig.savefig(homedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
+
+plt.ioff()
+plt.show()
