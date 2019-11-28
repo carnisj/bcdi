@@ -30,6 +30,9 @@ comment = ""
 binning = [3, 3, 3]  # binning for the measured diffraction pattern in each dimension
 # tick_spacing = 50  # for plots, in nm
 threshold_isosurface = 5  # log scale
+##########################
+# end of user parameters #
+##########################
 
 #############
 # load data #
@@ -77,9 +80,10 @@ grid_qx, grid_qz, grid_qy = np.mgrid[qx.min():qx.max():1j * nz, qz.min():qz.max(
 # in CXI convention, z is downstream, y vertical and x outboard
 # for q: classical convention qx downstream, qz vertical and qy outboard
 myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
-mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(data), contours=[threshold_isosurface], color=(0.7, 0.7, 0.7))
+mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(data), contours=[0.75*threshold_isosurface, threshold_isosurface, 1.25*threshold_isosurface],
+               opacity=0.2, colormap='hsv', vmin=-2)  # , color=(0.7, 0.7, 0.7))
 
-mlab.view(azimuth=165, elevation=135, distance=3.5*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max())
+mlab.view(azimuth=0, elevation=50, distance=3.5*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max())
 # azimut is the rotation around z axis of mayavi (x)
 mlab.roll(0)
 
