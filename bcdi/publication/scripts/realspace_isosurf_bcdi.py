@@ -18,9 +18,8 @@ sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-realspace_isosurf_3d.py
+Template for 3d isosurface figures of a real space BCDI reconstruction.
 
-Template for 3d isosurface figures of a real space CDI reconstruction for publication.
 Open an npz file (reconstruction ampdispstrain.npz) and save individual figures including a length scale.
 """
 
@@ -61,7 +60,6 @@ print("Initial data size: (", numz, ',', numy, ',', numx, ')')
 ###################################################
 #  pad arrays to obtain the desired field of view #
 ###################################################
-pixel_spacing = tick_spacing / voxel_size
 z_pixel_FOV = int(np.rint((field_of_view[0] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 y_pixel_FOV = int(np.rint((field_of_view[1] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 x_pixel_FOV = int(np.rint((field_of_view[2] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
@@ -70,7 +68,6 @@ amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
 print("Cropped/padded data size: (", numz, ',', numy, ',', numx, ')')
 
-plt.ion()
 #################################
 # plot 3D isosurface (top view) #
 #################################
