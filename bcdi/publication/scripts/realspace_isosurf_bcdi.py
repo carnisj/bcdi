@@ -31,7 +31,8 @@ comment = ""
 voxel_size = 6.0  # in nm, supposed isotropic
 tick_spacing = 50  # for plots, in nm
 field_of_view = [350, 350, 350]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
-
+# the number of labels of mlab.axes() is an integer and is be calculated as: field_of_view[0]/tick_spacing
+# therefore it is better to use an isotropic field_of_view
 threshold_isosurface = 0.2
 
 #############
