@@ -428,8 +428,8 @@ if save_fig:
 ###########################################
 # normalize and apply amplitude threshold #
 ###########################################
-obj = obj / abs(obj).max()
-obj[abs(obj) < support_threshold] = 0
+newobj = newobj / abs(newobj).max()
+newobj[abs(newobj) < support_threshold] = 0
 
 #####################################
 # calculate the diffraction pattern #
