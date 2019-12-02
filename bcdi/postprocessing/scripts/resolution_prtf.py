@@ -135,7 +135,7 @@ else:
         template_imagefile = specfile_name + template_imagefile
         detector.template_imagefile = template_imagefile
 
-    logfile = pru.create_logfile(beamline=setup.beamline, detector=detector, scan_number=scan, root_folder=root_folder,
+    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
                                  filename=specfile_name)
 
 #############################################
