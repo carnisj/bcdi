@@ -248,7 +248,10 @@ for scan_nb in range(len(scans)):
 
     print('\nScan', scans[scan_nb])
     print('Setup: ', setup.beamline)
+    print('Direct beam (VxH)', direct_beam)
     print('Detector: ', detector.name)
+    print('Pixel number (VxH): ', detector.nb_pixel_y, detector.nb_pixel_x)
+    print('Detector ROI:', roi_detector)
     print('Horizontal pixel size with binning: ', detector.pixelsize_x, 'm')
     print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
     print('Specfile: ', specfile_name)
