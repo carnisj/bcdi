@@ -1164,14 +1164,16 @@ def load_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     if normalize:
         rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
                                                 norm_to_min=True, debugging=debugging)
-
+    nbz, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
-    rawdata = pu.crop_pad(array=rawdata, output_shape=(rawdata.shape[0],
-                                                       detector.roi[1] - detector.roi[0],
-                                                       detector.roi[3] - detector.roi[2]))
-    rawmask = pu.crop_pad(array=rawmask, output_shape=(rawmask.shape[0],
-                                                       detector.roi[1] - detector.roi[0],
-                                                       detector.roi[3] - detector.roi[2]))
+    if detector.roi[1] - detector.roi[0] > nby or detector.roi[3] - detector.roi[2] > nbx:
+        print('Paddind the data to the shape defined by the ROI')
+        rawdata = pu.crop_pad(array=rawdata, output_shape=(rawdata.shape[0],
+                                                           detector.roi[1] - detector.roi[0],
+                                                           detector.roi[3] - detector.roi[2]))
+        rawmask = pu.crop_pad(array=rawmask, padwith_ones=True, output_shape=(rawmask.shape[0],
+                                                                              detector.roi[1] - detector.roi[0],
+                                                                              detector.roi[3] - detector.roi[2]))
 
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
@@ -1307,7 +1309,7 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     print('Detector size defined by the ROI:', detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2])
     print('Detector physical size:', detector.nb_pixel_y, detector.nb_pixel_x)
     if detector.roi[1]-detector.roi[0] > detector.nb_pixel_y or detector.roi[3]-detector.roi[2] > detector.nb_pixel_x:
-        print('Data shape is limited by detector size, will be smaller than defined by the ROI.')
+        print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
 
     if setup.custom_scan and not setup.filtered_data:
         data, mask3d, monitor, frames_logical = load_custom_data(custom_images=setup.custom_images,
