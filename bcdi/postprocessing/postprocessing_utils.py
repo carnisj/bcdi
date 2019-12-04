@@ -448,13 +448,16 @@ def center_max(array, width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=
     return array
 
 
-def crop_pad(array, output_shape, padwith_ones=False, width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=False):
+def crop_pad(array, output_shape, padwith_ones=False, start=(np.nan, np.nan, np.nan), width_z=np.nan, width_y=np.nan,
+             width_x=np.nan, debugging=False):
     """
     Crop or pad the 3D object depending on output_shape.
 
     :param array: 3D complex array to be padded
     :param output_shape: list of desired output shape [z, y, x]
     :param padwith_ones: if True, pad with ones instead of zeros
+    :param start: tuple of 3 positions in pixel where the original array should be placed.
+     If a value of np.nan is provided, padding is symmetric along the respective axis.
     :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
     :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
     :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
@@ -477,7 +480,10 @@ def crop_pad(array, output_shape, padwith_ones=False, width_z=np.nan, width_y=np
             temp_z = np.zeros((output_shape[0], nby, nbx), dtype=array.dtype)
         else:
             temp_z = np.ones((output_shape[0], nby, nbx), dtype=array.dtype)
-        temp_z[(newz - nbz) // 2:(newz + nbz) // 2, :, :] = array
+        if np.isnan(start[0]):
+            temp_z[(newz - nbz) // 2:(newz + nbz) // 2, :, :] = array
+        else:
+            temp_z[start[0]:start[0]+nbz, :, :] = array
     else:  # crop
         temp_z = array[(nbz - newz) // 2:(newz + nbz) // 2, :, :]
     # y
@@ -486,7 +492,10 @@ def crop_pad(array, output_shape, padwith_ones=False, width_z=np.nan, width_y=np
             temp_y = np.zeros((newz, newy, nbx), dtype=array.dtype)
         else:
             temp_y = np.ones((newz, newy, nbx), dtype=array.dtype)
-        temp_y[:, (newy - nby) // 2:(newy + nby) // 2, :] = temp_z
+        if np.isnan(start[1]):
+            temp_y[:, (newy - nby) // 2:(newy + nby) // 2, :] = temp_z
+        else:
+            temp_y[:, start[1]:start[1]+nby, :] = temp_z
     else:  # crop
         temp_y = temp_z[:, (nby - newy) // 2:(newy + nby) // 2, :]
     # x
@@ -495,7 +504,10 @@ def crop_pad(array, output_shape, padwith_ones=False, width_z=np.nan, width_y=np
             newobj = np.zeros((newz, newy, newx), dtype=array.dtype)
         else:
             newobj = np.ones((newz, newy, newx), dtype=array.dtype)
-        newobj[:, :, (newx - nbx) // 2:(newx + nbx) // 2] = temp_y
+        if np.isnan(start[2]):
+            newobj[:, :, (newx - nbx) // 2:(newx + nbx) // 2] = temp_y
+        else:
+            newobj[:, :, start[2]:start[2]+nbx] = temp_y
     else:  # crop
         newobj = temp_y[:, :, (nbx - newx) // 2:(newx + nbx) // 2]
 
@@ -505,13 +517,16 @@ def crop_pad(array, output_shape, padwith_ones=False, width_z=np.nan, width_y=np
     return newobj
 
 
-def crop_pad_2d(array, output_shape, padwith_ones=False, width_y=np.nan, width_x=np.nan, debugging=False):
+def crop_pad_2d(array, output_shape, padwith_ones=False, start=(np.nan, np.nan), width_y=np.nan, width_x=np.nan,
+                debugging=False):
     """
     Crop or pad the 2D object depending on output_shape.
 
     :param array: 2D complex array to be padded
     :param output_shape: list of desired output shape [y, x]
     :param padwith_ones: if True, pad with ones instead of zeros
+    :param start: tuple of 2 positions in pixel where the original array should be placed.
+     If a value of np.nan is provided, padding is symmetric along the respective axis.
     :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
     :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
     :param debugging: set to True to see plots
@@ -532,7 +547,10 @@ def crop_pad_2d(array, output_shape, padwith_ones=False, width_y=np.nan, width_x
             temp_y = np.zeros((output_shape[0], nbx), dtype=array.dtype)
         else:
             temp_y = np.ones((output_shape[0], nbx), dtype=array.dtype)
-        temp_y[(newy - nby) // 2:(newy + nby) // 2, :] = array
+        if np.isnan(start[0]):
+            temp_y[(newy - nby) // 2:(newy + nby) // 2, :] = array
+        else:
+            temp_y[start[0]:start[0]+nby, :] = array
     else:  # crop
         temp_y = array[(nby - newy) // 2:(newy + nby) // 2, :]
     # x
@@ -541,7 +559,10 @@ def crop_pad_2d(array, output_shape, padwith_ones=False, width_y=np.nan, width_x
             newobj = np.zeros((newy, newx), dtype=array.dtype)
         else:
             newobj = np.ones((newy, newx), dtype=array.dtype)
-        newobj[:, (newx - nbx) // 2:(newx + nbx) // 2] = temp_y
+        if np.isnan(start[1]):
+            newobj[:, (newx - nbx) // 2:(newx + nbx) // 2] = temp_y
+        else:
+            newobj[:, start[1]:start[1]+nbx] = temp_y
     else:  # crop
         newobj = temp_y[:, (nbx - newx) // 2:(newx + nbx) // 2]
 
@@ -550,13 +571,14 @@ def crop_pad_2d(array, output_shape, padwith_ones=False, width_y=np.nan, width_x
     return newobj
 
 
-def crop_pad_1d(array, output_length, padwith_ones=False, extrapolate=False):
+def crop_pad_1d(array, output_length, padwith_ones=False, start=np.nan, extrapolate=False):
     """
     Crop or pad the 2D object depending on output_shape.
 
     :param array: 1D complex array to be padded
     :param output_length: int desired output length
     :param padwith_ones: if True, pad with ones instead of zeros
+    :param start: position in pixel where the original array should be placed. If np.nan, padding is symmetric.
     :param extrapolate: set to True to extrapolate using the current spacing (supposed constant)
     :return: myobj cropped or padded
     """
@@ -572,7 +594,10 @@ def crop_pad_1d(array, output_length, padwith_ones=False, extrapolate=False):
                 newobj = np.zeros(output_length, dtype=array.dtype)
             else:
                 newobj = np.ones(output_length, dtype=array.dtype)
-            newobj[(newx - nbx) // 2:(newx + nbx) // 2] = array
+            if np.isnan(start):
+                newobj[(newx - nbx) // 2:(newx + nbx) // 2] = array
+            else:
+                newobj[start:start+nbx] = array
         else:
             spacing = array[1] - array[0]
             start = array[0] - ((newx - nbx) // 2) * spacing
