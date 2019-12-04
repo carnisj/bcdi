@@ -1003,7 +1003,7 @@ def load_reconstruction(file_path):
         h5file = h5py.File(file_path, 'r')
         group_key = list(h5file.keys())[0]
         subgroup_key = list(h5file[group_key])
-        dataset = h5file['/' + group_key + '/' + subgroup_key[0] + '/data'].value[0]
+        dataset = h5file['/' + group_key + '/' + subgroup_key[0] + '/data'][0]  # select only first mode
     else:
         raise ValueError("File format not supported: can load only '.npy', '.npz', '.cxi' or '.h5' files")
     return dataset, extension
