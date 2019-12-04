@@ -1298,7 +1298,9 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
 
     print('Detector size defined by the ROI:', detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2])
     print('Detector physical size:', detector.nb_pixel_y, detector.nb_pixel_x)
-
+    if detector.roi[1]-detector.roi[0] > detector.nb_pixel_y or detector.roi[3]-detector.roi[2] > detector.nb_pixel_x:
+        print('Data shape is limited by detector size, will be smaller than defined by the ROI.')
+        
     if setup.custom_scan and not setup.filtered_data:
         data, mask3d, monitor, frames_logical = load_custom_data(custom_images=setup.custom_images,
                                                                  custom_monitor=setup.custom_monitor,
