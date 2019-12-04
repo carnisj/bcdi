@@ -2358,7 +2358,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         numz, numy, numx = (nbx, nby, nbx)
         voxelsize_z, voxelsize_y, voxelsize_x = (1, 1, 1)  # in pixels
 
-    print('Voxel sizes for interpolation (z,y,x)=', voxelsize_z, voxelsize_y, voxelsize_x)
+    print('Voxel sizes for interpolation (z,y,x)=', str('{:.2f}'.format(voxelsize_z)),
+          str('{:.2f}'.format(voxelsize_y)), str('{:.2f}'.format(voxelsize_x)))
 
     if not correct_curvature:
         # calculate q spacing and q values using above voxel sizes
@@ -2369,7 +2370,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         qx = np.arange(-(numz-directbeam_x), -(numz-directbeam_x) + numz, 1) * dqx  # downstream
         qz = np.arange(-(numy-directbeam_y), -(numy-directbeam_y) + numy, 1) * dqz  # vertical up opposite to detector Y
         qy = np.arange(-(numx-directbeam_x), -(numx-directbeam_x) + numx, 1) * dqy  # outboard opposite to detector X
-        print('q spacing for interpolation (z,y,x)=', dqx, dqz, dqy, ' (1/nm)')
+        print('q spacing for interpolation (z,y,x)=', str('{:.6f}'.format(dqx)), str('{:.6f}'.format(dqz)),
+              str('{:.6f}'.format(dqy)), ' (1/nm)')
 
         # create a set of cartesian coordinates to interpolate onto (in z y x reciprocal frame):
         # the range along z is nbx because the frame is rotating aroung y
