@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
+import matplotlib
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
 import matplotlib.animation as manimation
@@ -36,6 +37,7 @@ roi = []  # ROI to be plotted, leave it as [] to use all the reconstruction [zst
 field_name = ''  # name or ''
 # load the field name in a .npz file, if '' load the complex object and plot the normalized modulus
 threshold = 0.05  # threshold apply on the object, if np.nan nothing happens
+output_format = 'gif'  # 'gif', 'mp4'
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -49,14 +51,17 @@ my_cmap = colormap.cmap
 ###############
 # load FFMpeg #
 ###############
-try:
-    FFMpegWriter = manimation.writers['ffmpeg']
-except KeyError:
-    print('KeyError: \'ffmpeg\'')
-    sys.exit()
-except RuntimeError:
-    print("Could not import FFMpeg writer for movie generation")
-    sys.exit()
+if output_format == 'gif':
+    plt.rcParams['animation.convert_path'] = 'D:/Python/imagemagick/magick.exe'
+else:
+    try:
+        FFMpegWriter = manimation.writers['ffmpeg']
+    except KeyError:
+        print("KeyError: 'ffmpeg'")
+        sys.exit()
+    except RuntimeError:
+        print("Could not import FFMpeg writer for movie generation")
+        sys.exit()
 
 #############################
 # load reconstructed object #
@@ -114,11 +119,14 @@ if len(roi) == 6:
 #################
 if movie_z:
     metadata = dict(title='S'+str(scan)+comment)
-    writer = FFMpegWriter(fps=5, metadata=metadata)
+    if output_format == 'gif':
+        writer = matplotlib.animation.ImageMagickFileWriter(fps=5, metadata=metadata)
+    else:
+        writer = FFMpegWriter(fps=5, metadata=metadata)
     fontsize = 10
 
     fig = plt.figure()
-    with writer.saving(fig, datadir+"S"+str(scan)+"_z_movie.avi", dpi=100):
+    with writer.saving(fig, datadir+"S"+str(scan)+"_z_movie."+output_format, dpi=100):
         for index in range(nbz // frame_spacing):
             img = obj[index*frame_spacing, :, :]
             plt.clf()
@@ -133,11 +141,14 @@ if movie_z:
 #################
 if movie_y:
     metadata = dict(title='S'+str(scan)+comment)
-    writer = FFMpegWriter(fps=5, metadata=metadata)
+    if output_format == 'gif':
+        writer = matplotlib.animation.ImageMagickFileWriter(fps=5, metadata=metadata)
+    else:
+        writer = FFMpegWriter(fps=5, metadata=metadata)
     fontsize = 10
 
     fig = plt.figure()
-    with writer.saving(fig, datadir+"S"+str(scan)+"_y_movie.avi", dpi=100):
+    with writer.saving(fig, datadir+"S"+str(scan)+"_y_movie."+output_format, dpi=100):
         for index in range(nby // frame_spacing):
             img = obj[:, index*frame_spacing, :]
             plt.clf()
@@ -152,11 +163,14 @@ if movie_y:
 #################
 if movie_x:
     metadata = dict(title='S'+str(scan)+comment)
-    writer = FFMpegWriter(fps=5, metadata=metadata)
+    if output_format == 'gif':
+        writer = matplotlib.animation.ImageMagickFileWriter(fps=5, metadata=metadata)
+    else:
+        writer = FFMpegWriter(fps=5, metadata=metadata)
     fontsize = 10
 
     fig = plt.figure()
-    with writer.saving(fig, datadir+"S"+str(scan)+"_x_movie.avi", dpi=100):
+    with writer.saving(fig, datadir+"S"+str(scan)+"_x_movie."+output_format, dpi=100):
         for index in range(nbx // frame_spacing):
             img = obj[:, :, index*frame_spacing]
             plt.clf()
