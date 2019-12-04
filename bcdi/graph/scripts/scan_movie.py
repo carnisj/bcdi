@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-make_movie.py
-Create a movie from a scan (i.e. timescan)
-"""
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as manimation
@@ -14,6 +17,11 @@ import os
 import sys
 import matplotlib
 matplotlib.use("Qt5Agg")
+
+helptext = """
+scan_movie.py
+Create a movie from a scan (i.e. timescan)
+"""
 
 scan = 99  # spec scan number
 specdir = "C:/Users/carnis/Work Folders/Documents/data/HC3796/OER/"
