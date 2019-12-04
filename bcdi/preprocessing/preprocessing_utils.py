@@ -1168,7 +1168,8 @@ def load_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
     if (detector.binning[1] != 1) or (detector.binning[2] != 1):
-        print('Binning the data')
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
         rawdata = pu.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
         rawmask = pu.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
         rawmask[np.nonzero(rawmask)] = 1
@@ -1294,6 +1295,9 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
     if background is None:
         background = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+
+    print('Detector size defined by the ROI:', detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2])
+    print('Detector physical size:', detector.nb_pixel_y, detector.nb_pixel_x)
 
     if setup.custom_scan and not setup.filtered_data:
         data, mask3d, monitor, frames_logical = load_custom_data(custom_images=setup.custom_images,
