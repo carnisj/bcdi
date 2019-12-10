@@ -22,14 +22,16 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/800_800_800_1_1_1/'
+root_folder = 'D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/'
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for radial average
-origin = [np.nan, np.nan, np.nan] # [297, 299, 297]
+origin = [297, 242, 219]  # [np.nan, np.nan, np.nan] #
 # position in pixels of the origin of the radial average in the array.
 # if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
 threshold = 1  # data < threshold will be set to 0
-debug = True  # True to show more plots
+debug = False  # True to show more plots
+xlim = [0, 1]  # limits used for the horizontal axis of the radial plot
+ylim = [0, 7]  # limits used for the vertical axis of the radial plot
 ##########################
 # end of user parameters #
 ##########################
@@ -53,7 +55,9 @@ diff_pattern = npzfile[list(npzfile.files)[0]].astype(float)
 diff_pattern[diff_pattern < threshold] = 0
 nz, ny, nx = diff_pattern.shape
 print('Data shape:', nz, ny, nx)
-
+gu.multislices_plot(diff_pattern, sum_frames=True, plot_colorbar=True, cmap=my_cmap,
+                    title='diffraction pattern', scale='log', invert_yaxis=True, vmin=np.nan, vmax=np.nan,
+                    reciprocal_space=True, is_orthogonal=True)
 #############
 # load mask #
 #############
@@ -129,7 +133,7 @@ gc.collect()
 #######################
 np.savez_compressed(root_folder + 'q+radial_avg.npz', distances=q_axis, average=radial_avg)
 
-###############################
+################################
 # plot and save the 1D average #
 ################################
 # prepare for masking arrays - 'conventional' arrays won't do it
@@ -141,6 +145,8 @@ fig, ax0 = plt.subplots(1, 1)
 plt0 = ax0.plot(q_axis, np.log10(y_values_masked), 'r')
 plt.xlabel('q (1/nm)')
 plt.ylabel('radial average (A.U.)')
+plt.xlim(xlim[0], xlim[1])
+plt.ylim(ylim[0], ylim[1])
 plt.savefig(root_folder + 'radial_avg_labels.png')
 ax0.tick_params(labelbottom=False, labelleft=False)
 plt.xlabel('')
