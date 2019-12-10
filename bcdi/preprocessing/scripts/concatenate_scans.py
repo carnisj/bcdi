@@ -2,17 +2,19 @@
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
 #       authors:
-#         Jerome Carnis, jerome.carnis@esrf.fr
+#         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
 import pathlib
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 import sys
-sys.path.append('C:\\Users\\carnis\\Work Folders\\Documents\\myscripts\\bcdi\\')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 Align diffraction patterns using the center of mass or dft registration 
@@ -32,6 +34,7 @@ comment = '__norm_160_512_480.npz'  # the end of the filename template after 'py
 homedir = "C:/Users/carnis/Work Folders/Documents/data/P10_2018/"
 method = 'center_of_mass'  # method to find the offset, 'center_of_mass' or 'registration'
 combining_method = 'rgi'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
+output_shape = (160, 512, 480)  # the output dataset will be cropped/padded to this shape
 correlation_threshold = 0.5
 debug = False  # True or False
 plt.ion()
@@ -94,10 +97,16 @@ for idx in range(nb_scan):
 summask[np.nonzero(summask)] = 1  # mask should be 0 or 1
 sumdata = sumdata / len(scanlist)
 
+summask = pu.crop_pad(array=summask, output_shape=output_shape)
+sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape)
+
 savedir = homedir + sample_name + 'sum_S' + str(scanlist[0]) + '_to_S' + str(scanlist[-1])+'/'
+template = '_S'+str(scanlist[0]) + '_to_S' + str(scanlist[-1]) + '_' +\
+           str(output_shape[0]) + '_' + str(output_shape[1]) + '_' + str(output_shape[2]) + '.npz'
+
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-np.savez_compressed(savedir+'pynx_S'+str(scanlist[0]) + '_to_S' + str(scanlist[-1])+'.npz', obj=sumdata)
-np.savez_compressed(savedir+'maskpynx_S'+str(scanlist[0]) + '_to_S' + str(scanlist[-1])+'.npz', obj=summask)
+np.savez_compressed(savedir+'pynx' + template, obj=sumdata)
+np.savez_compressed(savedir+'maskpynx' + template, obj=summask)
 print('Sum of ', len(scanlist), 'scans')
 
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, invert_yaxis=False, scale='log', plot_colorbar=True,
