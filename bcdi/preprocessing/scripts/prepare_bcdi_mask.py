@@ -19,7 +19,7 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import gc
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -40,15 +40,15 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [423]  # list or array of scan numbers
-root_folder = "D:/data/bug_energie/"
-sample_name = "S"  # "SN"  #
+scans = np.arange(173, 185+1, 3)  # list or array of scan numbers
+root_folder = "D:/data/Pt_growth/data/"
+sample_name = "dewet5"  # "SN"  #
 comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = (1, 1, 1)  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
-flag_interact = True  # True to interact with plots, False to close it automatically
+flag_interact = False  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ###########################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
@@ -69,7 +69,7 @@ normalize_flux = True  # will normalize the intensity by the default monitor.
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
-flag_medianfilter = 'skip'
+flag_medianfilter = 'interp_isolated'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -83,8 +83,9 @@ save_to_mat = False  # True to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+is_series = False  # specific to series measurement at P10
 
 custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = []  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
@@ -96,9 +97,9 @@ custom_motors = {}
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 
-rocking_angle = "energy"  # "outofplane" or "inplane" or "energy"
-follow_bragg = True  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = '2018_11_07_101509fw2-6'
+rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
+follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
+specfile_name = sample_name + '_%05d'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -108,25 +109,24 @@ specfile_name = '2018_11_07_101509fw2-6'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-nb_pixel_y = 1614  # 1 tile broken on the Eiger2M
-x_bragg = 451  # horizontal pixel number of the Bragg peak
-y_bragg = 1450  # vertical pixel number of the Bragg peak
+detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+# nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
+x_bragg = 1282  # horizontal pixel number of the Bragg peak
+# y_bragg = 1450  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-# roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
+roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
-roi_detector = [400, 1000, 350, 900]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'data_eiger2M_%05d.edf.gz'
+template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
-# template for P10: '_data_%06d.h5'
+# template for P10: '_master.h5' or '_data_%06d.h5'
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
@@ -279,12 +279,14 @@ for scan_nb in range(len(scans)):
     if setup.beamline != 'P10':
         homedir = root_folder + sample_name + str(scans[scan_nb]) + '/'
         detector.datadir = homedir + "data/"
+        specfile = specfile_name
     else:
-        specfile_name = specfile_name % scans[scan_nb]
-        homedir = root_folder + specfile_name + '/'
+        specfile = specfile_name % scans[scan_nb]
+        homedir = root_folder + specfile + '/'
         detector.datadir = homedir + 'e4m/'
-        template_imagefile = specfile_name + template_imagefile
-        detector.template_imagefile = template_imagefile
+        imagefile = specfile + template_imagefile
+        detector.template_imagefile = imagefile
+        print('The scan is composed of series:', is_series)
 
     if not use_rawdata:
         comment = comment + '_ortho'
@@ -298,9 +300,11 @@ for scan_nb in range(len(scans)):
     print('\nScan', scans[scan_nb])
     print('Setup: ', setup.beamline)
     print('Detector: ', detector.name)
+    print('Pixel number (VxH): ', detector.nb_pixel_y, detector.nb_pixel_x)
+    print('Detector ROI:', roi_detector)
     print('Horizontal pixel size with binning: ', detector.pixelsize_x, 'm')
     print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
-    print('Specfile: ', specfile_name)
+    print('Specfile: ', specfile)
     print('Scan type: ', setup.rocking_angle)
     print('Sample to detector distance: ', setup.distance, 'm')
     print('Energy:', setup.energy, 'ev')
@@ -350,7 +354,7 @@ for scan_nb in range(len(scans)):
         hotpix_array = pru.load_hotpixels(hotpixels_file)
 
         logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
-                                     root_folder=root_folder, filename=specfile_name)
+                                     root_folder=root_folder, filename=specfile)
 
         if use_rawdata:
             q_values, data, _, mask, _, frames_logical, monitor = \

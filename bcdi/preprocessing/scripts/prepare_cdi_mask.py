@@ -120,7 +120,7 @@ template_imagefile = '_master.h5'  # ''_data_%06d.h5'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
-# template for P10: '_data_%06d.h5'
+# template for P10: '_master.h5' and '_data_%06d.h5'
 #########################################################################
 # define parameters below if you want to regrid the data before phasing #
 #########################################################################
@@ -246,6 +246,18 @@ if len(fix_size) != 0:
 for scan_nb in range(len(scans)):
     plt.ion()
 
+    if setup.beamline != 'P10':
+        homedir = root_folder + sample_name + str(scans[scan_nb]) + '/'
+        detector.datadir = homedir + "data/"
+        specfile = specfile_name
+    else:
+        specfile = specfile_name % scans[scan_nb]
+        homedir = root_folder + specfile + '/'
+        detector.datadir = homedir + 'e4m/'
+        imagefile = specfile + template_imagefile
+        detector.template_imagefile = imagefile
+        print('The scan is composed of series:', is_series)
+
     print('\nScan', scans[scan_nb])
     print('Setup: ', setup.beamline)
     print('Direct beam (VxH)', direct_beam)
@@ -254,21 +266,10 @@ for scan_nb in range(len(scans)):
     print('Detector ROI:', roi_detector)
     print('Horizontal pixel size with binning: ', detector.pixelsize_x, 'm')
     print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
-    print('Specfile: ', specfile_name)
+    print('Specfile: ', specfile)
     print('Scan type: ', setup.rocking_angle)
     print('Sample to detector distance: ', setup.distance, 'm')
     print('Energy:', setup.energy, 'ev')
-
-    if setup.beamline != 'P10':
-        homedir = root_folder + sample_name + str(scans[scan_nb]) + '/'
-        detector.datadir = homedir + "data/"
-    else:
-        specfile_name = specfile_name % scans[scan_nb]
-        homedir = root_folder + specfile_name + '/'
-        detector.datadir = homedir + 'e4m/'
-        template_imagefile = specfile_name + template_imagefile
-        detector.template_imagefile = template_imagefile
-        print('The scan is composed of series:', is_series)
 
     if not use_rawdata:
         comment = comment + '_ortho'
@@ -325,7 +326,7 @@ for scan_nb in range(len(scans)):
         background = pru.load_background(background_file)
 
         logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
-                                     root_folder=root_folder, filename=specfile_name)
+                                     root_folder=root_folder, filename=specfile)
 
         data, mask, frames_logical, monitor = pru.load_cdi(logfile=logfile, scan_number=scans[scan_nb],
                                                            detector=detector, setup=setup, flatfield=flatfield,
