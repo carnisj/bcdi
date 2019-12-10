@@ -43,7 +43,7 @@ output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 
 scans = np.arange(173, 185+1, 3)  # list or array of scan numbers
 root_folder = "D:/data/Pt_growth/data/"
 sample_name = "dewet5"  # "SN"  #
-comment = ''  # string, should start with "_"
+user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = (1, 1, 1)  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
@@ -276,6 +276,7 @@ if len(fix_size) != 0:
 for scan_nb in range(len(scans)):
     plt.ion()
 
+    comment = user_comment  # initialize comment
     if setup.beamline != 'P10':
         homedir = root_folder + sample_name + str(scans[scan_nb]) + '/'
         detector.datadir = homedir + "data/"
