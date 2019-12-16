@@ -34,13 +34,13 @@ The coordinate system follows the CXI convetion: Z downstream, Y vertical up and
 Q values follow the more classical convention: qx downstream, qz vertical up, qy outboard.
 """
 
-scan = 2    # spec scan number
-root_folder = "D:/data/PtRh/"
+scan = 142    # spec scan number
+root_folder = "D:/data/CH5309/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
-radius_mean = 0.03  # q from Bragg peak
-dq = 0.0005  # width in q of the shell to be projected
+radius_mean = 0.04  # q from Bragg peak
+dq = 0.0004  # width in q of the shell to be projected
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
@@ -49,10 +49,10 @@ offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation arou
 # will shift peaks upwards in the pole figure
 q_offset = [0.00, 0.00, 0.00]  # offset of the projection plane in [qx, qy, qz] (0 = equatorial plane)
 # q_offset applies only to measured diffraction pattern (not obtained from a reconstruction)
-photon_threshold = 3  # threshold applied to the measured diffraction pattern
-range_min = -2000  # low limit for the colorbar in polar plots, every below will be set to nan
+photon_threshold = 0  # threshold applied to the measured diffraction pattern
+range_min = 100  # low limit for the colorbar in polar plots, every below will be set to nan
 range_max = 5100  # high limit for the colorbar in polar plots
-range_step = 100  # step for color change in polar plots
+range_step = 250  # step for color change in polar plots
 background_polarplot = 1  # everything below this value is set to np.nan in the polar plot
 #######################################################################################################
 # parameters for plotting the stereographic projection starting from the measured diffraction pattern #
@@ -63,15 +63,15 @@ binning = [3, 3, 3]  # binning for the measured diffraction pattern in each dime
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
 ###################################################################################################
-reconstructed_data = False  # set it to True if the data is a BCDI reconstruction (real space)
+reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
-reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
-threshold_amp = 0.485  # threshold for support determination from amplitude, if reconstructed_data=1
+reflection_axis = 1  # array axis along which is aligned the measurement direction (0, 1 or 2)
+threshold_amp = 0.5  # threshold for support determination from amplitude, if reconstructed_data=1
 use_phase = True  # set to False to use only a support, True to use the compex amplitude
 binary_support = False  # if True, the modulus of the reconstruction will be set to a binary support
-phase_factor = -2*np.pi/0.22447  # 1, -1, -2*np.pi/d depending on what is in the field phase (-phase, displacement...)
-voxel_size = [3.64, 5.53, 2.53]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
-pad_size = [4, 6, 3]  # list of three int >= 1, will pad to get this number times the initial array size
+phase_factor = 1  # -2*np.pi/0.22447  # 1, -1, -2*np.pi/d depending on what is in the field phase (-phase, displacement...)
+voxel_size = [5, 5, 5]  # [3.64, 5.53, 2.53]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
+pad_size = [3, 3, 3]  # [4, 6, 3]  # list of three int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
 upsampling_ratio = 2  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
 # it corresponds to increasing the size of the detector while keeping detector pixel size constant
@@ -83,13 +83,13 @@ flag_plotplanes = True  # if True, plot red dotted circle with plane index
 flag_plottext = False  # if True, will plot plane indices and angles in the figure
 normalize_flux = True  # will normalize the intensity by the default monitor.
 debug = False  # True to show more plots, False otherwise
-######################################
-# define beamline related parameters #
-######################################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+#######################################################################
+# define beamline related parameters, not used for reconstructed data #
+#######################################################################
+beamline = 'SIXS_2018'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
-custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11665, 11764, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 custom_motors = {"eta": np.linspace(16.989, 18.969596, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 35.978}
@@ -107,9 +107,9 @@ specfile_name = ''
 # template for SIXS_2019: ''
 # template for P10: sample_name + '_%05d'
 # template for CRISTAL: ''
-#############################################################
-# define detector related parameters and region of interest #
-#############################################################
+##############################################################################################
+# define detector related parameters and region of interest, not used for reconstructed data #
+##############################################################################################
 detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 451  # horizontal pixel number of the Bragg peak
 y_bragg = 1450  # vertical pixel number of the Bragg peak
@@ -125,9 +125,9 @@ template_imagefile = 'BCDI_eiger2M_%05d.edf'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_data_%06d.h5'
-###################################################################
-# define parameters for xrayutilities, used for orthogonalization #
-###################################################################
+####################################################################################################
+# define parameters for xrayutilities, used for orthogonalization, not used for reconstructed data #
+####################################################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
 sdd = 0.865  # sample to detector distance in m, not important if you use raw data
 energy = 9000  # x-ray energy in eV, not important if you use raw data
@@ -144,9 +144,10 @@ tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
 # calculate theoretical angles between the measured reflection and other planes - only for cubic #
 ##################################################################################################
 planes = dict()  # create dictionnary
-# planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
+planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
+planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
 planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
+# planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
 ###################
 # define colormap #
 ###################
@@ -336,7 +337,7 @@ else:
         axis_to_align = np.array([1, 0, 0])  # in order x y z for rotate_crystal()
 
     if reflection_axis != 1:
-        print('Rotation object to have q along axis 1 (y vertical up)')
+        print('Rotating object to have q along axis 1 (y vertical up)')
         amp = pu.rotate_crystal(array=abs(obj), axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
                                 debugging=True)
         phase = pu.rotate_crystal(array=np.angle(obj), axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
@@ -345,9 +346,11 @@ else:
         del amp, phase
         gc.collect()
 
-    ###########################################
+    #########################################
     # normalize and apply modulus threshold #
-    ###########################################
+    #########################################
+    # It is important to apply the threshold just before FFT calculation, otherwise the FFT is noisy because of
+    # interpolation artefacts
     obj = obj / abs(obj).max()
     obj[abs(obj) < threshold_amp] = 0
     if not use_phase:  # phase is 0, obj is real
