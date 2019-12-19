@@ -34,13 +34,13 @@ The coordinate system follows the CXI convetion: Z downstream, Y vertical up and
 Q values follow the more classical convention: qx downstream, qz vertical up, qy outboard.
 """
 
-scan = 142    # spec scan number
-root_folder = "D:/data/CH5309/"
+scan = 2    # spec scan number
+root_folder = "D:/data/PtRh/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
 radius_mean = 0.04  # q from Bragg peak
-dq = 0.0004  # width in q of the shell to be projected
+dq = 0.0005  # width in q of the shell to be projected
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
@@ -50,8 +50,8 @@ offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation arou
 q_offset = [0.00, 0.00, 0.00]  # offset of the projection plane in [qx, qy, qz] (0 = equatorial plane)
 # q_offset applies only to measured diffraction pattern (not obtained from a reconstruction)
 photon_threshold = 0  # threshold applied to the measured diffraction pattern
-range_min = 100  # low limit for the colorbar in polar plots, every below will be set to nan
-range_max = 5100  # high limit for the colorbar in polar plots
+range_min = 250  # low limit for the colorbar in polar plots, every below will be set to nan
+range_max = 2600  # high limit for the colorbar in polar plots
 range_step = 250  # step for color change in polar plots
 background_polarplot = 1  # everything below this value is set to np.nan in the polar plot
 #######################################################################################################
@@ -63,15 +63,15 @@ binning = [3, 3, 3]  # binning for the measured diffraction pattern in each dime
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
 ###################################################################################################
-reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
+reconstructed_data = False  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
-reflection_axis = 1  # array axis along which is aligned the measurement direction (0, 1 or 2)
+reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
 threshold_amp = 0.5  # threshold for support determination from amplitude, if reconstructed_data=1
 use_phase = True  # set to False to use only a support, True to use the compex amplitude
 binary_support = False  # if True, the modulus of the reconstruction will be set to a binary support
-phase_factor = 1  # -2*np.pi/0.22447  # 1, -1, -2*np.pi/d depending on what is in the field phase (-phase, displacement...)
-voxel_size = [5, 5, 5]  # [3.64, 5.53, 2.53]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
-pad_size = [3, 3, 3]  # [4, 6, 3]  # list of three int >= 1, will pad to get this number times the initial array size
+phase_factor = -2*np.pi/0.22447  # 1, -1, -2*np.pi/d depending on what is in the field phase (-phase, displacement...)
+voxel_size = [3.64, 5.53, 2.53]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
+pad_size = [4, 6, 3]  # list of three int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
 upsampling_ratio = 2  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
 # it corresponds to increasing the size of the detector while keeping detector pixel size constant
@@ -86,10 +86,10 @@ debug = False  # True to show more plots, False otherwise
 #######################################################################
 # define beamline related parameters, not used for reconstructed data #
 #######################################################################
-beamline = 'SIXS_2018'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
-custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11665, 11764, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 custom_motors = {"eta": np.linspace(16.989, 18.969596, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 35.978}
@@ -144,10 +144,10 @@ tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
 # calculate theoretical angles between the measured reflection and other planes - only for cubic #
 ##################################################################################################
 planes = dict()  # create dictionnary
-planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
-planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
+# planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
+# planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
 planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-# planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
+planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
 ###################
 # define colormap #
 ###################
@@ -725,7 +725,7 @@ if flag_plotplanes:
         print(key + ": ", str('{:.2f}'.format(value)))
 myax0.set_title('Top projection\nfrom South pole S' + str(scan)+'\n')
 if reconstructed_data == 0:
-    myfig0.text(0.05, 0.8, "q=" + str(radius_mean) +
+    myfig0.text(0.05, 0.02, "q=" + str(radius_mean) +
                 " dq=" + str(dq) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
                 " offset_chi=" + str(offset_chi), size=20)
 
@@ -789,7 +789,7 @@ if flag_plotplanes:
 plt.title('Bottom projection\nfrom North pole S' + str(scan) + '\n')
 # save figure
 if reconstructed_data == 0:
-    myfig1.text(0.05, 0.8, "q=" + str(radius_mean) +
+    myfig1.text(0.05, 0.02, "q=" + str(radius_mean) +
                 " dq=" + str(dq) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
                 " offset_chi=" + str(offset_chi), size=20)
 
