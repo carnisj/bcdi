@@ -260,19 +260,18 @@ if ((nbz != nz) or (nby != ny) or (nbx != nx)) and not reload_support:
         newvoxelsize_y = 2 * np.pi / (newqz.max() - newqz.min())  # qz along y
 
     else:  # data in detector frame
-        # TODO: check this part especially dq considering cropping/binning
         wavelength = 12.398 * 1e-7 / energy  # in m
         voxelsize_z = wavelength / (nz * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
         voxelsize_y = wavelength * distance / (ny * pixel_y) * 1e9  # in nm
         voxelsize_x = wavelength * distance / (nx * pixel_x) * 1e9  # in nm
 
         newvoxelsize_z = wavelength / (nbz * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
-        newvoxelsize_x = wavelength * distance / (nby * pixel_y) * 1e9  # in nm
-        newvoxelsize_y = wavelength * distance / (nbx * pixel_x) * 1e9  # in nm
+        newvoxelsize_y = wavelength * distance / (nby * pixel_y) * 1e9  # in nm
+        newvoxelsize_x = wavelength * distance / (nbx * pixel_x) * 1e9  # in nm
 
-    print('Original voxel sizes (nm):', str('{:.2f}'.format(voxelsize_z)), str('{:.2f}'.format(voxelsize_y)),
+    print('Original voxel sizes zyx (nm):', str('{:.2f}'.format(voxelsize_z)), str('{:.2f}'.format(voxelsize_y)),
           str('{:.2f}'.format(voxelsize_x)))
-    print('Output voxel sizes (nm):', str('{:.2f}'.format(newvoxelsize_z)), str('{:.2f}'.format(newvoxelsize_y)),
+    print('Output voxel sizes zyx (nm):', str('{:.2f}'.format(newvoxelsize_z)), str('{:.2f}'.format(newvoxelsize_y)),
           str('{:.2f}'.format(newvoxelsize_x)))
 
     rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2, 1) * voxelsize_z,
