@@ -40,7 +40,7 @@ def align_diffpattern(reference_data, data, mask, method='registration', combini
         raise ValueError('reference_data and data do not have the same shape')
 
     if method is 'registration':
-        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=10)
+        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=100)
     elif method is 'center_of_mass':
         ref_piz, ref_piy, ref_pix = center_of_mass(abs(reference_data))
         piz, piy, pix = center_of_mass(abs(data))
