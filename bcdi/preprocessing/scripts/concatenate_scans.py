@@ -28,20 +28,20 @@ Average the scans if their correlation coefficient is larger than a threshold.
 The first scan in the list serves as reference.
 """
 
-scan_list = [411, 414, 417, 421]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
+scan_list = np.arange(173, 185+1, 3)  # np.arange(404, 407+1, 3)  # list or array of scan numbers
 sample_name = 'dewet5_'
-comment = '__norm_160_512_480.npz'  # the end of the filename template after 'pynx'
-homedir = "C:/Users/carnis/Work Folders/Documents/data/P10_2018/"
-method = 'center_of_mass'  # method to find the offset, 'center_of_mass' or 'registration'
+comment = '_norm_141_512_480_1_1_1.npz'  # the end of the filename template after 'pynx'
+homedir = "D:/data/Pt_growth/data/"
+method = 'registration'  # method to find the offset, 'center_of_mass' or 'registration'
 combining_method = 'rgi'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
-output_shape = (160, 512, 480)  # the output dataset will be cropped/padded to this shape
-correlation_threshold = 0.5
+output_shape = (140, 512, 350)  # the output dataset will be cropped/padded to this shape
+correlation_threshold = 0.8
 debug = False  # True or False
-plt.ion()
 ##################################
 # end of user-defined parameters #
 ##################################
 
+plt.ion()
 print(scan_list)
 filename = sample_name + str('{:05d}').format(scan_list[0])
 refdata = np.load(homedir + filename + '/pynxraw/S' + str(scan_list[0]) + '_pynx' + comment)['data']
@@ -62,11 +62,11 @@ for idx in range(nb_scan):
     if debug:
         gu.multislices_plot(data, sum_frames=True, invert_yaxis=False, scale='log', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Data before shift', vmin=0,
-                            reciprocal_space=True)
+                            reciprocal_space=True, is_orthogonal=False)
 
         gu.multislices_plot(mask, sum_frames=True, invert_yaxis=False, scale='linear', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Mask before shift', vmin=0,
-                            reciprocal_space=True)
+                            reciprocal_space=True, is_orthogonal=False)
     ##################
     # align datasets #
     ##################
@@ -77,11 +77,11 @@ for idx in range(nb_scan):
     if debug:
         gu.multislices_plot(data, sum_frames=True, invert_yaxis=False, scale='log', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Data after shift', vmin=0,
-                            reciprocal_space=True)
+                            reciprocal_space=True, is_orthogonal=False)
 
         gu.multislices_plot(mask, sum_frames=True, invert_yaxis=False, scale='linear', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Mask after shift', vmin=0,
-                            reciprocal_space=True)
+                            reciprocal_space=True, is_orthogonal=False)
 
     correlation = pearsonr(np.ndarray.flatten(abs(refdata)), np.ndarray.flatten(abs(data)))[0]
     print('Rocking curve ', idx+1, ': Pearson correlation coefficient = ', str('{:.2f}'.format(correlation)))
@@ -110,7 +110,7 @@ np.savez_compressed(savedir+'maskpynx' + template, obj=summask)
 print('Sum of ', len(scanlist), 'scans')
 
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, invert_yaxis=False, scale='log', plot_colorbar=True,
-                                title='sum(intensity)', vmin=0, reciprocal_space=True)
+                                title='sum(intensity)', vmin=0, reciprocal_space=True, is_orthogonal=False)
 fig.text(0.50, 0.40, "Scans tested: " + str(scan_list), size=14)
 fig.text(0.50, 0.35, 'Scans concatenated: ' + str(scanlist), size=14)
 fig.text(0.50, 0.30, "Correlation coefficients: " + str(corr_coeff), size=14)
@@ -119,7 +119,7 @@ plt.pause(0.1)
 plt.savefig(savedir + 'sum_S' + str(scan_list[0]) + '_to_S' + str(scan_list[-1]) + '.png')
 
 gu.multislices_plot(summask, sum_frames=True, invert_yaxis=False, scale='linear', plot_colorbar=True,
-                    title='sum(mask)', vmin=0, reciprocal_space=True)
+                    title='sum(mask)', vmin=0, reciprocal_space=True, is_orthogonal=False)
 plt.savefig(savedir + 'sum_mask_S' + str(scan_list[0]) + '_to_S' + str(scan_list[-1]) + '.png')
 plt.ioff()
 plt.show()
