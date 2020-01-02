@@ -79,12 +79,29 @@ obj = abs(obj)
 numz, numy, numx = obj.shape
 print("Initial data size: (", numz, ',', numy, ',', numx, ')')
 
-##################################################
+#############################
+# rotate the reconstruction #
+#############################
+new_shape = [int(1.2*numz), int(1.2*numy), int(1.2*numx)]
+obj = pu.crop_pad(array=obj, output_shape=new_shape, debugging=False)
+numz, numy, numx = obj.shape
+
+print("Cropped/padded data size before rotating: (", numz, ',', numy, ',', numx, ')')
+print('Rotating object to have the crystallographic axes along array axes')
+axis_to_align = np.array([0.2, 1, 0.02])  # in order x y z for rotate_crystal()
+obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
+                        debugging=True)  # out of plane alignement
+axis_to_align = np.array([1, 0, -0.1])  # in order x y z for rotate_crystal()
+obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([1, 0, 0]),
+                        debugging=True)  # inplane alignement
+
+#################################################
 #  pad array to obtain the desired field of view #
 ##################################################
 amp = np.copy(obj)
-amp = obj / obj.max()
+amp = amp / amp.max()
 amp[amp < threshold_isosurface] = 0
+
 z_pixel_FOV = int(np.rint((field_of_view[0] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 y_pixel_FOV = int(np.rint((field_of_view[1] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 x_pixel_FOV = int(np.rint((field_of_view[2] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
@@ -121,21 +138,8 @@ mlab.close(myfig)
 #################
 # plot 2D views #
 #################
-amp = obj / obj.max()
-new_shape = [int(1.2*numz), int(1.2*numy), int(1.2*numx)]
-amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
-numz, numy, numx = amp.shape
-
-print("Cropped/padded data size before rotating: (", numz, ',', numy, ',', numx, ')')
-print('Rotating object to have the crystallographic axes along array axes')
-axis_to_align = np.array([0.2, 1, 0.02])  # in order x y z for rotate_crystal()
-amp = pu.rotate_crystal(array=amp, axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
-                        debugging=True)  # out of plane alignement
-axis_to_align = np.array([1, 0, -0.1])  # in order x y z for rotate_crystal()
-amp = pu.rotate_crystal(array=amp, axis_to_align=axis_to_align, reference_axis=np.array([1, 0, 0]),
-                        debugging=True)  # inplane alignement
-
-# apply modulus threshold
+amp = np.copy(obj)
+amp = amp / amp.max()
 amp[amp < threshold_modulus] = 0
 
 pixel_spacing = tick_spacing / voxel_size
