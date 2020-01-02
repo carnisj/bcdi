@@ -23,9 +23,9 @@ Template for 3d isosurface figures of a diffraction pattern.
 The diffraction pattern is supposed to be in an orthonormal frame and q values need to be provided.
 """
 
-scan = 13    # spec scan number
+scan = 515    # spec scan number
 root_folder = "D:/data/P10_August2019/data/"
-sample_name = "magnetite_A2_new_000"
+sample_name = "gold2_2_00"
 homedir = root_folder + sample_name + str(scan) + '/pynx/'
 comment = ""
 binning = [2, 2, 2]  # binning for the measured diffraction pattern in each dimension
@@ -75,6 +75,7 @@ print('Diffraction data shape after binning', data.shape)
 #########################################
 # plot 3D isosurface (perspective view) #
 #########################################
+data = np.flip(data, 2)  # mayavi expects xyz, data order is downstream/upward/outboard
 data[data == 0] = np.nan
 grid_qx, grid_qz, grid_qy = np.mgrid[qx.min():qx.max():1j * nz, qz.min():qz.max():1j * ny, qy.min():qy.max():1j*nx]
 # in CXI convention, z is downstream, y vertical and x outboard

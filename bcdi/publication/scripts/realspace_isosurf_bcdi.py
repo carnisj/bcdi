@@ -53,7 +53,7 @@ if amp.ndim != 3:
 
 amp = amp / amp.max()
 amp[amp < threshold_isosurface] = 0
-# amp[np.nonzero(amp)] = 1  # create a support for the isosurface
+amp = np.flip(amp, 2)  # mayavi expect xyz, but we provide downstream/upward/outboard which is not in the correct order
 
 numz, numy, numx = amp.shape
 print("Initial data size: (", numz, ',', numy, ',', numx, ')')
