@@ -91,7 +91,7 @@ print('Rotating object to have the crystallographic axes along array axes')
 axis_to_align = np.array([0.2, 1, 0.02])  # in order x y z for rotate_crystal()
 obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
                         debugging=True)  # out of plane alignement
-axis_to_align = np.array([1, 0, -0.1])  # in order x y z for rotate_crystal()
+axis_to_align = np.array([1, 0, -0.06])  # in order x y z for rotate_crystal()
 obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([1, 0, 0]),
                         debugging=True)  # inplane alignement
 
@@ -99,6 +99,7 @@ obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=n
 #  pad array to obtain the desired field of view #
 ##################################################
 amp = np.copy(obj)
+amp = np.flip(amp, 2)  # mayavi expect xyz, but we provide downstream/upward/outboard which is not in the correct order
 amp = amp / amp.max()
 amp[amp < threshold_isosurface] = 0
 
