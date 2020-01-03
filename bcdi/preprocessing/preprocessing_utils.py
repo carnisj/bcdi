@@ -2312,14 +2312,15 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     pixel_x = detector.pixelsize_x * 1e9  # convert to nm, pixel size in the horizontal direction
     pixel_y = detector.pixelsize_y * 1e9  # convert to nm, pixel size in the vertical direction
     lambdaz = wavelength * distance
-    directbeam_y = (setup.direct_beam[0] - detector.roi[0]) / detector.binning[1]  # vertical
-    directbeam_x = (setup.direct_beam[1] - detector.roi[2]) / detector.binning[2]  # horizontal
+    directbeam_y = int((setup.direct_beam[0] - detector.roi[0]) / detector.binning[1])  # vertical
+    directbeam_x = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
+    print('Corrected direct beam (y, x):', directbeam_y, directbeam_x)
 
     data, mask, cdi_angle, frames_logical = check_cdi_angle(data=data, mask=mask, cdi_angle=cdi_angle,
                                                             frames_logical=frames_logical)
     print('cdi_angle', cdi_angle)
     nbz, nby, nbx = data.shape
-    print('Data shape for regridding:', data.shape)
+    print('Data shape after check_cdi_angle and before regridding:', nbz, nby, nbx)
     print('Angle range:', cdi_angle.min(), cdi_angle.max())
     angular_step = (cdi_angle[1] - cdi_angle[0]) * np.pi / 180  # switch to radians
 
@@ -2360,6 +2361,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
 
     print('Voxel sizes for interpolation (z,y,x)=', str('{:.2f}'.format(voxelsize_z)),
           str('{:.2f}'.format(voxelsize_y)), str('{:.2f}'.format(voxelsize_x)))
+    print('Data shape after regridding:', numz, numy, numx)
 
     if not correct_curvature:
         # calculate q spacing and q values using above voxel sizes
@@ -2367,7 +2369,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         dqz = 2 * np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm, vertical up
         dqy = 2 * np.pi / lambdaz * (pixel_x * voxelsize_x)  # in 1/nm, outboard
 
-        qx = np.arange(-(numz-directbeam_x), -(numz-directbeam_x) + numz, 1) * dqx  # downstream
+        qx = np.arange(-directbeam_x, -directbeam_x + numz, 1) * dqx
+        # downstream, same direction as detector X rotated by +90deg
         qz = np.arange(-(numy-directbeam_y), -(numy-directbeam_y) + numy, 1) * dqz  # vertical up opposite to detector Y
         qy = np.arange(-(numx-directbeam_x), -(numx-directbeam_x) + numx, 1) * dqy  # outboard opposite to detector X
         print('q spacing for interpolation (z,y,x)=', str('{:.6f}'.format(dqx)), str('{:.6f}'.format(dqz)),
