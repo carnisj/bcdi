@@ -12,6 +12,8 @@ import mayavi
 from mayavi import mlab
 import tkinter as tk
 from tkinter import filedialog
+from scipy.interpolate import RegularGridInterpolator
+import gc
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 # sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
@@ -20,17 +22,21 @@ import bcdi.postprocessing.postprocessing_utils as pu
 helptext = """
 Template for 3d isosurface figures of a diffraction pattern.
 
+The data will be interpolated on an isotropic range in order to fulfill the desired tick spacing.
+
+Note that qy values (axis 2) are opposite to the correct ones, because there is no easy way to flip an axis in mayvi.
+
 The diffraction pattern is supposed to be in an orthonormal frame and q values need to be provided.
 """
 
-scan = 515    # spec scan number
+scan = 22    # spec scan number
 root_folder = "D:/data/P10_August2019/data/"
-sample_name = "gold2_2_00"
-homedir = root_folder + sample_name + str(scan) + '/pynx/'
+sample_name = "gold_2_2_2_000"
+homedir = root_folder + sample_name + str(scan) + '/pynx/full_detector_1_4_4/'
 comment = ""
 binning = [2, 2, 2]  # binning for the measured diffraction pattern in each dimension
-# tick_spacing = 50  # for plots, in nm
-threshold_isosurface = 4  # log scale
+tick_spacing = 0.1  # in 1/nm, spacing between ticks
+threshold_isosurface = 4.0  # log scale
 ##########################
 # end of user parameters #
 ##########################
@@ -69,19 +75,57 @@ qx = qx[:nz - (nz % binning[0]):binning[0]]
 qz = qz[:ny - (ny % binning[1]):binning[1]]
 qy = qy[:nx - (nx % binning[2]):binning[2]]
 data = pu.bin_data(data, (binning[0], binning[1], binning[2]), debugging=False)
-nz, ny, nx = data.shape
 print('Diffraction data shape after binning', data.shape)
+
+##########################################
+# take the largest data symmetrical in q #
+##########################################
+min_range = min(min(abs(qx.min()), qx.max()), min(abs(qz.min()), qz.max()), min(abs(qy.min()), qy.max()))
+indices_qx = np.argwhere(abs(qx) < min_range)[:, 0]
+indices_qz = np.argwhere(abs(qz) < min_range)[:, 0]
+indices_qy = np.argwhere(abs(qy) < min_range)[:, 0]
+qx = qx[indices_qx]
+qz = qz[indices_qz]
+qy = qy[indices_qy]
+data = data[indices_qx.min():indices_qx.max()+1,
+            indices_qz.min():indices_qz.max()+1,
+            indices_qy.min():indices_qy.max()+1]
+nz, ny, nx = data.shape
+print("Shape of the largest symmetrical dataset:", nz, ny, nx)
+
+##############################################################
+# interpolate the data to have ticks at the desired location #
+##############################################################
+half_labels = int(min_range // tick_spacing)  # the number of labels is (2*half_labels+1)
+rgi = RegularGridInterpolator((np.linspace(qx.min(), qx.max(), num=nz),
+                               np.linspace(qz.min(), qz.max(), num=ny),
+                               np.linspace(qy.min(), qy.max(), num=nx)),
+                              data, method='linear', bounds_error=False, fill_value=0)
+
+new_z, new_y, new_x = np.meshgrid(np.linspace(-tick_spacing*half_labels, tick_spacing*half_labels, num=nz),
+                                  np.linspace(-tick_spacing*half_labels, tick_spacing*half_labels, num=ny),
+                                  np.linspace(-tick_spacing*half_labels, tick_spacing*half_labels, num=nx),
+                                  indexing='ij')
+
+newdata = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                              new_x.reshape((1, new_z.size)))).transpose())
+newdata = newdata.reshape((nz, ny, nx)).astype(data.dtype)
+
+del data, new_z, new_y, new_x, rgi
+gc.collect()
 
 #########################################
 # plot 3D isosurface (perspective view) #
 #########################################
-data = np.flip(data, 2)  # mayavi expects xyz, data order is downstream/upward/outboard
-data[data == 0] = np.nan
-grid_qx, grid_qz, grid_qy = np.mgrid[qx.min():qx.max():1j * nz, qz.min():qz.max():1j * ny, qy.min():qy.max():1j*nx]
+newdata = np.flip(newdata, 2)  # mayavi expects xyz, data order is downstream/upward/outboard
+newdata[newdata == 0] = np.nan
+grid_qx, grid_qz, grid_qy = np.mgrid[-tick_spacing*half_labels:tick_spacing*half_labels:1j * nz,
+                                     -tick_spacing*half_labels:tick_spacing*half_labels:1j * ny,
+                                     -tick_spacing*half_labels:tick_spacing*half_labels:1j * nx]
 # in CXI convention, z is downstream, y vertical and x outboard
 # for q: classical convention qx downstream, qz vertical and qy outboard
 myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=(800, 700))
-mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(data),
+mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(newdata),
                contours=[0.75*threshold_isosurface, threshold_isosurface, 1.25*threshold_isosurface],
                opacity=0.2, colormap='hsv', vmin=-2)  # , color=(0.7, 0.7, 0.7))
 
@@ -89,7 +133,7 @@ mlab.view(azimuth=0, elevation=50, distance=3.5*np.sqrt(grid_qx**2+grid_qz**2+gr
 # azimut is the rotation around z axis of mayavi (x)
 mlab.roll(0)
 
-ax = mlab.axes(line_width=2.0, nb_labels=5)
+ax = mlab.axes(line_width=2.0, nb_labels=2*half_labels+1)
 mlab.savefig(homedir + 'S' + str(scan) + '_labels.png', figure=myfig)
 ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
