@@ -44,10 +44,10 @@ root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2"  # "S"
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 1, 1]  # binning that will be used for phasing
+binning = [1, 8, 8]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
-flag_interact = True  # True to interact with plots, False to close it automatically
+flag_interact = False  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ###########################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
@@ -108,7 +108,7 @@ specfile_name = sample_name + '_%05d'
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = [direct_beam[0] - 50, direct_beam[0] + 50, direct_beam[1] - 50, direct_beam[1] + 50]
+roi_detector = []  # [direct_beam[0] - 50, direct_beam[0] + 50, direct_beam[1] - 50, direct_beam[1] + 50]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
@@ -335,6 +335,8 @@ for scan_nb in range(len(scans)):
                                                            detector=detector, setup=setup, flatfield=flatfield,
                                                            hotpixels=hotpix_array, background=background,
                                                            normalize=normalize_flux, debugging=debug)
+        print('Raw data shape:', data.shape)
+
         if save_rawdata:
             np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack', data=data)
             if save_to_mat:
@@ -418,7 +420,7 @@ for scan_nb in range(len(scans)):
     # crop/pad/center data #
     ########################
     nz, ny, nx = np.shape(data)
-    print('Data size:', nz, ny, nx)
+    print('Data shape before cropping / padding:', nz, ny, nx)
 
     data, mask, pad_width, q_vector, frames_logical = \
         pru.center_fft(data=data, mask=mask, frames_logical=frames_logical, centering=centering, detector=detector,
