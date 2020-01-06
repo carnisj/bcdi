@@ -2278,6 +2278,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
                correct_curvature=False, debugging=False):
     """
     Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in cartesian coordinates.
+     Note that it is based on PetraIII P10 beamline (counterclockwise rotation, detector seen from the front).
 
     :param data: the 3D data
     :param mask: the corresponding 3D mask
@@ -2387,7 +2388,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         # map these points to (angle, Y, X), the measurement cylindrical coordinates
         angle_det = wrap(obj=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
         # angle_det in radians, located in the range [start_angle, start_angle+np.pi[
-        y_det = y_interp
+        y_det = -1*y_interp  # vertical up opposite to detector Y
         sign_array = sign(angle=angle_det, z_coord=z_interp, x_coord=x_interp)
         x_det = np.multiply(sign_array, np.sqrt(x_interp**2 + z_interp**2))
         # if angle_det in [0, np.pi/2[ X axis of the detector is opposite to x
@@ -2411,11 +2412,6 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
                                       x_det.reshape((1, z_interp.size)))).transpose())
         newmask = newmask.reshape((numz, numy, numx)).astype(mask.dtype)
         newmask[np.nonzero(newmask)] = 1
-
-        newdata = np.flip(newdata, axis=1)
-        newdata = np.flip(newdata, axis=2)
-        newmask = np.flip(newmask, axis=1)
-        newmask = np.flip(newmask, axis=2)
 
     else:
         from scipy.interpolate import griddata
