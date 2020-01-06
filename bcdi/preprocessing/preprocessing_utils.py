@@ -2370,6 +2370,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         dqz = 2 * np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm, vertical up
         dqy = 2 * np.pi / lambdaz * (pixel_x * voxelsize_x)  # in 1/nm, outboard
 
+        # calculation of q based on P10 geometry
         qx = np.arange(-directbeam_x, -directbeam_x + numz, 1) * dqx
         # downstream, same direction as detector X rotated by +90deg
         qz = np.arange(-(numy-directbeam_y), -(numy-directbeam_y) + numy, 1) * dqz  # vertical up opposite to detector Y
@@ -2378,11 +2379,12 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
               str('{:.6f}'.format(dqy)), ' (1/nm)')
 
         # create a set of cartesian coordinates to interpolate onto (in z y x reciprocal frame):
+        # based on P10 geometry, it should use the same range as q values defined aboved
         # the range along z is nbx because the frame is rotating aroung y
         z_interp, y_interp, x_interp =\
             np.meshgrid(np.linspace(-directbeam_x, -directbeam_x + nbx, num=numz, endpoint=False),
-                        np.linspace(-directbeam_y, -directbeam_y + nby, num=numy, endpoint=False),
-                        np.linspace(-directbeam_x, -directbeam_x + nbx, num=numx, endpoint=False),
+                        np.linspace(-(nby-directbeam_y), -(nby-directbeam_y) + nby, num=numy, endpoint=False),
+                        np.linspace(-(nbx-directbeam_x), -(nbx-directbeam_x) + nbx, num=numx, endpoint=False),
                         indexing='ij')
 
         # map these points to (angle, Y, X), the measurement cylindrical coordinates
