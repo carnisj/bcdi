@@ -58,6 +58,8 @@ The following third-party packages are required:
 
 * scipy
 
+* skimage
+
 * matplotlib
 
 * vtk
@@ -69,6 +71,8 @@ The following third-party packages are required:
 * fabio
 
 * silx
+
+* xrayutilities
 
 Download & Installation
 =======================
