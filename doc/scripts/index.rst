@@ -45,10 +45,18 @@ Postprocessing
    :end-before: """
    :language: rst
 
-`resolution_prtf.py`:
-^^^^^^^^^^^^^^^^^^^^^
+`prtf_bcdi.py`:
+^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/postprocessing/scripts/resolution_prtf.py
+.. literalinclude:: ../../bcdi/postprocessing/scripts/prtf_bcdi.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+`prtf_cdi.py`:
+^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/prtf_cdi.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -116,10 +124,10 @@ Publication
 Utilities
 ---------
 
-`make_support.py`:
-^^^^^^^^^^^^^^^^^^
+`rescale_support.py`:
+^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/make_support.py
+.. literalinclude:: ../../bcdi/utils/scripts/rescale_support.py
    :start-after: helptext
    :end-before: """
    :language: rst
