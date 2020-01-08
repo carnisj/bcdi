@@ -29,19 +29,20 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 1
-root_folder = 'D:/data/PtRh/'
-sample_name = "S"
+scan = 194
+root_folder = 'D:/data/Pt_growth/data/'
+sample_name = "dewet5"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
 peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+is_series = False  # specific to series measurement at P10
 
-custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
@@ -51,7 +52,7 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # SIXS: beta, mu, gamma, delta
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = ''
+specfile_name = sample_name + '_%05d'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -63,18 +64,17 @@ specfile_name = ''
 detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 451  # horizontal pixel number of the Bragg peak
 y_bragg = 1450  # vertical pixel number of the Bragg peak
-roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430
-# roi_detector = []
+roi_detector = []  # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = 'BCDI_eiger2M_%05d.edf'
+template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
-# template for P10: '_data_%06d.h5'
+# template for P10: '_master.h5'
 ###################################
 # define setup related parameters #
 ###################################
@@ -82,12 +82,12 @@ reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the 
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to Pt 3.9236/norm(reflection)
 reference_temperature = None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
 beam_direction = (1, 0, 0)  # beam along z
-directbeam_x = 390.8  # x horizontal,  cch2 in xrayutilities
-directbeam_y = 1273.5  # y vertical,  cch1 in xrayutilities
-direct_inplane = -0.5  # outer angle in xrayutilities
-direct_outofplane = 0
-sdd = 0.865  # sample to detector distance in m
-energy = 8994  # in eV, offset of 6eV at ID01
+directbeam_x = 476  # x horizontal,  cch2 in xrayutilities
+directbeam_y = 1374  # y vertical,  cch1 in xrayutilities
+direct_inplane = -2.0  # outer angle in xrayutilities
+direct_outofplane = 0.8
+sdd = 1.83  # sample to detector distance in m
+energy = 10300  # in eV, offset of 6eV at ID01
 ##########################################################
 # end of user parameters
 ##########################################################
@@ -96,7 +96,8 @@ plt.ion()
 #######################
 # Initialize detector #
 #######################
-detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector)
+detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
+                        is_series=is_series)
 
 ####################
 # Initialize setup #

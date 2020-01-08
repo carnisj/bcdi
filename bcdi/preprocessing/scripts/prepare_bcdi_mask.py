@@ -40,7 +40,7 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = np.arange(173, 185+1, 3)  # list or array of scan numbers
+scans = np.arange(320, 332+1, 3)  # list or array of scan numbers
 root_folder = "D:/data/Pt_growth/data/"
 sample_name = "dewet5"  # "SN"  #
 user_comment = ''  # string, should start with "_"
@@ -111,7 +111,7 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 1282  # horizontal pixel number of the Bragg peak
+x_bragg = 1394  # horizontal pixel number of the Bragg peak
 # y_bragg = 1450  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
@@ -126,7 +126,7 @@ template_imagefile = '_master.h5'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
-# template for P10: '_master.h5' or '_data_%06d.h5'
+# template for P10: '_master.h5'
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################

@@ -120,7 +120,7 @@ template_imagefile = '_master.h5'  # ''_data_%06d.h5'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
-# template for P10: '_master.h5' and '_data_%06d.h5'
+# template for P10: '_master.h5'
 #########################################################################
 # define parameters below if you want to regrid the data before phasing #
 #########################################################################
