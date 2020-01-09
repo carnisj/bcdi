@@ -29,7 +29,7 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 194
+scan = 302
 root_folder = 'D:/data/Pt_growth/data/'
 sample_name = "dewet5"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
@@ -61,10 +61,11 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 451  # horizontal pixel number of the Bragg peak
+detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+x_bragg = 1392  # horizontal pixel number of the Bragg peak
 y_bragg = 1450  # vertical pixel number of the Bragg peak
-roi_detector = []  # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430
+roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]
+# [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
@@ -255,7 +256,7 @@ dist_plane = 2 * np.pi / Qnorm
 print("\nWavevector transfer of Bragg peak: ", q, str('{:.4f}'.format(Qnorm)))
 print("Interplanar distance: ", str('{:.4f}'.format(dist_plane)), "angstroms")
 temperature = pu.bragg_temperature(spacing=dist_plane, reflection=reflection, spacing_ref=reference_spacing,
-                                   temperature_ref=reference_temperature, use_q=0, material="Pt")
+                                   temperature_ref=reference_temperature, use_q=False, material="Pt")
 
 #########################
 # calculate voxel sizes #
