@@ -40,7 +40,7 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = np.arange(320, 332+1, 3)  # list or array of scan numbers
+scans = np.arange(404, 407+1, 3)  # list or array of scan numbers
 root_folder = "D:/data/Pt_growth/data/"
 sample_name = "dewet5"  # "SN"  #
 user_comment = ''  # string, should start with "_"
@@ -111,7 +111,7 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 1394  # horizontal pixel number of the Bragg peak
+x_bragg = 1387  # horizontal pixel number of the Bragg peak
 # y_bragg = 1450  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
@@ -307,11 +307,11 @@ for scan_nb in range(len(scans)):
     print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
     print('Specfile: ', specfile)
     print('Scan type: ', setup.rocking_angle)
-    print('Sample to detector distance: ', setup.distance, 'm')
-    print('Energy:', setup.energy, 'ev')
 
     if not use_rawdata:
         print('Output will be orthogonalized by xrayutilities')
+        print('Energy:', setup.energy, 'ev')
+        print('Sample to detector distance: ', setup.distance, 'm')
         plot_title = ['QzQx', 'QyQx', 'QyQz']
     else:
         print('Output will be non orthogonal, in the detector frame')
