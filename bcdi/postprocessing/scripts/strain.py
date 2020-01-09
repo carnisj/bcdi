@@ -14,7 +14,7 @@ import tkinter as tk
 from tkinter import filedialog
 import gc
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -41,9 +41,9 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 936  # spec scan number
+scan = 8  # spec scan number
 
-datadir = 'D:/data/HC3207/SN' + str(scan) + "/test/"
+datadir = 'D:/data/Pt_growth/data/dewet5_sum_S302_to_S314/'  # 'D:/data/HC3207/SN' + str(scan) + "/test/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
@@ -51,9 +51,9 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [100, 400, 512]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [140, 512, 350]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-binning = (1, 1, 1)  # binning factor during phasing
+binning = (2, 2, 2)  # binning factor during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
 fix_voxel = 6.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
@@ -74,24 +74,26 @@ comment = "_angles_" + isosurface_method + "_iso_" + str(isosurface_strain)  # s
 #################################
 # define the experimental setup #
 #################################
-beamline = "ID01"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
+beamline = "P10"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 0.8618  # sample to detector distance in m
-pixel_size = 55e-6  # detector pixel size in m
-energy = 8994  # x-ray energy in eV, 6eV offset at ID01
+sdd = 1.83  # sample to detector distance in m
+pixel_size = 75e-6  # detector pixel size in m
+energy = 10300  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 35.1012  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 3.5457  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 30.5403  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 8.5033  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
 tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
-correct_refraction = False  # True for correcting the phase shift due to refraction
-correct_absorption = False  # True for correcting the amplitude for absorption
+correct_refraction = True  # True for correcting the phase shift due to refraction
+correct_absorption = True  # True for correcting the amplitude for absorption
 dispersion = 4.1184E-05  # delta
-# Pt:  3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994keV, 5.2647E-05 @ 7994keV, 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
+# Pt:  3.0761E-05 @ 10300eV
+# 3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994eV, 5.2647E-05 @ 7994eV, 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
 absorption = 3.4298E-06  # beta
-# Pt:  2.3486E-06 @ 9994eV, 3.4298E-06 @ 8994keV, 5.2245E-06 @ 7994keV, 4.1969E-06 @ 8500eV
+# Pt:  2.0982E-06 @ 10300eV
+# 2.3486E-06 @ 9994eV, 3.4298E-06 @ 8994eV, 5.2245E-06 @ 7994eV, 4.1969E-06 @ 8500eV
 threshold_refraction = 0.05  # threshold used to calculate the optical path
 # the threshold for refraction/absorption corrections should be low, to correct for an object larger than the real one,
 # otherwise it messes up the phase
@@ -131,7 +133,7 @@ alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
 ############################################
 align_crystal = True  # if True rotates the crystal to align it along q
 ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
-align_inplane = True  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
+align_inplane = False  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
 ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
 inplane_normal = np.array([1, 0, -0.16])  # facet normal to align with ref_axis_inplane (y should be 0)
 strain_range = 0.004  # for plots
