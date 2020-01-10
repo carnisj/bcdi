@@ -428,7 +428,7 @@ for scan_nb in range(len(scans)):
     # save the raw data and mask #
     ##############################
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                    title='Data before aliens removal\n', invert_yaxis=False,
+                                    title='Data before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '.png')
 
@@ -439,7 +439,7 @@ for scan_nb in range(len(scans)):
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                    vmax=(nz, ny, nx), title='Mask before aliens removal\n', invert_yaxis=False,
+                                    vmax=(nz, ny, nx), title='Mask before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     plt.savefig(savedir + 'mask_before_masking_S' + str(scans[scan_nb]) + '.png')
 
@@ -523,7 +523,7 @@ for scan_nb in range(len(scans)):
         del dim, width, fig_mask, original_data
 
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                        title='Data after aliens removal\n', invert_yaxis=False,
+                                        title='Data after aliens removal\n',
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
 
         if flag_interact:
@@ -533,7 +533,7 @@ for scan_nb in range(len(scans)):
         plt.close(fig)
 
         fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                        vmax=(nz, ny, nx), title='Mask after aliens removal\n', invert_yaxis=False,
+                                        vmax=(nz, ny, nx), title='Mask after aliens removal\n',
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
 
         if flag_interact:
@@ -696,22 +696,21 @@ for scan_nb in range(len(scans)):
     if center_fft in ['crop_symmetric_ZYX', 'pad_symmetric_ZYX']:
         # in other cases the diffraction pattern will not be centered
         fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                        title='Masked data', invert_yaxis=False,
+                                        title='Masked data',
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
         plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + comment + '.png')
         if not flag_interact:
             plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
-                                    invert_yaxis=False,
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                    vmax=(nz, ny, nx), title='Mask', invert_yaxis=False,
-                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
+                                    vmax=(nz, ny, nx), title='Mask', is_orthogonal=not use_rawdata,
+                                    reciprocal_space=True)
     plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
@@ -734,14 +733,14 @@ for scan_nb in range(len(scans)):
         comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)
 
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                        title='Final data', invert_yaxis=False, is_orthogonal=not use_rawdata,
+                                        title='Final data', is_orthogonal=not use_rawdata,
                                         reciprocal_space=True)
         plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
         if not flag_interact:
             plt.close(fig)
 
         fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                        vmax=(nz, ny, nx), title='Final mask', invert_yaxis=False,
+                                        vmax=(nz, ny, nx), title='Final mask',
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
         plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
         if not flag_interact:
