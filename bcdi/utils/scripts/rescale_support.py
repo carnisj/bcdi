@@ -44,6 +44,7 @@ roll_centering = (0, 0, 0)  # roll applied after masking when centering by cente
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 save_fig = True  # if True, will save the figure of the final support
 comment = ''  # should start with _
+roll_modes = (-2, 15, -15)   # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 ##############################################################################
 # parameters used when (original_shape != output_shape) and (is_ortho=False) #
 ##############################################################################
@@ -99,10 +100,9 @@ data, _ = pu.load_reconstruction(file_path)
 data = abs(data)  # take the real part
 mask = np.zeros(data.shape)
 nz, ny, nx = data.shape
+data = np.roll(data, roll_modes, axis=(0, 1, 2))
 
 if not skip_masking:
-
-    data = np.roll(data, roll_modes, axis=(0, 1, 2))
     data = data / data.max()  # normalize
     data[data < support_threshold] = 0
 
