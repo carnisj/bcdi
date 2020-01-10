@@ -41,9 +41,9 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 8  # spec scan number
+scan = 1  # spec scan number
 
-datadir = 'D:/data/Pt_growth/data/dewet5_sum_S302_to_S314/'  # 'D:/data/HC3207/SN' + str(scan) + "/test/"
+datadir = 'D:/data/Pt_growth/data/dewet5_sum_S173_to_S182/'  # 'D:/data/HC3207/SN' + str(scan) + "/test/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
@@ -82,8 +82,8 @@ sdd = 1.83  # sample to detector distance in m
 pixel_size = 75e-6  # detector pixel size in m
 energy = 10300  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 30.5403  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 8.5033  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 30.5462  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 4.1714  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
 tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = True  # True for correcting the phase shift due to refraction
@@ -109,7 +109,7 @@ reference_temperature = None  # used to calibrate the thermal expansion, if None
 ###########
 simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
-flip_reconstruction = False  # True if you want to get the conjugate object
+flip_reconstruction = True  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling'
 threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use for ramp removal
 xrayutils_ortho = False  # True if the data is already orthogonalized
@@ -118,7 +118,8 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
+roll_modes = (0, 0, 0) # (-2, 15, -15)   # correct a roll of few pixels after the decomposition into modes in PyNX.
+# axis=(0, 1, 2)
 ############################################
 # setup for phase averaging or apodization #
 ############################################
@@ -252,7 +253,7 @@ for ii in sorted_obj:
         centering_method = 'do_nothing'  # do not center, data is already cropped just on support for mode decomposition
         # coorect a roll after the decomposition into modes in PyNX
         obj = np.roll(obj, roll_modes, axis=(0, 1, 2))
-
+        gu.multislices_plot(abs(obj), plot_colorbar=True, title='1st mode after centering')
     # use the range of interest defined above
     obj = pu.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
 
@@ -280,7 +281,7 @@ print('Extent of the phase over an extended support (ceil(phase range))~ ', int(
 phase = pru.wrap(phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                        invert_yaxis=False, plot_colorbar=True, title='Phase after unwrap + wrap')
+                        plot_colorbar=True, title='Phase after unwrap + wrap')
 #############################################
 # phase ramp removal before phase filtering #
 #############################################
@@ -292,7 +293,7 @@ gc.collect()
 
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                        invert_yaxis=False, plot_colorbar=True, title='Phase after ramp removal')
+                        plot_colorbar=True, title='Phase after ramp removal')
 
 #######################################
 # phase offset removal (COM then mean) #
@@ -318,7 +319,7 @@ phase = pru.wrap(obj=phase, start_angle=-extent_phase/2, range_angle=extent_phas
 
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                        invert_yaxis=False, plot_colorbar=True, title='Phase after offset removal')
+                        plot_colorbar=True, title='Phase after offset removal')
 
 print("Mean phase:", phase[support == 1].mean(), "rad")
 phase = phase - phase[support == 1].mean() + phase_offset
@@ -328,7 +329,7 @@ gc.collect()
 phase = pru.wrap(obj=phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                        invert_yaxis=False, plot_colorbar=True, title='Phase after mean removal')
+                        plot_colorbar=True, title='Phase after mean removal')
 
 ##############################################################################
 # average the phase over a window or apodize to reduce noise in strain plots #
@@ -383,12 +384,12 @@ elif centering_method is 'max_com':
 #  plot amp & phase, save support & vti #
 #########################################
 gu.multislices_plot(abs(avg_obj), width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                    sum_frames=False, invert_yaxis=False, plot_colorbar=True, vmin=0, vmax=abs(avg_obj).max(),
+                    sum_frames=False, plot_colorbar=True, vmin=0, vmax=abs(avg_obj).max(),
                     title='Amp before orthogonalization')
 if debug:
     phase, _ = pu.unwrap(avg_obj, support_threshold=0.05, debugging=True)
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                        sum_frames=False, invert_yaxis=False, plot_colorbar=True,
+                        sum_frames=False, plot_colorbar=True,
                         title='Unwrapped phase before orthogonalization')
     del phase
     gc.collect()
@@ -425,10 +426,10 @@ if not xrayutils_ortho:
     if True:
         phase, _ = pu.unwrap(obj_ortho, support_threshold=0.05, debugging=True)
         gu.multislices_plot(abs(obj_ortho), width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                            sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=0, vmax=abs(obj_ortho).max(),
+                            sum_frames=False, plot_colorbar=True, vmin=0, vmax=abs(obj_ortho).max(),
                             title='Amp after orthogonalization')
         gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                            sum_frames=False, invert_yaxis=True, plot_colorbar=True,
+                            sum_frames=False, plot_colorbar=True,
                             title='Unwrapped phase after orthogonalization')
         del phase
         gc.collect()
@@ -498,7 +499,10 @@ print("Atomic plane distance: (angstroms)", str('{:.4f}'.format(planar_dist)), "
 
 if get_temperature:
     temperature = pu.bragg_temperature(spacing=planar_dist, reflection=reflection, spacing_ref=reference_spacing,
-                                       temperature_ref=reference_temperature, use_q=0, material="Pt")
+                                       temperature_ref=reference_temperature, use_q=False, material="Pt")
+else:
+    temperature = 20  # C
+
 planar_dist = planar_dist / 10  # switch to nm
 
 ######################
@@ -512,10 +516,10 @@ gc.collect()
 
 if debug:
     gu.multislices_plot(amp, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                        sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=0, vmax=amp.max(),
+                        sum_frames=False, plot_colorbar=True, vmin=0, vmax=amp.max(),
                         title='Amp before absorption correction')
     gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                        sum_frames=False, invert_yaxis=True, plot_colorbar=True,
+                        sum_frames=False, plot_colorbar=True,
                         title='Unwrapped phase before refraction correction')
 
 #############################################
@@ -548,7 +552,7 @@ if correct_refraction or correct_absorption:
         phase = phase + phase_correction
 
         gu.multislices_plot(phase_correction, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                            sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=0, vmax=np.pi/2,
+                            sum_frames=False, plot_colorbar=True, vmin=0, vmax=np.pi/2,
                             title='Refraction correction')
 
     if correct_absorption:
@@ -556,7 +560,7 @@ if correct_refraction or correct_absorption:
         amp = amp * amp_correction
 
         gu.multislices_plot(amp_correction, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                            sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=1, vmax=1.1,
+                            sum_frames=False, plot_colorbar=True, vmin=1, vmax=1.1,
                             title='Absorption correction')
 
     del optical_path
@@ -594,7 +598,7 @@ else:
 phase = pru.wrap(obj=phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 if True:
     gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                        sum_frames=False, invert_yaxis=True, plot_colorbar=True,
+                        sum_frames=False, plot_colorbar=True,
                         title='Orthogonal phase after mean removal')
 
 ################################
@@ -730,7 +734,7 @@ if True:
                       reciprocal_space=False)
 
 # bulk support
-fig, _, _ = gu.multislices_plot(bulk, sum_frames=False, invert_yaxis=True, title='Orthogonal bulk', vmin=0, vmax=1,
+fig, _, _ = gu.multislices_plot(bulk, sum_frames=False, title='Orthogonal bulk', vmin=0, vmax=1,
                                 tick_direction=tick_direction, tick_width=tick_width, tick_length=tick_length,
                                 pixel_spacing=pixel_spacing, is_orthogonal=True, reciprocal_space=False)
 fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
@@ -742,7 +746,7 @@ if save:
         datadir + 'S' + str(scan) + '_bulk' + comment + '.png')
 
 # amplitude
-fig, _, _ = gu.multislices_plot(amp, sum_frames=False, invert_yaxis=True, title='Normalized orthogonal amp', vmin=0,
+fig, _, _ = gu.multislices_plot(amp, sum_frames=False, title='Normalized orthogonal amp', vmin=0,
                                 vmax=1, tick_direction=tick_direction, tick_width=tick_width, tick_length=tick_length,
                                 pixel_spacing=pixel_spacing, plot_colorbar=True, is_orthogonal=True,
                                 reciprocal_space=False)
@@ -760,7 +764,7 @@ if save:
     plt.savefig(datadir + 'amp_S' + str(scan) + comment + '.png')
 
 # phase
-fig, _, _ = gu.multislices_plot(phase, sum_frames=False, invert_yaxis=True, title='Orthogonal displacement',
+fig, _, _ = gu.multislices_plot(phase, sum_frames=False, title='Orthogonal displacement',
                                 vmin=-phase_range, vmax=phase_range, tick_direction=tick_direction, cmap=my_cmap,
                                 tick_width=tick_width, tick_length=tick_length, pixel_spacing=pixel_spacing,
                                 plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
@@ -776,7 +780,7 @@ if save:
     plt.savefig(datadir + 'displacement_S' + str(scan) + comment + '.png')
 
 # strain
-fig, _, _ = gu.multislices_plot(strain, sum_frames=False, invert_yaxis=True, title='Orthogonal strain',
+fig, _, _ = gu.multislices_plot(strain, sum_frames=False, title='Orthogonal strain',
                                 vmin=-strain_range, vmax=strain_range, tick_direction=tick_direction,
                                 tick_width=tick_width, tick_length=tick_length, plot_colorbar=True, cmap=my_cmap,
                                 pixel_spacing=pixel_spacing, is_orthogonal=True, reciprocal_space=False)
