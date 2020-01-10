@@ -53,7 +53,7 @@ def align_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thresho
         avg_obj = ref_obj
         if debugging:
             gu.multislices_plot(abs(avg_obj), width_z=width_z, width_y=width_y, width_x=width_x,
-                                sum_frames=True, invert_yaxis=True, title='Reference object')
+                                sum_frames=True, title='Reference object')
     else:
         myref_support = np.zeros((nbz, nby, nbx))
         myref_support[abs(ref_obj) > support_threshold*abs(ref_obj).max()] = 1
@@ -101,7 +101,7 @@ def align_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thresho
             if debugging:
 
                 myfig, _, _ = gu.multislices_plot(abs(new_obj), width_z=width_z, width_y=width_y, width_x=width_x,
-                                                  sum_frames=True, invert_yaxis=True, title='Aligned object')
+                                                  sum_frames=True, title='Aligned object')
                 myfig.text(0.60, 0.30, "pearson-correlation = " + str('{:.4f}'.format(correlation)), size=20)
 
             avg_obj = avg_obj + new_obj
@@ -109,7 +109,7 @@ def align_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thresho
 
         if debugging:
             gu.multislices_plot(abs(avg_obj), width_z=width_z, width_y=width_y, width_x=width_x,
-                                sum_frames=True, invert_yaxis=True, title='New averaged object')
+                                sum_frames=True, title='New averaged object')
 
     return avg_obj, avg_flag
 
@@ -371,9 +371,9 @@ def calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=np.nan, width_
 
     if debugging:
         gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x,
-                            invert_yaxis=True, vmin=0, title='Input support')
+                            vmin=0, title='Input support')
         gu.multislices_plot(mycoord, width_z=width_z, width_y=width_y, width_x=width_x,
-                            invert_yaxis=True, vmin=0, title='Coordination matrix')
+                            vmin=0, title='Coordination matrix')
     return mycoord
 
 
@@ -395,8 +395,7 @@ def center_com(array, width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=
     nbz, nby, nbx = array.shape
 
     if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x,
-                            invert_yaxis=True, title='Before COM centering')
+        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before COM centering')
 
     piz, piy, pix = center_of_mass(abs(array))
     print("center of mass at (z, y, x): (", str('{:.2f}'.format(piz)), ',',
@@ -408,8 +407,7 @@ def center_com(array, width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=
     array = np.roll(array, (offset_z, offset_y, offset_x), axis=(0, 1, 2))
 
     if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x,
-                            invert_yaxis=True, title='After COM centering')
+        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='After COM centering')
     return array
 
 
@@ -431,8 +429,7 @@ def center_max(array, width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=
     nbz, nby, nbx = array.shape
 
     if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x,
-                            invert_yaxis=True, title='Before max centering')
+        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before max centering')
 
     piz, piy, pix = np.unravel_index(abs(array).argmax(), array.shape)
     print("Max at (z, y, x): (", piz, ',', piy, ',', pix, ')')
@@ -443,8 +440,7 @@ def center_max(array, width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=
     array = np.roll(array, (offset_z, offset_y, offset_x), axis=(0, 1, 2))
 
     if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x,
-                            invert_yaxis=True, title='After max centering')
+        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='After max centering')
     return array
 
 
@@ -472,8 +468,7 @@ def crop_pad(array, output_shape, padwith_ones=False, start=(np.nan, np.nan, np.
     newz, newy, newx = output_shape
 
     if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x,
-                            invert_yaxis=True, title='Before crop/pad')
+        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before crop/pad')
     # z
     if newz >= nbz:  # pad
         if not padwith_ones:
@@ -512,8 +507,7 @@ def crop_pad(array, output_shape, padwith_ones=False, start=(np.nan, np.nan, np.
         newobj = temp_y[:, :, (nbx - newx) // 2:(newx + nbx) // 2]
 
     if debugging:
-        gu.multislices_plot(abs(newobj), width_z=width_z, width_y=width_y, width_x=width_x,
-                            invert_yaxis=True, title='After crop/pad')
+        gu.multislices_plot(abs(newobj), width_z=width_z, width_y=width_y, width_x=width_x, title='After crop/pad')
     return newobj
 
 
@@ -692,7 +686,7 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=np.nan, width_
         outer[mycoordination_matrix == 0] = 1  # corresponds to outside of the crystal
         if debugging:
             gu.multislices_plot(outer, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, vmin=0, vmax=1, title='Outer matrix')
+                                vmin=0, vmax=1, title='Outer matrix')
 
         ############################################################################
         # remove layer by layer until the correct isosurface is reached on average #
@@ -717,7 +711,7 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=np.nan, width_
             surface[:, :, nbx - 6:nbx] = 0
             if debugging:
                 gu.multislices_plot(surface, width_z=width_z, width_y=width_y, width_x=width_x,
-                                    invert_yaxis=True, vmin=0, vmax=1, title='Surface matrix')
+                                    vmin=0, vmax=1, title='Surface matrix')
 
             # second step: calculate the % of voxels from that layer whose amplitude is lower than support_threshold
             nb_voxels = surface[np.nonzero(surface)].sum()
@@ -792,9 +786,9 @@ def flip_reconstruction(obj, debugging=False):
 
     flipped_obj = ifftn(ifftshift(np.conj(fftshift(fftn(obj)))))
     if debugging:
-        gu.multislices_plot(abs(obj), vmin=0, sum_frames=False, invert_yaxis=True, plot_colorbar=True,
+        gu.multislices_plot(abs(obj), vmin=0, sum_frames=False, plot_colorbar=True,
                             title='Initial object')
-        gu.multislices_plot(abs(flipped_obj), vmin=0, sum_frames=False, invert_yaxis=True, plot_colorbar=True,
+        gu.multislices_plot(abs(flipped_obj), vmin=0, sum_frames=False, plot_colorbar=True,
                             title='Flipped object')
     return flipped_obj
 
@@ -888,7 +882,7 @@ def get_opticalpath(support, direction, k, width_z=np.nan, width_y=np.nan, width
     path = np.zeros((nbz, nby, nbx))
     if debugging:
         gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x, vmin=0, vmax=1,
-                            sum_frames=False, invert_yaxis=True, title='Support for optical path')
+                            sum_frames=False, title='Support for optical path')
 
     indices_support = np.nonzero(support)
     min_z = indices_support[0].min()
@@ -950,7 +944,7 @@ def get_opticalpath(support, direction, k, width_z=np.nan, width_y=np.nan, width
 
     if debugging:
         gu.multislices_plot(path, width_z=width_z, width_y=width_y, width_x=width_x,
-                            invert_yaxis=True, title='Optical path ' + direction)
+                            title='Optical path ' + direction)
     return path
 
 
@@ -1028,10 +1022,10 @@ def mean_filter(phase, support, half_width=0, width_z=np.nan, width_y=np.nan, wi
     if half_width != 0:
         if debugging:
             gu.multislices_plot(phase, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-phase_range, vmax=phase_range, invert_yaxis=True,
+                                vmin=-phase_range, vmax=phase_range,
                                 title='Phase before averaging', plot_colorbar=True)
             gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=0, vmax=1, invert_yaxis=True, title='Support for averaging')
+                                vmin=0, vmax=1, title='Support for averaging')
 
         nonzero_pixels = np.argwhere(support != 0)
         new_values = np.zeros((nonzero_pixels.shape[0], 1), dtype=phase.dtype)
@@ -1054,7 +1048,7 @@ def mean_filter(phase, support, half_width=0, width_z=np.nan, width_y=np.nan, wi
             phase[nonzero_pixels[indx, 0], nonzero_pixels[indx, 1], nonzero_pixels[indx, 2]] = new_values[indx]
         if debugging:
             gu.multislices_plot(phase, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-phase_range, vmax=phase_range, invert_yaxis=True,
+                                vmin=-phase_range, vmax=phase_range,
                                 title='Phase after averaging', plot_colorbar=True)
         if counter != 0:
             print("There were", counter, "voxels for which phase could not be averaged")
@@ -1225,9 +1219,9 @@ def remove_ramp(amp, phase, initial_shape, width_z=np.nan, width_y=np.nan, width
         myrampz = mygradz[mysupportz == 1].mean()
         if debugging:
             gu.multislices_plot(mygradz, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, vmin=-0.2, vmax=0.2, title='Phase gradient along Z')
+                                 vmin=-0.2, vmax=0.2, title='Phase gradient along Z')
             gu.multislices_plot(mysupportz, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, vmin=0, vmax=1, title='Thresholded support along Z')
+                                vmin=0, vmax=1, title='Thresholded support along Z')
         del mysupportz, mygradz
         gc.collect()
 
@@ -1239,9 +1233,9 @@ def remove_ramp(amp, phase, initial_shape, width_z=np.nan, width_y=np.nan, width
         myrampy = mygrady[mysupporty == 1].mean()
         if debugging:
             gu.multislices_plot(mygrady, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, vmin=-0.2, vmax=0.2, title='Phase gradient along Y')
+                                vmin=-0.2, vmax=0.2, title='Phase gradient along Y')
             gu.multislices_plot(mysupporty, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, vmin=0, vmax=1, title='Thresholded support along Y')
+                                vmin=0, vmax=1, title='Thresholded support along Y')
         del mysupporty, mygrady
         gc.collect()
 
@@ -1253,9 +1247,9 @@ def remove_ramp(amp, phase, initial_shape, width_z=np.nan, width_y=np.nan, width
         myrampx = mygradx[mysupportx == 1].mean()
         if debugging:
             gu.multislices_plot(mygradx, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, vmin=-0.2, vmax=0.2, title='Phase gradient along X')
+                                vmin=-0.2, vmax=0.2, title='Phase gradient along X')
             gu.multislices_plot(mysupportx, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, vmin=0, vmax=1, title='Thresholded support along X')
+                                vmin=0, vmax=1, title='Thresholded support along X')
         del mysupportx, mygradx, mysupport
         gc.collect()
 
@@ -1428,8 +1422,7 @@ def rotate_crystal(array, axis_to_align, reference_axis, width_z=np.nan, width_y
 
     nbz, nby, nbx = array.shape
     if debugging:
-        gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x,
-                            invert_yaxis=True, title='Before rotating')
+        gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, title='Before rotating')
 
     v = np.cross(axis_to_align, reference_axis)
     skew_sym_matrix = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
@@ -1452,8 +1445,7 @@ def rotate_crystal(array, axis_to_align, reference_axis, width_z=np.nan, width_y
                                    new_x.reshape((1, new_z.size)))).transpose())
     new_array = new_array.reshape((nbz, nby, nbx)).astype(array.dtype)
     if debugging:
-        gu.multislices_plot(new_array, width_z=width_z, width_y=width_y, width_x=width_x,
-                            invert_yaxis=True, title='After rotating')
+        gu.multislices_plot(new_array, width_z=width_z, width_y=width_y, width_x=width_x, title='After rotating')
     return new_array
 
 
@@ -1583,15 +1575,13 @@ def unwrap(obj, support_threshold, debugging=True):
 
     if debugging:
         if ndim == 3:
-            gu.multislices_plot(phase_wrapped.data, invert_yaxis=False, plot_colorbar=True,
-                                title='Object before unwrapping')
+            gu.multislices_plot(phase_wrapped.data, plot_colorbar=True, title='Object before unwrapping')
 
     phase_unwrapped = unwrap_phase(phase_wrapped).data
     phase_unwrapped[np.nonzero(unwrap_support)] = 0
     if debugging:
         if ndim == 3:
-            gu.multislices_plot(phase_unwrapped, invert_yaxis=False, plot_colorbar=True,
-                                title='Object after unwrapping')
+            gu.multislices_plot(phase_unwrapped, plot_colorbar=True, title='Object after unwrapping')
 
     extent_phase = np.ceil(phase_unwrapped.max() - phase_unwrapped.min())
 
