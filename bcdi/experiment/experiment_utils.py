@@ -46,25 +46,28 @@ class SetupPostprocessing(object):
 
     def rotation_direction(self):
         """
-        Define a coefficient +/- 1 depending on the detector rotation direction.
+        Define a coefficient +/- 1 depending on the detector rotation direction and the detector inplane orientation.
 
         :return: a coefficient  which is 1 for anticlockwise rotation or -1 for clockwise rotation.
         """
         if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
             # gamma is anti-clockwise
             coeff_inplane = 1
+            # TODO: check this
         elif self.beamline == 'ID01':
-            # nu is clockwise
+            # nu is clockwise, we see the detector from downstream (behind)
             coeff_inplane = -1
         elif self.beamline == '34ID':
             coeff_inplane = 1
             # gamma is anti-clockwise
+            # TODO: check this
         elif self.beamline == 'P10':
-            coeff_inplane = 1
-            # gamma is anti-clockwise
+            coeff_inplane = -1
+            # gamma is anti-clockwise, we see the detector from the front
         elif self.beamline == 'CRISTAL':
             coeff_inplane = 1
             # gamma is anti-clockwise
+            # TODO: check this
         else:
             raise ValueError('setup parameter: ', self.beamline, 'not defined')
         return coeff_inplane
@@ -640,4 +643,3 @@ class Detector(object):
         self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
         self.pixelsize_y = self.pixelsize_y * binning[1]
         self.pixelsize_x = self.pixelsize_x * binning[2]
-
