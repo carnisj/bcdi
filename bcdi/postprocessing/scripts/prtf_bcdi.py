@@ -330,11 +330,15 @@ fig = plt.figure()
 plt.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
 plt.title('PRTF')
 plt.xlabel('q (1/nm)')
+plt.plot([defined_q.min(), defined_q.max()], [1/np.e, 1/np.e], 'k.', lw=1)
+plt.xlim(defined_q.min(), defined_q.max())
 plt.ylim(0, 1.1)
+if save:
+    plt.savefig(detector.datadir + 'S' + str(scan) + '_prtf' + comment + '.png')
 fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
 fig.text(0.15, 0.20, "q at PRTF=1/e: " + str('{:.5f}'.format(q_resolution)) + '(1/nm)', size=14)
 fig.text(0.15, 0.15, "resolution d= " + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm', size=14)
 if save:
-    plt.savefig(detector.datadir + 'S' + str(scan) + '_prtf' + comment + '.png')
+    plt.savefig(detector.datadir + 'S' + str(scan) + '_prtf_comments' + comment + '.png')
 plt.ioff()
 plt.show()
