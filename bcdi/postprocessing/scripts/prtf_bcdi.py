@@ -219,7 +219,7 @@ gc.collect()
 
 if debug:
     gu.multislices_plot(distances_q, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
-                        title='distances_q', scale='linear', invert_yaxis=False, vmin=np.nan, vmax=np.nan,
+                        title='distances_q', scale='linear', vmin=np.nan, vmax=np.nan,
                         reciprocal_space=True)
 
 #############################
@@ -273,7 +273,7 @@ diff_pattern[diff_pattern == 0] = np.nan  # discard zero valued pixels
 prtf_matrix = abs(phased_fft) / np.sqrt(diff_pattern)
 
 gu.multislices_plot(prtf_matrix, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
-                    title='prtf_matrix', scale='linear', invert_yaxis=False, vmin=0, vmax=1.1,
+                    title='prtf_matrix', scale='linear', vmin=0, vmax=1.1,
                     reciprocal_space=True)
 
 #################################

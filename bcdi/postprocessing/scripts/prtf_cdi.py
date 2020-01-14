@@ -138,8 +138,8 @@ gc.collect()
 
 if True:
     gu.multislices_plot(distances_q, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
-                        title='distances_q', scale='linear', invert_yaxis=False, vmin=np.nan, vmax=np.nan,
-                        reciprocal_space=True)
+                        title='distances_q', scale='linear', vmin=np.nan, vmax=np.nan,
+                        reciprocal_space=True, is_orthogonal=True)
 
 #############################
 # load reconstructed object #
@@ -205,8 +205,8 @@ diff_pattern[diff_pattern == 0] = np.nan  # discard zero valued pixels
 prtf_matrix = abs(phased_fft) / np.sqrt(diff_pattern)
 
 gu.multislices_plot(prtf_matrix, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
-                    title='prtf_matrix', scale='linear', invert_yaxis=False, vmin=0, vmax=1.1,
-                    reciprocal_space=True)
+                    title='prtf_matrix', scale='linear', vmin=0, vmax=1.1,
+                    reciprocal_space=True, is_orthogonal=True)
 
 #################################
 # average over spherical shells #
@@ -262,11 +262,16 @@ fig = plt.figure()
 plt.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
 plt.title('PRTF')
 plt.xlabel('q (1/nm)')
+# draw an horizontal line corresponding to 1/e
+plt.plot([defined_q.min(), defined_q.max()], [1/np.e, 1/np.e], 'k.', lw=1)
+plt.xlim(defined_q.min(), defined_q.max())
 plt.ylim(0, 1.1)
+if save:
+    plt.savefig(datadir + 'S' + str(scan) + '_prtf' + comment + '.png')
 fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
 fig.text(0.15, 0.20, "q at PRTF=1/e: " + str('{:.5f}'.format(q_resolution)) + '(1/nm)', size=14)
 fig.text(0.15, 0.15, "resolution d= " + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm', size=14)
 if save:
-    plt.savefig(datadir + 'S' + str(scan) + '_prtf' + comment + '.png')
+    plt.savefig(datadir + 'S' + str(scan) + '_prtf_comments' + comment + '.png')
 plt.ioff()
 plt.show()
