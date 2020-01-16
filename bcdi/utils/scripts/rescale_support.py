@@ -107,7 +107,7 @@ if not skip_masking:
     data[data < support_threshold] = 0
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, vmax=1,
-                                    title='Support before masking', invert_yaxis=True, is_orthogonal=True,
+                                    title='Support before masking', is_orthogonal=True,
                                     reciprocal_space=False)
     cid = plt.connect('close_event', close_event)
     fig.waitforbuttonpress()
@@ -166,7 +166,7 @@ if not skip_masking:
 ############################################
 # plot the support with the original shape #
 ############################################
-fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, invert_yaxis=True,
+fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                                 title='Support after masking\n', is_orthogonal=True, reciprocal_space=False)
 cid = plt.connect('close_event', close_event)
 fig.waitforbuttonpress()
@@ -189,7 +189,7 @@ if filter_name != 'do_nothing':
     comment = comment + '_' + filter_name
     data = pu.filter_3d(data, filter_name=filter_name, sigma=gaussian_sigma, debugging=True)
     fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
-                                    invert_yaxis=True, title='Support after filtering\n', is_orthogonal=True,
+                                    title='Support after filtering\n', is_orthogonal=True,
                                     reciprocal_space=False)
     cid = plt.connect('close_event', close_event)
     fig.waitforbuttonpress()
@@ -299,7 +299,7 @@ if binary_support:
 # plot the support with the output shape #
 ##########################################
 fig, _, _ = gu.multislices_plot(new_support, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
-                                invert_yaxis=True, title='Support after interpolation\n', is_orthogonal=True,
+                                title='Support after interpolation\n', is_orthogonal=True,
                                 reciprocal_space=False)
 filename = 'support_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) +\
            '_bin_' + str(binning_output[0]) + '_' + str(binning_output[1]) + '_' + str(binning_output[2]) + comment
