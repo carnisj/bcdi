@@ -40,15 +40,15 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = np.arange(404, 407+1, 3)  # list or array of scan numbers
-root_folder = "D:/data/Pt_growth/data/"
-sample_name = "dewet5"  # "SN"  #
+scans = [589]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
+root_folder = "D:/data/CH5309/"
+sample_name = "S"  # "SN"  #
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = (1, 1, 1)  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
-flag_interact = False  # True to interact with plots, False to close it automatically
+flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ###########################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
@@ -83,7 +83,7 @@ save_to_mat = False  # True to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 is_series = False  # specific to series measurement at P10
 
@@ -99,7 +99,7 @@ custom_motors = {}
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = sample_name + '_%05d'
+specfile_name = 'align'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -109,19 +109,20 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 1387  # horizontal pixel number of the Bragg peak
-# y_bragg = 1450  # vertical pixel number of the Bragg peak
+x_bragg = 156  # horizontal pixel number of the Bragg peak
+y_bragg = 184  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
-# roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
+roi_detector = [y_bragg - 180, y_bragg + 180, x_bragg - 120, x_bragg + 120]  # CH5309
+# roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
+# roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
-flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
-template_imagefile = '_master.h5'
+flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  #
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -430,8 +431,20 @@ for scan_nb in range(len(scans)):
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Data before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '.png')
+    plt.savefig(savedir + 'data_before_masking_sum_S' + str(scans[scan_nb]) + '.png')
+    if flag_interact:
+        cid = plt.connect('close_event', close_event)
+        fig.waitforbuttonpress()
+        plt.disconnect(cid)
+    plt.close(fig)
 
+    piz, piy, pix = np.unravel_index(data.argmax(), data.shape)
+    fig = gu.combined_plots((data[piz, :, :], data[:, piy, :], data[:, :, pix]), tuple_sum_frames=False,
+                            tuple_sum_axis=0, tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=True,
+                            tuple_vmin=0, tuple_vmax=np.nan, tuple_scale='log',
+                            tuple_title=('data at max in xy', 'data at max in xz', 'data at max in yz'),
+                            is_orthogonal=not use_rawdata, reciprocal_space=False)
+    plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '.png')
     if flag_interact:
         cid = plt.connect('close_event', close_event)
         fig.waitforbuttonpress()
