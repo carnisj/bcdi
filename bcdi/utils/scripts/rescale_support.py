@@ -39,15 +39,15 @@ binary_support = True  # True to save the support as an array of 0 and 1
 reload_support = False  # if True, will load the support which shape is assumed to be the shape after binning_output
 # it is usefull to redo some masking without interpolating again.
 is_ortho = True  # True if the data is already orthogonalized
+center = True  # will center the support based on the center of mass
 roll_modes = (-1, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 roll_centering = (0, 0, 0)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 save_fig = True  # if True, will save the figure of the final support
 comment = ''  # should start with _
-roll_modes = (-2, 15, -15)   # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
-##############################################################################
-# parameters used when (original_shape != output_shape) and (is_ortho=False) #
-##############################################################################
+###############################################################################################
+# parameters used when (original_shape*binning_original != output_shape) and (is_ortho=False) #
+###############################################################################################
 energy = 9000  # in eV
 tilt_angle = 0.5  # in degrees
 distance = 4.95  # in m
@@ -215,7 +215,8 @@ print('Data shape after considering original binning and shape:', data.shape)
 ######################
 # center the support #
 ######################
-# data = pu.center_com(data)
+if center:
+    data = pu.center_com(data)
 # Use user-defined roll when the center by COM is not optimal
 data = np.roll(data, roll_centering, axis=(0, 1, 2))
 
