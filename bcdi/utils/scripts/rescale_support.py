@@ -40,6 +40,7 @@ reload_support = False  # if True, will load the support which shape is assumed 
 # it is usefull to redo some masking without interpolating again.
 is_ortho = True  # True if the data is already orthogonalized
 center = True  # will center the support based on the center of mass
+flip_reconstruction = True  # True if you want to get the conjugate object
 roll_modes = (-1, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 roll_centering = (0, 0, 0)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
@@ -97,10 +98,14 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the reconstruction",
                                        filetypes=[("HDF5", "*.h5"), ("NPZ", "*.npz"), ("CXI", "*.cxi")])
 data, _ = pu.load_reconstruction(file_path)
-data = abs(data)  # take the real part
 mask = np.zeros(data.shape)
 nz, ny, nx = data.shape
 data = np.roll(data, roll_modes, axis=(0, 1, 2))
+
+if flip_reconstruction:
+    data = pu.flip_reconstruction(data, debugging=True)
+
+data = abs(data)  # take the real part
 
 if not skip_masking:
     data = data / data.max()  # normalize
