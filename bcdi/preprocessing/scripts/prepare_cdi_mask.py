@@ -18,7 +18,7 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import gc
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -384,6 +384,15 @@ for scan_nb in range(len(scans)):
             gc.collect()
             flag_mask = False
 
+        tmp_data = np.copy(data)
+        tmp_data[mask == 1] = 0
+        fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                                        title='Data before gridding\n', is_orthogonal=False, reciprocal_space=True)
+        plt.savefig(savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '.png')
+        plt.close(fig)
+        del tmp_data
+        gc.collect()
+
         if use_rawdata:
             q_values = []
         else:
@@ -442,9 +451,9 @@ for scan_nb in range(len(scans)):
 
     plt.ioff()
 
-    ##############################
-    # save the raw data and mask #
-    ##############################
+    #####################################
+    # save data and mask before masking #
+    #####################################
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Data before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
@@ -795,8 +804,13 @@ for scan_nb in range(len(scans)):
     ############################
     comment = comment + '_' + str(detector.binning[0]) + '_' + str(detector.binning[1]) + '_' + str(detector.binning[2])
     if not use_rawdata:
-        np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
-                            qx=qx, qz=qz, qy=qy)
+        np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment, qx=qx, qz=qz, qy=qy)
+        fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=True, title='Final data',
+                                      levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
+                                      plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+        fig.savefig(
+            detector.savedir + 'reciprocal_space_phasing_' + str(nz) + '_' + str(ny) + '_' + str(nx) + '_' + '.png')
+        plt.close(fig)
     else:
         comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)
     print('saving to directory:', savedir)
