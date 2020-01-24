@@ -14,7 +14,7 @@ import xrayutilities as xu
 import fabio
 import os
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
 from bcdi.utils import image_registration as reg
@@ -2459,10 +2459,9 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
 
     if debugging:
         gu.multislices_plot(newdata, sum_frames=False, scale='log', plot_colorbar=True, vmin=0, title='Regridded data',
-                            invert_yaxis=False, is_orthogonal=True, reciprocal_space=True)
+                            is_orthogonal=True, reciprocal_space=True)
         gu.multislices_plot(newmask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
-                            title='Regridded mask',
-                            invert_yaxis=False, is_orthogonal=True, reciprocal_space=True)
+                            title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
     return newdata, newmask, [qx, qz, qy], frames_logical
 
 
@@ -3377,7 +3376,7 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
     padding_x0 = padding_width[4]
     padding_x1 = padding_width[5]
     if debugging:
-        gu.multislices_plot(array=array, sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=0, vmax=1,
+        gu.multislices_plot(array=array, sum_frames=False, plot_colorbar=True, vmin=0, vmax=1,
                             title='Array before padding')
 
     if mask_flag:
@@ -3386,7 +3385,7 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
         newobj = np.zeros((nbz + padding_z0 + padding_z1, nby + padding_y0 + padding_y1, nbx + padding_x0 + padding_x1))
     newobj[padding_z0:padding_z0 + nbz, padding_y0:padding_y0 + nby, padding_x0:padding_x0 + nbx] = array
     if debugging:
-        gu.multislices_plot(array=newobj, sum_frames=False, invert_yaxis=True, plot_colorbar=True, vmin=0, vmax=1,
+        gu.multislices_plot(array=newobj, sum_frames=False, plot_colorbar=True, vmin=0, vmax=1,
                             title='Array after padding')
     return newobj
 
