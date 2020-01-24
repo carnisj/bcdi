@@ -36,12 +36,14 @@ def align_obj(reference_obj, obj, precision=1000, debugging=False):
     if obj.ndim != 3 or reference_obj.ndim != 3:
         raise ValueError('reference_obj and obj should be 3D arrays')
     if obj.shape != reference_obj.shape:
-        raise ValueError('reference_obj and obj must have the same shape\n'
-                         ' - reference_obj is ', reference_obj.shape, ' - obj is ', obj.shape)
+        print('reference_obj and obj do not have the same shape\n'
+              ' - reference_obj is ', reference_obj.shape, ' - obj is ', obj.shape)
+        print('crop/pad obj')
+        obj = crop_pad(array=obj, output_shape=reference_obj.shape)
 
     shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(obj), precision=precision)
     new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output
-    print("Shift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
+    print("    Shift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
           str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
 
     if debugging:
@@ -1084,25 +1086,47 @@ def mean_filter(phase, support, half_width=0, width_z=np.nan, width_y=np.nan, wi
     return phase
 
 
-def ortho_modes(arrays):
+def ortho_modes(stack, nb_mode=None, verbose=False):
     """
     Orthogonalize modes from a N+1 dimensional array or a list/tuple of N-dimensional arrays.
      The decomposition is such that the total intensity (i.e. (abs(m)**2).sum()) is conserved.
      Adapted from PyNX.
 
-     :param arrays: the stack of modes to orthogonalize along the first dimension.
-     :return: an array (mo) with the same shape ias given in input, but with orthogonal modes,
+     :param stack: the stack of modes to orthogonalize along the first dimension.
+     :param nb_mode: the maximum number of modes to be returned. If None, all are returned.
+      This is useful if nb_mode is used, and only a partial list of modes is returned.
+     :param verbose: set it to True to have more printed comments
+     :return: an array (modes) with the same shape as given in input, but with orthogonal modes,
       i.e. (mo[i]*mo[j].conj()).sum()=0 for i!=j
-      The modes are sorted by decreasing norm.
+      The modes are sorted by decreasing norm. If nb_mode is not None, only modes up to nb_mode will be returned.
     """
-    if arrays[0].ndim != 2:
-        mm = np.array([[np.vdot(p2, p1) for p1 in arrays] for p2 in arrays])
-        e, v = np.linalg.eig(mm)
-        e = (-e).argsort()
-        modes = [sum(arrays[i] * v[i, j] for i in range(len(arrays))) for j in e]
+
+    if stack[0].ndim != 3:
+        raise ValueError('A stack of 3D arrays is expected')
+
+    mm = np.array([[np.vdot(p2, p1) for p1 in stack] for p2 in stack])
+    eigenvalues, eigenvectors = np.linalg.eig(mm)
+    sort_indices = (-eigenvalues).argsort()  # returns the indices that would sort eigenvalues in descending order
+    eigenvectors = eigenvectors[:, sort_indices]  # sort eigenvectors using sort_indices
+
+    for idx in range(len(sort_indices)):
+        if eigenvectors[abs(eigenvectors[:, idx]).argmax(), idx].real < 0:
+            eigenvectors[:, idx] *= -1
+
+    modes = np.array([sum(stack[i] * eigenvectors[i, j] for i in range(len(stack))) for j in range(len(stack))])
+    if verbose:
         print("Orthonormal decomposition coefficients (rows)")
-        print(np.array2string(abs(v[:, e].transpose()), threshold=10, precision=2, floatmode='fixed'))
-        return np.array(modes)
+        print(np.array2string((eigenvectors.transpose()), threshold=10, precision=3, floatmode='fixed',
+                              suppress_small=True))
+
+    if nb_mode is not None:
+        nb_mode = min(len(stack), nb_mode)
+    else:
+        nb_mode = len(stack)
+
+    weights = np.array([(abs(modes[i]) ** 2).sum() for i in range(len(stack))]) / (abs(modes) ** 2).sum()
+
+    return modes[:nb_mode], eigenvectors, weights
 
 
 def plane_angle(ref_plane, plane):
