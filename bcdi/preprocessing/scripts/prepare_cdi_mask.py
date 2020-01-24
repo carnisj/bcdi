@@ -776,7 +776,7 @@ for scan_nb in range(len(scans)):
         mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
         if not use_rawdata:
-            qx = pu.bin_data(qx, detector.binning[0])  # along Z
+            qx = qx[::binning[0]]  # along Z
 
     ############################
     # plot final data and mask #

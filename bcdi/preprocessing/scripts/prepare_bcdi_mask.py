@@ -40,7 +40,7 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [589]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
+scans = [816]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
 root_folder = "D:/data/CH5309/"
 sample_name = "S"  # "SN"  #
 user_comment = ''  # string, should start with "_"
@@ -59,7 +59,7 @@ fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg] consid
 fix_size = []  # crop the array to predefined size considering the full detector,
 # leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop]. ROI will be defaulted to []
 ###########################
-center_fft = 'do_nothing'
+center_fft = 'crop_asym_ZYX'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'do_nothing'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
@@ -111,10 +111,10 @@ specfile_name = 'align'
 #############################################################
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 156  # horizontal pixel number of the Bragg peak
-y_bragg = 184  # vertical pixel number of the Bragg peak
+x_bragg = 147  # horizontal pixel number of the Bragg peak
+y_bragg = 178  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = [y_bragg - 180, y_bragg + 180, x_bragg - 120, x_bragg + 120]  # CH5309
+roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
 # [Vstart, Vstop, Hstart, Hstop]
@@ -736,7 +736,7 @@ for scan_nb in range(len(scans)):
         mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
         if not use_rawdata:
-            qx = pu.bin_data(qx, detector.binning[0])  # along Z
+            qx = qx[::binning[0]]  # along Z
 
         ############################
         # plot binned data and mask #

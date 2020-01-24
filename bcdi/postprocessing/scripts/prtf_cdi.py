@@ -98,10 +98,9 @@ if any(bin_factor != 1 for bin_factor in binning):
     diff_pattern = pu.bin_data(array=diff_pattern, binning=binning, debugging=False)
     mask = pu.bin_data(array=mask, binning=binning, debugging=False)
     mask[np.nonzero(mask)] = 1
-    qx = pu.bin_data(array=qx, binning=binning[0], debugging=False)
-    qz = pu.bin_data(array=qz, binning=binning[1], debugging=False)
-    qy = pu.bin_data(array=qy, binning=binning[2], debugging=False)
-
+    qx = qx[::binning[0]]
+    qy = qy[::binning[1]]
+    qz = qz[::binning[2]]
 
 ############################
 # plot diffraction pattern #
@@ -116,7 +115,7 @@ print("COM of measured pattern after masking: ", z0, y0, x0, ' Number of unmaske
 
 plt.figure()
 plt.imshow(np.log10(np.sqrt(diff_pattern).sum(axis=0)), cmap=my_cmap, vmin=0)
-plt.title('abs(diffraction amplitude).sum(axis=0)')
+plt.title('abs(binned measured amplitude).sum(axis=0)')
 plt.colorbar()
 plt.pause(0.1)
 
