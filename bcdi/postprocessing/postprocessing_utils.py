@@ -22,10 +22,10 @@ import gc
 import os
 
 
-def align_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_threshold=0.90, aligning_option='dft',
-              width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=False):
+def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_threshold=0.90, aligning_option='dft',
+                width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=False):
     """
-    Align two reconstructions by interpolating it based on COM offset, if their cross-correlation is larger than
+    Average two reconstructions after aligning it, if their cross-correlation is larger than
     correlation_threshold.
 
     :param avg_obj: 3D array, average complex density
@@ -577,7 +577,7 @@ def crop_pad_1d(array, output_length, padwith_ones=False, start=np.nan, extrapol
     :return: myobj cropped or padded
     """
     if array.ndim != 1:
-        raise ValueError('array should be a 1D array')
+        raise ValueError('array should be 1D')
 
     nbx = array.shape[0]
     newx = output_length
@@ -1055,6 +1055,27 @@ def mean_filter(phase, support, half_width=0, width_z=np.nan, width_y=np.nan, wi
     return phase
 
 
+def ortho_modes(arrays):
+    """
+    Orthogonalize modes from a N+1 dimensional array or a list/tuple of N-dimensional arrays.
+     The decomposition is such that the total intensity (i.e. (abs(m)**2).sum()) is conserved.
+     Adapted from PyNX.
+
+     :param arrays: the stack of modes to orthogonalize along the first dimension.
+     :return: an array (mo) with the same shape ias given in input, but with orthogonal modes,
+      i.e. (mo[i]*mo[j].conj()).sum()=0 for i!=j
+      The modes are sorted by decreasing norm.
+    """
+    if arrays[0].ndim != 2:
+        mm = np.array([[np.vdot(p2, p1) for p1 in arrays] for p2 in arrays])
+        e, v = np.linalg.eig(mm)
+        e = (-e).argsort()
+        modes = [sum(arrays[i] * v[i, j] for i in range(len(arrays))) for j in e]
+        print("Orthonormal decomposition coefficients (rows)")
+        print(np.array2string(abs(v[:, e].transpose()), threshold=10, precision=2, floatmode='fixed'))
+        return np.array(modes)
+
+
 def plane_angle(ref_plane, plane):
     """
     Calculate the angle between two crystallographic planes in cubic materials.
@@ -1219,7 +1240,7 @@ def remove_ramp(amp, phase, initial_shape, width_z=np.nan, width_y=np.nan, width
         myrampz = mygradz[mysupportz == 1].mean()
         if debugging:
             gu.multislices_plot(mygradz, width_z=width_z, width_y=width_y, width_x=width_x,
-                                 vmin=-0.2, vmax=0.2, title='Phase gradient along Z')
+                                vmin=-0.2, vmax=0.2, title='Phase gradient along Z')
             gu.multislices_plot(mysupportz, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Thresholded support along Z')
         del mysupportz, mygradz
@@ -1589,5 +1610,3 @@ def unwrap(obj, support_threshold, debugging=True):
 
 
 # if __name__ == "__main__":
-#     gaussian_kernel(ndim=3, debugging=True)
-#     plt.show()
