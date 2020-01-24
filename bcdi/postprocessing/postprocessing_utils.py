@@ -1104,7 +1104,7 @@ def ortho_modes(stack, nb_mode=None, verbose=False):
     if stack[0].ndim != 3:
         raise ValueError('A stack of 3D arrays is expected')
 
-    mm = np.array([[np.vdot(p2, p1) for p1 in stack] for p2 in stack])
+    mm = np.array([[np.vdot(p2, p1) for p1 in stack] for p2 in stack])  # array of shape (stack.shape[0],stack.shape[0])
     eigenvalues, eigenvectors = np.linalg.eig(mm)
     sort_indices = (-eigenvalues).argsort()  # returns the indices that would sort eigenvalues in descending order
     eigenvectors = eigenvectors[:, sort_indices]  # sort eigenvectors using sort_indices
