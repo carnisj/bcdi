@@ -22,6 +22,35 @@ import gc
 import os
 
 
+def align_obj(reference_obj, obj, precision=1000, debugging=False):
+    """
+    Align two arrays using dft registration and subpixel shift.
+
+    :param reference_obj: 3D array, reference complex object
+    :param obj: 3D array, complex density to average with
+    :param precision: precision for the DFT registration in 1/pixel
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :return: the aligned array
+    """
+    if obj.ndim != 3 or reference_obj.ndim != 3:
+        raise ValueError('reference_obj and obj should be 3D arrays')
+    if obj.shape != reference_obj.shape:
+        raise ValueError('reference_obj and obj must have the same shape\n'
+                         ' - reference_obj is ', reference_obj.shape, ' - obj is ', obj.shape)
+
+    shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(obj), precision=precision)
+    new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output
+    print("Shift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
+          str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
+
+    if debugging:
+        gu.multislices_plot(abs(reference_obj), sum_frames=True, title='Reference object')
+        gu.multislices_plot(abs(new_obj), sum_frames=True, title='Aligned object')
+
+    return new_obj
+
+
 def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_threshold=0.90, aligning_option='dft',
                 width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=False):
     """
