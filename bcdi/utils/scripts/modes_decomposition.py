@@ -15,9 +15,7 @@ import tkinter as tk
 from tkinter import filedialog
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
-import bcdi.preprocessing.preprocessing_utils as pru
 
 helptext = """
 Eigendecomposition of a set of 3D reconstructed objects from phase retrieval,
@@ -75,6 +73,3 @@ fig, _, _ = gu.multislices_plot(abs(modes[0]), scale='linear', sum_frames=False,
                                 reciprocal_space=False, is_orthogonal=True, title='')
 fig.text(0.60, 0.25, "1st mode =" + str('{:.2f}'.format(weights[0]*100) + "%"), size=20)
 plt.show()
-
-
-
