@@ -1104,27 +1104,37 @@ def ortho_modes(stack, nb_mode=None, verbose=False):
     if stack[0].ndim != 3:
         raise ValueError('A stack of 3D arrays is expected')
 
-    mm = np.array([[np.vdot(p2, p1) for p1 in stack] for p2 in stack])  # array of shape (stack.shape[0],stack.shape[0])
-    eigenvalues, eigenvectors = np.linalg.eig(mm)
+    nb_arrays = len(stack)
+    my_matrix = np.array([[np.vdot(p2, p1) for p1 in stack] for p2 in stack])  # array of shape (nb_arrays,nb_arrays)
+    eigenvalues, eigenvectors = np.linalg.eig(my_matrix)  # the number of eigenvalues is nb_arrays
     sort_indices = (-eigenvalues).argsort()  # returns the indices that would sort eigenvalues in descending order
-    eigenvectors = eigenvectors[:, sort_indices]  # sort eigenvectors using sort_indices
+    eigenvectors = eigenvectors[:, sort_indices]  # sort eigenvectors using sort_indices, same shape as my_matrix
 
-    for idx in range(len(sort_indices)):
+    for idx in range(nb_arrays):
         if eigenvectors[abs(eigenvectors[:, idx]).argmax(), idx].real < 0:
             eigenvectors[:, idx] *= -1
 
-    modes = np.array([sum(stack[i] * eigenvectors[i, j] for i in range(len(stack))) for j in range(len(stack))])
+    modes = np.array([sum(stack[i] * eigenvectors[i, j] for i in range(nb_arrays)) for j in range(nb_arrays)])
+    # # the double nested comprehension list above is equivalent to the following code:
+    # modes = np.zeros(stack.shape, dtype=complex)
+    # for column in range(nb_arrays):
+    #     temp = np.zeros(stack[0].shape, dtype=complex)
+    #     for raw in range(nb_arrays):
+    #         temp += stack[raw] * eigenvectors[raw, column]
+    #     modes[column] = temp
+
+    # same shape as stack
     if verbose:
         print("Orthonormal decomposition coefficients (rows)")
         print(np.array2string((eigenvectors.transpose()), threshold=10, precision=3, floatmode='fixed',
                               suppress_small=True))
 
     if nb_mode is not None:
-        nb_mode = min(len(stack), nb_mode)
+        nb_mode = min(nb_arrays, nb_mode)
     else:
-        nb_mode = len(stack)
+        nb_mode = nb_arrays
 
-    weights = np.array([(abs(modes[i]) ** 2).sum() for i in range(len(stack))]) / (abs(modes) ** 2).sum()
+    weights = np.array([(abs(modes[i]) ** 2).sum() for i in range(nb_arrays)]) / (abs(modes) ** 2).sum()
 
     return modes[:nb_mode], eigenvectors, weights
 
