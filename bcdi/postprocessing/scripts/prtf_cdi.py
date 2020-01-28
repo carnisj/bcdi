@@ -17,7 +17,7 @@ from scipy.interpolate import interp1d
 import gc
 import sys
 import os
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
@@ -36,17 +36,18 @@ For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 scan = 22
 root_folder = 'D:/data/P10_August2019/data/'  # location of the .spec or log file
 sample_name = "gold_2_2_2_000"  # "SN"  #
-datadir = root_folder + sample_name + str(scan) + '/pynx/800_800_800_1_1_1/'
+datadir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/'
 comment = ""  # should start with _
 binning = (2, 2, 2)  # binning factor during phasing: axis0=downstream, axis1=vertical up, axis2=outboard
 # leave it to (1, 1, 1) if the binning factor is the same between the input data and the phasing output
-original_shape = (800, 800, 800)  # shape of the array used during phasing, before an eventual crop of the result
+original_shape = (1000, 1000, 1000)  # shape of the array used during phasing, before an eventual crop of the result
 ###########
 # options #
 ###########
 normalize_prtf = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = False  # True to show more plots
 save = True  # True to save the prtf figure
+q_max = 0.45  # in 1/nm, PRTF normalization will consider only points smaller than q_max for normalization
 ##########################
 # end of user parameters #
 ##########################
@@ -211,16 +212,27 @@ gu.multislices_plot(prtf_matrix, sum_frames=False, plot_colorbar=True, cmap=my_c
 # average over spherical shells #
 #################################
 print('Distance max:', distances_q.max(), '(1/nm) at: ', np.unravel_index(abs(distances_q).argmax(), distances_q.shape))
-nb_bins = nz // 4
+nb_bins = nz // 5
 prtf_avg = np.zeros(nb_bins)
+nb_points = np.zeros(nb_bins)
 dq = distances_q.max() / nb_bins  # in 1/nm
 q_axis = np.linspace(0, distances_q.max(), endpoint=True, num=nb_bins+1)  # in 1/nm
 
 for index in range(nb_bins):
     logical_array = np.logical_and((distances_q < q_axis[index+1]), (distances_q >= q_axis[index]))
     temp = prtf_matrix[logical_array]
+    nb_points[index] = logical_array.sum()
     prtf_avg[index] = temp[~np.isnan(temp)].mean()
 q_axis = q_axis[:-1]
+
+plt.figure()
+plt.plot(q_axis, nb_points, '.')
+plt.xlabel('q (1/nm)')
+plt.ylabel('nb of points in the average')
+
+prtf_avg = prtf_avg[q_axis < q_max]
+q_axis = q_axis[q_axis < q_max]
+
 
 if normalize_prtf:
     print('Normalizing the PRTF to 1 ...')
