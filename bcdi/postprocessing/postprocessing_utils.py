@@ -11,7 +11,7 @@ import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 import matplotlib.pyplot as plt
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 from bcdi.utils import image_registration as reg
 from scipy.ndimage.measurements import center_of_mass
@@ -888,6 +888,51 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
         raise ValueError('This function generates only 2D or 3D kernels')
 
     return kernel
+
+
+def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
+    """
+    Create a 2D or 3D Gaussian window using scipy.stats.multivariate_normal.
+
+    :param window_shape: shape of the window
+    :param sigma: float, sigma of the distribution
+    :param mu: float, mean of the distribution
+    :param debugging: True to see plots
+    :return: the Gaussian window
+    """
+    ndim = len(window_shape)
+    sigma = np.repeat(sigma, ndim)
+    mu = np.repeat(mu, ndim)
+
+    if ndim == 2:
+        nby, nbx = window_shape
+        grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nby), np.linspace(-1, 1, nbx),
+                                     indexing='ij')
+        covariance = np.diag(sigma ** 2)
+        window = multivariate_normal.pdf(np.column_stack([grid_y.flat, grid_x.flat]), mean=mu,
+                                         cov=covariance)
+        del grid_y, grid_x
+        gc.collect()
+        window = window.reshape((nby, nbx))
+
+    elif ndim == 3:
+        nbz, nby, nbx = window_shape
+        grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby),
+                                             np.linspace(-1, 1, nbx), indexing='ij')
+        covariance = np.diag(sigma ** 2)
+        window = multivariate_normal.pdf(np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]), mean=mu,
+                                         cov=covariance)
+        del grid_z, grid_y, grid_x
+        gc.collect()
+        window = window.reshape((nbz, nby, nbx))
+
+    else:
+        raise ValueError('Image should be 2D or 3D')
+
+    if debugging:
+        gu.multislices_plot(array=window, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window')
+
+    return window
 
 
 def get_opticalpath(support, direction, k, width_z=np.nan, width_y=np.nan, width_x=np.nan,
