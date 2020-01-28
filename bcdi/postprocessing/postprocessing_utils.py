@@ -930,7 +930,8 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
         raise ValueError('Image should be 2D or 3D')
 
     if debugging:
-        gu.multislices_plot(array=window, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window')
+        gu.multislices_plot(array=window, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window',
+                            reciprocal_space=False, is_orthogonal=True)
 
     return window
 
