@@ -28,6 +28,7 @@ Open a CDI reconstruction file and save individual figures including a length sc
 scan = 22    # spec scan number
 root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2_000"
+homedir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/maximum_likelihood/'
 comment = ""
 
 save_YZ = True  # True to save the modulus in YZ plane
@@ -62,7 +63,6 @@ my_cmap = colormap.cmap
 #############
 # load data #
 #############
-homedir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/v1/'
 plt.ion()
 root = tk.Tk()
 root.withdraw()
