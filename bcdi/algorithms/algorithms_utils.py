@@ -15,13 +15,14 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
 
 
-def deconvolution_rl(image, psf=None, iterations=20, debugging=False):
+def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, debugging=False):
     """
     Image deconvolution using Richardson-Lucy algorithm. The algorithm is based on a PSF (Point Spread Function),
      where PSF is described as the impulse response of the optical system.
 
     :param image: image to be deconvoluted
     :param psf: psf to be used as a first guess
+    :param psf_shape: shape of the kernel used for deconvolution
     :param iterations: number of iterations for the Richardson-Lucy algorithm
     :param debugging: True to see plots
     :return:
@@ -31,15 +32,20 @@ def deconvolution_rl(image, psf=None, iterations=20, debugging=False):
     if psf is None:
         print('Initializing the psf using a', ndim, 'D multivariate normal window\n')
         print('sigma =', 0.3, ' mu =', 0.0)
-        psf = pu.gaussian_window(image.shape, sigma=0.3, mu=0.0, debugging=True)
+        psf = pu.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False)
     psf = psf.astype(float)
+    if debugging:
+        gu.multislices_plot(array=psf, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window',
+                            reciprocal_space=False, is_orthogonal=True)
 
     im_deconv = np.abs(richardson_lucy(image=image, psf=psf, iterations=iterations, clip=False))
 
     if debugging:
+        image = abs(image) / abs(image) .max()
+        im_deconv = abs(im_deconv) / abs(im_deconv) .max()
         gu.combined_plots(tuple_array=(image, im_deconv), tuple_sum_frames=False, tuple_colorbar=True,
-                          tuple_scale='linear', tuple_width_v=None, tuple_width_h=None, tuple_vmin=0, tuple_vmax=1,
-                          tuple_title=('Before RL', 'After'+str(iterations)+'iterations of RL'))
+                          tuple_scale='linear', tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_vmin=0, tuple_vmax=1,
+                          tuple_title=('Before RL', 'After '+str(iterations)+' iterations of RL (normalized)'))
 
     return im_deconv
 
@@ -75,3 +81,16 @@ def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=Fals
 # def raar:
 #     return
 
+# if __name__ == "__main__":
+#     import h5py
+#     import matplotlib.pyplot as plt
+#     datadir = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/800_800_800_1_1_1/v5/'
+#     filename = 'modes_800_800-800.h5'
+#     h5file = h5py.File(datadir+filename, 'r')
+#     group_key = list(h5file.keys())[0]
+#     subgroup_key = list(h5file[group_key])
+#     dataset = h5file['/' + group_key + '/' + subgroup_key[0] + '/data'][0]  # select only first mode
+#     dataset = abs(dataset) / abs(dataset).max()
+#     my_psf = pu.tukey_window((10, 10, 10), alpha=(0.6, 0.6, 0.6))
+#     output = deconvolution_rl(dataset, psf=None, debugging=True)
+#     plt.show()
