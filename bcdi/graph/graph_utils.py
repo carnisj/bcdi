@@ -73,8 +73,8 @@ class Colormap(object):
         self.cmap.set_bad(color=bad_color)
 
 
-def combined_plots(tuple_array, tuple_sum_frames, tuple_sum_axis, tuple_width_v, tuple_width_h, tuple_colorbar,
-                   tuple_vmin, tuple_vmax, tuple_title, tuple_scale, cmap=my_cmap, tick_direction='inout',
+def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, tuple_colorbar, tuple_vmin,
+                   tuple_vmax, tuple_title, tuple_scale, tuple_sum_axis=0, cmap=my_cmap, tick_direction='inout',
                    tick_width=1, tick_length=3, pixel_spacing=np.nan, is_orthogonal=False, reciprocal_space=False,
                    **kwargs):
     """
