@@ -47,7 +47,7 @@ original_shape = (1000, 1000, 1000)  # shape of the array used during phasing, b
 normalize_prtf = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = False  # True to show more plots
 save = True  # True to save the prtf figure
-q_max = 0.45  # in 1/nm, PRTF normalization will consider only points smaller than q_max for normalization
+q_max = None  # in 1/nm, PRTF normalization using only points smaller than q_max. Leave it to None otherwise.
 ##########################
 # end of user parameters #
 ##########################
@@ -229,6 +229,9 @@ plt.figure()
 plt.plot(q_axis, nb_points, '.')
 plt.xlabel('q (1/nm)')
 plt.ylabel('nb of points in the average')
+
+if q_max is None:
+    q_max = q_axis.max() + 1
 
 prtf_avg = prtf_avg[q_axis < q_max]
 q_axis = q_axis[q_axis < q_max]
