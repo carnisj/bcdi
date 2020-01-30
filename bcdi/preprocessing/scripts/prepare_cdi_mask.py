@@ -111,7 +111,7 @@ direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of t
 roi_detector = []  # [direct_beam[0] - 50, direct_beam[0] + 50, direct_beam[1] - 50, direct_beam[1] + 50]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
-photon_threshold = 0  # data[data <= photon_threshold] = 0
+photon_threshold = 0  # data[data < photon_threshold] = 0
 background_file = ''  # root_folder + 'background.npz'  #
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
@@ -702,9 +702,9 @@ for scan_nb in range(len(scans)):
     # apply photon threshold #
     ##########################
     if photon_threshold != 0:
-        mask[np.nonzero(data) == photon_threshold] = 1
-        data[data <= photon_threshold] = 0
-        print("Applying photon threshold")
+        mask[data < photon_threshold] = 1
+        data[data < photon_threshold] = 0
+        print("Applying photon threshold < ", photon_threshold)
 
     ########################################
     # check for nans / inf, convert to int #

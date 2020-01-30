@@ -119,7 +119,7 @@ roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # C
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
-photon_threshold = 0  # data[data <= photon_threshold] = 0
+photon_threshold = 0  # data[data < photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  #
 template_imagefile = 'data_mpx4_%05d.edf.gz'
@@ -680,9 +680,9 @@ for scan_nb in range(len(scans)):
     # apply photon threshold
     #############################################
     if photon_threshold != 0:
-        mask[np.nonzero(data) == photon_threshold] = 1
-        data[data <= photon_threshold] = 0
-        print("Applying photon threshold")
+        mask[data < photon_threshold] = 1
+        data[data < photon_threshold] = 0
+        print("Applying photon threshold < ", photon_threshold)
 
     #############################################
     # save prepared data and mask
