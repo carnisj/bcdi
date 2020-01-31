@@ -17,7 +17,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 
-setup(name='bcdi', version='0.0.7',
+setup(name='bcdi', version='0.0.8',
       packages=find_packages(),
       include_package_data=True,
       # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},  # the file needs to be in a package
@@ -62,21 +62,22 @@ setup(name='bcdi', version='0.0.7',
                'bcdi/utils/scripts/compare_dataset_corr.py',
                'bcdi/utils/scripts/concatenate_scans.py',
                'bcdi/utils/scripts/cross_corr_fast_live_macro.py',
+               'bcdi/utils/scripts/modes_decomposition.py',
                'bcdi/utils/scripts/parse_fio2spec.py',
                'bcdi/utils/scripts/plane_angle.py',
                'bcdi/utils/scripts/primes.py',
-               'bcdi/utils/scripts/radial_average.py',
+               'bcdi/utils/scripts/angular_average.py',
                'bcdi/utils/scripts/read_edf.py',
                'bcdi/utils/scripts/rescale_support.py',
                ],
       # metadata
       author="Jerome Carnis",
       author_email="carnis_jerome@yahoo.fr",
-      description="BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data",
+      description="BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data",
       license="CeCILL-B",
       keywords="BCDI Bragg coherent X-rays diffraction imaging",
       long_description_content_type='text/x-rst',
-      long_description="BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data.\n\
+      long_description="BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data.\n\
                         BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:\n\n\
                         1. Pre-processing BCDI and forward CDI data (masking aliens, detector gaps...) before phasing.\n\
                         2. Post-processing phased data (phase offset and phase ramp removal, averaging, apodization, ...).\n\

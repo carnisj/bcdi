@@ -1,3 +1,24 @@
+Version 0.0.8
+-------------
+
+* Feature: implement 3Dobject_movie.py, creating movies of a real-space 3D object.
+
+* Feature: implement modes_decomposition.py, decomposition of a set of reconstructed object in orthogonal modes (adapted from PyNX)
+
+* Bug: correct the calculation of q when data is binned
+
+* implement scripts to visualize isosurfaces of reciprocal/real space including publication options (in /publication/)
+
+* implement algorithms_utils.py, featuring psf and image deconvolution using Richardson-Lucy algorithm
+
+* implement separate PRTF resolution estimation for CDI (prtf_cdi.py) and BCDI (bcdi_prtf.py) datasets
+
+* Feature: implement angular_average.py to average 3D CDI reciprocal space data in 1D curve
+
+* Feature: implement view_psf to plot the psf output of a phase retrieval with partial coherence
+
+* Refactor: change name of make_support.py to rescale_support.py
+
 Version 0.0.7
 -------------
 * Feature: implement supportMaker() class to define a support from a set of planes
