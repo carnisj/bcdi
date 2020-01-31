@@ -18,7 +18,7 @@ import bcdi.graph.graph_utils as gu
 def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, debugging=False):
     """
     Image deconvolution using Richardson-Lucy algorithm. The algorithm is based on a PSF (Point Spread Function),
-     where PSF is described as the impulse response of the optical system.
+    where PSF is described as the impulse response of the optical system.
 
     :param image: image to be deconvoluted
     :param psf: psf to be used as a first guess
