@@ -607,8 +607,8 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical):
     index_duplicated = np.where(frames_logical == 0)[0][0]
 
     # change the angle by a negligeable amount to still be able to use it for interpolation
-    cdi_angle[index_duplicated] = cdi_angle[index_duplicated] - 0.001
-    print('shifting frame', index_duplicated, 'by 1/1000 degrees for interpolation')
+    cdi_angle[index_duplicated] = cdi_angle[index_duplicated] - 0.0001
+    print('shifting frame', index_duplicated, 'by 1/10000 degrees for interpolation')
 
     frames_logical[index_duplicated] = 1
 
