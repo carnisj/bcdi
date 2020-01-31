@@ -6,6 +6,7 @@ API Reference
 .. toctree::
    :maxdepth: 1
 
+   algorithms/index.rst
    facet_recognition/index.rst
    experiment/index.rst
    graph/index.rst
