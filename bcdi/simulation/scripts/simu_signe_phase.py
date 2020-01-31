@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-calculation of the diffraction pattern using FFTs with both conventions and kinematic sum, to show the relationship
-between the phase and the displacement. The object is a Ge-core / Si-shell nanowire
-"""
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
 import numpy as np
 from numpy.fft import fftn, fftshift
 import matplotlib
@@ -10,6 +13,11 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.ticker as ticker
+
+helptext = """
+calculation of the diffraction pattern using FFTs with both conventions and kinematic sum, to show the relationship
+between the phase and the displacement. The object is a Ge-core / Si-shell nanowire
+"""
 
 savedir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S2227/simu/Figures/phasing_kin_FFT/new/"
 colorbar_range = [-7, 4]  # [0, 9.5]  # [vmin, vmax] log scale in photon counts

@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
-"""
-Calculate the FT of an object with displacement, using kinematic sum.
-Created on Mon Jul 16 13:50:08 2018
 
-@author: Stephane Labat
-Modif: Jerome Carnis
-"""
-import os, sys, time
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
 import pylab as plt
 import numpy as np
+
+helptext = """
+Calculate the FT of an object with displacement, using kinematic sum.
+
+Author: Stephane Labat @ IM2NP
+Modif: Jerome Carnis
+"""
 
 support = np.ones((32, 32))
 x, y = np.indices((32, 32))

@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Calculate the diffraction pattern using a kinematic sum.
-You need to use pynx as source
-"""
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
 import numpy as np
 from matplotlib import pyplot as plt
 # from pynx import scattering
@@ -10,6 +13,11 @@ from scipy.interpolate import RegularGridInterpolator
 from matplotlib.colors import LinearSegmentedColormap
 import tkinter as tk
 from tkinter import filedialog
+
+helptext = """
+Calculate the diffraction pattern using a kinematic sum.
+You need to use pynx as python source.
+"""
 
 datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S2227/pynxraw/"
 photon_number = 5e7  # total number of photons in the array, usually around 5e7
