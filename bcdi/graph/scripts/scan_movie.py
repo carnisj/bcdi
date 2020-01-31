@@ -19,8 +19,7 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 
 helptext = """
-scan_movie.py
-Create a movie from a scan (i.e. timescan)
+Create a movie from a scan (i.e. timescan). Requires ffmpeg (http://ffmpeg.zeranoe.com/builds/).
 """
 
 scan = 99  # spec scan number
