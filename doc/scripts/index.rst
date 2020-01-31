@@ -226,7 +226,7 @@ Simulation
 `kinematic_sum_forloop.py`:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/facet_recognition/scripts/kinematic_sum_forloop.py
+.. literalinclude:: ../../bcdi/simulation/scripts/kinematic_sum_forloop.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -234,7 +234,7 @@ Simulation
 `kinematic_sum_pynx.py`:
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/facet_recognition/scripts/kinematic_sum_pynx.py
+.. literalinclude:: ../../bcdi/simulation/scripts/kinematic_sum_pynx.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -242,7 +242,7 @@ Simulation
 simu_noise_CDI.py
 ^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/facet_recognition/scripts/simu_noise_CDI.py
+.. literalinclude:: ../../bcdi/simulation/scripts/simu_noise_CDI.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -250,7 +250,7 @@ simu_noise_CDI.py
 simu_signe_phase.py
 ^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/facet_recognition/scripts/simu_signe_phase.py
+.. literalinclude:: ../../bcdi/simulation/scripts/simu_signe_phase.py
    :start-after: helptext
    :end-before: """
    :language: rst
