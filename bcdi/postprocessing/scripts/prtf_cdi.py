@@ -37,7 +37,7 @@ scan = 22
 root_folder = 'D:/data/P10_August2019/data/'  # location of the .spec or log file
 sample_name = "gold_2_2_2_000"  # "SN"  #
 datadir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/'
-comment = ""  # should start with _
+comment = "_hotpixel"  # should start with _
 binning = (2, 2, 2)  # binning factor during phasing: axis0=downstream, axis1=vertical up, axis2=outboard
 # leave it to (1, 1, 1) if the binning factor is the same between the input data and the phasing output
 original_shape = (1000, 1000, 1000)  # shape of the array used during phasing, before an eventual crop of the result
@@ -81,6 +81,14 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the mas
                                        filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
 mask = npzfile[list(npzfile.files)[0]]
+if debug:
+    gu.multislices_plot(diff_pattern, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
+                        title='measured amplitude', scale='log', vmin=np.nan, vmax=np.nan,
+                        reciprocal_space=True, is_orthogonal=True)
+
+    gu.multislices_plot(mask, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
+                        title='mask', scale='linear', vmin=0, vmax=1,
+                        reciprocal_space=True, is_orthogonal=True)
 
 #################
 # load q values #
@@ -107,7 +115,11 @@ if any(bin_factor != 1 for bin_factor in binning):
 # plot diffraction pattern #
 ############################
 nz, ny, nx = diff_pattern.shape
-print('Data shape after binning=', nz, ny, nx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
+print('Data shape after binning=', nz, ny, nx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max(), ' at voxel # ',
+      np.unravel_index(diff_pattern.argmax(), diff_pattern.shape))
+# print(diff_pattern[434, 54, 462])
+mask[diff_pattern < 1.0] = 1  # do not use interpolated points with a low photon count in PRTF calculation.
+# These points results in overshoots in the PRTF
 diff_pattern[np.nonzero(mask)] = 0
 
 z0, y0, x0 = center_of_mass(diff_pattern)
@@ -119,6 +131,14 @@ plt.imshow(np.log10(np.sqrt(diff_pattern).sum(axis=0)), cmap=my_cmap, vmin=0)
 plt.title('abs(binned measured amplitude).sum(axis=0)')
 plt.colorbar()
 plt.pause(0.1)
+
+if debug:
+    gu.multislices_plot(diff_pattern, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
+                        title='abs(binned measured amplitude)', scale='log', vmin=0,
+                        reciprocal_space=True, is_orthogonal=True)
+    gu.multislices_plot(mask, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
+                        title='binned mask', scale='linear', vmin=0, vmax=1,
+                        reciprocal_space=True, is_orthogonal=True)
 
 ##########################################################
 # calculate the distances in q space relative to the COM #
@@ -136,7 +156,7 @@ distances_q = np.sqrt((qx - qxCOM)**2 + (qy - qyCOM)**2 + (qz - qzCOM)**2)
 del qx, qy, qz
 gc.collect()
 
-if True:
+if debug:
     gu.multislices_plot(distances_q, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
                         title='distances_q', scale='linear', vmin=np.nan, vmax=np.nan,
                         reciprocal_space=True, is_orthogonal=True)
@@ -203,11 +223,31 @@ print("COM of retrieved pattern after masking: ", z1, y1, x1, ' Number of unmask
 #########################
 diff_pattern[diff_pattern == 0] = np.nan  # discard zero valued pixels
 prtf_matrix = abs(phased_fft) / np.sqrt(diff_pattern)
+del phased_fft  # , diff_pattern
+gc.collect()
 
+copy_prtf = np.copy(prtf_matrix)
+copy_prtf[np.isnan(copy_prtf)] = 0
+piz, piy, pix = np.unravel_index(copy_prtf.argmax(), copy_prtf.shape)
+print('Max(3D PRTF)=', copy_prtf.max(), ' at voxel # ', (piz, piy, pix))
 gu.multislices_plot(prtf_matrix, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
-                    title='prtf_matrix', scale='linear', vmin=0, vmax=1.1,
-                    reciprocal_space=True, is_orthogonal=True)
+                    title='prtf_matrix', scale='linear', vmin=0, vmax=np.nan, reciprocal_space=True, is_orthogonal=True)
+plt.figure()
+plt.imshow(copy_prtf[piz, :, :], vmin=0)
+plt.colorbar()
+plt.title('PRTF at max in Qx (frame ' + str(piz) + ') \nMax in QyQz plane: vertical '+str(piy)+', horizontal '+str(pix))
+print(diff_pattern[piz, piy, pix])
+if debug:
+    copy_prtf = np.copy(prtf_matrix)
+    copy_prtf[np.isnan(prtf_matrix)] = 0
+    copy_prtf[copy_prtf < 5] = 0
+    copy_prtf[np.nonzero(copy_prtf)] = 1
 
+    gu.multislices_plot(copy_prtf, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
+                        title='hotpix_prtf', scale='linear', vmin=0, vmax=1,
+                        reciprocal_space=True, is_orthogonal=True)
+del copy_prtf
+gc.collect()
 #################################
 # average over spherical shells #
 #################################
