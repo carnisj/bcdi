@@ -8,13 +8,12 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
 from scipy.interpolate import RegularGridInterpolator
-from skimage.restoration.deconvolution import richardson_lucy
-from numpy.fft import fftn, fftshift
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.graph.graph_utils as gu
+import bcdi.algorithms.algorithms_utils as au
 
 helptext = """
 Create a support from a reconstruction, using the indicated threshold.
@@ -32,7 +31,6 @@ output_shape = [560, 800, 560]  # shape of the array for later phasing (before b
 # if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
 binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
 skip_masking = False  # if True, will skip thresholding and masking
-psf_iterations = 50  # perform psf_iterations iterations of Richardson-Lucy deconvolution, set 0 if unwanted
 filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
 gaussian_sigma = 3.0  # sigma of the gaussian filter
 binary_support = True  # True to save the support as an array of 0 and 1
@@ -54,6 +52,12 @@ tilt_angle = 0.5  # in degrees
 distance = 4.95  # in m
 pixel_x = 75e-06  # in m
 pixel_y = 75e-06  # in m
+######################################################################
+# parameters for image deconvolution using Richardson-Lucy algorithm #
+######################################################################
+psf_iterations = 20  # number of iterations of Richardson-Lucy deconvolution, leave it to 0 if unwanted
+psf_shape = (10, 10, 10)
+psf = pu.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False)
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -181,10 +185,8 @@ plt.close(fig)
 #################################
 # Richardson-Lucy deconvolution #
 #################################
-# if psf_iterations > 0:
-#     psf =
-#     diff_pattern = fftshift(abs(fftn(data))**2)
-#     richardson_lucy(diff_pattern, psf, iterations=psf_iterations, clip=False)
+if psf_iterations > 0:
+    data = au.deconvolution_rl(data, psf=psf, iterations=psf_iterations, debugging=True)
 
 ##################
 # apply a filter #
