@@ -1,16 +1,22 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Dec  4 20:21:28 2018
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
 
-@author: p10user
-"""
 import numpy as np
 import matplotlib
 matplotlib.use("Qt5Agg")
-import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
-import image_registration as reg
+import sys
+sys.path.append('D:/myscripts/bcdi/')
+from bcdi.utils import image_registration as reg
 from scipy.stats import pearsonr
+
+helptext = """
+Compare the correlation between 3D diffraction patterns.
+"""
+
 
 previous_file = "T:/current/processed/analysis/dewet5_sum_S173_to_S185/pynx_S173_to_S185.npz"
 

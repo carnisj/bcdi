@@ -1,10 +1,18 @@
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
 import numpy as np
 import xrayutilities as xu
 import fabio
 import matplotlib.pyplot as plt
-# from timeit import default_timer as timer
 import os
 
+helptext = """
+Calculate the cross-correlation of 2D detector images in live.
+"""
 
 start_image = 41233    # starting image number
 detector = 1  # 0 for eiger, 1 for maxipix

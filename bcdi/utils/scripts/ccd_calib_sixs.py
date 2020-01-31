@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-"""
-Script to calibrate the Maxipix detector on SIXS beamline
-command for the mesh detector is e.g.
-SBS.mesh delta -0.40 0.70 12 gamma -0.40 0.70 12 1  (do not invert motors)
-remove first image of ascan gamma
-@author: CARNIS
-"""
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
 import xrayutilities as xu
 import fabio
 import os
@@ -13,6 +11,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 from scipy.ndimage.measurements import center_of_mass
+
+helptext = """
+Script to calibrate the Maxipix detector on SIXS beamline
+command for the mesh detector is e.g.
+SBS.mesh delta -0.40 0.70 12 gamma -0.40 0.70 12 1  (do not invert motors)
+remove first image of ascan gamma
+"""
+
 start_scan = 299
 stop_scan = 314
 rough_sdd = 1.25  # in m

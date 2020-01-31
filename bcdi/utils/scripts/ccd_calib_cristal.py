@@ -1,5 +1,17 @@
-# -*- coding: utf-8 -*-
-"""
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
+
+import xrayutilities as xu
+import numpy as np
+import matplotlib.pyplot as plt
+import h5py
+import sys
+from scipy.ndimage.measurements import center_of_mass
+
+helptext = """
 Area detector calibration
 Based on CRISTAL geometry
 
@@ -8,18 +20,7 @@ Meshes at direct beam and Bragg angle can be combined.
 The corresponding HKLs have to be provided.
 
 Frames where the peak is truncated (in the gap...) can be excluded.
-
-Author: Carnis J.
 """
-import xrayutilities as xu
-import fabio
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-import h5py
-import silx.io
-import sys
-from scipy.ndimage.measurements import center_of_mass
 
 scan_nb = [60]  # [ , ] list of scans (ideally mesh at direct beam + Bragg peak)
 
