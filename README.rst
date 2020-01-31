@@ -1,6 +1,6 @@
 
-BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
-==================================================================================
+BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data
+==============================================================================================
 
 Introduction
 ============
@@ -54,7 +54,7 @@ We would like to acknowledge the following packages:
 
 * We adapted some functions of PyNX about decomposition into prime numbers: (c) Vincent Favre-Nicolin. See: http://ftp.esrf.fr/pub/scisoft/PyNX/ and J. Appl. Cryst. 49, 1842-1848 (2016).
 
-The following third-party packages are required: 
+The following third-party packages are required:
 
 * numpy
 
@@ -76,26 +76,30 @@ The following third-party packages are required:
 
 * xrayutilities
 
+* imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/) for creating movies
+
 Download & Installation
 =======================
 
 BCDI is available from:
  * Python Package Index: pip install bcdi
- * https://github.com/carnisj
+ * https://github.com/carnisj  for the most updated version
  * upgrade existing version from GitHub: pip install --upgrade git+https://github.com/carnisj/bcdi.git
+
+Please send feedback in GitHub or at carnis_jerome@yahoo.fr
 
 Changelog
 =========
 
 .. include:: ../HISTORY.rst
-  :end-before: Version 0.0.5
+  :end-before: Version 0.0.6
 
 See the full :doc:`Changelog<changelog>`
 
 Citation & Bibliography
 =======================
 
-If you use BCDI for scientific work, please consider including a citation (DOI: 10.5281/zenodo.3257617).
+If you use BCDI for scientific work, please consider including a citation (DOI: 10.5281/zenodo.3257616).
 
 License
 =======
