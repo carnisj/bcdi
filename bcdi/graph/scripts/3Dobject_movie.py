@@ -9,18 +9,17 @@
 import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
-from scipy.ndimage.measurements import center_of_mass
 import matplotlib.animation as manimation
 import tkinter as tk
 from tkinter import filedialog
-import matplotlib.ticker as ticker
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
 
 helptext = """
-Create a movie from a 3D real space reconstruction in each direction.
+Create a movie from a 3D real space reconstruction in each direction. Requires imagemagick (https://imagemagick.org)
+or ffmpeg (http://ffmpeg.zeranoe.com/builds/).
 """
 
 scan = 22
