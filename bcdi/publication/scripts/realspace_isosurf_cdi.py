@@ -8,14 +8,12 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-import mayavi
 from mayavi import mlab
 import tkinter as tk
 from tkinter import filedialog
 import matplotlib.ticker as ticker
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
-# sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
 
@@ -44,8 +42,8 @@ tick_spacing = 500  # for plots, in nm
 field_of_view = [2000, 2000, 2000]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
 # the number of labels of mlab.axes() is an integer and is be calculated as: field_of_view[0]/tick_spacing
 # therefore it is better to use an isotropic field_of_view
-threshold_isosurface = 0.4  # threshold for the 3D isosurface plot
-threshold_modulus = 0.06  # threshold for 2D plots
+threshold_isosurface = 0.4  # threshold for the 3D isosurface plot  #0.4 without ML
+threshold_modulus = 0.06  # threshold for 2D plots  # 0.06 without ML
 ##########################
 # end of user parameters #
 ##########################
