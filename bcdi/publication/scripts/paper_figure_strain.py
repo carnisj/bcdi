@@ -13,7 +13,7 @@ import tkinter as tk
 from tkinter import filedialog
 import matplotlib.ticker as ticker
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
 
@@ -30,31 +30,31 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 """
 
 
-scan = 2227  # spec scan number
-datadir = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_0,34/'  # 'D:/data/HC3207/SN' + str(scan)+"/pynxraw/test/"
-savedir = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_0,34/'  # 'D:/data/HC3207/Figures/'
-comment = '_1_' + str(scan)   # should start with _
-simulated_data = True  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
+scan = 14  # spec scan number
+datadir = 'D:/data/Pt_growth_P10/data/dewet5_sum_S404_to_S407/'
+savedir = 'D:/data/Pt_growth_P10/figures/'
+comment = '_' + str(scan)   # should start with _
+simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 
-voxel_size = 2.0  # in nm
+voxel_size = 6.0  # in nm
 tick_spacing = 50  # for plots, in nm
-field_of_view = 600  # in nm, can be larger than the total width (the array will be padded)
+field_of_view = 400  # in nm, can be larger than the total width (the array will be padded)
 
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 
-strain_range = 0.001  # for plots
-phase_range = np.pi  # for plots
-grey_background = False  # True to set the background to grey in phase and strain plots
+strain_range = 0.002  # for plots
+phase_range = 2*np.pi  # for plots
+grey_background = True  # True to set the background to grey in phase and strain plots
 
 save_YZ = True  # True to save the strain in YZ plane
 save_XZ = True  # True to save the strain in XZ plane
 save_XY = True  # True to save the strain in XY plane
 
-flag_strain = True  # True to plot and save the strain
+flag_strain = False  # True to plot and save the strain
 flag_phase = False  # True to plot and save the phase
-flag_amp = False  # True to plot and save the amplitude
+flag_amp = True  # True to plot and save the amplitude
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
 flag_linecut = False  # True to plot and save a linecut of the phase

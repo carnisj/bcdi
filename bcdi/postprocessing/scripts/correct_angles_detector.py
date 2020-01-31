@@ -29,7 +29,7 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 302
+scan = 404
 root_folder = 'D:/data/Pt_growth/data/'
 sample_name = "dewet5"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
@@ -62,7 +62,7 @@ specfile_name = sample_name + '_%05d'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1392  # horizontal pixel number of the Bragg peak
+x_bragg = 1387  # horizontal pixel number of the Bragg peak
 y_bragg = 1450  # vertical pixel number of the Bragg peak
 roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]
 # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430

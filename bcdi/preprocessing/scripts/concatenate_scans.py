@@ -28,14 +28,14 @@ Average the scans if their correlation coefficient is larger than a threshold.
 The first scan in the list serves as reference.
 """
 
-scan_list = np.arange(173, 185+1, 3)  # np.arange(404, 407+1, 3)  # list or array of scan numbers
+scan_list = np.arange(404, 407+1, 3)  # np.arange(404, 407+1, 3)  # list or array of scan numbers
 sample_name = 'dewet5_'
-comment = '_norm_141_512_480_1_1_1.npz'  # the end of the filename template after 'pynx'
+comment = '_norm_181_512_480_1_1_1.npz'  # the end of the filename template after 'pynx'
 homedir = "D:/data/Pt_growth/data/"
 method = 'registration'  # method to find the offset, 'center_of_mass' or 'registration'
-combining_method = 'rgi'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
+combining_method = 'subpixel'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
 output_shape = (140, 512, 350)  # the output dataset will be cropped/padded to this shape
-correlation_threshold = 0.8
+correlation_threshold = 0.95
 debug = False  # True or False
 ##################################
 # end of user-defined parameters #

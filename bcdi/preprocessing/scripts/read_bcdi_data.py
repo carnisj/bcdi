@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.graph.graph_utils as gu
@@ -24,8 +24,8 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 1
-root_folder = "D:/data/PtRh/"
+scan = 614
+root_folder = "D:/data/CH5309/"
 sample_name = "S"  # "S"
 save_mask = False  # set to True to save the mask
 fit_rockingcurve = True  # set to True if you want a fit of the rocking curve
@@ -36,7 +36,7 @@ beamline = 'ID01'  # name of the beamlis[scan_nb]ne, used for data loading and n
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
 
-custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
@@ -46,7 +46,7 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # SIXS: beta, mu, gamma, delta
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = ''
+specfile_name = 'align'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -56,12 +56,12 @@ specfile_name = ''
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 bragg_position = []  # Bragg peak position [vertical, horizontal], leave it as [] if there is a single peak
 peak_method = 'max'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = 'BCDI_eiger2M_%05d.edf'
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'

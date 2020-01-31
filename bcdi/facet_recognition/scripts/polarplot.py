@@ -34,20 +34,20 @@ The coordinate system follows the CXI convetion: Z downstream, Y vertical up and
 Q values follow the more classical convention: qx downstream, qz vertical up, qy outboard.
 """
 
-scan = 2    # spec scan number
-root_folder = "D:/data/PtRh/"
+scan = 142    # spec scan number
+root_folder = "D:/data/CH5309/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
-radius_mean = 0.04  # q from Bragg peak
-dq = 0.0005  # width in q of the shell to be projected
+radius_mean = 0.02  # q from Bragg peak
+dq = 0.0002  # width in q of the shell to be projected
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
 # will rotate peaks counterclockwise in the pole figure
 offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation around Qx)
 # will shift peaks upwards in the pole figure
-q_offset = [0.00, 0.00, 0.00]  # offset of the projection plane in [qx, qy, qz] (0 = equatorial plane)
+q_offset = [0.0001, -0.0005, 0.0002]  # offset of the projection plane in [qx, qy, qz] (0 = equatorial plane)
 # q_offset applies only to measured diffraction pattern (not obtained from a reconstruction)
 photon_threshold = 0  # threshold applied to the measured diffraction pattern
 range_min = 250  # low limit for the colorbar in polar plots, every below will be set to nan
@@ -59,7 +59,7 @@ background_polarplot = 1  # everything below this value is set to np.nan in the 
 #######################################################################################################
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
-binning = [3, 3, 3]  # binning for the measured diffraction pattern in each dimension
+binning = [1, 1, 1]  # binning for the measured diffraction pattern in each dimension
 ###################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object #
 ###################################################################################################
@@ -89,7 +89,7 @@ debug = False  # True to show more plots, False otherwise
 beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
-custom_scan = True  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11665, 11764, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 custom_motors = {"eta": np.linspace(16.989, 18.969596, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 35.978}
@@ -100,7 +100,7 @@ custom_motors = {"eta": np.linspace(16.989, 18.969596, num=100, endpoint=False),
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = ''
+specfile_name = 'align'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -110,16 +110,16 @@ specfile_name = ''
 ##############################################################################################
 # define detector related parameters and region of interest, not used for reconstructed data #
 ##############################################################################################
-detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 451  # horizontal pixel number of the Bragg peak
 y_bragg = 1450  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
+roi_detector = []  # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
-flatfield_file = root_folder + "flatfield_eiger.npz"  #
-template_imagefile = 'BCDI_eiger2M_%05d.edf'
+flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  #
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -129,14 +129,14 @@ template_imagefile = 'BCDI_eiger2M_%05d.edf'
 # define parameters for xrayutilities, used for orthogonalization, not used for reconstructed data #
 ####################################################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
-sdd = 0.865  # sample to detector distance in m, not important if you use raw data
-energy = 9000  # x-ray energy in eV, not important if you use raw data
+sdd = 1.0137  # 0.865  # sample to detector distance in m, not important if you use raw data
+energy = 10000  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = -0.5  # outer detector angle offset, not important if you use raw data
-cch1 = 1273.5  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-cch2 = 390.8  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+offset_inplane = -1.3645  # outer detector angle offset, not important if you use raw data
+cch1 = 82.85  # 1273.5  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch2 = -174.21  # 390.8  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
 tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
@@ -144,10 +144,10 @@ tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
 # calculate theoretical angles between the measured reflection and other planes - only for cubic #
 ##################################################################################################
 planes = dict()  # create dictionnary
-# planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
-# planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
+planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
+planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
 planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
+# planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
 ###################
 # define colormap #
 ###################
