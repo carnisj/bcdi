@@ -1,11 +1,19 @@
-"""
+# -*- coding: utf-8 -*-
 
-"""
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Steven Leake, steven.leake@esrf.fr
+
 import numpy as np
 import os
 import re
-# import pdb
 import h5py
+
+helptext = """
+Script parsing the log file of P10.
+"""
 
 basepath = "/gpfs/current/raw/"
 # basepath = "/mntdirect/_data_id01_inhouse/otherlightsources/2018_P10_JC/misc/"
