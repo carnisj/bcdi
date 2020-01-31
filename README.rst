@@ -25,17 +25,19 @@ BCDI as a python toolkit
 
 BCDI can be used as a python library with the following main modules:
 
-1) :mod:`bcdi.facet_recognition`: Stereographic projection of a diffraction peak or a reconstructed crystal. Automatic detection of reconstructed facets and statistics on facet strain.
+1) :mod:`bcdi.algorithms`: PSF and image deconvolution using Richardson-Lucy algorithm
 
-2) :mod:`bcdi.experiment`: definition of the experimental geometry (beamline, setup, detector...).
+2) :mod:`bcdi.facet_recognition`: Stereographic projection of a diffraction peak or a reconstructed crystal. Automatic detection of reconstructed facets and statistics on facet strain.
 
-3) :mod:`bcdi.graph` : generation of plots using predefined templates.
+3) :mod:`bcdi.experiment`: definition of the experimental geometry (beamline, setup, detector...).
 
-4) :mod:`bcdi.postprocessing`: various methods for post-processing the complex output of a phasing algorithm.
+4) :mod:`bcdi.graph` : generation of plots using predefined templates.
 
-5) :mod:`bcdi.preprocessing`: various methods for pre-processing the diffraction intensity.
+5) :mod:`bcdi.postprocessing`: various methods for post-processing the complex output of a phasing algorithm.
 
-6) :mod:`bcdi.simulation`: calculation of the diffraction intensity based on FFT or kinematical sum. 
+6) :mod:`bcdi.preprocessing`: various methods for pre-processing the diffraction intensity.
+
+7) :mod:`bcdi.simulation`: calculation of the diffraction intensity based on FFT or kinematical sum.
    It can include a displacement field, noise, detector gaps etc...
    TODO
 
