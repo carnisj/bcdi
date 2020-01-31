@@ -1,16 +1,9 @@
-# -*- coding: utf-8 -*-
-"""
-Area detector calibration
-Based on ESRF.ID01 geometry
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
 
-The input should be a list of detector meshes.
-Meshes at direct beam and Bragg angle can be combined.
-The corresponding HKLs have to be provided.
-
-Frames where the peak is truncated (in the gap...) can be excluded.
-
-Author: Carnis J.
-"""
 import xrayutilities as xu
 import fabio
 import os
@@ -19,6 +12,17 @@ import matplotlib.pyplot as plt
 import silx.io
 import sys
 from scipy.ndimage.measurements import center_of_mass
+
+helptext = """
+Area detector calibration
+Based on ESRF.ID01 geometry
+
+The input should be a list of detector meshes.
+Meshes at direct beam and Bragg angle can be combined.
+The corresponding HKLs have to be provided.
+
+Frames where the peak is truncated (in the gap...) can be excluded.
+"""
 
 scan_nb = [299, 47]  # [ , ] list of scans (ideally mesh at direct beam + Bragg peak)
 
