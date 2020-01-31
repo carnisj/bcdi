@@ -111,6 +111,19 @@ Documentation
 
 The documentation is available at: https://bcdi.readthedocs.io/en/latest/
 
+BCDI.algorithms: psf and image deconvolution algorithms
+=======================================================
+
+.. bcdi.algorithms section
+
+Description
+-----------
+
+This module includes routines using Richardson-Lucy devconvolution algorithm.
+In the future, algorithms used in phase retrieval (HIO, RAAR, ER, DM, ML...) will also be implemented.
+
+.. bcdi.algorithms end
+
 BCDI.facet_recognition: automatic facet detection in BCDI 3D reconstructions
 ============================================================================
 
