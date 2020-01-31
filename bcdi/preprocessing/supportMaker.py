@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
-#   (c) 10/2019 : class based on make_a_polygon.py from R. Harder
-#                 
-#		The concept is to be able to build a support from a set of defined planes
-# 		these planes can be positioned based on physical size (nm) if known or eventually
-#       made into a fancy tool with a 3D view of the support versus the data so you can match fringes
-#       it may also be interesting to consider how to make 3D supports from other characterisation methods (SEM etc)
-#
-#
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
 #       authors:
 #         Steven Leake, steven.leake@esrf.fr
 
 import numpy as np
 import h5py as h5
 import sys
-import pdb
+
+helptext = """
+The concept is to be able to build a support from a set of defined planes these planes can be positioned based
+on physical size (nm) if known or eventually made into a fancy tool with a 3D view of the support versus the data
+so you can match fringes. It may also be interesting to consider how to make 3D supports from other characterisation
+methods (SEM etc...).
+"""
 
 ####################################################################
 def AddPolyCen(array, center, planes):
