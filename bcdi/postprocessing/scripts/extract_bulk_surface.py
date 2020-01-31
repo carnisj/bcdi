@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#       authors:
+#         Jerome Carnis, jerome.carnis@esrf.fr
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
@@ -7,6 +13,10 @@ from tkinter import filedialog
 from scipy.signal import convolve
 import os
 import logging
+
+helptext = """
+# TODO refactor
+"""
 
 scan = 2191  # spec scan number
 datadir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S"+str(scan)+"/pynxraw/"

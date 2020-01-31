@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
-starting from a 2D complex object (output of phasing program), center the object, remove the phase ramp,
- the phase offset and wrap the phase
-"""
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#       authors:
+#         Jerome Carnis, jerome.carnis@esrf.fr
+
 import numpy as np
 import h5py
 import sys
@@ -13,6 +15,12 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
+
+helptext = """
+starting from a 2D complex object (output of phasing program), center the object, remove the phase ramp,
+ the phase offset and wrap the phase
+"""
+
 
 datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S2227/simu/Figures/phasing_kin_FFT/"
 savedir = datadir

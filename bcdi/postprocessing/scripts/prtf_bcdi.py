@@ -2,8 +2,9 @@
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
 #       authors:
-#         Jerome Carnis, jerome.carnis@esrf.fr
+#         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import hdf5plugin  # for P10, should be imported before h5py or PyTables
 import numpy as np
@@ -17,7 +18,7 @@ from scipy.interpolate import interp1d
 import gc
 import sys
 import os
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
@@ -42,10 +43,10 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 2227
-root_folder = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_0,34/'  # location of the .spec or log file
-sample_name = "S"  # "SN"  #
-comment = "_5"  # should start with _
+scan = 966
+root_folder = 'D:/data/HC3207/'  # location of the .spec or log file
+sample_name = "SN"  # "SN"  #
+comment = ""  # should start with _
 ############################
 # beamline parameters #
 ############################
@@ -53,7 +54,7 @@ beamline = 'ID01'  # name of the beamline, used for data loading and normalizati
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'alignment'
+specfile_name = 'align2'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -63,8 +64,8 @@ specfile_name = 'alignment'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+template_imagefile = 'align_eiger2M_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -73,7 +74,7 @@ template_imagefile = 'data_mpx4_%05d.edf.gz'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
-sdd = 0.50678*2/3  # sample to detector distance in m
+sdd = 0.8618  # sample to detector distance in m
 energy = 8994   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
@@ -86,7 +87,7 @@ rawdata_binned = False  # set to True if the raw data and the mask loaded are al
 ###############################
 # only needed for simulations #
 ###############################
-simulation = True  # True is this is simulated data, will not load the specfile
+simulation = False  # True is this is simulated data, will not load the specfile
 bragg_angle_simu = 17.1177  # value of the incident angle at Bragg peak (eta at ID01)
 outofplane_simu = 35.3240  # detector delta @ ID01
 inplane_simu = -1.6029  # detector nu @ ID01
