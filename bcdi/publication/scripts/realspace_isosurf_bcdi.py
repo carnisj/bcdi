@@ -8,12 +8,11 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-import mayavi
 from mayavi import mlab
 import tkinter as tk
 from tkinter import filedialog
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 # sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 
@@ -23,22 +22,23 @@ Template for 3d isosurface figures of a real space BCDI reconstruction.
 Open an npz file (reconstruction ampdispstrain.npz) and save individual figures including a length scale.
 """
 
-scan = 936    # spec scan number
-root_folder = "D:/data/HC3207/"
-sample_name = "SN"  # "S"  #
+scan = 676    # spec scan number
+root_folder = 'D:/data/CH5309/figures_dataset2/'
+homedir = root_folder  # + sample_name + str(scan) + '/pynxraw/'
+# homedir = root_folder + sample_name
+sample_name = "SN"  #
 comment = ""
 
 voxel_size = 6.0  # in nm, supposed isotropic
 tick_spacing = 50  # for plots, in nm
-field_of_view = [350, 350, 350]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
+field_of_view = [500, 500, 500]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
 # the number of labels of mlab.axes() is an integer and is be calculated as: field_of_view[0]/tick_spacing
 # therefore it is better to use an isotropic field_of_view
-threshold_isosurface = 0.2
+threshold_isosurface = 0.15
 
 #############
 # load data #
 #############
-homedir = root_folder + sample_name + str(scan) + '/'
 plt.ion()
 root = tk.Tk()
 root.withdraw()
