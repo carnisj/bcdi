@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Nov 30 03:44:26 2018
-
-@author: p10user
-"""
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
 import pathlib
@@ -11,10 +10,20 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
-import image_registration as reg
+import sys
+sys.path.append('D:/myscripts/bcdi/')
+from bcdi.utils import image_registration as reg
 from scipy.stats import pearsonr
 from scipy.interpolate import RegularGridInterpolator
 from scipy.ndimage.measurements import center_of_mass
+
+helptext = """
+Created on Fri Nov 30 03:44:26 2018
+
+@author: p10user
+"""
+
+
 
 a = np.arange(2295,2307+1,3)
 b = np.arange(2313,2325+1,3)
