@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-merge3D_qspace.py
-Merge 3D reciprocal space map together
 
-File structure should be (e.g. scan 583):
-data in:        /specdir/S583/data/myscan.nxs
-soecfile in:    /specdir/
-output files will be saved in:   /specdir/S583/pynx/
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Jerome Carnis, carnis_jerome@yahoo.fr
 
-@author: CARNIS
-"""
 import hdf5plugin  # for P10
 import numpy as np
 import xrayutilities as xu
@@ -23,6 +19,19 @@ import sys
 from silx.io.specfile import SpecFile
 import matplotlib
 matplotlib.use("Qt5Agg")
+
+helptext = """
+merge3D_qspace.py
+Merge 3D reciprocal space map together
+
+File structure should be (e.g. scan 583):
+data in:        /specdir/S583/data/myscan.nxs
+soecfile in:    /specdir/
+output files will be saved in:   /specdir/S583/pynx/
+
+@author: CARNIS
+"""
+
 
 scans = [572, 936]  # list of spec scan numbers
 ###########################
