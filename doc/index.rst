@@ -11,7 +11,7 @@ Welcome to BCDI's documentation!
    :caption: Contents:
     
 .. include:: ../README.rst
-   :end-before: BCDI.facet_recognition
+   :end-before: BCDI.algorithms
    
 Command-line scripts
 ====================
