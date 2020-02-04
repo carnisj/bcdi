@@ -22,7 +22,7 @@ Eigendecomposition of a set of 3D reconstructed objects from phase retrieval,
 ideally the first mode should be as high as possible. Adapted from PyNX.
 """
 
-datadir = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/v1/"
+datadir = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/maximum_likelihood/"
 user_comment = ''  # string, should start with "_"
 nb_mode = 2  # number of modes to save in the file (starting from 0)
 ################
@@ -31,8 +31,8 @@ nb_mode = 2  # number of modes to save in the file (starting from 0)
 root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilenames(initialdir=datadir,
-                                        filetypes=[("NPZ", "*.npz"),
-                                                   ("NPY", "*.npy"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
+                                        filetypes=[("CXI", "*.cxi"), ("NPZ", "*.npz"),
+                                                   ("NPY", "*.npy"), ("HDF5", "*.h5")])
 nbfiles = len(file_path)
 print('Loading ', nbfiles, 'objects')
 if nbfiles == 1:
