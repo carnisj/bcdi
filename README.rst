@@ -52,7 +52,7 @@ We would like to acknowledge the following packages:
 
 * image_registration.py: original code from Xianhui Xiao @ APS Sector 2. See: Opt. Lett. 33, 156-158 (2008).
 
-* We adapted some functions of PyNX about decomposition into prime numbers: (c) Vincent Favre-Nicolin. See: http://ftp.esrf.fr/pub/scisoft/PyNX/ and J. Appl. Cryst. 49, 1842-1848 (2016).
+* Some functions were adapted from PyNX: (c) Vincent Favre-Nicolin. See: http://ftp.esrf.fr/pub/scisoft/PyNX/ and J. Appl. Cryst. 49, 1842-1848 (2016).
 
 The following third-party packages are required:
 
@@ -60,9 +60,11 @@ The following third-party packages are required:
 
 * scipy
 
-* skimage
+* scikit-image
 
 * matplotlib
+
+* mayavi
 
 * vtk
 
