@@ -121,7 +121,7 @@ BCDI.algorithms: psf and image deconvolution algorithms
 Description
 -----------
 
-This module includes routines using Richardson-Lucy devconvolution algorithm.
+This module includes routines using Richardson-Lucy deconvolution algorithm.
 In the future, algorithms used in phase retrieval (HIO, RAAR, ER, DM, ML...) will also be implemented.
 
 .. bcdi.algorithms end
