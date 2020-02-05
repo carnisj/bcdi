@@ -25,12 +25,13 @@ or ffmpeg (http://ffmpeg.zeranoe.com/builds/).
 scan = 22
 root_folder = 'D:/data/P10_August2019/data/'  # location of the .spec or log file
 sample_name = "gold_2_2_2_000"  # "SN"  #
-datadir = root_folder + sample_name + str(scan) + '/pynx/800_800_800_1_1_1/'
+datadir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/maximum_likelihood/'
 comment = ''  # should start with _
-movie_z = True  # save movie along z axis (downstream)
+movie_z = False  # save movie along z axis (downstream)
 movie_y = True  # save movie along y axis (vertical up)
-movie_x = True  # save movie along x axis (outboard)
-frame_spacing = 2  # spacing between consecutive slices in voxel
+movie_x = False  # save movie along x axis (outboard)
+frame_spacing = 1  # spacing between consecutive slices in voxel
+frame_per_second = 2  # number of frames per second, 5 is a good default
 vmin_vmax = [0, 1]  # scale for plotting the data
 roi = []  # ROI to be plotted, leave it as [] to use all the reconstruction [zstart, ztop, ystart, ystop, xstart, xstop]
 field_name = ''  # name or ''
@@ -119,9 +120,9 @@ if len(roi) == 6:
 if movie_z:
     metadata = dict(title='S'+str(scan)+comment)
     if output_format == 'gif':
-        writer = matplotlib.animation.ImageMagickFileWriter(fps=5, metadata=metadata)
+        writer = matplotlib.animation.ImageMagickFileWriter(fps=frame_per_second, metadata=metadata)
     else:
-        writer = FFMpegWriter(fps=5, metadata=metadata)
+        writer = FFMpegWriter(fps=frame_per_second, metadata=metadata)
     fontsize = 10
 
     fig = plt.figure()
@@ -141,9 +142,9 @@ if movie_z:
 if movie_y:
     metadata = dict(title='S'+str(scan)+comment)
     if output_format == 'gif':
-        writer = matplotlib.animation.ImageMagickFileWriter(fps=5, metadata=metadata)
+        writer = matplotlib.animation.ImageMagickFileWriter(fps=frame_per_second, metadata=metadata)
     else:
-        writer = FFMpegWriter(fps=5, metadata=metadata)
+        writer = FFMpegWriter(fps=frame_per_second, metadata=metadata)
     fontsize = 10
 
     fig = plt.figure()
@@ -163,9 +164,9 @@ if movie_y:
 if movie_x:
     metadata = dict(title='S'+str(scan)+comment)
     if output_format == 'gif':
-        writer = matplotlib.animation.ImageMagickFileWriter(fps=5, metadata=metadata)
+        writer = matplotlib.animation.ImageMagickFileWriter(fps=frame_per_second, metadata=metadata)
     else:
-        writer = FFMpegWriter(fps=5, metadata=metadata)
+        writer = FFMpegWriter(fps=frame_per_second, metadata=metadata)
     fontsize = 10
 
     fig = plt.figure()
