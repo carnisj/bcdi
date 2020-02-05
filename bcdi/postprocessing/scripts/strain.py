@@ -247,8 +247,7 @@ print('\nAveraging using', nbfiles, 'candidate reconstructions')
 for ii in sorted_obj:
     obj, extension = pu.load_reconstruction(file_path[ii])
     print('\nOpening ', file_path[ii])
-    # obj[0:40, :, :] = 0
-    # obj[65:, :, :] = 0
+
     if flip_reconstruction:
         obj = pu.flip_reconstruction(obj, debugging=True)
 
@@ -264,8 +263,7 @@ for ii in sorted_obj:
     if avg_obj.sum() == 0:  # the fist array loaded will serve as reference object
         print('This reconstruction will serve as reference object.')
         ref_obj = obj
-    #     avg_obj = obj
-    # else:
+
     avg_obj, flag_avg = pu.average_obj(avg_obj=avg_obj, ref_obj=ref_obj, obj=obj, support_threshold=0.25,
                                        correlation_threshold=avg_threshold, aligning_option='dft',
                                        method=avg_method, debugging=True)
