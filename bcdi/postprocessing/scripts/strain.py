@@ -41,7 +41,7 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 825  # spec scan number
+scan = 614  # spec scan number
 
 datadir = 'D:/data/CH5309/S' + str(scan) + "/pynxraw/"  # 'D:/data/HC3207/ + "/test/"
 
@@ -50,7 +50,7 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [96, 336, 280]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [96, 360, 240]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 2, 2)  # binning factor during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
@@ -81,10 +81,10 @@ sdd = 1.0137  # sample to detector distance in m
 pixel_size = 55e-6  # detector pixel size in m
 energy = 9994  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 31.7910  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = -1.7510  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 31.7863  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = -1.9119  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.0126  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.0116  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 dispersion = 3.2880E-05  # delta
@@ -103,6 +103,11 @@ get_temperature = False
 reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
 reference_temperature = None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
+##########################################################
+# parameters for averaging several reconstructed objects #
+##########################################################
+avg_method = 'reciprocal_space'  # 'real_space' or 'reciprocal_space'
+avg_threshold = 0.90  # minimum correlation within reconstructed object for averaging
 ###########
 # options #
 ###########
@@ -249,7 +254,7 @@ for ii in sorted_obj:
 
     if extension == '.h5':
         centering_method = 'do_nothing'  # do not center, data is already cropped just on support for mode decomposition
-        # coorect a roll after the decomposition into modes in PyNX
+        # correct a roll after the decomposition into modes in PyNX
         obj = np.roll(obj, roll_modes, axis=(0, 1, 2))
         gu.multislices_plot(abs(obj), plot_colorbar=True, title='1st mode after centering')
     # use the range of interest defined above
@@ -259,11 +264,12 @@ for ii in sorted_obj:
     if avg_obj.sum() == 0:  # the fist array loaded will serve as reference object
         print('This reconstruction will serve as reference object.')
         ref_obj = obj
-        avg_obj = obj
-    else:
-        avg_obj, flag_avg = pu.average_obj(avg_obj=avg_obj, ref_obj=ref_obj, obj=obj, support_threshold=0.25,
-                                           correlation_threshold=0.90, aligning_option='dft')
-        avg_counter = avg_counter + flag_avg
+    #     avg_obj = obj
+    # else:
+    avg_obj, flag_avg = pu.average_obj(avg_obj=avg_obj, ref_obj=ref_obj, obj=obj, support_threshold=0.25,
+                                       correlation_threshold=avg_threshold, aligning_option='dft',
+                                       method=avg_method, debugging=True)
+    avg_counter = avg_counter + flag_avg
 
 avg_obj = avg_obj / avg_counter
 print('\nAverage performed over ', avg_counter, 'reconstructions\n')

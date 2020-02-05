@@ -54,7 +54,7 @@ def align_obj(reference_obj, obj, precision=1000, debugging=False):
 
 
 def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_threshold=0.90, aligning_option='dft',
-                width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=False):
+                width_z=np.nan, width_y=np.nan, width_x=np.nan, method='reciprocal_space', debugging=False):
     """
     Average two reconstructions after aligning it, if their cross-correlation is larger than
     correlation_threshold.
@@ -68,6 +68,7 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
     :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
     :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
     :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :param method: 'real_space' or 'reciprocal_space', in which space the average will be performed
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: the average complex density
@@ -83,7 +84,7 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
     if avg_obj.sum() == 0:
         avg_obj = ref_obj
         if debugging:
-            gu.multislices_plot(abs(avg_obj), width_z=width_z, width_y=width_y, width_x=width_x,
+            gu.multislices_plot(abs(avg_obj), width_z=width_z, width_y=width_y, width_x=width_x, plot_colorbar=True,
                                 sum_frames=True, title='Reference object')
     else:
         myref_support = np.zeros((nbz, nby, nbx))
@@ -130,16 +131,20 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
             print('pearson-correlation=', correlation, ', average with this reconstruction')
 
             if debugging:
-
                 myfig, _, _ = gu.multislices_plot(abs(new_obj), width_z=width_z, width_y=width_y, width_x=width_x,
-                                                  sum_frames=True, title='Aligned object')
+                                                  sum_frames=True, plot_colorbar=True, title='Aligned object')
                 myfig.text(0.60, 0.30, "pearson-correlation = " + str('{:.4f}'.format(correlation)), size=20)
 
-            avg_obj = avg_obj + new_obj
+            if method == 'real_space':
+                avg_obj = avg_obj + new_obj
+            elif method == 'reciprocal_space':
+                avg_obj = ifftn(fftn(avg_obj) + fftn(obj))
+            else:
+                raise ValueError('method should be "real_space" or "reciprocal_space"')
             avg_flag = 1
 
         if debugging:
-            gu.multislices_plot(abs(avg_obj), width_z=width_z, width_y=width_y, width_x=width_x,
+            gu.multislices_plot(abs(avg_obj), plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
                                 sum_frames=True, title='New averaged object')
 
     return avg_obj, avg_flag
