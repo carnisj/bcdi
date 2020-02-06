@@ -6,6 +6,59 @@
 Scripts Reference
 =================
 
+.. _graph:
+
+Graph
+-----
+
+'3Dobject_movie.py':
+^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/graph/scripts/3Dobject_movie.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+'merge3D_qspace.py':
+^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/graph/scripts/merge3D_qspace.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+'scan_movie.py':
+^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/graph/scripts/scan_movie.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+'view_psf.py':
+^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/graph/scripts/view_psf.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+'visu_2Dslice.py':
+^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/graph/scripts/visu_2Dslice.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+'xrutils_Qplot_3Dmayavi.py':
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/graph/scripts/xrutils_Qplot_3Dmayavi.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 .. _facet:
 
 Facet recognition
