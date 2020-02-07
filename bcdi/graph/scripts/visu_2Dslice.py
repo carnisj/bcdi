@@ -24,7 +24,8 @@ Graphical interface to visualize 2D slices through a 3D dataset in an easy way.
 datadir = "D:/data/CH5309/S614/pynxraw/"
 savedir = "D:/data/CH5309/S614/test/"
 scale = 'linear'  # 'linear' or 'log', scale of the 2D plots
-field = 'bl'  # data field name. By default, it will take abs() for 'modulus', numpy.angle() for 'phase'
+field = 'angle'  # data field name. Leave it to None for default.
+# It will take abs() for 'modulus', numpy.angle() for 'angle'
 half_range = 1  # colorbar range will be [-half_range half-range]
 grey_background = True
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort
@@ -63,6 +64,9 @@ else:
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
 
+if field == 'angle' or field == 'modulus':
+    scale = 'linear'
+    
 #############
 # load data #
 #############

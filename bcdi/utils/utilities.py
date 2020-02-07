@@ -31,9 +31,9 @@ def load_file(file_path, fieldname=None):
             except KeyError:
                 npzfile = np.load(file_path)
                 dataset = npzfile[list(npzfile.files)[0]]
-                if fieldname == 'amp':
+                if fieldname == 'modulus':
                     dataset = abs(dataset)
-                elif fieldname == 'phase':
+                elif fieldname == 'angle':
                     dataset = np.angle(dataset)
                 else:
                     raise ValueError('"field" parameter settings is not valid')
