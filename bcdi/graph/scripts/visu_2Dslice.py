@@ -24,9 +24,8 @@ Graphical interface to visualize 2D slices through a 3D dataset in an easy way.
 datadir = "D:/data/CH5309/S614/pynxraw/"
 savedir = "D:/data/CH5309/S614/test/"
 scale = 'linear'  # 'linear' or 'log', scale of the 2D plots
-field = 'angle'  # data field name. Leave it to None for default.
+field = 'amp'  # data field name. Leave it to None for default.
 # It will take abs() for 'modulus', numpy.angle() for 'angle'
-half_range = 1  # colorbar range will be [-half_range half-range]
 grey_background = True
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort
 vmin = None  # lower boundary of the colorbar, leave it to None for default
@@ -40,12 +39,12 @@ def press_key(event):
     :param event: button press event
     :return: updated controls
     """
-    global data, dim, idx, max_colorbar, scale, savedir
+    global data, dim, idx, vmin, max_colorbar, scale, savedir
 
     try:
         max_colorbar, idx, exit_flag = \
-            gu.loop_thru_scan(key=event.key, data=data, figure=fig_loop, scale=scale, dim=dim, idx=idx, vmin=0, vmax=max_colorbar,
-                              savedir=savedir)
+            gu.loop_thru_scan(key=event.key, data=data, figure=fig_loop, scale=scale, dim=dim, idx=idx, vmin=vmin,
+                              vmax=max_colorbar, savedir=savedir)
 
         if exit_flag:
             plt.close(fig_loop)
@@ -66,7 +65,7 @@ my_cmap = colormap.cmap
 
 if field == 'angle' or field == 'modulus':
     scale = 'linear'
-    
+
 #############
 # load data #
 #############
@@ -79,29 +78,40 @@ plt.ion()
 
 data, extension = util.load_file(file_path, fieldname=field)
 
+if data.max() <= 0:
+    scale = 'linear'
+
 if vmin is None:
-    vmin = data.min()
+    if scale == 'linear':
+        vmin = data.min()
+    else:  # 'log'
+        vmin = max(data.min(), 0)
+        vmin = max(np.log10(vmin), 0)
 if vmax is None:
-    vmax = data.max()
+    if scale == 'linear':
+        vmax = data.max()
+    else:  # 'log', we are sure that data.max() is > 0
+        vmax = np.log10(data.max())
 #########################
 # loop through the data #
 #########################
 plt.ioff()
 nz, ny, nx = np.shape(data)
 max_colorbar = vmax
-
+print('Init', vmin, vmax)
 # in XY
 dim = 0
 fig_loop = plt.figure()
 idx = 0
 original_data = np.copy(data)
 if scale == 'linear':
-    plt.imshow(data[idx, :, :], vmin=vmin, vmax=max_colorbar)
+    plt.imshow(data[idx, :, :], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
 else:  # 'log'
-    plt.imshow(np.log10(data[idx, :, :]), vmin=vmin, vmax=max_colorbar)
+    plt.imshow(np.log10(data[idx, :, :]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
 plt.title("Frame " + str(idx + 1) + "/" + str(nz) + "\n"
           "q quit ; u next frame ; d previous frame ; p unzoom\n"
           "right darker ; left brighter ; r save 2D frame")
+plt.colorbar()
 plt.connect('key_press_event', press_key)
 fig_loop.set_facecolor(background_plot)
 plt.show()
@@ -112,12 +122,13 @@ dim = 1
 fig_loop = plt.figure()
 idx = 0
 if scale == 'linear':
-    plt.imshow(data[:, idx, :], vmin=vmin, vmax=max_colorbar)
+    plt.imshow(data[:, idx, :], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
 else:  # 'log'
-    plt.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=max_colorbar)
+    plt.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
 plt.title("Frame " + str(idx + 1) + "/" + str(ny) + "\n"
           "q quit ; u next frame ; d previous frame ; p unzoom\n"
           "right darker ; left brighter ; r save 2D frame")
+plt.colorbar()
 plt.connect('key_press_event', press_key)
 fig_loop.set_facecolor(background_plot)
 plt.show()
@@ -128,12 +139,13 @@ dim = 2
 fig_loop = plt.figure()
 idx = 0
 if scale == 'linear':
-    plt.imshow(data[:, :, idx], vmin=vmin, vmax=max_colorbar)
+    plt.imshow(data[:, :, idx], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
 else:  # 'log'
-    plt.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=max_colorbar)
+    plt.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
 plt.title("Frame " + str(idx + 1) + "/" + str(nx) + "\n"
           "q quit ; u next frame ; d previous frame ; p unzoom\n"
           "right darker ; left brighter ; r save 2D frame")
+plt.colorbar()
 plt.connect('key_press_event', press_key)
 fig_loop.set_facecolor(background_plot)
 plt.show()
