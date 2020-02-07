@@ -28,16 +28,10 @@ def load_file(file_path, fieldname=None):
         else:  # could be anything
             try:
                 dataset = np.load(file_path)[fieldname]
+                return dataset, extension
             except KeyError:
                 npzfile = np.load(file_path)
                 dataset = npzfile[list(npzfile.files)[0]]
-                if fieldname == 'modulus':
-                    dataset = abs(dataset)
-                elif fieldname == 'angle':
-                    dataset = np.angle(dataset)
-                else:
-                    raise ValueError('"field" parameter settings is not valid')
-
     elif extension == '.npy':  # could be anything
         dataset = np.load(file_path)
     elif extension == '.cxi':  # output of PyNX phasing
@@ -52,4 +46,13 @@ def load_file(file_path, fieldname=None):
         dataset = h5file['/' + group_key + '/' + subgroup_key[0] + '/data'][0]  # select only first mode
     else:
         raise ValueError("File format not supported: can load only '.npy', '.npz', '.cxi' or '.h5' files")
+
+    if fieldname == 'modulus':
+        dataset = abs(dataset)
+    elif fieldname == 'angle':
+        dataset = np.angle(dataset)
+    elif fieldname is None:
+        pass
+    else:
+        raise ValueError('"field" parameter settings is not valid')
     return dataset, extension
