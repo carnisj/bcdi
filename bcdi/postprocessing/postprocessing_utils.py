@@ -1057,34 +1057,6 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y'):
     return strain
 
 
-def load_reconstruction(file_path):
-    """
-    Load the BCDI reconstruction.
-
-    :param file_path: the path of the reconstruction to load. Format supported: .npy .npz .cxi .h5
-    :return: the complex object and the extension of the file
-    """
-    _, extension = os.path.splitext(file_path)
-    if extension == '.npz':
-        npzfile = np.load(file_path)
-        dataset = npzfile[list(npzfile.files)[0]]
-    elif extension == '.npy':
-        dataset = np.load(file_path)
-    elif extension == '.cxi':
-        h5file = h5py.File(file_path, 'r')
-        group_key = list(h5file.keys())[1]
-        subgroup_key = list(h5file[group_key])
-        dataset = h5file['/'+group_key+'/'+subgroup_key[0]+'/data'].value
-    elif extension == '.h5':  # modes.h5
-        h5file = h5py.File(file_path, 'r')
-        group_key = list(h5file.keys())[0]
-        subgroup_key = list(h5file[group_key])
-        dataset = h5file['/' + group_key + '/' + subgroup_key[0] + '/data'][0]  # select only first mode
-    else:
-        raise ValueError("File format not supported: can load only '.npy', '.npz', '.cxi' or '.h5' files")
-    return dataset, extension
-
-
 def mean_filter(phase, support, half_width=0, width_z=np.nan, width_y=np.nan, width_x=np.nan,
                 phase_range=np.pi, debugging=False):
     """

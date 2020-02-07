@@ -16,6 +16,7 @@ import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 
 helptext = """
 Create a movie from a 3D real space reconstruction in each direction. Requires imagemagick (https://imagemagick.org)
@@ -74,7 +75,7 @@ if len(field_name) == 0:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the reconstructed object",
                                            filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
                                                       ("CXI", "*.cxi"), ("HDF5", "*.h5")])
-    obj, extension = pu.load_reconstruction(file_path)
+    obj, extension = util.load_file(file_path)
     obj = abs(obj)
     obj = obj / obj.max()
     if extension == '.h5':

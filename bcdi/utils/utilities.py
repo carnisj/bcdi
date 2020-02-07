@@ -11,9 +11,10 @@ import h5py
 import numpy as np
 
 
-def load_file(file_path, fieldname):
+def load_file(file_path, fieldname=None):
     """
-    Load a file.
+    Load a file. In case of .cxi or .h5 file, it will use a default path to the data.
+    'fieldname' is used only for .npz files.
 
     :param file_path: the path of the reconstruction to load. Format supported: .npy .npz .cxi .h5
     :param fieldname: the name of the field to be loaded
@@ -21,7 +22,22 @@ def load_file(file_path, fieldname):
     """
     _, extension = os.path.splitext(file_path)
     if extension == '.npz':  # could be anything
-        dataset = np.load(file_path)[fieldname]
+        if fieldname is None:  # output of PyNX phasing
+            npzfile = np.load(file_path)
+            dataset = npzfile[list(npzfile.files)[0]]
+        else:  # could be anything
+            try:
+                dataset = np.load(file_path)[fieldname]
+            except KeyError:
+                npzfile = np.load(file_path)
+                dataset = npzfile[list(npzfile.files)[0]]
+                if fieldname == 'amp':
+                    dataset = abs(dataset)
+                elif fieldname == 'phase':
+                    dataset = np.angle(dataset)
+                else:
+                    raise ValueError('"field" parameter settings is not valid')
+
     elif extension == '.npy':  # could be anything
         dataset = np.load(file_path)
     elif extension == '.cxi':  # output of PyNX phasing

@@ -19,6 +19,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.utils.utilities as util
 
 helptext = """
 strain.py: calculate the strain component from experimental geometry
@@ -198,7 +199,7 @@ file_path = filedialog.askopenfilenames(initialdir=datadir,
 nbfiles = len(file_path)
 plt.ion()
 
-obj, extension = pu.load_reconstruction(file_path[0])
+obj, extension = util.load_file(file_path[0])
 # obj[0:40,:,:] = 0
 # obj[65:,:,:] = 0
 if extension == '.h5':

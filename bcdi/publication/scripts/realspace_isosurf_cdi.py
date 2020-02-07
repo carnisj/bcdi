@@ -16,6 +16,7 @@ import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 
 helptext = """
 Template for 3d isosurface figures of a real space forward CDI reconstruction.
@@ -67,7 +68,7 @@ root.withdraw()
 
 file_path = filedialog.askopenfilename(initialdir=homedir, title="Select reconstruction file",
                                        filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
-obj, _ = pu.load_reconstruction(file_path)
+obj, _ = util.load_file(file_path)
 
 if obj.ndim != 3:
     print('a 3D reconstruction array is expected')

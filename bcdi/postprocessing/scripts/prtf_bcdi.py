@@ -24,6 +24,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.utilities as util
 
 helptext = """
 Calculate the resolution of a CDI reconstruction using the phase retrieval transfer function (PRTF).
@@ -43,10 +44,10 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 966
+scan = 1017
 root_folder = 'D:/data/HC3207/'  # location of the .spec or log file
 sample_name = "SN"  # "SN"  #
-comment = ""  # should start with _
+comment = "mode_new"  # should start with _
 ############################
 # beamline parameters #
 ############################
@@ -233,7 +234,7 @@ if 'prtf' not in os.path.splitext(os.path.basename(file_path))[0]:
     print('Wrong reconstruction file - should be still in the detector frame')
     sys.exit()
 
-obj, extension = pu.load_reconstruction(file_path)
+obj, extension = util.load_file(file_path)
 print('Opening ', file_path)
 
 if extension == '.h5':

@@ -15,16 +15,16 @@ from tkinter import filedialog
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
-import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.utilities as util
 
 helptext = """
 Graphical interface to visualize 2D slices through a 3D dataset in an easy way.
 """
 
-datadir = "D:/data/CH5309/S614/pynxraw"
-savedir = datadir
+datadir = "D:/data/CH5309/S614/pynxraw/"
+savedir = "D:/data/CH5309/S614/test/"
 scale = 'linear'  # 'linear' or 'log', scale of the 2D plots
-field = 'modulus'  # 'modulus' or 'phase'. Will take abs() for 'modulus', numpy.angle() for 'phase'
+field = 'bl'  # data field name. By default, it will take abs() for 'modulus', numpy.angle() for 'phase'
 half_range = 1  # colorbar range will be [-half_range half-range]
 grey_background = True
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort
@@ -73,14 +73,7 @@ file_path = filedialog.askopenfilename(initialdir=datadir, filetypes=[("NPZ", "*
 nbfiles = len(file_path)
 plt.ion()
 
-data, extension = pu.load_reconstruction(file_path)
-if field == 'modulus':
-    data = abs(data)
-elif field == 'phase':
-    data = np.angle(data)
-else:
-    print('"field" parameter settings is not valid')
-    sys.exit()
+data, extension = util.load_file(file_path, fieldname=field)
 
 if vmin is None:
     vmin = data.min()

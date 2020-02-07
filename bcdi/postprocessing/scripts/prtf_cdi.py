@@ -24,6 +24,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.utilities as util
 
 helptext = """
 Calculate the resolution of a forward CDI reconstruction using the phase retrieval transfer function (PRTF).
@@ -169,7 +170,7 @@ file_path = filedialog.askopenfilename(initialdir=datadir,  title="Select the re
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
                                                   ("CXI", "*.cxi"), ("HDF5", "*.h5")])
 
-obj, extension = pu.load_reconstruction(file_path)
+obj, extension = util.load_file(file_path)
 print('Opening ', file_path)
 
 if extension == '.h5':
