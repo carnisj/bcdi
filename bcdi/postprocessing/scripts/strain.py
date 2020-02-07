@@ -42,18 +42,18 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 614  # spec scan number
+scan = 3  # spec scan number
 
-datadir = 'D:/data/CH5309/S' + str(scan) + "/pynxraw/"  # 'D:/data/HC3207/ + "/test/"
+datadir = 'D:/data/Pt_growth_P10/data/dewet5_sum_S200_to_S206/'  # 'D:/data/CH5309/S' + str(scan) + "/pynxraw/"  # 'D:/data/HC3207/ + "/test/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [96, 360, 240]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [140, 512, 350]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-binning = (1, 2, 2)  # binning factor during phasing
+binning = (2, 2, 2)  # binning factor during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
 fix_voxel = 6.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
@@ -62,7 +62,7 @@ plot_margin = (60, 30, 30)  # (z, y, x) margin outside the support in each direc
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-isosurface_strain = 0.10  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.25  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect'
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 offset_origin = []  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
@@ -74,18 +74,18 @@ comment = "_nosupport_" + isosurface_method + "_iso_" + str(isosurface_strain)  
 #################################
 # define the experimental setup #
 #################################
-beamline = "ID01"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
+beamline = "P10"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 1.0137  # sample to detector distance in m
-pixel_size = 55e-6  # detector pixel size in m
-energy = 9994  # x-ray energy in eV, 6eV offset at ID01
+sdd = 1.83  # sample to detector distance in m
+pixel_size = 75e-6  # detector pixel size in m
+energy = 10300  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 31.7863  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = -1.9119  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 30.5415  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 4.1785  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.0116  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 dispersion = 3.2880E-05  # delta
@@ -123,7 +123,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (+10, +10, -10)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (-2, 15, -15)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # setup for phase averaging or apodization #
 ############################################
@@ -246,7 +246,7 @@ ref_obj = np.zeros((numz, numy, numx))
 avg_counter = 1
 print('\nAveraging using', nbfiles, 'candidate reconstructions')
 for ii in sorted_obj:
-    obj, extension = pu.load_reconstruction(file_path[ii])
+    obj, extension = util.load_file(file_path[ii])
     print('\nOpening ', file_path[ii])
 
     if flip_reconstruction:
