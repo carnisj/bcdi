@@ -178,6 +178,44 @@ def beamstop_correction(data, detector, setup, debugging=False):
     return data
 
 
+def bin_parameters(binning, nb_frames, params, debugging=True):
+    """
+    Select parameter values taking into account an eventual binning of the data along the rocking curve axis.
+
+    :param binning: binning factor for the axis corresponding to the rocking curve
+    :param nb_frames: number of frames of the rocking curve dimension
+    :param params: list of parameters
+    :param debugging: set to True to have printed parameters
+    :return: parameters of the same length, taking into account binning
+    """
+    if binning == 1:  # nothing to do
+        return params
+
+    if debugging:
+        print(params)
+
+    nb_param = len(params)
+    print(nb_param, 'motor parameters modified to take into account binning of the rocking curve axis')
+
+    if (binning % 1) != 0:
+        raise ValueError('Invalid binning value')
+    else:
+        for idx in range(len(params)):
+            try:
+                param_length = len(params[idx])
+                if param_length != nb_frames:
+                    raise ValueError('parameter ', idx, 'length', param_length, 'different from nb_frames', nb_frames)
+            except TypeError:  # int or float
+                params[idx] = np.repeat(params[idx], nb_frames)
+            temp = params[idx]
+            params[idx] = temp[::binning]
+
+    if debugging:
+        print(params)
+
+    return params
+
+
 def center_fft(data, mask, detector, frames_logical, centering='max', fft_option='crop_asymmetric_ZYX', **kwargs):
     """
     Center and crop/pad the dataset depending on user parameters
@@ -2145,9 +2183,14 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
      - qx, qz, qy components for the dataset
      - updated frames_logical
     """
+    binning = detector.binning
+
     if frames_logical is None:  # retrieve the raw data length, then len(frames_logical) may be different from nb_frames
-        # TODO: create a function which does not load the data but use the specfile
-        _, _, _, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector, setup=setup)
+        if (setup.beamline == 'ID01') or (setup.beamline == 'SIXS_2018') or (setup.beamline == 'SIXS_2019'):
+            _, _, _, frames_logical = load_data(logfile=logfile, scan_number=scan_number,
+                                                detector=detector, setup=setup)
+        else:  # frames_logical parameter not used yet for CRISTAL and P10
+            pass
 
     if follow_bragg and setup.beamline != 'ID01':
         raise ValueError('Energy scan implemented only for ID01 beamline')
@@ -2186,9 +2229,11 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
         elif setup.rocking_angle == 'energy':
             pass
-
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        eta, chi, phi, nu, delta, energy = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                          params=[eta, chi, phi, nu, delta, energy])
         qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
@@ -2208,7 +2253,8 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
         else:
             raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
-
+        beta, mu, beta, gamma, delta = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                      params=[beta, mu, beta, gamma, delta])
         qx, qy, qz = hxrd.Ang2Q.area(beta, mu, beta, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'CRISTAL':
@@ -2229,7 +2275,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
         else:
             raise ValueError('Inplane rocking curve not implemented for CRISTAL')
-
+        mgomega, gamma, delta = bin_parameters(binning=binning[0], nb_frames=nb_frames, params=[mgomega, gamma, delta])
         qx, qy, qz = hxrd.Ang2Q.area(mgomega, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'P10':
@@ -2265,7 +2311,8 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
-
+        mu, om, chi, phi, gamma, delta = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                        params=[mu, om, chi, phi, gamma, delta])
         qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     else:
