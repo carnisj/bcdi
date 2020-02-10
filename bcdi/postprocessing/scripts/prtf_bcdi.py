@@ -44,18 +44,20 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 1017
-root_folder = 'D:/data/HC3207/'  # location of the .spec or log file
-sample_name = "SN"  # "SN"  #
-comment = "mode_new"  # should start with _
+scan = 314
+root_folder = 'D:/data/Pt_growth_P10/data/'  # location of the .spec or log file
+savedir = 'D:/data/Pt_growth_P10/data/dewet5_sum_S302_to_S314/'  # PRTF will be saved here, leave it to '' otherwise
+sample_name = "dewet5"  # "SN"  #
+comment = "_step8"  # should start with _
 ############################
 # beamline parameters #
 ############################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+is_series = False  # specific to series measurement at P10
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'align2'
+specfile_name = sample_name + '_%05d'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -65,26 +67,24 @@ specfile_name = 'align2'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger2M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-template_imagefile = 'align_eiger2M_%05d.edf.gz'
+detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
-# template for P10: '_data_%06d.h5'
+# template for P10: '_master.h5'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
-sdd = 0.8618  # sample to detector distance in m
-energy = 8994   # x-ray energy in eV, 6eV offset at ID01
+sdd = 1.83  # sample to detector distance in m
+energy = 10300   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-binning = (1, 1, 1)  # binning factor during phasing: rocking curve axis, detector vertical and horizontal axis
-# TODO: considering binning is probably not necessary: if the data is binned, the resolution does not change because
-# TODO: the pixel size is multiplied. If we pad the phased object we find back the initial resolution?
-rawdata_binned = False  # set to True if the raw data and the mask loaded are already binned.
-# If False, the raw data and the mask will be binned using 'binning' parameter
+pre_binning = (1, 1, 1)  # binning factor before phasing: rocking curve axis, detector vertical and horizontal axis
+# this is necessary to calculate correctly q values. If data was binned during phasing, it will be automatically padded
+# to the diffraction data shape before calculating the Fourier transform.
 ###############################
 # only needed for simulations #
 ###############################
@@ -102,14 +102,17 @@ save = True  # True to save the prtf figure
 ##########################
 # end of user parameters #
 ##########################
-# TODO: add the option for binning the rocking angle
-if binning[0] != 1:
-    print('PRTF not yet implemented for rocking angle binning')
-    sys.exit()
+
 #################################################
 # Initialize paths, detector, setup and logfile #
 #################################################
-detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile)
+kwargs = dict()  # create dictionnary
+try:
+    kwargs['is_series'] = is_series
+except NameError:  # is_series not declared
+    pass
+
+detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, binning=pre_binning, **kwargs)
 
 setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, distance=sdd, energy=energy,
                                beam_direction=beam_direction, sample_inplane=sample_inplane,
@@ -126,6 +129,7 @@ print('Energy:', setup.energy, 'ev')
 
 if simulation:
     detector.datadir = root_folder
+    detector.savedir = root_folder
 else:
     if setup.beamline != 'P10':
         homedir = root_folder + sample_name + str(scan) + '/'
@@ -136,7 +140,12 @@ else:
         detector.datadir = homedir + 'e4m/'
         template_imagefile = specfile_name + template_imagefile
         detector.template_imagefile = template_imagefile
-
+    if savedir == '':
+        detector.savedir = os.path.abspath(os.path.join(detector.datadir, os.pardir))
+    else:
+        detector.savedir = savedir
+    print('Datadir:', detector.datadir)
+    print('Savedir:', detector.savedir)
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
                                  filename=specfile_name)
 
@@ -160,21 +169,15 @@ my_cmap = colormap.cmap
 plt.ion()
 root = tk.Tk()
 root.withdraw()
-file_path = filedialog.askopenfilename(initialdir=detector.datadir, title="Select diffraction pattern",
+file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select diffraction pattern",
                                        filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
-diff_pattern = npzfile['data']
+diff_pattern = npzfile[list(npzfile.files)[0]]
 diff_pattern = diff_pattern.astype(float)
 
-file_path = filedialog.askopenfilename(initialdir=detector.datadir, title="Select mask", filetypes=[("NPZ", "*.npz")])
+file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select mask", filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
-mask = npzfile['mask']
-
-if not rawdata_binned:
-    if binning[1] != 1 or binning[2] != 1:
-        diff_pattern = pu.bin_data(array=diff_pattern, binning=binning, debugging=True)
-        mask = pu.bin_data(array=mask, binning=binning, debugging=True)
-        mask[np.nonzero(mask)] = 1
+mask = npzfile[list(npzfile.files)[0]]
 
 numz, numy, numx = diff_pattern.shape
 print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
@@ -194,9 +197,7 @@ plt.pause(0.1)
 # calculate the q matrix respective to the COM #
 ################################################
 hxrd.Ang2Q.init_area('z-', 'y+', cch1=int(y0), cch2=int(x0), Nch1=numy, Nch2=numx,
-                     pwidth1=detector.pixelsize_y * binning[1],
-                     pwidth2=detector.pixelsize_x * binning[2],
-                     distance=setup.distance)
+                     pwidth1=detector.pixelsize_y, pwidth2=detector.pixelsize_x, distance=setup.distance)
 # first two arguments in init_area are the direction of the detector
 if simulation:
     eta = bragg_angle_simu + tilt_simu * (np.arange(0, numz, 1) - int(z0))
@@ -219,6 +220,10 @@ distances_q = np.sqrt((qx - qxCOM)**2 + (qy - qyCOM)**2 + (qz - qzCOM)**2)  # if
 del qx, qy, qz
 gc.collect()
 
+if distances_q.shape != diff_pattern.shape:
+    print('\nThe shape of q values and the shape of the diffraction pattern are different: check binning parameter')
+    sys.exit()
+
 if debug:
     gu.multislices_plot(distances_q, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
                         title='distances_q', scale='linear', vmin=np.nan, vmax=np.nan,
@@ -227,7 +232,7 @@ if debug:
 #############################
 # load reconstructed object #
 #############################
-file_path = filedialog.askopenfilename(initialdir=detector.datadir,  title="Select reconstructions (prtf)",
+file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select reconstructions (prtf)",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
                                                   ("CXI", "*.cxi"), ("HDF5", "*.h5")])
 if 'prtf' not in os.path.splitext(os.path.basename(file_path))[0]:
