@@ -267,11 +267,9 @@ print('COM of the retrieved diffraction pattern after masking: ', center_of_mass
 del mask
 gc.collect()
 
-gu.combined_plots(tuple_array=(diff_pattern, diff_pattern, diff_pattern, phased_fft, phased_fft, phased_fft),
-                  tuple_sum_frames=False, tuple_sum_axis=(0, 1, 2, 0, 1, 2), tuple_width_v=np.nan, tuple_width_h=np.nan,
-                  tuple_colorbar=False, tuple_vmin=(np.nan, np.nan, np.nan, -1, -1, -1), tuple_vmax=np.nan,
-                  tuple_title=('measurement', 'measurement', 'measurement', 'phased_fft', 'phased_fft', 'phased_fft'),
-                  tuple_scale='log')
+gu.combined_plots(tuple_array=(diff_pattern, phased_fft), tuple_sum_frames=False, tuple_sum_axis=(0, 0),
+                  tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=False, tuple_vmin=(-1, -1),
+                  tuple_vmax=np.nan, tuple_title=('measurement', 'phased_fft'), tuple_scale='log')
 
 #########################
 # calculate the 3D PRTF #
