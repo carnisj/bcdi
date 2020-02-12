@@ -126,8 +126,8 @@ grid_qx, grid_qz, grid_qy = np.mgrid[-tick_spacing*half_labels:tick_spacing*half
 # for q: classical convention qx downstream, qz vertical and qy outboard
 myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=(800, 700))
 mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(newdata),
-               contours=[0.8*threshold_isosurface, 0.9*threshold_isosurface, threshold_isosurface,
-                         1.1*threshold_isosurface, 1.2*threshold_isosurface],
+               contours=[0.85*threshold_isosurface, 0.9*threshold_isosurface, 0.95*threshold_isosurface, threshold_isosurface, 1.05*threshold_isosurface,
+                         1.1*threshold_isosurface, 1.15*threshold_isosurface, 1.2*threshold_isosurface],
                opacity=0.2, colormap='hsv', vmin=3, vmax=5.5)  # , color=(0.7, 0.7, 0.7))
 
 mlab.view(azimuth=38, elevation=63, distance=4*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max())
@@ -138,5 +138,9 @@ ax = mlab.axes(line_width=2.0, nb_labels=2*half_labels+1)
 mlab.savefig(homedir + 'S' + str(scan) + '_labels.png', figure=myfig)
 ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
+mlab.savefig(homedir + 'S' + str(scan) + '_axes.png', figure=myfig)
+ax.axes.x_axis_visibility = False
+ax.axes.y_axis_visibility = False
+ax.axes.z_axis_visibility = False
 mlab.savefig(homedir + 'S' + str(scan) + '.png', figure=myfig)
 mlab.show()
