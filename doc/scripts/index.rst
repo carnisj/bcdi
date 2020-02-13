@@ -408,3 +408,11 @@ read_edf.py
    :start-after: helptext
    :end-before: """
    :language: rst
+
+save_to_mat.py
+^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/save_to_mat.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst

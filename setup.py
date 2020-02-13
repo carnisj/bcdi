@@ -69,6 +69,7 @@ setup(name='bcdi', version='0.0.8',
                'bcdi/utils/scripts/angular_average.py',
                'bcdi/utils/scripts/read_edf.py',
                'bcdi/utils/scripts/rescale_support.py',
+               'bcdi/utils/scripts/save_to_mat.py',
                ],
       # metadata
       author="Jerome Carnis",
