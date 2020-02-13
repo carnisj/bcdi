@@ -18,7 +18,7 @@ Load a 2D or 3D object and save it into Matlab .mat format.
 """
 
 datadir = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/maximum_likelihood/'
-save_name = ''  #
+save_name = ''  # use this to change the filename, it will default to the actual file name if save_name=''
 #############
 # load data #
 #############
@@ -34,7 +34,7 @@ if save_name == '':
 
 if obj.ndim == 2:
     savemat(datadir + save_name + '.mat', {'data': obj})
-elif obj.ndim ==3:
+elif obj.ndim == 3:
     savemat(datadir + save_name + '.mat',
             {'data': np.moveaxis(obj, [0, 1, 2], [-1, -3, -2])})
 else:
