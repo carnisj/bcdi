@@ -27,9 +27,7 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.utilities as util
 
 helptext = """
-Calculate the resolution of a CDI reconstruction using the phase retrieval transfer function (PRTF).
-Can load several reconstructions (given that the 3D array shape and the voxel size are identical) 
-and calculate the PRTF of the ensemble.
+Calculate the resolution of a BCDI reconstruction using the phase retrieval transfer function (PRTF).
 
 The measured diffraction pattern and reconstructions should be in the detector frame, before
 phase ramp removal and centering.
@@ -44,20 +42,20 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 314
-root_folder = 'D:/data/Pt_growth_P10/data/'  # location of the .spec or log file
-savedir = 'D:/data/Pt_growth_P10/data/dewet5_sum_S302_to_S314/'  # PRTF will be saved here, leave it to '' otherwise
-sample_name = "dewet5"  # "SN"  #
-comment = "_step8"  # should start with _
+scan = 279
+root_folder = 'D:/data/DATA_exp/'  # location of the .spec or log file
+savedir = 'D:/data/DATA_exp/'  # PRTF will be saved here, leave it to '' otherwise
+sample_name = "S"  # "SN"  #
+comment = ""  # should start with _
 ############################
 # beamline parameters #
 ############################
-beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 is_series = False  # specific to series measurement at P10
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = sample_name + '_%05d'
+specfile_name = 'alignment'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -67,8 +65,8 @@ specfile_name = sample_name + '_%05d'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-template_imagefile = '_master.h5'
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+template_imagefile = 'alignment_12_%04d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -77,8 +75,8 @@ template_imagefile = '_master.h5'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
-sdd = 1.83  # sample to detector distance in m
-energy = 10300   # x-ray energy in eV, 6eV offset at ID01
+sdd = 1  # sample to detector distance in m
+energy = 8000   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
@@ -170,14 +168,13 @@ plt.ion()
 root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select diffraction pattern",
-                                       filetypes=[("NPZ", "*.npz")])
-npzfile = np.load(file_path)
-diff_pattern = npzfile[list(npzfile.files)[0]]
+                                       filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
+diff_pattern, _ = util.load_file(file_path)
 diff_pattern = diff_pattern.astype(float)
 
-file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select mask", filetypes=[("NPZ", "*.npz")])
-npzfile = np.load(file_path)
-mask = npzfile[list(npzfile.files)[0]]
+file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select mask",
+                                       filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
+mask, _ = util.load_file(file_path)
 
 numz, numy, numx = diff_pattern.shape
 print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
