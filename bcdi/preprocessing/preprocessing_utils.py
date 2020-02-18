@@ -24,65 +24,106 @@ def align_diffpattern(reference_data, data, mask, method='registration', combini
     """
     Align two diffraction patterns based on the shift of the center of mass or based on dft registration.
 
-    :param reference_data: the first 3D diffraction intensity array which will serve as a reference.
-    :param data: the 3D diffraction intensity array to align.
-    :param mask: the 3D mask corresponding to data
+    :param reference_data: the first 3D or 2D diffraction intensity array which will serve as a reference.
+    :param data: the 3D or 2D diffraction intensity array to align.
+    :param mask: the 3D or 2D mask corresponding to data
     :param method: 'center_of_mass' or 'registration'. For 'registration', see: Opt. Lett. 33, 156-158 (2008).
     :param combining_method: 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
     :return:
      - the shifted data
      - the shifted mask
     """
-    if reference_data.ndim != 3:
-        raise ValueError('Expect 3D arrays as input')
-    nbz, nby, nbx = reference_data.shape
-    if reference_data.shape != data.shape:
-        raise ValueError('reference_data and data do not have the same shape')
+    if reference_data.ndim == 3:
+        nbz, nby, nbx = reference_data.shape
+        if reference_data.shape != data.shape:
+            raise ValueError('reference_data and data do not have the same shape')
 
-    if method is 'registration':
-        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=100)
-    elif method is 'center_of_mass':
-        ref_piz, ref_piy, ref_pix = center_of_mass(abs(reference_data))
-        piz, piy, pix = center_of_mass(abs(data))
-        shiftz = ref_piz - piz
-        shifty = ref_piy - piy
-        shiftx = ref_pix - pix
+        if method is 'registration':
+            shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=100)
+        elif method is 'center_of_mass':
+            ref_piz, ref_piy, ref_pix = center_of_mass(abs(reference_data))
+            piz, piy, pix = center_of_mass(abs(data))
+            shiftz = ref_piz - piz
+            shifty = ref_piy - piy
+            shiftx = ref_pix - pix
+        else:
+            raise ValueError("Incorrect value for parameter 'method'")
+
+        print('z shift', str('{:.2f}'.format(shiftz)), ', y shift',
+              str('{:.2f}'.format(shifty)), ', x shift', str('{:.2f}'.format(shiftx)))
+        if (shiftz == 0) and (shifty == 0) and (shiftx == 0):
+            return data, mask
+
+        if combining_method is 'rgi':
+            # re-sample data on a new grid based on the shift
+            old_z = np.arange(-nbz // 2, nbz // 2)
+            old_y = np.arange(-nby // 2, nby // 2)
+            old_x = np.arange(-nbx // 2, nbx // 2)
+            myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing='ij')
+            new_z = myz + shiftz
+            new_y = myy + shifty
+            new_x = myx + shiftx
+            del myx, myy, myz
+            rgi = RegularGridInterpolator((old_z, old_y, old_x), data, method='linear', bounds_error=False,
+                                          fill_value=0)
+            data = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                       new_x.reshape((1, new_z.size)))).transpose())
+            data = data.reshape((nbz, nby, nbx)).astype(reference_data.dtype)
+            rgi = RegularGridInterpolator((old_z, old_y, old_x), mask, method='linear', bounds_error=False,
+                                          fill_value=0)
+            mask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                       new_x.reshape((1, new_z.size)))).transpose())
+            mask = mask.reshape((nbz, nby, nbx)).astype(data.dtype)
+            mask = np.rint(mask)  # mask is integer 0 or 1
+
+        elif combining_method is 'subpixel':
+            data = abs(reg.subpixel_shift(data, shiftz, shifty, shiftx))  # data is a real number (intensity)
+            mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
+        else:
+            raise ValueError("Incorrect value for parameter 'combining_method'")
+
+    elif reference_data.ndim == 2:
+        nby, nbx = reference_data.shape
+        if reference_data.shape != data.shape:
+            raise ValueError('reference_data and data do not have the same shape')
+
+        if method is 'registration':
+            shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=100)
+        elif method is 'center_of_mass':
+            ref_piy, ref_pix = center_of_mass(abs(reference_data))
+            piy, pix = center_of_mass(abs(data))
+            shifty = ref_piy - piy
+            shiftx = ref_pix - pix
+        else:
+            raise ValueError("Incorrect value for parameter 'method'")
+
+        print('y shift', str('{:.2f}'.format(shifty)), ', x shift', str('{:.2f}'.format(shiftx)))
+        if (shifty == 0) and (shiftx == 0):
+            return data, mask
+
+        if combining_method is 'rgi':
+            # re-sample data on a new grid based on the shift
+            old_y = np.arange(-nby // 2, nby // 2)
+            old_x = np.arange(-nbx // 2, nbx // 2)
+            myy, myx = np.meshgrid(old_y, old_x, indexing='ij')
+            new_y = myy + shifty
+            new_x = myx + shiftx
+            del myx, myy
+            rgi = RegularGridInterpolator((old_y, old_x), data, method='linear', bounds_error=False, fill_value=0)
+            data = rgi(np.concatenate((new_y.reshape((1, new_y.size)), new_x.reshape((1, new_y.size)))).transpose())
+            data = data.reshape((nby, nbx)).astype(reference_data.dtype)
+            rgi = RegularGridInterpolator((old_y, old_x), mask, method='linear', bounds_error=False, fill_value=0)
+            mask = rgi(np.concatenate((new_y.reshape((1, new_y.size)), new_x.reshape((1, new_y.size)))).transpose())
+            mask = mask.reshape((nby, nbx)).astype(data.dtype)
+            mask = np.rint(mask)  # mask is integer 0 or 1
+
+        elif combining_method is 'subpixel':
+            data = abs(reg.subpixel_shift(data, shifty, shiftx))  # data is a real number (intensity)
+            mask = np.rint(abs(reg.subpixel_shift(mask, shifty, shiftx)))  # mask is integer 0 or 1
+        else:
+            raise ValueError("Incorrect value for parameter 'combining_method'")
     else:
-        raise ValueError("Incorrect value for parameter 'method'")
-
-    print('z shift', str('{:.2f}'.format(shiftz)), ', y shift',
-          str('{:.2f}'.format(shifty)), ', x shift', str('{:.2f}'.format(shiftx)))
-    if (shiftz == 0) and (shifty == 0) and (shiftx == 0):
-        return data, mask
-
-    if combining_method is 'rgi':
-        # re-sample data on a new grid based on the shift
-        old_z = np.arange(-nbz // 2, nbz // 2)
-        old_y = np.arange(-nby // 2, nby // 2)
-        old_x = np.arange(-nbx // 2, nbx // 2)
-        myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing='ij')
-        new_z = myz + shiftz
-        new_y = myy + shifty
-        new_x = myx + shiftx
-        del myx, myy, myz
-        rgi = RegularGridInterpolator((old_z, old_y, old_x), data, method='linear', bounds_error=False,
-                                      fill_value=0)
-        data = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                   new_x.reshape((1, new_z.size)))).transpose())
-        data = data.reshape((nbz, nby, nbx)).astype(reference_data.dtype)
-        rgi = RegularGridInterpolator((old_z, old_y, old_x), mask, method='linear', bounds_error=False,
-                                      fill_value=0)
-        mask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                   new_x.reshape((1, new_z.size)))).transpose())
-        mask = mask.reshape((nbz, nby, nbx)).astype(data.dtype)
-        mask = np.rint(mask)  # mask is integer 0 or 1
-
-    elif combining_method is 'subpixel':
-        data = abs(reg.subpixel_shift(data, shiftz, shifty, shiftx))  # data is a real number (intensity)
-        mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
-    else:
-        raise ValueError("Incorrect value for parameter 'combining_method'")
-
+        raise ValueError('Expect 2D or 3D arrays as input')
     return data, mask
 
 
@@ -1493,14 +1534,14 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
 
     try:
-        monitor = labels_data[labels.index('exp1'), :]  # mon2 monitor at ID01
-    except ValueError:
-        monitor = labels_data[labels.index('mon2'), :]  # exp1 for old data at ID01
-
-    try:
         ccdn = labels_data[labels.index(detector.counter), :]
     except ValueError:
-        raise ValueError(detector.counter, 'not in the list, the detector name may be wrong')
+        try:
+            print(detector.counter, "not in the list, trying 'ccd_n'")
+            detector.counter = 'ccd_n'
+            ccdn = labels_data[labels.index(detector.counter), :]
+        except ValueError:
+            raise ValueError(detector.counter, 'not in the list, the detector name may be wrong')
 
     nb_img = len(ccdn)
     data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
@@ -1527,6 +1568,15 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
     data[np.isnan(data)] = 0
 
     frames_logical = np.ones(nb_img)
+
+    try:
+        monitor = labels_data[labels.index('exp1'), :]  # mon2 monitor at ID01
+    except ValueError:
+        try:
+            monitor = labels_data[labels.index('mon2'), :]  # exp1 for old data at ID01
+        except ValueError:  # no monitor data
+            print('No available monitor data')
+            monitor = np.ones(nb_img)
 
     return data, mask3d, monitor, frames_logical
 
@@ -1875,30 +1925,55 @@ def motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bra
     :return: (eta, chi, phi, nu, delta, energy) motor positions
     """
     energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
-
+    old_names = False
     if not setup.custom_scan:
         motor_names = logfile[str(scan_number) + '.1'].motor_names  # positioners
         motor_positions = logfile[str(scan_number) + '.1'].motor_positions  # positioners
         labels = logfile[str(scan_number) + '.1'].labels  # motor scanned
         labels_data = logfile[str(scan_number) + '.1'].data  # motor scanned
 
+        try:
+            nu = motor_positions[motor_names.index('nu')]  # positioner
+        except ValueError:
+            print("'nu' not in the list, trying 'Nu'")
+            nu = motor_positions[motor_names.index('Nu')]  # positioner
+            old_names = True
+
         if follow_bragg:
-            delta = list(labels_data[labels.index('del'), :])  # scanned
+            if not old_names:
+                delta = list(labels_data[labels.index('del'), :])  # scanned
+            else:
+                delta = list(labels_data[labels.index('Delta'), :])  # scanned
         else:
-            delta = motor_positions[motor_names.index('del')]  # positioner
-        nu = motor_positions[motor_names.index('nu')]  # positioner
+            if not old_names:
+                delta = motor_positions[motor_names.index('del')]  # positioner
+            else:
+                delta = motor_positions[motor_names.index('Delta')]  # positioner
+
         chi = 0
 
         if setup.rocking_angle == "outofplane":
-            eta = labels_data[labels.index('eta'), :]
-            phi = motor_positions[motor_names.index('phi')]
+            if not old_names:
+                eta = labels_data[labels.index('eta'), :]
+                phi = motor_positions[motor_names.index('phi')]
+            else:
+                eta = labels_data[labels.index('Eta'), :]
+                phi = motor_positions[motor_names.index('Phi')]
         elif setup.rocking_angle == "inplane":
-            phi = labels_data[labels.index('phi'), :]
-            eta = motor_positions[motor_names.index('eta')]
+            if not old_names:
+                phi = labels_data[labels.index('phi'), :]
+                eta = motor_positions[motor_names.index('eta')]
+            else:
+                phi = labels_data[labels.index('Phi'), :]
+                eta = motor_positions[motor_names.index('Eta')]
         elif setup.rocking_angle == "energy":
             raw_energy = list(labels_data[labels.index('energy'), :])  # in kev, scanned
-            phi = motor_positions[motor_names.index('phi')]  # positioner
-            eta = motor_positions[motor_names.index('eta')]  # positioner
+            if not old_names:
+                phi = motor_positions[motor_names.index('phi')]  # positioner
+                eta = motor_positions[motor_names.index('eta')]  # positioner
+            else:
+                phi = motor_positions[motor_names.index('Phi')]  # positioner
+                eta = motor_positions[motor_names.index('Eta')]  # positioner
 
             nb_overlap = 0
             energy = raw_energy[:]
@@ -3438,5 +3513,28 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
 
 
 # if __name__ == "__main__":
-#     print(wrap(-np.pi, -np.pi, 2*np.pi))
+#     colormap = gu.Colormap(bad_color='0.7')
+#     my_cmap = colormap.cmap
+#     q_values = np.load('D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/400_400_400_1_1_1/QxQzQy_S22_ortho_norm_400_400_400_1_1_1.npz')
 #
+#     npzfile = np.load('D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/400_400_400_1_1_1/S22_pynx_ortho_norm_400_400_400_1_1_1.npz')
+#     data = npzfile[list(npzfile.files)[0]]
+#     nz, ny, nx = data.shape
+#     qx = q_values['qx']  # 1D array
+#     qy = q_values['qy']  # 1D array
+#     qz = q_values['qz']  # 1D array
+#     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(13, 9))
+#     ax.contourf(qy, qz, np.log10(abs(data[nz//2, :, :])), np.linspace(0, int(np.log10(data.max())), 150, endpoint=False), cmap=my_cmap)
+#     ax.set_aspect("equal")
+#     plt.savefig('D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/400_400_400_1_1_1/QyQz.png')
+#     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(13, 9))
+#     ax.contourf(qy[136:200], qz[9:73], np.log10(abs(data[nz//2, 9:73, 136:200])), np.linspace(0, int(np.log10(data.max())), 150, endpoint=False), cmap=my_cmap)
+#     # fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=False,
+#     #                               title='Regridded data',
+#     #                               levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
+#     #                               plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+#     ax.set_aspect("equal")
+#     plt.savefig('D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/400_400_400_1_1_1/zoomQyQz.png')
+#     # plt.figure()
+#     # plt.imshow(np.log10(abs(data[nz//2-2, 1:81, 128:208])), vmin=0, vmax=5, cmap=my_cmap)
+#     plt.show()
