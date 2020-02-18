@@ -179,7 +179,8 @@ z0, y0, x0 = [int(z0), int(y0), int(x0)]
 print("COM of measured pattern after masking: ", z0, y0, x0, ' Number of unmasked photons =', diff_pattern.sum())
 
 fig, _, _ = gu.multislices_plot(np.sqrt(diff_pattern), sum_frames=False, title='3D diffraction amplitude', vmin=0,
-                                vmax=3.5, is_orthogonal=False, reciprocal_space=True)
+                                vmax=3.5, is_orthogonal=False, reciprocal_space=True, slice_position=[z0, y0, x0],
+                                scale='log', plot_colorbar=True)
 
 file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select 2D slice",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])

@@ -822,15 +822,16 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
     return vmax, idx, exit_flag
 
 
-def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, width_x=np.nan, plot_colorbar=False,
-                     cmap=my_cmap, title='', scale='linear', vmin=np.nan, vmax=np.nan,
-                     tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
+def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None, width_y=None, width_x=None,
+                     plot_colorbar=False, cmap=my_cmap, title='', scale='linear', vmin=np.nan, vmax=np.nan,
+                     tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=None,
                      is_orthogonal=False, reciprocal_space=False):
     """
     Create a figure with three 2D imshow plots from a 3D dataset.
 
     :param array: 3D array of real numbers
     :param sum_frames: if True, will sum the data along the 3rd axis
+    :param slice_position: tuple of three integers where to slice the 3D array
     :param width_z: zoom width along axis 0 (rocking angle), should be smaller than the actual data size
     :param width_y: zoom width along axis 1 (vertical), should be smaller than the actual data size
     :param width_x: zoom width along axis 2 (horizontal), should be smaller than the actual data size
@@ -848,26 +849,36 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
     :param vmax: higher boundary for the colorbar. Float or tuple of 3 floats
     :return: fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) instances
     """
+    nb_dim = array.ndim
+    if nb_dim != 3:
+        raise ValueError('multislices_plot() expects a 3D array')
+
+    nbz, nby, nbx = array.shape
 
     try:
-        len_vmin = len(vmin)
-        if len_vmin == 3:
+        if len(vmin) == 3:
             min_value = vmin
         else:
             raise ValueError('wrong shape for the parameter vmin')
-    except TypeError:  # case len_vmin=1
+    except TypeError:  # case len(vmin)=1
         min_value = [vmin, vmin, vmin]
 
     try:
-        len_vmax = len(vmax)
-        if len_vmax == 3:
+        if len(vmax) == 3:
             max_value = vmax
         else:
             raise ValueError('wrong shape for the parameter vmax')
-    except TypeError:  # case len_vmax=1
+    except TypeError:  # case len(vmax)=1
         max_value = [vmax, vmax, vmax]
 
-    nb_dim = array.ndim
+    if not sum_frames:
+        if slice_position is None:
+            slice_position = [nbz//2, nby//2, nbx//2]
+        elif len(slice_position) != 3:
+            raise ValueError('wrong shape for the parameter slice_position')
+        else:
+            slice_position = [int(position) for position in slice_position]
+
     plt.ion()
     if sum_frames:
         title = title + ' sum'
@@ -885,140 +896,138 @@ def multislices_plot(array, sum_frames=False, width_z=np.nan, width_y=np.nan, wi
         else:  # detector frame
             invert_yaxis = False
             slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
-    if nb_dim != 3:  # wrong array dimension
-        raise ValueError('multislices_plot() needs a 3D array')
+
+    if width_z is None:
+        width_z = nbz
+    if width_y is None:
+        width_y = nby
+    if width_x is None:
+        width_x = nbx
+
+    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(13, 9))
+
+    # axis 0
+    temp_array = np.copy(array)
+    if not sum_frames:
+        temp_array = temp_array[slice_position[0], :, :]
     else:
-        nbz, nby, nbx = array.shape
-        if np.isnan(width_z):
-            width_z = nbz
-        if np.isnan(width_y):
-            width_y = nby
-        if np.isnan(width_x):
-            width_x = nbx
+        temp_array = temp_array.sum(axis=0)
+    # now array is 2D
+    temp_array = temp_array[int(np.rint(nby // 2 - min(width_y, nby) // 2)):
+                            int(np.rint(nby // 2 - min(width_y, nby) // 2)) + min(width_y, nby),
+                            int(np.rint(nbx // 2 - min(width_x, nbx) // 2)):
+                            int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
 
-        fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(13, 9))
+    if scale == 'linear':
+        if np.isnan(min_value[0]):
+            min_value[0] = temp_array[~np.isnan(temp_array)].min()
+        if np.isnan(max_value[0]):
+            max_value[0] = temp_array[~np.isnan(temp_array)].max()
+        plt0 = ax0.imshow(temp_array, vmin=min_value[0], vmax=max_value[0], cmap=cmap)
+    elif scale == 'log':
+        if np.isnan(min_value[0]):
+            min_value[0] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
+            if np.isinf(min_value[0]):
+                min_value[0] = 0
+        if np.isnan(max_value[0]):
+            max_value[0] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
+        plt0 = ax0.imshow(np.log10(abs(temp_array)), vmin=min_value[0], vmax=max_value[0], cmap=cmap)
+    else:
+        raise ValueError('Wrong value for scale')
 
-        # axis 0
-        temp_array = np.copy(array)
-        if not sum_frames:
-            temp_array = temp_array[nbz // 2, :, :]
-        else:
-            temp_array = temp_array.sum(axis=0)
-        # now array is 2D
-        temp_array = temp_array[int(np.rint(nby / 2 - min(width_y, nby) / 2)):
-                                int(np.rint(nby / 2 - min(width_y, nby) / 2)) + min(width_y, nby),
-                                int(np.rint(nbx // 2 - min(width_x, nbx) // 2)):
-                                int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
+    ax0.set_title(title + slice_names[0])
+    if invert_yaxis:  # Y is axis 0, need to be flipped
+        ax0.invert_yaxis()
+    plt.axis('scaled')
+    if plot_colorbar:
+        plt.colorbar(plt0, ax=ax0)
+    if pixel_spacing is not None:
+        ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                        length=tick_length, width=tick_width)
 
-        if scale == 'linear':
-            if np.isnan(min_value[0]):
-                min_value[0] = temp_array[~np.isnan(temp_array)].min()
-            if np.isnan(max_value[0]):
-                max_value[0] = temp_array[~np.isnan(temp_array)].max()
-            plt0 = ax0.imshow(temp_array, vmin=min_value[0], vmax=max_value[0], cmap=cmap)
-        elif scale == 'log':
-            if np.isnan(min_value[0]):
-                min_value[0] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
-                if np.isinf(min_value[0]):
-                    min_value[0] = 0
-            if np.isnan(max_value[0]):
-                max_value[0] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
-            plt0 = ax0.imshow(np.log10(abs(temp_array)), vmin=min_value[0], vmax=max_value[0], cmap=cmap)
-        else:
-            raise ValueError('Wrong value for scale')
+    # axis 1
+    temp_array = np.copy(array)
+    if not sum_frames:
+        temp_array = temp_array[:, slice_position[1], :]
+    else:
+        temp_array = temp_array.sum(axis=1)
+    # now array is 2D
+    temp_array = temp_array[int(np.rint(nbz // 2 - min(width_z, nbz) // 2)):
+                            int(np.rint(nbz // 2 - min(width_z, nbz) // 2)) + min(width_z, nbz),
+                            int(np.rint(nbx // 2 - min(width_x, nbx) // 2)):
+                            int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
 
-        ax0.set_title(title + slice_names[0])
-        if invert_yaxis:  # Y is axis 0, need to be flipped
-            ax0.invert_yaxis()
-        plt.axis('scaled')
-        if plot_colorbar:
-            plt.colorbar(plt0, ax=ax0)
-        if not np.isnan(pixel_spacing):
-            ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-            ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-            ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
-                            length=tick_length, width=tick_width)
+    if scale == 'linear':
+        if np.isnan(min_value[1]):
+            min_value[1] = temp_array[~np.isnan(temp_array)].min()
+        if np.isnan(max_value[1]):
+            max_value[1] = temp_array[~np.isnan(temp_array)].max()
+        plt1 = ax1.imshow(temp_array, vmin=min_value[1], vmax=max_value[1], cmap=cmap)
+    elif scale == 'log':
+        if np.isnan(min_value[1]):
+            min_value[1] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
+            if np.isinf(min_value[1]):
+                min_value[1] = 0
+        if np.isnan(max_value[1]):
+            max_value[1] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
+        plt1 = ax1.imshow(np.log10(abs(temp_array)), vmin=min_value[1], vmax=max_value[1], cmap=cmap)
+    else:
+        raise ValueError('Wrong value for scale')
+    ax1.set_title(title + slice_names[1])
+    plt.axis('scaled')
+    if plot_colorbar:
+        plt.colorbar(plt1, ax=ax1)
+    if pixel_spacing is not None:
+        ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                        length=tick_length, width=tick_width)
 
-        # axis 1
-        temp_array = np.copy(array)
-        if not sum_frames:
-            temp_array = temp_array[:, nby // 2, :]
-        else:
-            temp_array = temp_array.sum(axis=1)
-        # now array is 2D
-        temp_array = temp_array[int(np.rint(nbz / 2 - min(width_z, nbz) / 2)):
-                                int(np.rint(nbz / 2 - min(width_z, nbz) / 2)) + min(width_z, nbz),
-                                int(np.rint(nbx // 2 - min(width_x, nbx) // 2)):
-                                int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
+    # axis 2
+    temp_array = np.copy(array)
+    if not sum_frames:
+        temp_array = temp_array[:, :, slice_position[2]]
+    else:
+        temp_array = temp_array.sum(axis=2)
+    # now array is 2D
+    temp_array = temp_array[int(np.rint(nbz // 2 - min(width_z, nbz) // 2)):
+                            int(np.rint(nbz // 2 - min(width_z, nbz) // 2)) + min(width_z, nbz),
+                            int(np.rint(nby // 2 - min(width_y, nby) // 2)):
+                            int(np.rint(nby // 2 - min(width_y, nby) // 2)) + min(width_y, nby)]
 
-        if scale == 'linear':
-            if np.isnan(min_value[1]):
-                min_value[1] = temp_array[~np.isnan(temp_array)].min()
-            if np.isnan(max_value[1]):
-                max_value[1] = temp_array[~np.isnan(temp_array)].max()
-            plt1 = ax1.imshow(temp_array, vmin=min_value[1], vmax=max_value[1], cmap=cmap)
-        elif scale == 'log':
-            if np.isnan(min_value[1]):
-                min_value[1] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
-                if np.isinf(min_value[1]):
-                    min_value[1] = 0
-            if np.isnan(max_value[1]):
-                max_value[1] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
-            plt1 = ax1.imshow(np.log10(abs(temp_array)), vmin=min_value[1], vmax=max_value[1], cmap=cmap)
-        else:
-            raise ValueError('Wrong value for scale')
-        ax1.set_title(title + slice_names[1])
-        plt.axis('scaled')
-        if plot_colorbar:
-            plt.colorbar(plt1, ax=ax1)
-        if not np.isnan(pixel_spacing):
-            ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-            ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-            ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
-                            length=tick_length, width=tick_width)
+    if scale == 'linear':
+        if np.isnan(min_value[2]):
+            min_value[2] = temp_array[~np.isnan(temp_array)].min()
+        if np.isnan(max_value[2]):
+            max_value[2] = temp_array[~np.isnan(temp_array)].max()
+        plt2 = ax2.imshow(temp_array, vmin=min_value[2], vmax=max_value[2], cmap=cmap)
+    elif scale == 'log':
+        if np.isnan(min_value[2]):
+            min_value[2] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
+            if np.isinf(min_value[2]):
+                min_value[2] = 0
+        if np.isnan(max_value[2]):
+            max_value[2] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
+        plt2 = ax2.imshow(np.log10(abs(temp_array)), vmin=min_value[2], vmax=max_value[2], cmap=cmap)
+    else:
+        raise ValueError('Wrong value for scale')
 
-        # axis 2
-        temp_array = np.copy(array)
-        if not sum_frames:
-            temp_array = temp_array[:, :, nbx // 2]
-        else:
-            temp_array = temp_array.sum(axis=2)
-        # now array is 2D
-        temp_array = temp_array[int(np.rint(nbz / 2 - min(width_z, nbz) / 2)):
-                                int(np.rint(nbz / 2 - min(width_z, nbz) / 2)) + min(width_z, nbz),
-                                int(np.rint(nby // 2 - min(width_y, nby) // 2)):
-                                int(np.rint(nby // 2 - min(width_y, nby) // 2)) + min(width_y, nby)]
+    ax2.set_title(title + slice_names[2])
+    plt.axis('scaled')
 
-        if scale == 'linear':
-            if np.isnan(min_value[2]):
-                min_value[2] = temp_array[~np.isnan(temp_array)].min()
-            if np.isnan(max_value[2]):
-                max_value[2] = temp_array[~np.isnan(temp_array)].max()
-            plt2 = ax2.imshow(temp_array, vmin=min_value[2], vmax=max_value[2], cmap=cmap)
-        elif scale == 'log':
-            if np.isnan(min_value[2]):
-                min_value[2] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
-                if np.isinf(min_value[2]):
-                    min_value[2] = 0
-            if np.isnan(max_value[2]):
-                max_value[2] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
-            plt2 = ax2.imshow(np.log10(abs(temp_array)), vmin=min_value[2], vmax=max_value[2], cmap=cmap)
-        else:
-            raise ValueError('Wrong value for scale')
+    if plot_colorbar:
+        plt.colorbar(plt2, ax=ax2)
+    if pixel_spacing is not None:
+        ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                        length=tick_length, width=tick_width)
 
-        ax2.set_title(title + slice_names[2])
-        plt.axis('scaled')
+    # axis 3
+    ax3.set_visible(False)
 
-        if plot_colorbar:
-            plt.colorbar(plt2, ax=ax2)
-        if not np.isnan(pixel_spacing):
-            ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-            ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-            ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
-                            length=tick_length, width=tick_width)
-
-        # axis 3
-        ax3.set_visible(False)
     plt.tight_layout()
     plt.pause(0.5)
     plt.ioff()
