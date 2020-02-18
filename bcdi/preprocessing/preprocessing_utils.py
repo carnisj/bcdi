@@ -1941,6 +1941,7 @@ def motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bra
         except ValueError:
             print("'nu' not in the list, trying 'Nu'")
             nu = motor_positions[motor_names.index('Nu')]  # positioner
+            print('Defaulting to old ID01 motor names')
             old_names = True
 
         if follow_bragg:
