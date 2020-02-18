@@ -108,6 +108,14 @@ Postprocessing
    :start-after: helptext
    :end-before: """
    :language: rst
+   
+`prtf_bcdi_2D.py`:
+^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/prtf_bcdi_2D.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
 
 `prtf_cdi.py`:
 ^^^^^^^^^^^^^^^
