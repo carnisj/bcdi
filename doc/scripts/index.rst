@@ -369,10 +369,10 @@ ccd_calib_sixs.py
    :end-before: """
    :language: rst
    
-compare_dataset_corr.py
-^^^^^^^^^^^^^^^^^^^^^^^
+correlation_realspace.py
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/compare_dataset_corr.py
+.. literalinclude:: ../../bcdi/utils/scripts/correlation_realspace.py
    :start-after: helptext
    :end-before: """
    :language: rst
