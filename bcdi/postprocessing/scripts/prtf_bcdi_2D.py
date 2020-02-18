@@ -47,6 +47,8 @@ root_folder = 'D:/data/DATA_exp/'  # location of the .spec or log file
 savedir = 'D:/data/DATA_exp/'  # PRTF will be saved here, leave it to '' otherwise
 sample_name = "S"  # "SN"  #
 comment = ""  # should start with _
+crop_roi = [3, 255, 3, 387]  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
+# in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
 ############################
 # beamline parameters #
 ############################
@@ -75,8 +77,8 @@ template_imagefile = 'alignment_12_%04d.edf.gz'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
-sdd = 1  # sample to detector distance in m
-energy = 8000   # x-ray energy in eV, 6eV offset at ID01
+sdd = 1.3  # sample to detector distance in m
+energy = 9000   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
@@ -256,6 +258,11 @@ print('Opening ', file_path)
 if extension == '.h5':
     comment = comment + '_mode'
 
+if len(crop_roi) != 0:
+    slice_2D = slice_2D[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
+    mask = mask[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
+    distances_q = distances_q[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
+    print('2D slice cropped to match "roi_final" parameter of PyNX, new shape=', slice_2D.shape)
 # check if the shape is the same as the measured diffraction pattern
 if obj.shape != slice_2D.shape:
     print('Reconstructed object shape = ', obj.shape, 'different from the 2D diffraction slice: crop/pad')
