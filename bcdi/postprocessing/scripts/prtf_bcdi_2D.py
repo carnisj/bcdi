@@ -167,7 +167,7 @@ my_cmap = colormap.cmap
 plt.ion()
 root = tk.Tk()
 root.withdraw()
-file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select diffraction pattern",
+file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select the 3D diffraction pattern",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
 diff_pattern, _ = util.load_file(file_path)
 diff_pattern = diff_pattern.astype(float)
@@ -273,16 +273,17 @@ gc.collect()
 
 if True:
     plt.figure()
-    plt.imshow(abs(phased_fft), vmin=0, vmax=3.5, cmap=my_cmap)
+    plt.imshow(np.log10(abs(phased_fft)), vmin=0, vmax=3.5, cmap=my_cmap)
     plt.colorbar()
     plt.title('abs(retrieved amplitude) before alignement')
     plt.pause(0.1)
 
 # align the reconstruction with the initial diffraction data
-phased_fft, _ = pru.align_diffpattern(reference_data=slice_2D, data=phased_fft, combining_method='subpixel')
+phased_fft, _ = pru.align_diffpattern(reference_data=slice_2D, data=phased_fft, method='registration',
+                                      combining_method='subpixel')
 
 plt.figure()
-plt.imshow(abs(phased_fft), cmap=my_cmap, vmin=0, vmax=3.5)
+plt.imshow(np.log10(abs(phased_fft)), cmap=my_cmap, vmin=0, vmax=3.5)
 plt.title('abs(retrieved amplitude)')
 plt.colorbar()
 plt.pause(0.1)
@@ -366,11 +367,11 @@ plt.plot([defined_q.min(), defined_q.max()], [1/np.e, 1/np.e], 'k.', lw=1)
 plt.xlim(defined_q.min(), defined_q.max())
 plt.ylim(0, 1.1)
 if save:
-    plt.savefig(detector.datadir + 'S' + str(scan) + '_prtf' + comment + '.png')
+    plt.savefig(detector.savedir + 'S' + str(scan) + '_prtf' + comment + '.png')
 fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
 fig.text(0.15, 0.20, "q at PRTF=1/e: " + str('{:.5f}'.format(q_resolution)) + '(1/nm)', size=14)
 fig.text(0.15, 0.15, "resolution d= " + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm', size=14)
 if save:
-    plt.savefig(detector.datadir + 'S' + str(scan) + '_prtf_comments' + comment + '.png')
+    plt.savefig(detector.savedir + 'S' + str(scan) + '_prtf_comments' + comment + '.png')
 plt.ioff()
 plt.show()
