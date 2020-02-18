@@ -20,7 +20,7 @@ import bcdi.postprocessing.postprocessing_utils as pu
 from bcdi.utils import image_registration as reg
 
 
-def align_diffpattern(reference_data, data, mask, method='registration', combining_method='rgi'):
+def align_diffpattern(reference_data, data, mask=None, method='registration', combining_method='rgi'):
     """
     Align two diffraction patterns based on the shift of the center of mass or based on dft registration.
 
@@ -69,16 +69,18 @@ def align_diffpattern(reference_data, data, mask, method='registration', combini
             data = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                        new_x.reshape((1, new_z.size)))).transpose())
             data = data.reshape((nbz, nby, nbx)).astype(reference_data.dtype)
-            rgi = RegularGridInterpolator((old_z, old_y, old_x), mask, method='linear', bounds_error=False,
-                                          fill_value=0)
-            mask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                       new_x.reshape((1, new_z.size)))).transpose())
-            mask = mask.reshape((nbz, nby, nbx)).astype(data.dtype)
-            mask = np.rint(mask)  # mask is integer 0 or 1
+            if mask is not None:
+                rgi = RegularGridInterpolator((old_z, old_y, old_x), mask, method='linear', bounds_error=False,
+                                              fill_value=0)
+                mask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                           new_x.reshape((1, new_z.size)))).transpose())
+                mask = mask.reshape((nbz, nby, nbx)).astype(data.dtype)
+                mask = np.rint(mask)  # mask is integer 0 or 1
 
         elif combining_method is 'subpixel':
             data = abs(reg.subpixel_shift(data, shiftz, shifty, shiftx))  # data is a real number (intensity)
-            mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
+            if mask is not None:
+                mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
         else:
             raise ValueError("Incorrect value for parameter 'combining_method'")
 
@@ -112,14 +114,16 @@ def align_diffpattern(reference_data, data, mask, method='registration', combini
             rgi = RegularGridInterpolator((old_y, old_x), data, method='linear', bounds_error=False, fill_value=0)
             data = rgi(np.concatenate((new_y.reshape((1, new_y.size)), new_x.reshape((1, new_y.size)))).transpose())
             data = data.reshape((nby, nbx)).astype(reference_data.dtype)
-            rgi = RegularGridInterpolator((old_y, old_x), mask, method='linear', bounds_error=False, fill_value=0)
-            mask = rgi(np.concatenate((new_y.reshape((1, new_y.size)), new_x.reshape((1, new_y.size)))).transpose())
-            mask = mask.reshape((nby, nbx)).astype(data.dtype)
-            mask = np.rint(mask)  # mask is integer 0 or 1
+            if mask is not None:
+                rgi = RegularGridInterpolator((old_y, old_x), mask, method='linear', bounds_error=False, fill_value=0)
+                mask = rgi(np.concatenate((new_y.reshape((1, new_y.size)), new_x.reshape((1, new_y.size)))).transpose())
+                mask = mask.reshape((nby, nbx)).astype(data.dtype)
+                mask = np.rint(mask)  # mask is integer 0 or 1
 
         elif combining_method is 'subpixel':
             data = abs(reg.subpixel_shift(data, shifty, shiftx))  # data is a real number (intensity)
-            mask = np.rint(abs(reg.subpixel_shift(mask, shifty, shiftx)))  # mask is integer 0 or 1
+            if mask is not None:
+                mask = np.rint(abs(reg.subpixel_shift(mask, shifty, shiftx)))  # mask is integer 0 or 1
         else:
             raise ValueError("Incorrect value for parameter 'combining_method'")
     else:
