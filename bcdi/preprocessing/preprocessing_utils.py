@@ -1838,21 +1838,22 @@ def mask_maxipix(data, mask):
     return data, mask
 
 
-def mean_filter(data, nb_neighbours, mask, interpolate=False, debugging=False):
+def mean_filter(data, nb_neighbours, mask, min_count=3, interpolate='mask_isolated', debugging=False):
     """
-    Apply a mean filter if the empty pixel is surrounded by nb_neighbours or more pixels
+    Mask or apply a mean filter if the empty pixel is surrounded by nb_neighbours or more pixels with at least
+    min_count intensity per pixel.
 
     :param data: 2D array to be filtered
     :param nb_neighbours: minimum number of non-zero neighboring pixels for median filtering
     :param mask: 2D mask array
-    :param interpolate: if False will mask isolated pixels based on 'nb_neighbours',
-      if True will interpolate isolated pixels based on 'nb_neighbours'
-    :type interpolate: bool
+    :param min_count: minimum intensity in the neighboring pixels
+    :param interpolate: based on 'nb_neighbours', if 'mask_isolated' will mask isolated pixels,
+      if 'interp_isolated' will interpolate isolated pixels
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: updated data and mask, number of pixels treated
     """
-
+    threshold = min_count*nb_neighbours
     if data.ndim != 2 or mask.ndim != 2:
         raise ValueError('Data and mask should be 2D arrays')
 
@@ -1867,16 +1868,16 @@ def mean_filter(data, nb_neighbours, mask, interpolate=False, debugging=False):
         pixrow = zero_pixels[indx, 0]
         pixcol = zero_pixels[indx, 1]
         temp = data[pixrow-1:pixrow+2, pixcol-1:pixcol+2]
-        if temp.size != 0 and temp.sum() > 24 and sum(sum(temp != 0)) >= nb_neighbours:
+        if temp.size != 0 and temp.sum() > threshold and sum(sum(temp != 0)) >= nb_neighbours:
             # mask/interpolate if at least 3 photons in each neighboring pixels
             nb_pixels = nb_pixels + 1
-            if interpolate:
+            if interpolate == 'interp_isolated':
                 value = temp.sum() / sum(sum(temp != 0))
                 data[pixrow, pixcol] = value
                 mask[pixrow, pixcol] = 0
             else:
                 mask[pixrow, pixcol] = 1
-    if interpolate:
+    if interpolate == 'interp_isolated':
         print("Nb of filtered pixel: ", nb_pixels)
     else:
         print("Nb of masked pixel: ", nb_pixels)
