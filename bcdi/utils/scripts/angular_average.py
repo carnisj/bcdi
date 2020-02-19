@@ -56,7 +56,7 @@ diff_pattern[diff_pattern < threshold] = 0
 nz, ny, nx = diff_pattern.shape
 print('Data shape:', nz, ny, nx)
 gu.multislices_plot(diff_pattern, sum_frames=True, plot_colorbar=True, cmap=my_cmap,
-                    title='diffraction pattern', scale='log', invert_yaxis=True, vmin=np.nan, vmax=np.nan,
+                    title='diffraction pattern', scale='log', vmin=np.nan, vmax=np.nan,
                     reciprocal_space=True, is_orthogonal=True)
 #############
 # load mask #
