@@ -6,20 +6,63 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import hdf5plugin  # for P10, should be imported before h5py or PyTables
 import numpy as np
+from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
 import tkinter as tk
 from tkinter import filedialog
 import sys
 sys.path.append('D:/myscripts/bcdi/')
-import bcdi.graph.graph_utils as gu
+import bcdi.preprocessing.preprocessing_utils as pru
 
-datadir = ''
-fit_option = 'manual'  # only 'manual' for now
+datadir = 'D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/'
+method = 'manual'  # method for background determination: only 'manual' for now
 xlim = [0, 1]  # limits used for the horizontal axis of the angular plot
 ylim = [0, 7]  # limits used for the vertical axis of the angular plot
+flag_interact = True  # True to interact with plots, False to close it automatically
+scale = 'log'  # scale for plotting the data
+
+##################################
+# end of user-defined parameters #
+##################################
+
+
+def on_click(event):
+    """
+    Function to interact with a plot, return the position of clicked pixel. If flag_pause==1 or
+    if the mouse is out of plot axes, it will not register the click
+
+    :param event: mouse click event
+    :return: updated list of vertices which defines a polygon to be masked
+    """
+    global xy, flag_pause
+    if not event.inaxes:
+        return
+    if not flag_pause:
+        xy.append([event.xdata, event.ydata])
+    return
+
+
+def press_key(event):
+    """
+    Interact with a plot for masking parasitic diffraction intensity or detector gaps
+
+    :param event: button press event
+    :return: updated data, mask and controls
+    """
+    global distances, data, flag_pause, xy, fig_back, xlim, ylim
+
+    try:
+        flag_pause, xy, stop_masking = \
+                pru.update_background(key=event.key, distances=distances, data=data, figure=fig_back,
+                                      flag_pause=flag_pause, xy=xy, xlim=None, ylim=None)
+        if stop_masking:
+            plt.close(fig_back)
+
+    except AttributeError:  # mouse pointer out of axes
+        pass
+
 
 ##############################
 # load reciprocal space data #
@@ -31,7 +74,7 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the rec
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
 npzfile = np.load(file_path)
 distances = npzfile['distances']
-average = npzfile['avergage']
+average = npzfile['average']
 
 #############
 # plot data #
@@ -40,20 +83,57 @@ average = npzfile['avergage']
 y_values = np.ma.array(average)
 # mask values below a certain threshold
 y_values_masked = np.ma.masked_where(np.isnan(y_values), y_values)
-fig, ax0 = plt.subplots(1, 1)
-plt0 = ax0.plot(distances, np.log10(y_values_masked), 'r')
-plt.xlabel('q (1/nm)')
-plt.ylabel('Angular average (A.U.)')
-plt.xlim(xlim[0], xlim[1])
-plt.ylim(ylim[0], ylim[1])
 
 ######################
 # fit the background #
 ######################
+if method == 'manual':
+    plt.ioff()
+    xy = []  # list of points defining the background curve
+    flag_pause = False  # press x to pause for pan/zoom
+    data = np.copy(y_values_masked)
+    fig_back, _ = plt.subplots(1, 1)
+    if scale == 'linear':
+        plt.plot(distances, data, 'r')
+    else:
+        plt.plot(distances, np.log10(data), 'r')
+    plt.xlabel('q (1/nm)')
+    plt.ylabel('Angular average (A.U.)')
+    plt.title("Click to select background points\nx to pause/resume for pan/zoom\n"
+              "a restart ; p plot background ; q quit")
+    plt.xlim(xlim[0], xlim[1])
+    plt.ylim(ylim[0], ylim[1])
+    plt.connect('key_press_event', press_key)
+    plt.connect('button_press_event', on_click)
+    plt.show()
+
+#########################################################
+# fit background and interpolate it to mach data points #
+#########################################################
+xy_array = np.asarray(xy)
+interpolation = interp1d(xy_array[:, 0], xy_array[:, 1], kind='cubic', bounds_error=False, fill_value=0)
+background = interpolation(distances)
+
+###################################
+# save background subtracted data #
+###################################
+# np.savez_compressed(datadir + 'q+angular_avg_back.npz', distances=distances, average=data_back)
 
 ###################################
 # plot background subtracted data #
 ###################################
+fig, (ax0, ax1) = plt.subplots(2, 1)
+if scale == 'linear':
+    ax0.plot(distances, data, 'r', distances, background, 'b')
+else:
+    ax0.plot(distances, np.log10(data), 'r', distances, background, 'b')
+ax0.legend(['data', 'background'])
 
+data_back = data - 10**background
+if scale == 'linear':
+    ax1.plot(distances, data_back, 'r')
+else:
+    ax1.plot(distances, np.log10(data_back))
+ax1.legend(['data-background'])
 plt.ioff()
 plt.show()
