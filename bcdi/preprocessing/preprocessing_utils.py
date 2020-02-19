@@ -3132,11 +3132,10 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
 
         figure.clear()
         if scale == 'linear':
-            plt.plot(distances, data, 'r', background[:, 0], background[:, 1],
-                     'b')
+            plt.plot(distances, data, 'r', background[:, 0], background[:, 1], 'b')
         else:
-            plt.plot(distances, np.log10(data), 'r', background[:, 0],
-                     background[:, 1], 'b')  # background is in log scale directly
+            plt.plot(distances, np.log10(data), 'r',
+                     background[:, 0], background[:, 1], 'b')  # background is in log scale directly
         axes = figure.gca()
         axes.set_xlim([xmin, xmax])
         axes.set_ylim([ymin, ymax])
@@ -3169,11 +3168,10 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
 
         figure.clear()
         if scale == 'linear':
-            plt.plot(distances, data, 'r', background[:, 0], background[:, 1],
-                     'b')
+            plt.plot(distances, data, 'r', background[:, 0], background[:, 1], 'b')
         else:
-            plt.plot(distances, np.log10(data), 'r', background[:, 0],
-                     background[:, 1], 'b')  # background is in log scale directly
+            plt.plot(distances, np.log10(data), 'r',
+                     background[:, 0], background[:, 1], 'b')  # background is in log scale directly
         axes = figure.gca()
         axes.set_xlim([xmin, xmax])
         axes.set_ylim([ymin, ymax])
@@ -3196,7 +3194,7 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
     elif key == 'q':
         stop_masking = True
 
-    return np.asarray(xy), flag_pause, xy, stop_masking
+    return flag_pause, xy, stop_masking
 
 
 def update_mask(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, flag_pause, points,
