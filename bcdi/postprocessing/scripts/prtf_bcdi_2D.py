@@ -49,6 +49,8 @@ sample_name = "S"  # "SN"  #
 comment = ""  # should start with _
 crop_roi = [3, 255, 3, 387]  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
+align_pattern = False  # if True, will align the retrieved diffraction amplitude with the measured one
+slicing_axis = 1  # 0 for first axis, 1 for second, 2 for third
 ############################
 # beamline parameters #
 ############################
@@ -238,7 +240,16 @@ if debug:
 
 numy, numx = slice_2D.shape
 print('\n2D slice shape =', numy, numx)
-distances_q = distances_q[:, y0, :]  # take only the slice at the COM in y0
+if slicing_axis == 0:
+    distances_q = distances_q[z0, :, :]  # take only the slice at the COM in y0
+elif slicing_axis == 1:
+    distances_q = distances_q[:, y0, :]  # take only the slice at the COM in y0
+elif slicing_axis == 2:
+    distances_q = distances_q[:, :, x0]  # take only the slice at the COM in y0
+else:
+    print('Invalid value for "slicing_axis" parameter')
+    sys.exit()
+
 distances_q = pu.crop_pad_2d(array=distances_q, output_shape=slice_2D.shape, debugging=False)
 plt.figure()
 plt.imshow(distances_q, cmap=my_cmap)
@@ -286,9 +297,10 @@ if True:
     plt.title('abs(retrieved amplitude) before alignement')
     plt.pause(0.1)
 
-# align the reconstruction with the initial diffraction data
-phased_fft, _ = pru.align_diffpattern(reference_data=slice_2D, data=phased_fft, method='registration',
-                                      combining_method='subpixel')
+if align_pattern:
+    # align the reconstruction with the initial diffraction data
+    phased_fft, _ = pru.align_diffpattern(reference_data=slice_2D, data=phased_fft, method='registration',
+                                          combining_method='subpixel')
 
 plt.figure()
 plt.imshow(np.log10(abs(phased_fft)), cmap=my_cmap, vmin=0, vmax=3.5)
