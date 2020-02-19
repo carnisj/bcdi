@@ -3095,6 +3095,110 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
     return updated_data, updated_mask, width, vmax, stop_masking
 
 
+def update_background(key, distances, data, figure, flag_pause, xy, scale='log', xlim=None, ylim=None):
+    """
+    Define the background for a 1D reciprocal space dataset.
+
+    :param key: the keyboard key which was pressed
+    :param distances: x axis for data
+    :param data: the 1D data before background subtraction
+    :param figure: the figure instance
+    :param flag_pause: set to 1 to stop registering vertices using mouse clicks
+    :param xy: the list of vertices which defines a polygon to be masked
+    :param scale: scale of data, 'linear' or 'log'
+    :param xlim: x axis plot limits
+    :param ylim: y axis plot limits
+    :return: updated background and controls
+    """
+    if data.ndim != 1:
+        raise ValueError('data is expected to be a 1D array')
+
+    if xlim is None:
+        axes = figure.gca()
+        xmin, xmax = axes.get_xlim()
+    else:
+        xmin, xmax = xlim
+    if ylim is None:
+        axes = figure.gca()
+        ymin, ymax = axes.get_ylim()
+    else:
+        ymin, ymax = ylim
+
+    stop_masking = False
+
+    if key == 'b':  # remove the last selected background point
+        xy.pop()
+        background = np.asarray(xy)
+
+        figure.clear()
+        if scale == 'linear':
+            plt.plot(distances, data, 'r', background[:, 0], background[:, 1],
+                     'b')
+        else:
+            plt.plot(distances, np.log10(data), 'r', background[:, 0],
+                     background[:, 1], 'b')  # background is in log scale directly
+        axes = figure.gca()
+        axes.set_xlim([xmin, xmax])
+        axes.set_ylim([ymin, ymax])
+        plt.xlabel('q (1/nm)')
+        plt.ylabel('Angular average (A.U.)')
+        plt.title("Click to select background points\nx to pause/resume for pan/zoom\n"
+                  "a restart ; p plot background ; q quit")
+        plt.draw()
+
+    elif key == 'a':  # restart background selection from the beginning
+        xy = []
+        print('restart background selection')
+
+        figure.clear()
+        if scale == 'linear':
+            plt.plot(distances, data, 'r')
+        else:
+            plt.plot(distances, np.log10(data), 'r')
+        axes = figure.gca()
+        axes.set_xlim([xmin, xmax])
+        axes.set_ylim([ymin, ymax])
+        plt.xlabel('q (1/nm)')
+        plt.ylabel('Angular average (A.U.)')
+        plt.title("Click to select background points\nx to pause/resume for pan/zoom\n"
+                  "a restart ; p plot background ; q quit")
+        plt.draw()
+
+    elif key == 'p':  # plot background
+        background = np.asarray(xy)
+
+        figure.clear()
+        if scale == 'linear':
+            plt.plot(distances, data, 'r', background[:, 0], background[:, 1],
+                     'b')
+        else:
+            plt.plot(distances, np.log10(data), 'r', background[:, 0],
+                     background[:, 1], 'b')  # background is in log scale directly
+        axes = figure.gca()
+        axes.set_xlim([xmin, xmax])
+        axes.set_ylim([ymin, ymax])
+        plt.xlabel('q (1/nm)')
+        plt.ylabel('Angular average (A.U.)')
+        plt.title("Click to select background points\nx to pause/resume for pan/zoom\n"
+                  "a restart ; p plot background ; q quit")
+        plt.draw()
+        thismanager = plt.get_current_fig_manager()
+        thismanager.toolbar.pan()  # deactivate the pan
+
+    elif key == 'x':
+        if not flag_pause:
+            flag_pause = True
+            print('pause for pan/zoom')
+        else:
+            flag_pause = False
+            print('resume masking')
+
+    elif key == 'q':
+        stop_masking = True
+
+    return np.asarray(xy), flag_pause, xy, stop_masking
+
+
 def update_mask(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, flag_pause, points,
                 xy, width, dim, vmax, vmin=0, masked_color=0.1):
     """
