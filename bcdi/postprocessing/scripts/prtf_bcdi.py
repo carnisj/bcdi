@@ -42,20 +42,23 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 279
-root_folder = 'D:/data/DATA_exp/'  # location of the .spec or log file
-savedir = 'D:/data/DATA_exp/'  # PRTF will be saved here, leave it to '' otherwise
+scan = 1301
+root_folder = 'C:/Users/Jerome/Documents/data/SIXS_2019/'  # location of the .spec or log file
+savedir = 'C:/Users/Jerome/Documents/data/SIXS_2019/'  # PRTF will be saved here, leave it to '' otherwise
 sample_name = "S"  # "SN"  #
 comment = ""  # should start with _
+crop_roi = []  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
+# in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
+align_pattern = False  # if True, will align the retrieved diffraction amplitude with the measured one
 ############################
 # beamline parameters #
 ############################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'SIXS_2019'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 is_series = False  # specific to series measurement at P10
-rocking_angle = "outofplane"  # "outofplane" or "inplane"
+rocking_angle = "inplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'alignment'
+specfile_name = root_folder + 'alias_dict_2019.txt'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -66,7 +69,7 @@ specfile_name = 'alignment'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-template_imagefile = 'alignment_12_%04d.edf.gz'
+template_imagefile = 'Pt_ascan_mu_%05d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -184,6 +187,10 @@ z0, y0, x0 = center_of_mass(diff_pattern)
 z0, y0, x0 = [int(z0), int(y0), int(x0)]
 print("COM of measured pattern after masking: ", z0, y0, x0, ' Number of unmasked photons =', diff_pattern.sum())
 
+fig, _, _ = gu.multislices_plot(np.sqrt(diff_pattern), sum_frames=False, title='3D diffraction amplitude', vmin=0,
+                                vmax=3.5, is_orthogonal=False, reciprocal_space=True, slice_position=[z0, y0, x0],
+                                scale='log', plot_colorbar=True)
+
 plt.figure()
 plt.imshow(np.log10(np.sqrt(diff_pattern).sum(axis=0)), cmap=my_cmap, vmin=0, vmax=3.5)
 plt.title('abs(diffraction amplitude).sum(axis=0)')
@@ -232,15 +239,18 @@ if debug:
 file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select reconstructions (prtf)",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
                                                   ("CXI", "*.cxi"), ("HDF5", "*.h5")])
-if 'prtf' not in os.path.splitext(os.path.basename(file_path))[0]:
-    print('Wrong reconstruction file - should be still in the detector frame')
-    sys.exit()
 
 obj, extension = util.load_file(file_path)
 print('Opening ', file_path)
 
 if extension == '.h5':
     comment = comment + '_mode'
+
+if len(crop_roi) != 0:
+    diff_pattern = diff_pattern[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
+    mask = mask[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
+    distances_q = distances_q[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
+    print('Measured diffraction pattern cropped to match "roi_final" parameter of PyNX, new shape=', diff_pattern.shape)
 
 # check if the shape is the same as the measured diffraction pattern
 if obj.shape != diff_pattern.shape:
@@ -251,6 +261,18 @@ if obj.shape != diff_pattern.shape:
 phased_fft = fftshift(fftn(obj)) / (np.sqrt(numz)*np.sqrt(numy)*np.sqrt(numx))  # complex amplitude
 del obj
 gc.collect()
+
+if debug:
+    plt.figure()
+    plt.imshow(np.log10(abs(phased_fft).sum(axis=0)), cmap=my_cmap, vmin=0, vmax=3.5)
+    plt.colorbar()
+    plt.title('abs(retrieved amplitude).sum(axis=0) before alignment')
+    plt.pause(0.1)
+
+if align_pattern:
+    # align the reconstruction with the initial diffraction data
+    phased_fft, _ = pru.align_diffpattern(reference_data=diff_pattern, data=phased_fft, method='registration',
+                                          combining_method='subpixel')
 
 plt.figure()
 plt.imshow(np.log10(abs(phased_fft).sum(axis=0)), cmap=my_cmap, vmin=0, vmax=3.5)
