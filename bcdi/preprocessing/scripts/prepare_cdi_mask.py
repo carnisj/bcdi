@@ -13,6 +13,7 @@ plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of
 import pathlib
 import os
 import scipy.signal  # for medfilt2d
+from scipy.ndimage.measurements import center_of_mass
 import sys
 from scipy.io import savemat
 import tkinter as tk
@@ -683,7 +684,7 @@ for scan_nb in range(len(scans)):
         for idx in range(pad_width[0], nz-pad_width[1]):  # filter only frames whith data (not padded)
             data[idx, :, :], numb_pix, mask[idx, :, :] = \
                 pru.mean_filter(data=data[idx, :, :], nb_neighbours=medfilt_order, mask=mask[idx, :, :],
-                                interpolate=flag_medianfilter, debugging=debug)
+                                interpolate=flag_medianfilter, min_count=3, debugging=debug)
             nb_pix = nb_pix + numb_pix
             print("Processed image nb: ", idx)
         if flag_medianfilter == 'mask_isolated':
@@ -729,14 +730,14 @@ for scan_nb in range(len(scans)):
     ###################################
     # plot the prepared data and mask #
     ###################################
-    if center_fft in ['crop_symmetric_ZYX', 'pad_symmetric_ZYX']:
-        # in other cases the diffraction pattern will not be centered
-        fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                        title='Masked data', is_orthogonal=not use_rawdata,
-                                        reciprocal_space=True)
-        plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + comment + '.png')
-        if not flag_interact:
-            plt.close(fig)
+
+    z0, y0, x0 = center_of_mass(data)
+    fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
+                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
+    plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + comment + '.png')
+    if not flag_interact:
+        plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
