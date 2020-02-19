@@ -107,7 +107,7 @@ distances = np.sqrt((qx[:, np.newaxis, np.newaxis] - qxCOM)**2 +
                     (qy[np.newaxis, np.newaxis, :] - qyCOM)**2)
 if debug:
     gu.multislices_plot(distances, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
-                        title='distances_q', scale='linear', invert_yaxis=False, vmin=np.nan, vmax=np.nan,
+                        title='distances_q', scale='linear', vmin=np.nan, vmax=np.nan,
                         reciprocal_space=True, is_orthogonal=True)
 
 #################################
