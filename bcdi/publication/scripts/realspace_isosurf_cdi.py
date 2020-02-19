@@ -27,7 +27,7 @@ Open a CDI reconstruction file and save individual figures including a length sc
 scan = 22    # spec scan number
 root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2_000"
-homedir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/maximum_likelihood/'
+homedir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/'
 comment = ""
 
 save_YZ = True  # True to save the modulus in YZ plane
@@ -133,7 +133,7 @@ mlab.savefig(homedir + 'S' + str(scan) + '-perspective_labels.png', figure=myfig
 ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
 mlab.savefig(homedir + 'S' + str(scan) + '-perspective.png', figure=myfig)
-mlab.close(myfig)
+# mlab.close(myfig)
 
 #################
 # plot 2D views #

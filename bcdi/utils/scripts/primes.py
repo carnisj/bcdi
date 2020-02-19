@@ -13,7 +13,7 @@ Check smaller or higher prime of a number, in order to determine the correct FFT
 Adapted from PyNX
 """
 
-my_nb = 450
+my_nb = 136
 
 
 def primes(n):

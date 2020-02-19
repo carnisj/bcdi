@@ -22,16 +22,16 @@ Template for 3d isosurface figures of a real space BCDI reconstruction.
 Open an npz file (reconstruction ampdispstrain.npz) and save individual figures including a length scale.
 """
 
-scan = 676    # spec scan number
-root_folder = 'D:/data/CH5309/figures_dataset2/'
+scan = 2    # spec scan number
+root_folder = 'D:/data/Pt_growth_P10/data/dewet5_sum_S194_to_S203/'
+sample_name = "SN"  #
 homedir = root_folder  # + sample_name + str(scan) + '/pynxraw/'
 # homedir = root_folder + sample_name
-sample_name = "SN"  #
 comment = ""
 
 voxel_size = 6.0  # in nm, supposed isotropic
 tick_spacing = 50  # for plots, in nm
-field_of_view = [500, 500, 500]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
+field_of_view = [400, 400, 400]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
 # the number of labels of mlab.axes() is an integer and is be calculated as: field_of_view[0]/tick_spacing
 # therefore it is better to use an isotropic field_of_view
 threshold_isosurface = 0.15

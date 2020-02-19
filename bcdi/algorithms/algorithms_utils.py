@@ -81,16 +81,19 @@ def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=Fals
 # def raar:
 #     return
 
-# if __name__ == "__main__":
-#     import h5py
-#     import matplotlib.pyplot as plt
-#     datadir = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/800_800_800_1_1_1/v5/'
-#     filename = 'modes_800_800-800.h5'
-#     h5file = h5py.File(datadir+filename, 'r')
-#     group_key = list(h5file.keys())[0]
-#     subgroup_key = list(h5file[group_key])
-#     dataset = h5file['/' + group_key + '/' + subgroup_key[0] + '/data'][0]  # select only first mode
-#     dataset = abs(dataset) / abs(dataset).max()
-#     # my_psf = pu.tukey_window((10, 10, 10), alpha=(0.6, 0.6, 0.6))
-#     output = deconvolution_rl(dataset, psf=None, iterations=20, debugging=True)
-#     plt.show()
+if __name__ == "__main__":
+    import h5py
+    import matplotlib.pyplot as plt
+
+    datadir = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/maximum_likelihood/'
+    filename = 'modes_ml.h5'
+    h5file = h5py.File(datadir+filename, 'r')
+    group_key = list(h5file.keys())[0]
+    subgroup_key = list(h5file[group_key])
+    dataset = h5file['/' + group_key + '/' + subgroup_key[0] + '/data'][0]  # select only first mode
+    dataset = abs(dataset) / abs(dataset).max()
+    # my_psf = pu.tukey_window((10, 10, 10), alpha=(0.6, 0.6, 0.6))
+    output = deconvolution_rl(dataset, psf=None, iterations=10, debugging=True)
+    # psf = pu.gaussian_window(window_shape=(3, 3, 3), sigma=0.7, mu=0.0, debugging=False)
+    # output = deconvolution_rl(output, psf=psf, iterations=20, debugging=True)
+    plt.show()

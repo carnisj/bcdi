@@ -30,8 +30,8 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 """
 
 
-scan = 14  # spec scan number
-datadir = 'D:/data/Pt_growth_P10/data/dewet5_sum_S404_to_S407/'
+scan = 2  # spec scan number
+datadir = 'D:/data/Pt_growth_P10/data/dewet5_sum_S194_to_S203/'
 savedir = 'D:/data/Pt_growth_P10/figures/'
 comment = '_' + str(scan)   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
@@ -45,16 +45,16 @@ tick_length = 10  # in plots
 tick_width = 2  # in plots
 
 strain_range = 0.002  # for plots
-phase_range = 2*np.pi  # for plots
+phase_range = np.pi  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
 
 save_YZ = True  # True to save the strain in YZ plane
 save_XZ = True  # True to save the strain in XZ plane
 save_XY = True  # True to save the strain in XY plane
 
-flag_strain = False  # True to plot and save the strain
-flag_phase = False  # True to plot and save the phase
-flag_amp = True  # True to plot and save the amplitude
+flag_strain = True  # True to plot and save the strain
+flag_phase = True  # True to plot and save the phase
+flag_amp = False  # True to plot and save the amplitude
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
 flag_linecut = False  # True to plot and save a linecut of the phase

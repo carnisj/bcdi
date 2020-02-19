@@ -8,7 +8,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-import mayavi
+# import mayavi
 from mayavi import mlab
 import tkinter as tk
 from tkinter import filedialog
@@ -34,7 +34,7 @@ root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2_000"
 homedir = root_folder + sample_name + str(scan) + '/pynx/800_800_800_1_1_1/new_geometry/'
 comment = ""
-binning = [3, 3, 3]  # binning for the measured diffraction pattern in each dimension
+binning = [2, 2, 2]  # binning for the measured diffraction pattern in each dimension
 tick_spacing = 0.1  # in 1/nm, spacing between ticks
 threshold_isosurface = 4.5  # log scale
 ##########################
@@ -124,13 +124,12 @@ grid_qx, grid_qz, grid_qy = np.mgrid[-tick_spacing*half_labels:tick_spacing*half
                                      -tick_spacing*half_labels:tick_spacing*half_labels:1j * nx]
 # in CXI convention, z is downstream, y vertical and x outboard
 # for q: classical convention qx downstream, qz vertical and qy outboard
-myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=(800, 700))
+myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=(1000, 1000))
 mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(newdata),
-               contours=[0.85*threshold_isosurface, 0.9*threshold_isosurface, 0.95*threshold_isosurface, threshold_isosurface, 1.05*threshold_isosurface,
-                         1.1*threshold_isosurface, 1.15*threshold_isosurface, 1.2*threshold_isosurface],
-               opacity=0.2, colormap='hsv', vmin=3, vmax=5.5)  # , color=(0.7, 0.7, 0.7))
+               contours=[0.9*threshold_isosurface, threshold_isosurface, 1.1*threshold_isosurface, 1.2*threshold_isosurface],
+               opacity=0.2, colormap='hsv', vmin=3.5, vmax=5.5)  # , color=(0.7, 0.7, 0.7))
 
-mlab.view(azimuth=38, elevation=63, distance=4*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max())
+mlab.view(azimuth=38, elevation=63, distance=3*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max())
 # azimut is the rotation around z axis of mayavi (x)
 mlab.roll(0)
 

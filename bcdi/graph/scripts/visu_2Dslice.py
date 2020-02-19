@@ -21,10 +21,10 @@ helptext = """
 Graphical interface to visualize 2D slices through a 3D dataset in an easy way.
 """
 
-datadir = "D:/data/CH5309/S614/pynxraw/"
-savedir = "D:/data/CH5309/S614/test/"
-scale = 'linear'  # 'linear' or 'log', scale of the 2D plots
-field = 'amp'  # data field name. Leave it to None for default.
+datadir = "D:/data/P10_August2019/data/magnetite_A2_new_00013/pynxraw/"
+savedir = datadir  # "D:/data/CH5309/S614/test/"
+scale = 'log'  # 'linear' or 'log', scale of the 2D plots
+field = None  # data field name. Leave it to None for default.
 # It will take abs() for 'modulus', numpy.angle() for 'angle'
 grey_background = True
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort
