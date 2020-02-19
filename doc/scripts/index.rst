@@ -194,6 +194,14 @@ Preprocessing
    :end-before: """
    :language: rst
 
+`fit_background.py`:
+^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/fit_background.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 `prepare_bcdi_mask.py`:
 ^^^^^^^^^^^^^^^^^^^^^^^
 

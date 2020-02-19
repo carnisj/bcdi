@@ -1,3 +1,5 @@
+* Feature: implement fit_background.py for 1D reciprocal space curves
+
 * Refactor: in multislices_plot(), allow to plot at user-defined slices position.
 
 * Feature: implement prtf_bcdi_2D.py to calculate the PRTF also for 2D cases.
