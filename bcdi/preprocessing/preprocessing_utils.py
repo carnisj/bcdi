@@ -1702,11 +1702,15 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     else:
         try:
             data = logfile.mpx_image[:]
-            monitor = logfile.imon0[:]  # fix from MD and NL ??
-        except:
-            data = logfile.maxpix[:]
             monitor = logfile.imon0[:]
-    
+        except AttributeError:
+            try:
+                data = logfile.maxpix[:]
+                monitor = logfile.imon0[:]
+            except AttributeError:  # the alias dictionnary was probably not provided
+                data = logfile.image[:]
+                monitor = logfile.intensity[:]
+
     if detector.roiUser:
         # apply roi
         slice0 = slice(detector.roi[0], detector.roi[1], 1)
@@ -2086,12 +2090,14 @@ def motor_positions_sixs(logfile, frames_logical, setup):
     if not setup.custom_scan:
         delta = logfile.delta[0]  # not scanned
         gamma = logfile.gamma[0]  # not scanned
-        if setup.beamline == 'SIXS_2018':
+        try:
             beta = logfile.basepitch[0]  # not scanned
-        elif setup.beamline == 'SIXS_2019':  # data recorder changed after 11/03/2019
-            beta = logfile.beta[0]  # not scanned
-        else:
-            raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
+        except AttributeError:  # data recorder changed after 11/03/2019
+            try:
+                beta = logfile.beta[0]  # not scanned
+            except AttributeError:  # the alias dictionnary was probably not provided
+                beta = logfile.pitch[0]  # not scanned
+
         temp_mu = logfile.mu[:]
 
         mu = np.zeros((frames_logical != 0).sum())  # first frame is duplicated for SIXS_2018
