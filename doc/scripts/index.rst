@@ -85,6 +85,14 @@ Facet recognition
 Postprocessing
 --------------
 
+`fit_1Dcurve.py`:
+^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/fit_1Dcurve.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 `strain.py`:
 ^^^^^^^^^^^^
 
