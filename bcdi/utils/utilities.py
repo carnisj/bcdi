@@ -19,6 +19,8 @@ def find_nearest(original_array, array_values):
     :param array_values: a 1D array of numbers
     :return: indices from original_array nearest to values, of length len(array_values)
     """
+    original_array, array_values = np.asarray(original_array), np.asarray(array_values)
+
     if original_array.ndim != 1 or array_values.ndim != 1:
         raise ValueError('original_array and array_values are expected to be 1D arrays')
     nb_values = len(array_values)
