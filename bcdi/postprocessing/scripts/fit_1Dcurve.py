@@ -8,11 +8,13 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 from lmfit import minimize, Parameters, report_fit
 import tkinter as tk
 from tkinter import filedialog
 import sys
 sys.path.append('D:/myscripts/bcdi/')
+import bcdi.utils.utilities as util
 
 helptext = """
 Fit a reciprocal space linecut over selected region using different lineshapes. The fit is performed simultaneously 
@@ -21,7 +23,7 @@ over all regions defined by the user, limiting the number of fitting parameters.
 
 datadir = 'D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/'
 xlim = [0, 1]  # limits used for the horizontal axis of plots, leave None otherwise
-ylim = [0, 7]  # limits used for the vertical axis of plots, leave None otherwise
+ylim = [0, 3]  # limits used for the vertical axis of plots, leave None otherwise
 lineshape = 'gaussian'  # lineshape to use for fitting, only 'gaussian' for now
 scale = 'log'  # scale for plots
 field_names = ['distances', 'average']  # names of the fields in the file
@@ -48,11 +50,9 @@ def objective(params, x_axis, data):
     resid = 0.0*data[:]
     # make residual per data set
     for ii in range(ndata):
-        resid[ii, :] = data[ii, :] - gaussian_dataset(params, ii, x_axis)
+        resid[ii, :] = data[ii, :] - gaussian_dataset(params, ii, x_axis[ii, :])
     # now flatten this to a 1D array, as minimize() needs
     return resid.flatten()
-
-
 
 
 #####################
@@ -77,24 +77,50 @@ else:
     plt.plot(distances, np.log10(average), 'r')
 plt.xlabel('q (1/nm)')
 plt.ylabel('Angular average (A.U.)')
-if xlim is not None:
-    ax.set_xlim(xlim[0], xlim[1])
-if ylim is not None:
-    ax.set_ylim(ylim[0], ylim[1])
+if xlim is None:
+    xlim = [distances[np.unravel_index(distances[~np.isnan(average)].argmin(), distances.shape)],
+            distances[np.unravel_index(distances[~np.isnan(average)].argmax(), distances.shape)]]
+if ylim is None:
+    if scale == 'linear':
+        ylim = [0, average[~np.isnan(average)].max() * 2]
+    else:
+        ylim = [0, np.log10(average[~np.isnan(average)].max()) + 1]
+ax.set_xlim(xlim[0], xlim[1])
+ax.set_ylim(ylim[0], ylim[1])
 
 ##################################################
 # combine ranges of interest in a single dataset #
 ##################################################
 nb_ranges = len(fit_range)
+nb_points = np.zeros(nb_ranges, dtype=int)
 fit_range = np.asarray(fit_range)
 
+
+for idx in range(nb_ranges):
+    # find indices of distances belonging to ranges of interest
+    myrange = fit_range[idx]
+    ind_min, ind_max = util.find_nearest(distances, [myrange.min(), myrange.max()])
+    # TODO: add an option in find_nearest() to find the nearest within 2 values
+    nb_points[idx] = ind_max - ind_min + 1
+
+# check if the number of points in ranges in the same, interpolate otherwise
+max_points = nb_points.max()
 combined_xaxis = []
 combined_data = []
 for idx in range(nb_ranges):
     # find indices of distances belonging to ranges of interest
-
-    combined_xaxis = combined_xaxis.append(distances[indices])
-    combined_data = combined_data.append(average[indices])
+    myrange = fit_range[idx]
+    ind_min, ind_max = util.find_nearest(distances, [myrange.min(), myrange.max()])
+    indices = np.arange(ind_min, ind_max+1, 1)
+    if (ind_max-ind_min+1) != max_points:
+        interp = interp1d(distances[indices], average[indices], kind='linear', bounds_error=True)
+        interp_dist = np.linspace(distances[ind_min], distances[ind_max], num=max_points, endpoint=True)
+        interp_data = interp(interp_dist)
+        combined_xaxis.append(interp_dist)
+        combined_data.append(interp_data)
+    else:
+        combined_xaxis.append(distances[indices])
+        combined_data.append(average[indices])
 
 combined_xaxis = np.asarray(combined_xaxis)
 combined_data = np.asarray(combined_data)
@@ -104,10 +130,10 @@ combined_data = np.asarray(combined_data)
 ##############################################
 # create nb_fit sets of parameters, one per data set
 fit_params = Parameters()
-for idx, _ in enumerate(combined_data):
+for idx in range(nb_ranges):
     mu = (fit_range[idx, 0] + fit_range[idx, 1]) / 2
     sigma = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 4
-    fit_params.add('amp_%i' % (idx+1), value=0.5, min=0.0,  max=200)
+    fit_params.add('amp_%i' % (idx+1), value=10, min=0.0,  max=200)
     fit_params.add('cen_%i' % (idx+1), value=mu, min=mu-0.5,  max=mu+0.5)
     fit_params.add('sig_%i' % (idx+1), value=sigma, min=sigma/2, max=sigma*2)
 
@@ -118,7 +144,23 @@ report_fit(result.params)
 #####################
 # plot data and fit #
 #####################
+fig, ax = plt.subplots(1, 1)
+if scale == 'linear':
+    ax.plot(distances, average, 'r')
+else:
+    ax.plot(distances, np.log10(average), 'r')
+plt.legend(['data'])
+for idx in range(nb_ranges):
+    y_fit = gaussian_dataset(result.params, idx, distances)
+    if scale == 'linear':
+        ax.plot(distances, y_fit, '-')
+    else:
+        ax.plot(distances, np.log10(y_fit), '-')
+ax.set_xlim(xlim[0], xlim[1])
+ax.set_ylim(ylim[0], ylim[1])
+ax.set_xlabel('q (1/nm)')
+ax.set_ylabel('Angular average (A.U.)')
+fig.savefig(datadir + lineshape + ' fit.png')
 
-# fig.savefig(datadir + lineshape + ' fit.png')
 plt.ioff()
 plt.show()
