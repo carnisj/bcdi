@@ -38,28 +38,6 @@ constraint_var = ['cen']  # list of variable to be constrained for the fit, leav
 # end of user-defined parameters #
 ##################################
 
-
-def gaussian_dataset(params, iterator, x_axis):
-    """calc gaussian from params for data set i
-    using simple, hardwired naming convention"""
-    amp = params['amp_%i' % (iterator+1)].value
-    cen = params['cen_%i' % (iterator+1)].value
-    sig = params['sig_%i' % (iterator+1)].value
-    return amp*np.exp(-(x_axis-cen)**2/(2*sig**2))
-
-
-def objective(params, x_axis, data):
-    """ calculate total residual for fits to several data sets held
-    in a 2-D array, and modeled by Gaussian functions"""
-    ndata, nx = data.shape
-    resid = 0.0*data[:]
-    # make residual per data set
-    for ii in range(ndata):
-        resid[ii, :] = data[ii, :] - gaussian_dataset(params, ii, x_axis[ii, :])
-    # now flatten this to a 1D array, as minimize() needs
-    return resid.flatten()
-
-
 #####################
 # load the 1D curve #
 #####################
@@ -136,22 +114,23 @@ combined_data = np.asarray(combined_data)
 # create nb_fit sets of parameters, one per data set
 fit_params = Parameters()
 for idx in range(nb_ranges):
-    cen = (fit_range[idx, 0] + fit_range[idx, 1]) / 2
-    sig = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 4
-    fit_params.add('amp_%i' % (idx+1), value=10, min=0.0,  max=200)
-    fit_params.add('cen_%i' % (idx+1), value=cen, min=cen-0.5,  max=cen+0.5)
-    fit_params.add('sig_%i' % (idx+1), value=sig, min=sig/2, max=sig*2)
+    if lineshape == 'gaussian':
+        cen = (fit_range[idx, 0] + fit_range[idx, 1]) / 2
+        sig = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 4
+        fit_params.add('amp_%i' % (idx+1), value=10, min=0.0,  max=200)
+        fit_params.add('cen_%i' % (idx+1), value=cen, min=cen-0.5,  max=cen+0.5)
+        fit_params.add('sig_%i' % (idx+1), value=sig, min=sig/2, max=sig*2)
 
 # constrain values
 if len(constraint_expr) != 0:
     if len(constraint_expr) != (nb_ranges - 1) or len(constraint_var) != (nb_ranges - 1):
-        print('Number of constraints incompatible with the number of ranges')
+        print('Number of constraints or constrained variables incompatible with the number of ranges')
         sys.exit()
     for idx in range(1, nb_ranges):
         fit_params[constraint_var[idx-1]+'_%i' % (idx+1)].expr = constraint_expr[idx-1]
 
 # run the global fit to all the data sets
-result = minimize(objective, fit_params, args=(combined_xaxis, combined_data))
+result = minimize(util.objective_lmfit, fit_params, args=(combined_xaxis, combined_data, lineshape))
 report_fit(result.params)
 
 #####################
@@ -164,7 +143,8 @@ else:
     ax.plot(distances, np.log10(average), 'r')
 plt.legend(['data'])
 for idx in range(nb_ranges):
-    y_fit = gaussian_dataset(result.params, idx, distances)
+    if lineshape == 'gaussian':
+        y_fit = util.function_lmfit(params=result.params, iterator=idx, x_axis=distances, distribution=lineshape)
     if scale == 'linear':
         ax.plot(distances, y_fit, '-')
     else:
@@ -177,6 +157,9 @@ fig.text(0.15, 0.90, 'cen_1 = ' + str('{:.5f}'.format(result.params['cen_1'].val
          str('{:.5f}'.format(result.params['cen_1'].stderr)) +
          '   sig_1 = ' + str('{:.5f}'.format(result.params['sig_1'].value)) + '+/-' +
          str('{:.5f}'.format(result.params['sig_1'].stderr)), size=12)
+fig.text(0.15, 0.80, lineshape + ' fit', size=12)
+for idx in range(len(constraint_var)):
+    fig.text(0.15, (0.75-0.1*idx), constraint_var[idx] + ' = ' + constraint_expr[idx], size=12)
 fig.savefig(datadir + lineshape + ' fit.png')
 
 plt.ioff()

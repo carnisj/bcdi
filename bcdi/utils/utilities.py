@@ -9,6 +9,7 @@
 import os
 import h5py
 import numpy as np
+from scipy.special import wofz
 
 
 def find_nearest(original_array, array_values):
@@ -28,6 +29,50 @@ def find_nearest(original_array, array_values):
     for idx in range(nb_values):
         nearest_index[idx] = (np.abs(original_array - array_values[idx])).argmin()
     return nearest_index
+
+
+def gaussian(x_axis, scaling, mu, sigma):
+    """
+    Gaussian line shape.
+
+    :param x_axis: where to calculate the function
+    :param scaling: the amplitude of the gaussian
+    :param mu: the position of the center
+    :param sigma: HWHM of the gaussian
+    :return: the gaussian function
+    """
+    return scaling*np.exp(-(x_axis-mu)**2/(2.*sigma**2))
+
+
+def function_lmfit(params, iterator, x_axis, distribution):
+    """
+    Calculate distribution using by lmfit Parameters.
+
+    :param params: lmfit Parameters object
+    :param iterator: the index of the relevant parameters
+    :param x_axis: where to calculate the function
+    :param distribution: the distribution to use
+    :return: the gaussian function calculated at x_axis positions
+    """
+    if distribution == 'gaussian':
+        scaling = params['amp_%i' % (iterator+1)].value
+        mu = params['cen_%i' % (iterator+1)].value
+        sigma = params['sig_%i' % (iterator+1)].value
+        return gaussian(x_axis=x_axis, scaling=scaling, mu=mu, sigma=sigma)
+    
+
+
+def lorentzian(x_axis, scaling, mu, gamma):
+    """
+    Lorentzian line shape
+
+    :param x_axis: where to calculate the function
+    :param scaling: the amplitude of the gaussian
+    :param mu: the position of the center
+    :param gamma: HWHM of the lorentzian
+    :return: the lorentzian function
+    """
+    return scaling/(gamma*np.pi)/((x_axis-mu)**2/(gamma**2))
 
 
 def load_file(file_path, fieldname=None):
@@ -75,3 +120,25 @@ def load_file(file_path, fieldname=None):
     else:
         raise ValueError('"field" parameter settings is not valid')
     return dataset, extension
+
+
+def objective_lmfit(params, x_axis, data, distribution):
+    """
+    Calculate total residual for fits to several data sets held
+    in a 2-D array, and modeled by gaussian functions.
+
+    :param params: lmfit Parameters object
+    :param x_axis: where to calculate the gaussian distribution
+    :param data: data to fit
+    :param distribution: distribution to use for fitting
+    :return: the residuals of the fit of data using the parameters
+    """
+    ndata, nx = data.shape
+    resid = 0.0*data[:]
+    # make residual per data set
+    for idx in range(ndata):
+        if distribution == 'gaussian':
+            resid[idx, :] = data[idx, :] - function_lmfit(params=params, iterator=idx, x_axis=x_axis[idx, :],
+                                                          distribution=distribution)
+    # now flatten this to a 1D array, as minimize() needs
+    return resid.flatten()
