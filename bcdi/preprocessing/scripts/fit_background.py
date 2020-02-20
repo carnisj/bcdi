@@ -22,7 +22,7 @@ method = 'manual'  # method for background determination: only 'manual' for now
 xlim = [0, 1]  # limits used for the horizontal axis of the angular plot
 ylim = [0, 7]  # limits used for the vertical axis of the angular plot
 scale = 'log'  # scale for plotting the data
-
+field_names = ['distances', 'average']  # names of the fields in the file
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -73,8 +73,8 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the reciprocal space data",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
 npzfile = np.load(file_path)
-distances = npzfile['distances']
-average = npzfile['average']
+distances = npzfile[field_names[0]]
+average = npzfile[field_names[1]]
 
 #############
 # plot data #
