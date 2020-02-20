@@ -11,6 +11,7 @@ from matplotlib.path import Path
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
 import xrayutilities as xu
+from operator import itemgetter
 import fabio
 import os
 import sys
@@ -3125,7 +3126,7 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
         ymin, ymax = ylim
 
     stop_masking = False
-
+    xy = sorted(xy, key=itemgetter(0))
     if key == 'b':  # remove the last selected background point
         xy.pop()
         background = np.asarray(xy)
