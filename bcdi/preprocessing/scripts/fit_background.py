@@ -160,5 +160,7 @@ ax0.set_ylim([ymin, ymax])
 ax1.legend(['data-background'])
 ax1.set_xlim([xmin, xmax])
 ax1.set_ylim([ymin, ymax])
+fig.savefig(datadir + 'q+angular_avg_back.png')
+
 plt.ioff()
 plt.show()
