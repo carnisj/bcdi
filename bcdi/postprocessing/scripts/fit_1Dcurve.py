@@ -28,6 +28,11 @@ lineshape = 'gaussian'  # lineshape to use for fitting, only 'gaussian' for now
 scale = 'log'  # scale for plots
 field_names = ['distances', 'average']  # names of the fields in the file
 fit_range = [[0.30, 0.55], [0.70, 0.81]]  # list of ranges for simultaneous fit [[start1, stop1],[start2, stop2],...]
+constraint_expr = ['1.6329931618554523 * cen_1']  # list of string constraints for the fit, leave [] otherwise
+# if provided, len(constraint_expr) should be equal to len(fit_range)-1
+# 1.6329931618554523 = sqrt(8)/sqrt(3), ratio of 220 to 111 in FCC materials
+constraint_var = ['cen']  # list of variable to be constrained for the fit, leave [] otherwise
+# if provided, len(constraint_expr) should be equal to len(fit_range)-1
 
 ##################################
 # end of user-defined parameters #
@@ -131,11 +136,19 @@ combined_data = np.asarray(combined_data)
 # create nb_fit sets of parameters, one per data set
 fit_params = Parameters()
 for idx in range(nb_ranges):
-    mu = (fit_range[idx, 0] + fit_range[idx, 1]) / 2
-    sigma = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 4
+    cen = (fit_range[idx, 0] + fit_range[idx, 1]) / 2
+    sig = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 4
     fit_params.add('amp_%i' % (idx+1), value=10, min=0.0,  max=200)
-    fit_params.add('cen_%i' % (idx+1), value=mu, min=mu-0.5,  max=mu+0.5)
-    fit_params.add('sig_%i' % (idx+1), value=sigma, min=sigma/2, max=sigma*2)
+    fit_params.add('cen_%i' % (idx+1), value=cen, min=cen-0.5,  max=cen+0.5)
+    fit_params.add('sig_%i' % (idx+1), value=sig, min=sig/2, max=sig*2)
+
+# constrain values
+if len(constraint_expr) != 0:
+    if len(constraint_expr) != (nb_ranges - 1) or len(constraint_var) != (nb_ranges - 1):
+        print('Number of constraints incompatible with the number of ranges')
+        sys.exit()
+    for idx in range(1, nb_ranges):
+        fit_params[constraint_var[idx-1]+'_%i' % (idx+1)].expr = constraint_expr[idx-1]
 
 # run the global fit to all the data sets
 result = minimize(objective, fit_params, args=(combined_xaxis, combined_data))
@@ -160,6 +173,10 @@ ax.set_xlim(xlim[0], xlim[1])
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_xlabel('q (1/nm)')
 ax.set_ylabel('Angular average (A.U.)')
+fig.text(0.15, 0.90, 'cen_1 = ' + str('{:.5f}'.format(result.params['cen_1'].value)) + '+/-' +
+         str('{:.5f}'.format(result.params['cen_1'].stderr)) +
+         '   sig_1 = ' + str('{:.5f}'.format(result.params['sig_1'].value)) + '+/-' +
+         str('{:.5f}'.format(result.params['sig_1'].stderr)), size=12)
 fig.savefig(datadir + lineshape + ' fit.png')
 
 plt.ioff()
