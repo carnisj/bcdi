@@ -79,6 +79,8 @@ The following third-party packages are required:
 
 * xrayutilities
 
+* lmfit
+
 * imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/) for creating movies
 
 Download & Installation
