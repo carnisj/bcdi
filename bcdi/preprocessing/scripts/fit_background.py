@@ -15,6 +15,7 @@ from tkinter import filedialog
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.utils.utilities as util
 
 datadir = 'D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/'
 method = 'manual'  # method for background determination: only 'manual' for now
@@ -111,29 +112,47 @@ if method == 'manual':
 # fit background and interpolate it to mach data points #
 #########################################################
 xy_array = np.asarray(xy)
-interpolation = interp1d(xy_array[:, 0], xy_array[:, 1], kind='cubic', bounds_error=False, fill_value=0)
-background = interpolation(distances)
+indices = util.find_nearest(distances, xy_array[:, 0])
+if scale == 'linear':
+    interpolation = interp1d(distances[indices], data[indices], kind='linear', bounds_error=False,
+                             fill_value='extrapolate')
+    background = interpolation(distances)
+    data_back = data - background
+    data_back[data_back <= 0] = 0
+else:  # fit direcly log values, less artefacts
+    interpolation = interp1d(distances[indices], np.log10(data[indices]), kind='linear', bounds_error=False,
+                             fill_value='extrapolate')
+    background = interpolation(distances)
+    data_back = data - 10**background
+    data_back[data_back <= 1] = 1  # will appear as 0 in log plot
 
 ###################################
 # save background subtracted data #
 ###################################
-# np.savez_compressed(datadir + 'q+angular_avg_back.npz', distances=distances, average=data_back)
+np.savez_compressed(datadir + 'q+angular_avg_back.npz', distances=distances, average=data_back)
 
 ###################################
 # plot background subtracted data #
 ###################################
-fig, (ax0, ax1) = plt.subplots(2, 1)
-if scale == 'linear':
-    ax0.plot(distances, data, 'r', distances, background, 'b')
-else:
-    ax0.plot(distances, np.log10(data), 'r', distances, background, 'b')
-ax0.legend(['data', 'background'])
+xmin = distances[np.unravel_index(distances[~np.isnan(data)].argmin(), distances.shape)]
+xmax = distances[np.unravel_index(distances[~np.isnan(data)].argmax(), distances.shape)]
+ymin = 0
 
-data_back = data - 10**background
+fig, (ax0, ax1) = plt.subplots(3, 1)
 if scale == 'linear':
+    ymax = data[~np.isnan(data)].max()
+    ax0.plot(distances, data, 'r', distances, background, 'b')
     ax1.plot(distances, data_back, 'r')
 else:
+    ymax = np.log10(data[~np.isnan(data)].max())
+    ax0.plot(distances, np.log10(data), 'r', distances, background, 'b')
     ax1.plot(distances, np.log10(data_back))
+
+ax0.legend(['data', 'background'])
+ax0.set_xlim([xmin, xmax])
+ax0.set_ylim([ymin, ymax])
 ax1.legend(['data-background'])
+ax1.set_xlim([xmin, xmax])
+ax1.set_ylim([ymin, ymax])
 plt.ioff()
 plt.show()
