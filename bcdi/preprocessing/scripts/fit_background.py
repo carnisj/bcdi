@@ -21,7 +21,6 @@ datadir = 'D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/'
 method = 'manual'  # method for background determination: only 'manual' for now
 xlim = [0, 1]  # limits used for the horizontal axis of the angular plot
 ylim = [0, 7]  # limits used for the vertical axis of the angular plot
-flag_interact = True  # True to interact with plots, False to close it automatically
 scale = 'log'  # scale for plotting the data
 
 ##################################
