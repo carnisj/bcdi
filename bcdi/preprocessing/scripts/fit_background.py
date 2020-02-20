@@ -24,8 +24,8 @@ data is saved in a different .npz file with the original field names.
 
 datadir = 'D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/'
 method = 'manual'  # method for background determination: only 'manual' for now
-xlim = [0, 1]  # limits used for the horizontal axis of plots
-ylim = [0, 7]  # limits used for the vertical axis of plots
+xlim = [0, 1]  # limits used for the horizontal axis of plots, leave None otherwise
+ylim = [0, 7]  # limits used for the vertical axis of plots, leave None otherwise
 scale = 'log'  # scale for plots
 field_names = ['distances', 'average']  # names of the fields in the file
 ##################################
@@ -61,7 +61,7 @@ def press_key(event):
     try:
         flag_pause, xy, stop_masking = \
                 pru.update_background(key=event.key, distances=distances, data=data, figure=fig_back,
-                                      flag_pause=flag_pause, xy=xy, xlim=None, ylim=None)
+                                      flag_pause=flag_pause, xy=xy, xlim=xlim, ylim=ylim)
         if stop_masking:
             plt.close(fig_back)
 
@@ -106,8 +106,10 @@ if method == 'manual':
     plt.ylabel('Angular average (A.U.)')
     plt.title("Click to select background points\nx to pause/resume for pan/zoom\n"
               "a restart ; p plot background ; q quit")
-    plt.xlim(xlim[0], xlim[1])
-    plt.ylim(ylim[0], ylim[1])
+    if xlim is not None:
+        plt.xlim(xlim[0], xlim[1])
+    if ylim is not None:
+        plt.ylim(ylim[0], ylim[1])
     plt.connect('key_press_event', press_key)
     plt.connect('button_press_event', on_click)
     plt.show()
@@ -142,7 +144,7 @@ xmin = distances[np.unravel_index(distances[~np.isnan(data)].argmin(), distances
 xmax = distances[np.unravel_index(distances[~np.isnan(data)].argmax(), distances.shape)]
 ymin = 0
 
-fig, (ax0, ax1) = plt.subplots(3, 1)
+fig, (ax0, ax1) = plt.subplots(2, 1)
 if scale == 'linear':
     ymax = data[~np.isnan(data)].max()
     ax0.plot(distances, data, 'r', distances, background, 'b')
