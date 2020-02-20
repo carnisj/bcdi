@@ -17,6 +17,11 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.utilities as util
 
+helptext = """
+Determination of the background in a reciprocal space linecut using an interactive interface. The background-subtracted
+data is saved in a different .npz file with the original field names.
+"""
+
 datadir = 'D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/'
 method = 'manual'  # method for background determination: only 'manual' for now
 xlim = [0, 1]  # limits used for the horizontal axis of the angular plot
@@ -71,7 +76,7 @@ plt.ion()
 root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the reciprocal space data",
-                                       filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
+                                       filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
 distances = npzfile[field_names[0]]
 average = npzfile[field_names[1]]
