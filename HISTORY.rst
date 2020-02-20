@@ -1,4 +1,6 @@
-* Feature: implement fit_background.py for 1D reciprocal space curves
+* Feature: implement fit_1D curve to fit simultaneously ranges of a 1D curve with gaussian lineshapes
+
+* Feature: implement fit_background.py to interactively determine the background in 1D reciprocal space curves
 
 * Refactor: in multislices_plot(), allow to plot at user-defined slices position.
 
