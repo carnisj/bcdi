@@ -2592,9 +2592,17 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_' + str(numz)+'_' + str(numy) + '_' + str(numx) + '_' + '.png')
 
+    fig, _, _ = gu.contour_slices(newdata, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
+                                  levels=np.linspace(0, int(np.log10(newdata.max())), 150, endpoint=False),
+                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space_central'+str(numz)+'_'+str(numy)+'_'+str(numx)+'_'+'.png')
+
+    fig, _, _ = gu.multislices_plot(newdata, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + str(numz) + '_' + str(numy) + '_' + str(
+        numx) + '_' + '.png')
+
     if debugging:
-        gu.multislices_plot(newdata, sum_frames=False, scale='log', plot_colorbar=True, vmin=0, title='Regridded data',
-                            is_orthogonal=True, reciprocal_space=True)
         gu.multislices_plot(newmask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                             title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
     return newdata, newmask, [qx, qz, qy], frames_logical
