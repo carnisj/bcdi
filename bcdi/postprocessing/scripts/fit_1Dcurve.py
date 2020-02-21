@@ -23,11 +23,11 @@ over all regions defined by the user, limiting the number of fitting parameters.
 
 datadir = 'D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/'
 xlim = [0, 1]  # limits used for the horizontal axis of plots, leave None otherwise
-ylim = [0, 3]  # limits used for the vertical axis of plots, leave None otherwise
-lineshape = 'lorentzian'  # lineshape to use for fitting: 'gaussian', 'lorentzian' or 'pseudovoigt'
-scale = 'log'  # scale for plots
+ylim = None  # [0, 3]  # limits used for the vertical axis of plots, leave None otherwise
+lineshape = 'pseudovoigt'  # lineshape to use for fitting: 'gaussian', 'lorentzian' or 'pseudovoigt'
+scale = 'log'  # scale for plots, 'linear' or 'log'
 field_names = ['distances', 'average']  # names of the fields in the file
-fit_range = [[0.30, 0.55], [0.70, 0.81]]  # list of ranges for simultaneous fit [[start1, stop1],[start2, stop2],...]
+fit_range = [[0.40, 0.60], [0.70, 0.85]]  # list of ranges for simultaneous fit [[start1, stop1],[start2, stop2],...]
 constraint_expr = ['sqrt(8)/sqrt(3) * cen_1']  # list of string constraints for the fit, leave [] otherwise
 # if provided, len(constraint_expr) should be equal to len(fit_range)-1
 # sqrt(8)/sqrt(3), ratio of 220 to 111 in FCC materials
@@ -116,23 +116,23 @@ fit_params = Parameters()
 for idx in range(nb_ranges):
     if lineshape == 'gaussian':
         cen = (fit_range[idx, 0] + fit_range[idx, 1]) / 2
-        sig = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 4
-        fit_params.add('amp_%i' % (idx+1), value=10, min=0.0,  max=200)
+        sig = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 8
+        fit_params.add('amp_%i' % (idx+1), value=10, min=0.0,  max=1000)
         fit_params.add('cen_%i' % (idx+1), value=cen, min=cen-0.5,  max=cen+0.5)
-        fit_params.add('sig_%i' % (idx+1), value=sig, min=sig/2, max=sig*2)
+        fit_params.add('sig_%i' % (idx+1), value=sig, min=sig/32, max=sig*4)
     elif lineshape == 'lorentzian':
         cen = (fit_range[idx, 0] + fit_range[idx, 1]) / 2
-        sig = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 4
-        fit_params.add('amp_%i' % (idx + 1), value=10, min=0.0, max=200)
+        sig = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 8
+        fit_params.add('amp_%i' % (idx + 1), value=10, min=0.0, max=1000)
         fit_params.add('cen_%i' % (idx + 1), value=cen, min=cen - 0.5, max=cen + 0.5)
-        fit_params.add('sig_%i' % (idx + 1), value=sig, min=sig / 2, max=sig * 2)
+        fit_params.add('sig_%i' % (idx + 1), value=sig, min=sig / 32, max=sig * 4)
     elif lineshape == 'pseudovoigt':
         cen = (fit_range[idx, 0] + fit_range[idx, 1]) / 2
-        sig = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 2  # FWHM of the Pseudo Voigt
-        fit_params.add('amp_%i' % (idx + 1), value=10, min=0.0, max=200)
+        sig = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 4  # FWHM of the Pseudo Voigt
+        fit_params.add('amp_%i' % (idx + 1), value=10, min=0.0, max=1000)
         fit_params.add('cen_%i' % (idx + 1), value=cen, min=cen - 0.5, max=cen + 0.5)
-        fit_params.add('sig_%i' % (idx + 1), value=sig, min=sig / 2, max=sig * 2)
-        fit_params.add('ratio_%i' % (idx + 1), value=0.1, min=0, max=1)
+        fit_params.add('sig_%i' % (idx + 1), value=sig, min=sig / 32, max=sig * 4)
+        fit_params.add('ratio_%i' % (idx + 1), value=0.5, min=0, max=1)
 
 # constrain values
 if len(constraint_expr) != 0:
