@@ -40,7 +40,7 @@ BCDI can be used as a python library with the following main modules:
 7) :mod:`bcdi.simulation`: calculation of the diffraction intensity based on FFT or kinematical sum.
    It can include a displacement field, noise, detector gaps etc...
 
-8) :mod:`bcdi.utils`: functions that do not enter the classification above
+8) :mod:`bcdi.utils`: data loading, fitting functions ...
 
 Acknowledgment and third party packages
 =======================================
