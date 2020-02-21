@@ -9,7 +9,6 @@
 import os
 import h5py
 import numpy as np
-from scipy.special import wofz
 
 
 def find_nearest(original_array, array_values):
@@ -36,10 +35,10 @@ def gaussian(x_axis, scaling, mu, sigma):
     Gaussian line shape.
 
     :param x_axis: where to calculate the function
-    :param scaling: the amplitude of the gaussian
+    :param scaling: the amplitude of the Gaussian
     :param mu: the position of the center
-    :param sigma: HWHM of the gaussian
-    :return: the gaussian function
+    :param sigma: HWHM of the Gaussian
+    :return: the Gaussian line shape at x_axis
     """
     return scaling*np.exp(-(x_axis-mu)**2/(2.*sigma**2))
 
@@ -59,20 +58,19 @@ def function_lmfit(params, iterator, x_axis, distribution):
         mu = params['cen_%i' % (iterator+1)].value
         sigma = params['sig_%i' % (iterator+1)].value
         return gaussian(x_axis=x_axis, scaling=scaling, mu=mu, sigma=sigma)
-    
-
-
-def lorentzian(x_axis, scaling, mu, gamma):
-    """
-    Lorentzian line shape
-
-    :param x_axis: where to calculate the function
-    :param scaling: the amplitude of the gaussian
-    :param mu: the position of the center
-    :param gamma: HWHM of the lorentzian
-    :return: the lorentzian function
-    """
-    return scaling/(gamma*np.pi)/((x_axis-mu)**2/(gamma**2))
+    elif distribution == 'lorentzian':
+        scaling = params['amp_%i' % (iterator+1)].value
+        mu = params['cen_%i' % (iterator+1)].value
+        sigma = params['sig_%i' % (iterator+1)].value
+        return lorentzian(x_axis=x_axis, scaling=scaling, mu=mu, sigma=sigma)
+    elif distribution == 'pseudovoigt':
+        scaling = params['amp_%i' % (iterator+1)].value
+        mu = params['cen_%i' % (iterator+1)].value
+        fwhm = params['fwhm_%i' % (iterator+1)].value
+        ratio = params['ratio_%i' % (iterator+1)].value
+        return pseudovoigt(x_axis, scaling, mu, fwhm, ratio)
+    else:
+        raise ValueError(distribution + ' not implemented')
 
 
 def load_file(file_path, fieldname=None):
@@ -122,6 +120,19 @@ def load_file(file_path, fieldname=None):
     return dataset, extension
 
 
+def lorentzian(x_axis, scaling, mu, sigma):
+    """
+    Lorentzian line shape.
+
+    :param x_axis: where to calculate the function
+    :param scaling: the amplitude of the Lorentzian
+    :param mu: the position of the center
+    :param sigma: HWHM of the Lorentzian
+    :return: the Lorentzian line shape at x_axis
+    """
+    return scaling/(sigma*np.pi)/(1+(x_axis-mu)**2/(sigma**2))
+
+
 def objective_lmfit(params, x_axis, data, distribution):
     """
     Calculate total residual for fits to several data sets held
@@ -137,8 +148,26 @@ def objective_lmfit(params, x_axis, data, distribution):
     resid = 0.0*data[:]
     # make residual per data set
     for idx in range(ndata):
-        if distribution == 'gaussian':
-            resid[idx, :] = data[idx, :] - function_lmfit(params=params, iterator=idx, x_axis=x_axis[idx, :],
-                                                          distribution=distribution)
+        resid[idx, :] = data[idx, :] - function_lmfit(params=params, iterator=idx, x_axis=x_axis[idx, :],
+                                                      distribution=distribution)
     # now flatten this to a 1D array, as minimize() needs
     return resid.flatten()
+
+
+def pseudovoigt(x_axis, scaling, mu, fwhm, ratio):
+    """
+    Pseudo Voigt line shape.
+
+    :param x_axis: where to calculate the function
+    :param scaling: amplitude of the Pseudo Voigt
+    :param mu: position of the center of the Pseudo Voigt
+    :param fwhm: FWHM of the Pseudo Voigt
+    :param ratio: ratio of the Gaussian line shape
+    :return: the Pseudo Voigt line shape at x_axis
+    """
+    sigma_gaussian = fwhm / (2*np.sqrt(2*np.log(2)))
+    scaling_gaussian = 1 / (sigma_gaussian * np.sqrt(2*np.pi))  # the Gaussian is normalized
+    sigma_lorentzian = fwhm / 2
+    scaling_lorentzian = 1  # the Lorentzian is normalized
+    return scaling * (ratio * gaussian(x_axis, scaling_gaussian, mu, scaling_gaussian)
+                      + (1-ratio) * lorentzian(x_axis, scaling_lorentzian, mu, sigma_lorentzian))
