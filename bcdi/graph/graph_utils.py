@@ -711,7 +711,10 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
         plt.draw()
 
     elif key == 'right':  # increase colobar max
-        vmax = vmax * 2
+        if scale == 'linear':
+            vmax = vmax * 2
+        else:
+            vmax = vmax + 1
         figure.clear()
         if dim == 0:
             if scale == 'linear':
@@ -746,7 +749,10 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
         plt.draw()
 
     elif key == 'left':  # reduce colobar max
-        vmax = vmax / 2
+        if scale == 'linear':
+            vmax = vmax / 2
+        else:
+            vmax = vmax - 1
         if vmax < 1:
             vmax = 1
         figure.clear()
