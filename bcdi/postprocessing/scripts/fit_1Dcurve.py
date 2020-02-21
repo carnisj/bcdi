@@ -24,13 +24,13 @@ over all regions defined by the user, limiting the number of fitting parameters.
 datadir = 'D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/'
 xlim = [0, 1]  # limits used for the horizontal axis of plots, leave None otherwise
 ylim = [0, 3]  # limits used for the vertical axis of plots, leave None otherwise
-lineshape = 'gaussian'  # lineshape to use for fitting, only 'gaussian' for now
+lineshape = 'lorentzian'  # lineshape to use for fitting: 'gaussian', 'lorentzian' or 'pseudovoigt'
 scale = 'log'  # scale for plots
 field_names = ['distances', 'average']  # names of the fields in the file
 fit_range = [[0.30, 0.55], [0.70, 0.81]]  # list of ranges for simultaneous fit [[start1, stop1],[start2, stop2],...]
-constraint_expr = ['1.6329931618554523 * cen_1']  # list of string constraints for the fit, leave [] otherwise
+constraint_expr = ['sqrt(8)/sqrt(3) * cen_1']  # list of string constraints for the fit, leave [] otherwise
 # if provided, len(constraint_expr) should be equal to len(fit_range)-1
-# 1.6329931618554523 = sqrt(8)/sqrt(3), ratio of 220 to 111 in FCC materials
+# sqrt(8)/sqrt(3), ratio of 220 to 111 in FCC materials
 constraint_var = ['cen']  # list of variable to be constrained for the fit, leave [] otherwise
 # if provided, len(constraint_expr) should be equal to len(fit_range)-1
 
@@ -120,6 +120,19 @@ for idx in range(nb_ranges):
         fit_params.add('amp_%i' % (idx+1), value=10, min=0.0,  max=200)
         fit_params.add('cen_%i' % (idx+1), value=cen, min=cen-0.5,  max=cen+0.5)
         fit_params.add('sig_%i' % (idx+1), value=sig, min=sig/2, max=sig*2)
+    elif lineshape == 'lorentzian':
+        cen = (fit_range[idx, 0] + fit_range[idx, 1]) / 2
+        sig = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 4
+        fit_params.add('amp_%i' % (idx + 1), value=10, min=0.0, max=200)
+        fit_params.add('cen_%i' % (idx + 1), value=cen, min=cen - 0.5, max=cen + 0.5)
+        fit_params.add('sig_%i' % (idx + 1), value=sig, min=sig / 2, max=sig * 2)
+    elif lineshape == 'pseudovoigt':
+        cen = (fit_range[idx, 0] + fit_range[idx, 1]) / 2
+        sig = abs(fit_range[idx, 0] - fit_range[idx, 1]) / 2  # FWHM of the Pseudo Voigt
+        fit_params.add('amp_%i' % (idx + 1), value=10, min=0.0, max=200)
+        fit_params.add('cen_%i' % (idx + 1), value=cen, min=cen - 0.5, max=cen + 0.5)
+        fit_params.add('sig_%i' % (idx + 1), value=sig, min=sig / 2, max=sig * 2)
+        fit_params.add('ratio_%i' % (idx + 1), value=0.1, min=0, max=1)
 
 # constrain values
 if len(constraint_expr) != 0:
@@ -143,8 +156,7 @@ else:
     ax.plot(distances, np.log10(average), 'r')
 plt.legend(['data'])
 for idx in range(nb_ranges):
-    if lineshape == 'gaussian':
-        y_fit = util.function_lmfit(params=result.params, iterator=idx, x_axis=distances, distribution=lineshape)
+    y_fit = util.function_lmfit(params=result.params, iterator=idx, x_axis=distances, distribution=lineshape)
     if scale == 'linear':
         ax.plot(distances, y_fit, '-')
     else:
@@ -153,10 +165,22 @@ ax.set_xlim(xlim[0], xlim[1])
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_xlabel('q (1/nm)')
 ax.set_ylabel('Angular average (A.U.)')
-fig.text(0.15, 0.90, 'cen_1 = ' + str('{:.5f}'.format(result.params['cen_1'].value)) + '+/-' +
-         str('{:.5f}'.format(result.params['cen_1'].stderr)) +
-         '   sig_1 = ' + str('{:.5f}'.format(result.params['sig_1'].value)) + '+/-' +
-         str('{:.5f}'.format(result.params['sig_1'].stderr)), size=12)
+if lineshape in ['gaussian', 'lorentzian']:
+    try:
+        fig.text(0.15, 0.90, 'cen_1 = ' + str('{:.5f}'.format(result.params['cen_1'].value)) + '+/-' +
+                 str('{:.5f}'.format(result.params['cen_1'].stderr)) +
+                 '   sig_1 = ' + str('{:.5f}'.format(result.params['sig_1'].value)) + '+/-' +
+                 str('{:.5f}'.format(result.params['sig_1'].stderr)), size=12)
+    except TypeError:  # one output is None
+        fig.text(0.15, 0.90, 'at least one output is None', size=12)
+if lineshape == 'pseudovoigt':
+    try:
+        fig.text(0.15, 0.90, 'cen_1 = ' + str('{:.5f}'.format(result.params['cen_1'].value)) + '+/-' +
+                 str('{:.5f}'.format(result.params['cen_1'].stderr)) +
+                 '   sig_1 = ' + str('{:.5f}'.format(result.params['sig_1'].value)) + '+/-' +
+                 str('{:.5f}'.format(result.params['sig_1'].stderr)), size=12)
+    except TypeError:  # one output is None
+        fig.text(0.15, 0.90, 'at least one output is None', size=12)
 fig.text(0.15, 0.80, lineshape + ' fit', size=12)
 for idx in range(len(constraint_var)):
     fig.text(0.15, (0.75-0.1*idx), constraint_var[idx] + ' = ' + constraint_expr[idx], size=12)
