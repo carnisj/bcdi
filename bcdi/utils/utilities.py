@@ -47,7 +47,7 @@ def function_lmfit(params, iterator, x_axis, distribution):
     """
     Calculate distribution using by lmfit Parameters.
 
-    :param params: lmfit Parameters object
+    :param params: a lmfit Parameters object
     :param iterator: the index of the relevant parameters
     :param x_axis: where to calculate the function
     :param distribution: the distribution to use
@@ -138,7 +138,7 @@ def objective_lmfit(params, x_axis, data, distribution):
     Calculate total residual for fits to several data sets held
     in a 2-D array, and modeled by gaussian functions.
 
-    :param params: lmfit Parameters object
+    :param params: a lmfit Parameters object
     :param x_axis: where to calculate the gaussian distribution
     :param data: data to fit
     :param distribution: distribution to use for fitting
