@@ -398,7 +398,8 @@ for scan_nb in range(len(scans)):
 
         if use_rawdata:
             q_values = []
-            binning_comment = '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2])
+            binning_comment = '_' + str(1) + '_' + str(binning[1]) + '_' + str(binning[2])
+            # binning along axis 0 is done after masking
         else:
             print('Gridding the data in the orthonormal laboratory frame')
             # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
