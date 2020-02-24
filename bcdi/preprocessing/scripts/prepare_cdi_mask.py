@@ -788,6 +788,9 @@ for scan_nb in range(len(scans)):
         mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
         if not use_rawdata:
+            # sample rotation around the vertical direction at P10: the effective binning in axis 0 was already
+            # binning[2], and we bin by binning[0] again
+            binning_comment = '_' + str(binning[2] * binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2])
             qx = qx[::binning[0]]  # along Z
 
     ############################
@@ -795,38 +798,33 @@ for scan_nb in range(len(scans)):
     ############################
     nz, ny, nx = data.shape
     print('Data size after binning the stacking dimension:', data.shape)
-    comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)
+    comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx) + binning_comment
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Final data', is_orthogonal=not use_rawdata,
                                     reciprocal_space=True)
-    plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + binning_comment + '.png')
+    plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     vmax=(nz, ny, nx), title='Final mask',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + binning_comment + '.png')
+    plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
     ############################
     # save final data and mask #
     ############################
-    comment = comment + '_' + str(detector.binning[0]) + '_' + str(detector.binning[1]) + '_' + str(detector.binning[2])
     if not use_rawdata:
         np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment, qx=qx, qz=qz, qy=qy)
         fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=True, title='Final data',
                                       levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
                                       plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-        fig.savefig(detector.savedir + 'reciprocal_space_phasing_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' +
-                    str(ny) + '_' + str(nx) + binning_comment + '.png')
+        fig.savefig(detector.savedir + 'reciprocal_space_phasing_S' + str(scans[scan_nb]) + comment + '.png')
         plt.close(fig)
-    else:
-        comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)
+
     print('saving to directory:', savedir)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
