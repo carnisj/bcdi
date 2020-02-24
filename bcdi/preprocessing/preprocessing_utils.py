@@ -2445,7 +2445,6 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
 
     wavelength = setup.wavelength * 1e9  # convert to nm
     distance = setup.distance * 1e9  # convert to nm
-    binning = detector.binning  # only used for figure name when saving
     pixel_x = detector.pixelsize_x * 1e9  # convert to nm, pixel size in the horizontal direction
     pixel_y = detector.pixelsize_y * 1e9  # convert to nm, pixel size in the vertical direction
     lambdaz = wavelength * distance
@@ -2588,22 +2587,24 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     newdata[np.nonzero(newmask)] = 0
 
     # plot the gridded data
+    binning = detector.binning  # only used for figure name when saving
+    # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
     fig, _, _ = gu.contour_slices(newdata, (qx, qz, qy), sum_frames=True, title='Regridded data',
                                   levels=np.linspace(0, int(np.log10(newdata.max())), 150, endpoint=False),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_' + str(numz)+'_' + str(numy) + '_' + str(numx) +
-                '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
+                '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
     plt.close(fig)
     fig, _, _ = gu.contour_slices(newdata, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
                                   levels=np.linspace(0, int(np.log10(newdata.max())), 150, endpoint=False),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_central_'+str(numz)+'_'+str(numy)+'_'+str(numx) +
-                '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
+                '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
     plt.close(fig)
     fig, _, _ = gu.multislices_plot(newdata, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_central_pix_' + str(numz) + '_' + str(numy) + '_' + str(
-        numx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
+        numx) + '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
     plt.close(fig)
     if debugging:
         gu.multislices_plot(newmask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,

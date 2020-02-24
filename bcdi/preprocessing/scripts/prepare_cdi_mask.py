@@ -398,8 +398,11 @@ for scan_nb in range(len(scans)):
 
         if use_rawdata:
             q_values = []
+            binning_comment = '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2])
         else:
             print('Gridding the data in the orthonormal laboratory frame')
+            # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
+            binning_comment = '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2])
             data, mask, q_values, frames_logical = \
                 pru.regrid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
                                frames_logical=frames_logical, correct_curvature=correct_curvature,
@@ -420,7 +423,7 @@ for scan_nb in range(len(scans)):
                                 is_orthogonal=not use_rawdata, reciprocal_space=True)
 
         fig.savefig(savedir + 'monitor_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                    str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
+                    str(nx) + binning_comment + '.png')
         if flag_interact:
             cid = plt.connect('close_event', close_event)
             fig.waitforbuttonpress()
@@ -462,7 +465,7 @@ for scan_nb in range(len(scans)):
                                     title='Data before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
+                str(nx) + binning_comment + '.png')
 
     if flag_interact:
         cid = plt.connect('close_event', close_event)
@@ -474,7 +477,7 @@ for scan_nb in range(len(scans)):
                                     vmax=(nz, ny, nx), title='Mask before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     plt.savefig(savedir + 'mask_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
+                str(nx) + binning_comment + '.png')
 
     if flag_interact:
         cid = plt.connect('close_event', close_event)
@@ -741,14 +744,14 @@ for scan_nb in range(len(scans)):
                                     title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
+                str(nx) + binning_comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
+                str(nx) + binning_comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
@@ -756,7 +759,7 @@ for scan_nb in range(len(scans)):
                                     vmax=(nz, ny, nx), title='Mask', is_orthogonal=not use_rawdata,
                                     reciprocal_space=True)
     plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
+                str(nx) + binning_comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
@@ -798,7 +801,7 @@ for scan_nb in range(len(scans)):
                                     title='Final data', is_orthogonal=not use_rawdata,
                                     reciprocal_space=True)
     plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
+                str(nx) + binning_comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
@@ -806,7 +809,7 @@ for scan_nb in range(len(scans)):
                                     vmax=(nz, ny, nx), title='Final mask',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
+                str(nx) + binning_comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
@@ -820,8 +823,7 @@ for scan_nb in range(len(scans)):
                                       levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
                                       plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
         fig.savefig(detector.savedir + 'reciprocal_space_phasing_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' +
-                    str(ny) + '_' + str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) +
-                    comment + '.png')
+                    str(ny) + '_' + str(nx) + binning_comment + '.png')
         plt.close(fig)
     else:
         comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)
