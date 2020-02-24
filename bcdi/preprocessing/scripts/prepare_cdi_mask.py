@@ -45,10 +45,10 @@ root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2"  # "S"
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 8, 8]  # binning that will be used for phasing
+binning = [1, 2, 2]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
-flag_interact = False  # True to interact with plots, False to close it automatically
+flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ###########################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
@@ -69,7 +69,7 @@ normalize_flux = True  # will normalize the intensity by the default monitor.
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
-flag_medianfilter = 'mask_isolated'
+flag_medianfilter = 'skip'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -88,7 +88,7 @@ fit_datarange = True  # if True, crop the final array within data range, avoidin
 save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_mat = False  # True to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
-save_asint = True  # if True, the result will be saved as an array of integers (save space)
+save_asint = False  # if True, the result will be saved as an array of integers (save space)
 ######################################
 # define beamline related parameters #
 ######################################
@@ -109,7 +109,7 @@ specfile_name = sample_name + '_%05d'
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = []  # [direct_beam[0] - 50, direct_beam[0] + 50, direct_beam[1] - 50, direct_beam[1] + 50]
+roi_detector = [direct_beam[0] - 400, direct_beam[0] + 400, direct_beam[1] - 400, direct_beam[1] + 400]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
@@ -336,7 +336,8 @@ for scan_nb in range(len(scans)):
                                                            detector=detector, setup=setup, flatfield=flatfield,
                                                            hotpixels=hotpix_array, background=background,
                                                            normalize=normalize_flux, debugging=debug)
-        print('Raw data shape:', data.shape)
+        nz, ny, nx = np.shape(data)
+        print('Raw data shape:', nz, ny, nx)
 
         if save_rawdata:
             np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack', data=data)
@@ -354,7 +355,7 @@ for scan_nb in range(len(scans)):
             flag_aliens = False
             flag_mask = True
             flag_pause = False  # press x to pause for pan/zoom
-            nz, ny, nx = np.shape(data)
+
             original_data = np.copy(data)
 
             # in XY
@@ -389,7 +390,8 @@ for scan_nb in range(len(scans)):
         tmp_data[mask == 1] = 0
         fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                         title='Data before gridding\n', is_orthogonal=False, reciprocal_space=True)
-        plt.savefig(savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '.png')
+        plt.savefig(savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
         plt.close(fig)
         del tmp_data
         gc.collect()
@@ -417,7 +419,8 @@ for scan_nb in range(len(scans)):
                                 ylabel=('Counts (a.u.)', 'Rocking dimension'),
                                 is_orthogonal=not use_rawdata, reciprocal_space=True)
 
-        fig.savefig(savedir + 'monitor_S' + str(scans[scan_nb]) + '.png')
+        fig.savefig(savedir + 'monitor_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
         if flag_interact:
             cid = plt.connect('close_event', close_event)
             fig.waitforbuttonpress()
@@ -458,7 +461,8 @@ for scan_nb in range(len(scans)):
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Data before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '.png')
+    plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
 
     if flag_interact:
         cid = plt.connect('close_event', close_event)
@@ -469,7 +473,8 @@ for scan_nb in range(len(scans)):
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     vmax=(nz, ny, nx), title='Mask before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'mask_before_masking_S' + str(scans[scan_nb]) + '.png')
+    plt.savefig(savedir + 'mask_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
 
     if flag_interact:
         cid = plt.connect('close_event', close_event)
@@ -735,20 +740,23 @@ for scan_nb in range(len(scans)):
     fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                     title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + comment + '.png')
+    plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + comment + '.png')
+    plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     vmax=(nz, ny, nx), title='Mask', is_orthogonal=not use_rawdata,
                                     reciprocal_space=True)
-    plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + comment + '.png')
+    plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
@@ -789,14 +797,16 @@ for scan_nb in range(len(scans)):
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Final data', is_orthogonal=not use_rawdata,
                                     reciprocal_space=True)
-    plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
+    plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     vmax=(nz, ny, nx), title='Final mask',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
+    plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
@@ -809,8 +819,9 @@ for scan_nb in range(len(scans)):
         fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=True, title='Final data',
                                       levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
                                       plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-        fig.savefig(
-            detector.savedir + 'reciprocal_space_phasing_' + str(nz) + '_' + str(ny) + '_' + str(nx) + '_' + '.png')
+        fig.savefig(detector.savedir + 'reciprocal_space_phasing_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' +
+                    str(ny) + '_' + str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) +
+                    comment + '.png')
         plt.close(fig)
     else:
         comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)
