@@ -41,8 +41,8 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [816]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
-root_folder = "D:/data/CH5309/"
+scans = [1301]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
+root_folder = "D:/data/SIXS_2019_Ni/"
 sample_name = "S"  # "SN"  #
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -70,7 +70,7 @@ normalize_flux = True  # will normalize the intensity by the default monitor.
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
-flag_medianfilter = 'interp_isolated'
+flag_medianfilter = 'skip'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -84,7 +84,7 @@ save_to_mat = False  # True to save also in .mat format
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'SIXS_2019'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 is_series = False  # specific to series measurement at P10
 
@@ -98,9 +98,9 @@ custom_motors = {}
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 
-rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
+rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'align'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -115,15 +115,16 @@ detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 147  # horizontal pixel number of the Bragg peak
 y_bragg = 178  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
+roi_detector = [0, 303, 0, 296]
+# roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
-flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
+template_imagefile = 'Pt_ascan_mu_%05d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -381,6 +382,8 @@ for scan_nb in range(len(scans)):
     ##########################################
     # plot normalization by incident monitor #
     ##########################################
+    nz, ny, nx = np.shape(data)
+    print('Data shape:', nz, ny, nx)
     if normalize_flux:
         plt.ion()
         fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
@@ -405,9 +408,6 @@ for scan_nb in range(len(scans)):
     ########################
     # crop/pad/center data #
     ########################
-    nz, ny, nx = np.shape(data)
-    print('Data size:', nz, ny, nx)
-
     data, mask, pad_width, q_vector, frames_logical = \
         pru.center_fft(data=data, mask=mask, detector=detector, frames_logical=frames_logical, centering=centering,
                        fft_option=center_fft, pad_size=pad_size, fix_bragg=fix_bragg, fix_size=fix_size,
