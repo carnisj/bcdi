@@ -79,7 +79,9 @@ The following third-party packages are required:
 
 * xrayutilities
 
-* lmfit
+* lmfit: for scripts performing fits
+
+* pytables: when loading the dictionnary for SIXS data
 
 * imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/) for creating movies
 
