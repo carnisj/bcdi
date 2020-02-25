@@ -1697,40 +1697,28 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     """
 
     if beamline == 'SIXS_2018':
-        data = logfile.mfilm[:]
+        tmp_data = logfile.mfilm[:]
         monitor = logfile.imon1[:]
     else:
         try:
-            data = logfile.mpx_image[:]
+            tmp_data = logfile.mpx_image[:]
             monitor = logfile.imon0[:]
         except AttributeError:
             try:
-                data = logfile.maxpix[:]
+                tmp_data = logfile.maxpix[:]
                 monitor = logfile.imon0[:]
             except AttributeError:  # the alias dictionnary was probably not provided
-                data = logfile.image[:]
+                tmp_data = logfile.image[:]
                 monitor = logfile.intensity[:]
 
-    if detector.roiUser:
-        # apply roi
-        slice0 = slice(detector.roi[0], detector.roi[1], 1)
-        slice1 = slice(detector.roi[2], detector.roi[3], 1)
-        
-        data = data[:, slice0, slice1]
-        hotpixels = hotpixels[slice0, slice1]
-        flatfield = flatfield[slice0, slice1]
-        mask_2d = np.zeros_like(data[0, :, :])
-        
-    else: 
-        mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x)) 
-        # load data as usual
+    mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
-    frames_logical = np.ones(data.shape[0])
-    # frames_logical[0] = 0  # first frame is duplicated
+    frames_logical = np.ones(tmp_data.shape[0])
+    nb_img = tmp_data.shape[0]
+    data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
 
-    nb_img = data.shape[0]
     for idx in range(nb_img):
-        ccdraw = data[idx, :, :]
+        ccdraw = tmp_data[idx, :, :]
         ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Maxipix":
@@ -1738,10 +1726,10 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
         else:
             raise ValueError('Detector ', detector.name, 'not supported for SIXS')
         ccdraw = flatfield * ccdraw
-        # ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
         data[idx, :, :] = ccdraw
 
-    # mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
