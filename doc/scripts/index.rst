@@ -316,10 +316,10 @@ Simulation
    :end-before: """
    :language: rst
    
-simu_noise_CDI.py
-^^^^^^^^^^^^^^^^^
+simu_diffpattern_BCDI.py
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/simulation/scripts/simu_noise_CDI.py
+.. literalinclude:: ../../bcdi/simulation/scripts/simu_diffpattern_BCDI.py
    :start-after: helptext
    :end-before: """
    :language: rst

@@ -24,12 +24,10 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 
 helptext = """
-simu_noise.py
-
-Using a support created from a reconstruction (real space), calculate the diffraction pattern depending on several 
+Using a support created from a reconstructed object (real space), calculate the diffraction pattern depending on several 
 parameters: detector size, detector distance, presence/width of a detector gap, Poisson noise, user-defined phase.
 
-The provided reconstruction is expected to be orthogonalized, in the laboratory frame. """
+The provided reconstructed object is expected to be orthogonalized, in the laboratory frame. """
 
 scan = 2227  # spec scan number
 datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S"+str(scan)+"/test/"
