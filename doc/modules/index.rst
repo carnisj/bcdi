@@ -12,5 +12,6 @@ API Reference
    graph/index.rst
    postprocessing/index.rst
    preprocessing/index.rst
+   simulation/index.rst
    utils/index.rst
 

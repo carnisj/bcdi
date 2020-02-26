@@ -204,7 +204,7 @@ BCDI.publication: utilities to make formatted figure for publication
 Description
 -----------
 
-TODO
+This module provides scripts with templates for figures that can be used in presentations.
 
 .. bcdi.publication end
 
