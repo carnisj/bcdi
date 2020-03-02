@@ -55,7 +55,7 @@ def align_obj(reference_obj, obj, precision=1000, debugging=False):
 
 
 def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_threshold=0.90, aligning_option='dft',
-                width_z=np.nan, width_y=np.nan, width_x=np.nan, method='reciprocal_space', debugging=False):
+                width_z=None, width_y=None, width_x=None, method='reciprocal_space', debugging=False):
     """
     Average two reconstructions after aligning it, if their cross-correlation is larger than
     correlation_threshold.
@@ -303,7 +303,7 @@ def bin_data(array, binning, debugging=False):
         print('array shape after cropping but before binning:', array.shape)
         print('array shape after binning:', newarray.shape)
         gu.combined_plots(tuple_array=(array, newarray), tuple_sum_frames=False, tuple_sum_axis=(1, 1),
-                          tuple_colorbar=True, tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_vmin=0,
+                          tuple_colorbar=True, tuple_width_v=None, tuple_width_h=None, tuple_vmin=0,
                           tuple_vmax=np.nan, tuple_title=('array', 'binned array'),
                           tuple_scale='log', reciprocal_space=True)
     return newarray
@@ -384,7 +384,7 @@ def bragg_temperature(spacing, reflection, spacing_ref=None, temperature_ref=Non
     return mytemp
 
 
-def calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=np.nan, width_y=np.nan, width_x=np.nan,
+def calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=None, width_y=None, width_x=None,
                       debugging=False):
     """
     Calculate the coordination number of voxels in a support (numbe of neighbours).
@@ -414,7 +414,7 @@ def calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=np.nan, width_
     return mycoord
 
 
-def center_com(array, width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=False):
+def center_com(array, width_z=None, width_y=None, width_x=None, debugging=False):
     """
     Center array based on center_of_mass(abs(array)) using pixel shift.
 
@@ -448,7 +448,7 @@ def center_com(array, width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=
     return array
 
 
-def center_max(array, width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=False):
+def center_max(array, width_z=None, width_y=None, width_x=None, debugging=False):
     """
     Center array based on max(abs(array)) using pixel shift.
 
@@ -481,8 +481,8 @@ def center_max(array, width_z=np.nan, width_y=np.nan, width_x=np.nan, debugging=
     return array
 
 
-def crop_pad(array, output_shape, padwith_ones=False, start=(np.nan, np.nan, np.nan), width_z=np.nan, width_y=np.nan,
-             width_x=np.nan, debugging=False):
+def crop_pad(array, output_shape, padwith_ones=False, start=(np.nan, np.nan, np.nan), width_z=None, width_y=None,
+             width_x=None, debugging=False):
     """
     Crop or pad the 3D object depending on output_shape.
 
@@ -548,7 +548,7 @@ def crop_pad(array, output_shape, padwith_ones=False, start=(np.nan, np.nan, np.
     return newobj
 
 
-def crop_pad_2d(array, output_shape, padwith_ones=False, start=(np.nan, np.nan), width_y=np.nan, width_x=np.nan,
+def crop_pad_2d(array, output_shape, padwith_ones=False, start=(np.nan, np.nan), width_y=None, width_x=None,
                 debugging=False):
     """
     Crop or pad the 2D object depending on output_shape.
@@ -683,7 +683,7 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
     return array
 
 
-def find_bulk(amp, support_threshold, method='threshold', width_z=np.nan, width_y=np.nan, width_x=np.nan,
+def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=None, width_x=None,
               debugging=False):
     """
     Isolate the inner part of the crystal from the non-physical surface.
@@ -942,7 +942,7 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
     return window
 
 
-def get_opticalpath(support, direction, k, width_z=np.nan, width_y=np.nan, width_x=np.nan,
+def get_opticalpath(support, direction, k, width_z=None, width_y=None, width_x=None,
                     debugging=False):
     """
     Calculate the optical path for refraction/absorption corrections in the crystal. 'k' should be in the same basis
@@ -1058,7 +1058,7 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y'):
     return strain
 
 
-def mean_filter(phase, support, half_width=0, width_z=np.nan, width_y=np.nan, width_x=np.nan,
+def mean_filter(phase, support, half_width=0, width_z=None, width_y=None, width_x=None,
                 phase_range=np.pi, debugging=False):
     """
     Apply a mean filter to the phase (spatial average), taking care of the surface.
@@ -1212,7 +1212,7 @@ def regrid(array, voxel_zyx, voxel):
     return new_array
 
 
-def remove_ramp(amp, phase, initial_shape, width_z=np.nan, width_y=np.nan, width_x=np.nan,
+def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=None,
                 amplitude_threshold=0.25, gradient_threshold=0.2, method='gradient', ups_factor=2, debugging=False):
     """
     Remove the linear trend in the ramp using its gradient and a threshold n 3D dataset.
@@ -1370,7 +1370,7 @@ def remove_ramp(amp, phase, initial_shape, width_z=np.nan, width_y=np.nan, width
         return amp, phase, myrampz, myrampy, myrampx
 
 
-def remove_ramp_2d(amp, phase, initial_shape, width_y=np.nan, width_x=np.nan, amplitude_threshold=0.25,
+def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplitude_threshold=0.25,
                    gradient_threshold=0.2, method='gradient', ups_factor=2, debugging=False):
     """
     Remove the linear trend in the ramp using its gradient and a threshold in 2D dataset.
@@ -1508,7 +1508,7 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=np.nan, width_x=np.nan, am
         return amp, phase, myrampy, myrampx
 
 
-def rotate_crystal(array, axis_to_align, reference_axis, width_z=np.nan, width_y=np.nan, width_x=np.nan,
+def rotate_crystal(array, axis_to_align, reference_axis, width_z=None, width_y=None, width_x=None,
                    debugging=False):
     """
     Rotate myobj to align axis_to_align onto reference_axis.

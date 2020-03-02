@@ -415,8 +415,8 @@ for scan_nb in range(len(scans)):
     if normalize_flux:
         plt.ion()
         fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
-                                tuple_sum_axis=(0, 1), tuple_width_v=(np.nan, np.nan),
-                                tuple_width_h=(np.nan, np.nan), tuple_colorbar=(False, False),
+                                tuple_sum_axis=(0, 1), tuple_width_v=None,
+                                tuple_width_h=None, tuple_colorbar=(False, False),
                                 tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
                                 tuple_title=('monitor.min() / monitor', 'Data after normalization'),
                                 tuple_scale=('linear', 'log'), xlabel=('Frame number', 'Frame number'),

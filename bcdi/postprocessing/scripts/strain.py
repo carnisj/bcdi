@@ -311,7 +311,7 @@ print("Phase offset at COM(amp) of:", str('{:.2f}'.format(phase[int(zcom), int(y
 
 if debug:
     gu.combined_plots((phase[int(zcom), :, :], phase[:, int(ycom), :], phase[:, :, int(xcom)]), tuple_sum_frames=False,
-                      tuple_sum_axis=0, tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=True,
+                      tuple_sum_axis=0, tuple_width_v=None, tuple_width_h=None, tuple_colorbar=True,
                       tuple_vmin=np.nan, tuple_vmax=np.nan,
                       tuple_title=('phase at COM in xy', 'phase at COM in xz', 'phase at COM in yz'),
                       tuple_scale='linear', cmap=my_cmap, is_orthogonal=False, reciprocal_space=False)
@@ -731,7 +731,7 @@ strain[bulk == 0] = np.nan
 phase[bulk == 0] = np.nan
 if True:
     gu.combined_plots((phase[piz, :, :], phase[:, piy, :], phase[:, :, pix]), tuple_sum_frames=False, tuple_sum_axis=0,
-                      tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=True, tuple_vmin=np.nan,
+                      tuple_width_v=None, tuple_width_h=None, tuple_colorbar=True, tuple_vmin=np.nan,
                       tuple_vmax=np.nan, tuple_title=('phase at max in xy', 'phase at max in xz', 'phase at max in yz'),
                       tuple_scale='linear', cmap=my_cmap, pixel_spacing=pixel_spacing, is_orthogonal=True,
                       reciprocal_space=False)

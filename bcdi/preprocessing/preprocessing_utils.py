@@ -177,7 +177,7 @@ def beamstop_correction(data, detector, setup, debugging=False):
     if debugging:
         gu.combined_plots(tuple_array=(data, large_square, small_square, large_border, small_border),
                           tuple_sum_frames=(True, False, False, False, False),
-                          tuple_sum_axis=0, tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=False,
+                          tuple_sum_axis=0, tuple_width_v=None, tuple_width_h=None, tuple_colorbar=False,
                           tuple_vmin=0, tuple_vmax=np.nan, is_orthogonal=False, reciprocal_space=True,
                           tuple_title=('data', 'large_square', 'small_square', 'larger border', 'small border'),
                           tuple_scale=('log', 'linear', 'linear', 'linear', 'linear'))
@@ -733,7 +733,7 @@ def check_pixels(data, mask, debugging=False):
     # we do not want to mask pixels where there was trully no intensity during the scan
     if debugging:
         gu.combined_plots(tuple_array=(meandata, vardata), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
-                          tuple_width_v=(np.nan, np.nan), tuple_width_h=(np.nan, np.nan), tuple_colorbar=(True, True),
+                          tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
                           tuple_vmin=(0, 0), tuple_vmax=(1, np.nan), tuple_scale=('linear', 'linear'),
                           tuple_title=('mean(data) before masking', '1/var(data) before masking'),
                           reciprocal_space=True)
@@ -760,7 +760,7 @@ def check_pixels(data, mask, debugging=False):
         meandata = data.mean(axis=0)
         vardata = 1 / data.var(axis=0)
         gu.combined_plots(tuple_array=(meandata, vardata), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
-                          tuple_width_v=(np.nan, np.nan), tuple_width_h=(np.nan, np.nan), tuple_colorbar=(True, True),
+                          tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
                           tuple_vmin=(0, 0), tuple_vmax=(1, np.nan), tuple_scale=('linear', 'linear'),
                           tuple_title=('mean(data) after masking', '1/var(data) after masking'), reciprocal_space=True)
     print("check_pixels():", str(indices_badpixels[0].shape[0]), "badpixels were masked on a total of", str(nbx * nby))
@@ -1852,7 +1852,7 @@ def mean_filter(data, nb_neighbours, mask, min_count=3, interpolate='mask_isolat
 
     if debugging:
         gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
-                          tuple_width_v=(np.nan, np.nan), tuple_width_h=(np.nan, np.nan), tuple_colorbar=(True, True),
+                          tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
                           tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
                           tuple_title=('Data before filtering', 'Mask before filtering'), reciprocal_space=True)
     zero_pixels = np.argwhere(data == 0)
@@ -1877,7 +1877,7 @@ def mean_filter(data, nb_neighbours, mask, min_count=3, interpolate='mask_isolat
 
     if debugging:
         gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
-                          tuple_width_v=(np.nan, np.nan), tuple_width_h=(np.nan, np.nan), tuple_colorbar=(True, True),
+                          tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
                           tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
                           tuple_title=('Data after filtering', 'Mask after filtering'), reciprocal_space=True)
     return data, nb_pixels, mask

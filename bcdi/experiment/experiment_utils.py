@@ -113,7 +113,7 @@ class SetupPostprocessing(object):
             raise ValueError('setup parameter: ', self.beamline, 'not defined')
         return kout
 
-    def detector_frame(self, obj, voxelsize, width_z=np.nan, width_y=np.nan, width_x=np.nan,
+    def detector_frame(self, obj, voxelsize, width_z=None, width_y=None, width_x=None,
                        debugging=False, **kwargs):
         """
         Interpolate the orthogonal object back into the non-orthogonal detector frame
@@ -173,8 +173,8 @@ class SetupPostprocessing(object):
 
         return detector_obj
 
-    def orthogonalize(self, obj, initial_shape=(), voxel_size=np.nan, width_z=np.nan, width_y=np.nan,
-                      width_x=np.nan, debugging=False, **kwargs):
+    def orthogonalize(self, obj, initial_shape=(), voxel_size=np.nan, width_z=None, width_y=None,
+                      width_x=None, debugging=False, **kwargs):
         """
         Interpolate obj on the orthogonal reference frame defined by the setup.
 

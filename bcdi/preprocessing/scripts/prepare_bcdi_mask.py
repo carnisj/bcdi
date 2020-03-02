@@ -387,8 +387,8 @@ for scan_nb in range(len(scans)):
     if normalize_flux:
         plt.ion()
         fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
-                                tuple_sum_axis=(0, 1), tuple_width_v=(np.nan, np.nan),
-                                tuple_width_h=(np.nan, np.nan), tuple_colorbar=(False, False),
+                                tuple_sum_axis=(0, 1), tuple_width_v=None,
+                                tuple_width_h=None, tuple_colorbar=(False, False),
                                 tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
                                 tuple_title=('monitor.min() / monitor', 'Data after normalization'),
                                 tuple_scale=('linear', 'log'), xlabel=('Frame number', 'Frame number'),
@@ -443,7 +443,7 @@ for scan_nb in range(len(scans)):
 
     piz, piy, pix = np.unravel_index(data.argmax(), data.shape)
     fig = gu.combined_plots((data[piz, :, :], data[:, piy, :], data[:, :, pix]), tuple_sum_frames=False,
-                            tuple_sum_axis=0, tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=True,
+                            tuple_sum_axis=0, tuple_width_v=None, tuple_width_h=None, tuple_colorbar=True,
                             tuple_vmin=0, tuple_vmax=np.nan, tuple_scale='log',
                             tuple_title=('data at max in xy', 'data at max in xz', 'data at max in yz'),
                             is_orthogonal=not use_rawdata, reciprocal_space=False)

@@ -208,7 +208,7 @@ del mask
 gc.collect()
 
 gu.combined_plots(tuple_array=(diff_pattern, phased_fft), tuple_sum_frames=False, tuple_sum_axis=(0, 0),
-                  tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=False, tuple_vmin=(-1, -1),
+                  tuple_width_v=None, tuple_width_h=None, tuple_colorbar=False, tuple_vmin=(-1, -1),
                   tuple_vmax=np.nan, tuple_title=('measurement', 'phased_fft'), tuple_scale='log')
 
 ###########################################
