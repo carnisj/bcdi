@@ -496,7 +496,7 @@ if xrayutils_ortho:  # transform kin and kout back into the crystal frame (xrayu
 
 Qnorm = Qnorm * 1e-10  # switch to angstroms
 planar_dist = 2*np.pi/Qnorm  # Qnorm should be in angstroms
-print("Wavevector transfer [z, y, x]:", q*Qnorm)
+print("Normalized wavevector transfer [z, y, x]:", q)
 print("Wavevector transfer: (angstroms)", str('{:.4f}'.format(Qnorm)))
 print("Atomic plane distance: (angstroms)", str('{:.4f}'.format(planar_dist)), "angstroms")
 
