@@ -155,14 +155,14 @@ if data.ndim == 3 and fit_rockingcurve:
 ############################################
 # plot mask, monitor and concatenated data #
 ############################################
-#data = data[data.shape[0]//2, :, :]  # select the first frame e.g. for detector mesh scan
+# data = data[data.shape[0]//2, :, :]  # select the first frame e.g. for detector mesh scan
 data = data.sum(axis=0)  # concatenate along the axis of the rocking curve
 
 if save_mask:
     np.savez_compressed(detector.datadir+'hotpixels.npz', mask=mask)
 
 gu.combined_plots(tuple_array=(monitor, mask), tuple_sum_frames=False, tuple_sum_axis=(0, 0),
-                  tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_colorbar=(True, False), tuple_vmin=np.nan,
+                  tuple_width_v=None, tuple_width_h=None, tuple_colorbar=(True, False), tuple_vmin=np.nan,
                   tuple_vmax=np.nan, tuple_title=('monitor', 'mask'), tuple_scale='linear',
                   ylabel=('Counts (a.u.)', ''))
 
