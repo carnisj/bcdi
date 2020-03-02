@@ -84,9 +84,9 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
     :param tuple_sum_frames: boolean or tuple of boolean values. If True, will sum the data along sum_axis
     :param tuple_sum_axis: tuple of axis along which to sum or to take the middle slice
     :param tuple_width_v: int or tuple of user-defined zoom vertical width, should be smaller than the actual data
-     size. Set it to np.nan if you do not need it.
+     size. Set it to None if you do not need it.
     :param tuple_width_h: int or tuple of user-defined zoom horizontal width, should be smaller than the actual data
-     size. Set it to np.nan if you do not need it.
+     size. Set it to None if you do not need it.
     :param tuple_colorbar: boolean or tuple of boolean values. Set it to True in order to plot the colorbar
     :param tuple_vmin: float or tuple of lower boundaries for the colorbar, set to np.nan if you do not need it
     :param tuple_vmax: float or tuple of higher boundaries for the colorbar, set to np.nan if you do not need it
@@ -214,9 +214,9 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
                     slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
 
             nbz, nby, nbx = array.shape
-            if np.isnan(width_v):
+            if width_v is None:
                 width_v = max(nbz, nby, nbx)
-            if np.isnan(width_h):
+            if width_h is None:
                 width_h = max(nbz, nby, nbx)
 
             if sum_axis == 0:
@@ -247,9 +247,9 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
 
         else:  # 2D
             nby, nbx = array.shape
-            if np.isnan(width_v):
+            if width_v is None:
                 width_v = max(nby, nbx)
-            if np.isnan(width_h):
+            if width_h is None:
                 width_h = max(nby, nbx)
 
             dim_v = nby
@@ -311,7 +311,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
     return plt.gcf()
 
 
-def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=np.nan, width_y=np.nan, width_x=np.nan,
+def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=None, width_y=None, width_x=None,
                    plot_colorbar=False, cmap=my_cmap, title='', scale='linear', is_orthogonal=False,
                    reciprocal_space=True):
     """
@@ -357,11 +357,11 @@ def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=n
         if len(qx) != nbz or len(qz) != nby or len(qy) != nbx:
             print('Coordinates shape is not compatible with data shape')
 
-        if np.isnan(width_z):
+        if width_z is None:
             width_z = nbz
-        if np.isnan(width_y):
+        if width_y is None:
             width_y = nby
-        if np.isnan(width_x):
+        if width_x is None:
             width_x = nbx
 
         fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(13, 9))
@@ -446,7 +446,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=n
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
 
 
-def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=np.nan, width_h=np.nan, plot_colorbar=False,
+def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None, plot_colorbar=False,
                 vmin=np.nan, vmax=np.nan, cmap=my_cmap, title='', scale='linear',
                 tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
                 is_orthogonal=False, reciprocal_space=False):
@@ -496,9 +496,9 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=np.nan, width_h=np.
                 slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
 
         nbz, nby, nbx = array.shape
-        if np.isnan(width_v):
+        if width_v is None:
             width_v = max(nbz, nby, nbx)
-        if np.isnan(width_h):
+        if width_h is None:
             width_h = max(nbz, nby, nbx)
 
         if sum_axis == 0:
@@ -530,9 +530,9 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=np.nan, width_h=np.
     elif nb_dim == 2:
         invert_yaxis = False
         nby, nbx = array.shape
-        if np.isnan(width_v):
+        if width_v is None:
             width_v = max(nby, nbx)
-        if np.isnan(width_h):
+        if width_h is None:
             width_h = max(nby, nbx)
 
         dim_v = nby
