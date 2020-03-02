@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 from bcdi.utils import image_registration as reg
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
@@ -1603,7 +1604,7 @@ def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method=
 
     quality_array = np.ones((nbfiles, 4))  # 1/mean_amp, variance(amp), variance(amp)/mean_amp, 1/volume
     for ii in range(nbfiles):
-        obj, _ = load_reconstruction(file_path[ii])
+        obj, _ = util.load_file(file_path[ii])
         print('Opening ', file_path[ii])
 
         # use the range of interest defined above
