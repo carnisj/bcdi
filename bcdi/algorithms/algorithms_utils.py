@@ -44,7 +44,7 @@ def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, deb
         image = abs(image) / abs(image) .max()
         im_deconv = abs(im_deconv) / abs(im_deconv) .max()
         gu.combined_plots(tuple_array=(image, im_deconv), tuple_sum_frames=False, tuple_colorbar=True,
-                          tuple_scale='linear', tuple_width_v=np.nan, tuple_width_h=np.nan, tuple_vmin=0, tuple_vmax=1,
+                          tuple_scale='linear', tuple_width_v=None, tuple_width_h=None, tuple_vmin=0, tuple_vmax=1,
                           tuple_title=('Before RL', 'After '+str(iterations)+' iterations of RL (normalized)'))
 
     return im_deconv
