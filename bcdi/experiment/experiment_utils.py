@@ -142,7 +142,7 @@ class SetupPostprocessing(object):
 
         if debugging:
             gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, title=title + ' before interpolation\n')
+                                title=title + ' before interpolation\n')
 
         ortho_matrix = self.update_coords(array_shape=(nbz, nby, nbx), tilt_angle=self.tilt_angle,
                                           pixel_x=self.pixel_x, pixel_y=self.pixel_y)
@@ -169,7 +169,7 @@ class SetupPostprocessing(object):
 
         if debugging:
             gu.multislices_plot(abs(detector_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, title=title + ' interpolated in detector frame\n')
+                                title=title + ' interpolated in detector frame\n')
 
         return detector_obj
 
@@ -204,7 +204,7 @@ class SetupPostprocessing(object):
 
         if debugging:
             gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, title=title+' in detector frame')
+                                title=title+' in detector frame')
 
         tilt_sign = np.sign(self.tilt_angle)
         wavelength = 12.398 * 1e-7 / self.energy  # in m
@@ -268,7 +268,7 @@ class SetupPostprocessing(object):
 
         if debugging:
             gu.multislices_plot(abs(ortho_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                invert_yaxis=True, title=title+' in the orthogonal laboratory frame')
+                                title=title+' in the orthogonal laboratory frame')
         return ortho_obj, voxel
 
     def update_coords(self, array_shape, tilt_angle, pixel_x, pixel_y):
