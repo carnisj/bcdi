@@ -108,8 +108,7 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir, filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
 amp = npzfile['amp']
-gu.multislices_plot(amp, sum_frames=False, plot_colorbar=False, vmin=0, vmax=1, invert_yaxis=True, cmap=my_cmap,
-                    title='Input amplitude')
+gu.multislices_plot(amp, sum_frames=False, plot_colorbar=False, vmin=0, vmax=1, cmap=my_cmap, title='Input amplitude')
 
 #################################
 # pad data to the original size #
@@ -157,8 +156,7 @@ else:
 
 if debug and not flat_phase:
     gu.multislices_plot(phase, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
-                        vmin=-phase_range, vmax=phase_range,
-                        invert_yaxis=True, cmap=my_cmap, title='Phase before wrapping\n')
+                        vmin=-phase_range, vmax=phase_range, cmap=my_cmap, title='Phase before wrapping\n')
 
 phase = pru.wrap(phase, start_angle=-np.pi, range_angle=2*np.pi)
 
@@ -192,19 +190,17 @@ bulk[np.nonzero(bulk)] = 1
 
 if debug and not flat_phase:
     gu.multislices_plot(surface, sum_frames=False, plot_colorbar=False, width_z=200, width_y=200, width_x=200,
-                        vmin=0, vmax=1, invert_yaxis=True, cmap=my_cmap, title='surface')
+                        vmin=0, vmax=1, cmap=my_cmap, title='surface')
 
     surface = np.multiply(surface, strain)
 
     gu.multislices_plot(surface, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
-                        vmin=-strain_range, vmax=strain_range, invert_yaxis=True, cmap=my_cmap, title='surface strain')
+                        vmin=-strain_range, vmax=strain_range, cmap=my_cmap, title='surface strain')
 
-    gu.multislices_plot(support, sum_frames=True, plot_colorbar=False, invert_yaxis=True, cmap=my_cmap,
-                        title='Orthogonal support\n')
+    gu.multislices_plot(support, sum_frames=True, plot_colorbar=False, cmap=my_cmap, title='Orthogonal support\n')
 
     gu.multislices_plot(phase, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
-                        vmin=-phase_range, vmax=phase_range, invert_yaxis=True, cmap=my_cmap,
-                        title='Orthogonal phase')
+                        vmin=-phase_range, vmax=phase_range, cmap=my_cmap, title='Orthogonal phase')
 
     strain[bulk == 0] = 0  # for easier visualization
     if save_fig:
@@ -221,8 +217,7 @@ if debug and not flat_phase:
                        tuple_fieldnames=('amp', 'bulk', 'phase', 'strain'), amplitude_threshold=0.01)
 
     gu.multislices_plot(strain, sum_frames=False, plot_colorbar=True, width_z=200, width_y=200, width_x=200,
-                        vmin=-strain_range, vmax=strain_range, invert_yaxis=True, cmap=my_cmap,
-                        title='strain')
+                        vmin=-strain_range, vmax=strain_range, cmap=my_cmap, title='strain')
     if save_fig:
         plt.savefig(datadir + 'S' + str(scan) + '_strain_' + str('{:.0e}'.format(photon_number)) + comment + '.png')
 
@@ -360,13 +355,13 @@ gc.collect()
 obj = obj.reshape((nz_interp, ny_interp, nx_interp)).astype(original_obj.dtype)
 
 if debug:
-    gu.multislices_plot(abs(obj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
+    gu.multislices_plot(abs(obj), sum_frames=True, cmap=my_cmap,
                         title='Orthogonal support interpolated for \npadding & detector distance change compensation\n')
     if orthogonal_frame:
         data = fftshift(abs(fftn(original_obj)) ** 2)
         data = data / data.sum() * photon_number  # convert into photon number
         gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5,
-                            invert_yaxis=False, cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
+                            cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
                             title='FFT before padding & detector distance change\n')
         del original_obj, data
         gc.collect()
@@ -383,7 +378,7 @@ if not orthogonal_frame:
         original_obj = setup.detector_frame(obj=original_obj, voxelsize=voxel_size, debugging=debug,
                                             title='Original object')
         data = fftshift(abs(fftn(original_obj)) ** 2)
-        gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
+        gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=-5,
                             cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
                             title='FFT before padding & detector distance change\n')
         del original_obj, data
@@ -418,8 +413,7 @@ comment = comment + "_pad_" + str(nz) + "," + str(ny) + "," + str(nx)
 del obj
 gc.collect()
 
-gu.multislices_plot(abs(newobj), sum_frames=True, invert_yaxis=True, cmap=my_cmap,
-                    title='Support before FFT calculation')
+gu.multislices_plot(abs(newobj), sum_frames=True, cmap=my_cmap, title='Support before FFT calculation')
 if save_fig:
     plt.savefig(datadir + 'S' + str(scan) + '_support_before_FFT' + comment + '_sum.png')
 
@@ -433,7 +427,7 @@ newobj[abs(newobj) < support_threshold] = 0
 # calculate the diffraction pattern #
 #####################################
 data = fftshift(abs(fftn(newobj))**2)
-gu.multislices_plot(data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
+gu.multislices_plot(data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5,
                     cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
                     title='FFT on the padded object\n')
 del newobj
@@ -464,7 +458,7 @@ if (sdd_change_mode == 'reciprocal_space') and (original_sdd != simulated_sdd):
 
     simu_data = simu_data.reshape((nz, ny, nx)).astype(data.dtype)
 
-    gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
+    gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5,
                         cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
                         title='FFT for simulated detector distance\n')
 else:
@@ -487,7 +481,7 @@ print('Number of pixels filled with non-zero intensity= ', filled_pixels)
 del temp_data
 gc.collect()
 
-gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5, invert_yaxis=False,
+gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-5,
                     cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT converted into photons\n')
 if save_fig:
     plt.savefig(datadir + 'S' + str(scan) + '_diff_float_' + str('{:.0e}'.format(photon_number))+comment + '_sum.png')
@@ -510,11 +504,11 @@ if set_gap:
 else:
     comment = comment + "_nogap"
 
-gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1, invert_yaxis=False,
+gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1,
                     cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='FFT after rounding')
 
 myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=True,  scale='log', plot_colorbar=True, vmin=-1,
-                                  invert_yaxis=False, cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
+                                  cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
                                   title='Masked intensity')
 myfig.text(0.60, 0.30, "Pad size =" + str(pad_size), size=20)
 if save_fig:
@@ -564,12 +558,11 @@ if save_data:
 #####################################
 plt.ioff()
 if debug:
-    gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=False, invert_yaxis=False,
-                        cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='Mask')
+    gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=False, cmap=my_cmap, reciprocal_space=True,
+                        is_orthogonal=False, title='Mask')
 
 myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=False,  scale='log', plot_colorbar=True, vmin=-1,
-                                  invert_yaxis=False, cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
-                                  title='Masked intensity')
+                                  cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='Masked intensity')
 myfig.text(0.60, 0.35, "Pad size =" + str(pad_size), size=20)
 myfig.text(0.60, 0.30, "Crop size =" + str(crop_size), size=20)
 myfig.text(0.60, 0.25, "Filled pixels =" + str(filled_pixels), size=20)
@@ -583,8 +576,7 @@ if save_fig:
     myfig.savefig(datadir + 'S' + str(scan) + '_diff_' + str('{:.0e}'.format(photon_number))+comment + '_center.png')
 
 myfig, _, _ = gu.multislices_plot(simu_data, sum_frames=True,  scale='log', plot_colorbar=True, vmin=-1,
-                                  invert_yaxis=False, cmap=my_cmap, reciprocal_space=True, is_orthogonal=False,
-                                  title='Masked intensity')
+                                  cmap=my_cmap, reciprocal_space=True, is_orthogonal=False, title='Masked intensity')
 myfig.text(0.60, 0.35, "Pad size =" + str(pad_size), size=20)
 myfig.text(0.60, 0.30, "Crop size =" + str(crop_size), size=20)
 myfig.text(0.60, 0.25, "Filled pixels =" + str(filled_pixels), size=20)
