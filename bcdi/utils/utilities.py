@@ -16,17 +16,23 @@ def find_nearest(original_array, array_values):
     Find the indices where original_array is nearest to array_values.
 
     :param original_array: a 1D array where to look for the nearest values
-    :param array_values: a 1D array of numbers
-    :return: indices from original_array nearest to values, of length len(array_values)
+    :param array_values: a number or a 1D array of numbers
+    :return: index or indices from original_array nearest to values, of length len(array_values)
     """
     original_array, array_values = np.asarray(original_array), np.asarray(array_values)
 
-    if original_array.ndim != 1 or array_values.ndim != 1:
-        raise ValueError('original_array and array_values are expected to be 1D arrays')
-    nb_values = len(array_values)
-    nearest_index = np.zeros(nb_values, dtype=int)
-    for idx in range(nb_values):
-        nearest_index[idx] = (np.abs(original_array - array_values[idx])).argmin()
+    if original_array.ndim != 1:
+        raise ValueError('original_array should be 1D')
+    if array_values.ndim > 1:
+        raise ValueError('array_values should be a number or a 1D array')
+    if array_values.ndim == 0:
+        nearest_index = (np.abs(original_array - array_values)).argmin()
+    else:
+        nb_values = len(array_values)
+        nearest_index = np.zeros(nb_values, dtype=int)
+        for idx in range(nb_values):
+            nearest_index[idx] = (np.abs(original_array - array_values[idx])).argmin()
+
     return nearest_index
 
 
