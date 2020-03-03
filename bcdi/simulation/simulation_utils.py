@@ -7,10 +7,9 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-from matplotlib import pyplot as plt
 import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
-import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 
 
 def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param):
@@ -33,9 +32,10 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param):
     wavelength = 12.398 * 1e2 / energy  # in nm, energy in eV
     distance = sdd * 1e9  # convert to nm
     lambdaz = wavelength * distance
-    numz, numy, numx = (roi[3] - roi[2]) / detector.binning[2], \
-                       (roi[1] - roi[0]) / detector.binning[1], \
-                       (roi[3] - roi[2]) / detector.binning[2]  # for P10 data were the rotation is around y vertical
+    numz, numy, numx = np.floor((roi[3] - roi[2]) / detector.binning[2]),\
+        np.floor((roi[1] - roi[0]) / detector.binning[1]), \
+        np.floor((roi[3] - roi[2]) / detector.binning[2])
+    # for P10 data the rotation is around y vertical, hence gridded data range & binning in z and x are identical
 
     ######################
     # calculate q values #
@@ -63,12 +63,30 @@ def fcc_lattice(q_values, unitcell_param):
     :param unitcell_param:
     :return:
     """
+    lattice_pos = []  # position of the pixels corresponding to hkl reflections
+    peaks = []  # list of hkl fitting the data range
+    print('fcc unit cell of parameter a =', unitcell_param, 'nm')
+    recipr_param = 2*np.pi/unitcell_param  # reciprocal lattice is simple cubic of parameter 2*pi/unitcell_param
+    print('reciprocal unit cell of parameter 2*pi/a =', recipr_param, '1/nm')
     qx = q_values[0]
     qz = q_values[1]
     qy = q_values[2]
-    numz, numy, numx = qx.shape, qz.shape, qy.shape,
     q_max = np.sqrt(abs(qx).max()**2+abs(qz).max()**2+abs(qy).max()**2)
 
     # calculate the maximum Miller indices which fit into q_max
     h_max = int(np.floor(q_max * unitcell_param / (2 * np.pi)))
-    print(h_max)
+    hkl = np.arange(start=-h_max, stop=h_max+1, step=1)
+    for h in hkl:  # h downstream along qx
+        for l in hkl:  # k outboard along qz
+            for k in hkl:  # l vertical up along qy
+                struct_factor = np.real(1 + np.exp(1j*np.pi*(h+k)) + np.exp(1j*np.pi*(h+l)) + np.exp(1j*np.pi*(k+l)))
+                q_bragg = np.sqrt((h * recipr_param) ** 2 + (k * recipr_param) ** 2 + (l * recipr_param) ** 2)
+                if (h == 0) and (k == 0) and (l == 0):
+                    continue  # go to the next iteration of the loop, the code below is not evaluated
+                if (struct_factor != 0) and (q_bragg < q_max):  # find the position of the pixel nearest to q_bragg
+                    pix_h = util.find_nearest(original_array=qx, array_values=h * recipr_param)
+                    pix_k = util.find_nearest(original_array=qy, array_values=k * recipr_param)
+                    pix_l = util.find_nearest(original_array=qz, array_values=l * recipr_param)
+                    lattice_pos.append([pix_h, pix_l, pix_k])  # CXI convention: downstream, vertical up, outboard
+                    peaks.append([h, l, k])  # CXI convention: downstream, vertical up, outboard
+    return lattice_pos, peaks
