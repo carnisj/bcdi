@@ -35,10 +35,9 @@ unitcell_param = 22.4  # in nm, unit cell parameter
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [0, 90, 0, 90, 0, 90]  # in degrees, ranges to span for the rotation around qx downstream,
+angles_ranges = [0, 91, 0, 91, 0, 91]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
-angular_step = 2  # in degrees
-angles = [1, 20, 0]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
+angular_step = 18  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -89,6 +88,12 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the dat
                                        filetypes=[("NPZ", "*.npz")])
 data = np.load(file_path)['data']
 
+#########################
+# define the peak shape #
+#########################
+peak_shape = pu.gaussian_kernel(ndim=3, kernel_length=kernel_length, sigma=3, debugging=False)
+maxpeak = peak_shape.max()
+
 #####################################
 # define the list of angles to test #
 #####################################
@@ -96,7 +101,9 @@ angles_qx = np.arange(start=angles_ranges[0], stop=angles_ranges[1], step=angula
 angles_qz = np.arange(start=angles_ranges[2], stop=angles_ranges[3], step=angular_step)
 angles_qy = np.arange(start=angles_ranges[4], stop=angles_ranges[5], step=angular_step)
 
-cross_corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy)))
+print('Number of angles to test: ', len(angles_qx)*len(angles_qz)*len(angles_qy))
+corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy)))
+struct_array = np.zeros((nbz, nby, nbx))
 
 for idz, alpha in enumerate(angles_qx):
     for idy, beta in enumerate(angles_qz):
@@ -105,20 +112,18 @@ for idz, alpha in enumerate(angles_qx):
             ######################
             # create the lattice #
             ######################
-            pivot, q_values, lattice, peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
-                                                           detector=detector, unitcell=unitcell,
-                                                           unitcell_param=unitcell_param, euler_angles=angles)
+            pivot, _, lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam, detector=detector,
+                                                unitcell=unitcell, unitcell_param=unitcell_param,
+                                                euler_angles=[alpha, beta, gamma])
             # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
-            struct_array = np.zeros((nbz, nby, nbx))
+            struct_array[:] = 0
             for [piz, piy, pix] in lattice:
                 struct_array[piz, piy, pix] = 1
 
             ##############################################
-            # convolute the lattice with a 3D peak shape #
+            # convolute the lattice with the 3D peak shape #
             ##############################################
             # since we have a small list of peaks, do not use convolution (too slow) but for loop
-            peak_shape = pu.gaussian_kernel(ndim=3, kernel_length=kernel_length, sigma=3, debugging=False)
-            maxpeak = peak_shape.max()
 
             for [piz, piy, pix] in lattice:
                 startz1, startz2 = max(0, int(piz-kernel_length//2)), -min(0, int(piz-kernel_length//2))
@@ -138,22 +143,27 @@ for idz, alpha in enumerate(angles_qx):
                          pivot[1] - kernel_length // 2:pivot[1] + kernel_length // 2 + 1,
                          pivot[2] - kernel_length // 2:pivot[2] + kernel_length // 2 + 1] = 0
 
-            ##########################################################
-            # calculate the cross-correlation with experimental data #
-            ##########################################################
-            # Do an array flipped convolution, which is a correlation.
-            cross_corr[idz, idy, idx] = signal.fftconvolve(data, struct_array[::-1, ::-1, ::-1], mode='same').sum()
+            ####################################################
+            # calculate the correlation with experimental data #
+            ####################################################
+            corr[idz, idy, idx] = np.multiply(struct_array, data).sum()
+            # print(alpha, beta, gamma, corr[idz, idy, idx])
 
 ###############
 # plot result #
 ###############
-vmin = cross_corr.min()
-vmax = cross_corr.max()
-fig, _, _ = gu.multislices_plot(cross_corr, sum_frames=True, title='Cross-correlation', vmin=vmin,
-                                vmax=vmax, plot_colorbar=True, cmap=my_cmap, is_orthogonal=True,
-                                reciprocal_space=False)
+vmin = corr.min()
+vmax = corr.max()
+piz, piy, pix = np.unravel_index(abs(corr).argmax(), corr.shape)
+print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', angles_qx[piz], angles_qz[piy], angles_qy[pix])
+
+fig, _, _ = gu.contour_slices(corr, (angles_qx, angles_qz, angles_qy), sum_frames=False,
+                              title='Correlation', slice_position=[piz, piy, pix], plot_colorbar=True, cmap=my_cmap,
+                              levels=np.linspace(vmin, vmax, 10, endpoint=False), is_orthogonal=True,
+                              reciprocal_space=True)
 fig.text(0.60, 0.25, "Kernel size = " + str(kernel_length) + " pixels", size=12)
 plt.pause(0.1)
 plt.savefig(savedir + 'cross_corr.png')
+
 plt.ioff()
 plt.show()
