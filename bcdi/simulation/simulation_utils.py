@@ -13,7 +13,7 @@ sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.utils.utilities as util
 
 
-def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
+def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose=False):
     """
     Calculate Bragg peaks positions using experimental parameters for a BCC unit cell.
 
@@ -21,6 +21,7 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
     :param unitcell_param: the unit cell parameter of the FCC lattice
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
+    :param verbose: True to have printed comments
     :return: a list of lists of pixels positions for each Bragg peak.
     """
     lattice_pos = []  # position of the pixels corresponding to hkl reflections
@@ -29,9 +30,10 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
     rotation = Rotation.from_euler('xzy', euler_angles, degrees=True)
     pivot_z, pivot_y, pivot_x = pivot  # downstream, vertical up, outboard
 
-    print('fcc unit cell of parameter a =', unitcell_param, 'nm')
     recipr_param = 2*np.pi/unitcell_param  # reciprocal lattice is simple cubic of parameter 2*pi/unitcell_param
-    print('reciprocal unit cell of parameter 2*pi/a =', str('{:.4f}'.format(recipr_param)), '1/nm')
+    if verbose:
+        print('fcc unit cell of parameter a =', unitcell_param, 'nm')
+        print('reciprocal unit cell of parameter 2*pi/a =', str('{:.4f}'.format(recipr_param)), '1/nm')
 
     qx = q_values[0]  # along z downstream in CXI convention
     qz = q_values[1]  # along y vertical up in CXI convention
@@ -61,8 +63,6 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
                     pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
                     pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
 
-                    if h == 0 and k == 0 and l == 0:
-                        print('')
                     # rotate the vector using Euler angles and the pivot point while compensating padding
                     offset_h, offset_l, offset_k = pix_h-(pivot_z+leftpad_z), pix_l-(pivot_y+leftpad_y), \
                         pix_k-(pivot_x+leftpad_x)
@@ -87,7 +87,7 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
     return lattice_pos, peaks
 
 
-def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
+def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose=False):
     """
     Calculate Bragg peaks positions using experimental parameters for a simple cubic unit cell.
 
@@ -95,6 +95,7 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
     :param unitcell_param: the unit cell parameter of the FCC lattice
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
+    :param verbose: True to have printed comments
     :return: a list of lists of pixels positions for each Bragg peak.
     """
     lattice_pos = []  # position of the pixels corresponding to hkl reflections
@@ -103,9 +104,10 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
     rotation = Rotation.from_euler('xzy', euler_angles, degrees=True)
     pivot_z, pivot_y, pivot_x = pivot  # downstream, vertical up, outboard
 
-    print('fcc unit cell of parameter a =', unitcell_param, 'nm')
     recipr_param = 2*np.pi/unitcell_param  # reciprocal lattice is simple cubic of parameter 2*pi/unitcell_param
-    print('reciprocal unit cell of parameter 2*pi/a =', str('{:.4f}'.format(recipr_param)), '1/nm')
+    if verbose:
+        print('fcc unit cell of parameter a =', unitcell_param, 'nm')
+        print('reciprocal unit cell of parameter 2*pi/a =', str('{:.4f}'.format(recipr_param)), '1/nm')
 
     qx = q_values[0]  # along z downstream in CXI convention
     qz = q_values[1]  # along y vertical up in CXI convention
@@ -132,8 +134,6 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
                 pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
                 pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
 
-                if h == 0 and k == 0 and l == 0:
-                    print('')
                 # rotate the vector using Euler angles and the pivot point while compensating padding
                 offset_h, offset_l, offset_k = pix_h-(pivot_z+leftpad_z), pix_l-(pivot_y+leftpad_y), \
                     pix_k-(pivot_x+leftpad_x)
@@ -158,7 +158,7 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
     return lattice_pos, peaks
 
 
-def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
+def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose=False):
     """
     Calculate Bragg peaks positions using experimental parameters for a FCC unit cell.
 
@@ -166,6 +166,7 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
     :param unitcell_param: the unit cell parameter of the FCC lattice
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
+    :param verbose: True to have printed comments
     :return: a list of lists of pixels positions for each Bragg peak.
     """
     lattice_pos = []  # position of the pixels corresponding to hkl reflections
@@ -174,9 +175,10 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
     rotation = Rotation.from_euler('xzy', euler_angles, degrees=True)
     pivot_z, pivot_y, pivot_x = pivot  # downstream, vertical up, outboard
 
-    print('fcc unit cell of parameter a =', unitcell_param, 'nm')
     recipr_param = 2*np.pi/unitcell_param  # reciprocal lattice is simple cubic of parameter 2*pi/unitcell_param
-    print('reciprocal unit cell of parameter 2*pi/a =', str('{:.4f}'.format(recipr_param)), '1/nm')
+    if verbose:
+        print('fcc unit cell of parameter a =', unitcell_param, 'nm')
+        print('reciprocal unit cell of parameter 2*pi/a =', str('{:.4f}'.format(recipr_param)), '1/nm')
 
     qx = q_values[0]  # along z downstream in CXI convention
     qz = q_values[1]  # along y vertical up in CXI convention
@@ -205,8 +207,6 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
                     pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
                     pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
 
-                    if h == 0 and k == 0 and l == 0:
-                        print('')
                     # rotate the vector using Euler angles and the pivot point while compensating padding
                     offset_h, offset_l, offset_k = pix_h-(pivot_z+leftpad_z), pix_l-(pivot_y+leftpad_y), \
                         pix_k-(pivot_x+leftpad_x)
