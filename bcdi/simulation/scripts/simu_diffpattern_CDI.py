@@ -30,7 +30,7 @@ unitcell_param = 22.4  # in nm, unit cell parameter
 ######################
 # sample orientation #
 ######################
-angles = [0, 30, 0]  # in degrees, rotation around z downstream, y vertical up and x outboard respectively
+angles = [0, 0, 0]  # in degrees, rotation around z downstream, y vertical up and x outboard respectively
 #######################
 # beamline parameters #
 #######################
@@ -121,11 +121,11 @@ struct_array[directbeam_z-2:directbeam_z+3, directbeam_y-2:directbeam_y+3, direc
 fig, _, _ = gu.multislices_plot(struct_array, sum_frames=False, title='Simulated diffraction pattern', vmin=0,
                                 vmax=maxpeak, slice_position=[directbeam_z, directbeam_y, directbeam_x],
                                 plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
-fig.text(0.60, 0.30, "Direct beam (Qx,Qz,Qy) =" + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
+fig.text(0.60, 0.30, "Direct beam (Qx,Qz,Qy) = " + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
          size=12)
-fig.text(0.60, 0.25, "Energy =" + str(energy/1000) + "keV", size=12)
-fig.text(0.60, 0.20, "SDD =" + str(sdd) + "m", size=12)
-fig.text(0.60, 0.15, unitcell + "unit cell of parameter" + str(unitcell_param) + "nm", size=12)
+fig.text(0.60, 0.25, "Energy = " + str(energy/1000) + " keV", size=12)
+fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
+fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
 plt.pause(0.1)
 plt.savefig(savedir + 'central_slice_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
             str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(angles[0]) + '_' + str(angles[1]) + '_' +
@@ -134,11 +134,11 @@ plt.savefig(savedir + 'central_slice_' + str(nbz) + '_' + str(nby) + '_' + str(n
 fig, _, _ = gu.multislices_plot(struct_array, sum_frames=True, title='Simulated diffraction pattern', vmin=0,
                                 vmax=maxpeak, plot_colorbar=True, cmap=my_cmap, is_orthogonal=True,
                                 reciprocal_space=True)
-fig.text(0.60, 0.30, "Direct beam (Qx,Qz,Qy) =" + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
+fig.text(0.60, 0.30, "Direct beam (Qx,Qz,Qy) = " + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
          size=12)
-fig.text(0.60, 0.25, "Energy =" + str(energy/1000) + "keV", size=12)
-fig.text(0.60, 0.20, "SDD =" + str(sdd) + "m", size=12)
-fig.text(0.60, 0.15, unitcell + "unit cell of parameter" + str(unitcell_param) + "nm", size=12)
+fig.text(0.60, 0.25, "Energy = " + str(energy/1000) + " keV", size=12)
+fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
+fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
 plt.pause(0.1)
 plt.savefig(savedir + 'sum_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
             str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(angles[0]) + '_' + str(angles[1]) + '_' +
