@@ -24,7 +24,7 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     :param unitcell: string, unit cell e.g. 'fcc'
     :param unitcell_param: number or tuple for unit cell parameters
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
-    :return: a list of lists of pixels positions for each Bragg peak.
+    :return: pivot position, q values, a list of pixels positions for each Bragg peak, Miller indices.
     """
     pixel_x = detector.pixelsize_x * 1e9  # convert to nm, pixel size in the horizontal direction
     pixel_y = detector.pixelsize_y * 1e9  # convert to nm, pixel size in the vertical direction
@@ -63,7 +63,7 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     if unitcell == 'fcc':
         mylattice, peaks = fcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
                                        pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
-        return (pivot_z, pivot_y, pivot_x), mylattice, peaks
+        return (pivot_z, pivot_y, pivot_x), (qx, qz, qy), mylattice, peaks
 
 
 def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
