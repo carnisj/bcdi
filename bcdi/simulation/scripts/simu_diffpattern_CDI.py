@@ -30,12 +30,12 @@ unitcell_param = 22.4  # in nm, unit cell parameter
 ######################
 # sample orientation #
 ######################
-angles = [0, 0, 0]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
+angles = [0, 20, 0]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
 #######################
 # beamline parameters #
 #######################
 sdd = 4.95  # in m, sample to detector distance
-energy = 13000  # in ev X-ray energy
+energy = 8700  # in ev X-ray energy
 ##################
 # detector setup #
 ##################
@@ -129,7 +129,7 @@ plt.savefig(savedir + 'central_slice_' + str(nbz) + '_' + str(nby) + '_' + str(n
 fig, _, _ = gu.contour_slices(struct_array, (qx, qz, qy), sum_frames=False, title='Simulated diffraction pattern',
                               slice_position=[pivot[0], pivot[1], pivot[2]],
                               levels=np.linspace(0, struct_array.max(), 10, endpoint=False),
-                              plot_colorbar=True, scale='linear', is_orthogonal=True, reciprocal_space=True)
+                              plot_colorbar=False, scale='linear', is_orthogonal=True, reciprocal_space=True)
 fig.text(0.60, 0.25, "Energy = " + str(energy/1000) + " keV", size=12)
 fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
 fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
@@ -158,7 +158,7 @@ if debug:
 
     fig, _, _ = gu.contour_slices(struct_array, (qx, qz, qy), sum_frames=True, title='Simulated diffraction pattern',
                                   levels=np.linspace(0, struct_array.max(), 10, endpoint=False),
-                                  plot_colorbar=True, scale='linear', is_orthogonal=True, reciprocal_space=True)
+                                  plot_colorbar=False, scale='linear', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.60, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
     fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
     fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
