@@ -7,25 +7,28 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
+from scipy.spatial.transform import Rotation
 import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.utils.utilities as util
 
 
-def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param):
+def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_angles=(0, 0, 0)):
     """
+    Calculate Bragg peaks positions using experimental parameters and unit cell.
 
-
-    :param energy:
-    :param sdd:
-    :param direct_beam:
-    :param detector:
-    :param unitcell:
-    :param unitcell_param:
-    :return:
+    :param energy: X-ray energy in eV
+    :param sdd: sample to detector distance in m
+    :param direct_beam: direct beam position on the detector in pixels (vertical, horizontal)
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param unitcell: string, unit cell e.g. 'fcc'
+    :param unitcell_param: number or tuple for unit cell parameters
+    :param euler_angles: angles for rotating the unit cell
+    :return: a list of lists of pixels positions for each Bragg peak.
     """
     pixel_x = detector.pixelsize_x * 1e9  # convert to nm, pixel size in the horizontal direction
     pixel_y = detector.pixelsize_y * 1e9  # convert to nm, pixel size in the vertical direction
+    directbeam_z = int((direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
     directbeam_y = int((direct_beam[0] - detector.roi[0]) / detector.binning[1])  # vertical
     directbeam_x = int((direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
     roi = detector.roi  # before binning
@@ -52,41 +55,76 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param):
     qy = np.arange(-(numx - directbeam_x), -(numx - directbeam_x) + numx, 1) * dqy  # outboard opposite to detector X
 
     if unitcell == 'fcc':
-        return fcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param)
+        return fcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+                           directbeam=(directbeam_z, directbeam_y, directbeam_x), euler_angles=euler_angles)
 
 
-def fcc_lattice(q_values, unitcell_param):
+def fcc_lattice(q_values, unitcell_param, directbeam, euler_angles=(0, 0, 0)):
     """
+    Calculate Bragg peaks positions using experimental parameters for a FCC unit cell.
 
-
-    :param q_values:
-    :param unitcell_param:
-    :return:
+    :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look for Bragg peaks
+    :param unitcell_param: the unit cell parameter of the FCC lattice
+    :param directbeam:  tuple, the pivot point position in pixels for the rotation
+    :param euler_angles: euler_angles: angles for rotating the unit cell
+    :return: a list of lists of pixels positions for each Bragg peak.
     """
     lattice_pos = []  # position of the pixels corresponding to hkl reflections
     peaks = []  # list of hkl fitting the data range
+    # define the rotation using Euler angles with the direct beam as origin
+    rotation = Rotation.from_euler('zyx', euler_angles, degrees=True)
+    directbeam_z, directbeam_y, directbeam_x = directbeam  # downstream, vertical up, outboard
+
     print('fcc unit cell of parameter a =', unitcell_param, 'nm')
     recipr_param = 2*np.pi/unitcell_param  # reciprocal lattice is simple cubic of parameter 2*pi/unitcell_param
-    print('reciprocal unit cell of parameter 2*pi/a =', recipr_param, '1/nm')
-    qx = q_values[0]
-    qz = q_values[1]
-    qy = q_values[2]
+    print('reciprocal unit cell of parameter 2*pi/a =', str('{:.4f}'.format(recipr_param)), '1/nm')
+
+    qx = q_values[0]  # along z downstream in CXI convention
+    qz = q_values[1]  # along y vertical up in CXI convention
+    qy = q_values[2]  # along x outboard in CXI convention
     q_max = np.sqrt(abs(qx).max()**2+abs(qz).max()**2+abs(qy).max()**2)
+    numz, numy, numx = len(qx), len(qz), len(qy)
 
     # calculate the maximum Miller indices which fit into q_max
     h_max = int(np.floor(q_max * unitcell_param / (2 * np.pi)))
+    print('h_max=', h_max)
     hkl = np.arange(start=-h_max, stop=h_max+1, step=1)
+
+    # pad q arrays in order to find the position in pixels of each hkl within the array
+    # otherwise it finds the first or last index but this can be far from the real peak position
+    leftpad_z, leftpad_y, leftpad_x = numz, numy, numx  # offset of indices to the left
+    pad_qx = qx[0] - leftpad_z * (qx[1] - qx[0]) + np.arange(3*numz) * (qx[1] - qx[0])
+    pad_qz = qz[0] - leftpad_y * (qz[1] - qz[0]) + np.arange(3*numy) * (qz[1] - qz[0])
+    pad_qy = qy[0] - leftpad_x * (qy[1] - qy[0]) + np.arange(3*numx) * (qy[1] - qy[0])
+
     for h in hkl:  # h downstream along qx
-        for l in hkl:  # k outboard along qz
-            for k in hkl:  # l vertical up along qy
+        for k in hkl:  # k outboard along qy
+            for l in hkl:  # l vertical up along qz
                 struct_factor = np.real(1 + np.exp(1j*np.pi*(h+k)) + np.exp(1j*np.pi*(h+l)) + np.exp(1j*np.pi*(k+l)))
-                q_bragg = np.sqrt((h * recipr_param) ** 2 + (k * recipr_param) ** 2 + (l * recipr_param) ** 2)
-                if (h == 0) and (k == 0) and (l == 0):
-                    continue  # go to the next iteration of the loop, the code below is not evaluated
-                if (struct_factor != 0) and (q_bragg < q_max):  # find the position of the pixel nearest to q_bragg
-                    pix_h = util.find_nearest(original_array=qx, array_values=h * recipr_param)
-                    pix_k = util.find_nearest(original_array=qy, array_values=k * recipr_param)
-                    pix_l = util.find_nearest(original_array=qz, array_values=l * recipr_param)
-                    lattice_pos.append([pix_h, pix_l, pix_k])  # CXI convention: downstream, vertical up, outboard
-                    peaks.append([h, l, k])  # CXI convention: downstream, vertical up, outboard
+                if struct_factor != 0:  # find the position of the pixel nearest to q_bragg
+                    pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param)
+                    pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
+                    pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
+
+                    # rotate the vector using Euler angles with the direct beam as origin while compensating padding
+                    offset_h, offset_k, offset_l = pix_h-(directbeam_z+leftpad_z), pix_k-(directbeam_x+leftpad_x),\
+                        pix_l-(directbeam_y+leftpad_y)
+
+                    rot_h, rot_k, rot_l = rotation.apply([offset_h, offset_k, offset_l])
+                    # coordinates order for Rotation(): [qx, qy, qz]
+
+                    # shift back the origin to (0, 0, 0)
+                    rot_h, rot_k, rot_l = np.rint(rot_h+directbeam_z+leftpad_z).astype(int),\
+                        np.rint(rot_k+directbeam_x+leftpad_x).astype(int),\
+                        np.rint(rot_l+directbeam_y+leftpad_y).astype(int)
+
+                    # calculate indices in the original q values coordinates before padding
+                    rot_h, rot_k, rot_l = rot_h - leftpad_z, rot_k - leftpad_x, rot_l - leftpad_y
+
+                    # check if the rotated peak is in the non-padded data range
+                    if (0 <= rot_h < numz) and (0 <= rot_l < numy) and (0 <= rot_k < numx):
+                        # use here CXI convention: downstream, vertical up, outboard
+                        lattice_pos.append([rot_h, rot_l, rot_k])
+                        peaks.append([h, l, k])
+
     return lattice_pos, peaks
