@@ -99,7 +99,7 @@ for [piz, piy, pix] in lattice:
     startx1, startx2 = max(0, int(pix-kernel_length//2)), -min(0, int(pix-kernel_length//2))
     stopx1, stopx2 = min(nbx-1, int(pix+kernel_length//2)), kernel_length + min(0, int(nbx-1 - (pix+kernel_length//2)))
     struct_array[startz1:stopz1+1, starty1:stopy1+1, startx1:stopx1+1] =\
-    peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
+        peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
 
 ###############
 # plot result #
@@ -121,16 +121,28 @@ struct_array[directbeam_z-2:directbeam_z+3, directbeam_y-2:directbeam_y+3, direc
 fig, _, _ = gu.multislices_plot(struct_array, sum_frames=False, title='Simulated diffraction pattern', vmin=0,
                                 vmax=maxpeak, slice_position=[directbeam_z, directbeam_y, directbeam_x],
                                 plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
-fig.text(0.60, 0.20, "Direct beam (Qx,Qz,Qy) =" + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
+fig.text(0.60, 0.30, "Direct beam (Qx,Qz,Qy) =" + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
          size=12)
+fig.text(0.60, 0.25, "Energy =" + str(energy/1000) + "keV", size=12)
+fig.text(0.60, 0.20, "SDD =" + str(sdd) + "m", size=12)
+fig.text(0.60, 0.15, unitcell + "unit cell of parameter" + str(unitcell_param) + "nm", size=12)
 plt.pause(0.1)
+plt.savefig(savedir + 'central_slice_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
+            str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(angles[0]) + '_' + str(angles[1]) + '_' +
+            str(angles[2]) + '.png')
 
 fig, _, _ = gu.multislices_plot(struct_array, sum_frames=True, title='Simulated diffraction pattern', vmin=0,
                                 vmax=maxpeak, plot_colorbar=True, cmap=my_cmap, is_orthogonal=True,
                                 reciprocal_space=True)
-fig.text(0.60, 0.20, "Direct beam (Qx,Qz,Qy) =" + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
+fig.text(0.60, 0.30, "Direct beam (Qx,Qz,Qy) =" + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
          size=12)
+fig.text(0.60, 0.25, "Energy =" + str(energy/1000) + "keV", size=12)
+fig.text(0.60, 0.20, "SDD =" + str(sdd) + "m", size=12)
+fig.text(0.60, 0.15, unitcell + "unit cell of parameter" + str(unitcell_param) + "nm", size=12)
 plt.pause(0.1)
+plt.savefig(savedir + 'sum_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
+            str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(angles[0]) + '_' + str(angles[1]) + '_' +
+            str(angles[2]) + '.png')
 
 plt.ioff()
 plt.show()
