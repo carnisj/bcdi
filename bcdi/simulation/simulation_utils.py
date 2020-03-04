@@ -41,7 +41,6 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
 
     # calculate the maximum Miller indices which fit into q_max
     h_max = int(np.floor(q_max * unitcell_param / (2 * np.pi)))
-    print('h_max=', h_max)
     hkl = np.arange(start=-h_max, stop=h_max+1, step=1)
 
     # pad q arrays in order to find the position in pixels of each hkl within the array
@@ -116,7 +115,6 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
 
     # calculate the maximum Miller indices which fit into q_max
     h_max = int(np.floor(q_max * unitcell_param / (2 * np.pi)))
-    print('h_max=', h_max)
     hkl = np.arange(start=-h_max, stop=h_max+1, step=1)
 
     # pad q arrays in order to find the position in pixels of each hkl within the array
@@ -188,7 +186,6 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
 
     # calculate the maximum Miller indices which fit into q_max
     h_max = int(np.floor(q_max * unitcell_param / (2 * np.pi)))
-    print('h_max=', h_max)
     hkl = np.arange(start=-h_max, stop=h_max+1, step=1)
 
     # pad q arrays in order to find the position in pixels of each hkl within the array
