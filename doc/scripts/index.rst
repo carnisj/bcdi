@@ -300,6 +300,14 @@ realspace_isosurf_cdi.py
 Simulation
 ----------
 
+`domain_orientation.py`:
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/simulation/scripts/domain_orientation.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 `kinematic_sum_forloop.py`:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -325,7 +333,7 @@ simu_diffpattern_BCDI.py
    :language: rst
 
 simu_diffpattern_CDI.py
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/simulation/scripts/simu_diffpattern_CDI.py
    :start-after: helptext
