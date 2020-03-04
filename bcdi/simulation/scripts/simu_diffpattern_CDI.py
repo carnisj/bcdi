@@ -35,14 +35,14 @@ angles = [0, 0, 0]  # in degrees, rotation around qx downstream, qz vertical up 
 # beamline parameters #
 #######################
 sdd = 4.95  # in m, sample to detector distance
-energy = 8700  # in ev X-ray energy
+energy = 13000  # in ev X-ray energy
 ##################
 # detector setup #
 ##################
 detector = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
-direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
+direct_beam = (1195, 1187)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = []  # [direct_beam[0] - 900, direct_beam[0] + 900, direct_beam[1] - 900, direct_beam[1] + 900]
+roi_detector = [direct_beam[0] - 972, direct_beam[0] + 972, direct_beam[1] - 883, direct_beam[1] + 883]
 # [Vstart, Vstop, Hstart, Hstop]
 binning = [4, 4, 4]  # binning of the detector
 ###########
@@ -130,8 +130,6 @@ fig, _, _ = gu.contour_slices(struct_array, (qx, qz, qy), sum_frames=False, titl
                               slice_position=[pivot[0], pivot[1], pivot[2]],
                               levels=np.linspace(0, struct_array.max(), 10, endpoint=False),
                               plot_colorbar=True, scale='linear', is_orthogonal=True, reciprocal_space=True)
-fig.text(0.60, 0.30, "Origin of reciprocal space (Qx,Qz,Qy) = " + str(pivot[0]) + "," + str(pivot[1]) + "," +
-         str(pivot[2]), size=12)
 fig.text(0.60, 0.25, "Energy = " + str(energy/1000) + " keV", size=12)
 fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
 fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
@@ -161,8 +159,6 @@ if debug:
     fig, _, _ = gu.contour_slices(struct_array, (qx, qz, qy), sum_frames=True, title='Simulated diffraction pattern',
                                   levels=np.linspace(0, struct_array.max(), 10, endpoint=False),
                                   plot_colorbar=True, scale='linear', is_orthogonal=True, reciprocal_space=True)
-    fig.text(0.60, 0.30, "Origin of reciprocal space (Qx,Qz,Qy) = " + str(pivot[0]) + "," + str(pivot[1]) + "," +
-             str(pivot[2]), size=12)
     fig.text(0.60, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
     fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
     fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
