@@ -1,3 +1,5 @@
+* Feature: implement simu_diffpattern_CDI to find in 3D the Bragg peaks positions of a mesocrystal 
+
 * Feature: implement fit_1D curve to fit simultaneously ranges of a 1D curve with gaussian lineshapes
 
 * Feature: implement fit_background.py to interactively determine the background in 1D reciprocal space curves
