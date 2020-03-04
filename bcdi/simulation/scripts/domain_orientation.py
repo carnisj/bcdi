@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 from scipy import signal
 import tkinter as tk
 from tkinter import filedialog
+import gc
 import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
@@ -25,7 +26,7 @@ maximize the cross-correlation of the simulated data with experimental data.
 
 Laboratory frame convention (CXI): z downstream, y vertical up, x outboard."""
 
-datadir = "D:/data/P10_August2019/data/gold2_2_00515/pynx/441_486_441_1_4_4/"
+datadir = "D:/data/P10_August2019/data/gold2_2_00515/pynx/441_486_441_1_4_4_masked/"
 savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
 ################
 # sample setup #
@@ -79,14 +80,22 @@ colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
 plt.ion()
 
-##########################
-# load experimental data #
-##########################
+###################################
+# load experimental data and mask #
+###################################
 root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the data to fit",
                                        filetypes=[("NPZ", "*.npz")])
 data = np.load(file_path)['data']
+
+file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the mask",
+                                       filetypes=[("NPZ", "*.npz")])
+mask = np.load(file_path)['mask']
+
+data[np.nonzero(mask)] = 0
+del mask
+gc.collect()
 
 #########################
 # define the peak shape #
