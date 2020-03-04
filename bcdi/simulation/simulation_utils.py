@@ -23,7 +23,7 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     :param detector: the detector object: Class experiment_utils.Detector()
     :param unitcell: string, unit cell e.g. 'fcc'
     :param unitcell_param: number or tuple for unit cell parameters
-    :param euler_angles: angles for rotating the unit cell
+    :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :return: a list of lists of pixels positions for each Bragg peak.
     """
     pixel_x = detector.pixelsize_x * 1e9  # convert to nm, pixel size in the horizontal direction
@@ -66,13 +66,13 @@ def fcc_lattice(q_values, unitcell_param, directbeam, euler_angles=(0, 0, 0)):
     :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look for Bragg peaks
     :param unitcell_param: the unit cell parameter of the FCC lattice
     :param directbeam:  tuple, the pivot point position in pixels for the rotation
-    :param euler_angles: euler_angles: angles for rotating the unit cell
+    :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :return: a list of lists of pixels positions for each Bragg peak.
     """
     lattice_pos = []  # position of the pixels corresponding to hkl reflections
     peaks = []  # list of hkl fitting the data range
     # define the rotation using Euler angles with the direct beam as origin
-    rotation = Rotation.from_euler('zyx', euler_angles, degrees=True)
+    rotation = Rotation.from_euler('xzy', euler_angles, degrees=True)
     directbeam_z, directbeam_y, directbeam_x = directbeam  # downstream, vertical up, outboard
 
     print('fcc unit cell of parameter a =', unitcell_param, 'nm')
@@ -114,12 +114,12 @@ def fcc_lattice(q_values, unitcell_param, directbeam, euler_angles=(0, 0, 0)):
                     # coordinates order for Rotation(): [qx, qy, qz]
 
                     # shift back the origin to (0, 0, 0)
-                    rot_h, rot_k, rot_l = np.rint(rot_h+directbeam_z+leftpad_z).astype(int),\
-                        np.rint(rot_k+directbeam_x+leftpad_x).astype(int),\
-                        np.rint(rot_l+directbeam_y+leftpad_y).astype(int)
+                    rot_h, rot_l, rot_k = np.rint(rot_h+directbeam_z+leftpad_z).astype(int),\
+                        np.rint(rot_l+directbeam_y+leftpad_y).astype(int),\
+                        np.rint(rot_k+directbeam_x+leftpad_x).astype(int)
 
                     # calculate indices in the original q values coordinates before padding
-                    rot_h, rot_k, rot_l = rot_h - leftpad_z, rot_k - leftpad_x, rot_l - leftpad_y
+                    rot_h, rot_l, rot_k = rot_h - leftpad_z, rot_l - leftpad_y, rot_k - leftpad_x
 
                     # check if the rotated peak is in the non-padded data range
                     if (0 <= rot_h < numz) and (0 <= rot_l < numy) and (0 <= rot_k < numx):
