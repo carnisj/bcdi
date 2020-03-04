@@ -1,6 +1,8 @@
-* Feature: implement simu_diffpattern_CDI to find in 3D the Bragg peaks positions of a mesocrystal 
+* Feature: implement domain_orientation.py to find the orientation of domains in a 3D forward CDI dataset of mesocrystal
 
-* Feature: implement fit_1D curve to fit simultaneously ranges of a 1D curve with gaussian lineshapes
+* Feature: implement simu_diffpattern_CDI.py to find in 3D the Bragg peaks positions of a mesocrystal
+
+* Feature: implement fit_1D curve.py to fit simultaneously ranges of a 1D curve with gaussian lineshapes
 
 * Feature: implement fit_background.py to interactively determine the background in 1D reciprocal space curves
 
