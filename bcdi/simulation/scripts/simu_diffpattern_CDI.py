@@ -30,7 +30,7 @@ unitcell_param = 22.4  # in nm, unit cell parameter
 ######################
 # sample orientation #
 ######################
-angles = [0, 30, 0]  # in degrees, rotation around z downstream, y vertical up and x outboard respectively
+angles = [0, 0, 0]  # in degrees, rotation around z downstream, y vertical up and x outboard respectively
 #######################
 # beamline parameters #
 #######################
@@ -89,36 +89,47 @@ for [piz, piy, pix] in lattice:
 ##############################################
 # since we have a small list of peaks, do not use convolution (too slow) but for loop
 peak_shape = pu.gaussian_kernel(ndim=3, kernel_length=kernel_length, sigma=3, debugging=False)
+maxpeak = peak_shape.max()
 
 for [piz, piy, pix] in lattice:
-    startz = max(0, int(piz-kernel_length//2))
-    stopz = min(nbz-1, int(piz+kernel_length//2))
-    starty = max(0, int(piy-kernel_length//2))
-    stopy = min(nby-1, int(piy+kernel_length//2))
-    startx = max(0, int(pix-kernel_length//2))
-    stopx = min(nbx-1, int(pix+kernel_length//2))
-    struct_array[startz:stopz+1, starty:stopy+1, startx:stopx+1] = peak_shape
+    startz1, startz2 = max(0, int(piz-kernel_length//2)), min(0, int(piz-kernel_length//2))
+    stopz1, stopz2 = min(nbz-1, int(piz+kernel_length//2)), kernel_length + min(0, int(nbz-1 - (piz+kernel_length//2)))
+    starty1, starty2 = max(0, int(piy-kernel_length//2)), min(0, int(piy-kernel_length//2))
+    stopy1, stopy2 = min(nby-1, int(piy+kernel_length//2)), kernel_length + min(0, int(nby-1 - (piy+kernel_length//2)))
+    startx1, startx2 = max(0, int(pix-kernel_length//2)), min(0, int(pix-kernel_length//2))
+    stopx1, stopx2 = min(nbx-1, int(pix+kernel_length//2)), kernel_length + min(0, int(nbx-1 - (pix+kernel_length//2)))
+    struct_array[startz1:stopz1+1, starty1:stopy1+1, startx1:stopx1+1] =\
+        peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
 
 ###############
 # plot result #
 ###############
 # direct beam position after binning
-center_z = int((direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal downstream
+directbeam_z = int((direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal downstream
 # same orientation as detector X rotated by 90 deg at P10, along z (or qx)
 directbeam_y = nby - int((direct_beam[0] - detector.roi[0]) / detector.binning[1])  # vertical
 # detector Y along vertical down, opposite to y (and qz)
 directbeam_x = nbx - int((direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
 # detector X inboard, opposite to x (and qy)
 
+# mark the direct beam position
+struct_array[directbeam_z-kernel_length//2:directbeam_z+kernel_length//2+1,
+             directbeam_y-kernel_length//2:directbeam_y+kernel_length//2+1,
+             directbeam_x-kernel_length//2:directbeam_x+kernel_length//2+1] = 0
+struct_array[directbeam_z-2:directbeam_z+3, directbeam_y-2:directbeam_y+3, directbeam_x-2:directbeam_x+3] = maxpeak
+
 fig, _, _ = gu.multislices_plot(struct_array, sum_frames=False, title='Simulated diffraction pattern', vmin=0,
-                                slice_position=[center_z, directbeam_y, directbeam_x], plot_colorbar=True,
-                                cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
-fig.text(0.60, 0.20, "Direct beam (Y,X) =" + str(directbeam_y) + "," + str(directbeam_x), size=20)
+                                vmax=maxpeak, slice_position=[directbeam_z, directbeam_y, directbeam_x],
+                                plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
+fig.text(0.60, 0.20, "Direct beam (Qx,Qz,Qy) =" + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
+         size=12)
 plt.pause(0.1)
 
 fig, _, _ = gu.multislices_plot(struct_array, sum_frames=True, title='Simulated diffraction pattern', vmin=0,
-                                plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
-fig.text(0.60, 0.20, "Direct beam (Y,X) =" + str(directbeam_y) + "," + str(directbeam_x), size=20)
+                                vmax=maxpeak, plot_colorbar=True, cmap=my_cmap, is_orthogonal=True,
+                                reciprocal_space=True)
+fig.text(0.60, 0.20, "Direct beam (Qx,Qz,Qy) =" + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
+         size=12)
 plt.pause(0.1)
 
 plt.ioff()
