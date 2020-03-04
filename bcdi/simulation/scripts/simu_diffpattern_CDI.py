@@ -26,11 +26,11 @@ savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
 # sample setup #
 ################
 unitcell = 'fcc'
-unitcell_param = 50  # 22.4  # in nm, unit cell parameter
+unitcell_param = 22.4  # in nm, unit cell parameter
 ######################
 # sample orientation #
 ######################
-angles = [0, 0, 3]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
+angles = [0, 20, 0]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
 #######################
 # beamline parameters #
 #######################
@@ -75,8 +75,8 @@ plt.ion()
 ######################
 # create the lattice #
 ######################
-lattice, peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam, detector=detector, unitcell=unitcell,
-                              unitcell_param=unitcell_param, euler_angles=angles)
+pivot, lattice, peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam, detector=detector, unitcell=unitcell,
+                                     unitcell_param=unitcell_param, euler_angles=angles)
 # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 for idx in range(len(peaks)):
     print('Miller indices:', peaks[idx], '    at pixels:', lattice[idx])
@@ -104,28 +104,22 @@ for [piz, piy, pix] in lattice:
 ###############
 # plot result #
 ###############
-# direct beam position after binning
-directbeam_z = int((direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal downstream
-# same orientation as detector X rotated by 90 deg at P10, along z (or qx)
-directbeam_y = nby - int((direct_beam[0] - detector.roi[0]) / detector.binning[1])  # vertical
-# detector Y along vertical down, opposite to y (and qz)
-directbeam_x = nbx - int((direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
-# detector X inboard, opposite to x (and qy)
-
 # mark the direct beam position
-struct_array[directbeam_z-kernel_length//2:directbeam_z+kernel_length//2+1,
-             directbeam_y-kernel_length//2:directbeam_y+kernel_length//2+1,
-             directbeam_x-kernel_length//2:directbeam_x+kernel_length//2+1] = 0
-struct_array[directbeam_z-2:directbeam_z+3, directbeam_y-2:directbeam_y+3, directbeam_x-2:directbeam_x+3] = maxpeak
+struct_array[pivot[0]-kernel_length//2:pivot[0]+kernel_length//2+1,
+             pivot[1]-kernel_length//2:pivot[1]+kernel_length//2+1,
+             pivot[2]-kernel_length//2:pivot[2]+kernel_length//2+1] = 0
+struct_array[pivot[0]-2:pivot[0]+3, pivot[1]-2:pivot[1]+3, pivot[2]-2:pivot[2]+3] = maxpeak
 
 fig, _, _ = gu.multislices_plot(struct_array, sum_frames=False, title='Simulated diffraction pattern', vmin=0,
-                                vmax=maxpeak, slice_position=[directbeam_z, directbeam_y, directbeam_x],
+                                vmax=maxpeak, slice_position=[pivot[0], pivot[1], pivot[2]],
                                 plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
-fig.text(0.60, 0.30, "Direct beam (Qx,Qz,Qy) = " + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
-         size=12)
+fig.text(0.60, 0.30, "Origin of reciprocal space (Qx,Qz,Qy) = " + str(pivot[0]) + "," + str(pivot[1]) + "," +
+         str(pivot[2]), size=12)
 fig.text(0.60, 0.25, "Energy = " + str(energy/1000) + " keV", size=12)
 fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
 fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
+fig.text(0.60, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(angles[0]) + "," + str(angles[1])
+         + "," + str(angles[2]), size=12)
 plt.pause(0.1)
 plt.savefig(savedir + 'central_slice_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
             str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(angles[0]) + '_' + str(angles[1]) + '_' +
@@ -135,11 +129,13 @@ if debug:
     fig, _, _ = gu.multislices_plot(struct_array, sum_frames=True, title='Simulated diffraction pattern', vmin=0,
                                     vmax=maxpeak, plot_colorbar=True, cmap=my_cmap, is_orthogonal=True,
                                     reciprocal_space=True)
-    fig.text(0.60, 0.30, "Direct beam (Qx,Qz,Qy) = " + str(directbeam_z) + "," + str(directbeam_y) + "," + str(directbeam_x),
-             size=12)
+    fig.text(0.60, 0.30, "Origin of reciprocal space  (Qx,Qz,Qy) = " + str(pivot[0]) + "," + str(pivot[1]) +
+             "," + str(pivot[2]), size=12)
     fig.text(0.60, 0.25, "Energy = " + str(energy/1000) + " keV", size=12)
     fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
     fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
+    fig.text(0.60, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(angles[0]) + "," + str(angles[1])
+             + "," + str(angles[2]), size=12)
     plt.pause(0.1)
     plt.savefig(savedir + 'sum_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
                 str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(angles[0]) + '_' + str(angles[1]) + '_' +
