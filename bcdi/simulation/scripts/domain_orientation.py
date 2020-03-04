@@ -89,13 +89,16 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the dat
                                        filetypes=[("NPZ", "*.npz")])
 data = np.load(file_path)['data']
 
-file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the mask",
-                                       filetypes=[("NPZ", "*.npz")])
-mask = np.load(file_path)['mask']
+try:
+    file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the mask",
+                                           filetypes=[("NPZ", "*.npz")])
+    mask = np.load(file_path)['mask']
 
-data[np.nonzero(mask)] = 0
-del mask
-gc.collect()
+    data[np.nonzero(mask)] = 0
+    del mask
+    gc.collect()
+except FileNotFoundError:
+    pass
 
 #########################
 # define the peak shape #
