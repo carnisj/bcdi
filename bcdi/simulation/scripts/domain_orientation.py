@@ -36,9 +36,9 @@ unitcell_param = 22.4  # in nm, unit cell parameter
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [0, 91, 0, 91, 0, 91]  # in degrees, ranges to span for the rotation around qx downstream,
+angles_ranges = [-5, 5, 15, 25, -5, 5]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
-angular_step = 18  # in degrees
+angular_step = 2  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -98,6 +98,15 @@ try:
     del mask
     gc.collect()
 except FileNotFoundError:
+    pass
+
+try:
+    file_path = filedialog.askopenfilename(initialdir=datadir, title="Select q values",
+                                           filetypes=[("NPZ", "*.npz")])
+    exp_qvalues = np.load(file_path)
+    qvalues_flag = True
+except FileNotFoundError:
+    qvalues_flag = False
     pass
 
 #########################
@@ -167,7 +176,8 @@ for idz, alpha in enumerate(angles_qx):
 vmin = corr.min()
 vmax = corr.max()
 piz, piy, pix = np.unravel_index(abs(corr).argmax(), corr.shape)
-print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', angles_qx[piz], angles_qz[piy], angles_qy[pix])
+alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
+print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', alpha, beta, gamma)
 
 fig, _, _ = gu.contour_slices(corr, (angles_qx, angles_qz, angles_qy), sum_frames=False,
                               title='Correlation', slice_position=[piz, piy, pix], plot_colorbar=True, cmap=my_cmap,
@@ -177,5 +187,56 @@ fig.text(0.60, 0.25, "Kernel size = " + str(kernel_length) + " pixels", size=12)
 plt.pause(0.1)
 plt.savefig(savedir + 'cross_corr.png')
 
+######################
+# create the lattice #
+######################
+pivot, q_values, lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam, detector=detector,
+                                           unitcell=unitcell, unitcell_param=unitcell_param,
+                                           euler_angles=[alpha, beta, gamma])
+# peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
+struct_array[:] = 0
+for [piz, piy, pix] in lattice:
+    struct_array[piz, piy, pix] = 1
+
+##############################################
+# convolute the lattice with the 3D peak shape #
+##############################################
+# since we have a small list of peaks, do not use convolution (too slow) but for loop
+# 1 is related to indices for struct_array, 2 is related to indices for peak_shape
+for [piz, piy, pix] in lattice:
+    startz1, startz2 = max(0, int(piz - kernel_length // 2)), -min(0, int(piz - kernel_length // 2))
+    stopz1, stopz2 = min(nbz - 1, int(piz + kernel_length // 2)), \
+        kernel_length + min(0, int(nbz - 1 - (piz + kernel_length // 2)))
+    starty1, starty2 = max(0, int(piy - kernel_length // 2)), -min(0, int(piy - kernel_length // 2))
+    stopy1, stopy2 = min(nby - 1, int(piy + kernel_length // 2)), \
+        kernel_length + min(0, int(nby - 1 - (piy + kernel_length // 2)))
+    startx1, startx2 = max(0, int(pix - kernel_length // 2)), -min(0, int(pix - kernel_length // 2))
+    stopx1, stopx2 = min(nbx - 1, int(pix + kernel_length // 2)), \
+        kernel_length + min(0, int(nbx - 1 - (pix + kernel_length // 2)))
+    struct_array[startz1:stopz1 + 1, starty1:stopy1 + 1, startx1:stopx1 + 1] = \
+        peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
+
+# mask the region near the origin of the reciprocal space
+struct_array[pivot[0] - kernel_length // 2:pivot[0] + kernel_length // 2 + 1,
+             pivot[1] - kernel_length // 2:pivot[1] + kernel_length // 2 + 1,
+             pivot[2] - kernel_length // 2:pivot[2] + kernel_length // 2 + 1] = 0
+
+if qvalues_flag:
+    gu.contour_slices(data, (exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']), sum_frames=True,
+                      title='Experimental data', levels=np.linspace(0, np.log10(data).max(), 150, endpoint=False),
+                      scale='log', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
+else:
+    gu.multislices_plot(data, sum_frames=True, title='Experimental data', vmin=0, vmax=np.log10(data).max(),
+                        scale='log', plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
+
+fig, _, _ = gu.contour_slices(struct_array, q_values, sum_frames=True, title='Simulated diffraction pattern',
+                              levels=np.linspace(0, struct_array.max(), 10, endpoint=False),
+                              plot_colorbar=False, scale='linear', is_orthogonal=True, reciprocal_space=True)
+fig.text(0.60, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
+fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
+fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
+fig.text(0.60, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
+         str(beta) + "," + str(gamma), size=12)
+plt.pause(0.1)
 plt.ioff()
 plt.show()
