@@ -124,7 +124,7 @@ for idz, alpha in enumerate(angles_qx):
             # convolute the lattice with the 3D peak shape #
             ##############################################
             # since we have a small list of peaks, do not use convolution (too slow) but for loop
-
+            # 1 is related to indices for struct_array, 2 is related to indices for peak_shape
             for [piz, piy, pix] in lattice:
                 startz1, startz2 = max(0, int(piz-kernel_length//2)), -min(0, int(piz-kernel_length//2))
                 stopz1, stopz2 = min(nbz-1, int(piz+kernel_length//2)),\
