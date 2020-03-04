@@ -20,7 +20,8 @@ import bcdi.simulation.simulation_utils as simu
 
 helptext = """
 Calculate the position of the Bragg peaks for a mesocrystal given the lattice type, the unit cell parameter
-and beamline-related parameters.
+and beamline-related parameters. Assign 3D Gaussians to each lattice point and rotates the unit cell in order to
+maximize the cross-correlation of the simulated data with experimental data.
 
 Laboratory frame convention (CXI): z downstream, y vertical up, x outboard."""
 
