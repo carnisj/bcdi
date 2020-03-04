@@ -30,7 +30,7 @@ unitcell_param = 22.4  # in nm, unit cell parameter
 ######################
 # sample orientation #
 ######################
-angles = [0, 0, 0]  # in degrees, rotation around z downstream, y vertical up and x outboard respectively
+angles = [0, 30, 0]  # in degrees, rotation around z downstream, y vertical up and x outboard respectively
 #######################
 # beamline parameters #
 #######################
@@ -92,14 +92,14 @@ peak_shape = pu.gaussian_kernel(ndim=3, kernel_length=kernel_length, sigma=3, de
 maxpeak = peak_shape.max()
 
 for [piz, piy, pix] in lattice:
-    startz1, startz2 = max(0, int(piz-kernel_length//2)), min(0, int(piz-kernel_length//2))
+    startz1, startz2 = max(0, int(piz-kernel_length//2)), -min(0, int(piz-kernel_length//2))
     stopz1, stopz2 = min(nbz-1, int(piz+kernel_length//2)), kernel_length + min(0, int(nbz-1 - (piz+kernel_length//2)))
-    starty1, starty2 = max(0, int(piy-kernel_length//2)), min(0, int(piy-kernel_length//2))
+    starty1, starty2 = max(0, int(piy-kernel_length//2)), -min(0, int(piy-kernel_length//2))
     stopy1, stopy2 = min(nby-1, int(piy+kernel_length//2)), kernel_length + min(0, int(nby-1 - (piy+kernel_length//2)))
-    startx1, startx2 = max(0, int(pix-kernel_length//2)), min(0, int(pix-kernel_length//2))
+    startx1, startx2 = max(0, int(pix-kernel_length//2)), -min(0, int(pix-kernel_length//2))
     stopx1, stopx2 = min(nbx-1, int(pix+kernel_length//2)), kernel_length + min(0, int(nbx-1 - (pix+kernel_length//2)))
     struct_array[startz1:stopz1+1, starty1:stopy1+1, startx1:stopx1+1] =\
-        peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
+    peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
 
 ###############
 # plot result #
