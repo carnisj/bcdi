@@ -311,7 +311,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
     return plt.gcf()
 
 
-def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=None, width_y=None, width_x=None,
+def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, levels=150, width_z=None, width_y=None, width_x=None,
                    plot_colorbar=False, cmap=my_cmap, title='', scale='linear', is_orthogonal=False,
                    reciprocal_space=True):
     """
@@ -320,6 +320,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=N
     :param array: 3D array of real numbers
     :param q_coordinates: a tuple of (qx, qz, qy) 1D-coordinates corresponding to the (Z, Y, X) of the cxi convention
     :param sum_frames: if True, will sum the data along the 3rd axis
+    :param slice_position: tuple of three integers where to slice the 3D array
     :param levels: int n, will use n data intervals and draw n+1 contour lines
     :param width_z: user-defined zoom width along axis 0 (rocking angle), should be smaller than the actual data size
     :param width_y: user-defined zoom width along axis 1 (vertical), should be smaller than the actual data size
@@ -364,12 +365,20 @@ def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=N
         if width_x is None:
             width_x = nbx
 
+        if not sum_frames:
+            if slice_position is None:
+                slice_position = [nbz // 2, nby // 2, nbx // 2]
+            elif len(slice_position) != 3:
+                raise ValueError('wrong shape for the parameter slice_position')
+            else:
+                slice_position = [int(position) for position in slice_position]
+
         fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(13, 9))
 
         # axis 0
         temp_array = np.copy(array)
         if not sum_frames:
-            temp_array = temp_array[nbz // 2, :, :]
+            temp_array = temp_array[slice_position[0], :, :]
         else:
             temp_array = temp_array.sum(axis=0)
         # now array is 2D
@@ -393,7 +402,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=N
         # axis 1
         temp_array = np.copy(array)
         if not sum_frames:
-            temp_array = temp_array[:, nby // 2, :]
+            temp_array = temp_array[:, slice_position[1], :]
         else:
             temp_array = temp_array.sum(axis=1)
         # now array is 2D
@@ -417,7 +426,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, levels=150, width_z=N
         # axis 2
         temp_array = np.copy(array)
         if not sum_frames:
-            temp_array = temp_array[:, :, nbx // 2]
+            temp_array = temp_array[:, :, slice_position[2]]
         else:
             temp_array = temp_array.sum(axis=2)
         # now array is 2D

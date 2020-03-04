@@ -75,7 +75,7 @@ plt.ion()
 ######################
 # create the lattice #
 ######################
-pivot, lattice, peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam, detector=detector, unitcell=unitcell,
+pivot, q_values, lattice, peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam, detector=detector, unitcell=unitcell,
                                      unitcell_param=unitcell_param, euler_angles=angles)
 # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 for idx in range(len(peaks)):
@@ -104,6 +104,7 @@ for [piz, piy, pix] in lattice:
 ###############
 # plot result #
 ###############
+qx, qz, qy = q_values
 # mark the direct beam position
 struct_array[pivot[0]-kernel_length//2:pivot[0]+kernel_length//2+1,
              pivot[1]-kernel_length//2:pivot[1]+kernel_length//2+1,
@@ -122,6 +123,22 @@ fig.text(0.60, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + st
          + "," + str(angles[2]), size=12)
 plt.pause(0.1)
 plt.savefig(savedir + 'central_slice_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
+            str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(angles[0]) + '_' + str(angles[1]) + '_' +
+            str(angles[2]) + '.png')
+
+fig, _, _ = gu.contour_slices(struct_array, (qx, qz, qy), sum_frames=False, title='Simulated diffraction pattern',
+                              slice_position=[pivot[0], pivot[1], pivot[2]],
+                              levels=np.linspace(0, struct_array.max(), 10, endpoint=False),
+                              plot_colorbar=True, scale='linear', is_orthogonal=True, reciprocal_space=True)
+fig.text(0.60, 0.30, "Origin of reciprocal space (Qx,Qz,Qy) = " + str(pivot[0]) + "," + str(pivot[1]) + "," +
+         str(pivot[2]), size=12)
+fig.text(0.60, 0.25, "Energy = " + str(energy/1000) + " keV", size=12)
+fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
+fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
+fig.text(0.60, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(angles[0]) + "," + str(angles[1])
+         + "," + str(angles[2]), size=12)
+plt.pause(0.1)
+plt.savefig(savedir + 'q_central_slice_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
             str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(angles[0]) + '_' + str(angles[1]) + '_' +
             str(angles[2]) + '.png')
 

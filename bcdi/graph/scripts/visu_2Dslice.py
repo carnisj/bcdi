@@ -21,7 +21,7 @@ helptext = """
 Graphical interface to visualize 2D slices through a 3D dataset in an easy way.
 """
 
-datadir = "D:/data/P10_August2019/data/magnetite_A2_new_00013/pynxraw/"
+datadir = "D:/data/P10_August2019/data/gold_2_2_2_00022/Zhe_2_2_2/"
 savedir = datadir  # "D:/data/CH5309/S614/test/"
 scale = 'log'  # 'linear' or 'log', scale of the 2D plots
 field = None  # data field name. Leave it to None for default.
