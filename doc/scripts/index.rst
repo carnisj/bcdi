@@ -323,6 +323,14 @@ simu_diffpattern_BCDI.py
    :start-after: helptext
    :end-before: """
    :language: rst
+
+simu_diffpattern_CDI.py
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/simulation/scripts/simu_diffpattern_CDI.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
    
 simu_signe_phase.py
 ^^^^^^^^^^^^^^^^^^^
