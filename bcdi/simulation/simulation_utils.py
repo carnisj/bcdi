@@ -28,16 +28,17 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     """
     pixel_x = detector.pixelsize_x * 1e9  # convert to nm, pixel size in the horizontal direction
     pixel_y = detector.pixelsize_y * 1e9  # convert to nm, pixel size in the vertical direction
-    directbeam_z = int((direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
-    directbeam_y = int((direct_beam[0] - detector.roi[0]) / detector.binning[1])  # vertical
-    directbeam_x = int((direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
-    roi = detector.roi  # before binning
+
+    # position of the direct beam in the detector frame
+    directbeam_y = int((direct_beam[0] - detector.roi[0]) / detector.binning[1])  # detector Y vertical down
+    directbeam_x = int((direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal X inboard
+
     wavelength = 12.398 * 1e2 / energy  # in nm, energy in eV
     distance = sdd * 1e9  # convert to nm
     lambdaz = wavelength * distance
-    numz, numy, numx = np.floor((roi[3] - roi[2]) / detector.binning[2]),\
-        np.floor((roi[1] - roi[0]) / detector.binning[1]), \
-        np.floor((roi[3] - roi[2]) / detector.binning[2])
+    numz, numy, numx = np.floor((detector.roi[3] - detector.roi[2]) / detector.binning[2]),\
+        np.floor((detector.roi[1] - detector.roi[0]) / detector.binning[1]), \
+        np.floor((detector.roi[3] - detector.roi[2]) / detector.binning[2])
     # for P10 data the rotation is around y vertical, hence gridded data range & binning in z and x are identical
 
     ######################
@@ -54,18 +55,24 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     qz = np.arange(-(numy - directbeam_y), -(numy - directbeam_y) + numy, 1) * dqz  # vertical up opposite to detector Y
     qy = np.arange(-(numx - directbeam_x), -(numx - directbeam_x) + numx, 1) * dqy  # outboard opposite to detector X
 
+    # calculate the position of the pivot point for the rotation in the laboratory frame
+    pivot_z = int((direct_beam[1] - detector.roi[2]) / detector.binning[2])
+    # 90 degrees conter-clockwise rotation of detector X around qz, downstream
+    pivot_y = int(numy - directbeam_y)  # detector Y vertical down, opposite to qz vertical up
+    pivot_x = int(numx - directbeam_x)  # detector X inboard at P10, opposite to qy outboard
     if unitcell == 'fcc':
-        return fcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
-                           directbeam=(directbeam_z, directbeam_y, directbeam_x), euler_angles=euler_angles)
+        mylattice, peaks = fcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+                                       pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
+        return (pivot_z, pivot_y, pivot_x), mylattice, peaks
 
 
-def fcc_lattice(q_values, unitcell_param, directbeam, euler_angles=(0, 0, 0)):
+def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0)):
     """
     Calculate Bragg peaks positions using experimental parameters for a FCC unit cell.
 
     :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look for Bragg peaks
     :param unitcell_param: the unit cell parameter of the FCC lattice
-    :param directbeam:  tuple, the pivot point position in pixels for the rotation
+    :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :return: a list of lists of pixels positions for each Bragg peak.
     """
@@ -73,7 +80,7 @@ def fcc_lattice(q_values, unitcell_param, directbeam, euler_angles=(0, 0, 0)):
     peaks = []  # list of hkl fitting the data range
     # define the rotation using Euler angles with the direct beam as origin
     rotation = Rotation.from_euler('xzy', euler_angles, degrees=True)
-    directbeam_z, directbeam_y, directbeam_x = directbeam  # downstream, vertical up, outboard
+    pivot_z, pivot_y, pivot_x = pivot  # downstream, vertical up, outboard
 
     print('fcc unit cell of parameter a =', unitcell_param, 'nm')
     recipr_param = 2*np.pi/unitcell_param  # reciprocal lattice is simple cubic of parameter 2*pi/unitcell_param
@@ -106,17 +113,19 @@ def fcc_lattice(q_values, unitcell_param, directbeam, euler_angles=(0, 0, 0)):
                     pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
                     pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
 
-                    # rotate the vector using Euler angles with the direct beam as origin while compensating padding
-                    offset_h, offset_k, offset_l = pix_h-(directbeam_z+leftpad_z), pix_k-(directbeam_x+leftpad_x),\
-                        pix_l-(directbeam_y+leftpad_y)
+                    if h == 0 and k == 0 and l == 0:
+                        print('')
+                    # rotate the vector using Euler angles and the pivot point while compensating padding
+                    offset_h, offset_l, offset_k = pix_h-(pivot_z+leftpad_z), pix_l-(pivot_y+leftpad_y), \
+                        pix_k-(pivot_x+leftpad_x)
 
                     rot_h, rot_k, rot_l = rotation.apply([offset_h, offset_k, offset_l])
                     # coordinates order for Rotation(): [qx, qy, qz]
 
                     # shift back the origin to (0, 0, 0)
-                    rot_h, rot_l, rot_k = np.rint(rot_h+directbeam_z+leftpad_z).astype(int),\
-                        np.rint(rot_l+directbeam_y+leftpad_y).astype(int),\
-                        np.rint(rot_k+directbeam_x+leftpad_x).astype(int)
+                    rot_h, rot_l, rot_k = np.rint(rot_h+pivot_z+leftpad_z).astype(int),\
+                        np.rint(rot_l+pivot_y+leftpad_y).astype(int),\
+                        np.rint(rot_k+pivot_x+leftpad_x).astype(int)
 
                     # calculate indices in the original q values coordinates before padding
                     rot_h, rot_l, rot_k = rot_h - leftpad_z, rot_l - leftpad_y, rot_k - leftpad_x
