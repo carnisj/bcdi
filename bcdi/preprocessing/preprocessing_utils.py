@@ -1215,7 +1215,7 @@ def load_background(background_file):
 
 
 def load_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
-             normalize=False, debugging=False):
+             normalize=False, debugging=False, **kwargs):
     """
     Load the forward CDI data, apply filters and optionally regrid it for phasing.
 
@@ -1229,12 +1229,24 @@ def load_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
     :param background: the 2D background array to subtract to the data
     :param normalize: set to True to normalize the diffracted intensity by the incident X-ray beam intensity
     :param debugging:  set to True to see plots
+    :parama kwargs:
+     - 'photon_threshold' = float, photon threshold to apply before binning
     :return:
      - the 3D data array (in an orthonormal frame or in the detector frame) and the 3D mask array
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values for normalization
     """
+    for k in kwargs.keys():
+        if k in ['photon_threshold']:
+            photon_threshold = kwargs['photon_threshold']
+        else:
+            raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
+    try:
+        photon_threshold
+    except NameError:  # photon_threshold not declared
+        photon_threshold = 0
+
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
                                                           background=background, debugging=debugging)
@@ -1259,6 +1271,12 @@ def load_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=No
         rawmask = pu.crop_pad(array=rawmask, padwith_ones=True, start=start,
                               output_shape=(rawmask.shape[0], detector.roi[1] - detector.roi[0],
                                             detector.roi[3] - detector.roi[2]))
+
+    # apply optional photon threshold before binning
+    if photon_threshold != 0:
+        rawmask[rawdata < photon_threshold] = 1
+        rawdata[rawdata < photon_threshold] = 0
+        print("Applying photon threshold before binning: < ", photon_threshold)
 
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
