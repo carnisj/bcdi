@@ -81,9 +81,6 @@ pivot, _, q_values, lattice, peaks = simu.lattice(energy=energy, sdd=sdd, direct
 # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 for idx in range(len(peaks)):
     print('Miller indices:', peaks[idx], '    at pixels:', lattice[idx])
-struct_array = np.zeros((nbz, nby, nbx))
-for [piz, piy, pix] in lattice:
-    struct_array[piz, piy, pix] = 1
 
 ##############################################
 # convolute the lattice with a 3D peak shape #
@@ -92,24 +89,14 @@ for [piz, piy, pix] in lattice:
 peak_shape = pu.gaussian_kernel(ndim=3, kernel_length=kernel_length, sigma=3, debugging=False)
 maxpeak = peak_shape.max()
 
-for [piz, piy, pix] in lattice:
-    startz1, startz2 = max(0, int(piz-kernel_length//2)), -min(0, int(piz-kernel_length//2))
-    stopz1, stopz2 = min(nbz-1, int(piz+kernel_length//2)), kernel_length + min(0, int(nbz-1 - (piz+kernel_length//2)))
-    starty1, starty2 = max(0, int(piy-kernel_length//2)), -min(0, int(piy-kernel_length//2))
-    stopy1, stopy2 = min(nby-1, int(piy+kernel_length//2)), kernel_length + min(0, int(nby-1 - (piy+kernel_length//2)))
-    startx1, startx2 = max(0, int(pix-kernel_length//2)), -min(0, int(pix-kernel_length//2))
-    stopx1, stopx2 = min(nbx-1, int(pix+kernel_length//2)), kernel_length + min(0, int(nbx-1 - (pix+kernel_length//2)))
-    struct_array[startz1:stopz1+1, starty1:stopy1+1, startx1:stopx1+1] =\
-        peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
-
+# assign the peak shape to each lattice point
+struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=lattice, peak_shape=peak_shape,
+                                     pivot=pivot)
 ###############
 # plot result #
 ###############
 qx, qz, qy = q_values
 # mark the direct beam position
-struct_array[pivot[0]-kernel_length//2:pivot[0]+kernel_length//2+1,
-             pivot[1]-kernel_length//2:pivot[1]+kernel_length//2+1,
-             pivot[2]-kernel_length//2:pivot[2]+kernel_length//2+1] = 0
 struct_array[pivot[0]-2:pivot[0]+3, pivot[1]-2:pivot[1]+3, pivot[2]-2:pivot[2]+3] = maxpeak
 
 if debug:
