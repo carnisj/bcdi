@@ -48,7 +48,7 @@ def assign_peakshape(array_shape, lattice_list, peak_shape, pivot):
     return array
 
 
-def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose=False):
+def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_indices=False, verbose=False):
     """
     Calculate Bragg peaks positions using experimental parameters for a BCC unit cell.
 
@@ -56,6 +56,8 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
     :param unitcell_param: the unit cell parameter of the FCC lattice
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
+    :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
+    length of padded q values
     :param verbose: True to have printed comments
     :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
     """
@@ -84,6 +86,7 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
     pad_qz = qz[0] - leftpad_y * (qz[1] - qz[0]) + np.arange(3*numy) * (qz[1] - qz[0])
     pad_qy = qy[0] - leftpad_x * (qy[1] - qy[0]) + np.arange(3*numx) * (qy[1] - qy[0])
 
+    # calculate peaks position for the non rotated lattice
     for h in hkl:  # h downstream along qx
         for k in hkl:  # k outboard along qy
             for l in hkl:  # l vertical up along qz
@@ -97,15 +100,19 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
                     lattice_list.append([pix_h, pix_l, pix_k])
                     peaks_list.append([h, l, k])
 
-    lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
-                                        original_shape=(numz, numy, numx),
-                                        pad_offset=(leftpad_z, leftpad_y, leftpad_x),
-                                        pivot=pivot, euler_angles=euler_angles)
+    if offset_indices:
+        # non rotated lattice, the origin of indices will correspond to the length of padded q values
+        return (leftpad_z, leftpad_y, leftpad_x), lattice_list, peaks_list
+    else:
+        # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
+        lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
+                                            original_shape=(numz, numy, numx),
+                                            pad_offset=(leftpad_z, leftpad_y, leftpad_x),
+                                            pivot=pivot, euler_angles=euler_angles)
+        return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
-    return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
-
-def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose=False):
+def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_indices=False, verbose=False):
     """
     Calculate Bragg peaks positions using experimental parameters for a simple cubic unit cell.
 
@@ -113,6 +120,8 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbo
     :param unitcell_param: the unit cell parameter of the FCC lattice
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
+    :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
+    length of padded q values
     :param verbose: True to have printed comments
     :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
     """
@@ -141,6 +150,7 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbo
     pad_qz = qz[0] - leftpad_y * (qz[1] - qz[0]) + np.arange(3*numy) * (qz[1] - qz[0])
     pad_qy = qy[0] - leftpad_x * (qy[1] - qy[0]) + np.arange(3*numx) * (qy[1] - qy[0])
 
+    # calculate peaks position for the non rotated lattice
     for h in hkl:  # h downstream along qx
         for k in hkl:  # k outboard along qy
             for l in hkl:  # l vertical up along qz
@@ -152,15 +162,19 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbo
                 lattice_list.append([pix_h, pix_l, pix_k])
                 peaks_list.append([h, l, k])
 
-    lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
-                                        original_shape=(numz, numy, numx),
-                                        pad_offset=(leftpad_z, leftpad_y, leftpad_x),
-                                        pivot=pivot, euler_angles=euler_angles)
+    if offset_indices:
+        # non rotated lattice, the origin of indices will correspond to the length of padded q values
+        return (leftpad_z, leftpad_y, leftpad_x), lattice_list, peaks_list
+    else:
+        # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
+        lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
+                                            original_shape=(numz, numy, numx),
+                                            pad_offset=(leftpad_z, leftpad_y, leftpad_x),
+                                            pivot=pivot, euler_angles=euler_angles)
+        return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
-    return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
-
-def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose=False):
+def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_indices=False, verbose=False):
     """
     Calculate Bragg peaks positions using experimental parameters for a FCC unit cell.
 
@@ -168,6 +182,8 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
     :param unitcell_param: the unit cell parameter of the FCC lattice
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
+    :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
+    length of padded q values
     :param verbose: True to have printed comments
     :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
     """
@@ -196,6 +212,7 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
     pad_qz = qz[0] - leftpad_y * (qz[1] - qz[0]) + np.arange(3*numy) * (qz[1] - qz[0])
     pad_qy = qy[0] - leftpad_x * (qy[1] - qy[0]) + np.arange(3*numx) * (qy[1] - qy[0])
 
+    # calculate peaks position for the non rotated lattice
     for h in hkl:  # h downstream along qx
         for k in hkl:  # k outboard along qy
             for l in hkl:  # l vertical up along qz
@@ -209,15 +226,19 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
                     lattice_list.append([pix_h, pix_l, pix_k])
                     peaks_list.append([h, l, k])
 
-    lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
-                                        original_shape=(numz, numy, numx),
-                                        pad_offset=(leftpad_z, leftpad_y, leftpad_x),
-                                        pivot=pivot, euler_angles=euler_angles)
+    if offset_indices:
+        # non rotated lattice, the origin of indices will correspond to the length of padded q values
+        return (leftpad_z, leftpad_y, leftpad_x), lattice_list, peaks_list
+    else:
+        # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
+        lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
+                                            original_shape=(numz, numy, numx),
+                                            pad_offset=(leftpad_z, leftpad_y, leftpad_x),
+                                            pivot=pivot, euler_angles=euler_angles)
+        return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
-    return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
-
-def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_angles=(0, 0, 0)):
+def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_angles=(0, 0, 0), offset_indices=False):
     """
     Calculate Bragg peaks positions using experimental parameters and unit cell.
 
@@ -228,6 +249,8 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     :param unitcell: 'cubic', 'bcc' or 'fcc'
     :param unitcell_param: number or tuple for unit cell parameters
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
+    :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
+    length of padded q values
     :return: pivot position, q values, a list of pixels positions for each Bragg peak, Miller indices.
     """
     pixel_x = detector.pixelsize_x * 1e9  # convert to nm, pixel size in the horizontal direction
@@ -265,18 +288,21 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     pivot_y = int(numy - directbeam_y)  # detector Y vertical down, opposite to qz vertical up
     pivot_x = int(numx - directbeam_x)  # detector X inboard at P10, opposite to qy outboard
     if unitcell == 'fcc':
-        offset, lattice_pos, peaks = fcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
-                                                 pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
+        pad_offset, lattice_pos, peaks = fcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+                                                     pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles,
+                                                     offset_indices=offset_indices)
     elif unitcell == 'bcc':
-        offset, lattice_pos, peaks = bcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
-                                                 pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
+        pad_offset, lattice_pos, peaks = bcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+                                                     pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles,
+                                                     offset_indices=offset_indices)
     elif unitcell == 'cubic':
-        offset, lattice_pos, peaks = cubic_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
-                                                   pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
+        pad_offset, lattice_pos, peaks = cubic_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+                                                       pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles,
+                                                       offset_indices=offset_indices)
     else:
         raise ValueError('Unit cell "' + unitcell + '" not yet implemented')
 
-    return (pivot_z, pivot_y, pivot_x), offset, (qx, qz, qy), lattice_pos, peaks
+    return (pivot_z, pivot_y, pivot_x), pad_offset, (qx, qz, qy), lattice_pos, peaks
 
 
 def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, euler_angles=(0, 0, 0)):
