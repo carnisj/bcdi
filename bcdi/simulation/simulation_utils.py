@@ -22,7 +22,7 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :param verbose: True to have printed comments
-    :return: a list of lists of pixels positions for each Bragg peak.
+    :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
     """
     lattice_list = []  # position of the pixels corresponding to hkl reflections
     peaks_list = []  # list of hkl fitting the data range
@@ -67,7 +67,7 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
                                         pad_offset=(leftpad_z, leftpad_y, leftpad_x),
                                         pivot=pivot, euler_angles=euler_angles)
 
-    return lattice_pos, peaks
+    return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
 
 def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose=False):
@@ -79,7 +79,7 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbo
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :param verbose: True to have printed comments
-    :return: a list of lists of pixels positions for each Bragg peak.
+    :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
     """
     lattice_list = []  # position of the pixels corresponding to hkl reflections
     peaks_list = []  # list of hkl fitting the data range
@@ -122,7 +122,7 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbo
                                         pad_offset=(leftpad_z, leftpad_y, leftpad_x),
                                         pivot=pivot, euler_angles=euler_angles)
 
-    return lattice_pos, peaks
+    return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
 
 def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose=False):
@@ -134,7 +134,7 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :param verbose: True to have printed comments
-    :return: a list of lists of pixels positions for each Bragg peak.
+    :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
     """
     lattice_list = []  # position of the pixels corresponding to hkl reflections
     peaks_list = []  # list of hkl fitting the data range
@@ -179,7 +179,7 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
                                         pad_offset=(leftpad_z, leftpad_y, leftpad_x),
                                         pivot=pivot, euler_angles=euler_angles)
 
-    return lattice_pos, peaks
+    return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
 
 def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_angles=(0, 0, 0)):
@@ -230,18 +230,18 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     pivot_y = int(numy - directbeam_y)  # detector Y vertical down, opposite to qz vertical up
     pivot_x = int(numx - directbeam_x)  # detector X inboard at P10, opposite to qy outboard
     if unitcell == 'fcc':
-        lattice_pos, peaks = fcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
-                                         pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
+        offset, lattice_pos, peaks = fcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+                                                 pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
     elif unitcell == 'bcc':
-        lattice_pos, peaks = bcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
-                                         pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
+        offset, lattice_pos, peaks = bcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+                                                 pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
     elif unitcell == 'cubic':
-        lattice_pos, peaks = cubic_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
-                                           pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
+        offset, lattice_pos, peaks = cubic_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+                                                   pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
     else:
         raise ValueError('Unit cell "' + unitcell + '" not yet implemented')
 
-    return (pivot_z, pivot_y, pivot_x), (qx, qz, qy), lattice_pos, peaks
+    return (pivot_z, pivot_y, pivot_x), offset, (qx, qz, qy), lattice_pos, peaks
 
 
 def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, euler_angles=(0, 0, 0)):
@@ -254,7 +254,7 @@ def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, 
     :param pad_offset: index shift of the origin for the padded q values
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
-    :return: list of Bragg peaks positions in pixels fitting into the range, and the corresponding list of hlk
+    :return: list of Bragg peaks positions fitting into the range, and the corresponding list of hlk
     """
     lattice_pos = []  # position of the pixels corresponding to hkl reflections
     peaks = []  # list of hkl fitting the data range

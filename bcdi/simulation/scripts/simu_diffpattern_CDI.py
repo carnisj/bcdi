@@ -25,12 +25,12 @@ savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
 ################
 # sample setup #
 ################
-unitcell = 'fcc'
+unitcell = 'cubic'
 unitcell_param = 22.4  # in nm, unit cell parameter
 ######################
 # sample orientation #
 ######################
-angles = [2, 20, 0]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
+angles = [-1, 18, 0]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
 #######################
 # beamline parameters #
 #######################
@@ -75,8 +75,9 @@ plt.ion()
 ######################
 # create the lattice #
 ######################
-pivot, q_values, lattice, peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam, detector=detector,
-                                               unitcell=unitcell, unitcell_param=unitcell_param, euler_angles=angles)
+pivot, _, q_values, lattice, peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
+                                                       detector=detector, unitcell=unitcell,
+                                                       unitcell_param=unitcell_param, euler_angles=angles)
 # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 for idx in range(len(peaks)):
     print('Miller indices:', peaks[idx], '    at pixels:', lattice[idx])
