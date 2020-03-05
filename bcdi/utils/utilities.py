@@ -9,6 +9,33 @@
 import os
 import h5py
 import numpy as np
+from scipy.interpolate import interp1d
+
+
+def create_3d_background(q_values, avg_background, avg_qvalues):
+    """
+    Create a 3D background array using a 1D average background and q values.
+
+    :param q_values: tuple of three 1D arrays (qx, qz, qy), q values for the 3D dataset
+    :param avg_background: average background data
+    :param avg_qvalues: q values for the 1D average background data
+    :return: the 3D background array
+    """
+    if (avg_background.ndim != 1) or (avg_qvalues.ndim != 1):
+        raise ValueError('avg_background and distances should be 1D arrays')
+    qx, qz, qy = q_values
+    nbz, nby, nbx = len(qx), len(qz), len(qy)
+    background = np.zeros((nbz, nby, nbx))
+    avg_background[np.isnan(avg_background)] = 0
+    interpolation = interp1d(avg_qvalues, avg_background, kind='linear', bounds_error=False, fill_value=np.nan)
+
+    for piz in np.arange(nbz):
+        for piy in np.arange(nby):
+            for pix in np.arange(nbx):
+                background[piz, piy, pix] = interpolation(qx[piz]**2+qz[piy]**2+qy[pix]**2)
+
+    background[np.isnan(background)] = 0
+    return background
 
 
 def find_nearest(original_array, array_values):
