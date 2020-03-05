@@ -67,11 +67,6 @@ debug = False  # True to see more plots
 #######################
 detector = exp.Detector(name=detector, binning=binning, roi=roi_detector)
 
-nbz, nby, nbx = int(np.floor((detector.roi[3] - detector.roi[2]) / detector.binning[2])), \
-                   int(np.floor((detector.roi[1] - detector.roi[0]) / detector.binning[1])), \
-                   int(np.floor((detector.roi[3] - detector.roi[2]) / detector.binning[2]))
-# for P10 data the rotation is around y vertical, hence gridded data range & binning in z and x are identical
-
 ###################
 # define colormap #
 ###################
@@ -123,50 +118,33 @@ angles_qz = np.arange(start=angles_ranges[2], stop=angles_ranges[3], step=angula
 angles_qy = np.arange(start=angles_ranges[4], stop=angles_ranges[5], step=angular_step)
 
 print('Number of angles to test: ', len(angles_qx)*len(angles_qz)*len(angles_qy))
+
+##################################
+# create the non rotated lattice #
+##################################
+pivot, offset, q_values, ref_lattice, ref_peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
+                                                               detector=detector, unitcell=unitcell,
+                                                               unitcell_param=unitcell_param, euler_angles=[0, 0, 0])
+nbz, nby, nbx = len(q_values[0]), len(q_values[1]), len(q_values[2])
+
+#############################
+# loop over rotation angles #
+#############################
 corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy)))
 struct_array = np.zeros((nbz, nby, nbx))
-
 for idz, alpha in enumerate(angles_qx):
     for idy, beta in enumerate(angles_qz):
         for idx, gamma in enumerate(angles_qy):
-
-            ######################
-            # create the lattice #
-            ######################
-            pivot, _, lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam, detector=detector,
-                                                unitcell=unitcell, unitcell_param=unitcell_param,
-                                                euler_angles=[alpha, beta, gamma])
+            rot_lattice, _ = simu.rotate_lattice(lattice_list=ref_lattice, peaks_list=ref_peaks,
+                                                 original_shape=(nbz, nby, nbx), pad_offset=offset, pivot=pivot,
+                                                 euler_angles=(alpha, beta, gamma))
             # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
-            struct_array[:] = 0
-            for [piz, piy, pix] in lattice:
-                struct_array[piz, piy, pix] = 1
 
-            ##############################################
-            # convolute the lattice with the 3D peak shape #
-            ##############################################
-            # since we have a small list of peaks, do not use convolution (too slow) but for loop
-            # 1 is related to indices for struct_array, 2 is related to indices for peak_shape
-            for [piz, piy, pix] in lattice:
-                startz1, startz2 = max(0, int(piz-kernel_length//2)), -min(0, int(piz-kernel_length//2))
-                stopz1, stopz2 = min(nbz-1, int(piz+kernel_length//2)),\
-                    kernel_length + min(0, int(nbz-1 - (piz+kernel_length//2)))
-                starty1, starty2 = max(0, int(piy-kernel_length//2)), -min(0, int(piy-kernel_length//2))
-                stopy1, stopy2 = min(nby-1, int(piy+kernel_length//2)),\
-                    kernel_length + min(0, int(nby-1 - (piy+kernel_length//2)))
-                startx1, startx2 = max(0, int(pix-kernel_length//2)), -min(0, int(pix-kernel_length//2))
-                stopx1, stopx2 = min(nbx-1, int(pix+kernel_length//2)),\
-                    kernel_length + min(0, int(nbx-1 - (pix+kernel_length//2)))
-                struct_array[startz1:stopz1+1, starty1:stopy1+1, startx1:stopx1+1] =\
-                    peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
+            # assign the peak shape to each lattice point
+            struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
+                                                 peak_shape=peak_shape, pivot=pivot)
 
-            # mask the region near the origin of the reciprocal space
-            struct_array[pivot[0] - kernel_length // 2:pivot[0] + kernel_length // 2 + 1,
-                         pivot[1] - kernel_length // 2:pivot[1] + kernel_length // 2 + 1,
-                         pivot[2] - kernel_length // 2:pivot[2] + kernel_length // 2 + 1] = 0
-
-            ####################################################
-            # calculate the correlation with experimental data #
-            ####################################################
+            # calculate the correlation between experimental data and simulated data
             corr[idz, idy, idx] = np.multiply(struct_array, data).sum()
             # print(alpha, beta, gamma, corr[idz, idy, idx])
 
@@ -187,40 +165,16 @@ fig.text(0.60, 0.25, "Kernel size = " + str(kernel_length) + " pixels", size=12)
 plt.pause(0.1)
 plt.savefig(savedir + 'cross_corr.png')
 
-######################
-# create the lattice #
-######################
-pivot, q_values, lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam, detector=detector,
-                                           unitcell=unitcell, unitcell_param=unitcell_param,
-                                           euler_angles=[alpha, beta, gamma])
+################################################
+# rotate the lattice at calculated best values #
+################################################
+rot_lattice, _ = simu.rotate_lattice(lattice_list=ref_lattice, peaks_list=ref_peaks, original_shape=(nbz, nby, nbx),
+                                     pad_offset=offset, pivot=pivot, euler_angles=(alpha, beta, gamma))
 # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
-struct_array[:] = 0
-for [piz, piy, pix] in lattice:
-    struct_array[piz, piy, pix] = 1
 
-##############################################
-# convolute the lattice with the 3D peak shape #
-##############################################
-# since we have a small list of peaks, do not use convolution (too slow) but for loop
-# 1 is related to indices for struct_array, 2 is related to indices for peak_shape
-for [piz, piy, pix] in lattice:
-    startz1, startz2 = max(0, int(piz - kernel_length // 2)), -min(0, int(piz - kernel_length // 2))
-    stopz1, stopz2 = min(nbz - 1, int(piz + kernel_length // 2)), \
-        kernel_length + min(0, int(nbz - 1 - (piz + kernel_length // 2)))
-    starty1, starty2 = max(0, int(piy - kernel_length // 2)), -min(0, int(piy - kernel_length // 2))
-    stopy1, stopy2 = min(nby - 1, int(piy + kernel_length // 2)), \
-        kernel_length + min(0, int(nby - 1 - (piy + kernel_length // 2)))
-    startx1, startx2 = max(0, int(pix - kernel_length // 2)), -min(0, int(pix - kernel_length // 2))
-    stopx1, stopx2 = min(nbx - 1, int(pix + kernel_length // 2)), \
-        kernel_length + min(0, int(nbx - 1 - (pix + kernel_length // 2)))
-    struct_array[startz1:stopz1 + 1, starty1:stopy1 + 1, startx1:stopx1 + 1] = \
-        peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
-
-# mask the region near the origin of the reciprocal space
-struct_array[pivot[0] - kernel_length // 2:pivot[0] + kernel_length // 2 + 1,
-             pivot[1] - kernel_length // 2:pivot[1] + kernel_length // 2 + 1,
-             pivot[2] - kernel_length // 2:pivot[2] + kernel_length // 2 + 1] = 0
-
+# assign the peak shape to each lattice point
+struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
+                                     peak_shape=peak_shape, pivot=pivot)
 if qvalues_flag:
     gu.contour_slices(data, (exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']), sum_frames=True,
                       title='Experimental data', levels=np.linspace(0, np.log10(data).max(), 150, endpoint=False),
