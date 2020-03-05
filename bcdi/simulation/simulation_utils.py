@@ -24,11 +24,8 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
     :param verbose: True to have printed comments
     :return: a list of lists of pixels positions for each Bragg peak.
     """
-    lattice_pos = []  # position of the pixels corresponding to hkl reflections
-    peaks = []  # list of hkl fitting the data range
-    # define the rotation using Euler angles with the direct beam as origin
-    rotation = Rotation.from_euler('xzy', euler_angles, degrees=True)
-    pivot_z, pivot_y, pivot_x = pivot  # downstream, vertical up, outboard
+    lattice_list = []  # position of the pixels corresponding to hkl reflections
+    peaks_list = []  # list of hkl fitting the data range
 
     recipr_param = 2*np.pi/unitcell_param  # reciprocal lattice is simple cubic of parameter 2*pi/unitcell_param
     if verbose:
@@ -63,26 +60,13 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
                     pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
                     pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
 
-                    # rotate the vector using Euler angles and the pivot point while compensating padding
-                    offset_h, offset_l, offset_k = pix_h-(pivot_z+leftpad_z), pix_l-(pivot_y+leftpad_y), \
-                        pix_k-(pivot_x+leftpad_x)
+                    lattice_list.append([pix_h, pix_l, pix_k])
+                    peaks_list.append([h, l, k])
 
-                    rot_h, rot_k, rot_l = rotation.apply([offset_h, offset_k, offset_l])
-                    # coordinates order for Rotation(): [qx, qy, qz]
-
-                    # shift back the origin to (0, 0, 0)
-                    rot_h, rot_l, rot_k = np.rint(rot_h+pivot_z+leftpad_z).astype(int),\
-                        np.rint(rot_l+pivot_y+leftpad_y).astype(int),\
-                        np.rint(rot_k+pivot_x+leftpad_x).astype(int)
-
-                    # calculate indices in the original q values coordinates before padding
-                    rot_h, rot_l, rot_k = rot_h - leftpad_z, rot_l - leftpad_y, rot_k - leftpad_x
-
-                    # check if the rotated peak is in the non-padded data range
-                    if (0 <= rot_h < numz) and (0 <= rot_l < numy) and (0 <= rot_k < numx):
-                        # use here CXI convention: downstream, vertical up, outboard
-                        lattice_pos.append([rot_h, rot_l, rot_k])
-                        peaks.append([h, l, k])
+    lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
+                                        original_shape=(numz, numy, numx),
+                                        pad_offset=(leftpad_z, leftpad_y, leftpad_x),
+                                        pivot=pivot, euler_angles=euler_angles)
 
     return lattice_pos, peaks
 
@@ -98,11 +82,8 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbo
     :param verbose: True to have printed comments
     :return: a list of lists of pixels positions for each Bragg peak.
     """
-    lattice_pos = []  # position of the pixels corresponding to hkl reflections
-    peaks = []  # list of hkl fitting the data range
-    # define the rotation using Euler angles with the direct beam as origin
-    rotation = Rotation.from_euler('xzy', euler_angles, degrees=True)
-    pivot_z, pivot_y, pivot_x = pivot  # downstream, vertical up, outboard
+    lattice_list = []  # position of the pixels corresponding to hkl reflections
+    peaks_list = []  # list of hkl fitting the data range
 
     recipr_param = 2*np.pi/unitcell_param  # reciprocal lattice is simple cubic of parameter 2*pi/unitcell_param
     if verbose:
@@ -134,26 +115,13 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbo
                 pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
                 pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
 
-                # rotate the vector using Euler angles and the pivot point while compensating padding
-                offset_h, offset_l, offset_k = pix_h-(pivot_z+leftpad_z), pix_l-(pivot_y+leftpad_y), \
-                    pix_k-(pivot_x+leftpad_x)
+                lattice_list.append([pix_h, pix_l, pix_k])
+                peaks_list.append([h, l, k])
 
-                rot_h, rot_k, rot_l = rotation.apply([offset_h, offset_k, offset_l])
-                # coordinates order for Rotation(): [qx, qy, qz]
-
-                # shift back the origin to (0, 0, 0)
-                rot_h, rot_l, rot_k = np.rint(rot_h+pivot_z+leftpad_z).astype(int),\
-                    np.rint(rot_l+pivot_y+leftpad_y).astype(int),\
-                    np.rint(rot_k+pivot_x+leftpad_x).astype(int)
-
-                # calculate indices in the original q values coordinates before padding
-                rot_h, rot_l, rot_k = rot_h - leftpad_z, rot_l - leftpad_y, rot_k - leftpad_x
-
-                # check if the rotated peak is in the non-padded data range
-                if (0 <= rot_h < numz) and (0 <= rot_l < numy) and (0 <= rot_k < numx):
-                    # use here CXI convention: downstream, vertical up, outboard
-                    lattice_pos.append([rot_h, rot_l, rot_k])
-                    peaks.append([h, l, k])
+    lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
+                                        original_shape=(numz, numy, numx),
+                                        pad_offset=(leftpad_z, leftpad_y, leftpad_x),
+                                        pivot=pivot, euler_angles=euler_angles)
 
     return lattice_pos, peaks
 
@@ -169,11 +137,8 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
     :param verbose: True to have printed comments
     :return: a list of lists of pixels positions for each Bragg peak.
     """
-    lattice_pos = []  # position of the pixels corresponding to hkl reflections
-    peaks = []  # list of hkl fitting the data range
-    # define the rotation using Euler angles with the direct beam as origin
-    rotation = Rotation.from_euler('xzy', euler_angles, degrees=True)
-    pivot_z, pivot_y, pivot_x = pivot  # downstream, vertical up, outboard
+    lattice_list = []  # position of the pixels corresponding to hkl reflections
+    peaks_list = []  # list of hkl fitting the data range
 
     recipr_param = 2*np.pi/unitcell_param  # reciprocal lattice is simple cubic of parameter 2*pi/unitcell_param
     if verbose:
@@ -207,26 +172,13 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
                     pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
                     pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
 
-                    # rotate the vector using Euler angles and the pivot point while compensating padding
-                    offset_h, offset_l, offset_k = pix_h-(pivot_z+leftpad_z), pix_l-(pivot_y+leftpad_y), \
-                        pix_k-(pivot_x+leftpad_x)
+                    lattice_list.append([pix_h, pix_l, pix_k])
+                    peaks_list.append([h, l, k])
 
-                    rot_h, rot_k, rot_l = rotation.apply([offset_h, offset_k, offset_l])
-                    # coordinates order for Rotation(): [qx, qy, qz]
-
-                    # shift back the origin to (0, 0, 0)
-                    rot_h, rot_l, rot_k = np.rint(rot_h+pivot_z+leftpad_z).astype(int),\
-                        np.rint(rot_l+pivot_y+leftpad_y).astype(int),\
-                        np.rint(rot_k+pivot_x+leftpad_x).astype(int)
-
-                    # calculate indices in the original q values coordinates before padding
-                    rot_h, rot_l, rot_k = rot_h - leftpad_z, rot_l - leftpad_y, rot_k - leftpad_x
-
-                    # check if the rotated peak is in the non-padded data range
-                    if (0 <= rot_h < numz) and (0 <= rot_l < numy) and (0 <= rot_k < numx):
-                        # use here CXI convention: downstream, vertical up, outboard
-                        lattice_pos.append([rot_h, rot_l, rot_k])
-                        peaks.append([h, l, k])
+    lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
+                                        original_shape=(numz, numy, numx),
+                                        pad_offset=(leftpad_z, leftpad_y, leftpad_x),
+                                        pivot=pivot, euler_angles=euler_angles)
 
     return lattice_pos, peaks
 
@@ -279,16 +231,62 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     pivot_y = int(numy - directbeam_y)  # detector Y vertical down, opposite to qz vertical up
     pivot_x = int(numx - directbeam_x)  # detector X inboard at P10, opposite to qy outboard
     if unitcell == 'fcc':
-        mylattice, peaks = fcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
-                                       pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
-    elif unitcell == 'bcc':
-        mylattice, peaks = bcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
-                                       pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
-    elif unitcell == 'cubic':
-        mylattice, peaks = cubic_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+        lattice_pos, peaks = fcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
                                          pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
+    elif unitcell == 'bcc':
+        lattice_pos, peaks = bcc_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+                                         pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
+    elif unitcell == 'cubic':
+        lattice_pos, peaks = cubic_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+                                           pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles)
     else:
         raise ValueError('Unit cell "' + unitcell + '" not yet implemented')
 
-    return (pivot_z, pivot_y, pivot_x), (qx, qz, qy), mylattice, peaks
+    return (pivot_z, pivot_y, pivot_x), (qx, qz, qy), lattice_pos, peaks
 
+
+def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, euler_angles=(0, 0, 0)):
+    """
+    Rotate lattice points given Euler angles, the pivot position and an eventual offset of the origin.
+
+    :param lattice_list: list of Bragg peaks positions in pixels to be rotated [[z1,y1,x1],[z2,y2,x2],...]
+    :param peaks_list: corresponding list of [[h1,l1,k1],[h2,l2,k2]...]
+    :param original_shape: shape of q values before padding
+    :param pad_offset: index shift of the origin for the padded q values
+    :param pivot:  tuple, the pivot point position in pixels for the rotation
+    :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
+    :return: list of Bragg peaks positions in pixels fitting into the range, and the corresponding list of hlk
+    """
+    lattice_pos = []  # position of the pixels corresponding to hkl reflections
+    peaks = []  # list of hkl fitting the data range
+    numz, numy, numx = original_shape
+    pivot_z, pivot_y, pivot_x = pivot  # downstream, vertical up, outboard
+    leftpad_z, leftpad_y, leftpad_x = pad_offset  # offset of the 0 index in padded q values: see fcc_lattice()
+
+    # define the rotation using Euler angles with the direct beam as origin
+    rotation = Rotation.from_euler('xzy', euler_angles, degrees=True)
+
+    for idx, point in enumerate(lattice_list):
+        pix_h, pix_l, pix_k = point
+        # rotate the vector using Euler angles and the pivot point while compensating padding
+        offset_h, offset_l, offset_k = pix_h-(pivot_z+leftpad_z), pix_l-(pivot_y+leftpad_y), \
+            pix_k-(pivot_x+leftpad_x)
+
+        rot_h, rot_k, rot_l = rotation.apply([offset_h, offset_k, offset_l])
+        # coordinates order for Rotation(): [qx, qy, qz]
+
+        # shift back the origin to (0, 0, 0)
+        rot_h, rot_l, rot_k = np.rint(rot_h+pivot_z+leftpad_z).astype(int),\
+            np.rint(rot_l+pivot_y+leftpad_y).astype(int),\
+            np.rint(rot_k+pivot_x+leftpad_x).astype(int)
+
+        # calculate indices in the original q values coordinates before padding
+        rot_h, rot_l, rot_k = rot_h - leftpad_z, rot_l - leftpad_y, rot_k - leftpad_x
+
+        # check if the rotated peak is in the non-padded data range
+        if (0 <= rot_h < numz) and (0 <= rot_l < numy) and (0 <= rot_k < numx):
+            # use here CXI convention: downstream, vertical up, outboard
+            lattice_pos.append([rot_h, rot_l, rot_k])
+            peaks.append(peaks_list[idx])
+
+    return lattice_pos, peaks
