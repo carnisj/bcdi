@@ -53,8 +53,7 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose
         for k in hkl:  # k outboard along qy
             for l in hkl:  # l vertical up along qz
                 # simple cubic unit cell with two point basis (0,0,0), (0.5,0.5,0.5)
-                # struct_factor = 1 + np.exp(1j*pi*(h+k+l)) = 1 + (-1)**(h+k+l)
-                struct_factor = 1 + (-1)**(h+k+l)
+                struct_factor = np.real(1 + np.exp(1j*np.pi*(h+k+l)))
                 if struct_factor != 0:  # find the position of the pixel nearest to q_bragg
                     pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param)
                     pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
