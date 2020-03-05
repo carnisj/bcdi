@@ -15,6 +15,7 @@ import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
+import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
 
@@ -57,6 +58,9 @@ binning = [4, 4, 4]  # binning of the detector
 ###########
 kernel_length = 21  # width of the 3D gaussian window
 debug = False  # True to see more plots
+create_background = True  # True to create a 3D background
+load_background = False  # True to load an existing 3D background
+
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -100,8 +104,52 @@ try:
     exp_qvalues = np.load(file_path)
     qvalues_flag = True
 except FileNotFoundError:
+    exp_qvalues = None
     qvalues_flag = False
     pass
+
+##################################
+# create the non rotated lattice #
+##################################
+# simu.rotate_lattice() needs that the origin of indices corresponds to the length of padded q values
+pivot, offset, q_values, ref_lattice, ref_peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
+                                                               detector=detector, unitcell=unitcell,
+                                                               unitcell_param=unitcell_param, euler_angles=[0, 0, 0],
+                                                               offset_indices=True)
+nbz, nby, nbx = len(q_values[0]), len(q_values[1]), len(q_values[2])
+
+################################################
+# remove background from the experimental data #
+################################################
+if create_background:
+    file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the 1D background file",
+                                           filetypes=[("NPZ", "*.npz")])
+    avg_background = np.load(file_path)['background']
+    distances = np.load(file_path)['distances']
+
+    if qvalues_flag:
+        background = util.create_3d_background(q_values=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']),
+                                              avg_background=avg_background, avg_qvalues=distances)
+    else:
+        print('Using calculated q values for background subtraction')
+        background = util.create_3d_background(q_values=q_values, avg_background=avg_background, avg_qvalues=distances)
+
+    gu.multislices_plot(background, sum_frames=True, title='Background subtracted data', vmin=0,
+                        vmax=np.log10(background).max(), scale='log', plot_colorbar=True, cmap=my_cmap,
+                        is_orthogonal=True, reciprocal_space=True)
+
+    np.savez_compressed(savedir+'3D_background_'+str(nbz)+'_'+str(nby)+'_'+str(nbx)+'.npz', background=background)
+    data = data - background
+    data[np.isnan(data)] = 0
+    data[data < 0] = 0
+
+elif load_background:
+    file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the 3D background file",
+                                           filetypes=[("NPZ", "*.npz")])
+    background = np.load(file_path)['background']
+    data = data - background
+    data[np.isnan(data)] = 0
+    data[data < 0] = 0
 
 #########################
 # define the peak shape #
@@ -115,16 +163,6 @@ angles_qx = np.arange(start=angles_ranges[0], stop=angles_ranges[1], step=angula
 angles_qz = np.arange(start=angles_ranges[2], stop=angles_ranges[3], step=angular_step)
 angles_qy = np.arange(start=angles_ranges[4], stop=angles_ranges[5], step=angular_step)
 print('Number of angles to test: ', len(angles_qx)*len(angles_qz)*len(angles_qy))
-
-##################################
-# create the non rotated lattice #
-##################################
-# simu.rotate_lattice() needs that the origin of indices corresponds to the length of padded q values
-pivot, offset, q_values, ref_lattice, ref_peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
-                                                               detector=detector, unitcell=unitcell,
-                                                               unitcell_param=unitcell_param, euler_angles=[0, 0, 0],
-                                                               offset_indices=True)
-nbz, nby, nbx = len(q_values[0]), len(q_values[1]), len(q_values[2])
 
 #############################
 # loop over rotation angles #
@@ -174,9 +212,12 @@ rot_lattice, _ = simu.rotate_lattice(lattice_list=ref_lattice, peaks_list=ref_pe
 struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
                                      peak_shape=peak_shape, pivot=pivot)
 if qvalues_flag:
+    # gu.contour_slices(data, (exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']), sum_frames=True,
+    #                   title='Experimental data', levels=np.linspace(0, np.log10(data).max(), 150, endpoint=False),
+    #                   scale='log', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
     gu.contour_slices(data, (exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']), sum_frames=True,
-                      title='Experimental data', levels=np.linspace(0, np.log10(data).max(), 150, endpoint=False),
-                      scale='log', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
+                      title='Experimental data', levels=np.linspace(0, 1, 10, endpoint=False),
+                      scale='linear', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
 else:
     gu.multislices_plot(data, sum_frames=True, title='Experimental data', vmin=0, vmax=np.log10(data).max(),
                         scale='log', plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
