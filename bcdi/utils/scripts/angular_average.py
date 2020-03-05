@@ -10,7 +10,7 @@ import tkinter as tk
 from tkinter import filedialog
 import gc
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 
 helptext = """
@@ -22,16 +22,16 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/'
+root_folder = 'D:/data/P10_August2019/data/gold2_2_00515/pynx/441_486_441_1_4_4_masked/'
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
-origin = [297, 242, 219]  # [np.nan, np.nan, np.nan] #
+origin = [220, 243, 221]  # [np.nan, np.nan, np.nan] #
 # position in pixels of the origin of the angular average in the array.
 # if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
 threshold = 1  # data < threshold will be set to 0
 debug = False  # True to show more plots
-xlim = [0, 1]  # limits used for the horizontal axis of the angular plot
-ylim = [0, 7]  # limits used for the vertical axis of the angular plot
+xlim = None  # limits used for the horizontal axis of the angular plot, leave None otherwise
+ylim = None  # limits used for the vertical axis of plots, leave None otherwise
 ##########################
 # end of user parameters #
 ##########################
@@ -145,8 +145,10 @@ fig, ax0 = plt.subplots(1, 1)
 plt0 = ax0.plot(q_axis, np.log10(y_values_masked), 'r')
 plt.xlabel('q (1/nm)')
 plt.ylabel('Angular average (A.U.)')
-plt.xlim(xlim[0], xlim[1])
-plt.ylim(ylim[0], ylim[1])
+if xlim is not None:
+    plt.xlim(xlim[0], xlim[1])
+if ylim is not None:
+    plt.ylim(ylim[0], ylim[1])
 plt.savefig(root_folder + 'angular_avg_labels.png')
 ax0.tick_params(labelbottom=False, labelleft=False)
 plt.xlabel('')
