@@ -129,7 +129,7 @@ if create_background:
 
     if qvalues_flag:
         background = util.create_3d_background(q_values=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']),
-                                              avg_background=avg_background, avg_qvalues=distances)
+                                               avg_background=avg_background, avg_qvalues=distances)
     else:
         print('Using calculated q values for background subtraction')
         background = util.create_3d_background(q_values=q_values, avg_background=avg_background, avg_qvalues=distances)
