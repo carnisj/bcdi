@@ -13,6 +13,41 @@ sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.utils.utilities as util
 
 
+def assign_peakshape(array_shape, lattice_list, peak_shape, pivot):
+    """
+    Assign the 3D peak_shape to lattice points.
+
+    :param array_shape: shape of the output array
+    :param lattice_list: list of points in pixels [[z1,y1,x1],[z2,y2,x2],...]
+    :param peak_shape: the 3D kernel to apply at each lattice point
+    :param pivot: position of the center of reciprocal space in pixels
+    :return: a 3D array featuring the peak shape at each lattice point
+    """
+    array = np.zeros(array_shape)
+    kernel_length = peak_shape.shape[0]
+    # since we have a small list of peaks, do not use convolution (too slow) but for loop
+    # 1 is related to indices for array, 2 is related to indices for peak_shape
+    for [piz, piy, pix] in lattice_list:
+        startz1, startz2 = max(0, int(piz - kernel_length // 2)), -min(0, int(piz - kernel_length // 2))
+        stopz1, stopz2 = min(array_shape[0] - 1, int(piz + kernel_length // 2)), \
+            kernel_length + min(0, int(array_shape[0] - 1 - (piz + kernel_length // 2)))
+        starty1, starty2 = max(0, int(piy - kernel_length // 2)), -min(0, int(piy - kernel_length // 2))
+        stopy1, stopy2 = min(array_shape[1] - 1, int(piy + kernel_length // 2)), \
+            kernel_length + min(0, int(array_shape[1] - 1 - (piy + kernel_length // 2)))
+        startx1, startx2 = max(0, int(pix - kernel_length // 2)), -min(0, int(pix - kernel_length // 2))
+        stopx1, stopx2 = min(array_shape[2] - 1, int(pix + kernel_length // 2)), \
+            kernel_length + min(0, int(array_shape[2] - 1 - (pix + kernel_length // 2)))
+        array[startz1:stopz1 + 1, starty1:stopy1 + 1, startx1:stopx1 + 1] = \
+            peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
+
+    # mask the region near the origin of the reciprocal space
+    array[pivot[0] - kernel_length // 2:pivot[0] + kernel_length // 2 + 1,
+          pivot[1] - kernel_length // 2:pivot[1] + kernel_length // 2 + 1,
+          pivot[2] - kernel_length // 2:pivot[2] + kernel_length // 2 + 1] = 0
+
+    return array
+
+
 def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), verbose=False):
     """
     Calculate Bragg peaks positions using experimental parameters for a BCC unit cell.
