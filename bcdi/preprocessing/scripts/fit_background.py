@@ -128,6 +128,7 @@ if scale == 'linear':
     interpolation = interp1d(distances[indices], data[indices], kind='linear', bounds_error=False,
                              fill_value=np.nan)
     background = interpolation(distances)
+    background[np.isnan(background)] = 0
     data_back = data - background
     data_back[data_back <= 0] = 0
 else:  # fit direcly log values, less artefactsdistances.max
@@ -135,6 +136,7 @@ else:  # fit direcly log values, less artefactsdistances.max
                              fill_value=np.nan)
     background = interpolation(distances)
     background = 10**background
+    background[np.isnan(background)] = 0
     data_back = data - background
     data_back[data_back <= 1] = 1  # will appear as 0 in log plot
 
