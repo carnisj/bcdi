@@ -122,6 +122,7 @@ nbz, nby, nbx = len(q_values[0]), len(q_values[1]), len(q_values[2])
 # remove background from the experimental data #
 ################################################
 if create_background:
+    load_background = False
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the 1D background file",
                                            filetypes=[("NPZ", "*.npz")])
     avg_background = np.load(file_path)['background']
@@ -143,7 +144,7 @@ if create_background:
     data[np.isnan(data)] = 0
     data[data < 0] = 0
 
-elif load_background:
+if load_background:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the 3D background file",
                                            filetypes=[("NPZ", "*.npz")])
     background = np.load(file_path)['background']
