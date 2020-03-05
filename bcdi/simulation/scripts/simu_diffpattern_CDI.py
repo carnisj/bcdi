@@ -76,8 +76,8 @@ plt.ion()
 # create the lattice #
 ######################
 pivot, _, q_values, lattice, peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
-                                                       detector=detector, unitcell=unitcell,
-                                                       unitcell_param=unitcell_param, euler_angles=angles)
+                                                  detector=detector, unitcell=unitcell,
+                                                  unitcell_param=unitcell_param, euler_angles=angles)
 # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 for idx in range(len(peaks)):
     print('Miller indices:', peaks[idx], '    at pixels:', lattice[idx])
