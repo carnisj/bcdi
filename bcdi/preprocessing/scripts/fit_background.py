@@ -26,6 +26,7 @@ datadir = 'D:/data/P10_August2019/data/gold2_2_00515/pynx/441_486_441_1_4_4/'
 method = 'manual'  # method for background determination: only 'manual' for now
 xlim = None  # limits used for the horizontal axis of plots, leave None otherwise
 ylim = None  # limits used for the vertical axis of plots, leave None otherwise
+include_origin = True  # if True, will include the first data point in the background
 scale = 'log'  # scale for plots
 field_names = ['distances', 'average']  # names of the fields in the file
 ##################################
@@ -92,27 +93,31 @@ y_values_masked = np.ma.masked_where(np.isnan(y_values), y_values)
 ######################
 # fit the background #
 ######################
-if method == 'manual':
-    plt.ioff()
-    xy = []  # list of points defining the background curve
-    flag_pause = False  # press x to pause for pan/zoom
-    data = np.copy(y_values_masked)
-    fig_back, _ = plt.subplots(1, 1)
-    if scale == 'linear':
-        plt.plot(distances, data, 'r')
-    else:
-        plt.plot(distances, np.log10(data), 'r')
-    plt.xlabel('q (1/nm)')
-    plt.ylabel('Angular average (A.U.)')
-    plt.title("Click to select background points\nx to pause/resume for pan/zoom\n"
-              "a restart ; p plot background ; q quit")
-    if xlim is not None:
-        plt.xlim(xlim[0], xlim[1])
-    if ylim is not None:
-        plt.ylim(ylim[0], ylim[1])
-    plt.connect('key_press_event', press_key)
-    plt.connect('button_press_event', on_click)
-    plt.show()
+plt.ioff()
+xy = []  # list of points defining the background curve
+if include_origin and scale == 'linear':
+    xy.append([0, y_values_masked[0]])
+elif include_origin and scale == 'log':
+    xy.append([0, np.log10(y_values_masked[0])])
+
+flag_pause = False  # press x to pause for pan/zoom
+data = np.copy(y_values_masked)
+fig_back, _ = plt.subplots(1, 1)
+if scale == 'linear':
+    plt.plot(distances, data, '.-r')
+else:
+    plt.plot(distances, np.log10(data), '.-r')
+plt.xlabel('q (1/nm)')
+plt.ylabel('Angular average (A.U.)')
+plt.title("Click to select background points\nx to pause/resume for pan/zoom\n"
+          "a restart ; p plot background ; q quit")
+if xlim is not None:
+    plt.xlim(xlim[0], xlim[1])
+if ylim is not None:
+    plt.ylim(ylim[0], ylim[1])
+plt.connect('key_press_event', press_key)
+plt.connect('button_press_event', on_click)
+plt.show()
 
 #########################################################
 # fit background and interpolate it to mach data points #
@@ -121,13 +126,13 @@ xy_array = np.asarray(xy)
 indices = util.find_nearest(distances, xy_array[:, 0])
 if scale == 'linear':
     interpolation = interp1d(distances[indices], data[indices], kind='linear', bounds_error=False,
-                             fill_value='extrapolate')
+                             fill_value=np.nan)
     background = interpolation(distances)
     data_back = data - background
     data_back[data_back <= 0] = 0
-else:  # fit direcly log values, less artefacts
+else:  # fit direcly log values, less artefactsdistances.max
     interpolation = interp1d(distances[indices], np.log10(data[indices]), kind='linear', bounds_error=False,
-                             fill_value='extrapolate')
+                             fill_value=np.nan)
     background = interpolation(distances)
     background = 10**background
     data_back = data - background
@@ -152,7 +157,7 @@ if scale == 'linear':
     ax1.plot(distances, data_back, 'r')
 else:
     ymax = np.log10(data[~np.isnan(data)].max())
-    ax0.plot(distances, np.log10(data), 'r', distances, background, 'b')
+    ax0.plot(distances, np.log10(data), 'r', distances,  np.log10(background), 'b')
     ax1.plot(distances, np.log10(data_back))
 
 ax0.legend(['data', 'background'])

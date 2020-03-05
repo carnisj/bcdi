@@ -3157,9 +3157,9 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
 
         figure.clear()
         if scale == 'linear':
-            plt.plot(distances, data, 'r', background[:, 0], background[:, 1], 'b')
+            plt.plot(distances, data, '.-r', background[:, 0], background[:, 1], 'b')
         else:
-            plt.plot(distances, np.log10(data), 'r',
+            plt.plot(distances, np.log10(data), '.-r',
                      background[:, 0], background[:, 1], 'b')  # background is in log scale directly
         axes = figure.gca()
         axes.set_xlim([xmin, xmax])
@@ -3176,9 +3176,9 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
 
         figure.clear()
         if scale == 'linear':
-            plt.plot(distances, data, 'r')
+            plt.plot(distances, data, '.-r')
         else:
-            plt.plot(distances, np.log10(data), 'r')
+            plt.plot(distances, np.log10(data), '.-r')
         axes = figure.gca()
         axes.set_xlim([xmin, xmax])
         axes.set_ylim([ymin, ymax])
@@ -3193,9 +3193,9 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
 
         figure.clear()
         if scale == 'linear':
-            plt.plot(distances, data, 'r', background[:, 0], background[:, 1], 'b')
+            plt.plot(distances, data, '.-r', background[:, 0], background[:, 1], 'b')
         else:
-            plt.plot(distances, np.log10(data), 'r',
+            plt.plot(distances, np.log10(data), '.-r',
                      background[:, 0], background[:, 1], 'b')  # background is in log scale directly
         axes = figure.gca()
         axes.set_xlim([xmin, xmax])
