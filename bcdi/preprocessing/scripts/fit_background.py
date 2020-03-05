@@ -22,7 +22,7 @@ Determination of the background in a reciprocal space linecut using an interacti
 data is saved in a different .npz file with the original field names.
 """
 
-datadir = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/'
+datadir = 'D:/data/P10_August2019/data/gold2_2_00515/pynx/441_486_441_1_4_4/'
 method = 'manual'  # method for background determination: only 'manual' for now
 xlim = None  # limits used for the horizontal axis of plots, leave None otherwise
 ylim = None  # limits used for the vertical axis of plots, leave None otherwise
@@ -129,7 +129,8 @@ else:  # fit direcly log values, less artefacts
     interpolation = interp1d(distances[indices], np.log10(data[indices]), kind='linear', bounds_error=False,
                              fill_value='extrapolate')
     background = interpolation(distances)
-    data_back = data - 10**background
+    background = 10**background
+    data_back = data - background
     data_back[data_back <= 1] = 1  # will appear as 0 in log plot
 
 ###################################
