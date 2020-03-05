@@ -8,7 +8,6 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy import signal
 import tkinter as tk
 from tkinter import filedialog
 import gc
@@ -108,7 +107,6 @@ except FileNotFoundError:
 # define the peak shape #
 #########################
 peak_shape = pu.gaussian_kernel(ndim=3, kernel_length=kernel_length, sigma=3, debugging=False)
-maxpeak = peak_shape.max()
 
 #####################################
 # define the list of angles to test #
@@ -116,22 +114,22 @@ maxpeak = peak_shape.max()
 angles_qx = np.arange(start=angles_ranges[0], stop=angles_ranges[1], step=angular_step)
 angles_qz = np.arange(start=angles_ranges[2], stop=angles_ranges[3], step=angular_step)
 angles_qy = np.arange(start=angles_ranges[4], stop=angles_ranges[5], step=angular_step)
-
 print('Number of angles to test: ', len(angles_qx)*len(angles_qz)*len(angles_qy))
 
 ##################################
 # create the non rotated lattice #
 ##################################
+# simu.rotate_lattice() needs that the origin of indices corresponds to the length of padded q values
 pivot, offset, q_values, ref_lattice, ref_peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
                                                                detector=detector, unitcell=unitcell,
-                                                               unitcell_param=unitcell_param, euler_angles=[0, 0, 0])
+                                                               unitcell_param=unitcell_param, euler_angles=[0, 0, 0],
+                                                               offset_indices=True)
 nbz, nby, nbx = len(q_values[0]), len(q_values[1]), len(q_values[2])
 
 #############################
 # loop over rotation angles #
 #############################
 corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy)))
-struct_array = np.zeros((nbz, nby, nbx))
 for idz, alpha in enumerate(angles_qx):
     for idy, beta in enumerate(angles_qz):
         for idx, gamma in enumerate(angles_qy):
