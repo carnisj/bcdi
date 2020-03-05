@@ -22,7 +22,7 @@ Determination of the background in a reciprocal space linecut using an interacti
 data is saved in a different .npz file with the original field names.
 """
 
-datadir = 'D:/data/P10_August2019/data/gold2_2_00515/pynx/'
+datadir = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/'
 method = 'manual'  # method for background determination: only 'manual' for now
 xlim = None  # limits used for the horizontal axis of plots, leave None otherwise
 ylim = None  # limits used for the vertical axis of plots, leave None otherwise
@@ -135,7 +135,7 @@ else:  # fit direcly log values, less artefacts
 ###################################
 # save background subtracted data #
 ###################################
-np.savez_compressed(datadir + 'q+angular_avg_back.npz', distances=distances, average=data_back)
+np.savez_compressed(datadir + 'q+angular_avg_back.npz', distances=distances, average=data_back, background=background)
 
 ###################################
 # plot background subtracted data #
