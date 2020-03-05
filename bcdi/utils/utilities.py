@@ -40,6 +40,7 @@ def create_3d_background(q_values, avg_background, avg_qvalues):
     interpolation = interp1d(avg_qvalues, avg_background, kind='linear', bounds_error=False, fill_value=np.nan)
 
     if symmetric:  # the origin of reciprocal space is centered
+        print('Using symmetry to speed up the calculation of the 3D background array')
         temp_array = np.zeros((nbz-cenz, nby-ceny, nbx-cenx))  # 1/8 of background
         # no need to calculate for each pixel, use symmetry instead
         for piz in np.arange(0, nbz-cenz):
