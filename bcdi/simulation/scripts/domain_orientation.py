@@ -135,7 +135,7 @@ if create_background:
         print('Using calculated q values for background subtraction')
         background = util.create_3d_background(q_values=q_values, avg_background=avg_background, avg_qvalues=distances)
 
-    gu.multislices_plot(background, sum_frames=True, title='Background subtracted data', vmin=0,
+    gu.multislices_plot(background, sum_frames=False, title='Background subtracted data', vmin=0,
                         vmax=np.log10(background).max(), scale='log', plot_colorbar=True, cmap=my_cmap,
                         is_orthogonal=True, reciprocal_space=True)
 
@@ -144,6 +144,10 @@ if create_background:
     data[np.isnan(data)] = 0
     data[data < 0] = 0
 
+    gu.multislices_plot(data, sum_frames=True, title='Background subtracted data', vmin=0,
+                        vmax=np.log10(data).max(), scale='log', plot_colorbar=True, cmap=my_cmap,
+                        is_orthogonal=True, reciprocal_space=True)
+
 if load_background:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the 3D background file",
                                            filetypes=[("NPZ", "*.npz")])
@@ -151,6 +155,10 @@ if load_background:
     data = data - background
     data[np.isnan(data)] = 0
     data[data < 0] = 0
+
+    gu.multislices_plot(data, sum_frames=True, title='Background subtracted data', vmin=0,
+                        vmax=np.log10(data).max(), scale='log', plot_colorbar=True, cmap=my_cmap,
+                        is_orthogonal=True, reciprocal_space=True)
 
 #########################
 # define the peak shape #
