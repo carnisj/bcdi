@@ -207,7 +207,7 @@ def remove_background(array, q_values, avg_background, avg_qvalues):
     for index in range(len(ind_z)):
         array[ind_z[index], ind_y[index], ind_x[index]] =\
             array[ind_z[index], ind_y[index], ind_x[index]]\
-            - interpolation(qx[ind_z[index]] ** 2 + qz[ind_y[index]] ** 2 + qy[ind_x[index]] ** 2)
+            - interpolation(np.sqrt(qx[ind_z[index]] ** 2 + qz[ind_y[index]] ** 2 + qy[ind_x[index]] ** 2))
 
     array[np.isnan(array)] = 0
     array[array < 0] = 0

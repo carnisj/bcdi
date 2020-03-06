@@ -132,11 +132,11 @@ if correct_background:
     distances = np.load(file_path)['distances']
 
     if qvalues_flag:
-        data = util.remove_background(data=data, avg_background=avg_background, avg_qvalues=distances,
+        data = util.remove_background(array=data, avg_background=avg_background, avg_qvalues=distances,
                                       q_values=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']))
     else:
         print('Using calculated q values for background subtraction')
-        data = util.remove_background(data=data, q_values=q_values, avg_background=avg_background,
+        data = util.remove_background(array=data, q_values=q_values, avg_background=avg_background,
                                       avg_qvalues=distances)
 
     np.savez_compressed(savedir+'data-background_'+str(nbz)+'_'+str(nby)+'_'+str(nbx)+'.npz', data=data)
