@@ -183,17 +183,17 @@ def pseudovoigt(x_axis, amp, cen, sig, ratio):
                   + (1-ratio) * lorentzian(x_axis, scaling_lorentzian, cen, sigma_lorentzian))
 
 
-def remove_background(data, q_values, avg_background, avg_qvalues):
+def remove_background(array, q_values, avg_background, avg_qvalues):
     """
     Subtract the averagae 1D background to the 3D array using q values.
 
-    :param data: the 3D array. It should be sparse for faster calculation.
+    :param array: the 3D array. It should be sparse for faster calculation.
     :param q_values: tuple of three 1D arrays (qx, qz, qy), q values for the 3D dataset
     :param avg_background: average background data
     :param avg_qvalues: q values for the 1D average background data
     :return: the 3D background array
     """
-    if data.ndim != 3:
+    if array.ndim != 3:
         raise ValueError('data should be a 3D array')
     if (avg_background.ndim != 1) or (avg_qvalues.ndim != 1):
         raise ValueError('avg_background and distances should be 1D arrays')
@@ -202,14 +202,14 @@ def remove_background(data, q_values, avg_background, avg_qvalues):
     avg_background[np.isnan(avg_background)] = 0
     interpolation = interp1d(avg_qvalues, avg_background, kind='linear', bounds_error=False, fill_value=np.nan)
 
-    ind_z, ind_y, ind_x = np.nonzero(data)  # if data is sparse, a loop over these indices only will be fast
+    ind_z, ind_y, ind_x = np.nonzero(array)  # if data is sparse, a loop over these indices only will be fast
 
     for index in range(len(ind_z)):
-        data[ind_z[index], ind_y[index], ind_x[index]] =\
-            data[ind_z[index], ind_y[index], ind_x[index]]\
+        array[ind_z[index], ind_y[index], ind_x[index]] =\
+            array[ind_z[index], ind_y[index], ind_x[index]]\
             - interpolation(qx[ind_z[index]] ** 2 + qz[ind_y[index]] ** 2 + qy[ind_x[index]] ** 2)
 
-    data[np.isnan(data)] = 0
-    data[data < 0] = 0
+    array[np.isnan(array)] = 0
+    array[array < 0] = 0
 
-    return data
+    return array
