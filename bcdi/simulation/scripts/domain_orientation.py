@@ -86,7 +86,7 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the dat
                                        filetypes=[("NPZ", "*.npz")])
 data = np.load(file_path)['data']
 nz, ny, nx = data.shape
-print('Sparsity of the data:', (data == 0).sum()/(nz*ny*nx)*100, '%')
+print('Sparsity of the data:', str('{:.2f}'.format((data == 0).sum()/(nz*ny*nx)*100)), '%')
 
 try:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the mask",

@@ -202,9 +202,6 @@ def remove_background(data, q_values, avg_background, avg_qvalues):
     avg_background[np.isnan(avg_background)] = 0
     interpolation = interp1d(avg_qvalues, avg_background, kind='linear', bounds_error=False, fill_value=np.nan)
 
-    import time
-    start = time.time()
-
     ind_z, ind_y, ind_x = np.nonzero(data)  # if data is sparse, a loop over these indices only will be fast
 
     for index in range(len(ind_z)):
@@ -214,8 +211,5 @@ def remove_background(data, q_values, avg_background, avg_qvalues):
 
     data[np.isnan(data)] = 0
     data[data < 0] = 0
-
-    end = time.time()
-    print('Elapsed time for the background calculation:', end - start)
 
     return data
