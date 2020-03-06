@@ -8,6 +8,8 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy import ndimage
+from skimage.feature import peak_local_max
 import tkinter as tk
 from tkinter import filedialog
 import gc
@@ -38,7 +40,7 @@ unitcell_param = 22.4  # in nm, unit cell parameter
 #########################
 angles_ranges = [-5, 5, 15, 25, -5, 5]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
-angular_step = 1  # in degrees
+angular_step = 2  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -53,12 +55,16 @@ direct_beam = (1195, 1187)  # tuple of int (vertical, horizontal): position of t
 roi_detector = [direct_beam[0] - 972, direct_beam[0] + 972, direct_beam[1] - 883, direct_beam[1] + 883]
 # [Vstart, Vstop, Hstart, Hstop]
 binning = [4, 4, 4]  # binning of the detector
+##########################
+# peak detection options #
+##########################
+min_distance = 20  # minimum distance between Bragg peaks in pixels
 ###########
 # options #
 ###########
-kernel_length = 21  # width of the 3D gaussian window
+kernel_length = 31  # width of the 3D gaussian window
 debug = False  # True to see more plots
-correct_background = True  # True to create a 3D background
+correct_background = False  # True to create a 3D background
 bckg_method = 'normalize'  # 'subtract' or 'normalize'
 
 ##################################
@@ -141,11 +147,33 @@ if correct_background:
         data = util.remove_background(array=data, q_values=q_values, avg_background=avg_background,
                                       avg_qvalues=distances, method=bckg_method)
 
-    np.savez_compressed(savedir+'data-background_'+str(nbz)+'_'+str(nby)+'_'+str(nbx)+'.npz', data=data)
+    np.savez_compressed(datadir+'data-background_'+str(nbz)+'_'+str(nby)+'_'+str(nbx)+'.npz', data=data)
 
     gu.multislices_plot(data, sum_frames=True, title='Background subtracted data', vmin=0,
                         vmax=np.log10(data).max(), scale='log', plot_colorbar=True, cmap=my_cmap,
                         is_orthogonal=True, reciprocal_space=True)
+
+#############################################
+# find Bragg peaks in the experimental data #
+#############################################
+density_map = np.copy(data)
+
+# find peaks
+local_maxi = peak_local_max(density_map, exclude_border=False, min_distance=min_distance, indices=True)
+nb_peaks = local_maxi.shape[0]
+print('Number of Bragg peaks isolated:', nb_peaks)
+print('Bragg peaks positions:')
+print(local_maxi)
+
+density_map[:] = 0
+
+for idx in range(nb_peaks):
+    piz, piy, pix = local_maxi[idx]
+    density_map[piz, piy, pix] = 1
+
+gu.multislices_plot(density_map, sum_frames=True, title='Bragg peaks positions', slice_position=pivot, vmin=0,
+                    vmax=1, scale='linear', cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
+plt.pause(0.1)
 
 #########################
 # define the peak shape #
@@ -177,7 +205,7 @@ for idz, alpha in enumerate(angles_qx):
                                                  peak_shape=peak_shape, pivot=pivot)
 
             # calculate the correlation between experimental data and simulated data
-            corr[idz, idy, idx] = np.multiply(struct_array, data).sum()
+            corr[idz, idy, idx] = np.multiply(struct_array, density_map).sum()
             # print(alpha, beta, gamma, corr[idz, idy, idx])
 
 ###############
@@ -208,17 +236,17 @@ rot_lattice, _ = simu.rotate_lattice(lattice_list=ref_lattice, peaks_list=ref_pe
 struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
                                      peak_shape=peak_shape, pivot=pivot)
 if qvalues_flag:
-    # gu.contour_slices(data, (exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']), sum_frames=True,
-    #                   title='Experimental data', levels=np.linspace(0, np.log10(data).max(), 150, endpoint=False),
-    #                   scale='log', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
-    gu.contour_slices(data, (exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']), sum_frames=True,
+    gu.contour_slices(data, q_coordinates=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']), sum_frames=True,
                       title='Experimental data', levels=np.linspace(0, 1, 10, endpoint=False),
                       scale='linear', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
 else:
-    gu.multislices_plot(data, sum_frames=True, title='Experimental data', vmin=0, vmax=np.log10(data).max(),
-                        scale='log', plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
+    gu.contour_slices(data, q_coordinates=q_values, sum_frames=True,
+                      title='Experimental data', levels=np.linspace(0, 1, 10, endpoint=False),
+                      scale='linear', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
+plt.pause(0.1)
 
-fig, _, _ = gu.contour_slices(struct_array, q_values, sum_frames=True, title='Simulated diffraction pattern',
+fig, _, _ = gu.contour_slices(struct_array, q_coordinates=q_values, sum_frames=True,
+                              title='Simulated diffraction pattern',
                               levels=np.linspace(0, struct_array.max(), 10, endpoint=False),
                               plot_colorbar=False, scale='linear', is_orthogonal=True, reciprocal_space=True)
 fig.text(0.60, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
