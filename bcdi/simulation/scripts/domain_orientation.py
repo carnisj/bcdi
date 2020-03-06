@@ -8,7 +8,6 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy import ndimage
 from skimage.feature import peak_local_max
 import tkinter as tk
 from tkinter import filedialog
@@ -24,7 +23,8 @@ import bcdi.simulation.simulation_utils as simu
 helptext = """
 Calculate the position of the Bragg peaks for a mesocrystal given the lattice type, the unit cell parameter
 and beamline-related parameters. Assign 3D Gaussians to each lattice point and rotates the unit cell in order to
-maximize the cross-correlation of the simulated data with experimental data.
+maximize the cross-correlation of the simulated data with experimental data. The experimental data should be sparse 
+(using a photon threshold), and Bragg peaks maximum must be clearly identifiable. 
 
 Laboratory frame convention (CXI): z downstream, y vertical up, x outboard."""
 
