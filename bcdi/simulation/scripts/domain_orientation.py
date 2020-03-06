@@ -58,8 +58,7 @@ binning = [4, 4, 4]  # binning of the detector
 ###########
 kernel_length = 21  # width of the 3D gaussian window
 debug = False  # True to see more plots
-create_background = True  # True to create a 3D background
-load_background = False  # True to load an existing 3D background
+correct_background = True  # True to create a 3D background
 
 ##################################
 # end of user-defined parameters #
@@ -86,6 +85,8 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the data to fit",
                                        filetypes=[("NPZ", "*.npz")])
 data = np.load(file_path)['data']
+nz, ny, nx = data.shape
+print('Sparsity of the data:', (data == 0).sum()/(nz*ny*nx)*100, '%')
 
 try:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the mask",
@@ -121,40 +122,24 @@ nbz, nby, nbx = len(q_values[0]), len(q_values[1]), len(q_values[2])
 ################################################
 # remove background from the experimental data #
 ################################################
-if create_background:
-    load_background = False
+gu.multislices_plot(data, sum_frames=True, title='data', vmin=0, vmax=np.log10(data).max(), scale='log',
+                    plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
+
+if correct_background:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the 1D background file",
                                            filetypes=[("NPZ", "*.npz")])
     avg_background = np.load(file_path)['background']
     distances = np.load(file_path)['distances']
 
     if qvalues_flag:
-        background = util.create_3d_background(q_values=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']),
-                                               avg_background=avg_background, avg_qvalues=distances)
+        data = util.remove_background(data=data, avg_background=avg_background, avg_qvalues=distances,
+                                      q_values=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']))
     else:
         print('Using calculated q values for background subtraction')
-        background = util.create_3d_background(q_values=q_values, avg_background=avg_background, avg_qvalues=distances)
+        data = util.remove_background(data=data, q_values=q_values, avg_background=avg_background,
+                                      avg_qvalues=distances)
 
-    gu.multislices_plot(background, sum_frames=False, title='Background subtracted data', vmin=0,
-                        vmax=np.log10(background).max(), scale='log', plot_colorbar=True, cmap=my_cmap,
-                        is_orthogonal=True, reciprocal_space=True)
-
-    np.savez_compressed(savedir+'3D_background_'+str(nbz)+'_'+str(nby)+'_'+str(nbx)+'.npz', background=background)
-    data = data - background
-    data[np.isnan(data)] = 0
-    data[data < 0] = 0
-
-    gu.multislices_plot(data, sum_frames=True, title='Background subtracted data', vmin=0,
-                        vmax=np.log10(data).max(), scale='log', plot_colorbar=True, cmap=my_cmap,
-                        is_orthogonal=True, reciprocal_space=True)
-
-if load_background:
-    file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the 3D background file",
-                                           filetypes=[("NPZ", "*.npz")])
-    background = np.load(file_path)['background']
-    data = data - background
-    data[np.isnan(data)] = 0
-    data[data < 0] = 0
+    np.savez_compressed(savedir+'data-background_'+str(nbz)+'_'+str(nby)+'_'+str(nbx)+'.npz', data=data)
 
     gu.multislices_plot(data, sum_frames=True, title='Background subtracted data', vmin=0,
                         vmax=np.log10(data).max(), scale='log', plot_colorbar=True, cmap=my_cmap,

@@ -12,52 +12,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
-def create_3d_background(q_values, avg_background, avg_qvalues):
-    """
-    Create a 3D background array using a 1D average background and q values.
 
-    :param q_values: tuple of three 1D arrays (qx, qz, qy), q values for the 3D dataset
-    :param avg_background: average background data
-    :param avg_qvalues: q values for the 1D average background data
-    :return: the 3D background array
-    """
-    if (avg_background.ndim != 1) or (avg_qvalues.ndim != 1):
-        raise ValueError('avg_background and distances should be 1D arrays')
-    symmetric = False
-    qx, qz, qy = q_values
-    nbz, nby, nbx = len(qx), len(qz), len(qy)
-
-    # look for the position of the origin of reciprocal space
-    cenz, ceny, cenx = find_nearest(qx, 0), find_nearest(qz, 0), find_nearest(qy, 0)
-
-    if cenz in [nbz // 2 - 1, nbz // 2, nbz // 2 + 1]\
-            and ceny in [nby // 2 - 1, nby // 2, nby // 2 + 1]\
-            and cenx in [nbx // 2 - 1, nbx // 2, nbx // 2 + 1]:
-        symmetric = True
-
-    background = np.zeros((nbz, nby, nbx))
-    avg_background[np.isnan(avg_background)] = 0
-    interpolation = interp1d(avg_qvalues, avg_background, kind='linear', bounds_error=False, fill_value=np.nan)
-
-    if symmetric:  # the origin of reciprocal space is centered
-        print('Using symmetry to speed up the calculation of the 3D background array')
-        temp_array = np.zeros((nbz-cenz, nby-ceny, nbx-cenx))  # 1/8 of background
-        # no need to calculate for each pixel, use symmetry instead
-        for piz in np.arange(0, nbz-cenz):
-            for piy in np.arange(0, nby-ceny):
-                for pix in np.arange(0, nbx-cenx):
-                    temp_array[piz, piy, pix] = interpolation(qx[piz] ** 2 + qz[piy] ** 2 + qy[pix] ** 2)
-
-        background[cenz:nbz, ceny:nby, cenx:nbx] = temp_array
-        # TODO: put the 7/8 remaining together using flipped versions of temp_array
-    else:  # need to calculate the background at each pixel
-        for piz in np.arange(nbz):
-            for piy in np.arange(nby):
-                for pix in np.arange(nbx):
-                    background[piz, piy, pix] = interpolation(qx[piz]**2+qz[piy]**2+qy[pix]**2)
-
-    background[np.isnan(background)] = 0
-    return background
 
 
 def find_nearest(original_array, array_values):
@@ -226,3 +181,41 @@ def pseudovoigt(x_axis, amp, cen, sig, ratio):
     scaling_lorentzian = 1  # the Lorentzian is normalized
     return amp * (ratio * gaussian(x_axis, scaling_gaussian, cen, scaling_gaussian)
                   + (1-ratio) * lorentzian(x_axis, scaling_lorentzian, cen, sigma_lorentzian))
+
+
+def remove_background(data, q_values, avg_background, avg_qvalues):
+    """
+    Subtract the averagae 1D background to the 3D array using q values.
+
+    :param data: the 3D array. It should be sparse for faster calculation.
+    :param q_values: tuple of three 1D arrays (qx, qz, qy), q values for the 3D dataset
+    :param avg_background: average background data
+    :param avg_qvalues: q values for the 1D average background data
+    :return: the 3D background array
+    """
+    if data.ndim != 3:
+        raise ValueError('data should be a 3D array')
+    if (avg_background.ndim != 1) or (avg_qvalues.ndim != 1):
+        raise ValueError('avg_background and distances should be 1D arrays')
+
+    qx, qz, qy = q_values
+    avg_background[np.isnan(avg_background)] = 0
+    interpolation = interp1d(avg_qvalues, avg_background, kind='linear', bounds_error=False, fill_value=np.nan)
+
+    import time
+    start = time.time()
+
+    ind_z, ind_y, ind_x = np.nonzero(data)  # if data is sparse, a loop over these indices only will be fast
+
+    for index in range(len(ind_z)):
+        data[ind_z[index], ind_y[index], ind_x[index]] =\
+            data[ind_z[index], ind_y[index], ind_x[index]]\
+            - interpolation(qx[ind_z[index]] ** 2 + qz[ind_y[index]] ** 2 + qy[ind_x[index]] ** 2)
+
+    data[np.isnan(data)] = 0
+    data[data < 0] = 0
+
+    end = time.time()
+    print('Elapsed time for the background calculation:', end - start)
+
+    return data
