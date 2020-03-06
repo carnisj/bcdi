@@ -38,7 +38,7 @@ unitcell_param = 22.4  # in nm, unit cell parameter
 #########################
 angles_ranges = [-5, 5, 15, 25, -5, 5]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
-angular_step = 2  # in degrees
+angular_step = 1  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -59,6 +59,7 @@ binning = [4, 4, 4]  # binning of the detector
 kernel_length = 21  # width of the 3D gaussian window
 debug = False  # True to see more plots
 correct_background = True  # True to create a 3D background
+bckg_method = 'normalize'  # 'subtract' or 'normalize'
 
 ##################################
 # end of user-defined parameters #
@@ -133,11 +134,12 @@ if correct_background:
 
     if qvalues_flag:
         data = util.remove_background(array=data, avg_background=avg_background, avg_qvalues=distances,
-                                      q_values=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']))
+                                      q_values=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']),
+                                      method=bckg_method)
     else:
         print('Using calculated q values for background subtraction')
         data = util.remove_background(array=data, q_values=q_values, avg_background=avg_background,
-                                      avg_qvalues=distances)
+                                      avg_qvalues=distances, method=bckg_method)
 
     np.savez_compressed(savedir+'data-background_'+str(nbz)+'_'+str(nby)+'_'+str(nbx)+'.npz', data=data)
 
