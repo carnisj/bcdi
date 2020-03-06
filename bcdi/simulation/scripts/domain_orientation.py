@@ -38,7 +38,7 @@ unitcell_param = 22.4  # in nm, unit cell parameter
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [-5, 5, 15, 25, -5, 5]  # in degrees, ranges to span for the rotation around qx downstream,
+angles_ranges = [-15, 15, 10, 40, -15, 15]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
 angular_step = 2  # in degrees
 #######################
@@ -171,6 +171,9 @@ for idx in range(nb_peaks):
     piz, piy, pix = local_maxi[idx]
     density_map[piz, piy, pix] = 1
 
+nonzero_indices = np.nonzero(density_map)
+bragg_peaks = density_map[nonzero_indices]  # 1D array of length nb_peaks
+
 gu.multislices_plot(density_map, sum_frames=True, title='Bragg peaks positions', slice_position=pivot, vmin=0,
                     vmax=1, scale='linear', cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
 plt.pause(0.1)
@@ -205,7 +208,7 @@ for idz, alpha in enumerate(angles_qx):
                                                  peak_shape=peak_shape, pivot=pivot)
 
             # calculate the correlation between experimental data and simulated data
-            corr[idz, idy, idx] = np.multiply(struct_array, density_map).sum()
+            corr[idz, idy, idx] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
             # print(alpha, beta, gamma, corr[idz, idy, idx])
 
 ###############
