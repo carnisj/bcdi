@@ -182,13 +182,13 @@ file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Selec
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
 mask, _ = util.load_file(file_path)
 
-# crop the diffraction pattern and the mask to compensate the auto_center_resize option used in PyNX. The shape will be
-# equal to 'roi_final' parameter of the .cxi file
+# crop the diffraction pattern and the mask to compensate the "auto_center_resize" option used in PyNX.
+# The shape will be equal to 'roi_final' parameter of the .cxi file
 if len(crop_roi) != 0:
     diff_pattern = diff_pattern[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
     mask = mask[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
 
-# bin the diffraction pattern and the mask to compensate the rebin option used in PyNX.
+# bin the diffraction pattern and the mask to compensate the "rebin" option used in PyNX.
 # update also the detector pixel sizes to take into account the binning
 detector.pixelsize_y = detector.pixelsize_y * phasing_binning[1]
 detector.pixelsize_x = detector.pixelsize_x * phasing_binning[2]
