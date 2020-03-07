@@ -83,9 +83,12 @@ energy = 8000   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-pre_binning = (1, 1, 1)  # binning factor before phasing: rocking curve axis, detector vertical and horizontal axis
-# this is necessary to calculate correctly q values. If data was binned during phasing, it will be automatically padded
-# to the diffraction data shape before calculating the Fourier transform.
+pre_binning = (1, 3, 1)  # binning factor applied during preprocessing: rocking curve axis, detector vertical and
+# horizontal axis. This is necessary to calculate correctly q values.
+phasing_binning = (1, 2, 2)  # binning factor applied during phasing: rocking curve axis, detector vertical and
+# horizontal axis.
+# If the reconstructed object was further croppedafter phasing, it will be automatically padded back to the FFT window
+# shape used during phasing (after binning) before calculating the Fourier transform.
 ###############################
 # only needed for simulations #
 ###############################
@@ -123,7 +126,7 @@ setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, d
 print('\nScan', scan)
 print('Setup: ', setup.beamline)
 print('Detector: ', detector.name)
-print('Pixel Size: ', detector.pixelsize_x, 'm')
+print('Pixel sizes after pre_binning (vertical, horizontal): ', detector.pixelsize_y, detector.pixelsize_x, '(m)')
 print('Scan type: ', setup.rocking_angle)
 print('Sample to detector distance: ', setup.distance, 'm')
 print('Energy:', setup.energy, 'ev')
@@ -179,7 +182,23 @@ file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Selec
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
 mask, _ = util.load_file(file_path)
 
-numz, numy, numx = diff_pattern.shape
+# crop the diffraction pattern and the mask to compensate the auto_center_resize option used in PyNX. The shape will be
+# equal to 'roi_final' parameter of the .cxi file
+if len(crop_roi) != 0:
+    diff_pattern = diff_pattern[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
+    mask = mask[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
+
+# bin the diffraction pattern and the mask to compensate the rebin option used in PyNX.
+# update also the detector pixel sizes to take into account the binning
+detector.pixelsize_y = detector.pixelsize_y * phasing_binning[1]
+detector.pixelsize_x = detector.pixelsize_x * phasing_binning[2]
+final_binning = np.multiply(pre_binning, phasing_binning)
+detector.binning = final_binning
+print('Pixel sizes after phasing_binning (vertical, horizontal): ', detector.pixelsize_y, detector.pixelsize_x, '(m)')
+diff_pattern = pu.bin_data(array=diff_pattern, binning=phasing_binning, debugging=False)
+mask = pu.bin_data(array=mask, binning=phasing_binning, debugging=False)
+
+numz, numy, numx = diff_pattern.shape  # this shape will be used for the calculation of q values
 print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
 diff_pattern[np.nonzero(mask)] = 0
 
@@ -225,7 +244,7 @@ del qx, qy, qz
 gc.collect()
 
 if distances_q.shape != diff_pattern.shape:
-    print('\nThe shape of q values and the shape of the diffraction pattern are different: check binning parameter')
+    print('\nThe shape of q values and the shape of the diffraction pattern are different: check binning parameters!')
     sys.exit()
 
 if debug:
@@ -246,13 +265,8 @@ print('Opening ', file_path)
 if extension == '.h5':
     comment = comment + '_mode'
 
-if len(crop_roi) != 0:
-    diff_pattern = diff_pattern[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
-    mask = mask[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
-    distances_q = distances_q[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
-    print('Measured diffraction pattern cropped to match "roi_final" parameter of PyNX, new shape=', diff_pattern.shape)
-
-# check if the shape is the same as the measured diffraction pattern
+# check if the shape of the real space object is the same as the measured diffraction pattern
+# the real space object may have been further cropped to a tight support, to save memory space.
 if obj.shape != diff_pattern.shape:
     print('Reconstructed object shape = ', obj.shape, 'different from the experimental diffraction pattern: crop/pad')
     obj = pu.crop_pad(array=obj, output_shape=diff_pattern.shape, debugging=False)
