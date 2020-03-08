@@ -187,8 +187,8 @@ mask, _ = util.load_file(file_path)
 if len(crop_roi) == 6:
     diff_pattern = diff_pattern[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
     mask = mask[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
-else:
-    print('Crop_roi should be a list of 6 integers!')
+elif len(crop_roi) != 0:
+    print('Crop_roi should be a list of 6 integers or a blank list!')
     sys.exit()
 
 # bin the diffraction pattern and the mask to compensate the "rebin" option used in PyNX.
