@@ -84,9 +84,12 @@ energy = 9000   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-pre_binning = (1, 1, 1)  # binning factor before phasing: rocking curve axis, detector vertical and horizontal axis
-# this is necessary to calculate correctly q values. If data was binned during phasing, it will be automatically padded
-# to the diffraction data shape before calculating the Fourier transform.
+pre_binning = (1, 3, 1)  # binning factor applied during preprocessing: rocking curve axis, detector vertical and
+# horizontal axis. This is necessary to calculate correctly q values. Use (1, binning_Y, binning_X) for 2D data.
+phasing_binning = (1, 2, 2)  # binning factor applied during phasing: rocking curve axis, detector vertical and
+# horizontal axis. Use (1, binning_Y, binning_X) for 2D data.
+# If the reconstructed object was further cropped after phasing, it will be automatically padded back to the FFT window
+# shape used during phasing (after binning) before calculating the Fourier transform.
 ###############################
 # only needed for simulations #
 ###############################
@@ -171,20 +174,6 @@ my_cmap = colormap.cmap
 plt.ion()
 root = tk.Tk()
 root.withdraw()
-file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select the 3D diffraction pattern",
-                                       filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
-diff_pattern, _ = util.load_file(file_path)
-diff_pattern = diff_pattern.astype(float)
-
-numz, numy, numx = diff_pattern.shape
-print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
-z0, y0, x0 = center_of_mass(diff_pattern)
-z0, y0, x0 = [int(z0), int(y0), int(x0)]
-print("COM of measured pattern after masking: ", z0, y0, x0, ' Number of unmasked photons =', diff_pattern.sum())
-
-fig, _, _ = gu.multislices_plot(np.sqrt(diff_pattern), sum_frames=False, title='3D diffraction amplitude', vmin=0,
-                                vmax=3.5, is_orthogonal=False, reciprocal_space=True, slice_position=[z0, y0, x0],
-                                scale='log', plot_colorbar=True)
 
 file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select 2D slice",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
@@ -193,14 +182,60 @@ slice_2D = slice_2D.astype(float)
 
 file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select 2D mask",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
-mask, _ = util.load_file(file_path)
-slice_2D[np.nonzero(mask)] = 0
+mask_2D, _ = util.load_file(file_path)
+
+# crop the diffraction pattern and the mask to compensate the "auto_center_resize" option used in PyNX.
+# The shape will be equal to 'roi_final' parameter of the .cxi file
+if len(crop_roi) == 4:
+    slice_2D = slice_2D[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
+    mask_2D = mask_2D[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
+elif len(crop_roi) != 0:
+    print('Crop_roi should be a list of 6 integers or a blank list!')
+    sys.exit()
+
+# bin the diffraction pattern and the mask to compensate the "rebin" option used in PyNX.
+# update also the detector pixel sizes to take into account the binning
+detector.pixelsize_y = detector.pixelsize_y * phasing_binning[1]
+detector.pixelsize_x = detector.pixelsize_x * phasing_binning[2]
+final_binning = np.multiply(pre_binning, phasing_binning)
+detector.binning = final_binning
+print('Pixel sizes after phasing_binning (vertical, horizontal): ', detector.pixelsize_y, detector.pixelsize_x, '(m)')
+slice_2D = pu.bin_data(array=slice_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False)
+mask_2D = pu.bin_data(array=mask_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False)
+
+slice_2D[np.nonzero(mask_2D)] = 0
 
 plt.figure()
 plt.imshow(np.log10(np.sqrt(slice_2D)), cmap=my_cmap, vmin=0, vmax=3.5)
 plt.title('2D diffraction amplitude')
 plt.colorbar()
 plt.pause(0.1)
+
+######################
+# calculate q values #
+######################
+file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select the 3D diffraction pattern",
+                                       filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
+diff_pattern, _ = util.load_file(file_path)
+diff_pattern = diff_pattern.astype(float)
+
+# crop the diffraction pattern to compensate the "auto_center_resize" option used in PyNX.
+# The shape will be equal to 'roi_final' parameter of the .cxi file
+diff_pattern = diff_pattern[:, crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
+
+# bin the diffraction pattern to compensate the "rebin" option used in PyNX.
+# the detector pixel sizes where already updated above.
+diff_pattern = pu.bin_data(array=diff_pattern, binning=phasing_binning, debugging=False)
+
+numz, numy, numx = diff_pattern.shape
+print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
+z0, y0, x0 = center_of_mass(diff_pattern)
+z0, y0, x0 = [int(z0), int(y0), int(x0)]
+print("COM of measured pattern: ", z0, y0, x0)
+
+fig, _, _ = gu.multislices_plot(np.sqrt(diff_pattern), sum_frames=False, title='3D diffraction amplitude', vmin=0,
+                                vmax=3.5, is_orthogonal=False, reciprocal_space=True, slice_position=[z0, y0, x0],
+                                scale='log', plot_colorbar=True)
 
 ################################################
 # calculate the q matrix respective to the COM #
@@ -238,8 +273,6 @@ if debug:
                         title='distances_q', scale='linear', vmin=np.nan, vmax=np.nan,
                         reciprocal_space=True)
 
-numy, numx = slice_2D.shape
-print('\n2D slice shape =', numy, numx)
 if slicing_axis == 0:
     distances_q = distances_q[z0, :, :]  # take only the slice at the COM in y0
 elif slicing_axis == 1:
@@ -250,31 +283,30 @@ else:
     print('Invalid value for "slicing_axis" parameter')
     sys.exit()
 
-distances_q = pu.crop_pad_2d(array=distances_q, output_shape=slice_2D.shape, debugging=False)
+if distances_q.shape != slice_2D.shape:
+    print('\nThe shape of 2D q values and the shape of the 2D diffraction pattern are different!')
+    sys.exit()
+
 plt.figure()
 plt.imshow(distances_q, cmap=my_cmap)
 plt.title('2D distances_q')
 plt.colorbar()
 plt.pause(0.1)
+
 #############################
 # load reconstructed object #
 #############################
 file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select a 2D reconstruction (prtf)",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
                                                   ("CXI", "*.cxi"), ("HDF5", "*.h5")])
-
 obj, extension = util.load_file(file_path)
 print('Opening ', file_path)
 
 if extension == '.h5':
     comment = comment + '_mode'
 
-if len(crop_roi) != 0:
-    slice_2D = slice_2D[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
-    mask = mask[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
-    distances_q = distances_q[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
-    print('2D slice cropped to match "roi_final" parameter of PyNX, new shape=', slice_2D.shape)
-# check if the shape is the same as the measured diffraction pattern
+# check if the shape of the real space object is the same as the measured 2D diffraction pattern
+# the real space object may have been further cropped to a tight support, to save memory space.
 if obj.shape != slice_2D.shape:
     print('Reconstructed object shape = ', obj.shape, 'different from the 2D diffraction slice: crop/pad')
     obj = pu.crop_pad_2d(array=obj, output_shape=slice_2D.shape, debugging=False)
@@ -286,11 +318,12 @@ plt.title('abs(reconstructed object')
 plt.pause(0.1)
 
 # calculate the retrieved diffraction amplitude
+numy, numx = slice_2D.shape
 phased_fft = fftshift(fftn(obj)) / (np.sqrt(numy)*np.sqrt(numx))  # complex amplitude
 del obj
 gc.collect()
 
-if True:
+if debug:
     plt.figure()
     plt.imshow(np.log10(abs(phased_fft)), vmin=0, vmax=3.5, cmap=my_cmap)
     plt.colorbar()
@@ -308,10 +341,10 @@ plt.title('abs(retrieved amplitude)')
 plt.colorbar()
 plt.pause(0.1)
 
-phased_fft[np.nonzero(mask)] = 0  # do not take mask voxels into account
+phased_fft[np.nonzero(mask_2D)] = 0  # do not take mask voxels into account
 print('Max(retrieved amplitude) =', abs(phased_fft).max())
 print('COM of the retrieved diffraction pattern after masking: ', center_of_mass(abs(phased_fft)))
-del mask
+del mask_2D
 gc.collect()
 
 gu.combined_plots(tuple_array=(slice_2D, phased_fft), tuple_sum_frames=False, tuple_sum_axis=(0, 0),
