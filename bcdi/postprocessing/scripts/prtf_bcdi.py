@@ -184,9 +184,12 @@ mask, _ = util.load_file(file_path)
 
 # crop the diffraction pattern and the mask to compensate the "auto_center_resize" option used in PyNX.
 # The shape will be equal to 'roi_final' parameter of the .cxi file
-if len(crop_roi) != 0:
+if len(crop_roi) == 6:
     diff_pattern = diff_pattern[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
     mask = mask[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
+else:
+    print('Crop_roi should be a list of 6 integers!')
+    sys.exit()
 
 # bin the diffraction pattern and the mask to compensate the "rebin" option used in PyNX.
 # update also the detector pixel sizes to take into account the binning
