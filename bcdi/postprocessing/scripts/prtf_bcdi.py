@@ -87,7 +87,7 @@ pre_binning = (1, 3, 1)  # binning factor applied during preprocessing: rocking 
 # horizontal axis. This is necessary to calculate correctly q values.
 phasing_binning = (1, 2, 2)  # binning factor applied during phasing: rocking curve axis, detector vertical and
 # horizontal axis.
-# If the reconstructed object was further croppedafter phasing, it will be automatically padded back to the FFT window
+# If the reconstructed object was further cropped after phasing, it will be automatically padded back to the FFT window
 # shape used during phasing (after binning) before calculating the Fourier transform.
 ###############################
 # only needed for simulations #
