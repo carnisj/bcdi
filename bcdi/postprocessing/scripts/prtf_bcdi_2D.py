@@ -231,7 +231,7 @@ numz, numy, numx = diff_pattern.shape
 print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
 z0, y0, x0 = center_of_mass(diff_pattern)
 z0, y0, x0 = [int(z0), int(y0), int(x0)]
-print("COM of measured pattern: ", z0, y0, x0)
+print("COM of the measured 3D diffraction pattern: ", z0, y0, x0)
 
 fig, _, _ = gu.multislices_plot(np.sqrt(diff_pattern), sum_frames=False, title='3D diffraction amplitude', vmin=0,
                                 vmax=3.5, is_orthogonal=False, reciprocal_space=True, slice_position=[z0, y0, x0],
@@ -273,6 +273,9 @@ if debug:
                         title='distances_q', scale='linear', vmin=np.nan, vmax=np.nan,
                         reciprocal_space=True)
 
+################################
+# select the relevant 2D slice #
+################################
 if slicing_axis == 0:
     distances_q = distances_q[z0, :, :]  # take only the slice at the COM in y0
 elif slicing_axis == 1:
