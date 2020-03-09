@@ -314,7 +314,7 @@ def blackman_window(shape, normalization=1):
     Create a 3d Blackman window based on shape.
 
     :param shape: tuple, shape of the 3d window
-    :param normalization: value of the max of the backman window
+    :param normalization: value of the integral of the backman window
     :return: the 3d Blackman window
     """
     nbz, nby, nbx = shape
@@ -327,7 +327,7 @@ def blackman_window(shape, normalization=1):
         blackman2[idz, :] = array_z[idz] * array_y
         for idy in range(nby):
             blackman3[idz, idy] = blackman2[idz, idy] * array_x
-    blackman3 = blackman3 / blackman3.max() * normalization
+    blackman3 = blackman3 / blackman3.sum() * normalization
     return blackman3
 
 
