@@ -874,9 +874,11 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
             kernel[idy, :] = kernel_1d[idy] * kernel_1d
 
         if debugging:
+            plt.figure()
             plt.imshow(kernel)
             plt.colorbar()
             plt.title('Gaussian kernel')
+            plt.pause(0.1)
 
     elif ndim == 3:
         kernel_2d = np.ones((kernel_length, kernel_length))
@@ -887,9 +889,11 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
                 kernel[idz, idy] = kernel_2d[idz, idy] * kernel_1d
 
         if debugging:
+            plt.figure()
             plt.imshow(kernel[half_range, :, :])
             plt.colorbar()
             plt.title('Central slice of the Gaussian kernel')
+            plt.pause(0.1)
     else:
         raise ValueError('This function generates only 2D or 3D kernels')
 
