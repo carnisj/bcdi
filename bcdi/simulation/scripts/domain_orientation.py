@@ -35,13 +35,13 @@ savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
 # sample setup #
 ################
 unitcell = 'fcc'
-unitcell_param = 21.3  # in nm, unit cell parameter
+unitcell_param = 22.4  # in nm, unit cell parameter
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [-0.25, 0.25, 15, 30, -0.25, 0.25]  # in degrees, ranges to span for the rotation around qx downstream,
+angles_ranges = [-10, 10.25, 21, 29.25, -10, 10.25]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
-angular_step = 0.25  # in degrees
+angular_step = 1  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -60,11 +60,12 @@ binning = [4, 4, 4]  # binning of the detector
 # peak detection options #
 ##########################
 min_distance = 20  # minimum distance between Bragg peaks in pixels
+peak_width = 1  # the total width will be (2*peak_width+1)
 ###########
 # options #
 ###########
-kernel_length = 31  # width of the 3D gaussian window
-debug = False  # True to see more plots
+kernel_length = 11  # width of the 3D gaussian window
+debug = True  # True to see more plots
 correct_background = False  # True to create a 3D background
 bckg_method = 'normalize'  # 'subtract' or 'normalize'
 
@@ -135,13 +136,14 @@ gu.multislices_plot(data, sum_frames=True, title='data', vmin=0, vmax=np.log10(d
 
 if debug:
     if qvalues_flag:
-        gu.contour_slices(data, q_coordinates=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']), sum_frames=True,
-                          title='Experimental data', levels=np.linspace(0, 1, 10, endpoint=False),
-                          scale='linear', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
+        gu.contour_slices(data, q_coordinates=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']),
+                          sum_frames=True, title='Experimental data',
+                          levels=np.linspace(0, np.log10(data.max())+1, 10, endpoint=False),
+                          scale='log', plot_colorbar=False, is_orthogonal=True, reciprocal_space=True)
     else:
         gu.contour_slices(data, q_coordinates=q_values, sum_frames=True,
-                          title='Experimental data', levels=np.linspace(0, 1, 10, endpoint=False),
-                          scale='linear', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
+                          title='Experimental data', levels=np.linspace(0, np.log10(data.max())+1, 10, endpoint=False),
+                          scale='log', plot_colorbar=False, is_orthogonal=True, reciprocal_space=True)
 
 ################################################
 # remove background from the experimental data #
@@ -184,10 +186,10 @@ density_map[:] = 0
 
 for idx in range(nb_peaks):
     piz, piy, pix = local_maxi[idx]
-    density_map[piz, piy, pix] = 1
+    density_map[piz-peak_width:piz+peak_width+1, piy-peak_width:piy+peak_width+1, pix-peak_width:pix+peak_width+1] = 1
 
 nonzero_indices = np.nonzero(density_map)
-bragg_peaks = density_map[nonzero_indices]  # 1D array of length nb_peaks
+bragg_peaks = density_map[nonzero_indices]  # 1D array of length: nb_peaks*(2*peak_width+1)**3
 
 gu.multislices_plot(density_map, sum_frames=True, title='Bragg peaks positions', slice_position=pivot, vmin=0,
                     vmax=1, scale='linear', cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
@@ -196,7 +198,6 @@ plt.pause(0.1)
 #########################
 # define the peak shape #
 #########################
-# peak_shape = pu.gaussian_kernel(ndim=3, kernel_length=kernel_length, sigma=kernel_length/5, debugging=True)
 peak_shape = pu.blackman_window(shape=(kernel_length, kernel_length, kernel_length), normalization=100)
 
 #####################################
@@ -266,37 +267,37 @@ struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=r
 #######################################################
 # plot the overlay of experimental and simulated data #
 #######################################################
-plot_max = 4*peak_shape.sum(axis=0).max()
+plot_max = 2*peak_shape.sum(axis=0).max()
 density_map[np.nonzero(density_map)] = 10*plot_max
 fig, _, _ = gu.multislices_plot(struct_array+density_map, sum_frames=True, title='Overlay',
                                 vmin=0, vmax=plot_max, plot_colorbar=True, scale='linear',
                                 is_orthogonal=True, reciprocal_space=True)
-fig.text(0.60, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
-fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
-fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
-fig.text(0.60, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
+fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
+fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
+fig.text(0.55, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
+fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
          str(beta) + "," + str(gamma), size=12)
 plt.pause(0.1)
 
 if debug:
     fig, _, _ = gu.multislices_plot(struct_array, sum_frames=True, title='Simulated diffraction pattern',
-                                    vmin=0, vmax=peak_shape.max(), plot_colorbar=False, scale='linear',
+                                    vmin=0, vmax=plot_max, plot_colorbar=False, scale='linear',
                                     is_orthogonal=True, reciprocal_space=True)
-    fig.text(0.60, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
-    fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
-    fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
-    fig.text(0.60, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
+    fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
+    fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
+    fig.text(0.55, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
+    fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
              str(beta) + "," + str(gamma), size=12)
     plt.pause(0.1)
 
     fig, _, _ = gu.contour_slices(struct_array, q_coordinates=q_values, sum_frames=True,
-                                  title='Simulated diffraction pattern',
-                                  levels=np.linspace(0, peak_shape.max(), 10, endpoint=False),
-                                  plot_colorbar=False, scale='linear', is_orthogonal=True, reciprocal_space=True)
-    fig.text(0.60, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
-    fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
-    fig.text(0.60, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
-    fig.text(0.60, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
+                                  title='Simulated diffraction pattern', cmap=my_cmap,
+                                  levels=np.linspace(struct_array.min()+plot_max/100, plot_max, 10, endpoint=False),
+                                  plot_colorbar=True, scale='linear', is_orthogonal=True, reciprocal_space=True)
+    fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
+    fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
+    fig.text(0.55, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
+    fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
              str(beta) + "," + str(gamma), size=12)
     plt.pause(0.1)
 
