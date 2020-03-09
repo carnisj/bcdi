@@ -39,7 +39,7 @@ unitcell_param = 22.4  # in nm, unit cell parameter
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [-2, 2, 15, 30, -2, 2]  # in degrees, ranges to span for the rotation around qx downstream,
+angles_ranges = [-1, 1, 18, 22, -1, 1]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
 angular_step = 0.5  # in degrees
 #######################
@@ -63,7 +63,7 @@ min_distance = 20  # minimum distance between Bragg peaks in pixels
 ###########
 # options #
 ###########
-kernel_length = 11  # width of the 3D gaussian window
+kernel_length = 21  # width of the 3D gaussian window
 debug = False  # True to see more plots
 correct_background = False  # True to create a 3D background
 bckg_method = 'normalize'  # 'subtract' or 'normalize'
@@ -133,14 +133,15 @@ nbz, nby, nbx = len(q_values[0]), len(q_values[1]), len(q_values[2])
 gu.multislices_plot(data, sum_frames=True, title='data', vmin=0, vmax=np.log10(data).max(), scale='log',
                     plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
 
-if qvalues_flag:
-    gu.contour_slices(data, q_coordinates=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']), sum_frames=True,
-                      title='Experimental data', levels=np.linspace(0, 1, 10, endpoint=False),
-                      scale='linear', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
-else:
-    gu.contour_slices(data, q_coordinates=q_values, sum_frames=True,
-                      title='Experimental data', levels=np.linspace(0, 1, 10, endpoint=False),
-                      scale='linear', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
+if debug:
+    if qvalues_flag:
+        gu.contour_slices(data, q_coordinates=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']), sum_frames=True,
+                          title='Experimental data', levels=np.linspace(0, 1, 10, endpoint=False),
+                          scale='linear', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
+    else:
+        gu.contour_slices(data, q_coordinates=q_values, sum_frames=True,
+                          title='Experimental data', levels=np.linspace(0, 1, 10, endpoint=False),
+                          scale='linear', plot_colorbar=True, is_orthogonal=True, reciprocal_space=True)
 
 ################################################
 # remove background from the experimental data #
