@@ -35,11 +35,11 @@ savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
 # sample setup #
 ################
 unitcell = 'fcc'
-unitcell_param = 23  # in nm, unit cell parameter
+unitcell_param = 22  # in nm, unit cell parameter
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [-1, 1, 18, 21, -1, 1]  # in degrees, ranges to span for the rotation around qx downstream,
+angles_ranges = [-1.5, 1.5, 18, 22, -1.5, 1.5]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
 angular_step = 0.5  # in degrees
 #######################
@@ -63,7 +63,7 @@ min_distance = 20  # minimum distance between Bragg peaks in pixels
 ###########
 # options #
 ###########
-kernel_length = 21  # width of the 3D gaussian window
+kernel_length = 41  # width of the 3D gaussian window
 debug = False  # True to see more plots
 correct_background = False  # True to create a 3D background
 bckg_method = 'normalize'  # 'subtract' or 'normalize'
@@ -196,7 +196,7 @@ plt.pause(0.1)
 #########################
 # define the peak shape #
 #########################
-peak_shape = pu.gaussian_kernel(ndim=3, kernel_length=kernel_length, sigma=3, debugging=False)
+peak_shape = pu.gaussian_kernel(ndim=3, kernel_length=kernel_length, sigma=kernel_length/3, debugging=True)
 
 #####################################
 # define the list of angles to test #
@@ -237,7 +237,7 @@ vmax = corr.max()
 if vmax == vmin:
     print('The correlation map is flat: no maximum in this range of angles')
     sys.exit()
-    
+
 piz, piy, pix = np.unravel_index(abs(corr).argmax(), corr.shape)
 alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
 print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', alpha, beta, gamma)
@@ -265,7 +265,7 @@ struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=r
 # plot the overlay of experimental and simulated data #
 #######################################################
 fig, _, _ = gu.multislices_plot(struct_array+density_map, sum_frames=True, title='Overlay',
-                                vmin=0, vmax=density_map.max(), plot_colorbar=False, scale='linear',
+                                vmin=0, vmax=peak_shape.max(), plot_colorbar=False, scale='linear',
                                 is_orthogonal=True, reciprocal_space=True)
 fig.text(0.60, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
 fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
@@ -276,7 +276,7 @@ plt.pause(0.1)
 
 if debug:
     fig, _, _ = gu.multislices_plot(struct_array, sum_frames=True, title='Simulated diffraction pattern',
-                                    vmin=0, vmax=struct_array.max(), plot_colorbar=False, scale='linear',
+                                    vmin=0, vmax=peak_shape.max(), plot_colorbar=False, scale='linear',
                                     is_orthogonal=True, reciprocal_space=True)
     fig.text(0.60, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
     fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
@@ -287,7 +287,7 @@ if debug:
 
     fig, _, _ = gu.contour_slices(struct_array, q_coordinates=q_values, sum_frames=True,
                                   title='Simulated diffraction pattern',
-                                  levels=np.linspace(0, struct_array.max(), 10, endpoint=False),
+                                  levels=np.linspace(0, peak_shape.max(), 10, endpoint=False),
                                   plot_colorbar=False, scale='linear', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.60, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
     fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
