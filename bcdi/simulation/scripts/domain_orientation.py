@@ -35,11 +35,11 @@ savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
 # sample setup #
 ################
 unitcell = 'fcc'
-unitcell_param = 22.4  # in nm, unit cell parameter
+unitcell_param = 23  # in nm, unit cell parameter
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [-1, 1, 18, 22, -1, 1]  # in degrees, ranges to span for the rotation around qx downstream,
+angles_ranges = [-1, 1, 18, 21, -1, 1]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
 angular_step = 0.5  # in degrees
 #######################
@@ -234,6 +234,10 @@ print('Time ellapsed in the loop over angles (s)', int(end - start))
 ##########################################
 vmin = corr.min()
 vmax = corr.max()
+if vmax == vmin:
+    print('The correlation map is flat: no maximum in this range of angles')
+    sys.exit()
+    
 piz, piy, pix = np.unravel_index(abs(corr).argmax(), corr.shape)
 alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
 print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', alpha, beta, gamma)
