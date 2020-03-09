@@ -35,13 +35,13 @@ savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
 # sample setup #
 ################
 unitcell = 'fcc'
-unitcell_param = 22  # in nm, unit cell parameter
+unitcell_param = 21.3  # in nm, unit cell parameter
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [-1.5, 1.5, 18, 22, -1.5, 1.5]  # in degrees, ranges to span for the rotation around qx downstream,
+angles_ranges = [-0.25, 0.25, 15, 30, -0.25, 0.25]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
-angular_step = 0.5  # in degrees
+angular_step = 0.25  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -63,7 +63,7 @@ min_distance = 20  # minimum distance between Bragg peaks in pixels
 ###########
 # options #
 ###########
-kernel_length = 41  # width of the 3D gaussian window
+kernel_length = 31  # width of the 3D gaussian window
 debug = False  # True to see more plots
 correct_background = False  # True to create a 3D background
 bckg_method = 'normalize'  # 'subtract' or 'normalize'
@@ -196,7 +196,8 @@ plt.pause(0.1)
 #########################
 # define the peak shape #
 #########################
-peak_shape = pu.gaussian_kernel(ndim=3, kernel_length=kernel_length, sigma=kernel_length/3, debugging=True)
+# peak_shape = pu.gaussian_kernel(ndim=3, kernel_length=kernel_length, sigma=kernel_length/5, debugging=True)
+peak_shape = pu.blackman_window(shape=(kernel_length, kernel_length, kernel_length), normalization=100)
 
 #####################################
 # define the list of angles to test #
@@ -242,13 +243,14 @@ piz, piy, pix = np.unravel_index(abs(corr).argmax(), corr.shape)
 alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
 print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', alpha, beta, gamma)
 
-fig, _, _ = gu.contour_slices(corr, (angles_qx, angles_qz, angles_qy), sum_frames=False,
-                              title='Correlation', slice_position=[piz, piy, pix], plot_colorbar=True, cmap=my_cmap,
-                              levels=np.linspace(vmin, vmax, 10, endpoint=False), is_orthogonal=True,
-                              reciprocal_space=True)
-fig.text(0.60, 0.25, "Kernel size = " + str(kernel_length) + " pixels", size=12)
-plt.pause(0.1)
-plt.savefig(savedir + 'cross_corr.png')
+if all([corr.shape[idx] > 1 for idx in range(corr.ndim)]):
+    fig, _, _ = gu.contour_slices(corr, (angles_qx, angles_qz, angles_qy), sum_frames=False,
+                                  title='Correlation', slice_position=[piz, piy, pix], plot_colorbar=True, cmap=my_cmap,
+                                  levels=np.linspace(vmin, vmax, 10, endpoint=False), is_orthogonal=True,
+                                  reciprocal_space=True)
+    fig.text(0.60, 0.25, "Kernel size = " + str(kernel_length) + " pixels", size=12)
+    plt.pause(0.1)
+    plt.savefig(savedir + 'cross_corr.png')
 
 ################################################
 # rotate the lattice at calculated best values #
@@ -264,8 +266,10 @@ struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=r
 #######################################################
 # plot the overlay of experimental and simulated data #
 #######################################################
+plot_max = 4*peak_shape.sum(axis=0).max()
+density_map[np.nonzero(density_map)] = 10*plot_max
 fig, _, _ = gu.multislices_plot(struct_array+density_map, sum_frames=True, title='Overlay',
-                                vmin=0, vmax=peak_shape.max(), plot_colorbar=False, scale='linear',
+                                vmin=0, vmax=plot_max, plot_colorbar=True, scale='linear',
                                 is_orthogonal=True, reciprocal_space=True)
 fig.text(0.60, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
 fig.text(0.60, 0.20, "SDD = " + str(sdd) + " m", size=12)
