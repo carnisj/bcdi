@@ -1,12 +1,12 @@
 * Feature: implement domain_orientation.py to find the orientation of domains in a 3D forward CDI dataset of mesocrystal
 
-* Feature: implement simu_diffpattern_CDI.py to find in 3D the Bragg peaks positions of a mesocrystal
+* Feature: implement simu_diffpattern_CDI.py to find in 3D the Bragg peaks positions of a mesocrystal (supported unit cells: FCC, simple cubic, BCC and BCT)
 
 * Feature: implement fit_1D curve.py to fit simultaneously ranges of a 1D curve with gaussian lineshapes
 
 * Feature: implement fit_background.py to interactively determine the background in 1D reciprocal space curves
 
-* Refactor: in multislices_plot(), allow to plot at user-defined slices position.
+* Refactor: in multislices_plot() and contour_slices(), allow to plot at user-defined slices position.
 
 * Feature: implement prtf_bcdi_2D.py to calculate the PRTF also for 2D cases.
 
