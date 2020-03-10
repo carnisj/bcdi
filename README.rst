@@ -39,7 +39,7 @@ BCDI can be used as a python library with the following main modules:
 
 7) :mod:`bcdi.simulation`: in BCDI geometry, calculation of the diffraction intensity based on FFT or kinematical sum.
    It can include a displacement field, noise, detector gaps etc... In forward CDI geometry, calculation of the Bragg
-   pek positions in 3D for a mesocrystal, knowing the unit cell and unit cell parameter.
+   peak positions in 3D for a mesocrystal, knowing the unit cell and unit cell parameter.
 
 8) :mod:`bcdi.utils`: data loading, fitting functions ...
 
