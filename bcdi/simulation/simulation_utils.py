@@ -112,13 +112,13 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
         return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
 
-def bct_lattice(q_values, unitcell_params, axis, pivot, euler_angles=(0, 0, 0), offset_indices=False, verbose=False):
+def bct_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_indices=False, verbose=False):
     """
-    Calculate Bragg peaks positions using experimental parameters for a BCT unit cell.
+    Calculate Bragg peaks positions using experimental parameters for a BCT unit cell. The long axis is by default along
+    qz (vertical up).
 
     :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look for Bragg peaks
-    :param unitcell_params: tuple, the unit cell parameters of the BCT lattice in nm (square, elongated axis)
-    :param axis: 'qx', 'qy' or 'qz', axis along which the lattice parameter is equal to unitcell_params[1]
+    :param unitcell_param: tuple, the unit cell parameters of the BCT lattice in nm (square side, long axis)
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
@@ -129,10 +129,19 @@ def bct_lattice(q_values, unitcell_params, axis, pivot, euler_angles=(0, 0, 0), 
     lattice_list = []  # position of the pixels corresponding to hkl reflections
     peaks_list = []  # list of hkl fitting the data range
 
-    recipr_param = 2*np.pi/unitcell_param  # reciprocal lattice is simple cubic of parameter 2*pi/unitcell_param
+    try:
+        nb_param = len(unitcell_param)
+        if nb_param != 2:
+            raise ValueError('unitcell_param should be a tuple of two elements')
+    except TypeError:  # float or int
+        raise ValueError('unitcell_param should be a tuple of two elements')
+
+    recipr_param = [2*np.pi/param for param in unitcell_param]
+    # reciprocal lattice is BCT of parameter 2*pi/unitcell_param
     if verbose:
-        print('fcc unit cell of parameter a =', unitcell_param, 'nm')
-        print('reciprocal unit cell of parameter 2*pi/a =', str('{:.4f}'.format(recipr_param)), '1/nm')
+        print('BCT unit cell of parameters a =', unitcell_param[0], ' , c=', unitcell_param[1], 'nm')
+        print('reciprocal unit cell of parameter 2*pi/a =', str('{:.4f}'.format(recipr_param[0])), ' , 2*pi/c =',
+              str('{:.4f}'.format(recipr_param[1])), '1/nm')
 
     qx = q_values[0]  # along z downstream in CXI convention
     qz = q_values[1]  # along y vertical up in CXI convention
@@ -140,8 +149,8 @@ def bct_lattice(q_values, unitcell_params, axis, pivot, euler_angles=(0, 0, 0), 
     q_max = np.sqrt(abs(qx).max()**2+abs(qz).max()**2+abs(qy).max()**2)
     numz, numy, numx = len(qx), len(qz), len(qy)
 
-    # calculate the maximum Miller indices which fit into q_max
-    h_max = int(np.floor(q_max * unitcell_param / (2 * np.pi)))
+    # calculate the maximum Miller indices which fit into q_max using the long axis parameter
+    h_max = int(np.floor(q_max * unitcell_param[1] / (2 * np.pi)))
     hkl = np.arange(start=-h_max, stop=h_max+1, step=1)
 
     # pad q arrays in order to find the position in pixels of each hkl within the array
@@ -155,12 +164,12 @@ def bct_lattice(q_values, unitcell_params, axis, pivot, euler_angles=(0, 0, 0), 
     for h in hkl:  # h downstream along qx
         for k in hkl:  # k outboard along qy
             for l in hkl:  # l vertical up along qz
-                # simple cubic unit cell with two point basis (0,0,0), (0.5,0.5,0.5)
+                # unit cell with two point basis (0,0,0), (0.5,0.5,0.5), same structure factor as BCC
                 struct_factor = np.real(1 + np.exp(1j*np.pi*(h+k+l)))
                 if struct_factor != 0:  # find the position of the pixel nearest to q_bragg
-                    pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param)
-                    pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
-                    pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
+                    pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param[0])
+                    pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param[0])
+                    pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param[1])
 
                     lattice_list.append([pix_h, pix_l, pix_k])
                     peaks_list.append([h, l, k])
@@ -364,6 +373,10 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
         pad_offset, lattice_pos, peaks = cubic_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
                                                        pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles,
                                                        offset_indices=offset_indices)
+    elif unitcell == 'bct':
+        pad_offset, lattice_pos, peaks = bct_lattice(q_values=(qx, qz, qy), unitcell_param=unitcell_param,
+                                                     pivot=(pivot_z, pivot_y, pivot_x), euler_angles=euler_angles,
+                                                     offset_indices=offset_indices)
     else:
         raise ValueError('Unit cell "' + unitcell + '" not yet implemented')
 
