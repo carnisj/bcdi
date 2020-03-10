@@ -31,16 +31,17 @@ Laboratory frame convention (CXI): z downstream, y vertical up, x outboard."""
 
 datadir = "D:/data/P10_August2019/data/gold2_2_00515/pynx/441_486_441_1_4_4_masked/"
 savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
+comment = ''  # should start with _
 ################
 # sample setup #
 ################
-unitcell = 'fcc'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
-unitcell_param = 22.4   # in nm, unit cell parameter.
+unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
+unitcell_param = (16, 22.4)   # in nm, unit cell parameter.  # (15.84, 22.4)
 # It can be a number or tuple of numbers depending on the unit cell.
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [-5, 5.25, 21, 29.25, -5, 5.25]  # in degrees, ranges to span for the rotation around qx downstream,
+angles_ranges = [1, 1.25, 45+21, 45+29.25, 0, 0.25]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
 angular_step = 0.5  # in degrees
 #######################
@@ -73,6 +74,11 @@ bckg_method = 'normalize'  # 'subtract' or 'normalize'
 ##################################
 # end of user-defined parameters #
 ##################################
+comment = comment + '_' + unitcell
+if unitcell == 'bct':
+    comment = comment + '_a=' + str(unitcell_param[0])+',c=' + str(unitcell_param[1])
+else:
+    comment = comment + '_a=' + str(unitcell_param)
 
 #######################
 # Initialize detector #
@@ -252,8 +258,11 @@ if all([corr.shape[idx] > 1 for idx in range(corr.ndim)]):
                                   reciprocal_space=True)
     fig.text(0.60, 0.25, "Kernel size = " + str(kernel_length) + " pixels", size=12)
     plt.pause(0.1)
-    plt.savefig(savedir + 'cross_corr.png')
-
+    plt.savefig(
+        savedir + 'cross_corr_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
+        str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(alpha) + '_' + str(beta) + '_' +
+        str(gamma) + comment + '.png')
+    
 ################################################
 # rotate the lattice at calculated best values #
 ################################################
@@ -279,6 +288,10 @@ fig.text(0.55, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_para
 fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
          str(beta) + "," + str(gamma), size=12)
 plt.pause(0.1)
+plt.savefig(
+    savedir + 'q_sum_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
+    str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(alpha) + '_' + str(beta) + '_' +
+    str(gamma) + comment + '.png')
 
 if debug:
     fig, _, _ = gu.multislices_plot(struct_array, sum_frames=True, title='Simulated diffraction pattern',
