@@ -31,7 +31,7 @@ unitcell_param = (15.84, 22.4)   # in nm, unit cell parameter.
 ######################
 # sample orientation #
 ######################
-angles = [0, 45, 0]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
+angles = [1, 45+26, 0]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
 #######################
 # beamline parameters #
 #######################
@@ -142,8 +142,8 @@ if debug:
     fig.text(0.60, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(angles[0]) + "," + str(angles[1])
              + "," + str(angles[2]), size=12)
     plt.pause(0.1)
-    plt.savefig(savedir + 'q_central_slice_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
-                str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(angles[0]) + '_' + str(angles[1]) + '_' +
+    plt.savefig(savedir + 'q_central_slice_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_'
+                + str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(angles[0]) + '_' + str(angles[1]) + '_' +
                 str(angles[2]) + '.png')
 
 fig, _, _ = gu.contour_slices(struct_array, (qx, qz, qy), sum_frames=True, title='Simulated diffraction pattern',
