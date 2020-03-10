@@ -34,14 +34,15 @@ savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
 ################
 # sample setup #
 ################
-unitcell = 'fcc'
-unitcell_param = 22.4  # in nm, unit cell parameter
+unitcell = 'fcc'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
+unitcell_param = 22.4   # in nm, unit cell parameter.
+# It can be a number or tuple of numbers depending on the unit cell.
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [-10, 10.25, 21, 29.25, -10, 10.25]  # in degrees, ranges to span for the rotation around qx downstream,
+angles_ranges = [-5, 5.25, 21, 29.25, -5, 5.25]  # in degrees, ranges to span for the rotation around qx downstream,
 # qz vertical up and qy outboard respectively: [start, stop, start, stop, start, stop]    stop is excluded
-angular_step = 1  # in degrees
+angular_step = 0.5  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -60,11 +61,11 @@ binning = [4, 4, 4]  # binning of the detector
 # peak detection options #
 ##########################
 min_distance = 20  # minimum distance between Bragg peaks in pixels
-peak_width = 1  # the total width will be (2*peak_width+1)
+peak_width = 3  # the total width will be (2*peak_width+1)
 ###########
 # options #
 ###########
-kernel_length = 11  # width of the 3D gaussian window
+kernel_length = 21  # width of the 3D gaussian window
 debug = True  # True to see more plots
 correct_background = False  # True to create a 3D background
 bckg_method = 'normalize'  # 'subtract' or 'normalize'

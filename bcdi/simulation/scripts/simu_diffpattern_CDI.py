@@ -25,8 +25,8 @@ savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
 ################
 # sample setup #
 ################
-unitcell = 'bct'
-unitcell_param = [15.84, 22.4]   # in nm, unit cell parameter.
+unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
+unitcell_param = (15.84, 22.4)   # in nm, unit cell parameter.
 # It can be a number or tuple of numbers depending on the unit cell.
 ######################
 # sample orientation #

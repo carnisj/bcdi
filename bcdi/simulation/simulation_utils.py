@@ -320,7 +320,7 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     :param sdd: sample to detector distance in m
     :param direct_beam: direct beam position on the detector in pixels (vertical, horizontal)
     :param detector: the detector object: Class experiment_utils.Detector()
-    :param unitcell: 'cubic', 'bcc' or 'fcc'
+    :param unitcell: 'cubic', 'bcc', 'fcc', 'bct'
     :param unitcell_param: number or tuple for unit cell parameters
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
