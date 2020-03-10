@@ -67,7 +67,7 @@ peak_width = 3  # the total width will be (2*peak_width+1)
 # options #
 ###########
 kernel_length = 21  # width of the 3D gaussian window
-debug = True  # True to see more plots
+debug = False  # True to see more plots
 correct_background = False  # True to create a 3D background
 bckg_method = 'normalize'  # 'subtract' or 'normalize'
 
@@ -198,9 +198,10 @@ for idx in range(nb_peaks):
 nonzero_indices = np.nonzero(density_map)
 bragg_peaks = density_map[nonzero_indices]  # 1D array of length: nb_peaks*(2*peak_width+1)**3
 
-gu.multislices_plot(density_map, sum_frames=True, title='Bragg peaks positions', slice_position=pivot, vmin=0,
-                    vmax=1, scale='linear', cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
-plt.pause(0.1)
+if debug:
+    gu.multislices_plot(density_map, sum_frames=True, title='Bragg peaks positions', slice_position=pivot, vmin=0,
+                        vmax=1, scale='linear', cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
+    plt.pause(0.1)
 
 #########################
 # define the peak shape #
