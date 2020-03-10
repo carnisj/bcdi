@@ -311,8 +311,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
     return plt.gcf()
 
 
-def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, levels=150, width_z=None, width_y=None, width_x=None,
-                   plot_colorbar=False, cmap=my_cmap, title='', scale='linear', is_orthogonal=False,
+def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, levels=150, width_z=None, width_y=None,
+                   width_x=None, plot_colorbar=False, cmap=my_cmap, title='', scale='linear', is_orthogonal=False,
                    reciprocal_space=True):
     """
     Create a figure with three 2D contour plots from a 3D dataset.
