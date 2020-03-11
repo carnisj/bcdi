@@ -39,13 +39,13 @@ unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 # It can be a number or tuple of numbers depending on the unit cell.
 unitcell_ranges = [14.8, 15.4, 24.5, 24.9]  # in nm, values of the unit cell parameters to test
 # If the unit cell is cubic: [start, stop]. If the unit cell is bct: [start1, stop1, start2, stop2] etc...
-unitcell_step = 12  # number of steps within unitcell_ranges
+unitcell_step = 8  # number of steps within unitcell_ranges
 #########################
 # unit cell orientation #
 #########################
 angles_ranges = [1.5, 5.75, 45+25, 45+27.25, -5.75, -1.5]  # [start, stop, start, stop, start, stop], in degrees
 # ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is excluded)
-angular_step = 0.5  # in degrees
+angular_step = 2  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -278,11 +278,6 @@ print('Time ellapsed in the loop over angles and lattice parameters (s)', int(en
 # plot the correlation matrix at maximum #
 ##########################################
 comment = comment + '_' + unitcell
-vmin = corr.min()
-vmax = corr.max()
-if vmax == vmin:
-    print('The correlation map is flat: no maximum in this range of angles')
-    sys.exit()
 
 if unitcell == 'bct':  # corr is 5D
     piz, piy, pix, piw, piv = np.unravel_index(abs(corr).argmax(), corr.shape)
@@ -294,6 +289,8 @@ if unitcell == 'bct':  # corr is 5D
     corr_angles = np.copy(corr[:, :, :, piw, piv])
     corr_lattice = np.copy(corr[piz, piy, pix, :, :])
 
+    vmin = corr_lattice.min()
+    vmax = 1.1 * corr_lattice.max()
     fig, ax = plt.subplots(nrows=1, ncols=1)
     plt0 = ax.contourf(param_range[1], param_range[0], corr_lattice, np.linspace(vmin, vmax, 10, endpoint=False),
                        cmap=my_cmap)
@@ -321,6 +318,9 @@ else:  # corr is 4D
     plt.ylabel('Correlation')
     plt.pause(0.1)
     plt.savefig(savedir + 'correlation_lattice_' + comment + '_param a={:.2f}nm'.format(best_param) + '.png')
+
+vmin = corr_angles.min()
+vmax = 1.1 * corr_angles.max()
 
 if all([corr_angles.shape[idx] > 1 for idx in range(corr_angles.ndim)]):  # 3D
     fig, _, _ = gu.contour_slices(corr_angles, (angles_qx, angles_qz, angles_qy), sum_frames=False,
