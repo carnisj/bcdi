@@ -37,15 +37,15 @@ comment = ''  # should start with _
 ################
 unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 # It can be a number or tuple of numbers depending on the unit cell.
-unitcell_ranges = [14.8, 15.4, 24.5, 24.9]  # in nm, values of the unit cell parameters to test
-# If the unit cell is cubic: [start, stop]. If the unit cell is bct: [start1, stop1, start2, stop2] etc...
-unitcell_step = 0.05  # in nm
+unitcell_ranges = [14.95, 15.25, 24.60, 24.90]  # in nm, values of the unit cell parameters to test
+# cubic, FCC or BCC unit cells: [start, stop]. BCT unit cell: [start1, stop1, start2, stop2]   (stop is included)
+unitcell_step = 0.1  # in nm
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [-1.5, 7.75, 45+24, 45+28.25, -7.75, 1.5]  # [start, stop, start, stop, start, stop], in degrees
-# ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is excluded)
-angular_step = 0.25  # in degrees
+angles_ranges = [1, 5, 45+24, 45+28, -5, -1]  # [start, stop, start, stop, start, stop], in degrees
+# ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is included)
+angular_step = 2  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -64,7 +64,7 @@ binning = [4, 4, 4]  # binning of the detector
 # peak detection options #
 ##########################
 min_distance = 20  # minimum distance between Bragg peaks in pixels
-peak_width = 2  # the total width will be (2*peak_width+1)
+peak_width = 1  # the total width will be (2*peak_width+1)
 ###########
 # options #
 ###########
@@ -158,7 +158,6 @@ if debug:
 ################################################
 # remove background from the experimental data #
 ################################################
-
 if correct_background:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the 1D background file",
                                            filetypes=[("NPZ", "*.npz")])
@@ -214,9 +213,12 @@ peak_shape = pu.blackman_window(shape=(kernel_length, kernel_length, kernel_leng
 #####################################
 # define the list of angles to test #
 #####################################
-angles_qx = np.arange(start=angles_ranges[0], stop=angles_ranges[1], step=angular_step)
-angles_qz = np.arange(start=angles_ranges[2], stop=angles_ranges[3], step=angular_step)
-angles_qy = np.arange(start=angles_ranges[4], stop=angles_ranges[5], step=angular_step)
+angles_qx = np.linspace(start=angles_ranges[0], stop=angles_ranges[1],
+                        num=int((angles_ranges[1]-angles_ranges[0])/angular_step))
+angles_qz = np.linspace(start=angles_ranges[2], stop=angles_ranges[3],
+                        num=int((angles_ranges[3]-angles_ranges[2])/angular_step))
+angles_qy = np.linspace(start=angles_ranges[4], stop=angles_ranges[5],
+                        num=int((angles_ranges[5]-angles_ranges[4])/angular_step))
 nb_angles = len(angles_qx)*len(angles_qz)*len(angles_qy)
 print('Number of angles to test: ', nb_angles)
 
