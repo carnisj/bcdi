@@ -39,13 +39,13 @@ unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 # It can be a number or tuple of numbers depending on the unit cell.
 unitcell_ranges = [14.8, 15.4, 24.5, 24.9]  # in nm, values of the unit cell parameters to test
 # If the unit cell is cubic: [start, stop]. If the unit cell is bct: [start1, stop1, start2, stop2] etc...
-unitcell_step = 8  # number of steps within unitcell_ranges
+unitcell_step = 0.05  # in nm
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [1.5, 5.75, 45+25, 45+27.25, -5.75, -1.5]  # [start, stop, start, stop, start, stop], in degrees
+angles_ranges = [-1.5, 7.75, 45+24, 45+28.25, -7.75, 1.5]  # [start, stop, start, stop, start, stop], in degrees
 # ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is excluded)
-angular_step = 2  # in degrees
+angular_step = 0.25  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -64,7 +64,7 @@ binning = [4, 4, 4]  # binning of the detector
 # peak detection options #
 ##########################
 min_distance = 20  # minimum distance between Bragg peaks in pixels
-peak_width = 0  # the total width will be (2*peak_width+1)
+peak_width = 2  # the total width will be (2*peak_width+1)
 ###########
 # options #
 ###########
@@ -224,14 +224,14 @@ print('Number of angles to test: ', nb_angles)
 # loop over rotation angles and lattice parameters #
 ####################################################
 start = time.time()
-
+nb_lattices = int((unitcell_ranges[1]-unitcell_ranges[0])/unitcell_step)
 if unitcell == 'bct':
-    a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1], num=unitcell_step)
-    c_values = np.linspace(start=unitcell_ranges[2], stop=unitcell_ranges[3], num=unitcell_step)
-    param_range = np.concatenate((a_values, c_values)).reshape((2, unitcell_step))
-    print('Number of lattice parameters to test: ', unitcell_step**2)
-    print('Total number of iterations: ', nb_angles * unitcell_step**2)
-    corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy), unitcell_step, unitcell_step))
+    a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1], num=nb_lattices)
+    c_values = np.linspace(start=unitcell_ranges[2], stop=unitcell_ranges[3], num=nb_lattices)
+    param_range = np.concatenate((a_values, c_values)).reshape((2, nb_lattices))
+    print('Number of lattice parameters to test: ', nb_lattices**2)
+    print('Total number of iterations: ', nb_angles * nb_lattices**2)
+    corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy), nb_lattices, nb_lattices))
     for idz, alpha in enumerate(angles_qx):
         for idy, beta in enumerate(angles_qz):
             for idx, gamma in enumerate(angles_qy):
@@ -250,10 +250,10 @@ if unitcell == 'bct':
                         # calculate the correlation between experimental data and simulated data
                         corr[idz, idy, idx, idw, idv] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
 else:
-    param_range = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1], num=unitcell_step)
-    print('Number of lattice parameters to test: ', unitcell_step)
-    print('Total number of iterations: ', nb_angles * unitcell_step)
-    corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy), unitcell_step))
+    param_range = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1], num=nb_lattices)
+    print('Number of lattice parameters to test: ', nb_lattices)
+    print('Total number of iterations: ', nb_angles * nb_lattices)
+    corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy), nb_lattices))
     for idz, alpha in enumerate(angles_qx):
         for idy, beta in enumerate(angles_qz):
             for idx, gamma in enumerate(angles_qy):
@@ -392,7 +392,7 @@ fig.text(0.55, 0.15, text, size=12)
 fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
          str(beta) + "," + str(gamma), size=12)
 plt.pause(0.1)
-plt.savefig(savedir + 'Overlay_' + comment + '.png')
+plt.savefig(savedir + 'Overlay_' + comment + '_corr=' + str('{:.2f}'.format(corr.max())) + '.png')
 
 if debug:
     fig, _, _ = gu.multislices_plot(struct_array, sum_frames=True, title='Simulated diffraction pattern',
