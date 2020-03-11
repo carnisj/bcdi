@@ -36,7 +36,6 @@ comment = ''  # should start with _
 # sample setup #
 ################
 unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
-unitcell_param = (15.2, 25.0)   # in nm, unit cell parameter.  # (15.84, 22.4)
 # It can be a number or tuple of numbers depending on the unit cell.
 unitcell_ranges = [14.8, 15.4, 24.5, 24.9]  # in nm, values of the unit cell parameters to test
 # If the unit cell is cubic: [start, stop]. If the unit cell is bct: [start1, stop1, start2, stop2] etc...
@@ -123,14 +122,18 @@ except FileNotFoundError:
     qvalues_flag = False
     pass
 
-##################################
-# create the non rotated lattice #
-##################################
-# simu.rotate_lattice() needs that the origin of indices corresponds to the length of padded q values
-pivot, offset, q_values, ref_lattice, ref_peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
-                                                               detector=detector, unitcell=unitcell,
-                                                               unitcell_param=unitcell_param, euler_angles=[0, 0, 0],
-                                                               offset_indices=True)
+######################
+# calculate q values #
+######################
+if unitcell == 'bct':
+    pivot, _, q_values, _, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam, detector=detector,
+                                            unitcell=unitcell, unitcell_param=[unitcell_ranges[0], unitcell_ranges[2]],
+                                            euler_angles=[0, 0, 0], offset_indices=True)
+else:
+    pivot, _, q_values, _, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam, detector=detector,
+                                            unitcell=unitcell, unitcell_param=unitcell_ranges[0],
+                                            euler_angles=[0, 0, 0], offset_indices=True)
+
 nbz, nby, nbx = len(q_values[0]), len(q_values[1]), len(q_values[2])
 comment = comment + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' +\
           str(binning[2])
@@ -255,18 +258,18 @@ else:
         for idy, beta in enumerate(angles_qz):
             for idx, gamma in enumerate(angles_qy):
                 for idw, a in enumerate(param_range):
-                        _, _, _, rot_lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
-                                                               detector=detector, unitcell=unitcell,
-                                                               unitcell_param=a, euler_angles=(alpha, beta, gamma),
-                                                               offset_indices=False)
-                        # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
+                    _, _, _, rot_lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
+                                                           detector=detector, unitcell=unitcell,
+                                                           unitcell_param=a, euler_angles=(alpha, beta, gamma),
+                                                           offset_indices=False)
+                    # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 
-                        # assign the peak shape to each lattice point
-                        struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
-                                                             peak_shape=peak_shape, pivot=pivot)
+                    # assign the peak shape to each lattice point
+                    struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
+                                                         peak_shape=peak_shape, pivot=pivot)
 
-                        # calculate the correlation between experimental data and simulated data
-                        corr[idz, idy, idx, idw] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
+                    # calculate the correlation between experimental data and simulated data
+                    corr[idz, idy, idx, idw] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
 
 end = time.time()
 print('Time ellapsed in the loop over angles and lattice parameters (s)', int(end - start))
@@ -356,8 +359,7 @@ else:
         plt.xlabel(labels[nonzero_dim[0]])
         plt.ylabel('Correlation')
     plt.pause(0.1)
-plt.savefig(savedir + 'correlation_angles_' + comment + '_rot_' + str(alpha) + '_' + str(beta) + '_' + str(gamma) +
-            comment + '.png')
+plt.savefig(savedir + 'correlation_angles_' + comment + '_rot_{:.2f}_{:.2f}_{:.2f}'.format(alpha, beta, gamma) + '.png')
 
 ###################################################
 # calculate the lattice at calculated best values #
