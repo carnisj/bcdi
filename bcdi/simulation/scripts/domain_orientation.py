@@ -148,11 +148,11 @@ if debug:
     if qvalues_flag:
         gu.contour_slices(data, q_coordinates=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']),
                           sum_frames=True, title='Experimental data',
-                          levels=np.linspace(0, np.log10(data.max())+1, 10, endpoint=False),
+                          levels=np.linspace(0, np.log10(data.max())+1, 20, endpoint=False),
                           scale='log', plot_colorbar=False, is_orthogonal=True, reciprocal_space=True)
     else:
         gu.contour_slices(data, q_coordinates=q_values, sum_frames=True,
-                          title='Experimental data', levels=np.linspace(0, np.log10(data.max())+1, 10, endpoint=False),
+                          title='Experimental data', levels=np.linspace(0, np.log10(data.max())+1, 20, endpoint=False),
                           scale='log', plot_colorbar=False, is_orthogonal=True, reciprocal_space=True)
 
 ################################################
@@ -292,7 +292,7 @@ if unitcell == 'bct':  # corr is 5D
     vmin = corr_lattice.min()
     vmax = 1.1 * corr_lattice.max()
     fig, ax = plt.subplots(nrows=1, ncols=1)
-    plt0 = ax.contourf(param_range[1], param_range[0], corr_lattice, np.linspace(vmin, vmax, 10, endpoint=False),
+    plt0 = ax.contourf(param_range[1], param_range[0], corr_lattice, np.linspace(vmin, vmax, 20, endpoint=False),
                        cmap=my_cmap)
     plt.colorbar(plt0, ax=ax)
     ax.set_ylabel('a parameter (nm)')
@@ -325,7 +325,7 @@ vmax = 1.1 * corr_angles.max()
 if all([corr_angles.shape[idx] > 1 for idx in range(corr_angles.ndim)]):  # 3D
     fig, _, _ = gu.contour_slices(corr_angles, (angles_qx, angles_qz, angles_qy), sum_frames=False,
                                   title='Correlation map for rotation angles', slice_position=[piz, piy, pix],
-                                  plot_colorbar=True, levels=np.linspace(vmin, vmax, 10, endpoint=False),
+                                  plot_colorbar=True, levels=np.linspace(vmin, vmax, 20, endpoint=False),
                                   is_orthogonal=True, reciprocal_space=True, cmap=my_cmap)
     fig.text(0.60, 0.25, "Kernel size = " + str(kernel_length) + " pixels", size=12)
 else:
@@ -336,13 +336,13 @@ else:
     if corr_angles.ndim == 2:
         fig, ax = plt.subplots(nrows=1, ncols=1)
         if (nonzero_dim[0] == 0) and (nonzero_dim[1] == 1):
-            plt0 = ax.contourf(angles_qz, angles_qx, corr_angles, np.linspace(vmin, vmax, 10, endpoint=False),
+            plt0 = ax.contourf(angles_qz, angles_qx, corr_angles, np.linspace(vmin, vmax, 20, endpoint=False),
                                cmap=my_cmap)
         elif (nonzero_dim[0] == 0) and (nonzero_dim[1] == 2):
-            plt0 = ax.contourf(angles_qy, angles_qx, corr_angles, np.linspace(vmin, vmax, 10, endpoint=False),
+            plt0 = ax.contourf(angles_qy, angles_qx, corr_angles, np.linspace(vmin, vmax, 20, endpoint=False),
                                cmap=my_cmap)
         else:
-            plt0 = ax.contourf(angles_qy, angles_qz, corr_angles, np.linspace(vmin, vmax, 10, endpoint=False),
+            plt0 = ax.contourf(angles_qy, angles_qz, corr_angles, np.linspace(vmin, vmax, 20, endpoint=False),
                                cmap=my_cmap)
         plt.colorbar(plt0, ax=ax)
         ax.set_ylabel(labels[nonzero_dim[0]])
@@ -407,7 +407,7 @@ if debug:
 
     fig, _, _ = gu.contour_slices(struct_array, q_coordinates=q_values, sum_frames=True,
                                   title='Simulated diffraction pattern', cmap=my_cmap,
-                                  levels=np.linspace(struct_array.min()+plot_max/100, plot_max, 10, endpoint=False),
+                                  levels=np.linspace(struct_array.min()+plot_max/100, plot_max, 20, endpoint=False),
                                   plot_colorbar=True, scale='linear', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
     fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
