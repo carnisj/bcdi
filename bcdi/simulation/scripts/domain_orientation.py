@@ -38,13 +38,13 @@ comment = ''  # should start with _
 unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 unitcell_param = (15.2, 25.0)   # in nm, unit cell parameter.  # (15.84, 22.4)
 # It can be a number or tuple of numbers depending on the unit cell.
-unitcell_ranges = [14.8, 15.4, 24.6, 25.2]  # in nm, values of the unit cell parameters to test
+unitcell_ranges = [14.8, 15.2, 24.5, 24.9]  # in nm, values of the unit cell parameters to test
 # If the unit cell is cubic: [start, stop]. If the unit cell is bct: [start1, stop1, start2, stop2] etc...
-unitcell_step = 6  # number of steps within unitcell_ranges
+unitcell_step = 4  # number of steps within unitcell_ranges
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [0, 5.25, 45+24, 45+28.25, -5, 0.25]  # [start, stop, start, stop, start, stop], in degrees
+angles_ranges = [4, 7.25, 45+24, 45+28.25, -7, -3.75]  # [start, stop, start, stop, start, stop], in degrees
 # ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is excluded)
 angular_step = 1  # in degrees
 #######################
@@ -141,10 +141,10 @@ nbz, nby, nbx = len(q_values[0]), len(q_values[1]), len(q_values[2])
 ##########################
 # plot experimental data #
 ##########################
-gu.multislices_plot(data, sum_frames=True, title='data', vmin=0, vmax=np.log10(data).max(), scale='log',
-                    plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
-
 if debug:
+    gu.multislices_plot(data, sum_frames=True, title='data', vmin=0, vmax=np.log10(data).max(), scale='log',
+                        plot_colorbar=True, cmap=my_cmap, is_orthogonal=True, reciprocal_space=True)
+
     if qvalues_flag:
         gu.contour_slices(data, q_coordinates=(exp_qvalues['qx'], exp_qvalues['qz'], exp_qvalues['qy']),
                           sum_frames=True, title='Experimental data',
@@ -217,30 +217,62 @@ peak_shape = pu.blackman_window(shape=(kernel_length, kernel_length, kernel_leng
 angles_qx = np.arange(start=angles_ranges[0], stop=angles_ranges[1], step=angular_step)
 angles_qz = np.arange(start=angles_ranges[2], stop=angles_ranges[3], step=angular_step)
 angles_qy = np.arange(start=angles_ranges[4], stop=angles_ranges[5], step=angular_step)
-print('Number of angles to test: ', len(angles_qx)*len(angles_qz)*len(angles_qy))
+nb_angles = len(angles_qx)*len(angles_qz)*len(angles_qy)
+print('Number of angles to test: ', nb_angles)
 
-#############################
-# loop over rotation angles #
-#############################
+####################################################
+# loop over rotation angles and lattice parameters #
+####################################################
 start = time.time()
-corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy)))
-for idz, alpha in enumerate(angles_qx):
-    for idy, beta in enumerate(angles_qz):
-        for idx, gamma in enumerate(angles_qy):
-            rot_lattice, _ = simu.rotate_lattice(lattice_list=ref_lattice, peaks_list=ref_peaks,
-                                                 original_shape=(nbz, nby, nbx), pad_offset=offset, pivot=pivot,
-                                                 euler_angles=(alpha, beta, gamma))
-            # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 
-            # assign the peak shape to each lattice point
-            struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
-                                                 peak_shape=peak_shape, pivot=pivot)
+if unitcell == 'bct':
+    a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1], num=unitcell_step)
+    c_values = np.linspace(start=unitcell_ranges[2], stop=unitcell_ranges[3], num=unitcell_step)
+    param_range = np.concatenate((a_values, c_values)).reshape((2, unitcell_step))
+    print('Number of lattice parameters to test: ', unitcell_step**2)
+    print('Total number of iterations: ', nb_angles * unitcell_step**2)
+    corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy), unitcell_step, unitcell_step))
+    for idz, alpha in enumerate(angles_qx):
+        for idy, beta in enumerate(angles_qz):
+            for idx, gamma in enumerate(angles_qy):
+                for idw, a in enumerate(param_range[0]):
+                    for idv, c in enumerate(param_range[1]):
+                        _, _, _, rot_lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
+                                                               detector=detector, unitcell=unitcell,
+                                                               unitcell_param=(a, c), euler_angles=(alpha, beta, gamma),
+                                                               offset_indices=False)
+                        # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 
-            # calculate the correlation between experimental data and simulated data
-            corr[idz, idy, idx] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
-            # print(alpha, beta, gamma, corr[idz, idy, idx])
+                        # assign the peak shape to each lattice point
+                        struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
+                                                             peak_shape=peak_shape, pivot=pivot)
+
+                        # calculate the correlation between experimental data and simulated data
+                        corr[idz, idy, idx, idw, idv] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
+else:
+    param_range = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1], num=unitcell_step)
+    print('Number of lattice parameters to test: ', unitcell_step)
+    print('Total number of iterations: ', nb_angles * unitcell_step)
+    corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy), unitcell_step))
+    for idz, alpha in enumerate(angles_qx):
+        for idy, beta in enumerate(angles_qz):
+            for idx, gamma in enumerate(angles_qy):
+                for idw, a in enumerate(param_range):
+                        _, _, _, rot_lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
+                                                               detector=detector, unitcell=unitcell,
+                                                               unitcell_param=a, euler_angles=(alpha, beta, gamma),
+                                                               offset_indices=False)
+                        # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
+
+                        # assign the peak shape to each lattice point
+                        struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
+                                                             peak_shape=peak_shape, pivot=pivot)
+
+                        # calculate the correlation between experimental data and simulated data
+                        corr[idz, idy, idx, idw] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
+
 end = time.time()
-print('Time ellapsed in the loop over angles (s)', int(end - start))
+print('Time ellapsed in the loop over angles and lattice parameters (s)', int(end - start))
 
 ##########################################
 # plot the correlation matrix at maximum #
@@ -251,173 +283,58 @@ if vmax == vmin:
     print('The correlation map is flat: no maximum in this range of angles')
     sys.exit()
 
-piz, piy, pix = np.unravel_index(abs(corr).argmax(), corr.shape)
-alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
-print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', alpha, beta, gamma)
+if unitcell == 'bct':  # corr is 5D
+    piz, piy, pix, piw, piv = np.unravel_index(abs(corr).argmax(), corr.shape)
+    alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
+    best_param = param_range[0, piw], param_range[1, piv]
+    text = unitcell + " unit cell of parameter(s) = {:.2f} nm, {:.2f}".format(best_param[0], best_param[1]) + " nm"
+    print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', alpha, beta, gamma)
+    print('Maximum correlation for a', text)
+else:  # corr is 4D
+    piz, piy, pix, piw = np.unravel_index(abs(corr).argmax(), corr.shape)
+    alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
+    best_param = param_range[piw]
+    text = unitcell + " unit cell of parameter = " + str('{:.2f}'.format(best_param)) + " nm"
+    print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', alpha, beta, gamma)
+    print('Maximum correlation for a', text)
 
-if all([corr.shape[idx] > 1 for idx in range(corr.ndim)]):  # 3D
-    fig, _, _ = gu.contour_slices(corr, (angles_qx, angles_qz, angles_qy), sum_frames=False,
-                                  title='Correlation', slice_position=[piz, piy, pix], plot_colorbar=True, cmap=my_cmap,
-                                  levels=np.linspace(vmin, vmax, 10, endpoint=False), is_orthogonal=True,
-                                  reciprocal_space=True)
-    fig.text(0.60, 0.25, "Kernel size = " + str(kernel_length) + " pixels", size=12)
-else:
-    # find which angle is 1D
-    nonzero_dim = np.nonzero(np.asarray(corr.shape) != 1)[0]
-    corr = np.squeeze(corr)
-    labels = ['rotation around qx (deg)', 'rotation around qz (deg)', 'rotation around qy (deg)']
-    if corr.ndim == 2:
-        fig, ax = plt.subplots(nrows=1, ncols=1)
-        if (nonzero_dim[0] == 0) and (nonzero_dim[1] == 1):
-            plt0 = ax.contourf(angles_qz, angles_qx, corr, np.linspace(vmin, vmax, 10, endpoint=False), cmap=my_cmap)
-        elif (nonzero_dim[0] == 0) and (nonzero_dim[1] == 2):
-            plt0 = ax.contourf(angles_qy, angles_qx, corr, np.linspace(vmin, vmax, 10, endpoint=False), cmap=my_cmap)
-        else:
-            plt0 = ax.contourf(angles_qy, angles_qz, corr, np.linspace(vmin, vmax, 10, endpoint=False), cmap=my_cmap)
-        plt.colorbar(plt0, ax=ax)
-        ax.set_ylabel(labels[nonzero_dim[0]])
-        ax.set_xlabel(labels[nonzero_dim[1]])
-        ax.set_title('Correlation')
-    else:  # 1D
-        fig = plt.figure()
-        if nonzero_dim[0] == 0:
-            plt.plot(angles_qx, corr, '.r')
-        elif nonzero_dim[0] == 1:
-            plt.plot(angles_qz, corr, '.r')
-        elif nonzero_dim[0] == 2:
-            plt.plot(angles_qy, corr, '.r')
-        plt.xlabel(labels[nonzero_dim[0]])
-        plt.ylabel('Correlation')
-    plt.pause(0.1)
-plt.savefig(savedir + 'cross_corr_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
-            str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(alpha) + '_' + str(beta) + '_' + str(gamma) +
-            comment + '.png')
-
-################################################
-# rotate the lattice at calculated best values #
-################################################
-rot_lattice, _ = simu.rotate_lattice(lattice_list=ref_lattice, peaks_list=ref_peaks, original_shape=(nbz, nby, nbx),
-                                     pad_offset=offset, pivot=pivot, euler_angles=(alpha, beta, gamma))
-# peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
-
-# assign the peak shape to each lattice point
-struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
-                                     peak_shape=peak_shape, pivot=pivot)
-
-#######################################################
-# plot the overlay of experimental and simulated data #
-#######################################################
-plot_max = 2*peak_shape.sum(axis=0).max()
-density_map[np.nonzero(density_map)] = 10*plot_max
-fig, _, _ = gu.multislices_plot(struct_array+density_map, sum_frames=True, title='Overlay',
-                                vmin=0, vmax=plot_max, plot_colorbar=True, scale='linear',
-                                is_orthogonal=True, reciprocal_space=True)
-fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
-fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
-fig.text(0.55, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
-fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
-         str(beta) + "," + str(gamma), size=12)
-plt.pause(0.1)
-
-if debug:
-    fig, _, _ = gu.multislices_plot(struct_array, sum_frames=True, title='Simulated diffraction pattern',
-                                    vmin=0, vmax=plot_max, plot_colorbar=False, scale='linear',
-                                    is_orthogonal=True, reciprocal_space=True)
-    fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
-    fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
-    fig.text(0.55, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
-    fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
-             str(beta) + "," + str(gamma), size=12)
-    plt.pause(0.1)
-
-    fig, _, _ = gu.contour_slices(struct_array, q_coordinates=q_values, sum_frames=True,
-                                  title='Simulated diffraction pattern', cmap=my_cmap,
-                                  levels=np.linspace(struct_array.min()+plot_max/100, plot_max, 10, endpoint=False),
-                                  plot_colorbar=True, scale='linear', is_orthogonal=True, reciprocal_space=True)
-    fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
-    fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
-    fig.text(0.55, 0.15, unitcell + " unit cell of parameter = " + str(unitcell_param) + " nm", size=12)
-    fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
-             str(beta) + "," + str(gamma), size=12)
-    plt.pause(0.1)
-
-#################################
-# optimize unit cell parameters #
-#################################
-if unitcell == 'bct':
-    a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1], num=unitcell_step)
-    c_values = np.linspace(start=unitcell_ranges[2], stop=unitcell_ranges[3], num=unitcell_step)
-    param_range = np.concatenate((a_values, c_values)).reshape((2, unitcell_step))
-    start = time.time()
-    corr = np.zeros((unitcell_step, unitcell_step))
-    for idy, a in enumerate(param_range[0]):
-        for idx, c in enumerate(param_range[1]):
-            _, _, _, rot_lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
-                                                   detector=detector, unitcell=unitcell, unitcell_param=(a, c),
-                                                   euler_angles=(alpha, beta, gamma), offset_indices=False)
-            # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
-
-            # assign the peak shape to each lattice point
-            struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
-                                                 peak_shape=peak_shape, pivot=pivot)
-
-            # calculate the correlation between experimental data and simulated data
-            corr[idy, idx] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
-    end = time.time()
-    print('Time ellapsed in the loop over lattice parameters (s)', int(end - start))
-else:
-    param_range = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1], num=unitcell_step)
-    start = time.time()
-    corr = np.zeros(unitcell_step)
-    for idx, a in enumerate(param_range[0]):
-        _, _, _, rot_lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
-                                               detector=detector, unitcell=unitcell, unitcell_param=a,
-                                               euler_angles=(alpha, beta, gamma), offset_indices=False)
-        # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
-
-        # assign the peak shape to each lattice point
-        struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
-                                             peak_shape=peak_shape, pivot=pivot)
-
-        # calculate the correlation between experimental data and simulated data
-        corr[idx] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
-    end = time.time()
-    print('Time ellapsed in the loop over the lattice parameter (s)', int(end - start))
-
-##########################################
-# plot the correlation matrix at maximum #
-##########################################
-vmin = corr.min()
-vmax = corr.max()
-if vmax == vmin:
-    print('The correlation map is flat: no maximum in this range of unit cell lattice parameters')
-    sys.exit()
-
-if unitcell == 'bct':
-    piy, pix = np.unravel_index(abs(corr).argmax(), corr.shape)
-    best_param = param_range[0, piy], param_range[1, pix]
-    print('Maximum correlation for (a, c) =', a, c)
-
-    fig, ax = plt.subplots(nrows=1, ncols=1)
-    plt0 = ax.contourf(param_range[1], param_range[0], corr, np.linspace(vmin, vmax, 10, endpoint=False), cmap=my_cmap)
-    plt.colorbar(plt0, ax=ax)
-    ax.set_ylabel('a parameter (nm)')
-    ax.set_xlabel('c parameter (nm)')
-    ax.set_title('Correlation')
-    plt.pause(0.1)
-    plt.savefig(savedir + 'cross_corr_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
-                str(binning[1]) + '_' + str(binning[2]) + '_param a=' + str(best_param[0]) + '_c=' + str(best_param[1])
-                + comment + '.png')
-else:  # 1D
-    pix = np.unravel_index(abs(corr).argmax(), corr.shape)
-    best_param = param_range[pix]
-    fig = plt.figure()
-    plt.plot(param_range, corr, '.r')
-    plt.xlabel('a parameter (nm)')
-    plt.ylabel('Correlation')
-    plt.pause(0.1)
-    plt.savefig(savedir + 'cross_corr_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
-                str(binning[1]) + '_' + str(binning[2]) + '_param a=' + str(best_param) + comment + '.png')
+# if all([corr.shape[idx] > 1 for idx in range(corr.ndim)]):  # 3D
+#     fig, _, _ = gu.contour_slices(corr, (angles_qx, angles_qz, angles_qy), sum_frames=False,
+#                                   title='Correlation', slice_position=[piz, piy, pix], plot_colorbar=True, cmap=my_cmap,
+#                                   levels=np.linspace(vmin, vmax, 10, endpoint=False), is_orthogonal=True,
+#                                   reciprocal_space=True)
+#     fig.text(0.60, 0.25, "Kernel size = " + str(kernel_length) + " pixels", size=12)
+# else:
+#     # find which angle is 1D
+#     nonzero_dim = np.nonzero(np.asarray(corr.shape) != 1)[0]
+#     corr = np.squeeze(corr)
+#     labels = ['rotation around qx (deg)', 'rotation around qz (deg)', 'rotation around qy (deg)']
+#     if corr.ndim == 2:
+#         fig, ax = plt.subplots(nrows=1, ncols=1)
+#         if (nonzero_dim[0] == 0) and (nonzero_dim[1] == 1):
+#             plt0 = ax.contourf(angles_qz, angles_qx, corr, np.linspace(vmin, vmax, 10, endpoint=False), cmap=my_cmap)
+#         elif (nonzero_dim[0] == 0) and (nonzero_dim[1] == 2):
+#             plt0 = ax.contourf(angles_qy, angles_qx, corr, np.linspace(vmin, vmax, 10, endpoint=False), cmap=my_cmap)
+#         else:
+#             plt0 = ax.contourf(angles_qy, angles_qz, corr, np.linspace(vmin, vmax, 10, endpoint=False), cmap=my_cmap)
+#         plt.colorbar(plt0, ax=ax)
+#         ax.set_ylabel(labels[nonzero_dim[0]])
+#         ax.set_xlabel(labels[nonzero_dim[1]])
+#         ax.set_title('Correlation')
+#     else:  # 1D
+#         fig = plt.figure()
+#         if nonzero_dim[0] == 0:
+#             plt.plot(angles_qx, corr, '.r')
+#         elif nonzero_dim[0] == 1:
+#             plt.plot(angles_qz, corr, '.r')
+#         elif nonzero_dim[0] == 2:
+#             plt.plot(angles_qy, corr, '.r')
+#         plt.xlabel(labels[nonzero_dim[0]])
+#         plt.ylabel('Correlation')
+#     plt.pause(0.1)
+# plt.savefig(savedir + 'cross_corr_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
+#             str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(alpha) + '_' + str(beta) + '_' + str(gamma) +
+#             comment + '.png')
 
 ###################################################
 # calculate the lattice at calculated best values #
