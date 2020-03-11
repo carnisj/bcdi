@@ -38,15 +38,15 @@ comment = ''  # should start with _
 unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 unitcell_param = (15.2, 25.0)   # in nm, unit cell parameter.  # (15.84, 22.4)
 # It can be a number or tuple of numbers depending on the unit cell.
-unitcell_ranges = [14.8, 15.2, 24.5, 24.9]  # in nm, values of the unit cell parameters to test
+unitcell_ranges = [14.8, 15.4, 24.5, 24.9]  # in nm, values of the unit cell parameters to test
 # If the unit cell is cubic: [start, stop]. If the unit cell is bct: [start1, stop1, start2, stop2] etc...
-unitcell_step = 4  # number of steps within unitcell_ranges
+unitcell_step = 12  # number of steps within unitcell_ranges
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [4, 7.25, 45+24, 45+28.25, -7, -3.75]  # [start, stop, start, stop, start, stop], in degrees
+angles_ranges = [1.5, 5.75, 45+25, 45+27.25, -5.75, -1.5]  # [start, stop, start, stop, start, stop], in degrees
 # ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is excluded)
-angular_step = 1  # in degrees
+angular_step = 0.5  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -77,11 +77,6 @@ bckg_method = 'normalize'  # 'subtract' or 'normalize'
 ##################################
 # end of user-defined parameters #
 ##################################
-comment = comment + '_' + unitcell
-if unitcell == 'bct':
-    comment = comment + '_a=' + str(unitcell_param[0])+'_c=' + str(unitcell_param[1])
-else:
-    comment = comment + '_a=' + str(unitcell_param)
 
 #######################
 # Initialize detector #
@@ -137,6 +132,8 @@ pivot, offset, q_values, ref_lattice, ref_peaks = simu.lattice(energy=energy, sd
                                                                unitcell_param=unitcell_param, euler_angles=[0, 0, 0],
                                                                offset_indices=True)
 nbz, nby, nbx = len(q_values[0]), len(q_values[1]), len(q_values[2])
+comment = comment + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' +\
+          str(binning[2])
 
 ##########################
 # plot experimental data #
@@ -174,7 +171,7 @@ if correct_background:
         data = util.remove_background(array=data, q_values=q_values, avg_background=avg_background,
                                       avg_qvalues=distances, method=bckg_method)
 
-    np.savez_compressed(datadir+'data-background_'+str(nbz)+'_'+str(nby)+'_'+str(nbx)+'.npz', data=data)
+    np.savez_compressed(datadir + 'data-background_' + comment + '.npz', data=data)
 
     gu.multislices_plot(data, sum_frames=True, title='Background subtracted data', vmin=0,
                         vmax=np.log10(data).max(), scale='log', plot_colorbar=True, cmap=my_cmap,
@@ -277,6 +274,7 @@ print('Time ellapsed in the loop over angles and lattice parameters (s)', int(en
 ##########################################
 # plot the correlation matrix at maximum #
 ##########################################
+comment = comment + '_' + unitcell
 vmin = corr.min()
 vmax = corr.max()
 if vmax == vmin:
@@ -290,6 +288,20 @@ if unitcell == 'bct':  # corr is 5D
     text = unitcell + " unit cell of parameter(s) = {:.2f} nm, {:.2f}".format(best_param[0], best_param[1]) + " nm"
     print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', alpha, beta, gamma)
     print('Maximum correlation for a', text)
+    corr_angles = np.copy(corr[:, :, :, piw, piv])
+    corr_lattice = np.copy(corr[piz, piy, pix, :, :])
+
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    plt0 = ax.contourf(param_range[1], param_range[0], corr_lattice, np.linspace(vmin, vmax, 10, endpoint=False),
+                       cmap=my_cmap)
+    plt.colorbar(plt0, ax=ax)
+    ax.set_ylabel('a parameter (nm)')
+    ax.set_xlabel('c parameter (nm)')
+    ax.set_title('Correlation map for lattice parameters')
+    plt.pause(0.1)
+    plt.savefig(savedir + 'correlation_lattice_' + comment +
+                '_param a={:.2f}nm,c={:.2f}nm'.format(best_param[0], best_param[1]) + '.png')
+
 else:  # corr is 4D
     piz, piy, pix, piw = np.unravel_index(abs(corr).argmax(), corr.shape)
     alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
@@ -297,44 +309,55 @@ else:  # corr is 4D
     text = unitcell + " unit cell of parameter = " + str('{:.2f}'.format(best_param)) + " nm"
     print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', alpha, beta, gamma)
     print('Maximum correlation for a', text)
+    corr_angles = np.copy(corr[:, :, :, piw])
+    corr_lattice = np.copy(corr[piz, piy, pix, :])
 
-# if all([corr.shape[idx] > 1 for idx in range(corr.ndim)]):  # 3D
-#     fig, _, _ = gu.contour_slices(corr, (angles_qx, angles_qz, angles_qy), sum_frames=False,
-#                                   title='Correlation', slice_position=[piz, piy, pix], plot_colorbar=True, cmap=my_cmap,
-#                                   levels=np.linspace(vmin, vmax, 10, endpoint=False), is_orthogonal=True,
-#                                   reciprocal_space=True)
-#     fig.text(0.60, 0.25, "Kernel size = " + str(kernel_length) + " pixels", size=12)
-# else:
-#     # find which angle is 1D
-#     nonzero_dim = np.nonzero(np.asarray(corr.shape) != 1)[0]
-#     corr = np.squeeze(corr)
-#     labels = ['rotation around qx (deg)', 'rotation around qz (deg)', 'rotation around qy (deg)']
-#     if corr.ndim == 2:
-#         fig, ax = plt.subplots(nrows=1, ncols=1)
-#         if (nonzero_dim[0] == 0) and (nonzero_dim[1] == 1):
-#             plt0 = ax.contourf(angles_qz, angles_qx, corr, np.linspace(vmin, vmax, 10, endpoint=False), cmap=my_cmap)
-#         elif (nonzero_dim[0] == 0) and (nonzero_dim[1] == 2):
-#             plt0 = ax.contourf(angles_qy, angles_qx, corr, np.linspace(vmin, vmax, 10, endpoint=False), cmap=my_cmap)
-#         else:
-#             plt0 = ax.contourf(angles_qy, angles_qz, corr, np.linspace(vmin, vmax, 10, endpoint=False), cmap=my_cmap)
-#         plt.colorbar(plt0, ax=ax)
-#         ax.set_ylabel(labels[nonzero_dim[0]])
-#         ax.set_xlabel(labels[nonzero_dim[1]])
-#         ax.set_title('Correlation')
-#     else:  # 1D
-#         fig = plt.figure()
-#         if nonzero_dim[0] == 0:
-#             plt.plot(angles_qx, corr, '.r')
-#         elif nonzero_dim[0] == 1:
-#             plt.plot(angles_qz, corr, '.r')
-#         elif nonzero_dim[0] == 2:
-#             plt.plot(angles_qy, corr, '.r')
-#         plt.xlabel(labels[nonzero_dim[0]])
-#         plt.ylabel('Correlation')
-#     plt.pause(0.1)
-# plt.savefig(savedir + 'cross_corr_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
-#             str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(alpha) + '_' + str(beta) + '_' + str(gamma) +
-#             comment + '.png')
+    fig = plt.figure()
+    plt.plot(param_range, corr_lattice, '.r')
+    plt.xlabel('a parameter (nm)')
+    plt.ylabel('Correlation')
+    plt.pause(0.1)
+    plt.savefig(savedir + 'correlation_lattice_' + comment + '_param a={:.2f}nm'.format(best_param) + '.png')
+
+if all([corr_angles.shape[idx] > 1 for idx in range(corr_angles.ndim)]):  # 3D
+    fig, _, _ = gu.contour_slices(corr_angles, (angles_qx, angles_qz, angles_qy), sum_frames=False,
+                                  title='Correlation map for rotation angles', slice_position=[piz, piy, pix],
+                                  plot_colorbar=True, levels=np.linspace(vmin, vmax, 10, endpoint=False),
+                                  is_orthogonal=True, reciprocal_space=True, cmap=my_cmap)
+    fig.text(0.60, 0.25, "Kernel size = " + str(kernel_length) + " pixels", size=12)
+else:
+    # find which angle is 1D
+    nonzero_dim = np.nonzero(np.asarray(corr_angles.shape) != 1)[0]
+    corr_angles = np.squeeze(corr_angles)
+    labels = ['rotation around qx (deg)', 'rotation around qz (deg)', 'rotation around qy (deg)']
+    if corr_angles.ndim == 2:
+        fig, ax = plt.subplots(nrows=1, ncols=1)
+        if (nonzero_dim[0] == 0) and (nonzero_dim[1] == 1):
+            plt0 = ax.contourf(angles_qz, angles_qx, corr_angles, np.linspace(vmin, vmax, 10, endpoint=False),
+                               cmap=my_cmap)
+        elif (nonzero_dim[0] == 0) and (nonzero_dim[1] == 2):
+            plt0 = ax.contourf(angles_qy, angles_qx, corr_angles, np.linspace(vmin, vmax, 10, endpoint=False),
+                               cmap=my_cmap)
+        else:
+            plt0 = ax.contourf(angles_qy, angles_qz, corr_angles, np.linspace(vmin, vmax, 10, endpoint=False),
+                               cmap=my_cmap)
+        plt.colorbar(plt0, ax=ax)
+        ax.set_ylabel(labels[nonzero_dim[0]])
+        ax.set_xlabel(labels[nonzero_dim[1]])
+        ax.set_title('Correlation map for rotation angles')
+    else:  # 1D
+        fig = plt.figure()
+        if nonzero_dim[0] == 0:
+            plt.plot(angles_qx, corr_angles, '.r')
+        elif nonzero_dim[0] == 1:
+            plt.plot(angles_qz, corr_angles, '.r')
+        elif nonzero_dim[0] == 2:
+            plt.plot(angles_qy, corr_angles, '.r')
+        plt.xlabel(labels[nonzero_dim[0]])
+        plt.ylabel('Correlation')
+    plt.pause(0.1)
+plt.savefig(savedir + 'correlation_angles_' + comment + '_rot_' + str(alpha) + '_' + str(beta) + '_' + str(gamma) +
+            comment + '.png')
 
 ###################################################
 # calculate the lattice at calculated best values #
@@ -367,10 +390,7 @@ fig.text(0.55, 0.15, text, size=12)
 fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
          str(beta) + "," + str(gamma), size=12)
 plt.pause(0.1)
-plt.savefig(
-    savedir + 'q_sum_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' +
-    str(binning[1]) + '_' + str(binning[2]) + '_rot_' + str(alpha) + '_' + str(beta) + '_' +
-    str(gamma) + comment + '.png')
+plt.savefig(savedir + 'Overlay_' + comment + '.png')
 
 if debug:
     fig, _, _ = gu.multislices_plot(struct_array, sum_frames=True, title='Simulated diffraction pattern',
