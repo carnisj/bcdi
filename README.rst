@@ -217,7 +217,10 @@ BCDI.simulation: simulation of diffraction patterns
 Description
 -----------
 
-This module provides methods used for the calculation of the diffraction intensity based on FFT or kinematical sum.
+In Bragg geometry, calculation of the diffraction intensity based on FFT or kinematical sum. It can include
+a displacement field, noise, detector gaps etc...
+In forward CDI geometry, calculation of the Bragg peak positions in 3D for a mesocrystal, knowing the unit cell
+and unit cell parameter. It can be used to fit experimental data.
 
 .. bcdi.simulation end
 
