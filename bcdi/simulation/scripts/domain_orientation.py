@@ -37,15 +37,15 @@ comment = ''  # should start with _
 ################
 unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 # It can be a number or tuple of numbers depending on the unit cell.
-unitcell_ranges = [14.95, 15.25, 24.60, 24.90]  # in nm, values of the unit cell parameters to test
+unitcell_ranges = [14.95, 15.25, 24.60, 25.0]  # in nm, values of the unit cell parameters to test
 # cubic, FCC or BCC unit cells: [start, stop]. BCT unit cell: [start1, stop1, start2, stop2]   (stop is included)
-unitcell_step = 0.05  # in nm
+unitcell_step = 0.2  # in nm
 #########################
 # unit cell orientation #
 #########################
 angles_ranges = [1, 5, 45+24, 45+28, -5, -1]  # [start, stop, start, stop, start, stop], in degrees
 # ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is included)
-angular_step = 0.25  # in degrees
+angular_step = 1  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -214,11 +214,11 @@ peak_shape = pu.blackman_window(shape=(kernel_length, kernel_length, kernel_leng
 # define the list of angles to test #
 #####################################
 angles_qx = np.linspace(start=angles_ranges[0], stop=angles_ranges[1],
-                        num=int((angles_ranges[1]-angles_ranges[0])/angular_step))
+                        num=np.rint((angles_ranges[1]-angles_ranges[0])/angular_step))
 angles_qz = np.linspace(start=angles_ranges[2], stop=angles_ranges[3],
-                        num=int((angles_ranges[3]-angles_ranges[2])/angular_step))
+                        num=np.rint((angles_ranges[3]-angles_ranges[2])/angular_step))
 angles_qy = np.linspace(start=angles_ranges[4], stop=angles_ranges[5],
-                        num=int((angles_ranges[5]-angles_ranges[4])/angular_step))
+                        num=np.rint((angles_ranges[5]-angles_ranges[4])/angular_step))
 nb_angles = len(angles_qx)*len(angles_qz)*len(angles_qy)
 print('Number of angles to test: ', nb_angles)
 
@@ -226,10 +226,12 @@ print('Number of angles to test: ', nb_angles)
 # loop over rotation angles and lattice parameters #
 ####################################################
 start = time.time()
-nb_lattices = int((unitcell_ranges[1]-unitcell_ranges[0])/unitcell_step)
 if unitcell == 'bct':
-    a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1], num=nb_lattices)
-    c_values = np.linspace(start=unitcell_ranges[2], stop=unitcell_ranges[3], num=nb_lattices)
+    a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
+                           num=np.rint((unitcell_ranges[1]-unitcell_ranges[0])/unitcell_step))
+    c_values = np.linspace(start=unitcell_ranges[2], stop=unitcell_ranges[3],
+                           num=np.rint((unitcell_ranges[3]-unitcell_ranges[2])/unitcell_step))
+    nb_lattices = len(a_values) * len(c_values)
     param_range = np.concatenate((a_values, c_values)).reshape((2, nb_lattices))
     print('Number of lattice parameters to test: ', nb_lattices**2)
     print('Total number of iterations: ', nb_angles * nb_lattices**2)
@@ -252,7 +254,9 @@ if unitcell == 'bct':
                         # calculate the correlation between experimental data and simulated data
                         corr[idz, idy, idx, idw, idv] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
 else:
-    param_range = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1], num=nb_lattices)
+    param_range = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
+                              num=np.rint((unitcell_ranges[1] - unitcell_ranges[0]) / unitcell_step))
+    nb_lattices = len(param_range)
     print('Number of lattice parameters to test: ', nb_lattices)
     print('Total number of iterations: ', nb_angles * nb_lattices)
     corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy), nb_lattices))
@@ -294,16 +298,31 @@ if unitcell == 'bct':  # corr is 5D
     # TODO: add a test when corr_lattice has an empty dimension
     vmin = corr_lattice.min()
     vmax = 1.1 * corr_lattice.max()
-    fig, ax = plt.subplots(nrows=1, ncols=1)
-    plt0 = ax.contourf(param_range[1], param_range[0], corr_lattice, np.linspace(vmin, vmax, 20, endpoint=False),
-                       cmap=my_cmap)
-    plt.colorbar(plt0, ax=ax)
-    ax.set_ylabel('a parameter (nm)')
-    ax.set_xlabel('c parameter (nm)')
-    ax.set_title('Correlation map for lattice parameters')
+    save_lattice = True
+    if all([corr_lattice.shape[idx] > 1 for idx in range(corr_lattice.ndim)]):  # 2D
+        fig, ax = plt.subplots(nrows=1, ncols=1)
+        plt0 = ax.contourf(param_range[1], param_range[0], corr_lattice, np.linspace(vmin, vmax, 20, endpoint=False),
+                           cmap=my_cmap)
+        plt.colorbar(plt0, ax=ax)
+        ax.set_ylabel('a parameter (nm)')
+        ax.set_xlabel('c parameter (nm)')
+        ax.set_title('Correlation map for lattice parameters')
+    else:  # 1D or 0D
+        nonzero_dim = np.nonzero(np.asarray(corr_lattice.shape) != 1)[0]
+        if len(nonzero_dim) == 0:  # 0D
+            print('The unit cell lattice parameters are not scanned')
+            save_lattice = False
+        else:  # 1D
+            corr_lattice = np.squeeze(corr_lattice)
+            labels = ['a parameter (nm)', 'c parameter (nm)']
+            fig = plt.figure()
+            plt.plot(param_range[nonzero_dim[0]], corr_lattice, '.r')
+            plt.xlabel(labels[nonzero_dim[0]])
+            plt.ylabel('Correlation')
     plt.pause(0.1)
-    plt.savefig(savedir + 'correlation_lattice_' + comment +
-                '_param a={:.2f}nm,c={:.2f}nm'.format(best_param[0], best_param[1]) + '.png')
+    if save_lattice:
+        plt.savefig(savedir + 'correlation_lattice_' + comment +
+                    '_param a={:.2f}nm,c={:.2f}nm'.format(best_param[0], best_param[1]) + '.png')
 
 else:  # corr is 4D
     piz, piy, pix, piw = np.unravel_index(abs(corr).argmax(), corr.shape)
@@ -324,7 +343,7 @@ else:  # corr is 4D
 
 vmin = corr_angles.min()
 vmax = 1.1 * corr_angles.max()
-
+save_angles = True
 if all([corr_angles.shape[idx] > 1 for idx in range(corr_angles.ndim)]):  # 3D
     fig, _, _ = gu.contour_slices(corr_angles, (angles_qx, angles_qz, angles_qy), sum_frames=False,
                                   title='Correlation map for rotation angles', slice_position=[piz, piy, pix],
@@ -351,18 +370,25 @@ else:
         ax.set_ylabel(labels[nonzero_dim[0]])
         ax.set_xlabel(labels[nonzero_dim[1]])
         ax.set_title('Correlation map for rotation angles')
-    else:  # 1D
-        fig = plt.figure()
-        if nonzero_dim[0] == 0:
-            plt.plot(angles_qx, corr_angles, '.r')
-        elif nonzero_dim[0] == 1:
-            plt.plot(angles_qz, corr_angles, '.r')
-        elif nonzero_dim[0] == 2:
-            plt.plot(angles_qy, corr_angles, '.r')
-        plt.xlabel(labels[nonzero_dim[0]])
-        plt.ylabel('Correlation')
-    plt.pause(0.1)
-plt.savefig(savedir + 'correlation_angles_' + comment + '_rot_{:.2f}_{:.2f}_{:.2f}'.format(alpha, beta, gamma) + '.png')
+    else:  # 1D or 0D
+        if len(nonzero_dim) == 0:  # 0D
+            print('The unit cell rotation angles are not scanned')
+            save_angles = False
+        else:  # 1D
+            fig = plt.figure()
+            if nonzero_dim[0] == 0:
+                plt.plot(angles_qx, corr_angles, '.r')
+            elif nonzero_dim[0] == 1:
+                plt.plot(angles_qz, corr_angles, '.r')
+            elif nonzero_dim[0] == 2:
+                plt.plot(angles_qy, corr_angles, '.r')
+            plt.xlabel(labels[nonzero_dim[0]])
+            plt.ylabel('Correlation')
+
+plt.pause(0.1)
+if save_angles:
+    plt.savefig(savedir + 'correlation_angles_' + comment +
+                '_rot_{:.2f}_{:.2f}_{:.2f}'.format(alpha, beta, gamma) + '.png')
 
 ###################################################
 # calculate the lattice at calculated best values #
