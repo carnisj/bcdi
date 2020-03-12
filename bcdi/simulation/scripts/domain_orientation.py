@@ -39,13 +39,13 @@ unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 # It can be a number or tuple of numbers depending on the unit cell.
 unitcell_ranges = [14.95, 15.25, 24.60, 24.90]  # in nm, values of the unit cell parameters to test
 # cubic, FCC or BCC unit cells: [start, stop]. BCT unit cell: [start1, stop1, start2, stop2]   (stop is included)
-unitcell_step = 0.1  # in nm
+unitcell_step = 0.05  # in nm
 #########################
 # unit cell orientation #
 #########################
 angles_ranges = [1, 5, 45+24, 45+28, -5, -1]  # [start, stop, start, stop, start, stop], in degrees
 # ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is included)
-angular_step = 2  # in degrees
+angular_step = 0.25  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -291,6 +291,7 @@ if unitcell == 'bct':  # corr is 5D
     corr_angles = np.copy(corr[:, :, :, piw, piv])
     corr_lattice = np.copy(corr[piz, piy, pix, :, :])
 
+    # TODO: add a test when corr_lattice has an empty dimension
     vmin = corr_lattice.min()
     vmax = 1.1 * corr_lattice.max()
     fig, ax = plt.subplots(nrows=1, ncols=1)
@@ -391,8 +392,8 @@ fig, _, _ = gu.multislices_plot(struct_array+density_map, sum_frames=True, title
 fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
 fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
 fig.text(0.55, 0.15, text, size=12)
-fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
-         str(beta) + "," + str(gamma), size=12)
+fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
+                     " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma), size=12)
 plt.pause(0.1)
 plt.savefig(savedir + 'Overlay_' + comment + '_corr=' + str('{:.2f}'.format(corr.max())) + '.png')
 
@@ -403,8 +404,8 @@ if debug:
     fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
     fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
     fig.text(0.55, 0.15, text, size=12)
-    fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
-             str(beta) + "," + str(gamma), size=12)
+    fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
+                         " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma), size=12)
     plt.pause(0.1)
 
     fig, _, _ = gu.contour_slices(struct_array, q_coordinates=q_values, sum_frames=True,
@@ -414,8 +415,8 @@ if debug:
     fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
     fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
     fig.text(0.55, 0.15, text, size=12)
-    fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) = " + str(alpha) + "," +
-             str(beta) + "," + str(gamma), size=12)
+    fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
+                         " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma), size=12)
     plt.pause(0.1)
 
 plt.ioff()
