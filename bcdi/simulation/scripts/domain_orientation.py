@@ -43,7 +43,7 @@ unitcell_step = 0.2  # in nm
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [1, 5, 45+24, 45+28, -5, -1]  # [start, stop, start, stop, start, stop], in degrees
+angles_ranges = [5, 5, 45+24, 45+24, -5, -3]  # [start, stop, start, stop, start, stop], in degrees
 # ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is included)
 angular_step = 1  # in degrees
 #######################
@@ -213,12 +213,21 @@ peak_shape = pu.blackman_window(shape=(kernel_length, kernel_length, kernel_leng
 #####################################
 # define the list of angles to test #
 #####################################
-angles_qx = np.linspace(start=angles_ranges[0], stop=angles_ranges[1],
-                        num=np.rint((angles_ranges[1]-angles_ranges[0])/angular_step))
-angles_qz = np.linspace(start=angles_ranges[2], stop=angles_ranges[3],
-                        num=np.rint((angles_ranges[3]-angles_ranges[2])/angular_step))
-angles_qy = np.linspace(start=angles_ranges[4], stop=angles_ranges[5],
-                        num=np.rint((angles_ranges[5]-angles_ranges[4])/angular_step))
+if angles_ranges[1] == angles_ranges[0]:  # no scan for this angle
+    angles_qx = np.array([angles_ranges[0]])
+else:
+    angles_qx = np.linspace(start=angles_ranges[0], stop=angles_ranges[1],
+                            num=max(1, np.rint((angles_ranges[1]-angles_ranges[0])/angular_step)))
+if angles_ranges[3] == angles_ranges[2]:  # no scan for this angle
+    angles_qz = np.array([angles_ranges[2]])
+else:
+    angles_qz = np.linspace(start=angles_ranges[2], stop=angles_ranges[3],
+                            num=max(1, np.rint((angles_ranges[3]-angles_ranges[2])/angular_step)))
+if angles_ranges[5] == angles_ranges[4]:  # no scan for this angle
+    angles_qy = np.array([angles_ranges[4]])
+else:
+    angles_qy = np.linspace(start=angles_ranges[4], stop=angles_ranges[5],
+                            num=max(1, np.rint((angles_ranges[5]-angles_ranges[4])/angular_step)))
 nb_angles = len(angles_qx)*len(angles_qz)*len(angles_qy)
 print('Number of angles to test: ', nb_angles)
 
@@ -227,10 +236,16 @@ print('Number of angles to test: ', nb_angles)
 ####################################################
 start = time.time()
 if unitcell == 'bct':
-    a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
-                           num=np.rint((unitcell_ranges[1]-unitcell_ranges[0])/unitcell_step))
-    c_values = np.linspace(start=unitcell_ranges[2], stop=unitcell_ranges[3],
-                           num=np.rint((unitcell_ranges[3]-unitcell_ranges[2])/unitcell_step))
+    if unitcell_ranges[1] == unitcell_ranges[0]:  # no scan for this parameter
+        a_values = np.array([unitcell_ranges[0]])
+    else:
+        a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
+                               num=max(1, np.rint((unitcell_ranges[1]-unitcell_ranges[0])/unitcell_step)))
+    if unitcell_ranges[3] == unitcell_ranges[2]:  # no scan for this parameter
+        c_values = np.array([unitcell_ranges[2]])
+    else:
+        c_values = np.linspace(start=unitcell_ranges[2], stop=unitcell_ranges[3],
+                               num=max(1, np.rint((unitcell_ranges[3]-unitcell_ranges[2])/unitcell_step)))
     nb_lattices = len(a_values) * len(c_values)
     print('Number of lattice parameters to test: ', nb_lattices)
     print('Total number of iterations: ', nb_angles * nb_lattices)
@@ -253,8 +268,11 @@ if unitcell == 'bct':
                         # calculate the correlation between experimental data and simulated data
                         corr[idz, idy, idx, idw, idv] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
 else:
-    a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
-                           num=np.rint((unitcell_ranges[1] - unitcell_ranges[0]) / unitcell_step))
+    if unitcell_ranges[1] == unitcell_ranges[0]:  # no scan for this parameter
+        a_values = np.array([unitcell_ranges[0]])
+    else:
+        a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
+                               num=max(1, np.rint((unitcell_ranges[1] - unitcell_ranges[0]) / unitcell_step)))
     nb_lattices = len(a_values)
     print('Number of lattice parameters to test: ', nb_lattices)
     print('Total number of iterations: ', nb_angles * nb_lattices)
