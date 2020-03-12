@@ -277,7 +277,7 @@ else:
                     corr[idz, idy, idx, idw] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
 
 end = time.time()
-print('Time ellapsed in the loop over angles and lattice parameters (s)', int(end - start))
+print('Time ellapsed in the loop over angles and lattice parameters', int(end - start), ' s')
 
 ##########################################
 # plot the correlation matrix at maximum #
@@ -289,7 +289,7 @@ if unitcell == 'bct':  # corr is 5D
     alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
     best_param = a_values[piw], c_values[piv]
     text = unitcell + " unit cell of parameter(s) = {:.2f} nm, {:.2f}".format(best_param[0], best_param[1]) + " nm"
-    print('Maximum correlation for (angle_qx, angle_qz, angle_qy) ={:.2f}, {:.2f}, {:.2f}'.format(alpha, beta, gamma))
+    print('Maximum correlation for (angle_qx, angle_qz, angle_qy) = {:.2f}, {:.2f}, {:.2f}'.format(alpha, beta, gamma))
     print('Maximum correlation for a', text)
     corr_angles = np.copy(corr[:, :, :, piw, piv])
     corr_lattice = np.copy(corr[piz, piy, pix, :, :])
@@ -330,7 +330,7 @@ else:  # corr is 4D
     alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
     best_param = a_values[piw]
     text = unitcell + " unit cell of parameter = " + str('{:.2f}'.format(best_param)) + " nm"
-    print('Maximum correlation for (angle_qx, angle_qz, angle_qy) {:.2f}, {:.2f}, {:.2f}'.format(alpha, beta, gamma))
+    print('Maximum correlation for (angle_qx, angle_qz, angle_qy) = {:.2f}, {:.2f}, {:.2f}'.format(alpha, beta, gamma))
     print('Maximum correlation for a', text)
     corr_angles = np.copy(corr[:, :, :, piw])
     corr_lattice = np.copy(corr[piz, piy, pix, :])
@@ -416,11 +416,11 @@ density_map[np.nonzero(density_map)] = 10*plot_max
 fig, _, _ = gu.multislices_plot(struct_array+density_map, sum_frames=True, title='Overlay',
                                 vmin=0, vmax=plot_max, plot_colorbar=True, scale='linear',
                                 is_orthogonal=True, reciprocal_space=True)
-fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
-fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
-fig.text(0.55, 0.15, text, size=12)
-fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
-                     " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma), size=12)
+fig.text(0.5, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
+fig.text(0.5, 0.20, "SDD = " + str(sdd) + " m", size=12)
+fig.text(0.5, 0.15, text, size=12)
+fig.text(0.5, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
+                    " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma), size=12)
 plt.pause(0.1)
 plt.savefig(savedir + 'Overlay_' + comment + '_corr=' + str('{:.2f}'.format(corr.max())) + '.png')
 
@@ -428,22 +428,22 @@ if debug:
     fig, _, _ = gu.multislices_plot(struct_array, sum_frames=True, title='Simulated diffraction pattern',
                                     vmin=0, vmax=plot_max, plot_colorbar=False, scale='linear',
                                     is_orthogonal=True, reciprocal_space=True)
-    fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
-    fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
-    fig.text(0.55, 0.15, text, size=12)
-    fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
-                         " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma), size=12)
+    fig.text(0.5, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
+    fig.text(0.5, 0.20, "SDD = " + str(sdd) + " m", size=12)
+    fig.text(0.5, 0.15, text, size=12)
+    fig.text(0.5, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
+                        " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma), size=12)
     plt.pause(0.1)
 
     fig, _, _ = gu.contour_slices(struct_array, q_coordinates=q_values, sum_frames=True,
                                   title='Simulated diffraction pattern', cmap=my_cmap,
                                   levels=np.linspace(struct_array.min()+plot_max/100, plot_max, 20, endpoint=False),
                                   plot_colorbar=True, scale='linear', is_orthogonal=True, reciprocal_space=True)
-    fig.text(0.55, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
-    fig.text(0.55, 0.20, "SDD = " + str(sdd) + " m", size=12)
-    fig.text(0.55, 0.15, text, size=12)
-    fig.text(0.55, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
-                         " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma), size=12)
+    fig.text(0.5, 0.25, "Energy = " + str(energy / 1000) + " keV", size=12)
+    fig.text(0.5, 0.20, "SDD = " + str(sdd) + " m", size=12)
+    fig.text(0.5, 0.15, text, size=12)
+    fig.text(0.5, 0.10, "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
+                        " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma), size=12)
     plt.pause(0.1)
 
 plt.ioff()
