@@ -37,15 +37,15 @@ comment = ''  # should start with _
 ################
 unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 # It can be a number or tuple of numbers depending on the unit cell.
-unitcell_ranges = [14.95, 15.15, 24.60, 24.80]  # in nm, values of the unit cell parameters to test
+unitcell_ranges = [15.04, 15.13, 24.75, 24.87]  # in nm, values of the unit cell parameters to test
 # cubic, FCC or BCC unit cells: [start, stop]. BCT unit cell: [start1, stop1, start2, stop2]   (stop is included)
-unitcell_step = 0.2  # in nm
+unitcell_step = 0.1  # in nm
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [5, 5, 45+24, 45+24, -5, -3]  # [start, stop, start, stop, start, stop], in degrees
+angles_ranges = [3, 4, 70.5, 71.5, -3.5, -2.5]  # [start, stop, start, stop, start, stop], in degrees
 # ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is included)
-angular_step = 1  # in degrees
+angular_step = 0.5  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -412,11 +412,16 @@ if save_angles:
 ###################################################
 # calculate the lattice at calculated best values #
 ###################################################
-_, _, _, rot_lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
-                                       detector=detector, unitcell=unitcell, unitcell_param=best_param,
-                                       euler_angles=(alpha, beta, gamma), offset_indices=False)
+_, _, _, rot_lattice, peaks = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
+                                           detector=detector, unitcell=unitcell, unitcell_param=best_param,
+                                           euler_angles=(alpha, beta, gamma), offset_indices=False)
 # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 
+nb_peaks = len(peaks)
+print('Simulated Bragg peaks hkls and position:')
+print('hlk (qx, qz, qy)       indices (in pixels)')
+for idx in range(nb_peaks):
+    print(peaks[idx], ' : ', rot_lattice[idx])
 # assign the peak shape to each lattice point
 struct_array = simu.assign_peakshape(array_shape=(nbz, nby, nbx), lattice_list=rot_lattice,
                                      peak_shape=peak_shape, pivot=pivot)
