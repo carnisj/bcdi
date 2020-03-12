@@ -37,7 +37,7 @@ comment = ''  # should start with _
 ################
 unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 # It can be a number or tuple of numbers depending on the unit cell.
-unitcell_ranges = [14.95, 15.25, 24.60, 25.0]  # in nm, values of the unit cell parameters to test
+unitcell_ranges = [14.95, 15.15, 24.60, 24.80]  # in nm, values of the unit cell parameters to test
 # cubic, FCC or BCC unit cells: [start, stop]. BCT unit cell: [start1, stop1, start2, stop2]   (stop is included)
 unitcell_step = 0.2  # in nm
 #########################
@@ -277,7 +277,7 @@ else:
                     corr[idz, idy, idx, idw] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
 
 end = time.time()
-print('Time ellapsed in the loop over angles and lattice parameters', int(end - start), ' s')
+print('Time ellapsed in the loop over angles and lattice parameters', int(end - start), 's')
 
 ##########################################
 # plot the correlation matrix at maximum #
@@ -315,9 +315,9 @@ if unitcell == 'bct':  # corr is 5D
             labels = ['a parameter (nm)', 'c parameter (nm)']
             fig = plt.figure()
             if nonzero_dim[0] == 0:
-                plt.plot(a_values, corr_lattice, '.r')
+                plt.plot(a_values, corr_lattice, '.-r')
             else:  # index 1
-                plt.plot(c_values, corr_lattice, '.r')
+                plt.plot(c_values, corr_lattice, '.-r')
             plt.xlabel(labels[nonzero_dim[0]])
             plt.ylabel('Correlation')
     plt.pause(0.1)
@@ -378,11 +378,11 @@ else:
         else:  # 1D
             fig = plt.figure()
             if nonzero_dim[0] == 0:
-                plt.plot(angles_qx, corr_angles, '.r')
+                plt.plot(angles_qx, corr_angles, '.-r')
             elif nonzero_dim[0] == 1:
-                plt.plot(angles_qz, corr_angles, '.r')
+                plt.plot(angles_qz, corr_angles, '.-r')
             else:  # index 2
-                plt.plot(angles_qy, corr_angles, '.r')
+                plt.plot(angles_qy, corr_angles, '.-r')
             plt.xlabel(labels[nonzero_dim[0]])
             plt.ylabel('Correlation')
 
