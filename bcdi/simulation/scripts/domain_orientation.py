@@ -232,15 +232,14 @@ if unitcell == 'bct':
     c_values = np.linspace(start=unitcell_ranges[2], stop=unitcell_ranges[3],
                            num=np.rint((unitcell_ranges[3]-unitcell_ranges[2])/unitcell_step))
     nb_lattices = len(a_values) * len(c_values)
-    param_range = np.concatenate((a_values, c_values)).reshape((2, nb_lattices))
-    print('Number of lattice parameters to test: ', nb_lattices**2)
-    print('Total number of iterations: ', nb_angles * nb_lattices**2)
-    corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy), nb_lattices, nb_lattices))
+    print('Number of lattice parameters to test: ', nb_lattices)
+    print('Total number of iterations: ', nb_angles * nb_lattices)
+    corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy), len(a_values), len(c_values)))
     for idz, alpha in enumerate(angles_qx):
         for idy, beta in enumerate(angles_qz):
             for idx, gamma in enumerate(angles_qy):
-                for idw, a in enumerate(param_range[0]):
-                    for idv, c in enumerate(param_range[1]):
+                for idw, a in enumerate(a_values):
+                    for idv, c in enumerate(c_values):
                         _, _, _, rot_lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
                                                                detector=detector, unitcell=unitcell,
                                                                unitcell_param=(a, c), euler_angles=(alpha, beta, gamma),
@@ -254,16 +253,16 @@ if unitcell == 'bct':
                         # calculate the correlation between experimental data and simulated data
                         corr[idz, idy, idx, idw, idv] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
 else:
-    param_range = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
-                              num=np.rint((unitcell_ranges[1] - unitcell_ranges[0]) / unitcell_step))
-    nb_lattices = len(param_range)
+    a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
+                           num=np.rint((unitcell_ranges[1] - unitcell_ranges[0]) / unitcell_step))
+    nb_lattices = len(a_values)
     print('Number of lattice parameters to test: ', nb_lattices)
     print('Total number of iterations: ', nb_angles * nb_lattices)
-    corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy), nb_lattices))
+    corr = np.zeros((len(angles_qx), len(angles_qz), len(angles_qy), len(a_values)))
     for idz, alpha in enumerate(angles_qx):
         for idy, beta in enumerate(angles_qz):
             for idx, gamma in enumerate(angles_qy):
-                for idw, a in enumerate(param_range):
+                for idw, a in enumerate(a_values):
                     _, _, _, rot_lattice, _ = simu.lattice(energy=energy, sdd=sdd, direct_beam=direct_beam,
                                                            detector=detector, unitcell=unitcell,
                                                            unitcell_param=a, euler_angles=(alpha, beta, gamma),
@@ -288,20 +287,19 @@ comment = comment + '_' + unitcell
 if unitcell == 'bct':  # corr is 5D
     piz, piy, pix, piw, piv = np.unravel_index(abs(corr).argmax(), corr.shape)
     alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
-    best_param = param_range[0, piw], param_range[1, piv]
+    best_param = a_values[piw], c_values[piv]
     text = unitcell + " unit cell of parameter(s) = {:.2f} nm, {:.2f}".format(best_param[0], best_param[1]) + " nm"
-    print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', alpha, beta, gamma)
+    print('Maximum correlation for (angle_qx, angle_qz, angle_qy) ={:.2f}, {:.2f}, {:.2f}'.format(alpha, beta, gamma))
     print('Maximum correlation for a', text)
     corr_angles = np.copy(corr[:, :, :, piw, piv])
     corr_lattice = np.copy(corr[piz, piy, pix, :, :])
 
-    # TODO: add a test when corr_lattice has an empty dimension
     vmin = corr_lattice.min()
     vmax = 1.1 * corr_lattice.max()
     save_lattice = True
     if all([corr_lattice.shape[idx] > 1 for idx in range(corr_lattice.ndim)]):  # 2D
         fig, ax = plt.subplots(nrows=1, ncols=1)
-        plt0 = ax.contourf(param_range[1], param_range[0], corr_lattice, np.linspace(vmin, vmax, 20, endpoint=False),
+        plt0 = ax.contourf(c_values, a_values, corr_lattice, np.linspace(vmin, vmax, 20, endpoint=False),
                            cmap=my_cmap)
         plt.colorbar(plt0, ax=ax)
         ax.set_ylabel('a parameter (nm)')
@@ -316,7 +314,10 @@ if unitcell == 'bct':  # corr is 5D
             corr_lattice = np.squeeze(corr_lattice)
             labels = ['a parameter (nm)', 'c parameter (nm)']
             fig = plt.figure()
-            plt.plot(param_range[nonzero_dim[0]], corr_lattice, '.r')
+            if nonzero_dim[0] == 0:
+                plt.plot(a_values, corr_lattice, '.r')
+            else:  # index 1
+                plt.plot(c_values, corr_lattice, '.r')
             plt.xlabel(labels[nonzero_dim[0]])
             plt.ylabel('Correlation')
     plt.pause(0.1)
@@ -327,15 +328,15 @@ if unitcell == 'bct':  # corr is 5D
 else:  # corr is 4D
     piz, piy, pix, piw = np.unravel_index(abs(corr).argmax(), corr.shape)
     alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
-    best_param = param_range[piw]
+    best_param = a_values[piw]
     text = unitcell + " unit cell of parameter = " + str('{:.2f}'.format(best_param)) + " nm"
-    print('Maximum correlation for (angle_qx, angle_qz, angle_qy) =', alpha, beta, gamma)
+    print('Maximum correlation for (angle_qx, angle_qz, angle_qy) {:.2f}, {:.2f}, {:.2f}'.format(alpha, beta, gamma))
     print('Maximum correlation for a', text)
     corr_angles = np.copy(corr[:, :, :, piw])
     corr_lattice = np.copy(corr[piz, piy, pix, :])
 
     fig = plt.figure()
-    plt.plot(param_range, corr_lattice, '.r')
+    plt.plot(a_values, corr_lattice, '.r')
     plt.xlabel('a parameter (nm)')
     plt.ylabel('Correlation')
     plt.pause(0.1)
@@ -380,7 +381,7 @@ else:
                 plt.plot(angles_qx, corr_angles, '.r')
             elif nonzero_dim[0] == 1:
                 plt.plot(angles_qz, corr_angles, '.r')
-            elif nonzero_dim[0] == 2:
+            else:  # index 2
                 plt.plot(angles_qy, corr_angles, '.r')
             plt.xlabel(labels[nonzero_dim[0]])
             plt.ylabel('Correlation')
