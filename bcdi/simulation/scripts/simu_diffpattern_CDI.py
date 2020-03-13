@@ -21,17 +21,17 @@ and beamline-related parameters.
 
 Laboratory frame convention (CXI): z downstream, y vertical up, x outboard."""
 
-savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
+savedir = "D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/"
 ################
 # sample setup #
 ################
-unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
-unitcell_param = (15.84, 22.4)   # in nm, unit cell parameter.
+unitcell = 'fcc'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
+unitcell_param = 23.43   # in nm, unit cell parameter.
 # It can be a number or tuple of numbers depending on the unit cell.
 ######################
 # sample orientation #
 ######################
-angles = [1, 45+26, 0]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
+angles = [0, 0, 0]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
 #######################
 # beamline parameters #
 #######################
@@ -64,6 +64,7 @@ nbz, nby, nbx = int(np.floor((detector.roi[3] - detector.roi[2]) / detector.binn
                    int(np.floor((detector.roi[1] - detector.roi[0]) / detector.binning[1])), \
                    int(np.floor((detector.roi[3] - detector.roi[2]) / detector.binning[2]))
 # for P10 data the rotation is around y vertical, hence gridded data range & binning in z and x are identical
+print('Data shape:', nbz, nby, nbx)
 
 ###################
 # define colormap #
