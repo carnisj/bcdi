@@ -40,12 +40,12 @@ data in:                                                       /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [22]  # list or array of scan numbers
+scans = [13]  # list or array of scan numbers
 root_folder = "D:/data/P10_August2019/data/"
-sample_name = "gold_2_2_2"  # "S"
-user_comment = ''  # string, should start with "_"
+sample_name = "magnetite_A2_new"  # "S"
+user_comment = '_peak3'  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 2, 2]  # binning that will be used for phasing
+binning = [1, 4, 4]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
@@ -76,14 +76,14 @@ flag_medianfilter = 'skip'
 # set to 'skip' will skip filtering
 medfilt_order = 8    # for custom median filter, number of pixels with intensity surrounding the empty pixel
 ###########################
-reload_previous = False  # True to resume a previous masking (load data and mask)
+reload_previous = True  # True to resume a previous masking (load data and mask)
 ###########################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 interpolate_qmax = False  # parameter defining the interpolation interval when use_rawdata is False
 # if True, will interpolate using the q spacing at the outer boundary of the data array
 # if False, the output data will have the same shape as the ungridded data
-fit_datarange = True  # if True, crop the final array within data range, avoiding areas at the corners of the window
+fit_datarange = False  # if True, crop the final array within data range, avoiding areas at the corners of the window
 # viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
 save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_mat = False  # True to save also in .mat format
@@ -313,13 +313,20 @@ for scan_nb in range(len(scans)):
         npz_key = mask.files
         mask = mask[npz_key[0]]
 
-        q_values = []  # cannot orthogonalize since we do not know the original array size
+        try:
+            file_path = filedialog.askopenfilename(initialdir=homedir, title="Select q values",
+                                                   filetypes=[("NPZ", "*.npz")])
+            reload_qvalues = np.load(file_path)
+            q_values = [reload_qvalues['qx'], reload_qvalues['qz'], reload_qvalues['qy']]
+        except FileNotFoundError:
+            q_values = []  # cannot orthogonalize since we do not know the original array size
         center_fft = 'do_nothing'  # we assume that crop/pad/centering was already performed
         frames_logical = np.ones(data.shape[0])  # we assume that all frames will be used
         fix_size = []  # we assume that crop/pad/centering was already performed
         normalize_flux = False  # we assume that normalization was already performed
         monitor = []  # we assume that normalization was already performed
-
+        binning_comment = ''
+        # binning along axis 0 is done after masking
         np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous' + comment, data=data)
         np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx_previous', mask=mask)
 
@@ -489,13 +496,12 @@ for scan_nb in range(len(scans)):
     ###############################################
     # save the orthogonalized diffraction pattern #
     ###############################################
-    if not use_rawdata:
+    if not use_rawdata and len(q_vector) != 0:
         qx = q_vector[0]  # downstream
         qz = q_vector[1]  # vertical up
         qy = q_vector[2]  # outboard
 
         if save_to_vti:
-            # save diffraction pattern to vti
             nqx, nqz, nqy = data.shape  # in nexus z downstream, y vertical / in q z vertical, x downstream
             print('dqx, dqy, dqz = ', qx[1] - qx[0], qy[1] - qy[0], qz[1] - qz[0])
             # in nexus z downstream, y vertical / in q z vertical, x downstream
@@ -764,7 +770,7 @@ for scan_nb in range(len(scans)):
     if not flag_interact:
         plt.close(fig)
 
-    if not use_rawdata and fit_datarange:
+    if not use_rawdata and fit_datarange and len(q_vector) != 0:
         ############################################################
         # select the largest cubic array fitting inside data range #
         ############################################################
@@ -788,7 +794,7 @@ for scan_nb in range(len(scans)):
         data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
         mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
-        if not use_rawdata:
+        if not use_rawdata and len(q_vector) != 0:
             # sample rotation around the vertical direction at P10: the effective binning in axis 0 was already
             # binning[2], and we bin by binning[0] again
             binning_comment = '_' + str(binning[2] * binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2])
@@ -818,7 +824,7 @@ for scan_nb in range(len(scans)):
     ############################
     # save final data and mask #
     ############################
-    if not use_rawdata:
+    if not use_rawdata and len(q_vector) != 0:
         np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment, qx=qx, qz=qz, qy=qy)
         fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=True, title='Final data',
                                       levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
