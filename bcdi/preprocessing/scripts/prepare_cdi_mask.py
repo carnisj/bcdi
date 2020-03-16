@@ -203,11 +203,11 @@ if not use_rawdata:
 #######################
 kwargs = dict()  # create dictionnary
 try:
-    kwargs['nb_pixel_x'] = nb_pixel_x
+    kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 except NameError:  # nb_pixel_x not declared
     pass
 try:
-    kwargs['nb_pixel_y'] = nb_pixel_y
+    kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 except NameError:  # nb_pixel_y not declared
     pass
 try:
