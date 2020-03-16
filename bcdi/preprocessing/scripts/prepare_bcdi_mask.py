@@ -81,6 +81,7 @@ reload_previous = False  # True to resume a previous masking (load data and mask
 ###########################
 use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 save_to_mat = False  # True to save also in .mat format
+save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
 ######################################
 # define beamline related parameters #
 ######################################
@@ -214,11 +215,11 @@ def press_key(event):
 #######################
 kwargs = dict()  # create dictionnary
 try:
-    kwargs['nb_pixel_x'] = nb_pixel_x
+    kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 except NameError:  # nb_pixel_x not declared
     pass
 try:
-    kwargs['nb_pixel_y'] = nb_pixel_y
+    kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 except NameError:  # nb_pixel_y not declared
     pass
 try:
@@ -341,8 +342,13 @@ for scan_nb in range(len(scans)):
         mask = np.load(file_path)
         npz_key = mask.files
         mask = mask[npz_key[0]]
-
-        q_values = []  # cannot orthogonalize since we do not know the original array size
+        try:
+            file_path = filedialog.askopenfilename(initialdir=homedir, title="Select q values",
+                                                   filetypes=[("NPZ", "*.npz")])
+            reload_qvalues = np.load(file_path)
+            q_values = [reload_qvalues['qx'], reload_qvalues['qz'], reload_qvalues['qy']]
+        except FileNotFoundError:
+            q_values = []  # cannot orthogonalize since we do not know the original array size
         center_fft = 'do_nothing'  # we assume that crop/pad/centering was already performed
         frames_logical = np.ones(data.shape[0])  # we assume that all frames will be used
         fix_size = []  # we assume that crop/pad/centering was already performed
@@ -470,24 +476,25 @@ for scan_nb in range(len(scans)):
     ###############################################
     # save the orthogonalized diffraction pattern #
     ###############################################
-    if not use_rawdata:
+    if not use_rawdata and len(q_vector) != 0:
         qx = q_vector[0]
         qz = q_vector[1]
         qy = q_vector[2]
 
-        # save diffraction pattern to vti
-        nqx, nqz, nqy = data.shape  # in nexus z downstream, y vertical / in q z vertical, x downstream
-        print('dqx, dqy, dqz = ', qx[1] - qx[0], qy[1] - qy[0], qz[1] - qz[0])
-        # in nexus z downstream, y vertical / in q z vertical, x downstream
-        qx0 = qx.min()
-        dqx = (qx.max() - qx0) / nqx
-        qy0 = qy.min()
-        dqy = (qy.max() - qy0) / nqy
-        qz0 = qz.min()
-        dqz = (qz.max() - qz0) / nqz
+        if save_to_vti:
+            # save diffraction pattern to vti
+            nqx, nqz, nqy = data.shape  # in nexus z downstream, y vertical / in q z vertical, x downstream
+            print('dqx, dqy, dqz = ', qx[1] - qx[0], qy[1] - qy[0], qz[1] - qz[0])
+            # in nexus z downstream, y vertical / in q z vertical, x downstream
+            qx0 = qx.min()
+            dqx = (qx.max() - qx0) / nqx
+            qy0 = qy.min()
+            dqy = (qy.max() - qy0) / nqy
+            qz0 = qz.min()
+            dqz = (qz.max() - qz0) / nqz
 
-        gu.save_to_vti(filename=os.path.join(savedir, "S"+str(scans[scan_nb])+"_ortho_int"+comment+".vti"),
-                       voxel_size=(dqx, dqz, dqy), tuple_array=data, tuple_fieldnames='int', origin=(qx0, qz0, qy0))
+            gu.save_to_vti(filename=os.path.join(savedir, "S"+str(scans[scan_nb])+"_ortho_int"+comment+".vti"),
+                           voxel_size=(dqx, dqz, dqy), tuple_array=data, tuple_fieldnames='int', origin=(qx0, qz0, qy0))
 
     if flag_interact:
 
@@ -711,7 +718,6 @@ for scan_nb in range(len(scans)):
     ###################################
     # plot the prepared data and mask #
     ###################################
-
     z0, y0, x0 = center_of_mass(data)
     fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                     title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
@@ -743,7 +749,7 @@ for scan_nb in range(len(scans)):
         data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
         mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
-        if not use_rawdata:
+        if not use_rawdata and len(q_vector) != 0:
             qx = qx[::binning[0]]  # along Z
 
         ############################
@@ -773,7 +779,7 @@ for scan_nb in range(len(scans)):
     # save final data and mask #
     ############################
     comment = comment + '_' + str(detector.binning[0]) + '_' + str(detector.binning[1]) + '_' + str(detector.binning[2])
-    if not use_rawdata:
+    if not use_rawdata and len(q_vector) != 0:
         np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
                             qx=q_vector[0], qz=q_vector[1], qy=q_vector[2])
     print('saving to directory:', savedir)
