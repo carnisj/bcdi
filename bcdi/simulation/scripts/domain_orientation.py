@@ -37,15 +37,15 @@ comment = ''  # should start with _
 ################
 unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 # It can be a number or tuple of numbers depending on the unit cell.
-unitcell_ranges = [15.04, 15.13, 24.75, 24.87]  # in nm, values of the unit cell parameters to test
+unitcell_ranges = [14.75, 15.85, 23.4, 25.4]  # in nm, values of the unit cell parameters to test
 # cubic, FCC or BCC unit cells: [start, stop]. BCT unit cell: [start1, stop1, start2, stop2]   (stop is included)
 unitcell_step = 0.1  # in nm
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [3, 4, 70.5, 71.5, -3.5, -2.5]  # [start, stop, start, stop, start, stop], in degrees
+angles_ranges = [-5.0, 8.0, 68.0, 76.0, -8.0, 2.0]  # [start, stop, start, stop, start, stop], in degrees
 # ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is included)
-angular_step = 0.5  # in degrees
+angular_step = 1  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -64,11 +64,11 @@ binning = [4, 4, 4]  # binning of the detector
 # peak detection options #
 ##########################
 min_distance = 20  # minimum distance between Bragg peaks in pixels
-peak_width = 1  # the total width will be (2*peak_width+1)
+peak_width = 0  # the total width will be (2*peak_width+1)
 ###########
 # options #
 ###########
-kernel_length = 21  # width of the 3D gaussian window
+kernel_length = 11  # width of the 3D gaussian window
 debug = False  # True to see more plots
 correct_background = False  # True to create a 3D background
 bckg_method = 'normalize'  # 'subtract' or 'normalize'
@@ -213,21 +213,12 @@ peak_shape = pu.blackman_window(shape=(kernel_length, kernel_length, kernel_leng
 #####################################
 # define the list of angles to test #
 #####################################
-if angles_ranges[1] == angles_ranges[0]:  # no scan for this angle
-    angles_qx = np.array([angles_ranges[0]])
-else:
-    angles_qx = np.linspace(start=angles_ranges[0], stop=angles_ranges[1],
-                            num=max(1, np.rint((angles_ranges[1]-angles_ranges[0])/angular_step)))
-if angles_ranges[3] == angles_ranges[2]:  # no scan for this angle
-    angles_qz = np.array([angles_ranges[2]])
-else:
-    angles_qz = np.linspace(start=angles_ranges[2], stop=angles_ranges[3],
-                            num=max(1, np.rint((angles_ranges[3]-angles_ranges[2])/angular_step)))
-if angles_ranges[5] == angles_ranges[4]:  # no scan for this angle
-    angles_qy = np.array([angles_ranges[4]])
-else:
-    angles_qy = np.linspace(start=angles_ranges[4], stop=angles_ranges[5],
-                            num=max(1, np.rint((angles_ranges[5]-angles_ranges[4])/angular_step)))
+angles_qx = np.linspace(start=angles_ranges[0], stop=angles_ranges[1],
+                        num=max(1, np.rint((angles_ranges[1]-angles_ranges[0])/angular_step)+1))
+angles_qz = np.linspace(start=angles_ranges[2], stop=angles_ranges[3],
+                        num=max(1, np.rint((angles_ranges[3]-angles_ranges[2])/angular_step)+1))
+angles_qy = np.linspace(start=angles_ranges[4], stop=angles_ranges[5],
+                        num=max(1, np.rint((angles_ranges[5]-angles_ranges[4])/angular_step)+1))
 nb_angles = len(angles_qx)*len(angles_qz)*len(angles_qy)
 print('Number of angles to test: ', nb_angles)
 
@@ -236,16 +227,10 @@ print('Number of angles to test: ', nb_angles)
 ####################################################
 start = time.time()
 if unitcell == 'bct':
-    if unitcell_ranges[1] == unitcell_ranges[0]:  # no scan for this parameter
-        a_values = np.array([unitcell_ranges[0]])
-    else:
-        a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
-                               num=max(1, np.rint((unitcell_ranges[1]-unitcell_ranges[0])/unitcell_step)))
-    if unitcell_ranges[3] == unitcell_ranges[2]:  # no scan for this parameter
-        c_values = np.array([unitcell_ranges[2]])
-    else:
-        c_values = np.linspace(start=unitcell_ranges[2], stop=unitcell_ranges[3],
-                               num=max(1, np.rint((unitcell_ranges[3]-unitcell_ranges[2])/unitcell_step)))
+    a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
+                           num=max(1, np.rint((unitcell_ranges[1]-unitcell_ranges[0])/unitcell_step)+1))
+    c_values = np.linspace(start=unitcell_ranges[2], stop=unitcell_ranges[3],
+                           num=max(1, np.rint((unitcell_ranges[3]-unitcell_ranges[2])/unitcell_step)+1))
     nb_lattices = len(a_values) * len(c_values)
     print('Number of lattice parameters to test: ', nb_lattices)
     print('Total number of iterations: ', nb_angles * nb_lattices)
@@ -268,11 +253,8 @@ if unitcell == 'bct':
                         # calculate the correlation between experimental data and simulated data
                         corr[idz, idy, idx, idw, idv] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
 else:
-    if unitcell_ranges[1] == unitcell_ranges[0]:  # no scan for this parameter
-        a_values = np.array([unitcell_ranges[0]])
-    else:
-        a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
-                               num=max(1, np.rint((unitcell_ranges[1] - unitcell_ranges[0]) / unitcell_step)))
+    a_values = np.linspace(start=unitcell_ranges[0], stop=unitcell_ranges[1],
+                           num=max(1, np.rint((unitcell_ranges[1] - unitcell_ranges[0]) / unitcell_step)+1))
     nb_lattices = len(a_values)
     print('Number of lattice parameters to test: ', nb_lattices)
     print('Total number of iterations: ', nb_angles * nb_lattices)
