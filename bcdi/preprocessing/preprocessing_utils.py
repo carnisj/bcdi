@@ -2688,7 +2688,7 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
     if (type(number) is list) or (type(number) is tuple) or (type(number) is np.ndarray):
         vn = []
         for i in number:
-            assert (i > 1 and maxprime <= i)
+            assert (i > 1 and maxprime <= i), "Number is < " + str(maxprime)
             while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
                 i = i - 1
                 if i == 0:
@@ -2698,7 +2698,7 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
             return np.array(vn)
         return vn
     else:
-        assert (number > 1 and maxprime <= number)
+        assert (number > 1 and maxprime <= number), "Number is < " + str(maxprime)
         while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
             number = number - 1
             if number == 0:
@@ -3645,29 +3645,5 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
     return newobj
 
 
-# if __name__ == "__main__":
-#     colormap = gu.Colormap(bad_color='0.7')
-#     my_cmap = colormap.cmap
-#     q_values = np.load('D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/400_400_400_1_1_1/QxQzQy_S22_ortho_norm_400_400_400_1_1_1.npz')
-#
-#     npzfile = np.load('D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/400_400_400_1_1_1/S22_pynx_ortho_norm_400_400_400_1_1_1.npz')
-#     data = npzfile[list(npzfile.files)[0]]
-#     nz, ny, nx = data.shape
-#     qx = q_values['qx']  # 1D array
-#     qy = q_values['qy']  # 1D array
-#     qz = q_values['qz']  # 1D array
-#     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(13, 9))
-#     ax.contourf(qy, qz, np.log10(abs(data[nz//2, :, :])), np.linspace(0, int(np.log10(data.max())), 150, endpoint=False), cmap=my_cmap)
-#     ax.set_aspect("equal")
-#     plt.savefig('D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/400_400_400_1_1_1/QyQz.png')
-#     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(13, 9))
-#     ax.contourf(qy[136:200], qz[9:73], np.log10(abs(data[nz//2, 9:73, 136:200])), np.linspace(0, int(np.log10(data.max())), 150, endpoint=False), cmap=my_cmap)
-#     # fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=False,
-#     #                               title='Regridded data',
-#     #                               levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
-#     #                               plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-#     ax.set_aspect("equal")
-#     plt.savefig('D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/400_400_400_1_1_1/zoomQyQz.png')
-#     # plt.figure()
-#     # plt.imshow(np.log10(abs(data[nz//2-2, 1:81, 128:208])), vmin=0, vmax=5, cmap=my_cmap)
-#     plt.show()
+if __name__ == "__main__":
+    print(smaller_primes(129, maxprime=13, required_dividers=(4,)))
