@@ -29,23 +29,23 @@ maximize the cross-correlation of the simulated data with experimental data. The
 
 Laboratory frame convention (CXI): z downstream, y vertical up, x outboard."""
 
-datadir = "D:/data/P10_August2019/data/gold2_2_00515/pynx/441_486_441_1_4_4_masked/"
+datadir = "D:/data/P10_August2019/data/gold2_2_00515/pynx/1_4_4_masked_40_full_detector_peak1/"
 savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
 comment = ''  # should start with _
 ################
 # sample setup #
 ################
-unitcell = 'bct'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
+unitcell = 'fcc'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 # It can be a number or tuple of numbers depending on the unit cell.
-unitcell_ranges = [14.75, 15.85, 23.4, 25.4]  # in nm, values of the unit cell parameters to test
+unitcell_ranges = [23.2, 23.3]  # in nm, values of the unit cell parameters to test
 # cubic, FCC or BCC unit cells: [start, stop]. BCT unit cell: [start1, stop1, start2, stop2]   (stop is included)
-unitcell_step = 0.1  # in nm
+unitcell_step = 0.05  # in nm
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [-5.0, 8.0, 68.0, 76.0, -8.0, 2.0]  # [start, stop, start, stop, start, stop], in degrees
+angles_ranges = [-10, -7, 32, 35, -26, -23]  # [start, stop, start, stop, start, stop], in degrees
 # ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is included)
-angular_step = 1  # in degrees
+angular_step = 0.25  # in degrees
 #######################
 # beamline parameters #
 #######################
@@ -138,6 +138,10 @@ nbz, nby, nbx = len(q_values[0]), len(q_values[1]), len(q_values[2])
 comment = comment + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' +\
           str(binning[2])
 
+if (nbz != nz) or (nby != ny) or (nbx != nx):
+    print('The experimental data and calculated q values have different shape, check "roi_detector" parameter!')
+    sys.exit()
+    
 ##########################
 # plot experimental data #
 ##########################
