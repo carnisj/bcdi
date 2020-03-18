@@ -43,7 +43,7 @@ output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 
 scans = [13]  # list or array of scan numbers
 root_folder = "D:/data/P10_August2019/data/"
 sample_name = "magnetite_A2_new"  # "S"
-user_comment = '_peak3'  # string, should start with "_"
+user_comment = '_peak5'  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = [1, 4, 4]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
@@ -113,6 +113,8 @@ roi_detector = [direct_beam[0] - 400, direct_beam[0] + 400, direct_beam[1] - 400
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
+photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon threshold should be applied
+# if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
 background_file = ''  # root_folder + 'background.npz'  #
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
@@ -339,10 +341,17 @@ for scan_nb in range(len(scans)):
         logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
                                      root_folder=root_folder, filename=specfile)
 
-        data, mask, frames_logical, monitor = pru.load_cdi(logfile=logfile, scan_number=scans[scan_nb],
-                                                           detector=detector, setup=setup, flatfield=flatfield,
-                                                           hotpixels=hotpix_array, background=background,
-                                                           normalize=normalize_flux, debugging=debug)
+        if photon_filter == 'loading':
+            data, mask, frames_logical, monitor = pru.load_cdi(logfile=logfile, scan_number=scans[scan_nb],
+                                                               detector=detector, setup=setup, flatfield=flatfield,
+                                                               hotpixels=hotpix_array, background=background,
+                                                               normalize=normalize_flux, debugging=debug,
+                                                               photon_threshold=photon_threshold)
+        else:  # photon_filter == 'postprocessing':
+            data, mask, frames_logical, monitor = pru.load_cdi(logfile=logfile, scan_number=scans[scan_nb],
+                                                               detector=detector, setup=setup, flatfield=flatfield,
+                                                               hotpixels=hotpix_array, background=background,
+                                                               normalize=normalize_flux, debugging=debug)
         nz, ny, nx = np.shape(data)
         print('Raw data shape:', nz, ny, nx)
 
