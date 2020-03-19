@@ -547,7 +547,7 @@ for scan_nb in range(len(scans)):
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         if not use_rawdata:
-            axs.invert_yaxis()
+            axs.invert_yaxis()  # detector Y is vertical down
         plt.connect('key_press_event', press_key)
         fig_mask.set_facecolor(background_plot)
         plt.show()
@@ -557,14 +557,11 @@ for scan_nb in range(len(scans)):
         # in XZ
         dim = 1
         fig_mask = plt.figure()
-        axs = fig_mask.gca()
         idx = starting_frame[1]
         plt.imshow(data[:, idx, :], vmin=0, vmax=max_colorbar)
         plt.title("Frame " + str(idx+1) + "/" + str(ny) + "\n"
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
-        if not use_rawdata:
-            axs.invert_yaxis()
         plt.connect('key_press_event', press_key)
         fig_mask.set_facecolor(background_plot)
         plt.show()
@@ -574,14 +571,11 @@ for scan_nb in range(len(scans)):
         # in YZ
         dim = 2
         fig_mask = plt.figure()
-        axs = fig_mask.gca()
         idx = starting_frame[2]
         plt.imshow(data[:, :, idx], vmin=0, vmax=max_colorbar)
         plt.title("Frame " + str(idx+1) + "/" + str(nx) + "\n"
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
-        if not use_rawdata:
-            axs.invert_yaxis()
         plt.connect('key_press_event', press_key)
         fig_mask.set_facecolor(background_plot)
         plt.show()
@@ -639,7 +633,7 @@ for scan_nb in range(len(scans)):
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         if not use_rawdata:
-            axs.invert_yaxis()
+            axs.invert_yaxis()  # detector Y is vertical down
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
         fig_mask.set_facecolor(background_plot)
@@ -663,14 +657,11 @@ for scan_nb in range(len(scans)):
         data[mask == 1] = masked_color / ny  # will appear as -1 on the plot
         print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
         fig_mask = plt.figure()
-        axs = fig_mask.gca()
         plt.imshow(np.log10(abs(data.sum(axis=1))), vmin=0, vmax=max_colorbar)
         plt.title('x to pause/resume masking for pan/zoom \n'
                   'p plot mask ; a restart ; click to select vertices\n'
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
-        if not use_rawdata:
-            axs.invert_yaxis()
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
         fig_mask.set_facecolor(background_plot)
@@ -694,14 +685,11 @@ for scan_nb in range(len(scans)):
         data[mask == 1] = masked_color / nx  # will appear as -1 on the plot
         print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
         fig_mask = plt.figure()
-        axs = fig_mask.gca()
         plt.imshow(np.log10(abs(data.sum(axis=2))), vmin=0, vmax=max_colorbar)
         plt.title('x to pause/resume masking for pan/zoom \n'
                   'p plot mask ; a restart ; click to select vertices\n'
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
-        if not use_rawdata:
-            axs.invert_yaxis()
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
         fig_mask.set_facecolor(background_plot)
