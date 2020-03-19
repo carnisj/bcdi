@@ -2727,7 +2727,7 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
 
 
 def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figure, width, dim, idx,
-                  vmax, vmin=0):
+                  vmax, vmin=0, invert_yaxis=False):
     """
     Update the plot while removing the parasitic diffraction intensity in 3D dataset
 
@@ -2743,6 +2743,7 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
     :param idx: the frame index in the current axis
     :param vmax: the higher boundary for the colorbar
     :param vmin: the lower boundary for the colorbar
+    :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
     if original_data.ndim != 3 or updated_data.ndim != 3 or updated_mask.ndim != 3:
@@ -2781,6 +2782,8 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
         myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
@@ -2810,6 +2813,8 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
         myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
@@ -2841,6 +2846,8 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
         myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
@@ -2866,6 +2873,8 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
         myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
@@ -2902,6 +2911,8 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
         myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
@@ -2941,6 +2952,8 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
         myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
@@ -2977,6 +2990,8 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
         myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
@@ -2998,6 +3013,9 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
             plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         plt.draw()
 
     elif key == 'q':
@@ -3007,7 +3025,7 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
 
 
 def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, figure, width,
-                     vmax, vmin=0):
+                     vmax, vmin=0, invert_yaxis=False):
     """
     Update the plot while removing the parasitic diffraction intensity in 2D dataset
 
@@ -3021,6 +3039,7 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
     :param width: the half_width of the masking window
     :param vmax: the higher boundary for the colorbar
     :param vmin: the lower boundary for the colorbar
+    :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
     if original_data.ndim != 2 or updated_data.ndim != 2 or updated_mask.ndim != 2:
@@ -3046,6 +3065,8 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         plt.title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
@@ -3060,6 +3081,8 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         plt.title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
@@ -3081,6 +3104,8 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         plt.title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
@@ -3103,6 +3128,8 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         plt.title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.draw()
@@ -3112,6 +3139,9 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         plt.imshow(updated_data, vmin=vmin, vmax=vmax)
         plt.title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         plt.draw()
 
     elif key == 'q':
@@ -3223,7 +3253,7 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
 
 
 def update_mask(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, flag_pause, points,
-                xy, width, dim, vmax, vmin=0, masked_color=0.1):
+                xy, width, dim, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
     """
     Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
 
@@ -3244,6 +3274,7 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
     :param vmax: the higher boundary for the colorbar
     :param vmin: the lower boundary for the colorbar
     :param masked_color: the value that detector gaps should have in plots
+    :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
     if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3:
@@ -3274,7 +3305,9 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
         ymin, ymax = myaxs.get_ylim()
         figure.clear()
         plt.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
-        myaxs = myfig.gca()
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.title('x to pause/resume masking for pan/zoom \n'
@@ -3295,7 +3328,9 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
         ymin, ymax = myaxs.get_ylim()
         figure.clear()
         plt.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
-        myaxs = myfig.gca()
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.title('x to pause/resume masking for pan/zoom \n'
@@ -3322,7 +3357,9 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
         ymin, ymax = myaxs.get_ylim()
         figure.clear()
         plt.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
-        myaxs = myfig.gca()
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.title('x to pause/resume masking for pan/zoom \n'
@@ -3349,7 +3386,9 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
         ymin, ymax = myaxs.get_ylim()
         figure.clear()
         plt.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
-        myaxs = myfig.gca()
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.title('x to pause/resume masking for pan/zoom \n'
@@ -3380,6 +3419,9 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
                   'p plot mask ; a restart ; click to select vertices\n'
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         plt.draw()
 
     elif key == 'p':  # plot masked image
@@ -3402,6 +3444,9 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
                   'p plot mask ; a restart ; click to select vertices\n'
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         plt.draw()
         thismanager = plt.get_current_fig_manager()
         thismanager.toolbar.pan()  # deactivate the pan
@@ -3420,7 +3465,7 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
 
 
 def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, flag_pause, points,
-                   xy, width, vmax, vmin=0, masked_color=0.1):
+                   xy, width, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
     """
     Update the mask to remove parasitic diffraction intensity and hotpixels for 2d dataset.
 
@@ -3440,6 +3485,7 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
     :param vmax: the higher boundary for the colorbar
     :param vmin: the lower boundary for the colorbar
     :param masked_color: the value that detector gaps should have in plots
+    :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
     if original_data.ndim != 2 or updated_data.ndim != 2 or original_mask.ndim != 2 or updated_mask.ndim != 2:
@@ -3465,7 +3511,9 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
         ymin, ymax = myaxs.get_ylim()
         figure.clear()
         plt.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
-        myaxs = myfig.gca()
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.title('x to pause/resume masking for pan/zoom \n'
@@ -3485,7 +3533,9 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
         ymin, ymax = myaxs.get_ylim()
         figure.clear()
         plt.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
-        myaxs = myfig.gca()
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.title('x to pause/resume masking for pan/zoom \n'
@@ -3511,7 +3561,9 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
         ymin, ymax = myaxs.get_ylim()
         figure.clear()
         plt.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
-        myaxs = myfig.gca()
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.title('x to pause/resume masking for pan/zoom \n'
@@ -3537,7 +3589,9 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
         ymin, ymax = myaxs.get_ylim()
         figure.clear()
         plt.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
-        myaxs = myfig.gca()
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         myaxs.set_xlim([xmin, xmax])
         myaxs.set_ylim([ymin, ymax])
         plt.title('x to pause/resume masking for pan/zoom \n'
@@ -3561,6 +3615,9 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
                   'p plot mask ; a restart ; click to select vertices\n'
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         plt.draw()
 
     elif key == 'p':  # plot masked image
@@ -3578,6 +3635,9 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
                   'p plot mask ; a restart ; click to select vertices\n'
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        myaxs = figure.gca()
+        if invert_yaxis:
+            myaxs.invert_yaxis()
         plt.draw()
         thismanager = plt.get_current_fig_manager()
         thismanager.toolbar.pan()  # deactivate the pan

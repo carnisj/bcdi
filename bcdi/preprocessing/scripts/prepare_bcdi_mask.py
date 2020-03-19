@@ -193,13 +193,15 @@ def press_key(event):
             data, mask, width, max_colorbar, idx, stop_masking = \
                 pru.update_aliens(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
                                   original_data=original_data, updated_data=data, updated_mask=mask,
-                                  figure=fig_mask, width=width, dim=dim, idx=idx, vmin=0, vmax=max_colorbar)
+                                  figure=fig_mask, width=width, dim=dim, idx=idx, vmin=0, vmax=max_colorbar,
+                                  invert_yaxis=not use_rawdata)
         elif flag_mask:
             data, temp_mask, flag_pause, xy, width, vmax, stop_masking = \
                 pru.update_mask(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
                                 original_data=original_data, original_mask=mask, updated_data=data,
                                 updated_mask=temp_mask, figure=fig_mask, flag_pause=flag_pause, points=points,
-                                xy=xy, width=width, dim=dim, vmin=0, vmax=max_colorbar, masked_color=masked_color)
+                                xy=xy, width=width, dim=dim, vmin=0, vmax=max_colorbar, masked_color=masked_color,
+                                invert_yaxis=not use_rawdata)
         else:
             stop_masking = False
 
@@ -509,12 +511,15 @@ for scan_nb in range(len(scans)):
         # in XY
         dim = 0
         fig_mask = plt.figure()
+        axs = fig_mask.gca()
         idx = starting_frame[0]
         original_data = np.copy(data)
         plt.imshow(data[idx, :, :], vmin=0, vmax=max_colorbar)
         plt.title("Frame " + str(idx+1) + "/" + str(nz) + "\n"
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        if not use_rawdata:
+            axs.invert_yaxis()
         plt.connect('key_press_event', press_key)
         fig_mask.set_facecolor(background_plot)
         plt.show()
@@ -523,11 +528,14 @@ for scan_nb in range(len(scans)):
         # in XZ
         dim = 1
         fig_mask = plt.figure()
+        axs = fig_mask.gca()
         idx = starting_frame[1]
         plt.imshow(data[:, idx, :], vmin=0, vmax=max_colorbar)
         plt.title("Frame " + str(idx+1) + "/" + str(ny) + "\n"
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        if not use_rawdata:
+            axs.invert_yaxis()
         plt.connect('key_press_event', press_key)
         fig_mask.set_facecolor(background_plot)
         plt.show()
@@ -536,11 +544,14 @@ for scan_nb in range(len(scans)):
         # in YZ
         dim = 2
         fig_mask = plt.figure()
+        axs = fig_mask.gca()
         idx = starting_frame[2]
         plt.imshow(data[:, :, idx], vmin=0, vmax=max_colorbar)
         plt.title("Frame " + str(idx+1) + "/" + str(nx) + "\n"
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        if not use_rawdata:
+            axs.invert_yaxis()
         plt.connect('key_press_event', press_key)
         fig_mask.set_facecolor(background_plot)
         plt.show()
@@ -590,11 +601,14 @@ for scan_nb in range(len(scans)):
         data[mask == 1] = masked_color / nz  # will appear as -1 on the plot
         print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
         fig_mask = plt.figure()
+        axs = fig_mask.gca()
         plt.imshow(np.log10(abs(data.sum(axis=0))), vmin=0, vmax=max_colorbar)
         plt.title('x to pause/resume masking for pan/zoom \n'
                   'p plot mask ; a restart ; click to select vertices\n'
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        if not use_rawdata:
+            axs.invert_yaxis()
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
         fig_mask.set_facecolor(background_plot)
@@ -617,11 +631,14 @@ for scan_nb in range(len(scans)):
         data[mask == 1] = masked_color / ny  # will appear as -1 on the plot
         print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
         fig_mask = plt.figure()
+        axs = fig_mask.gca()
         plt.imshow(np.log10(abs(data.sum(axis=1))), vmin=0, vmax=max_colorbar)
         plt.title('x to pause/resume masking for pan/zoom \n'
                   'p plot mask ; a restart ; click to select vertices\n'
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        if not use_rawdata:
+            axs.invert_yaxis()
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
         fig_mask.set_facecolor(background_plot)
@@ -644,11 +661,14 @@ for scan_nb in range(len(scans)):
         data[mask == 1] = masked_color / nx  # will appear as -1 on the plot
         print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
         fig_mask = plt.figure()
+        axs = fig_mask.gca()
         plt.imshow(np.log10(abs(data.sum(axis=2))), vmin=0, vmax=max_colorbar)
         plt.title('x to pause/resume masking for pan/zoom \n'
                   'p plot mask ; a restart ; click to select vertices\n'
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+        if not use_rawdata:
+            axs.invert_yaxis()
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
         fig_mask.set_facecolor(background_plot)
