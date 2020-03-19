@@ -371,7 +371,7 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
     max_nx = abs(2 * min(ix0, nbx - ix0))
     print("Max symmetrical box (qx, qz, qy): ", max_nz, max_ny, max_nx)
     if max_nz == 0 or max_ny == 0 or max_nx == 0:
-        print('Images with no intensity!')
+        print('Empty images or presence of hotpixel at the border, defaulting fft_option to "do_nothing"!')
         fft_option = 'do_nothing'
 
     # Crop/pad data to fulfill FFT size and user requirements
@@ -3646,4 +3646,4 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
 
 
 if __name__ == "__main__":
-    print(smaller_primes(129, maxprime=13, required_dividers=(4,)))
+    print(smaller_primes(299, maxprime=7, required_dividers=(2,)))
