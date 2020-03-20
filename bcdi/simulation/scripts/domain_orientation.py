@@ -58,7 +58,7 @@ detector = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1195, 1187)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
 roi_detector = [direct_beam[0] - 972, direct_beam[0] + 972, direct_beam[1] - 883, direct_beam[1] + 883]
-# [Vstart, Vstop, Hstart, Hstop]
+# [Vstart, Vstop, Hstart, Hstop], leave [] to use the full detector
 binning = [4, 4, 4]  # binning of the detector
 ##########################
 # peak detection options #
@@ -141,7 +141,9 @@ comment = comment + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + str(binni
 if (nbz != nz) or (nby != ny) or (nbx != nx):
     print('The experimental data and calculated q values have different shape, check "roi_detector" parameter!')
     sys.exit()
-    
+
+print('Origin of the reciprocal space at pixel', pivot)
+
 ##########################
 # plot experimental data #
 ##########################

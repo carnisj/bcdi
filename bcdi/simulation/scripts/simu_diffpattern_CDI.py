@@ -26,12 +26,12 @@ savedir = "D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/"
 # sample setup #
 ################
 unitcell = 'fcc'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
-unitcell_param = 23.43   # in nm, unit cell parameter.
+unitcell_param = 23.50  # in nm, unit cell parameter.
 # It can be a number or tuple of numbers depending on the unit cell.
 ######################
 # sample orientation #
 ######################
-angles = [0, 0, 0]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
+angles = [-9, 34, -25]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
 #######################
 # beamline parameters #
 #######################
@@ -43,8 +43,8 @@ energy = 8700  # in ev X-ray energy
 detector = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1195, 1187)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = [direct_beam[0] - 972, direct_beam[0] + 972, direct_beam[1] - 883, direct_beam[1] + 883]
-# [Vstart, Vstop, Hstart, Hstop]
+roi_detector = []  # [direct_beam[0] - 972, direct_beam[0] + 972, direct_beam[1] - 883, direct_beam[1] + 883]
+# [Vstart, Vstop, Hstart, Hstop], leave [] to use the full detector
 binning = [4, 4, 4]  # binning of the detector
 ###########
 # options #
