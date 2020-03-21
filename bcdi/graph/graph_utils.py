@@ -373,7 +373,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
             else:
                 slice_position = [int(position) for position in slice_position]
 
-        fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(13, 9))
+        fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
 
         # axis 0
         temp_array = np.copy(array)
@@ -919,7 +919,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     if width_x is None:
         width_x = nbx
 
-    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(13, 9))
+    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
 
     # axis 0
     temp_array = np.copy(array)
@@ -1102,7 +1102,7 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
 
     # plot the stereographic projection
     plt.ion()
-    fig, ax0 = plt.subplots(1, 1, figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
+    fig, ax0 = plt.subplots(1, 1, figsize=(12, 6), dpi=80, facecolor='w', edgecolor='k')
     plt0 = ax0.contourf(u_grid, v_grid, abs(intensity_grid), range(100, 6100, 250), cmap='hsv')
     plt.colorbar(plt0, ax=ax0)
     ax0.axis('equal')
