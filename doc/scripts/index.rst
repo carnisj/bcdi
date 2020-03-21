@@ -210,18 +210,18 @@ Preprocessing
    :end-before: """
    :language: rst
 
-`prepare_bcdi_mask.py`:
-^^^^^^^^^^^^^^^^^^^^^^^
+`preprocess_bcdi_sequential.py`:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/prepare_bcdi_mask.py
+.. literalinclude:: ../../bcdi/preprocessing/scripts/preprocess_bcdi_sequential.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`prepare_cdi_mask.py`:
-^^^^^^^^^^^^^^^^^^^^^^
+`preprocess_cdi_sequential.py`:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/prepare_cdi_mask.py
+.. literalinclude:: ../../bcdi/preprocessing/scripts/preprocess_cdi_sequential.py
    :start-after: helptext
    :end-before: """
    :language: rst

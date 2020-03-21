@@ -43,7 +43,7 @@ output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 
 scans = [13]  # list or array of scan numbers
 root_folder = "D:/data/P10_August2019/data/"
 sample_name = "magnetite_A2_new"  # "S"
-user_comment = '_full_peak2'  # string, should start with "_"
+user_comment = '_full_peak3'  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = [1, 4, 4]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
