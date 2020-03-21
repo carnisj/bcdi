@@ -2883,7 +2883,7 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
     return updated_data, updated_mask, width, vmax, idx, stop_masking
 
 
-def update_aliens_combo(key, pix, piy, original_data, updated_data, updated_mask, figure, axes, width, dim, frame_index,
+def update_aliens_combo(key, pix, piy, original_data, updated_data, updated_mask, axes, width, dim, frame_index,
                         vmax, vmin=0, invert_yaxis=False):
     """
     Update the plot while removing the parasitic diffraction intensity in 3D dataset
@@ -2894,8 +2894,7 @@ def update_aliens_combo(key, pix, piy, original_data, updated_data, updated_mask
     :param original_data: the 3D data array before masking aliens
     :param updated_data: the current 3D data array
     :param updated_mask: the current 3D mask array
-    :param figure: the figure instance, expected to be a plt.subplots(nrows=2, ncols=2)
-    :param axes: tuple of the 4 axes instances of figure
+    :param axes: tuple of the 4 axes instances in a plt.subplots(nrows=2, ncols=2)
     :param width: the half_width of the masking window
     :param dim: the axis currently under review (axis 0, 1 or 2)
     :param frame_index: list of 3 frame indices (one per axis)
@@ -3174,14 +3173,12 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
 
     if key == 'b':  # remove the last selected background point
         xy.pop()
-        background = np.asarray(xy)
 
     elif key == 'a':  # restart background selection from the beginning
         xy = []
         print('restart background selection')
 
     elif key == 'p':  # plot background
-        background = np.asarray(xy)
         thismanager = plt.get_current_fig_manager()
         thismanager.toolbar.pan()  # deactivate the pan
 
@@ -3199,6 +3196,7 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
     else:
         return flag_pause, xy, stop_masking
 
+    background = np.asarray(xy)
     axs.axis.cla()
     if len(xy) != 0:
         if scale == 'linear':
@@ -3254,8 +3252,12 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
 
     nbz, nby, nbx = original_data.shape
     stop_masking = False
-    if dim != 0 and dim != 1 and dim != 2:
+    if dim not in [0, 1, 2]:
         raise ValueError('dim should be 0, 1 or 2')
+
+    axs = figure.gca()
+    xmin, xmax = axs.get_xlim()
+    ymin, ymax = axs.get_ylim()
 
     if key == 'up':
         width = width + 1
@@ -3267,47 +3269,11 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
 
     elif key == 'right':
         vmax = vmax + 1
-        array = updated_data.sum(axis=dim)
-        array[updated_mask == 1] = masked_color
-        myfig = plt.gcf()
-        myaxs = myfig.gca()
-        xmin, xmax = myaxs.get_xlim()
-        ymin, ymax = myaxs.get_ylim()
-        figure.clear()
-        plt.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
-        myaxs = figure.gca()
-        if invert_yaxis:
-            myaxs.invert_yaxis()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        plt.draw()
 
     elif key == 'left':
         vmax = vmax - 1
         if vmax < 1:
             vmax = 1
-        array = updated_data.sum(axis=dim)
-        array[updated_mask == 1] = masked_color
-        myfig = plt.gcf()
-        myaxs = myfig.gca()
-        xmin, xmax = myaxs.get_xlim()
-        ymin, ymax = myaxs.get_ylim()
-        figure.clear()
-        plt.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
-        myaxs = figure.gca()
-        if invert_yaxis:
-            myaxs.invert_yaxis()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        plt.draw()
 
     elif key == 'm':
         if (piy - width) < 0:
@@ -3319,24 +3285,6 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
         else:
             startx = pix - width
         updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 1
-        array = updated_data.sum(axis=dim)
-        array[updated_mask == 1] = masked_color
-        myfig = plt.gcf()
-        myaxs = myfig.gca()
-        xmin, xmax = myaxs.get_xlim()
-        ymin, ymax = myaxs.get_ylim()
-        figure.clear()
-        plt.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
-        myaxs = figure.gca()
-        if invert_yaxis:
-            myaxs.invert_yaxis()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        plt.draw()
 
     elif key == 'b':
         if (piy - width) < 0:
@@ -3348,24 +3296,6 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
         else:
             startx = pix - width
         updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 0
-        array = updated_data.sum(axis=dim)
-        array[updated_mask == 1] = masked_color
-        myfig = plt.gcf()
-        myaxs = myfig.gca()
-        xmin, xmax = myaxs.get_xlim()
-        ymin, ymax = myaxs.get_ylim()
-        figure.clear()
-        plt.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
-        myaxs = figure.gca()
-        if invert_yaxis:
-            myaxs.invert_yaxis()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        plt.draw()
 
     elif key == 'a':  # restart mask from beginning
         updated_data = np.copy(original_data)
@@ -3375,26 +3305,28 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
             updated_data[
                 original_mask == 1] = masked_color / nbz  # masked pixels plotted with the value of masked_pixel
             updated_mask = np.zeros((nby, nbx))
-        if dim == 1:
+        elif dim == 1:
             updated_data[
                 original_mask == 1] = masked_color / nby  # masked pixels plotted with the value of masked_pixel
             updated_mask = np.zeros((nbz, nbx))
-        if dim == 2:
+        else:  # dim=2
             updated_data[
                 original_mask == 1] = masked_color / nbx  # masked pixels plotted with the value of masked_pixel
             updated_mask = np.zeros((nbz, nby))
-        figure.clear()
-        plt.imshow(np.log10(abs(updated_data.sum(axis=dim))), vmin=0, vmax=vmax)
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        myaxs = figure.gca()
-        if invert_yaxis:
-            myaxs.invert_yaxis()
-        plt.draw()
 
-    elif key == 'p':  # plot masked image
+    elif key == 'p':  # plot full image
+        if dim == 0:
+            xmin, xmax = -0.5, nbx - 0.5
+            if invert_yaxis:
+                ymin, ymax = -0.5, nby - 0.5  # pointing up
+            else:
+                ymin, ymax = nby - 0.5, -0.5  # pointing down
+        elif dim == 1:
+            xmin, xmax = -0.5, nbx - 0.5
+            ymin, ymax = nbz - 0.5, -0.5  # pointing down
+        else:  # dim=2
+            xmin, xmax = -0.5, nby - 0.5
+            ymin, ymax = nbz - 0.5, -0.5  # pointing down
         if len(xy) != 0:
             xy.append(xy[0])
             print(xy)
@@ -3405,21 +3337,10 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
             else:  # dim=2
                 ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nby))
             updated_mask[ind] = 1
-        array = updated_data.sum(axis=dim)
-        array[updated_mask == 1] = masked_color
         xy = []  # allow to mask a different area
-        figure.clear()
-        plt.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        myaxs = figure.gca()
-        if invert_yaxis:
-            myaxs.invert_yaxis()
-        plt.draw()
         thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan
+        thismanager.toolbar.pan()  # deactivate the pan  # TODO: check why this is needed
+
     elif key == 'x':
         if not flag_pause:
             flag_pause = True
@@ -3430,6 +3351,182 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
 
     elif key == 'q':
         stop_masking = True
+
+    else:
+        return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
+
+    array = updated_data.sum(axis=dim)
+    array[updated_mask == 1] = masked_color
+
+    axs.axis.cla()
+    axs.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
+    if invert_yaxis:
+        axs.invert_yaxis()
+    axs.set_xlim([xmin, xmax])
+    axs.set_ylim([ymin, ymax])
+    axs.set_title('x to pause/resume masking for pan/zoom \n'
+                  'p plot mask ; a restart ; click to select vertices\n'
+                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                  "up larger ; down smaller ; right darker ; left brighter")
+    plt.draw()
+
+    return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
+
+
+def update_mask_combo(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, flag_pause, points,
+                     xy, width, dim, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
+    """
+    Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
+
+    :param key: the keyboard key which was pressed
+    :param pix: the x value of the mouse pointer
+    :param piy: the y value of the mouse pointer
+    :param original_data: the 3D data array before masking
+    :param original_mask: the 3D mask array before masking
+    :param updated_data: the current 3D data array
+    :param updated_mask: the temporary 2D mask array with updated points
+    :param axes: tuple of the 4 axes instances in a plt.subplots(nrows=2, ncols=2)
+    :param flag_pause: set to 1 to stop registering vertices using mouse clicks
+    :param points: list of all point coordinates: points=np.stack((x, y), axis=0).T with x=x.flatten() , y = y.flatten()
+     given x,y=np.meshgrid(np.arange(nx), np.arange(ny))
+    :param xy: the list of vertices which defines a polygon to be masked
+    :param width: the half_width of the masking window
+    :param dim: the axis currently under review (axis 0, 1 or 2)
+    :param vmax: the higher boundary for the colorbar
+    :param vmin: the lower boundary for the colorbar
+    :param masked_color: the value that detector gaps should have in plots
+    :param invert_yaxis: True to invert the y axis of imshow plots
+    :return: updated data, mask and controls
+    """
+    if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3:
+        raise ValueError('original_data, updated_data and original_mask should be 3D arrays')
+    if updated_mask.ndim != 2:
+        raise ValueError('updated_mask should be 2D arrays')
+
+    nbz, nby, nbx = original_data.shape
+    stop_masking = False
+    if dim not in [0, 1, 2]:
+        raise ValueError('dim should be 0, 1 or 2')
+
+    xmin0, xmax0 = axes[0].get_xlim()
+    ymin0, ymax0 = axes[0].get_ylim()
+    xmin1, xmax1 = axes[1].get_xlim()
+    ymin1, ymax1 = axes[1].get_ylim()
+    xmin2, xmax2 = axes[2].get_xlim()
+    ymin2, ymax2 = axes[2].get_ylim()
+
+    if key == 'up':
+        width = width + 1
+
+    elif key == 'down':
+        width = width - 1
+        if width < 0:
+            width = 0
+
+    elif key == 'right':
+        vmax = vmax + 1
+
+    elif key == 'left':
+        vmax = vmax - 1
+        if vmax < 1:
+            vmax = 1
+
+    elif key == 'm':
+        if (piy - width) < 0:
+            starty = 0
+        else:
+            starty = piy - width
+        if (pix - width) < 0:
+            startx = 0
+        else:
+            startx = pix - width
+        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 1
+
+    elif key == 'b':
+        if (piy - width) < 0:
+            starty = 0
+        else:
+            starty = piy - width
+        if (pix - width) < 0:
+            startx = 0
+        else:
+            startx = pix - width
+        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 0
+
+    elif key == 'a':  # restart mask from beginning
+        updated_data = np.copy(original_data)
+        xy = []
+        print('restart masking')
+        if dim == 0:
+            updated_data[
+                original_mask == 1] = masked_color / nbz  # masked pixels plotted with the value of masked_pixel
+            updated_mask = np.zeros((nby, nbx))
+        elif dim == 1:
+            updated_data[
+                original_mask == 1] = masked_color / nby  # masked pixels plotted with the value of masked_pixel
+            updated_mask = np.zeros((nbz, nbx))
+        else:  # dim=2
+            updated_data[
+                original_mask == 1] = masked_color / nbx  # masked pixels plotted with the value of masked_pixel
+            updated_mask = np.zeros((nbz, nby))
+
+    elif key == 'p':  # plot full image
+        if dim == 0:
+            xmin, xmax = -0.5, nbx - 0.5
+            if invert_yaxis:
+                ymin, ymax = -0.5, nby - 0.5  # pointing up
+            else:
+                ymin, ymax = nby - 0.5, -0.5  # pointing down
+        elif dim == 1:
+            xmin, xmax = -0.5, nbx - 0.5
+            ymin, ymax = nbz - 0.5, -0.5  # pointing down
+        else:  # dim=2
+            xmin, xmax = -0.5, nby - 0.5
+            ymin, ymax = nbz - 0.5, -0.5  # pointing down
+        if len(xy) != 0:
+            xy.append(xy[0])
+            print(xy)
+            if dim == 0:
+                ind = Path(np.array(xy)).contains_points(points).reshape((nby, nbx))
+            elif dim == 1:
+                ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nbx))
+            else:  # dim=2
+                ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nby))
+            updated_mask[ind] = 1
+        xy = []  # allow to mask a different area
+        thismanager = plt.get_current_fig_manager()
+        thismanager.toolbar.pan()  # deactivate the pan  # TODO: check why this is needed
+
+    elif key == 'x':
+        if not flag_pause:
+            flag_pause = True
+            print('pause for pan/zoom')
+        else:
+            flag_pause = False
+            print('resume masking')
+
+    elif key == 'q':
+        stop_masking = True
+
+    else:
+        return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
+
+    array0 = updated_data.sum(axis=dim)
+    array[updated_mask == 1] = masked_color
+
+    axes[0].cla()
+    axes[1].cla()
+    axes[2].cla()
+    axs.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
+    if invert_yaxis:
+        axs.invert_yaxis()
+    axs.set_xlim([xmin, xmax])
+    axs.set_ylim([ymin, ymax])
+    axs.set_title('x to pause/resume masking for pan/zoom \n'
+                  'p plot mask ; a restart ; click to select vertices\n'
+                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                  "up larger ; down smaller ; right darker ; left brighter")
+    plt.draw()
 
     return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
 
@@ -3464,6 +3561,10 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
     nby, nbx = original_data.shape
     stop_masking = False
 
+    axs = figure.gca()
+    xmin, xmax = axs.get_xlim()
+    ymin, ymax = axs.get_ylim()
+
     if key == 'up':
         width = width + 1
 
@@ -3475,44 +3576,12 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
     elif key == 'right':
         vmax = vmax + 1
         updated_data[updated_mask == 1] = masked_color
-        myfig = plt.gcf()
-        myaxs = myfig.gca()
-        xmin, xmax = myaxs.get_xlim()
-        ymin, ymax = myaxs.get_ylim()
-        figure.clear()
-        plt.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
-        myaxs = figure.gca()
-        if invert_yaxis:
-            myaxs.invert_yaxis()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        plt.draw()
 
     elif key == 'left':
         vmax = vmax - 1
         if vmax < 1:
             vmax = 1
         updated_data[updated_mask == 1] = masked_color
-        myfig = plt.gcf()
-        myaxs = myfig.gca()
-        xmin, xmax = myaxs.get_xlim()
-        ymin, ymax = myaxs.get_ylim()
-        figure.clear()
-        plt.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
-        myaxs = figure.gca()
-        if invert_yaxis:
-            myaxs.invert_yaxis()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        plt.draw()
 
     elif key == 'm':
         if (piy - width) < 0:
@@ -3525,22 +3594,6 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
             startx = pix - width
         updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 1
         updated_data[updated_mask == 1] = masked_color
-        myfig = plt.gcf()
-        myaxs = myfig.gca()
-        xmin, xmax = myaxs.get_xlim()
-        ymin, ymax = myaxs.get_ylim()
-        figure.clear()
-        plt.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
-        myaxs = figure.gca()
-        if invert_yaxis:
-            myaxs.invert_yaxis()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        plt.draw()
 
     elif key == 'b':
         if (piy - width) < 0:
@@ -3553,22 +3606,6 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
             startx = pix - width
         updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 0
         updated_data[updated_mask == 1] = masked_color
-        myfig = plt.gcf()
-        myaxs = myfig.gca()
-        xmin, xmax = myaxs.get_xlim()
-        ymin, ymax = myaxs.get_ylim()
-        figure.clear()
-        plt.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
-        myaxs = figure.gca()
-        if invert_yaxis:
-            myaxs.invert_yaxis()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        plt.draw()
 
     elif key == 'a':  # restart mask from beginning
         updated_data = np.copy(original_data)
@@ -3579,18 +3616,13 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
             original_mask == 1] = masked_color  # masked pixels plotted with the value of masked_pixel
         updated_mask = np.zeros((nby, nbx))
 
-        figure.clear()
-        plt.imshow(np.log10(abs(updated_data)), vmin=0, vmax=vmax)
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        myaxs = figure.gca()
+    elif key == 'p':  # plot full image
+        xmin, xmax = -0.5, nbx - 0.5
         if invert_yaxis:
-            myaxs.invert_yaxis()
-        plt.draw()
+            ymin, ymax = -0.5, nby - 0.5  # pointing up
+        else:
+            ymin, ymax = nby - 0.5, -0.5  # pointing down
 
-    elif key == 'p':  # plot masked image
         if len(xy) != 0:
             xy.append(xy[0])
             print(xy)
@@ -3599,18 +3631,9 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
 
         updated_data[updated_mask == 1] = masked_color
         xy = []  # allow to mask a different area
-        figure.clear()
-        plt.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
-        plt.title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-        myaxs = figure.gca()
-        if invert_yaxis:
-            myaxs.invert_yaxis()
-        plt.draw()
         thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan
+        thismanager.toolbar.pan()  # deactivate the pan  # TODO: check why this is needed
+
     elif key == 'x':
         if not flag_pause:
             flag_pause = True
@@ -3621,6 +3644,21 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
 
     elif key == 'q':
         stop_masking = True
+
+    else:
+        return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
+
+    axs.axis.cla()
+    axs.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
+    if invert_yaxis:
+        axs.invert_yaxis()
+    axs.set_xlim([xmin, xmax])
+    axs.set_ylim([ymin, ymax])
+    axs.set_title('x to pause/resume masking for pan/zoom \n'
+                  'p plot mask ; a restart ; click to select vertices\n'
+                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                  "up larger ; down smaller ; right darker ; left brighter")
+    plt.draw()
 
     return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
 
