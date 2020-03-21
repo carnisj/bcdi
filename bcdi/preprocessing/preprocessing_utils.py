@@ -3159,74 +3159,29 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
     """
     if data.ndim != 1:
         raise ValueError('data is expected to be a 1D array')
-
+    axs = figure.gca()
     if xlim is None:
-        axes = figure.gca()
-        xmin, xmax = axes.get_xlim()
+        xmin, xmax = axs.get_xlim()
     else:
         xmin, xmax = xlim
     if ylim is None:
-        axes = figure.gca()
-        ymin, ymax = axes.get_ylim()
+        ymin, ymax = axs.get_ylim()
     else:
         ymin, ymax = ylim
 
     stop_masking = False
     xy = sorted(xy, key=itemgetter(0))
+
     if key == 'b':  # remove the last selected background point
         xy.pop()
         background = np.asarray(xy)
-
-        figure.clear()
-        if scale == 'linear':
-            plt.plot(distances, data, '.-r', background[:, 0], background[:, 1], 'b')
-        else:
-            plt.plot(distances, np.log10(data), '.-r',
-                     background[:, 0], background[:, 1], 'b')  # background is in log scale directly
-        axes = figure.gca()
-        axes.set_xlim([xmin, xmax])
-        axes.set_ylim([ymin, ymax])
-        plt.xlabel('q (1/nm)')
-        plt.ylabel('Angular average (A.U.)')
-        plt.title("Click to select background points\nx to pause/resume for pan/zoom\n"
-                  "a restart ; p plot background ; q quit")
-        plt.draw()
 
     elif key == 'a':  # restart background selection from the beginning
         xy = []
         print('restart background selection')
 
-        figure.clear()
-        if scale == 'linear':
-            plt.plot(distances, data, '.-r')
-        else:
-            plt.plot(distances, np.log10(data), '.-r')
-        axes = figure.gca()
-        axes.set_xlim([xmin, xmax])
-        axes.set_ylim([ymin, ymax])
-        plt.xlabel('q (1/nm)')
-        plt.ylabel('Angular average (A.U.)')
-        plt.title("Click to select background points\nx to pause/resume for pan/zoom\n"
-                  "a restart ; p plot background ; q quit")
-        plt.draw()
-
     elif key == 'p':  # plot background
         background = np.asarray(xy)
-
-        figure.clear()
-        if scale == 'linear':
-            plt.plot(distances, data, '.-r', background[:, 0], background[:, 1], 'b')
-        else:
-            plt.plot(distances, np.log10(data), '.-r',
-                     background[:, 0], background[:, 1], 'b')  # background is in log scale directly
-        axes = figure.gca()
-        axes.set_xlim([xmin, xmax])
-        axes.set_ylim([ymin, ymax])
-        plt.xlabel('q (1/nm)')
-        plt.ylabel('Angular average (A.U.)')
-        plt.title("Click to select background points\nx to pause/resume for pan/zoom\n"
-                  "a restart ; p plot background ; q quit")
-        plt.draw()
         thismanager = plt.get_current_fig_manager()
         thismanager.toolbar.pan()  # deactivate the pan
 
@@ -3240,6 +3195,29 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
 
     elif key == 'q':
         stop_masking = True
+
+    else:
+        return flag_pause, xy, stop_masking
+
+    axs.axis.cla()
+    if len(xy) != 0:
+        if scale == 'linear':
+            axs.plot(distances, data, '.-r', background[:, 0], background[:, 1], 'b')
+        else:
+            axs.plot(distances, np.log10(data), '.-r',
+                     background[:, 0], background[:, 1], 'b')  # background is in log scale directly
+    else:  # restart background selection
+        if scale == 'linear':
+            axs.plot(distances, data, '.-r')
+        else:
+            axs.plot(distances, np.log10(data), '.-r')
+    axs.set_xlim([xmin, xmax])
+    axs.set_ylim([ymin, ymax])
+    axs.set_xlabel('q (1/nm)')
+    axs.set_ylabel('Angular average (A.U.)')
+    axs.set_title("Click to select background points\nx to pause/resume for pan/zoom\n"
+                  "a restart ; p plot background ; q quit")
+    plt.draw()
 
     return flag_pause, xy, stop_masking
 
