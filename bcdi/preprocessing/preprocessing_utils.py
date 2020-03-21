@@ -2896,7 +2896,7 @@ def update_aliens(key, pix, piy, original_data, original_mask, updated_data, upd
     return updated_data, updated_mask, width, vmax, idx, stop_masking
 
 
-def update_aliens_combined(key, pix, piy, original_data, updated_data, updated_mask, axes, width, dim, frame_index,
+def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, width, dim, frame_index,
                            vmax, vmin=0, invert_yaxis=False):
     """
     Update the plot while removing the parasitic diffraction intensity in 3D dataset
@@ -2905,6 +2905,7 @@ def update_aliens_combined(key, pix, piy, original_data, updated_data, updated_m
     :param pix: the x value of the mouse pointer
     :param piy: the y value of the mouse pointer
     :param original_data: the 3D data array before masking aliens
+    :param original_mask: the 3D mask array before masking aliens
     :param updated_data: the current 3D data array
     :param updated_mask: the current 3D mask array
     :param axes: tuple of the 4 axes instances in a plt.subplots(nrows=2, ncols=2)
@@ -2916,7 +2917,7 @@ def update_aliens_combined(key, pix, piy, original_data, updated_data, updated_m
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
-    if original_data.ndim != 3 or updated_data.ndim != 3 or updated_mask.ndim != 3:
+    if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3 or updated_mask.ndim != 3:
         raise ValueError('original_data, updated_data and updated_mask should be 3D arrays')
 
     nbz, nby, nbx = original_data.shape
@@ -2940,7 +2941,7 @@ def update_aliens_combined(key, pix, piy, original_data, updated_data, updated_m
             frame_index[1] = frame_index[1] + 1
             if frame_index[1] > nby - 1:
                 frame_index[1] = 0
-        elif dim == 2:
+        else:  # dim=2
             frame_index[2] = frame_index[2] + 1
             if frame_index[2] > nbx - 1:
                 frame_index[2] = 0
@@ -2954,7 +2955,7 @@ def update_aliens_combined(key, pix, piy, original_data, updated_data, updated_m
             frame_index[1] = frame_index[1] - 1
             if frame_index[1] < 0:
                 frame_index[1] = nby - 1
-        elif dim == 2:
+        else:  # dim=2
             frame_index[2] = frame_index[2] - 1
             if frame_index[2] < 0:
                 frame_index[2] = nbx - 1
@@ -2990,7 +2991,7 @@ def update_aliens_combined(key, pix, piy, original_data, updated_data, updated_m
         elif dim == 1:
             updated_data[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = 0
             updated_mask[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = 1
-        elif dim == 2:
+        else:  # dim=2
             updated_data[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = 0
             updated_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = 1
 
@@ -3006,15 +3007,18 @@ def update_aliens_combined(key, pix, piy, original_data, updated_data, updated_m
         if dim == 0:
             updated_data[frame_index[0], starty:piy + width + 1, startx:pix + width + 1] = \
                 original_data[frame_index[0], starty:piy + width + 1, startx:pix + width + 1]
-            updated_mask[frame_index[0], starty:piy + width + 1, startx:pix + width + 1] = 0
+            updated_mask[frame_index[0], starty:piy + width + 1, startx:pix + width + 1] = \
+                original_mask[frame_index[0], starty:piy + width + 1, startx:pix + width + 1]
         elif dim == 1:
             updated_data[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = \
                 original_data[starty:piy + width + 1, frame_index[1], startx:pix + width + 1]
-            updated_mask[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = 0
-        elif dim == 2:
+            updated_mask[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = \
+                original_mask[starty:piy + width + 1, frame_index[1], startx:pix + width + 1]
+        else:  # dim=2
             updated_data[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = \
                 original_data[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]]
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = 0
+            updated_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = \
+                original_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]]
 
     elif key == 'p':  # plot full image
         xmin0, xmax0 = -0.5, nbx - 0.5
@@ -3029,6 +3033,11 @@ def update_aliens_combined(key, pix, piy, original_data, updated_data, updated_m
 
         thismanager = plt.get_current_fig_manager()
         thismanager.toolbar.pan()  # deactivate the pan
+
+    elif key == 'a':  # restart masking
+        updated_data[:] = original_data[:]
+        updated_mask[:] = original_mask[:]
+        idx = 0
 
     elif key == 'q':
         stop_masking = True
