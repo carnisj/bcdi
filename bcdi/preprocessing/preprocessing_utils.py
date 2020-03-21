@@ -2726,7 +2726,7 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
     return True
 
 
-def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figure, width, dim, idx,
+def update_aliens(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, width, dim, idx,
                   vmax, vmin=0, invert_yaxis=False):
     """
     Update the plot while removing the parasitic diffraction intensity in 3D dataset
@@ -2735,6 +2735,7 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
     :param pix: the x value of the mouse pointer
     :param piy: the y value of the mouse pointer
     :param original_data: the 3D data array before masking aliens
+    :param original_mask: the 3D mask array before masking aliens
     :param updated_data: the current 3D data array
     :param updated_mask: the current 3D mask array
     :param figure: the figure instance
@@ -2746,8 +2747,8 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
-    if original_data.ndim != 3 or updated_data.ndim != 3 or updated_mask.ndim != 3:
-        raise ValueError('original_data, updated_data and updated_mask should be 3D arrays')
+    if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3 or updated_mask.ndim != 3:
+        raise ValueError('original_data, original_mask, updated_data and updated_mask should be 3D arrays')
 
     nbz, nby, nbx = original_data.shape
     stop_masking = False
@@ -2828,15 +2829,19 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
         if dim == 0:
             updated_data[idx, starty:piy + width + 1, startx:pix + width + 1] = \
                 original_data[idx, starty:piy + width + 1, startx:pix + width + 1]
-            updated_mask[idx, starty:piy + width + 1, startx:pix + width + 1] = 0
+            updated_mask[idx, starty:piy + width + 1, startx:pix + width + 1] = \
+                original_mask[idx, starty:piy + width + 1, startx:pix + width + 1]
+
         elif dim == 1:
             updated_data[starty:piy + width + 1, idx, startx:pix + width + 1] = \
                 original_data[starty:piy + width + 1, idx, startx:pix + width + 1]
-            updated_mask[starty:piy + width + 1, idx, startx:pix + width + 1] = 0
+            updated_mask[starty:piy + width + 1, idx, startx:pix + width + 1] = \
+                original_mask[starty:piy + width + 1, idx, startx:pix + width + 1]
         else:  # dim=2
             updated_data[starty:piy + width + 1, startx:pix + width + 1, idx] = \
                 original_data[starty:piy + width + 1, startx:pix + width + 1, idx]
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, idx] = 0
+            updated_mask[starty:piy + width + 1, startx:pix + width + 1, idx] = \
+                original_mask[starty:piy + width + 1, startx:pix + width + 1, idx]
 
     elif key == 'p':  # plot full image
         if dim == 0:
@@ -2852,13 +2857,21 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
             xmin, xmax = -0.5, nby - 0.5
             ymin, ymax = nbz - 0.5, -0.5  # pointing down
 
+        thismanager = plt.get_current_fig_manager()
+        thismanager.toolbar.pan()  # deactivate the pan
+
+    elif key == 'a':  # restart masking
+        updated_data[:] = original_data[:]
+        updated_mask[:] = original_mask[:]
+        idx = 0
+
     elif key == 'q':
         stop_masking = True
 
     else:
         return updated_data, updated_mask, width, vmax, idx, stop_masking
 
-    axs.axis.cla()
+    axs.cla()
     if dim == 0:
         axs.imshow(updated_data[idx, :, ], vmin=vmin, vmax=vmax)
         axs.set_title("Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
@@ -2883,8 +2896,8 @@ def update_aliens(key, pix, piy, original_data, updated_data, updated_mask, figu
     return updated_data, updated_mask, width, vmax, idx, stop_masking
 
 
-def update_aliens_combo(key, pix, piy, original_data, updated_data, updated_mask, axes, width, dim, frame_index,
-                        vmax, vmin=0, invert_yaxis=False):
+def update_aliens_combined(key, pix, piy, original_data, updated_data, updated_mask, axes, width, dim, frame_index,
+                           vmax, vmin=0, invert_yaxis=False):
     """
     Update the plot while removing the parasitic diffraction intensity in 3D dataset
 
@@ -3014,6 +3027,9 @@ def update_aliens_combo(key, pix, piy, original_data, updated_data, updated_mask
         xmin2, xmax2 = -0.5, nby - 0.5
         ymin2, ymax2 = nbz - 0.5, -0.5  # pointing down
 
+        thismanager = plt.get_current_fig_manager()
+        thismanager.toolbar.pan()  # deactivate the pan
+
     elif key == 'q':
         stop_masking = True
 
@@ -3046,7 +3062,7 @@ def update_aliens_combo(key, pix, piy, original_data, updated_data, updated_mask
     return updated_data, updated_mask, width, vmax, frame_index, stop_masking
 
 
-def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, figure, width,
+def update_aliens_2d(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, width,
                      vmax, vmin=0, invert_yaxis=False):
     """
     Update the plot while removing the parasitic diffraction intensity in 2D dataset
@@ -3055,6 +3071,7 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
     :param pix: the x value of the mouse pointer
     :param piy: the y value of the mouse pointer
     :param original_data: the 2D data array before masking aliens
+    :param original_mask: the 3D mask array before masking aliens
     :param updated_data: the current 2D data array
     :param updated_mask: the current 2D mask array
     :param figure: the figure instance
@@ -3064,7 +3081,7 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
-    if original_data.ndim != 2 or updated_data.ndim != 2 or updated_mask.ndim != 2:
+    if original_data.ndim != 2 or updated_data.ndim != 2 or original_mask.ndim != 2or updated_mask.ndim != 2:
         raise ValueError('original_data, updated_data and updated_mask should be 2D arrays')
 
     nby, nbx = original_data.shape
@@ -3113,7 +3130,8 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
             startx = pix - width
         updated_data[starty:piy + width + 1, startx:pix + width + 1] = \
             original_data[starty:piy + width + 1, startx:pix + width + 1]
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 0
+        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = \
+            original_mask[starty:piy + width + 1, startx:pix + width + 1]
 
     elif key == 'p':  # plot full image
         xmin, xmax = -0.5, nbx - 0.5
@@ -3122,13 +3140,20 @@ def update_aliens_2d(key, pix, piy, original_data, updated_data, updated_mask, f
         else:
             ymin, ymax = nby - 0.5, -0.5  # pointing down
 
+        thismanager = plt.get_current_fig_manager()
+        thismanager.toolbar.pan()  # deactivate the pan
+
+    elif key == 'a':  # restart masking
+        updated_data[:] = original_data[:]
+        updated_mask[:] = original_mask[:]
+
     elif key == 'q':
         stop_masking = True
 
     else:
         return updated_data, updated_mask, width, vmax, stop_masking
 
-    axs.axis.cla()
+    axs.cla()
     axs.imshow(updated_data, vmin=vmin, vmax=vmax)
     axs.set_title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
@@ -3197,7 +3222,7 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
         return flag_pause, xy, stop_masking
 
     background = np.asarray(xy)
-    axs.axis.cla()
+    axs.cla()
     if len(xy) != 0:
         if scale == 'linear':
             axs.plot(distances, data, '.-r', background[:, 0], background[:, 1], 'b')
@@ -3339,7 +3364,7 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
             updated_mask[ind] = 1
         xy = []  # allow to mask a different area
         thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan  # TODO: check why this is needed
+        thismanager.toolbar.pan()  # deactivate the pan
 
     elif key == 'x':
         if not flag_pause:
@@ -3358,7 +3383,7 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
     array = updated_data.sum(axis=dim)
     array[updated_mask == 1] = masked_color
 
-    axs.axis.cla()
+    axs.cla()
     axs.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
     if invert_yaxis:
         axs.invert_yaxis()
@@ -3373,8 +3398,8 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
     return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
 
 
-def update_mask_combo(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, flag_pause, points,
-                     xy, width, dim, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
+def update_mask_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, flag_pause, points,
+                         xy, width, dim, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
     """
     Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
 
@@ -3495,7 +3520,7 @@ def update_mask_combo(key, pix, piy, original_data, original_mask, updated_data,
             updated_mask[ind] = 1
         xy = []  # allow to mask a different area
         thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan  # TODO: check why this is needed
+        thismanager.toolbar.pan()  # deactivate the pan
 
     elif key == 'x':
         if not flag_pause:
@@ -3632,7 +3657,7 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
         updated_data[updated_mask == 1] = masked_color
         xy = []  # allow to mask a different area
         thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan  # TODO: check why this is needed
+        thismanager.toolbar.pan()  # deactivate the pan
 
     elif key == 'x':
         if not flag_pause:
@@ -3648,7 +3673,7 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
     else:
         return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
 
-    axs.axis.cla()
+    axs.cla()
     axs.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
     if invert_yaxis:
         axs.invert_yaxis()
