@@ -185,8 +185,8 @@ def press_key(event):
     :param event: button press event
     :return: updated data, mask and controls
     """
-    global original_data, data, mask, temp_mask, dim, idx, width, flag_aliens, flag_mask, flag_pause, max_colorbar
-    global xy, points, fig_mask, masked_color
+    global original_data, original_mask, data, mask, temp_mask, dim, idx, width, flag_aliens, flag_mask, flag_pause
+    global xy, points, fig_mask, masked_color, max_colorbar
 
     try:
         if flag_aliens:
