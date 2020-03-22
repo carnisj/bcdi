@@ -2869,17 +2869,17 @@ def update_aliens(key, pix, piy, original_data, original_mask, updated_data, upd
     axs.cla()
     if dim == 0:
         axs.imshow(updated_data[idx, :, ], vmin=vmin, vmax=vmax)
-        axs.set_title("Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
+        axs.set_title("XY - Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
     elif dim == 1:
         axs.imshow(updated_data[:, idx, :], vmin=vmin, vmax=vmax)
-        axs.set_title("Frame " + str(idx + 1) + "/" + str(nby) + "\n"
+        axs.set_title("XZ - Frame " + str(idx + 1) + "/" + str(nby) + "\n"
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
     elif dim == 2:
         axs.imshow(updated_data[:, :, idx], vmin=vmin, vmax=vmax)
-        axs.set_title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
+        axs.set_title("YZ - Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
                       "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
     if invert_yaxis:
@@ -2891,8 +2891,8 @@ def update_aliens(key, pix, piy, original_data, original_mask, updated_data, upd
     return updated_data, updated_mask, width, vmax, idx, stop_masking
 
 
-def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, width, dim, frame_index,
-                           vmax, vmin=0, invert_yaxis=False):
+def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, width, dim,
+                           frame_index, vmax, vmin=0, invert_yaxis=False):
     """
     Update the plot while removing the parasitic diffraction intensity in 3D dataset
 
@@ -3399,8 +3399,8 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
     return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
 
 
-def update_mask_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, flag_pause, points,
-                         xy, width, dim, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
+def update_mask_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, flag_pause,
+                         points, xy, width, dim, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
     """
     Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
 
@@ -3410,7 +3410,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     :param original_data: the 3D data array before masking
     :param original_mask: the 3D mask array before masking
     :param updated_data: the current 3D data array
-    :param updated_mask: the temporary 2D mask array with updated points
+    :param updated_mask: the temporary 3D mask array with updated points
     :param axes: tuple of the 4 axes instances in a plt.subplots(nrows=2, ncols=2)
     :param flag_pause: set to 1 to stop registering vertices using mouse clicks
     :param points: list of all point coordinates: points=np.stack((x, y), axis=0).T with x=x.flatten() , y = y.flatten()
@@ -3424,10 +3424,8 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
-    if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3:
+    if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3 or updated_mask.ndim != 3:
         raise ValueError('original_data, updated_data and original_mask should be 3D arrays')
-    if updated_mask.ndim != 2:
-        raise ValueError('updated_mask should be 2D arrays')
 
     nbz, nby, nbx = original_data.shape
     stop_masking = False
@@ -3544,7 +3542,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     else:
         return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
 
-    array0 = updated_data.sum(axis=dim)
+    array = updated_data[:]
     array[updated_mask == 1] = masked_color
 
     axes[0].cla()
@@ -3559,6 +3557,29 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
                   'p plot mask ; a restart ; click to select vertices\n'
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
+    plt.draw()
+
+    axes[0].cla()
+    axes[1].cla()
+    axes[2].cla()
+    axes[0].imshow(np.log10(abs(array).sum(axis=0)), vmin=vmin, vmax=vmax)
+    axes[1].imshow(np.log10(abs(array).sum(axis=1)), vmin=vmin, vmax=vmax)
+    axes[2].imshow(np.log10(abs(array).sum(axis=2)), vmin=vmin, vmax=vmax)
+    if invert_yaxis:
+        axes[0].invert_yaxis()
+    axes[0].set_xlim([xmin0, xmax0])
+    axes[0].set_ylim([ymin0, ymax0])
+    axes[0].set_title("Frame " + str(frame_index[0] + 1) + "/" + str(nbz))
+    axes[0].axis('scaled')
+    axes[1].set_xlim([xmin1, xmax1])
+    axes[1].set_ylim([ymin1, ymax1])
+    axes[1].set_title("Frame " + str(frame_index[1] + 1) + "/" + str(nby))
+    axes[1].axis('scaled')
+    axes[2].set_xlim([xmin2, xmax2])
+    axes[2].set_ylim([ymin2, ymax2])
+    axes[2].set_title("Frame " + str(frame_index[2] + 1) + "/" + str(nbx))
+    axes[2].axis('scaled')
+    plt.tight_layout()
     plt.draw()
 
     return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking

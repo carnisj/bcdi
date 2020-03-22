@@ -533,9 +533,9 @@ for scan_nb in range(len(scans)):
         ax3.set_visible(False)
         if not use_rawdata:
             ax0.invert_yaxis()  # detector Y is vertical down
-        ax0.set_title("Frame " + str(frame_index[0] + 1) + "/" + str(nz))
-        ax1.set_title("Frame " + str(frame_index[1] + 1) + "/" + str(ny))
-        ax2.set_title("Frame " + str(frame_index[2] + 1) + "/" + str(nx))
+        ax0.set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nz))
+        ax1.set_title("XZ - Frame " + str(frame_index[1] + 1) + "/" + str(ny))
+        ax2.set_title("YZ - Frame " + str(frame_index[2] + 1) + "/" + str(nx))
         ax0.axis('scaled')
         ax1.axis('scaled')
         ax2.axis('scaled')
