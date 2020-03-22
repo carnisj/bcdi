@@ -103,6 +103,7 @@ elif include_origin and scale == 'log':
 flag_pause = False  # press x to pause for pan/zoom
 data = np.copy(y_values_masked)
 fig_back, _ = plt.subplots(1, 1)
+fig_back.canvas.mpl_disconnect(fig_back.canvas.manager.key_press_handler_id)
 if scale == 'linear':
     plt.plot(distances, data, '.-r')
 else:

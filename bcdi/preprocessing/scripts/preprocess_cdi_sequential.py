@@ -386,7 +386,7 @@ for scan_nb in range(len(scans)):
             data[mask == 1] = masked_color / nz  # will appear as -1 on the plot
             print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
             fig_mask = plt.figure()
-            fig_mask.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+            fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
             plt.imshow(np.log10(abs(data.sum(axis=0))), vmin=0, vmax=max_colorbar)
             plt.title('x to pause/resume masking for pan/zoom \n'
                       'p plot mask ; a restart ; click to select vertices\n'
@@ -540,7 +540,7 @@ for scan_nb in range(len(scans)):
         # in XY
         dim = 0
         fig_mask = plt.figure()
-        fig_mask.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         axs = fig_mask.gca()
         idx = starting_frame[0]
         original_data = np.copy(data)
@@ -560,7 +560,7 @@ for scan_nb in range(len(scans)):
         # in XZ
         dim = 1
         fig_mask = plt.figure()
-        fig_mask.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         idx = starting_frame[1]
         original_data = np.copy(data)
         original_mask = np.copy(mask)
@@ -577,7 +577,7 @@ for scan_nb in range(len(scans)):
         # in YZ
         dim = 2
         fig_mask = plt.figure()
-        fig_mask.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         idx = starting_frame[2]
         original_data = np.copy(data)
         original_mask = np.copy(mask)
@@ -635,7 +635,7 @@ for scan_nb in range(len(scans)):
         data[mask == 1] = masked_color / nz  # will appear as -1 on the plot
         print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
         fig_mask = plt.figure()
-        fig_mask.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         axs = fig_mask.gca()
         plt.imshow(np.log10(abs(data.sum(axis=0))), vmin=0, vmax=max_colorbar)
         plt.title('x to pause/resume masking for pan/zoom \n'
@@ -667,7 +667,7 @@ for scan_nb in range(len(scans)):
         data[mask == 1] = masked_color / ny  # will appear as -1 on the plot
         print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
         fig_mask = plt.figure()
-        fig_mask.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         plt.imshow(np.log10(abs(data.sum(axis=1))), vmin=0, vmax=max_colorbar)
         plt.title('x to pause/resume masking for pan/zoom \n'
                   'p plot mask ; a restart ; click to select vertices\n'
@@ -696,7 +696,7 @@ for scan_nb in range(len(scans)):
         data[mask == 1] = masked_color / nx  # will appear as -1 on the plot
         print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
         fig_mask = plt.figure()
-        fig_mask.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         plt.imshow(np.log10(abs(data.sum(axis=2))), vmin=0, vmax=max_colorbar)
         plt.title('x to pause/resume masking for pan/zoom \n'
                   'p plot mask ; a restart ; click to select vertices\n'

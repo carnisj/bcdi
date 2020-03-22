@@ -2843,7 +2843,7 @@ def update_aliens(key, pix, piy, original_data, original_mask, updated_data, upd
             updated_mask[starty:piy + width + 1, startx:pix + width + 1, idx] = \
                 original_mask[starty:piy + width + 1, startx:pix + width + 1, idx]
 
-    elif key == 'p':  # plot full image
+    elif key == 'p' or key == 'a':  # plot full image or restart masking
         if dim == 0:
             xmin, xmax = -0.5, nbx - 0.5
             if invert_yaxis:
@@ -2856,14 +2856,9 @@ def update_aliens(key, pix, piy, original_data, original_mask, updated_data, upd
         else:  # dim=2
             xmin, xmax = -0.5, nby - 0.5
             ymin, ymax = nbz - 0.5, -0.5  # pointing down
-
-        thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan
-
-    elif key == 'a':  # restart masking
-        updated_data[:] = original_data[:]
-        updated_mask[:] = original_mask[:]
-        idx = 0
+        if key == 'a':  # restart masking
+            updated_data[:] = original_data[:]
+            updated_mask[:] = original_mask[:]
 
     elif key == 'q':
         stop_masking = True
@@ -3020,7 +3015,7 @@ def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_
             updated_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = \
                 original_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]]
 
-    elif key == 'p':  # plot full image
+    elif key == 'p' or key == 'a':  # plot full image or restart masking
         xmin0, xmax0 = -0.5, nbx - 0.5
         if invert_yaxis:
             ymin0, ymax0 = -0.5, nby - 0.5  # pointing up
@@ -3030,14 +3025,9 @@ def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_
         ymin1, ymax1 = nbz - 0.5, -0.5  # pointing down
         xmin2, xmax2 = -0.5, nby - 0.5
         ymin2, ymax2 = nbz - 0.5, -0.5  # pointing down
-
-        thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan
-
-    elif key == 'a':  # restart masking
-        updated_data[:] = original_data[:]
-        updated_mask[:] = original_mask[:]
-        idx = 0
+        if key == 'a':  # restart masking
+            updated_data[:] = original_data[:]
+            updated_mask[:] = original_mask[:]
 
     elif key == 'q':
         stop_masking = True
@@ -3142,19 +3132,15 @@ def update_aliens_2d(key, pix, piy, original_data, original_mask, updated_data, 
         updated_mask[starty:piy + width + 1, startx:pix + width + 1] = \
             original_mask[starty:piy + width + 1, startx:pix + width + 1]
 
-    elif key == 'p':  # plot full image
+    elif key == 'p' or key == 'a':  # plot full image or restart masking
         xmin, xmax = -0.5, nbx - 0.5
         if invert_yaxis:
             ymin, ymax = -0.5, nby - 0.5  # pointing up
         else:
             ymin, ymax = nby - 0.5, -0.5  # pointing down
-
-        thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan
-
-    elif key == 'a':  # restart masking
-        updated_data[:] = original_data[:]
-        updated_mask[:] = original_mask[:]
+        if key == 'a':  # restart masking
+            updated_data[:] = original_data[:]
+            updated_mask[:] = original_mask[:]
 
     elif key == 'q':
         stop_masking = True
@@ -3213,8 +3199,7 @@ def update_background(key, distances, data, figure, flag_pause, xy, scale='log',
         print('restart background selection')
 
     elif key == 'p':  # plot background
-        thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan
+        pass
 
     elif key == 'x':
         if not flag_pause:
@@ -3339,14 +3324,23 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
             updated_data[
                 original_mask == 1] = masked_color / nbz  # masked pixels plotted with the value of masked_pixel
             updated_mask = np.zeros((nby, nbx))
+            xmin, xmax = -0.5, nbx - 0.5
+            if invert_yaxis:
+                ymin, ymax = -0.5, nby - 0.5  # pointing up
+            else:
+                ymin, ymax = nby - 0.5, -0.5  # pointing down
         elif dim == 1:
             updated_data[
                 original_mask == 1] = masked_color / nby  # masked pixels plotted with the value of masked_pixel
             updated_mask = np.zeros((nbz, nbx))
+            xmin, xmax = -0.5, nbx - 0.5
+            ymin, ymax = nbz - 0.5, -0.5  # pointing down
         else:  # dim=2
             updated_data[
                 original_mask == 1] = masked_color / nbx  # masked pixels plotted with the value of masked_pixel
             updated_mask = np.zeros((nbz, nby))
+            xmin, xmax = -0.5, nby - 0.5
+            ymin, ymax = nbz - 0.5, -0.5  # pointing down
 
     elif key == 'p':  # plot full image
         if dim == 0:
@@ -3372,8 +3366,6 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
                 ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nby))
             updated_mask[ind] = 1
         xy = []  # allow to mask a different area
-        thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan
 
     elif key == 'x':
         if not flag_pause:
@@ -3495,14 +3487,23 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
             updated_data[
                 original_mask == 1] = masked_color / nbz  # masked pixels plotted with the value of masked_pixel
             updated_mask = np.zeros((nby, nbx))
+            xmin, xmax = -0.5, nbx - 0.5
+            if invert_yaxis:
+                ymin, ymax = -0.5, nby - 0.5  # pointing up
+            else:
+                ymin, ymax = nby - 0.5, -0.5  # pointing down
         elif dim == 1:
             updated_data[
                 original_mask == 1] = masked_color / nby  # masked pixels plotted with the value of masked_pixel
             updated_mask = np.zeros((nbz, nbx))
+            xmin, xmax = -0.5, nbx - 0.5
+            ymin, ymax = nbz - 0.5, -0.5  # pointing down
         else:  # dim=2
             updated_data[
                 original_mask == 1] = masked_color / nbx  # masked pixels plotted with the value of masked_pixel
             updated_mask = np.zeros((nbz, nby))
+            xmin, xmax = -0.5, nby - 0.5
+            ymin, ymax = nbz - 0.5, -0.5  # pointing down
 
     elif key == 'p':  # plot full image
         if dim == 0:
@@ -3528,8 +3529,6 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
                 ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nby))
             updated_mask[ind] = 1
         xy = []  # allow to mask a different area
-        thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan
 
     elif key == 'x':
         if not flag_pause:
@@ -3645,10 +3644,14 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
         updated_data = np.copy(original_data)
         xy = []
         print('restart masking')
-
         updated_data[
             original_mask == 1] = masked_color  # masked pixels plotted with the value of masked_pixel
         updated_mask = np.zeros((nby, nbx))
+        xmin, xmax = -0.5, nbx - 0.5
+        if invert_yaxis:
+            ymin, ymax = -0.5, nby - 0.5  # pointing up
+        else:
+            ymin, ymax = nby - 0.5, -0.5  # pointing down
 
     elif key == 'p':  # plot full image
         xmin, xmax = -0.5, nbx - 0.5
@@ -3656,7 +3659,6 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
             ymin, ymax = -0.5, nby - 0.5  # pointing up
         else:
             ymin, ymax = nby - 0.5, -0.5  # pointing down
-
         if len(xy) != 0:
             xy.append(xy[0])
             print(xy)
@@ -3665,8 +3667,6 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
 
         updated_data[updated_mask == 1] = masked_color
         xy = []  # allow to mask a different area
-        thismanager = plt.get_current_fig_manager()
-        thismanager.toolbar.pan()  # deactivate the pan
 
     elif key == 'x':
         if not flag_pause:

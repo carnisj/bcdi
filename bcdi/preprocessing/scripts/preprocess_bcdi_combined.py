@@ -185,38 +185,42 @@ def press_key(event):
     :param event: button press event
     :return: updated data, mask and controls
     """
-    global original_data, data, mask, temp_mask, frame_index, width, flag_aliens, flag_mask, flag_pause, max_colorbar
-    global xy, points, fig_mask, masked_color, ax0, ax1, ax2, ax3
+    global original_data, original_mask, data, mask, temp_mask, frame_index, width, flag_aliens, flag_mask, flag_pause
+    global xy, points, fig_mask, masked_color, max_colorbar, ax0, ax1, ax2, ax3
 
     try:
+        inaxes = False
         if event.inaxes == ax0:
-            dimension = 0
+            dim = 0
+            inaxes = True
         elif event.inaxes == ax1:
-            dimension = 1
+            dim = 1
+            inaxes = True
         elif event.inaxes == ax2:
-            dimension = 2
-        else:
-            pass
+            dim = 2
+            inaxes = True
 
-        if flag_aliens:
-            data, mask, width, max_colorbar, frame_index, stop_masking = \
-                pru.update_aliens_combo(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
-                                        original_data=original_data, updated_data=data, updated_mask=mask,
-                                        figure=fig_mask, axes=(ax0, ax1, ax2, ax3), width=width, dim=dimension,
-                                        frame_index=frame_index, vmin=0, vmax=max_colorbar,
-                                        invert_yaxis=not use_rawdata)
-        elif flag_mask:
-            data, temp_mask, flag_pause, xy, width, vmax, stop_masking = \
-                pru.update_mask_combo(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
-                                      original_data=original_data, original_mask=mask, updated_data=data,
-                                      updated_mask=temp_mask, figure=fig_mask, axes=(ax0, ax1, ax2, ax3),
-                                      flag_pause=flag_pause, points=points, xy=xy, width=width, dim=dimension, vmin=0,
-                                      vmax=max_colorbar, masked_color=masked_color, invert_yaxis=not use_rawdata)
-        else:
-            stop_masking = False
+        if inaxes:
+            if flag_aliens:
+                data, mask, width, max_colorbar, frame_index, stop_masking = \
+                    pru.update_aliens_combined(key=event.key, pix=int(np.rint(event.xdata)),
+                                               piy=int(np.rint(event.ydata)), original_data=original_data,
+                                               original_mask=original_mask, updated_data=data, updated_mask=mask,
+                                               axes=(ax0, ax1, ax2, ax3), width=width, dim=dim, frame_index=frame_index,
+                                               vmin=0, vmax=max_colorbar, invert_yaxis=not use_rawdata)
+            elif flag_mask:
+                data, temp_mask, flag_pause, xy, width, vmax, stop_masking = \
+                    pru.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
+                                             piy=int(np.rint(event.ydata)), original_data=original_data,
+                                             original_mask=mask, updated_data=data, updated_mask=temp_mask,
+                                             axes=(ax0, ax1, ax2, ax3), flag_pause=flag_pause, points=points,
+                                             xy=xy, width=width, dim=dim, vmin=0, vmax=max_colorbar,
+                                             masked_color=masked_color, invert_yaxis=not use_rawdata)
+            else:
+                stop_masking = False
 
-        if stop_masking:
-            plt.close(fig_mask)
+            if stop_masking:
+                plt.close(fig_mask)
 
     except AttributeError:  # mouse pointer out of axes
         pass
@@ -519,7 +523,9 @@ for scan_nb in range(len(scans)):
         flag_aliens = True
 
         fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
+        fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         original_data = np.copy(data)
+        original_mask = np.copy(mask)
         frame_index = starting_frame
         ax0.imshow(data[frame_index[0], :, :], vmin=0, vmax=max_colorbar)
         ax1.imshow(data[:, frame_index[1], :], vmin=0, vmax=max_colorbar)
@@ -540,7 +546,7 @@ for scan_nb in range(len(scans)):
         plt.connect('key_press_event', press_key)
         fig_mask.set_facecolor(background_plot)
         plt.show()
-        del fig_mask
+        del fig_mask, original_data, original_mask
 
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                         title='Data after aliens removal\n',
