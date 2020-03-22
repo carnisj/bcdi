@@ -517,7 +517,7 @@ for scan_nb in range(len(scans)):
         original_data = np.copy(data)
         original_mask = np.copy(mask)
         plt.imshow(data[idx, :, :], vmin=0, vmax=max_colorbar)
-        plt.title("Frame " + str(idx+1) + "/" + str(nz) + "\n"
+        plt.title("XY - Frame " + str(idx+1) + "/" + str(nz) + "\n"
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         if not use_rawdata:
@@ -535,7 +535,7 @@ for scan_nb in range(len(scans)):
         original_data = np.copy(data)
         original_mask = np.copy(mask)
         plt.imshow(data[:, idx, :], vmin=0, vmax=max_colorbar)
-        plt.title("Frame " + str(idx+1) + "/" + str(ny) + "\n"
+        plt.title("XZ - Frame " + str(idx+1) + "/" + str(ny) + "\n"
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
@@ -551,7 +551,7 @@ for scan_nb in range(len(scans)):
         original_data = np.copy(data)
         original_mask = np.copy(mask)
         plt.imshow(data[:, :, idx], vmin=0, vmax=max_colorbar)
-        plt.title("Frame " + str(idx+1) + "/" + str(nx) + "\n"
+        plt.title("YZ - Frame " + str(idx+1) + "/" + str(nx) + "\n"
                   "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                   "up larger ; down smaller ; right darker ; left brighter")
         plt.connect('key_press_event', press_key)
