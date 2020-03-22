@@ -12,9 +12,6 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
-
-
-
 def find_nearest(original_array, array_values):
     """
     Find the indices where original_array is nearest to array_values.
@@ -38,19 +35,6 @@ def find_nearest(original_array, array_values):
             nearest_index[idx] = (np.abs(original_array - array_values[idx])).argmin()
 
     return nearest_index
-
-
-def gaussian(x_axis, amp, cen, sig):
-    """
-    Gaussian line shape.
-
-    :param x_axis: where to calculate the function
-    :param amp: the amplitude of the Gaussian
-    :param cen: the position of the center
-    :param sig: HWHM of the Gaussian
-    :return: the Gaussian line shape at x_axis
-    """
-    return amp*np.exp(-(x_axis-cen)**2/(2.*sig**2))
 
 
 def function_lmfit(params, iterator, x_axis, distribution):
@@ -81,6 +65,19 @@ def function_lmfit(params, iterator, x_axis, distribution):
         return pseudovoigt(x_axis, amp=amp, cen=cen, sig=sig, ratio=ratio)
     else:
         raise ValueError(distribution + ' not implemented')
+
+    
+def gaussian(x_axis, amp, cen, sig):
+    """
+    Gaussian line shape.
+
+    :param x_axis: where to calculate the function
+    :param amp: the amplitude of the Gaussian
+    :param cen: the position of the center
+    :param sig: HWHM of the Gaussian
+    :return: the Gaussian line shape at x_axis
+    """
+    return amp*np.exp(-(x_axis-cen)**2/(2.*sig**2))
 
 
 def load_file(file_path, fieldname=None):
