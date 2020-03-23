@@ -176,7 +176,7 @@ def on_click(event):
         if previous_axis is None:
             previous_axis = event.inaxes
         elif previous_axis != event.inaxes:  # the click is not in the same subplot, restart collecting points
-            print('Please select mask polygon vertices within the same subplot.\nRestart masking...')
+            print('Please select mask polygon vertices within the same subplot: restart masking...')
             xy = []
             previous_axis = None
         else:  # the click in is the same subplot, continue collecting points
@@ -192,7 +192,7 @@ def press_key(event):
     :param event: button press event
     :return: updated data, mask and controls
     """
-    global original_data, original_mask, data, mask, temp_mask, frame_index, width, flag_aliens, flag_mask, flag_pause
+    global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
     global xy, points, fig_mask, masked_color, max_colorbar, ax0, ax1, ax2, ax3, previous_axis
 
     try:
@@ -227,10 +227,10 @@ def press_key(event):
                 else:
                     click_dim = None
 
-                data, temp_mask, flag_pause, xy, width, vmax, click_dim, stop_masking = \
+                data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking = \
                     pru.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
                                              piy=int(np.rint(event.ydata)), original_data=original_data,
-                                             original_mask=original_mask, updated_data=data, updated_mask=mask,
+                                             original_mask=mask, updated_data=data, updated_mask=updated_mask,
                                              axes=(ax0, ax1, ax2, ax3), flag_pause=flag_pause, points=points,
                                              xy=xy, width=width, dim=dim, click_dim=click_dim, vmin=0,
                                              vmax=max_colorbar, masked_color=masked_color, invert_yaxis=not use_rawdata)
@@ -462,12 +462,10 @@ for scan_nb in range(len(scans)):
 
     if mask_zero_event:
         # mask points when there is no intensity along the whole rocking curve - probably dead pixels
-        for idx in range(nz):
-            temp_mask = mask[idx, :, :]
-            temp_mask[np.sum(data, axis=0) == 0] = 1  # enough, numpy array is mutable hence mask will be modified
+        temp_mask = np.zeros((ny, nx))
+        temp_mask[np.sum(data, axis=0) == 0] = 1
+        mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nz, axis=0) == 1] = 1
         del temp_mask
-
-    plt.ioff()
 
     ##############################
     # save the raw data and mask #
@@ -533,7 +531,7 @@ for scan_nb in range(len(scans)):
                            voxel_size=(dqx, dqz, dqy), tuple_array=data, tuple_fieldnames='int', origin=(qx0, qz0, qy0))
 
     if flag_interact:
-
+        plt.ioff()
         #############################################
         # remove aliens
         #############################################
@@ -567,6 +565,8 @@ for scan_nb in range(len(scans)):
         fig_mask.set_facecolor(background_plot)
         plt.show()
         del fig_mask, original_data, original_mask
+
+        mask[np.nonzero(mask)] = 1
 
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                         title='Data after aliens removal\n',
@@ -607,7 +607,8 @@ for scan_nb in range(len(scans)):
         fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
         fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         original_data = np.copy(data)
-        original_mask = np.copy(mask)
+        updated_mask = np.zeros((nz, ny, nx))
+        data[mask == 1] = 0  # will appear as grey in the log plot (nan)
         ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar)
         ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar)
         ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar)
@@ -631,9 +632,10 @@ for scan_nb in range(len(scans)):
         fig_mask.set_facecolor(background_plot)
         plt.show()
 
+        mask[np.nonzero(updated_mask)] = 1
         data = original_data
         data[mask == 1] = 0
-        del fig_mask, flag_pause, flag_mask, original_data, original_mask
+        del fig_mask, flag_pause, flag_mask, original_data, updated_mask
 
     #############################################
     # mask or median filter isolated empty pixels
