@@ -617,9 +617,9 @@ for scan_nb in range(len(scans)):
         ax2.axis('scaled')
         if not use_rawdata:
             ax0.invert_yaxis()  # detector Y is vertical down
-        ax0.set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nz))
-        ax1.set_title("XZ - Frame " + str(frame_index[1] + 1) + "/" + str(ny))
-        ax2.set_title("YZ - Frame " + str(frame_index[2] + 1) + "/" + str(nx))
+        ax0.set_title("XY")
+        ax1.set_title("XZ")
+        ax2.set_title("YZ")
         fig_mask.text(0.60, 0.40, "click to select the vertices of a polygon mask", size=12)
         fig_mask.text(0.60, 0.30, "x to pause/resume masking for pan/zoom", size=12)
         fig_mask.text(0.60, 0.25, "up larger ; down smaller ; right darker ; left brighter", size=12)
