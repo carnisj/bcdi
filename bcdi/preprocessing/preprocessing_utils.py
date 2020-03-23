@@ -3400,7 +3400,7 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
 
 
 def update_mask_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, flag_pause,
-                         points, xy, width, dim, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
+                         points, xy, width, dim, click_dim, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
     """
     Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
 
@@ -3418,6 +3418,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     :param xy: the list of vertices which defines a polygon to be masked
     :param width: the half_width of the masking window
     :param dim: the axis currently under review (axis 0, 1 or 2)
+    :param click_dim: the dimension (0, 1 or 2) here the selection of mask polygon vertices by clicking was performed
     :param vmax: the higher boundary for the colorbar
     :param vmin: the lower boundary for the colorbar
     :param masked_color: the value that detector gaps should have in plots
@@ -3464,7 +3465,12 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
             startx = 0
         else:
             startx = pix - width
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 1
+        if dim == 0:
+            updated_mask[:, starty:piy + width + 1, startx:pix + width + 1] = 1
+        elif dim == 1:
+            updated_mask[starty:piy + width + 1, :, startx:pix + width + 1] = 1
+        else:  # dim=2
+            updated_mask[starty:piy + width + 1, startx:pix + width + 1, :] = 1
 
     elif key == 'b':
         if (piy - width) < 0:
@@ -3475,58 +3481,64 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
             startx = 0
         else:
             startx = pix - width
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 0
+        if dim == 0:
+            updated_mask[:, starty:piy + width + 1, startx:pix + width + 1] = \
+                original_mask[:, starty:piy + width + 1, startx:pix + width + 1]
+        elif dim == 1:
+            updated_mask[starty:piy + width + 1, :, startx:pix + width + 1] = \
+                original_mask[starty:piy + width + 1, :, startx:pix + width + 1]
+        else:  # dim=2
+            updated_mask[starty:piy + width + 1, startx:pix + width + 1, :] = \
+                original_mask[starty:piy + width + 1, startx:pix + width + 1, :]
 
     elif key == 'a':  # restart mask from beginning
         updated_data = np.copy(original_data)
         xy = []
+        click_dim = None
         print('restart masking')
-        if dim == 0:
-            updated_data[
-                original_mask == 1] = masked_color / nbz  # masked pixels plotted with the value of masked_pixel
-            updated_mask = np.zeros((nby, nbx))
-            xmin, xmax = -0.5, nbx - 0.5
-            if invert_yaxis:
-                ymin, ymax = -0.5, nby - 0.5  # pointing up
-            else:
-                ymin, ymax = nby - 0.5, -0.5  # pointing down
-        elif dim == 1:
-            updated_data[
-                original_mask == 1] = masked_color / nby  # masked pixels plotted with the value of masked_pixel
-            updated_mask = np.zeros((nbz, nbx))
-            xmin, xmax = -0.5, nbx - 0.5
-            ymin, ymax = nbz - 0.5, -0.5  # pointing down
-        else:  # dim=2
-            updated_data[
-                original_mask == 1] = masked_color / nbx  # masked pixels plotted with the value of masked_pixel
-            updated_mask = np.zeros((nbz, nby))
-            xmin, xmax = -0.5, nby - 0.5
-            ymin, ymax = nbz - 0.5, -0.5  # pointing down
+        xmin0, xmax0 = -0.5, nbx - 0.5
+        if invert_yaxis:
+            ymin0, ymax0 = -0.5, nby - 0.5  # pointing up
+        else:
+            ymin0, ymax0 = nby - 0.5, -0.5  # pointing down
+        xmin1, xmax1 = -0.5, nbx - 0.5
+        ymin1, ymax1 = nbz - 0.5, -0.5  # pointing down
+        xmin2, xmax2 = -0.5, nby - 0.5
+        ymin2, ymax2 = nbz - 0.5, -0.5  # pointing down
+
+        updated_data[:] = original_data[:]
+        updated_mask[:] = original_mask[:]
 
     elif key == 'p':  # plot full image
-        if dim == 0:
-            xmin, xmax = -0.5, nbx - 0.5
-            if invert_yaxis:
-                ymin, ymax = -0.5, nby - 0.5  # pointing up
-            else:
-                ymin, ymax = nby - 0.5, -0.5  # pointing down
-        elif dim == 1:
-            xmin, xmax = -0.5, nbx - 0.5
-            ymin, ymax = nbz - 0.5, -0.5  # pointing down
-        else:  # dim=2
-            xmin, xmax = -0.5, nby - 0.5
-            ymin, ymax = nbz - 0.5, -0.5  # pointing down
+        xmin0, xmax0 = -0.5, nbx - 0.5
+        if invert_yaxis:
+            ymin0, ymax0 = -0.5, nby - 0.5  # pointing up
+        else:
+            ymin0, ymax0 = nby - 0.5, -0.5  # pointing down
+        xmin1, xmax1 = -0.5, nbx - 0.5
+        ymin1, ymax1 = nbz - 0.5, -0.5  # pointing down
+        xmin2, xmax2 = -0.5, nby - 0.5
+        ymin2, ymax2 = nbz - 0.5, -0.5  # pointing down
         if len(xy) != 0:
             xy.append(xy[0])
             print(xy)
-            if dim == 0:
+            if click_dim == 0:
                 ind = Path(np.array(xy)).contains_points(points).reshape((nby, nbx))
-            elif dim == 1:
+                temp_mask = np.zeros((nby, nbx))
+                temp_mask[ind] = 1
+                updated_mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nbz, axis=0) == 1] = 1
+            elif click_dim == 1:
                 ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nbx))
+                temp_mask = np.zeros((nbz, nbx))
+                temp_mask[ind] = 1
+                updated_mask[np.repeat(temp_mask[:, np.newaxis, :], repeats=nby, axis=1) == 1] = 1
             else:  # dim=2
                 ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nby))
-            updated_mask[ind] = 1
+                temp_mask = np.zeros((nby, nbx))
+                temp_mask[ind] = 1
+                updated_mask[np.repeat(temp_mask[:, :, np.newaxis], repeats=nbx, axis=2) == 1] = 1
         xy = []  # allow to mask a different area
+        click_dim = None
 
     elif key == 'x':
         if not flag_pause:
@@ -3542,47 +3554,38 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     else:
         return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
 
-    array = updated_data[:]
-    array[updated_mask == 1] = masked_color
+    array0 = updated_data.sum(axis=0)
+    array1 = updated_data.sum(axis=1)
+    array2 = updated_data.sum(axis=2)
+
+    array0[updated_mask.sum(axis=0) == 1] = masked_color / nbz  # the sum along the axis is masked_color
+    array1[updated_mask.sum(axis=1) == 1] = masked_color / nby  # the sum along the axis is masked_color
+    array2[updated_mask.sum(axis=2) == 1] = masked_color / nbx  # the sum along the axis is masked_color
 
     axes[0].cla()
     axes[1].cla()
     axes[2].cla()
-    axs.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
-    if invert_yaxis:
-        axs.invert_yaxis()
-    axs.set_xlim([xmin, xmax])
-    axs.set_ylim([ymin, ymax])
-    axs.set_title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-    plt.draw()
-
-    axes[0].cla()
-    axes[1].cla()
-    axes[2].cla()
-    axes[0].imshow(np.log10(abs(array).sum(axis=0)), vmin=vmin, vmax=vmax)
-    axes[1].imshow(np.log10(abs(array).sum(axis=1)), vmin=vmin, vmax=vmax)
-    axes[2].imshow(np.log10(abs(array).sum(axis=2)), vmin=vmin, vmax=vmax)
+    axes[0].imshow(np.log10(array0), vmin=vmin, vmax=vmax)
+    axes[1].imshow(np.log10(array1), vmin=vmin, vmax=vmax)
+    axes[2].imshow(np.log10(array2), vmin=vmin, vmax=vmax)
     if invert_yaxis:
         axes[0].invert_yaxis()
     axes[0].set_xlim([xmin0, xmax0])
     axes[0].set_ylim([ymin0, ymax0])
-    axes[0].set_title("Frame " + str(frame_index[0] + 1) + "/" + str(nbz))
+    axes[0].set_title("XY")
     axes[0].axis('scaled')
     axes[1].set_xlim([xmin1, xmax1])
     axes[1].set_ylim([ymin1, ymax1])
-    axes[1].set_title("Frame " + str(frame_index[1] + 1) + "/" + str(nby))
+    axes[1].set_title("XZ")
     axes[1].axis('scaled')
     axes[2].set_xlim([xmin2, xmax2])
     axes[2].set_ylim([ymin2, ymax2])
-    axes[2].set_title("Frame " + str(frame_index[2] + 1) + "/" + str(nbx))
+    axes[2].set_title("YZ")
     axes[2].axis('scaled')
     plt.tight_layout()
     plt.draw()
 
-    return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
+    return updated_data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking
 
 
 def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, flag_pause, points,
