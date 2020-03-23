@@ -195,15 +195,6 @@ def press_key(event):
     global original_data, original_mask, data, mask, temp_mask, frame_index, width, flag_aliens, flag_mask, flag_pause
     global xy, points, fig_mask, masked_color, max_colorbar, ax0, ax1, ax2, ax3, previous_axis
 
-    if previous_axis == ax0:
-        click_dim = 0
-    elif previous_axis == ax1:
-        click_dim = 1
-    elif previous_axis == ax2:
-        click_dim = 2
-    else:
-        click_dim = None
-
     try:
         if event.inaxes == ax0:
             dim = 0
@@ -227,6 +218,15 @@ def press_key(event):
                                                axes=(ax0, ax1, ax2, ax3), width=width, dim=dim, frame_index=frame_index,
                                                vmin=0, vmax=max_colorbar, invert_yaxis=not use_rawdata)
             elif flag_mask:
+                if previous_axis == ax0:
+                    click_dim = 0
+                elif previous_axis == ax1:
+                    click_dim = 1
+                elif previous_axis == ax2:
+                    click_dim = 2
+                else:
+                    click_dim = None
+
                 data, temp_mask, flag_pause, xy, width, vmax, click_dim, stop_masking = \
                     pru.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
                                              piy=int(np.rint(event.ydata)), original_data=original_data,
@@ -551,14 +551,14 @@ for scan_nb in range(len(scans)):
         ax1.imshow(data[:, frame_index[1], :], vmin=0, vmax=max_colorbar)
         ax2.imshow(data[:, :, frame_index[2]], vmin=0, vmax=max_colorbar)
         ax3.set_visible(False)
+        ax0.axis('scaled')
+        ax1.axis('scaled')
+        ax2.axis('scaled')
         if not use_rawdata:
             ax0.invert_yaxis()  # detector Y is vertical down
         ax0.set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nz))
         ax1.set_title("XZ - Frame " + str(frame_index[1] + 1) + "/" + str(ny))
         ax2.set_title("YZ - Frame " + str(frame_index[2] + 1) + "/" + str(nx))
-        ax0.axis('scaled')
-        ax1.axis('scaled')
-        ax2.axis('scaled')
         fig_mask.text(0.60, 0.30, "m mask ; b unmask ; u next frame ; d previous frame", size=12)
         fig_mask.text(0.60, 0.25, "up larger ; down smaller ; right darker ; left brighter", size=12)
         fig_mask.text(0.60, 0.20, "p plot full image ; q quit", size=12)
@@ -612,20 +612,19 @@ for scan_nb in range(len(scans)):
         ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar)
         ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar)
         ax3.set_visible(False)
+        ax0.axis('scaled')
+        ax1.axis('scaled')
+        ax2.axis('scaled')
         if not use_rawdata:
             ax0.invert_yaxis()  # detector Y is vertical down
         ax0.set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nz))
         ax1.set_title("XZ - Frame " + str(frame_index[1] + 1) + "/" + str(ny))
         ax2.set_title("YZ - Frame " + str(frame_index[2] + 1) + "/" + str(nx))
-        ax0.axis('scaled')
-        ax1.axis('scaled')
-        ax2.axis('scaled')
-        fig_mask.text(0.60, 0.35, "click to select the vertices of a polygon mask", size=12)
+        fig_mask.text(0.60, 0.40, "click to select the vertices of a polygon mask", size=12)
         fig_mask.text(0.60, 0.30, "x to pause/resume masking for pan/zoom", size=12)
         fig_mask.text(0.60, 0.25, "up larger ; down smaller ; right darker ; left brighter", size=12)
         fig_mask.text(0.60, 0.20, "m mask ; b unmask ; u next frame ; d previous frame", size=12)
         fig_mask.text(0.60, 0.15, "p plot mask ; a restart ; q quit", size=12)
-
         plt.tight_layout()
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)

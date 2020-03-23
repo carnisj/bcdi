@@ -3041,21 +3041,20 @@ def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_
     axes[0].imshow(updated_data[frame_index[0], :, :], vmin=vmin, vmax=vmax)
     axes[1].imshow(updated_data[:, frame_index[1], :], vmin=vmin, vmax=vmax)
     axes[2].imshow(updated_data[:, :, frame_index[2]], vmin=vmin, vmax=vmax)
+    axes[0].set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nbz))
+    axes[0].axis('scaled')
     if invert_yaxis:
         axes[0].invert_yaxis()
     axes[0].set_xlim([xmin0, xmax0])
     axes[0].set_ylim([ymin0, ymax0])
-    axes[0].set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nbz))
-    axes[0].axis('scaled')
-    axes[1].set_xlim([xmin1, xmax1])
-    axes[1].set_ylim([ymin1, ymax1])
     axes[1].set_title("XZ - Frame " + str(frame_index[1] + 1) + "/" + str(nby))
     axes[1].axis('scaled')
-    axes[2].set_xlim([xmin2, xmax2])
-    axes[2].set_ylim([ymin2, ymax2])
+    axes[1].set_xlim([xmin1, xmax1])
+    axes[1].set_ylim([ymin1, ymax1])
     axes[2].set_title("YZ - Frame " + str(frame_index[2] + 1) + "/" + str(nbx))
     axes[2].axis('scaled')
-    plt.tight_layout()
+    axes[2].set_xlim([xmin2, xmax2])
+    axes[2].set_ylim([ymin2, ymax2])
     plt.draw()
 
     return updated_data, updated_mask, width, vmax, frame_index, stop_masking
@@ -3552,7 +3551,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
         stop_masking = True
 
     else:
-        return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
+        return updated_data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking
 
     array0 = updated_data.sum(axis=0)
     array1 = updated_data.sum(axis=1)
@@ -3561,28 +3560,26 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     array0[updated_mask.sum(axis=0) == 1] = masked_color / nbz  # the sum along the axis is masked_color
     array1[updated_mask.sum(axis=1) == 1] = masked_color / nby  # the sum along the axis is masked_color
     array2[updated_mask.sum(axis=2) == 1] = masked_color / nbx  # the sum along the axis is masked_color
-
     axes[0].cla()
     axes[1].cla()
     axes[2].cla()
     axes[0].imshow(np.log10(array0), vmin=vmin, vmax=vmax)
     axes[1].imshow(np.log10(array1), vmin=vmin, vmax=vmax)
     axes[2].imshow(np.log10(array2), vmin=vmin, vmax=vmax)
+    axes[0].set_title("XY")
+    axes[0].axis('scaled')
     if invert_yaxis:
         axes[0].invert_yaxis()
     axes[0].set_xlim([xmin0, xmax0])
     axes[0].set_ylim([ymin0, ymax0])
-    axes[0].set_title("XY")
-    axes[0].axis('scaled')
-    axes[1].set_xlim([xmin1, xmax1])
-    axes[1].set_ylim([ymin1, ymax1])
     axes[1].set_title("XZ")
     axes[1].axis('scaled')
-    axes[2].set_xlim([xmin2, xmax2])
-    axes[2].set_ylim([ymin2, ymax2])
+    axes[1].set_xlim([xmin1, xmax1])
+    axes[1].set_ylim([ymin1, ymax1])
     axes[2].set_title("YZ")
     axes[2].axis('scaled')
-    plt.tight_layout()
+    axes[2].set_xlim([xmin2, xmax2])
+    axes[2].set_ylim([ymin2, ymax2])
     plt.draw()
 
     return updated_data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking
