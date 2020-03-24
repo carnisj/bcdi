@@ -763,6 +763,10 @@ for scan_nb in range(len(scans)):
     if not use_rawdata and len(q_vector) != 0:
         np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
                             qx=q_vector[0], qz=q_vector[1], qy=q_vector[2])
+        if save_to_mat:
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qx.mat', {'qx': q_vector[0]})
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qy.mat', {'qy': q_vector[1]})
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qz.mat', {'qz': q_vector[2]})
     print('saving to directory:', savedir)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)

@@ -853,6 +853,10 @@ for scan_nb in range(len(scans)):
     ############################
     if not use_rawdata and len(q_vector) != 0:
         np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment, qx=qx, qz=qz, qy=qy)
+        if save_to_mat:
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qx.mat', {'qx': qx})
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qy.mat', {'qy': qy})
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qz.mat', {'qz': qz})
         fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=True, title='Final data',
                                       levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
                                       plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
