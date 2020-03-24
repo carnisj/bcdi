@@ -3314,11 +3314,20 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
         else:
             startx = pix - width
         updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 0
+        if dim == 0:
+            updated_data[:, starty:piy + width + 1, startx:pix + width + 1] = \
+                original_data[:, starty:piy + width + 1, startx:pix + width + 1]
+        elif dim == 1:
+            updated_data[starty:piy + width + 1, :, startx:pix + width + 1] = \
+                original_data[starty:piy + width + 1, :, startx:pix + width + 1]
+        else:  # dim=2
+            updated_data[starty:piy + width + 1, startx:pix + width + 1, :] = \
+                original_data[starty:piy + width + 1, startx:pix + width + 1, :]
 
     elif key == 'a':  # restart mask from beginning
-        updated_data = np.copy(original_data)
+        updated_data[:] = original_data[:]
         xy = []
-        print('restart masking')
+        print('Restart masking...')
         if dim == 0:
             updated_data[
                 original_mask == 1] = masked_color / nbz  # masked pixels plotted with the value of masked_pixel
@@ -3380,7 +3389,7 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
     else:
         return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
 
-    array = updated_data.sum(axis=dim)
+    array = updated_data.sum(axis=dim)  # updated_data is not modified
     array[updated_mask == 1] = masked_color
 
     axs.cla()
@@ -3399,7 +3408,7 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
 
 
 def update_mask_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, flag_pause,
-                         points, xy, width, dim, click_dim, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
+                         points, xy, width, dim, click_dim, vmax, vmin=0, invert_yaxis=False):
     """
     Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
 
@@ -3420,7 +3429,6 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     :param click_dim: the dimension (0, 1 or 2) here the selection of mask polygon vertices by clicking was performed
     :param vmax: the higher boundary for the colorbar
     :param vmin: the lower boundary for the colorbar
-    :param masked_color: the value that detector gaps should have in plots
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
@@ -3481,20 +3489,23 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
         else:
             startx = pix - width
         if dim == 0:
-            updated_mask[:, starty:piy + width + 1, startx:pix + width + 1] = \
-                original_mask[:, starty:piy + width + 1, startx:pix + width + 1]
+            updated_mask[:, starty:piy + width + 1, startx:pix + width + 1] = 0
+            updated_data[:, starty:piy + width + 1, startx:pix + width + 1] =\
+                original_data[:, starty:piy + width + 1, startx:pix + width + 1]
         elif dim == 1:
-            updated_mask[starty:piy + width + 1, :, startx:pix + width + 1] = \
-                original_mask[starty:piy + width + 1, :, startx:pix + width + 1]
+            updated_mask[starty:piy + width + 1, :, startx:pix + width + 1] = 0
+            updated_data[starty:piy + width + 1, :, startx:pix + width + 1] = \
+                original_data[starty:piy + width + 1, :, startx:pix + width + 1]
         else:  # dim=2
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, :] = \
-                original_mask[starty:piy + width + 1, startx:pix + width + 1, :]
+            updated_mask[starty:piy + width + 1, startx:pix + width + 1, :] = 0
+            updated_data[starty:piy + width + 1, startx:pix + width + 1, :] = \
+                original_data[starty:piy + width + 1, startx:pix + width + 1, :]
 
     elif key == 'a':  # restart mask from beginning
         updated_data = np.copy(original_data)
         xy = []
         click_dim = None
-        print('restart masking')
+        print('Restart masking...')
         xmin0, xmax0 = -0.5, nbx - 0.5
         if invert_yaxis:
             ymin0, ymax0 = -0.5, nby - 0.5  # pointing up
@@ -3506,7 +3517,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
         ymin2, ymax2 = nbz - 0.5, -0.5  # pointing down
 
         updated_data[:] = original_data[:]
-        updated_mask[:] = original_mask[:]
+        updated_mask = np.zeros((nbz, nby, nbx))
 
     elif key == 'p':  # plot full image
         xmin0, xmax0 = -0.5, nbx - 0.5
@@ -3533,7 +3544,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
                 updated_mask[np.repeat(temp_mask[:, np.newaxis, :], repeats=nby, axis=1) == 1] = 1
             else:  # dim=2
                 ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nby))
-                temp_mask = np.zeros((nby, nbx))
+                temp_mask = np.zeros((nbz, nby))
                 temp_mask[ind] = 1
                 updated_mask[np.repeat(temp_mask[:, :, np.newaxis], repeats=nbx, axis=2) == 1] = 1
         xy = []  # allow to mask a different area
@@ -3553,19 +3564,15 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     else:
         return updated_data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking
 
-    array0 = updated_data.sum(axis=0)
-    array1 = updated_data.sum(axis=1)
-    array2 = updated_data.sum(axis=2)
+    updated_data[original_mask == 1] = 0
+    updated_data[updated_mask == 1] = 0
 
-    array0[updated_mask.sum(axis=0) == 1] = masked_color / nbz  # the sum along the axis is masked_color
-    array1[updated_mask.sum(axis=1) == 1] = masked_color / nby  # the sum along the axis is masked_color
-    array2[updated_mask.sum(axis=2) == 1] = masked_color / nbx  # the sum along the axis is masked_color
     axes[0].cla()
     axes[1].cla()
     axes[2].cla()
-    axes[0].imshow(np.log10(array0), vmin=vmin, vmax=vmax)
-    axes[1].imshow(np.log10(array1), vmin=vmin, vmax=vmax)
-    axes[2].imshow(np.log10(array2), vmin=vmin, vmax=vmax)
+    axes[0].imshow(np.log10(updated_data.sum(axis=0)), vmin=vmin, vmax=vmax)
+    axes[1].imshow(np.log10(updated_data.sum(axis=1)), vmin=vmin, vmax=vmax)
+    axes[2].imshow(np.log10(updated_data.sum(axis=2)), vmin=vmin, vmax=vmax)
     axes[0].set_title("XY")
     axes[0].axis('scaled')
     if invert_yaxis:

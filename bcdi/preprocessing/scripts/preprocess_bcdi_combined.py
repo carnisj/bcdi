@@ -173,15 +173,16 @@ def on_click(event):
     if not event.inaxes:
         return
     if not flag_pause:
-        if previous_axis is None:
-            previous_axis = event.inaxes
-        elif previous_axis != event.inaxes:  # the click is not in the same subplot, restart collecting points
+
+        if (previous_axis == event.inaxes) or (previous_axis is None):  # collect points
+            _x, _y = int(np.rint(event.xdata)), int(np.rint(event.ydata))
+            xy.append([_x, _y])
+            if previous_axis is None:
+                previous_axis = event.inaxes
+        else:  # the click is not in the same subplot, restart collecting points
             print('Please select mask polygon vertices within the same subplot: restart masking...')
             xy = []
             previous_axis = None
-        else:  # the click in is the same subplot, continue collecting points
-            _x, _y = int(np.rint(event.xdata)), int(np.rint(event.ydata))
-            xy.append([_x, _y])
     return
 
 
@@ -193,7 +194,7 @@ def press_key(event):
     :return: updated data, mask and controls
     """
     global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-    global xy, points, fig_mask, masked_color, max_colorbar, ax0, ax1, ax2, ax3, previous_axis
+    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis
 
     try:
         if event.inaxes == ax0:
@@ -220,20 +221,27 @@ def press_key(event):
             elif flag_mask:
                 if previous_axis == ax0:
                     click_dim = 0
+                    x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
                 elif previous_axis == ax1:
                     click_dim = 1
+                    x, y = np.meshgrid(np.arange(nx), np.arange(nz))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
                 elif previous_axis == ax2:
                     click_dim = 2
+                    x, y = np.meshgrid(np.arange(ny), np.arange(nz))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
                 else:
                     click_dim = None
+                    points = None
 
-                data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking = \
+                data, updated_mask, flag_pause, xy, width, max_colorbar, click_dim, stop_masking = \
                     pru.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
                                              piy=int(np.rint(event.ydata)), original_data=original_data,
                                              original_mask=mask, updated_data=data, updated_mask=updated_mask,
                                              axes=(ax0, ax1, ax2, ax3), flag_pause=flag_pause, points=points,
                                              xy=xy, width=width, dim=dim, click_dim=click_dim, vmin=0,
-                                             vmax=max_colorbar, masked_color=masked_color, invert_yaxis=not use_rawdata)
+                                             vmax=max_colorbar, invert_yaxis=not use_rawdata)
                 if click_dim is None:
                     previous_axis = None
             else:
@@ -591,17 +599,12 @@ for scan_nb in range(len(scans)):
         #############################################
         # define mask
         #############################################
-        masked_color = 0.1  # will appear as -1 on the plot
         width = 0
         max_colorbar = 5
         flag_aliens = False
         flag_mask = True
         flag_pause = False  # press x to pause for pan/zoom
         previous_axis = None
-
-        x, y = np.meshgrid(np.arange(nx), np.arange(ny))
-        x, y = x.flatten(), y.flatten()
-        points = np.stack((x, y), axis=0).T
         xy = []  # list of points for mask
 
         fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
@@ -623,8 +626,8 @@ for scan_nb in range(len(scans)):
         ax2.set_title("YZ")
         fig_mask.text(0.60, 0.40, "click to select the vertices of a polygon mask", size=12)
         fig_mask.text(0.60, 0.30, "x to pause/resume masking for pan/zoom", size=12)
-        fig_mask.text(0.60, 0.25, "up larger ; down smaller ; right darker ; left brighter", size=12)
-        fig_mask.text(0.60, 0.20, "m mask ; b unmask ; u next frame ; d previous frame", size=12)
+        fig_mask.text(0.60, 0.25, "up larger masking box ; down smaller masking box", size=12)
+        fig_mask.text(0.60, 0.20, "m mask ; b unmask ; right darker ; left brighter", size=12)
         fig_mask.text(0.60, 0.15, "p plot mask ; a restart ; q quit", size=12)
         plt.tight_layout()
         plt.connect('key_press_event', press_key)
