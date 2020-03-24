@@ -234,6 +234,14 @@ Preprocessing
    :end-before: """
    :language: rst
 
+`preprocess_cdi_combined.py`:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/preprocess_cdi_combined.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 `read_bcdi_data.py`:
 ^^^^^^^^^^^^^^^^^^^^
 
