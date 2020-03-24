@@ -41,9 +41,9 @@ output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 
 """
 
 scans = [13]  # list or array of scan numbers
-root_folder = "D:/data/P10_August2019/data/"
+root_folder = "/nfs/fs/fscxi/experiments/2019/PETRA/P10/11007170/raw/"
 sample_name = "magnetite_A2_new"  # "S"
-user_comment = '_full_peak3'  # string, should start with "_"
+user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = [1, 4, 4]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
@@ -76,7 +76,7 @@ flag_medianfilter = 'skip'
 # set to 'skip' will skip filtering
 medfilt_order = 8    # for custom median filter, number of pixels with intensity surrounding the empty pixel
 ###########################
-reload_previous = True  # True to resume a previous masking (load data and mask)
+reload_previous = False  # True to resume a previous masking (load data and mask)
 ###########################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
@@ -107,9 +107,9 @@ specfile_name = sample_name + '_%05d'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
+direct_beam = (1195, 1187)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = [direct_beam[0] - 400, direct_beam[0] + 400, direct_beam[1] - 400, direct_beam[1] + 400]
+roi_detector = []  # [direct_beam[0] - 1172, direct_beam[0] + 972, direct_beam[1] - 883, direct_beam[1] + 883]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
@@ -177,7 +177,7 @@ def press_key(event):
     :return: updated data, mask and controls
     """
     global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis
+    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, detector_plane
 
     try:
         if event.inaxes == ax0:
@@ -194,13 +194,14 @@ def press_key(event):
             inaxes = False
 
         if inaxes:
+            invert_yaxis = (not use_rawdata) and (not detector_plane)
             if flag_aliens:
                 data, mask, width, max_colorbar, frame_index, stop_masking = \
                     pru.update_aliens_combined(key=event.key, pix=int(np.rint(event.xdata)),
                                                piy=int(np.rint(event.ydata)), original_data=original_data,
                                                original_mask=original_mask, updated_data=data, updated_mask=mask,
                                                axes=(ax0, ax1, ax2, ax3), width=width, dim=dim, frame_index=frame_index,
-                                               vmin=0, vmax=max_colorbar, invert_yaxis=not use_rawdata)
+                                               vmin=0, vmax=max_colorbar, invert_yaxis=invert_yaxis)
             elif flag_mask:
                 if previous_axis == ax0:
                     click_dim = 0
@@ -224,7 +225,7 @@ def press_key(event):
                                              original_mask=mask, updated_data=data, updated_mask=updated_mask,
                                              axes=(ax0, ax1, ax2, ax3), flag_pause=flag_pause, points=points,
                                              xy=xy, width=width, dim=dim, click_dim=click_dim, vmin=0,
-                                             vmax=max_colorbar, invert_yaxis=not use_rawdata)
+                                             vmax=max_colorbar, invert_yaxis=invert_yaxis)
                 if click_dim is None:
                     previous_axis = None
             else:
@@ -273,6 +274,7 @@ setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=r
 ############################################
 # Initialize values for callback functions #
 ############################################
+detector_plane = False
 flag_mask = False
 flag_aliens = False
 plt.rcParams["keymap.quit"] = ["ctrl+w", "cmd+w"]  # this one to avoid that q closes window (matplotlib default)
@@ -411,6 +413,7 @@ for scan_nb in range(len(scans)):
             plt.ioff()
             width = 0
             max_colorbar = 5
+            detector_plane = True
             flag_aliens = False
             flag_mask = True
             flag_pause = False  # press x to pause for pan/zoom
@@ -429,8 +432,6 @@ for scan_nb in range(len(scans)):
             ax0.axis('scaled')
             ax1.axis('scaled')
             ax2.axis('scaled')
-            if not use_rawdata:
-                ax0.invert_yaxis()  # detector Y is vertical down
             ax0.set_title("XY")
             ax1.set_title("XZ")
             ax2.set_title("YZ")
@@ -447,6 +448,7 @@ for scan_nb in range(len(scans)):
 
             mask[np.nonzero(updated_mask)] = 1
             data = original_data
+            detector_plane = False
             del fig_mask, original_data, updated_mask
             gc.collect()
 
