@@ -1,3 +1,9 @@
+* Feature: add the option of restarting masking the aliens during preprocessing, not back compatible with previous versions
+
+* Refactor: rename prepare_(b)cdi_mask.py preprocess_(b)cdi_sequential.py
+
+* Feature: implement simultaneous masking over the 3 axes in two new preprocessing scripts preprocess_(b)cdi_combinedl.py
+
 * Feature: implement domain_orientation.py to find the orientation of domains in a 3D forward CDI dataset of mesocrystal
 
 * Feature: implement simu_diffpattern_CDI.py to find in 3D the Bragg peaks positions of a mesocrystal (supported unit cells: FCC, simple cubic, BCC and BCT)

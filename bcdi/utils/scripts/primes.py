@@ -12,8 +12,8 @@ helptext = """
 Check smaller or higher prime of a number, in order to determine the correct FFT window size for phase retrieval.
 Adapted from PyNX
 """
-
-my_nb = 136
+# 428 * 294 * 599
+my_nb = 599
 
 
 def primes(n):
