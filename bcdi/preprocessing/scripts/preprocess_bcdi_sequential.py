@@ -526,6 +526,7 @@ for scan_nb in range(len(scans)):
         fig_mask.set_facecolor(background_plot)
         plt.show()
         del dim, fig_mask, original_data, original_mask
+        gc.collect()
 
         # in XZ
         dim = 1
@@ -542,6 +543,7 @@ for scan_nb in range(len(scans)):
         fig_mask.set_facecolor(background_plot)
         plt.show()
         del dim, fig_mask, original_data, original_mask
+        gc.collect()
 
         # in YZ
         dim = 2
@@ -559,6 +561,7 @@ for scan_nb in range(len(scans)):
         plt.show()
 
         del dim, width, fig_mask, original_data, original_mask
+        gc.collect()
 
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                         title='Data after aliens removal\n',
@@ -622,7 +625,8 @@ for scan_nb in range(len(scans)):
             temp_array = mask[idx, :, :]
             temp_array[np.nonzero(temp_mask)] = 1  # enough, numpy array is mutable hence mask will be modified
         del temp_mask
-
+        gc.collect()
+        
         # in XZ
         dim = 1
         flag_pause = False  # press x to pause for pan/zoom
@@ -650,6 +654,7 @@ for scan_nb in range(len(scans)):
             temp_array = mask[:, idx, :]
             temp_array[np.nonzero(temp_mask)] = 1  # enough, numpy array is mutable hence mask will be modified
         del temp_mask
+        gc.collect()
 
         # in YZ
         dim = 2
@@ -673,13 +678,13 @@ for scan_nb in range(len(scans)):
         fig_mask.set_facecolor(background_plot)
         plt.show()
 
+        data = original_data
+
         for idx in range(nx):
             temp_array = mask[:, :, idx]
             temp_array[np.nonzero(temp_mask)] = 1  # enough, numpy array is mutable hence mask will be modified
-        del temp_mask, dim
-
-        data = original_data
-        del original_data, flag_pause
+        del temp_mask, dim, original_data, flag_pause
+        gc.collect()
 
     data[mask == 1] = 0
     flag_mask = False

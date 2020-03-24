@@ -707,14 +707,12 @@ for scan_nb in range(len(scans)):
         fig_mask.set_facecolor(background_plot)
         plt.show()
 
+        data = original_data
+
         for idx in range(nx):
             temp_array = mask[:, :, idx]
             temp_array[np.nonzero(temp_mask)] = 1  # enough, numpy array is mutable hence mask will be modified
-        del temp_mask, dim
-        gc.collect()
-
-        data = original_data
-        del original_data, flag_pause
+        del temp_mask, dim, original_data, flag_pause
         gc.collect()
 
     data[mask == 1] = 0
