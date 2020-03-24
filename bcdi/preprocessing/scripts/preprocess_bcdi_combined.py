@@ -546,6 +546,7 @@ for scan_nb in range(len(scans)):
         nz, ny, nx = np.shape(data)
         width = 5
         max_colorbar = 5
+        flag_mask = False
         flag_aliens = True
 
         fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
@@ -573,6 +574,7 @@ for scan_nb in range(len(scans)):
         fig_mask.set_facecolor(background_plot)
         plt.show()
         del fig_mask, original_data, original_mask
+        gc.collect()
 
         mask[np.nonzero(mask)] = 1
 
@@ -637,8 +639,12 @@ for scan_nb in range(len(scans)):
 
         mask[np.nonzero(updated_mask)] = 1
         data = original_data
-        data[mask == 1] = 0
+
         del fig_mask, flag_pause, flag_mask, original_data, updated_mask
+        gc.collect()
+
+    mask[np.nonzero(mask)] = 1
+    data[mask == 1] = 0
 
     #############################################
     # mask or median filter isolated empty pixels
