@@ -2456,14 +2456,14 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     lambdaz = wavelength * distance
     directbeam_y = int((setup.direct_beam[0] - detector.roi[0]) / detector.binning[1])  # vertical
     directbeam_x = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
-    print('Corrected direct beam (y, x):', directbeam_y, directbeam_x)
+    print('\nCorrected direct beam (y, x):', directbeam_y, directbeam_x)
 
     data, mask, cdi_angle, frames_logical = check_cdi_angle(data=data, mask=mask, cdi_angle=cdi_angle,
                                                             frames_logical=frames_logical)
-    print('cdi_angle', cdi_angle)
+    print('\ncdi_angle', cdi_angle)
     nbz, nby, nbx = data.shape
-    print('Data shape after check_cdi_angle and before regridding:', nbz, nby, nbx)
-    print('Angle range:', cdi_angle.min(), cdi_angle.max())
+    print('\nData shape after check_cdi_angle and before regridding:', nbz, nby, nbx)
+    print('\nAngle range:', cdi_angle.min(), cdi_angle.max())
     angular_step = (cdi_angle[1] - cdi_angle[0]) * np.pi / 180  # switch to radians
 
     if debugging:
@@ -2501,9 +2501,9 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         numz, numy, numx = (nbx, nby, nbx)
         voxelsize_z, voxelsize_y, voxelsize_x = (1, 1, 1)  # in pixels
 
-    print('Voxel sizes for interpolation (z,y,x)=', str('{:.2f}'.format(voxelsize_z)),
+    print('\nVoxel sizes for interpolation (z,y,x)=', str('{:.2f}'.format(voxelsize_z)),
           str('{:.2f}'.format(voxelsize_y)), str('{:.2f}'.format(voxelsize_x)))
-    print('Data shape after regridding:', numz, numy, numx)
+    print('\nData shape after regridding:', numz, numy, numx)
 
     if not correct_curvature:
         # calculate q spacing and q values using above voxel sizes
@@ -2591,6 +2591,13 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     
     # apply the mask to the data
     newdata[np.nonzero(newmask)] = 0
+
+    # calculate the position in pixels of the origin of the reciprocal space
+    pivot_z = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
+    # 90 degrees conter-clockwise rotation of detector X around qz, downstream
+    pivot_y = int(numy - directbeam_y)  # detector Y vertical down, opposite to qz vertical up
+    pivot_x = int(numx - directbeam_x)  # detector X inboard at P10, opposite to qy outboard
+    print("\nOrigin of the reciprocal space  (Qx,Qz,Qy): " + str(pivot_z) + "," + str(pivot_y) + "," + str(pivot_x))
 
     # plot the gridded data
     binning = detector.binning  # only used for figure name when saving

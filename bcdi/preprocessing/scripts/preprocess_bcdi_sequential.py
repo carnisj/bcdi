@@ -693,6 +693,7 @@ for scan_nb in range(len(scans)):
     # mask or median filter isolated empty pixels
     #############################################
     if flag_medianfilter == 'mask_isolated' or flag_medianfilter == 'interp_isolated':
+        print("\nFiltering isolated pixels")
         nb_pix = 0
         for idx in range(pad_width[0], nz-pad_width[1]):  # filter only frames whith data (not padded)
             data[idx, :, :], numb_pix, mask[idx, :, :] = \

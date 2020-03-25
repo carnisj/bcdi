@@ -355,7 +355,7 @@ for scan_nb in range(len(scans)):
                                                                hotpixels=hotpix_array, background=background,
                                                                normalize=normalize_flux, debugging=debug)
         nz, ny, nx = np.shape(data)
-        print('Raw data shape:', nz, ny, nx)
+        print('\nRaw data shape:', nz, ny, nx)
 
         if save_rawdata:
             np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack', data=data)
@@ -420,7 +420,7 @@ for scan_nb in range(len(scans)):
             binning_comment = '_' + str(1) + '_' + str(binning[1]) + '_' + str(binning[2])
             # binning along axis 0 is done after masking
         else:
-            print('Gridding the data in the orthonormal laboratory frame')
+            print('\nGridding the data in the orthonormal laboratory frame')
             # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
             binning_comment = '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2])
             data, mask, q_values, frames_logical = \
@@ -456,7 +456,7 @@ for scan_nb in range(len(scans)):
     # crop/pad/center data #
     ########################
     nz, ny, nx = np.shape(data)
-    print('Data shape before cropping / padding:', nz, ny, nx)
+    print('\nData shape before cropping / padding:', nz, ny, nx)
 
     data, mask, pad_width, q_vector, frames_logical = \
         pru.center_fft(data=data, mask=mask, frames_logical=frames_logical, centering=centering, detector=detector,
@@ -464,9 +464,9 @@ for scan_nb in range(len(scans)):
                        q_values=q_values)
 
     starting_frame = [pad_width[0], pad_width[2], pad_width[4]]  # no need to check padded frames
-    print('Pad width:', pad_width)
+    print('\nPad width:', pad_width)
     nz, ny, nx = data.shape
-    print('Data size after cropping / padding:', nz, ny, nx)
+    print('\nData size after cropping / padding:', nz, ny, nx)
 
     if mask_zero_event:
         # mask points when there is no intensity along the whole rocking curve - probably dead pixels
@@ -515,7 +515,7 @@ for scan_nb in range(len(scans)):
 
         if save_to_vti:
             nqx, nqz, nqy = data.shape  # in nexus z downstream, y vertical / in q z vertical, x downstream
-            print('dqx, dqy, dqz = ', qx[1] - qx[0], qy[1] - qy[0], qz[1] - qz[0])
+            print('\ndqx, dqy, dqz = ', qx[1] - qx[0], qy[1] - qy[0], qz[1] - qz[0])
             # in nexus z downstream, y vertical / in q z vertical, x downstream
             qx0 = qx.min()
             dqx = (qx.max() - qx0) / nqx
@@ -633,7 +633,7 @@ for scan_nb in range(len(scans)):
         xy = []  # list of points for mask
         temp_mask = np.zeros((ny, nx))
         data[mask == 1] = masked_color / nz  # will appear as -1 on the plot
-        print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
+        print('\nSelect vertices of mask. Press a to restart;p to plot; q to quit.')
         fig_mask = plt.figure()
         fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         axs = fig_mask.gca()
@@ -665,7 +665,7 @@ for scan_nb in range(len(scans)):
         xy = []  # list of points for mask
         temp_mask = np.zeros((nz, nx))
         data[mask == 1] = masked_color / ny  # will appear as -1 on the plot
-        print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
+        print('\nSelect vertices of mask. Press a to restart;p to plot; q to quit.')
         fig_mask = plt.figure()
         fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         plt.imshow(np.log10(abs(data.sum(axis=1))), vmin=0, vmax=max_colorbar)
@@ -694,7 +694,7 @@ for scan_nb in range(len(scans)):
         xy = []  # list of points for mask
         temp_mask = np.zeros((nz, ny))
         data[mask == 1] = masked_color / nx  # will appear as -1 on the plot
-        print('Select vertices of mask. Press a to restart;p to plot; q to quit.')
+        print('\nSelect vertices of mask. Press a to restart;p to plot; q to quit.')
         fig_mask = plt.figure()
         fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         plt.imshow(np.log10(abs(data.sum(axis=2))), vmin=0, vmax=max_colorbar)
@@ -722,6 +722,7 @@ for scan_nb in range(len(scans)):
     # mask or median filter isolated empty pixels #
     ###############################################
     if flag_medianfilter == 'mask_isolated' or flag_medianfilter == 'interp_isolated':
+        print("\nFiltering isolated pixels")
         nb_pix = 0
         for idx in range(pad_width[0], nz-pad_width[1]):  # filter only frames whith data (not padded)
             data[idx, :, :], numb_pix, mask[idx, :, :] = \
@@ -730,16 +731,16 @@ for scan_nb in range(len(scans)):
             nb_pix = nb_pix + numb_pix
             print("Processed image nb: ", idx)
         if flag_medianfilter == 'mask_isolated':
-            print("Total number of masked isolated pixels: ", nb_pix)
+            print("\nTotal number of masked isolated pixels: ", nb_pix)
         if flag_medianfilter == 'interp_isolated':
-            print("Total number of interpolated isolated pixels: ", nb_pix)
+            print("\nTotal number of interpolated isolated pixels: ", nb_pix)
 
     elif flag_medianfilter == 'median':  # apply median filter
         for idx in range(pad_width[0], nz-pad_width[1]):  # filter only frames whith data (not padded)
             data[idx, :, :] = scipy.signal.medfilt2d(data[idx, :, :], [3, 3])
-        print("Applying median filtering")
+        print("\nApplying median filtering")
     else:
-        print("Skipping median filtering")
+        print("\nSkipping median filtering")
 
     ##########################
     # apply photon threshold #
@@ -747,14 +748,14 @@ for scan_nb in range(len(scans)):
     if photon_threshold != 0:
         mask[data < photon_threshold] = 1
         data[data < photon_threshold] = 0
-        print("Applying photon threshold < ", photon_threshold)
+        print("\nApplying photon threshold < ", photon_threshold)
 
     ########################################
     # check for nans / inf, convert to int #
     ########################################
     plt.ion()
     nz, ny, nx = np.shape(data)
-    print('Data size after masking:', nz, ny, nx)
+    print('\nData size after masking:', nz, ny, nx)
 
     # check for Nan
     mask[np.isnan(data)] = 1
@@ -811,7 +812,7 @@ for scan_nb in range(len(scans)):
         qx = qx[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along Z
         qy = qy[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along X
         # qz (along Y) keeps the same number of pixels
-        print('Data size after taking the largest data-defined area:', data.shape)
+        print('\nData size after taking the largest data-defined area:', data.shape)
         # need these numbers to calculate the voxel size
 
     if detector.binning[0] != 1:
@@ -831,7 +832,7 @@ for scan_nb in range(len(scans)):
     # plot final data and mask #
     ############################
     nz, ny, nx = data.shape
-    print('Data size after binning the stacking dimension:', data.shape)
+    print('\nData size after binning the stacking dimension:', data.shape)
     comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx) + binning_comment
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
@@ -863,7 +864,7 @@ for scan_nb in range(len(scans)):
         fig.savefig(detector.savedir + 'reciprocal_space_phasing_S' + str(scans[scan_nb]) + comment + '.png')
         plt.close(fig)
 
-    print('saving to directory:', savedir)
+    print('\nSaving to directory:', savedir)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
 
