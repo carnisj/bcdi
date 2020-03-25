@@ -774,9 +774,9 @@ for scan_nb in range(len(scans)):
     if save_to_mat:
         # save to .mat, the new order is x y z (outboard, vertical up, downstream)
         savemat(savedir + 'S' + str(scans[scan_nb]) + '_data.mat',
-                {'data': np.moveaxis(data, [0, 1, 2], [-1, -2, -3])})
+                {'data': np.moveaxis(data.astype(np.float32), [0, 1, 2], [-1, -2, -3])})
         savemat(savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
-                {'data': np.moveaxis(mask, [0, 1, 2], [-1, -2, -3])})
+                {'data': np.moveaxis(mask.astype(np.int8), [0, 1, 2], [-1, -2, -3])})
 
 plt.ioff()
 plt.show()
