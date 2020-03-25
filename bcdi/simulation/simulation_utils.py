@@ -57,7 +57,7 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
-    length of padded q values
+     length of padded q values
     :param verbose: True to have printed comments
     :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
     """
@@ -122,7 +122,7 @@ def bct_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
-    length of padded q values
+     length of padded q values
     :param verbose: True to have printed comments
     :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
     """
@@ -195,7 +195,7 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offse
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
-    length of padded q values
+     length of padded q values
     :param verbose: True to have printed comments
     :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
     """
@@ -257,7 +257,7 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
-    length of padded q values
+     length of padded q values
     :param verbose: True to have printed comments
     :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
     """
@@ -324,7 +324,7 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     :param unitcell_param: number or tuple for unit cell parameters
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
     :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
-    length of padded q values
+     length of padded q values
     :return: pivot position, q values, a list of pixels positions for each Bragg peak, Miller indices.
     """
     pixel_x = detector.pixelsize_x * 1e9  # convert to nm, pixel size in the horizontal direction
