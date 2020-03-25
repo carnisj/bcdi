@@ -360,9 +360,9 @@ for scan_nb in range(len(scans)):
         if save_rawdata:
             np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack', data=data)
             if save_to_mat:
-                # save to .mat, x becomes z for Matlab phasing code
+                # save to .mat, the new order is x y z (outboard, vertical up, downstream)
                 savemat(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack.mat',
-                        {'data': np.moveaxis(data, [0, 1, 2], [-1, -3, -2])})
+                        {'data': np.moveaxis(data, [0, 1, 2], [-1, -2, -3])})
 
         if flag_interact:
             # intermediate masking step in the detector plane
@@ -868,10 +868,10 @@ for scan_nb in range(len(scans)):
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
 
     if save_to_mat:
-        # save to .mat, x becomes z for Matlab phasing code
+        # save to .mat, the new order is x y z (outboard, vertical up, downstream)
         savemat(savedir + 'S' + str(scans[scan_nb]) + '_data.mat',
-                {'data': np.moveaxis(data, [0, 1, 2], [-1, -3, -2])})
+                {'data': np.moveaxis(data, [0, 1, 2], [-1, -2, -3])})
         savemat(savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
-                {'data': np.moveaxis(mask, [0, 1, 2], [-1, -3, -2])})
+                {'data': np.moveaxis(mask, [0, 1, 2], [-1, -2, -3])})
 plt.ioff()
 plt.show()
