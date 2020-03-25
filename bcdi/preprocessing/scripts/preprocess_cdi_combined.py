@@ -517,11 +517,10 @@ for scan_nb in range(len(scans)):
 
     if mask_zero_event:
         # mask points when there is no intensity along the whole rocking curve - probably dead pixels
-        for idx in range(nz):
-            temp_mask = mask[idx, :, :]
-            temp_mask[np.sum(data, axis=0) == 0] = 1  # enough, numpy array is mutable hence mask will be modified
+        temp_mask = np.zeros((ny, nx))
+        temp_mask[np.sum(data, axis=0) == 0] = 1
+        mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nz, axis=0) == 1] = 1
         del temp_mask
-        gc.collect()
 
     plt.ioff()
 
@@ -531,8 +530,9 @@ for scan_nb in range(len(scans)):
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Data before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + binning_comment + '.png')
+    if debug:
+        plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
 
     if flag_interact:
         cid = plt.connect('close_event', close_event)
@@ -543,8 +543,9 @@ for scan_nb in range(len(scans)):
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     vmax=(nz, ny, nx), title='Mask before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'mask_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + binning_comment + '.png')
+    if debug:
+        plt.savefig(savedir + 'mask_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
 
     if flag_interact:
         cid = plt.connect('close_event', close_event)
@@ -734,33 +735,33 @@ for scan_nb in range(len(scans)):
     if save_asint:
         data = data.astype(int)
 
-    ###################################
-    # plot the prepared data and mask #
-    ###################################
+    ####################
+    # debugging plots  #
+    ####################
+    if debug:
+        z0, y0, x0 = center_of_mass(data)
+        fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                                        title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+        plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
+        if not flag_interact:
+            plt.close(fig)
 
-    z0, y0, x0 = center_of_mass(data)
-    fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                    title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
-                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + binning_comment + '.png')
-    if not flag_interact:
-        plt.close(fig)
+        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+        plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
+        if not flag_interact:
+            plt.close(fig)
 
-    fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
-                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + binning_comment + '.png')
-    if not flag_interact:
-        plt.close(fig)
-
-    fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                    vmax=(nz, ny, nx), title='Mask', is_orthogonal=not use_rawdata,
-                                    reciprocal_space=True)
-    plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + binning_comment + '.png')
-    if not flag_interact:
-        plt.close(fig)
+        fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                        vmax=(nz, ny, nx), title='Mask', is_orthogonal=not use_rawdata,
+                                        reciprocal_space=True)
+        plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
+        if not flag_interact:
+            plt.close(fig)
 
     if not use_rawdata and fit_datarange and len(q_vector) != 0:
         ############################################################
@@ -825,7 +826,7 @@ for scan_nb in range(len(scans)):
         fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=True, title='Final data',
                                       levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
                                       plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-        fig.savefig(detector.savedir + 'reciprocal_space_phasing_S' + str(scans[scan_nb]) + comment + '.png')
+        fig.savefig(detector.savedir + 'final_reciprocal_space_S' + str(scans[scan_nb]) + comment + '.png')
         plt.close(fig)
 
     print('\nSaving to directory:', savedir)
