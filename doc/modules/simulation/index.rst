@@ -1,4 +1,4 @@
-.. py:module:: bcdi.utils
+.. py:module:: bcdi.simulation
 
 .. toctree::
    :maxdepth: 2
