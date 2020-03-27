@@ -402,6 +402,8 @@ def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, 
     leftpad_z, leftpad_y, leftpad_x = pad_offset  # offset of the 0 index in padded q values: see fcc_lattice()
 
     # define the rotation using Euler angles with the direct beam as origin (extrinsic rotations)
+    # the frame is x colinear to qx downstream, y colinear to qy outboard, z colinear to qz vertical up
+    # the rotation is applied starting from the left axis
     rotation = Rotation.from_euler('xzy', euler_angles, degrees=True)
 
     for idx, point in enumerate(lattice_list):
@@ -428,3 +430,10 @@ def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, 
             peaks.append(peaks_list[idx])
 
     return lattice_pos, peaks
+
+
+if __name__ == "__main__":
+    euler_angles = (-8.75, 33.75, -24.75)
+    rot = Rotation.from_euler('xzy', euler_angles, degrees=True)
+    vector = [0, 0, 1]  # in the frame (x, y, z) or (qx, qy, qz)
+    print(rot.apply(vector))
