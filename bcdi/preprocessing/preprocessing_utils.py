@@ -2597,7 +2597,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     # 90 degrees conter-clockwise rotation of detector X around qz, downstream
     pivot_y = int(numy - directbeam_y)  # detector Y vertical down, opposite to qz vertical up
     pivot_x = int(numx - directbeam_x)  # detector X inboard at P10, opposite to qy outboard
-    print("\nOrigin of the reciprocal space  (Qx,Qz,Qy): " + str(pivot_z) + "," + str(pivot_y) + "," + str(pivot_x))
+    print("\nOrigin of the reciprocal space  (Qx,Qz,Qy): " + str(pivot_z) + "," + str(pivot_y) + "," + str(pivot_x)
+          + '\n')
 
     # plot the gridded data
     binning = detector.binning  # only used for figure name when saving
