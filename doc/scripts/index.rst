@@ -316,6 +316,14 @@ realspace_isosurf_cdi.py
 Simulation
 ----------
 
+`diffraction_angles.py`:
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/simulation/scripts/diffraction_angles.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 `domain_orientation.py`:
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
