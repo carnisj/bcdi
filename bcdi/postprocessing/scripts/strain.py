@@ -44,7 +44,7 @@ or data[z, y, x] for real space
 
 scan = 3  # spec scan number
 
-datadir = 'D:/data/Pt_growth_P10/data/dewet5_sum_S200_to_S206/'  # 'D:/data/CH5309/S' + str(scan) + "/pynxraw/"  # 'D:/data/HC3207/ + "/test/"
+datadir = 'D:/review paper/Pt growth/P10/dewet5_sum_S200_to_S206/'  # 'D:/data/CH5309/S' + str(scan) + "/pynxraw/"  # 'D:/data/HC3207/ + "/test/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
@@ -76,7 +76,7 @@ comment = "_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should s
 # define the experimental setup #
 #################################
 beamline = "P10"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
-# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
 sdd = 1.83  # sample to detector distance in m
