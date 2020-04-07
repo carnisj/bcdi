@@ -105,9 +105,10 @@ def load_file(file_path, fieldname=None):
         dataset = np.load(file_path)
     elif extension == '.cxi':  # output of PyNX phasing
         h5file = h5py.File(file_path, 'r')
-        group_key = list(h5file.keys())[1]
-        subgroup_key = list(h5file[group_key])
-        dataset = h5file['/'+group_key+'/'+subgroup_key[0]+'/data'].value
+        # group_key = list(h5file.keys())[1]
+        # subgroup_key = list(h5file[group_key])
+        # dataset = h5file['/'+group_key+'/'+subgroup_key[0]+'/data'].value
+        dataset = h5file['/entry_1/data_1/data'].value
     elif extension == '.h5':  # modes.h5
         h5file = h5py.File(file_path, 'r')
         group_key = list(h5file.keys())[0]
