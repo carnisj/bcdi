@@ -359,7 +359,7 @@ def bragg_temperature(spacing, reflection, spacing_ref=None, temperature_ref=Non
         if temperature_ref is None:
             temperature_ref = 293.15  # K
     else:
-        return 0
+        raise ValueError('Only "Pt" available for temperature estimation')
     if use_q:
         spacing = 2 * np.pi / spacing  # go back to distance
         spacing_ref = 2 * np.pi / spacing_ref  # go back to distance
