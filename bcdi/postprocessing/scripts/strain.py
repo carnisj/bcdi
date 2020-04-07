@@ -53,24 +53,25 @@ correlation_threshold = 0.90
 #########################################################
 original_size = [140, 512, 350]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-binning = (2, 2, 2)  # binning factor during phasing
+binning = (2, 2, 2)  # binning factor applied during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
-keep_size = False  # set to True to keep the initial array size for orthogonalization (slower)
+keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
 fix_voxel = 6.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
-plot_margin = (60, 30, 30)  # (z, y, x) margin outside the support in each direction, can be negative
-# useful to avoid cutting the object during the orthogonalization
+plot_margin = (60, 30, 30)  # (z, y, x) margin in pixel to leave outside the support in each direction when cropping,
+# it can be negative. It is useful in order to avoid cutting the object during the orthogonalization.
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
 isosurface_strain = 0.25  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
-isosurface_method = 'threshold'  # 'threshold' or 'defect'
+isosurface_method = 'threshold'  # 'threshold' or 'defect', for 'defect' it tries to remove only outer layers even if
+# the amplitude is low inside the crystal
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 offset_origin = []  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
 offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the phase
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = "_nosupport_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = "_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
@@ -100,7 +101,7 @@ threshold_refraction = 0.05  # threshold used to calculate the optical path
 ##########################################
 # parameteres for temperature estimation #
 ##########################################
-get_temperature = False
+get_temperature = False  # only available for platinum at the moment
 reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
 reference_temperature = None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
@@ -115,7 +116,7 @@ avg_threshold = 0.90  # minimum correlation within reconstructed object for aver
 simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
 flip_reconstruction = False  # True if you want to get the conjugate object
-phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling'
+phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use for ramp removal
 xrayutils_ortho = False  # True if the data is already orthogonalized
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
@@ -127,7 +128,7 @@ roll_modes = (-2, 15, -15)   # axis=(0, 1, 2), correct a roll of few pixels afte
 ############################################
 # setup for phase averaging or apodization #
 ############################################
-hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no averaging
+hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no phase averaging
 apodize_flag = False  # True to multiply the diffraction pattern by a filtering window
 apodize_window = 'blackman'  # filtering window, multivariate 'normal' or 'tukey' or 'blackman'
 mu = np.array([0.0, 0.0, 0.0])  # mu of the gaussian window
@@ -136,7 +137,7 @@ alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
 ############################################
 # parameters related to data visualization #
 ############################################
-align_crystal = True  # if True rotates the crystal to align it along q
+align_crystal = True  # if True rotates the crystal to align q it along one axis of the array
 ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
 align_inplane = False  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
 ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
