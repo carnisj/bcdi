@@ -682,19 +682,22 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical):
     """
     wrap_angle = wrap(obj=cdi_angle, start_angle=cdi_angle[0], range_angle=180)
     for idx in range(len(wrap_angle)):
-        duplicate = (wrap_angle[:idx] == wrap_angle[idx]).sum()
-        frames_logical[idx] = frames_logical[idx] * (duplicate == 0)  # remove duplicated frames
+        duplicate = (wrap_angle[:idx] == wrap_angle[idx]).sum()  # will be different from 0 if duplicated
+        frames_logical[idx] = frames_logical[idx] * (duplicate == 0)  # set frames_logical to 0 if duplicated angle
 
     print('frames_logical after checking duplicated angles:\n', frames_logical)
 
     # find first duplicated angle
-    index_duplicated = np.where(frames_logical == 0)[0][0]
+    try:
+        index_duplicated = np.where(frames_logical == 0)[0][0]
 
-    # change the angle by a negligeable amount to still be able to use it for interpolation
-    cdi_angle[index_duplicated] = cdi_angle[index_duplicated] - 0.0001
-    print('shifting frame', index_duplicated, 'by 1/10000 degrees for interpolation')
+        # change the angle by a negligeable amount to still be able to use it for interpolation
+        cdi_angle[index_duplicated] = cdi_angle[index_duplicated] - 0.0001
+        print('shifting frame', index_duplicated, 'by 1/10000 degrees for interpolation')
 
-    frames_logical[index_duplicated] = 1
+        frames_logical[index_duplicated] = 1
+    except IndexError:  # no duplicated angle
+        print('no duplicated angle')
 
     data = data[np.nonzero(frames_logical)[0], :, :]
     mask = mask[np.nonzero(frames_logical)[0], :, :]
