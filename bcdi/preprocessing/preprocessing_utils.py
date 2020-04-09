@@ -2018,7 +2018,7 @@ def motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bra
 
 def motor_positions_p10(logfile, setup):
     """
-    Load the .fio file from the scan and extract motor positions.
+    Load the .fio file from the scan and extract motor positions for P10 6-circle difractometer setup.
 
     :param logfile: path of the . fio file containing the information about the scan
     :param setup: the experimental setup: Class SetupPreprocessing()
@@ -2043,8 +2043,7 @@ def motor_positions_p10(logfile, setup):
             if 'om' in words and '=' in words and setup.rocking_angle == "inplane":  # om is a positioner
                 om = float(words[2])
 
-            if 'Col' in words and ('phi' in words or 'sprz' or 'hprz' in words):
-                # phi (6 circle) / sprz or hprz (SAXS) scanned, template = ' Col 0 phi DOUBLE\n'
+            if 'Col' in words and 'phi' in words:  # phi scanned, template = ' Col 0 phi DOUBLE\n'
                 index_phi = int(words[1]) - 1  # python index starts at 0
             if 'phi' in words and '=' in words and setup.rocking_angle == "outofplane":  # phi is a positioner
                 phi = float(words[2])
@@ -2082,6 +2081,43 @@ def motor_positions_p10(logfile, setup):
         gamma = setup.custom_motors["gamma"]
         mu = setup.custom_motors["mu"]
     return om, phi, chi, mu, gamma, delta
+
+
+def motor_positions_p10_saxs(logfile, setup):
+    """
+    Load the .fio file from the scan and extract motor positions for P10 SAXS setup.
+
+    :param logfile: path of the . fio file containing the information about the scan
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :return: (om, phi, chi, mu, gamma, delta) motor positions
+    """
+    if not setup.custom_scan:
+        fio = open(logfile, 'r')
+        if setup.rocking_angle == "outofplane":
+            raise ValueError('Out of plane rotation not implemented for P110 SAXS setup')
+        elif setup.rocking_angle == "inplane":
+            phi = []
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        fio_lines = fio.readlines()
+        for line in fio_lines:
+            this_line = line.strip()
+            words = this_line.split()
+
+            if 'Col' in words and ('sprz' or 'hprz' in words):  # sprz or hprz (SAXS) scanned
+                # template = ' Col 0 sprz DOUBLE\n'
+                index_phi = int(words[1]) - 1  # python index starts at 0
+            try:
+                float(words[0])  # if this does not fail, we are reading data
+                phi.append(float(words[index_phi]))
+            except ValueError:  # first word is not a number, skip this line
+                continue
+        phi = np.asarray(phi, dtype=float)
+        fio.close()
+    else:
+        phi = setup.custom_motors["phi"]
+    return phi
 
 
 def motor_positions_sixs(logfile, frames_logical, setup):
@@ -2444,7 +2480,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
         raise ValueError('mask is expected to be a 3D array')
     if setup.beamline == 'P10':
         if setup.rocking_angle == 'inplane':
-            _, cdi_angle, _, _, _, _ = motor_positions_p10(logfile, setup)
+            cdi_angle = motor_positions_p10_saxs(logfile, setup)
         else:
             raise ValueError('out-of-plane rotation not yet implemented for forward CDI data')
     else:
