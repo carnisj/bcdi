@@ -2043,7 +2043,8 @@ def motor_positions_p10(logfile, setup):
             if 'om' in words and '=' in words and setup.rocking_angle == "inplane":  # om is a positioner
                 om = float(words[2])
 
-            if 'Col' in words and ('phi' in words or 'sprz' in words):  # phi scanned, template = ' Col 0 phi DOUBLE\n'
+            if 'Col' in words and ('phi' in words or 'sprz' or 'hprz' in words):
+                # phi (6 circle) / sprz or hprz (SAXS) scanned, template = ' Col 0 phi DOUBLE\n'
                 index_phi = int(words[1]) - 1  # python index starts at 0
             if 'phi' in words and '=' in words and setup.rocking_angle == "outofplane":  # phi is a positioner
                 phi = float(words[2])
