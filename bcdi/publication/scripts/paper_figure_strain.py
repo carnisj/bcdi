@@ -30,15 +30,15 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 """
 
 
-scan = 2  # spec scan number
-datadir = 'D:/data/Pt_growth_P10/data/dewet5_sum_S194_to_S203/'
-savedir = 'D:/data/Pt_growth_P10/figures/'
+scan = 1304  # spec scan number
+datadir = 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
+savedir = 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
 comment = '_' + str(scan)   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 
-voxel_size = 6.0  # in nm
+voxel_size = 9.74  # in nm
 tick_spacing = 50  # for plots, in nm
-field_of_view = 400  # in nm, can be larger than the total width (the array will be padded)
+field_of_view = 900  # in nm, can be larger than the total width (the array will be padded)
 
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
@@ -53,8 +53,9 @@ save_XZ = True  # True to save the strain in XZ plane
 save_XY = True  # True to save the strain in XY plane
 
 flag_strain = True  # True to plot and save the strain
-flag_phase = True  # True to plot and save the phase
-flag_amp = False  # True to plot and save the amplitude
+flag_phase = False  # True to plot and save the phase
+flag_amp = True  # True to plot and save the amplitude
+histogram_threshold = 0.05  # amplitude below this value will be set to 0, to avoid the peak at low amplitude
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
 flag_linecut = False  # True to plot and save a linecut of the phase
@@ -91,7 +92,7 @@ amp = npzfile['amp']
 bulk = npzfile['bulk']  # bulk is the amplitude minus the surface voxel layer were the strain is not defined
 
 amp = amp / amp.max()  # normalize amplitude
-amp[amp < 0.03] = 0
+amp[amp < histogram_threshold] = 0
 support = np.zeros(amp.shape)
 support[np.nonzero(amp)] = 1
 
@@ -222,8 +223,8 @@ if flag_amp:
     fig.savefig(savedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax = plt.subplots(1, 1)
-    plt.hist(amp[amp > 0.01].flatten(), bins=250)
-    plt.xlim(left=0.05)
+    plt.hist(amp[amp > histogram_threshold].flatten(), bins=250)
+    plt.xlim(left=histogram_threshold)
     plt.ylim(bottom=1)  # , top=100000
     if amp_histogram_Yaxis == 'log':
         ax.set_yscale('log')
