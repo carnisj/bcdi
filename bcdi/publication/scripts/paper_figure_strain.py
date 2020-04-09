@@ -48,9 +48,9 @@ strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
 
-save_YZ = True  # True to save the strain in YZ plane
-save_XZ = True  # True to save the strain in XZ plane
-save_XY = True  # True to save the strain in XY plane
+save_YZ = True  # True to save the view in YZ plane
+save_XZ = True  # True to save the view in XZ plane
+save_XY = True  # True to save the view in XY plane
 
 flag_strain = True  # True to plot and save the strain
 flag_phase = False  # True to plot and save the phase
