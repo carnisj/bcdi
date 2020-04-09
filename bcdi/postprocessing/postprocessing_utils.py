@@ -54,103 +54,6 @@ def align_obj(reference_obj, obj, precision=1000, debugging=False):
     return new_obj
 
 
-def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_threshold=0.90, aligning_option='dft',
-                width_z=None, width_y=None, width_x=None, method='reciprocal_space', debugging=False):
-    """
-    Average two reconstructions after aligning it, if their cross-correlation is larger than
-    correlation_threshold.
-
-    :param avg_obj: 3D array, average complex density
-    :param ref_obj: 3D array, reference complex object
-    :param obj: 3D array, complex density to average with
-    :param support_threshold: for support definition
-    :param correlation_threshold: minimum correlation between two dataset to average them
-    :param aligning_option: 'com' for center of mass, 'dft' for dft registration and subpixel shift
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param method: 'real_space' or 'reciprocal_space', in which space the average will be performed
-    :param debugging: set to True to see plots
-    :type debugging: bool
-    :return: the average complex density
-    """
-    if obj.ndim != 3 or avg_obj.ndim != 3 or ref_obj.ndim != 3:
-        raise ValueError('avg_obj, ref_obj and obj should be 3D arrays')
-    if obj.shape != avg_obj.shape or obj.shape != ref_obj.shape:
-        raise ValueError('avg_obj, ref_obj and obj must have the same shape\n'
-                         'avg_obj is ', avg_obj.shape, ' - ref_obj is ', ref_obj.shape, ' - obj is ', obj.shape)
-
-    nbz, nby, nbx = obj.shape
-    avg_flag = 0
-    if avg_obj.sum() == 0:
-        avg_obj = ref_obj
-        if debugging:
-            gu.multislices_plot(abs(avg_obj), width_z=width_z, width_y=width_y, width_x=width_x, plot_colorbar=True,
-                                sum_frames=True, title='Reference object')
-    else:
-        myref_support = np.zeros((nbz, nby, nbx))
-        myref_support[abs(ref_obj) > support_threshold*abs(ref_obj).max()] = 1
-        my_support = np.zeros((nbz, nby, nbx))
-        my_support[abs(obj) > support_threshold * abs(obj).max()] = 1
-        avg_piz, avg_piy, avg_pix = center_of_mass(abs(myref_support))
-        piz, piy, pix = center_of_mass(abs(my_support))
-        offset_z = avg_piz - piz
-        offset_y = avg_piy - piy
-        offset_x = avg_pix - pix
-        print("center of mass offset with reference object: (", str('{:.2f}'.format(offset_z)), ',',
-              str('{:.2f}'.format(offset_y)), ',', str('{:.2f}'.format(offset_x)), ') pixels')
-        if aligning_option is 'com':
-            # re-sample data on a new grid based on COM shift of support
-            old_z = np.arange(-nbz // 2, nbz // 2)
-            old_y = np.arange(-nby // 2, nby // 2)
-            old_x = np.arange(-nbx // 2, nbx // 2)
-            myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing='ij')
-            new_z = myz + offset_z
-            new_y = myy + offset_y
-            new_x = myx + offset_x
-            del myx, myy, myz
-            rgi = RegularGridInterpolator((old_z, old_y, old_x), obj, method='linear', bounds_error=False,
-                                          fill_value=0)
-            new_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                          new_x.reshape((1, new_z.size)))).transpose())
-            new_obj = new_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
-        else:
-            # dft registration and subpixel shift (see Matlab code)
-            shiftz, shifty, shiftx = reg.getimageregistration(abs(ref_obj), abs(obj), precision=1000)
-            new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output here
-            print("Shift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
-                  str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
-
-        new_obj = new_obj / abs(new_obj).max()  # renormalize
-
-        correlation = pearsonr(np.ndarray.flatten(abs(ref_obj[np.nonzero(myref_support)])),
-                               np.ndarray.flatten(abs(new_obj[np.nonzero(myref_support)])))[0]
-
-        if correlation < correlation_threshold:
-            print('pearson cross-correlation=', correlation, 'too low, skip this reconstruction')
-        else:
-            print('pearson-correlation=', correlation, ', average with this reconstruction')
-
-            if debugging:
-                myfig, _, _ = gu.multislices_plot(abs(new_obj), width_z=width_z, width_y=width_y, width_x=width_x,
-                                                  sum_frames=True, plot_colorbar=True, title='Aligned object')
-                myfig.text(0.60, 0.30, "pearson-correlation = " + str('{:.4f}'.format(correlation)), size=20)
-
-            if method == 'real_space':
-                avg_obj = avg_obj + new_obj
-            elif method == 'reciprocal_space':
-                avg_obj = ifftn(fftn(avg_obj) + fftn(obj))
-            else:
-                raise ValueError('method should be "real_space" or "reciprocal_space"')
-            avg_flag = 1
-
-        if debugging:
-            gu.multislices_plot(abs(avg_obj), plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                sum_frames=True, title='New averaged object')
-
-    return avg_obj, avg_flag
-
-
 def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     """
     Apodize the complex array based on the window of the same shape.
@@ -261,6 +164,103 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
         plt.pause(0.1)
     myobj = crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
     return abs(myobj), np.angle(myobj)
+
+
+def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_threshold=0.90, aligning_option='dft',
+                width_z=None, width_y=None, width_x=None, method='reciprocal_space', debugging=False):
+    """
+    Average two reconstructions after aligning it, if their cross-correlation is larger than
+    correlation_threshold.
+
+    :param avg_obj: 3D array, average complex density
+    :param ref_obj: 3D array, reference complex object
+    :param obj: 3D array, complex density to average with
+    :param support_threshold: for support definition
+    :param correlation_threshold: minimum correlation between two dataset to average them
+    :param aligning_option: 'com' for center of mass, 'dft' for dft registration and subpixel shift
+    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :param method: 'real_space' or 'reciprocal_space', in which space the average will be performed
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :return: the average complex density
+    """
+    if obj.ndim != 3 or avg_obj.ndim != 3 or ref_obj.ndim != 3:
+        raise ValueError('avg_obj, ref_obj and obj should be 3D arrays')
+    if obj.shape != avg_obj.shape or obj.shape != ref_obj.shape:
+        raise ValueError('avg_obj, ref_obj and obj must have the same shape\n'
+                         'avg_obj is ', avg_obj.shape, ' - ref_obj is ', ref_obj.shape, ' - obj is ', obj.shape)
+
+    nbz, nby, nbx = obj.shape
+    avg_flag = 0
+    if avg_obj.sum() == 0:
+        avg_obj = ref_obj
+        if debugging:
+            gu.multislices_plot(abs(avg_obj), width_z=width_z, width_y=width_y, width_x=width_x, plot_colorbar=True,
+                                sum_frames=True, title='Reference object')
+    else:
+        myref_support = np.zeros((nbz, nby, nbx))
+        myref_support[abs(ref_obj) > support_threshold*abs(ref_obj).max()] = 1
+        my_support = np.zeros((nbz, nby, nbx))
+        my_support[abs(obj) > support_threshold * abs(obj).max()] = 1
+        avg_piz, avg_piy, avg_pix = center_of_mass(abs(myref_support))
+        piz, piy, pix = center_of_mass(abs(my_support))
+        offset_z = avg_piz - piz
+        offset_y = avg_piy - piy
+        offset_x = avg_pix - pix
+        print("center of mass offset with reference object: (", str('{:.2f}'.format(offset_z)), ',',
+              str('{:.2f}'.format(offset_y)), ',', str('{:.2f}'.format(offset_x)), ') pixels')
+        if aligning_option is 'com':
+            # re-sample data on a new grid based on COM shift of support
+            old_z = np.arange(-nbz // 2, nbz // 2)
+            old_y = np.arange(-nby // 2, nby // 2)
+            old_x = np.arange(-nbx // 2, nbx // 2)
+            myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing='ij')
+            new_z = myz + offset_z
+            new_y = myy + offset_y
+            new_x = myx + offset_x
+            del myx, myy, myz
+            rgi = RegularGridInterpolator((old_z, old_y, old_x), obj, method='linear', bounds_error=False,
+                                          fill_value=0)
+            new_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                          new_x.reshape((1, new_z.size)))).transpose())
+            new_obj = new_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
+        else:
+            # dft registration and subpixel shift (see Matlab code)
+            shiftz, shifty, shiftx = reg.getimageregistration(abs(ref_obj), abs(obj), precision=1000)
+            new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output here
+            print("Shift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
+                  str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
+
+        new_obj = new_obj / abs(new_obj).max()  # renormalize
+
+        correlation = pearsonr(np.ndarray.flatten(abs(ref_obj[np.nonzero(myref_support)])),
+                               np.ndarray.flatten(abs(new_obj[np.nonzero(myref_support)])))[0]
+
+        if correlation < correlation_threshold:
+            print('pearson cross-correlation=', correlation, 'too low, skip this reconstruction')
+        else:
+            print('pearson-correlation=', correlation, ', average with this reconstruction')
+
+            if debugging:
+                myfig, _, _ = gu.multislices_plot(abs(new_obj), width_z=width_z, width_y=width_y, width_x=width_x,
+                                                  sum_frames=True, plot_colorbar=True, title='Aligned object')
+                myfig.text(0.60, 0.30, "pearson-correlation = " + str('{:.4f}'.format(correlation)), size=20)
+
+            if method == 'real_space':
+                avg_obj = avg_obj + new_obj
+            elif method == 'reciprocal_space':
+                avg_obj = ifftn(fftn(avg_obj) + fftn(obj))
+            else:
+                raise ValueError('method should be "real_space" or "reciprocal_space"')
+            avg_flag = 1
+
+        if debugging:
+            gu.multislices_plot(abs(avg_obj), plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                sum_frames=True, title='New averaged object')
+
+    return avg_obj, avg_flag
 
 
 def bin_data(array, binning, debugging=False):
