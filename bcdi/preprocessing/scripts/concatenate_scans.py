@@ -60,11 +60,11 @@ for idx in range(nb_scan):
     mask = np.load(homedir + filename + '/pynxraw/S'+str(scan_list[idx]) + '_maskpynx' + comment)['mask']
 
     if debug:
-        gu.multislices_plot(data, sum_frames=True, invert_yaxis=False, scale='log', plot_colorbar=True,
+        gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Data before shift', vmin=0,
                             reciprocal_space=True, is_orthogonal=False)
 
-        gu.multislices_plot(mask, sum_frames=True, invert_yaxis=False, scale='linear', plot_colorbar=True,
+        gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Mask before shift', vmin=0,
                             reciprocal_space=True, is_orthogonal=False)
     ##################
@@ -75,11 +75,11 @@ for idx in range(nb_scan):
     data[data < 0.5] = 0  # remove interpolated noisy pixels
 
     if debug:
-        gu.multislices_plot(data, sum_frames=True, invert_yaxis=False, scale='log', plot_colorbar=True,
+        gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Data after shift', vmin=0,
                             reciprocal_space=True, is_orthogonal=False)
 
-        gu.multislices_plot(mask, sum_frames=True, invert_yaxis=False, scale='linear', plot_colorbar=True,
+        gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Mask after shift', vmin=0,
                             reciprocal_space=True, is_orthogonal=False)
 
@@ -109,7 +109,7 @@ np.savez_compressed(savedir+'pynx' + template, obj=sumdata)
 np.savez_compressed(savedir+'maskpynx' + template, obj=summask)
 print('Sum of ', len(scanlist), 'scans')
 
-fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, invert_yaxis=False, scale='log', plot_colorbar=True,
+fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True,
                                 title='sum(intensity)', vmin=0, reciprocal_space=True, is_orthogonal=False)
 fig.text(0.50, 0.40, "Scans tested: " + str(scan_list), size=14)
 fig.text(0.50, 0.35, 'Scans concatenated: ' + str(scanlist), size=14)
@@ -118,7 +118,7 @@ fig.text(0.50, 0.25, "Threshold for correlation: " + str(correlation_threshold),
 plt.pause(0.1)
 plt.savefig(savedir + 'sum_S' + str(scan_list[0]) + '_to_S' + str(scan_list[-1]) + '.png')
 
-gu.multislices_plot(summask, sum_frames=True, invert_yaxis=False, scale='linear', plot_colorbar=True,
+gu.multislices_plot(summask, sum_frames=True, scale='linear', plot_colorbar=True,
                     title='sum(mask)', vmin=0, reciprocal_space=True, is_orthogonal=False)
 plt.savefig(savedir + 'sum_mask_S' + str(scan_list[0]) + '_to_S' + str(scan_list[-1]) + '.png')
 plt.ioff()
