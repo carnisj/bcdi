@@ -235,7 +235,7 @@ if nbfiles > 1:
     print('\nTrying to find the best reconstruction')
     print('Sorting by ', sort_method)
     sorted_obj = pu.sort_reconstruction(file_path=file_path, amplitude_threshold=isosurface_strain,
-                                        data_range=(zrange, yrange, xrange), sort_method='sort_method')
+                                        data_range=(zrange, yrange, xrange), sort_method='variance/mean')
 else:
     sorted_obj = [0]
 
