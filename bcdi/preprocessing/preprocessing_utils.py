@@ -2092,7 +2092,7 @@ def motor_positions_p10_saxs(logfile, setup):
 
     :param logfile: path of the . fio file containing the information about the scan
     :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: (om, phi, chi, mu, gamma, delta) motor positions
+    :return: sprz or hprz motor positions
     """
     if not setup.custom_scan:
         fio = open(logfile, 'r')
