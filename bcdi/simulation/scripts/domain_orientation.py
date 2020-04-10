@@ -63,6 +63,7 @@ binning = [4, 4, 4]  # binning of the detector
 ##########################
 # peak detection options #
 ##########################
+photon_threshold = 5  # intensity below this value will be set to 0
 min_distance = 20  # minimum distance between Bragg peaks in pixels
 peak_width = 0  # the total width will be (2*peak_width+1)
 ###########
@@ -121,6 +122,11 @@ except FileNotFoundError:
     exp_qvalues = None
     qvalues_flag = False
     pass
+
+##########################
+# apply photon threshold #
+##########################
+data[data < photon_threshold] = 0
 
 ######################
 # calculate q values #
