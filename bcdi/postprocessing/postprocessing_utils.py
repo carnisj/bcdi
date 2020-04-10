@@ -1058,7 +1058,7 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y'):
                                    voxel_size)  # q is along y after rotating the crystal
     elif reference_axis == "z":
         strain, _, _ = np.gradient(planar_distance / (2 * np.pi) * phase,
-                                   voxel_size)  # q is along y after rotating the crystal
+                                   voxel_size)  # q is along z after rotating the crystal
     else:  # default is ref_axis_outplane = "y"
         raise ValueError("Wrong value for the reference axis, it should be 'x', 'y' or 'z'")
     return strain
