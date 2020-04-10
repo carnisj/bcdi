@@ -246,9 +246,9 @@ avg_obj = np.zeros((numz, numy, numx))
 ref_obj = np.zeros((numz, numy, numx))
 avg_counter = 1
 print('\nAveraging using', nbfiles, 'candidate reconstructions')
-for ii in sorted_obj:
-    obj, extension = util.load_file(file_path[ii])
-    print('\nOpening ', file_path[ii])
+for counter, value in enumerate(sorted_obj):
+    obj, extension = util.load_file(file_path[value])
+    print('\nOpening ', file_path[value])
 
     if flip_reconstruction:
         obj = pu.flip_reconstruction(obj, debugging=True)
@@ -262,7 +262,7 @@ for ii in sorted_obj:
     obj = pu.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
 
     # align with average reconstruction
-    if avg_obj.sum() == 0:  # the fist array loaded will serve as reference object
+    if counter == 0:  # the fist array loaded will serve as reference object
         print('This reconstruction will serve as reference object.')
         ref_obj = obj
 
