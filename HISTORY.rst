@@ -1,3 +1,5 @@
+* Feature: implement coefficient_variation.py to compare several reconstructed modulus of a BCDI dataset
+
 * Feature: implement diffraction_angles.py to find Bragg reflections for a particular goniometer setup, based on xrayutilities
 
 * Feature: add the option of restarting masking the aliens during preprocessing, not back compatible with previous versions

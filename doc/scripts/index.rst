@@ -263,6 +263,14 @@ readimage_P10.py
 Publication
 -----------
 
+`coefficient_variation.py`:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/publication/scripts/coefficient_variation.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 `paper_figure_strain.py`:
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
