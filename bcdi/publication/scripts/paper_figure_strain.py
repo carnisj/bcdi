@@ -89,7 +89,8 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select data fi
 npzfile = np.load(file_path)
 strain = npzfile['strain']
 amp = npzfile['amp']
-bulk = npzfile['bulk']  # bulk is the amplitude minus the surface voxel layer were the strain is not defined
+bulk = npzfile['bulk']
+# bulk is a support build from the amplitude minus the surface voxel layer were the strain is not defined
 
 amp = amp / amp.max()  # normalize amplitude
 amp[amp < histogram_threshold] = 0
