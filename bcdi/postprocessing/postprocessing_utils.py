@@ -1673,12 +1673,13 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
 
 def unwrap(obj, support_threshold, debugging=True):
     """
-    Wrap obj between start_angle and (start_angle + range_angle)
+    Unwrap the phase of a complex object, based on skimage.restoration.unwrap_phase. A mask can be applied by
+     thresholding the modulus of the object.
 
     :param obj: number or array to be wrapped
     :param support_threshold: threshold used to define a support from abs(obj)
     :param debugging: set to True to see plots
-    :return: wrapped angle in [start_angle, start_angle+range[
+    :return: unwrapped phase, unwrapped phase range
     """
     from skimage.restoration import unwrap_phase
     import numpy.ma as ma
