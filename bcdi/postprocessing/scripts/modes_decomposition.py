@@ -15,6 +15,7 @@ import tkinter as tk
 from tkinter import filedialog
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
@@ -42,7 +43,7 @@ if nbfiles == 1:
 ##################################################################
 # align objects against the first one and stack it in a 4D array #
 ##################################################################
-obj0, _ = pu.load_reconstruction(file_path[0])
+obj0, _ = util.load_file(file_path[0])
 ndim = obj0.ndim
 if ndim != 3:
     print('3D objects are expected')
@@ -56,7 +57,7 @@ stack[0, :, :, :] = obj0
 
 for idx in range(1, nbfiles):
     print(os.path.basename(file_path[idx]))
-    obj, _ = pu.load_reconstruction(file_path[idx])
+    obj, _ = util.load_file(file_path[idx])
     obj = pu.crop_pad(array=obj, output_shape=obj0.shape)
     obj = pu.align_obj(reference_obj=obj0, obj=obj)
 
