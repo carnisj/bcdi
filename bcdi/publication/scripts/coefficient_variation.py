@@ -290,9 +290,10 @@ if flag_phase:
         ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
-        plt.colorbar(plt0, ax=ax0)
         if save_YZ:
             fig.savefig(savedir + 'diff_phase_YZ' + comment + '.png', bbox_inches="tight")
+        plt.colorbar(plt0, ax=ax0)
+        fig.savefig(savedir + 'diff_phase_YZ' + comment + '_colorbar.png', bbox_inches="tight")
 
         temp_diff = diff_phase[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2, numx//2-pixel_FOV:numx//2+pixel_FOV]
         min_diff, max_diff = temp_diff[~np.isnan(temp_diff)].min(), temp_diff[~np.isnan(temp_diff)].max()
@@ -302,9 +303,10 @@ if flag_phase:
         ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
-        plt.colorbar(plt1, ax=ax1)
         if save_XZ:
             fig.savefig(savedir + 'diff_phase_XZ' + comment + '.png', bbox_inches="tight")
+        plt.colorbar(plt1, ax=ax1)
+        fig.savefig(savedir + 'diff_phase_XZ' + comment + '_colorbar.png', bbox_inches="tight")
 
         temp_diff = diff_phase[numz // 2, numy//2-pixel_FOV:numy//2+pixel_FOV, numx//2-pixel_FOV:numx//2+pixel_FOV]
         min_diff, max_diff = temp_diff[~np.isnan(temp_diff)].min(), temp_diff[~np.isnan(temp_diff)].max()
@@ -315,9 +317,10 @@ if flag_phase:
         ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
-        plt.colorbar(plt2, ax=ax2)
         if save_XY:
             fig.savefig(savedir + 'diff_phase_XY' + comment + '.png', bbox_inches="tight")
+        plt.colorbar(plt2, ax=ax2)
+        fig.savefig(savedir + 'diff_phase_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
 ##########
 # Strain #
@@ -380,9 +383,10 @@ if flag_strain:
         ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
-        plt.colorbar(plt0, ax=ax0)
         if save_YZ:
             fig.savefig(savedir + 'diff_strain_YZ' + comment + '.png', bbox_inches="tight")
+        plt.colorbar(plt0, ax=ax0)
+        fig.savefig(savedir + 'diff_strain_YZ' + comment + '_colorbar.png', bbox_inches="tight")
 
         temp_diff = diff_strain[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2,
                                 numx // 2 - pixel_FOV:numx // 2 + pixel_FOV]
@@ -393,9 +397,10 @@ if flag_strain:
         ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
-        plt.colorbar(plt1, ax=ax1)
         if save_XZ:
             fig.savefig(savedir + 'diff_strain_XZ' + comment + '.png', bbox_inches="tight")
+        plt.colorbar(plt1, ax=ax1)
+        fig.savefig(savedir + 'diff_strain_XZ' + comment + '_colorbar.png', bbox_inches="tight")
 
         temp_diff = diff_strain[numz // 2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV,
                                 numx // 2 - pixel_FOV:numx // 2 + pixel_FOV]
@@ -407,9 +412,10 @@ if flag_strain:
         ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
-        plt.colorbar(plt2, ax=ax2)
         if save_XY:
             fig.savefig(savedir + 'diff_strain_XY' + comment + '.png', bbox_inches="tight")
+        plt.colorbar(plt2, ax=ax2)
+        fig.savefig(savedir + 'diff_strain_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
 plt.ioff()
 plt.show()
