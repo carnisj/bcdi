@@ -44,15 +44,15 @@ isosurface_strain = 0.30  # threshold use for removing the outer layer (strain i
 isosurface_method = 'threshold'  # 'threshold' or 'defect', for 'defect' it tries to remove only outer layers even if
 # the amplitude is low inside the crystal
 
-tick_spacing = 50  # for plots, in nm
+tick_spacing = 100  # for plots, in nm
 field_of_view = 900  # in nm, can be larger than the total width (the array will be padded)
 
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 
-strain_range = 1  # for plots, the color bar will be in the range [-strain_range, strain_range]
-phase_range = np.pi  # for plots, the color bar will be in the range [-phase_range, phase_range]
+strain_range = 1  # for coefficient of variation plots, the colorbar will be in the range [-strain_range, strain_range]
+phase_range = np.pi  # for coefficient of variation plots, the colorbar will be in the range [-phase_range, phase_range]
 grey_background = True  # True to set the background to grey in phase and strain plots
 background_color = np.nan  # value outside of the crystal, np.nan will give grey if grey_background = True
 
@@ -275,6 +275,50 @@ if flag_phase:
     plt.colorbar(plt2, ax=ax2)
     fig.savefig(savedir + 'CV_phase_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
+    ###################
+    # difference maps #
+    ###################
+    if nb_scans == 2:
+        diff_phase = (phase_concat[1, :] - phase_concat[0, :]).reshape(ref_amp.shape)
+        diff_phase[ref_amp < isosurface_strain * ref_amp.max()] = background_color
+
+        temp_diff = diff_phase[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixel_FOV:numy//2+pixel_FOV, numx // 2]
+        min_diff, max_diff = temp_diff[~np.isnan(temp_diff)].min(), temp_diff[~np.isnan(temp_diff)].max()
+        fig, ax0 = plt.subplots(1, 1)
+        plt0 = ax0.imshow(temp_diff, vmin=min_diff, vmax=max_diff, cmap=my_cmap)
+        ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                        length=tick_length, width=tick_width)
+        plt.colorbar(plt0, ax=ax0)
+        if save_YZ:
+            fig.savefig(savedir + 'diff_phase_YZ' + comment + '.png', bbox_inches="tight")
+
+        temp_diff = diff_phase[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2, numx//2-pixel_FOV:numx//2+pixel_FOV]
+        min_diff, max_diff = temp_diff[~np.isnan(temp_diff)].min(), temp_diff[~np.isnan(temp_diff)].max()
+        fig, ax1 = plt.subplots(1, 1)
+        plt1 = ax1.imshow(temp_diff, vmin=min_diff, vmax=max_diff, cmap=my_cmap)
+        ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                        length=tick_length, width=tick_width)
+        plt.colorbar(plt1, ax=ax1)
+        if save_XZ:
+            fig.savefig(savedir + 'diff_phase_XZ' + comment + '.png', bbox_inches="tight")
+
+        temp_diff = diff_phase[numz // 2, numy//2-pixel_FOV:numy//2+pixel_FOV, numx//2-pixel_FOV:numx//2+pixel_FOV]
+        min_diff, max_diff = temp_diff[~np.isnan(temp_diff)].min(), temp_diff[~np.isnan(temp_diff)].max()
+        fig, ax2 = plt.subplots(1, 1)
+        plt2 = ax2.imshow(temp_diff, vmin=min_diff, vmax=max_diff, cmap=my_cmap)
+        ax2.invert_yaxis()
+        ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                        length=tick_length, width=tick_width)
+        plt.colorbar(plt2, ax=ax2)
+        if save_XY:
+            fig.savefig(savedir + 'diff_phase_XY' + comment + '.png', bbox_inches="tight")
+
 ##########
 # Strain #
 ##########
@@ -319,6 +363,53 @@ if flag_strain:
         fig.savefig(savedir + 'CV_strain_XY' + comment + '.png', bbox_inches="tight")
     plt.colorbar(plt2, ax=ax2)
     fig.savefig(savedir + 'CV_strain_XY' + comment + '_colorbar.png', bbox_inches="tight")
+
+    ###################
+    # difference maps #
+    ###################
+    if nb_scans == 2:
+        diff_strain = (strain_concat[1, :] - strain_concat[0, :]).reshape(ref_amp.shape)
+        diff_strain[ref_amp < isosurface_strain * ref_amp.max()] = background_color
+
+        temp_diff = diff_strain[numz//2 - pixel_FOV:numz//2 + pixel_FOV, numy//2 - pixel_FOV:numy//2 + pixel_FOV,
+                                numx//2]
+        min_diff, max_diff = temp_diff[~np.isnan(temp_diff)].min(), temp_diff[~np.isnan(temp_diff)].max()
+        fig, ax0 = plt.subplots(1, 1)
+        plt0 = ax0.imshow(temp_diff, vmin=min_diff, vmax=max_diff, cmap=my_cmap)
+        ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                        length=tick_length, width=tick_width)
+        plt.colorbar(plt0, ax=ax0)
+        if save_YZ:
+            fig.savefig(savedir + 'diff_strain_YZ' + comment + '.png', bbox_inches="tight")
+
+        temp_diff = diff_strain[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2,
+                                numx // 2 - pixel_FOV:numx // 2 + pixel_FOV]
+        min_diff, max_diff = temp_diff[~np.isnan(temp_diff)].min(), temp_diff[~np.isnan(temp_diff)].max()
+        fig, ax1 = plt.subplots(1, 1)
+        plt1 = ax1.imshow(temp_diff, vmin=min_diff, vmax=max_diff, cmap=my_cmap)
+        ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                        length=tick_length, width=tick_width)
+        plt.colorbar(plt1, ax=ax1)
+        if save_XZ:
+            fig.savefig(savedir + 'diff_strain_XZ' + comment + '.png', bbox_inches="tight")
+
+        temp_diff = diff_strain[numz // 2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV,
+                                numx // 2 - pixel_FOV:numx // 2 + pixel_FOV]
+        min_diff, max_diff = temp_diff[~np.isnan(temp_diff)].min(), temp_diff[~np.isnan(temp_diff)].max()
+        fig, ax2 = plt.subplots(1, 1)
+        plt2 = ax2.imshow(temp_diff, vmin=min_diff, vmax=max_diff, cmap=my_cmap)
+        ax2.invert_yaxis()
+        ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
+                        length=tick_length, width=tick_width)
+        plt.colorbar(plt2, ax=ax2)
+        if save_XY:
+            fig.savefig(savedir + 'diff_strain_XY' + comment + '.png', bbox_inches="tight")
 
 plt.ioff()
 plt.show()
