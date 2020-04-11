@@ -30,14 +30,14 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 """
 
 
-scan = 1304  # spec scan number
+scan = 1301  # spec scan number
 datadir = 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
 savedir = 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
-comment = '_' + str(scan)   # should start with _
+comment = '_matched_' + str(scan)   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 
 voxel_size = 9.74  # in nm
-tick_spacing = 50  # for plots, in nm
+tick_spacing = 100  # for plots, in nm
 field_of_view = 900  # in nm, can be larger than the total width (the array will be padded)
 
 tick_direction = 'in'  # 'out', 'in', 'inout'
@@ -54,8 +54,8 @@ save_XY = True  # True to save the view in XY plane
 
 flag_strain = True  # True to plot and save the strain
 flag_phase = False  # True to plot and save the phase
-flag_amp = True  # True to plot and save the amplitude
-histogram_threshold = 0.05  # amplitude below this value will be set to 0, to avoid the peak at low amplitude
+flag_amp = False  # True to plot and save the amplitude
+amplitude_threshold = 0.30  # amplitude below this value will be set to 0
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
 flag_linecut = False  # True to plot and save a linecut of the phase
@@ -93,7 +93,7 @@ bulk = npzfile['bulk']
 # bulk is a support build from the amplitude minus the surface voxel layer were the strain is not defined
 
 amp = amp / amp.max()  # normalize amplitude
-amp[amp < histogram_threshold] = 0
+amp[amp < amplitude_threshold] = 0
 support = np.zeros(amp.shape)
 support[np.nonzero(amp)] = 1
 
@@ -224,8 +224,8 @@ if flag_amp:
     fig.savefig(savedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax = plt.subplots(1, 1)
-    plt.hist(amp[amp > histogram_threshold].flatten(), bins=250)
-    plt.xlim(left=histogram_threshold)
+    plt.hist(amp[amp > amplitude_threshold].flatten(), bins=250)
+    plt.xlim(left=amplitude_threshold)
     plt.ylim(bottom=1)  # , top=100000
     if amp_histogram_Yaxis == 'log':
         ax.set_yscale('log')
