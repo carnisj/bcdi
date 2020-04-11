@@ -40,7 +40,7 @@ comment = ''   # should start with _
 voxel_size = 9.74  # in nm
 planar_distance = 0.39242 / np.sqrt(3)  # crystallographic interplanar distance, in nm (for strain calculation)
 ref_axis_q = 'z'  # axis along which q is aligned (for strain calculation) 'z', 'y' or 'x' in CXI convention
-isosurface_strain = 0.30  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface = 0.30  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect', for 'defect' it tries to remove only outer layers even if
 # the amplitude is low inside the crystal
 
@@ -126,7 +126,7 @@ for index in range(len(scans)):
         # center the first object if needed
         if center_object is True:
             support = np.zeros(amp.shape)
-            support[amp > isosurface_strain * amp.max()] = 1
+            support[amp > isosurface * amp.max()] = 1
 
             zcom, ycom, xcom = center_of_mass(support)
             zcom, ycom, xcom = [int(np.rint(zcom)), int(np.rint(ycom)), int(np.rint(xcom))]
@@ -135,7 +135,7 @@ for index in range(len(scans)):
             phase = np.roll(phase, (numz // 2 - zcom, numy // 2 - ycom, numx // 2 - xcom), axis=(0, 1, 2))
 
         support = np.zeros(amp.shape)
-        support[amp > isosurface_strain * amp.max()] = 1
+        support[amp > isosurface * amp.max()] = 1
         zcom, ycom, xcom = center_of_mass(support)
         zcom, ycom, xcom = [int(np.rint(zcom)), int(np.rint(ycom)), int(np.rint(xcom))]  # used for the reference phase
         phase, extent_phase = pu.unwrap(amp * np.exp(1j * phase), support_threshold=0.05, debugging=debug)
@@ -175,7 +175,7 @@ for index in range(len(scans)):
                            reference_axis=ref_axis_q)
     datasets['strain'].append(strain)
 
-    bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method=isosurface_method)
+    bulk = pu.find_bulk(amp=amp, support_threshold=isosurface, method=isosurface_method)
 
     np.savez_compressed(savedir + 'S' + str(scans[index]) + "_amp_disp_strain_matched" + comment,
                         amp=amp, displacement=phase, bulk=bulk, strain=strain)
@@ -239,7 +239,7 @@ if flag_phase:
         # do not apply amplitude threshold before CV calculation, it creates artefacts in the coefficient of variation
 
     CV_phase = np.divide(np.std(phase_concat, axis=0), np.mean(phase_concat, axis=0)).reshape(ref_amp.shape)
-    CV_phase[ref_amp < isosurface_strain * ref_amp.max()] = background_color
+    CV_phase[ref_amp < isosurface * ref_amp.max()] = background_color
 
     fig, ax0 = plt.subplots(1, 1)
     plt0 = ax0.imshow(CV_phase[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixel_FOV:numy//2+pixel_FOV, numx // 2],
@@ -280,7 +280,7 @@ if flag_phase:
     ###################
     if nb_scans == 2:
         diff_phase = (phase_concat[1, :] - phase_concat[0, :]).reshape(ref_amp.shape)
-        diff_phase[ref_amp < isosurface_strain * ref_amp.max()] = background_color
+        diff_phase[ref_amp < isosurface * ref_amp.max()] = background_color
 
         temp_diff = diff_phase[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixel_FOV:numy//2+pixel_FOV, numx // 2]
         min_diff, max_diff = temp_diff[~np.isnan(temp_diff)].min(), temp_diff[~np.isnan(temp_diff)].max()
@@ -332,7 +332,7 @@ if flag_strain:
         # do not apply amplitude threshold before CV calculation, it creates artefacts in the coefficient of variation
 
     CV_strain = np.divide(np.std(strain_concat, axis=0), np.mean(strain_concat, axis=0)).reshape(ref_amp.shape)
-    CV_strain[ref_amp < isosurface_strain * ref_amp.max()] = background_color
+    CV_strain[ref_amp < isosurface * ref_amp.max()] = background_color
 
     fig, ax0 = plt.subplots(1, 1)
     plt0 = ax0.imshow(CV_strain[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixel_FOV:numy//2+pixel_FOV, numx // 2],
@@ -372,7 +372,7 @@ if flag_strain:
     ###################
     if nb_scans == 2:
         diff_strain = (strain_concat[1, :] - strain_concat[0, :]).reshape(ref_amp.shape)
-        diff_strain[ref_amp < isosurface_strain * ref_amp.max()] = background_color
+        diff_strain[ref_amp < isosurface * ref_amp.max()] = background_color
 
         temp_diff = diff_strain[numz//2 - pixel_FOV:numz//2 + pixel_FOV, numy//2 - pixel_FOV:numy//2 + pixel_FOV,
                                 numx//2]
