@@ -18,15 +18,15 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import os
 
-sample_name = "gold_2_2_2"  # without _ at the end
-scan = 22  # scan number as it appears in the folder name
-image_nb = 21  # last number in the filename, e.g. 1 for gold_2_2_2_00022_data_000001.h5
-rootdir = "D:/data/P10_August2019/data/"
+sample_name = "align_06"  # without _ at the end
+scan = 123  # scan number as it appears in the folder name
+image_nb = 1  # last number in the filename, e.g. 1 for gold_2_2_2_00022_data_000001.h5
+rootdir = "D:/data/P10_March2020_CDI/test_april/data/"
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
 series = True  # set to True if the measurement is a time series, False for a single image
 save_mask = False  # True to save the mask as 'hotpixels.npz'
 
-if series: 
+if series:
     datadir = rootdir + sample_name + '_' + str('{:05d}'.format(scan)) + '/e4m/'
     ccdfiletmp = os.path.join(datadir, sample_name + '_' + str('{:05d}'.format(scan)) + 
                               "_data_" + str('{:06d}'.format(image_nb))+".h5")
@@ -39,6 +39,14 @@ if savedir == '':
 
 h5file = h5py.File(ccdfiletmp, 'r')
 data = h5file['entry']['data']['data'][:]
+if series:
+    nbz, nby, nbx = data.shape
+    plot_title = 'masked data - sum of ' + str(nbz) + ' frames'
+    filename = '/S' + str(scan) + '_series.png'
+else:
+    plot_title = 'masked data'
+    filename = '/image_' + str(image_nb) + '.png'
+
 print(data.shape)
 data = data.sum(axis=0)
 # data = data[109, :, :]
@@ -50,12 +58,12 @@ mask[1614:1654, :] = 1
 
 mask[np.log10(data) > 9] = 1  # look for hot pixels
 data[mask == 1] = 0
-plt.figure()
-plt.imshow(mask)
-plt.title('mask')
-plt.colorbar()
 
 if save_mask:
+    plt.figure()
+    plt.imshow(mask)
+    plt.title('mask')
+    plt.colorbar()
     np.savez_compressed(savedir+'hotpixels.npz', mask=mask)
     plt.savefig(savedir + '/mask.png')
 
@@ -64,7 +72,7 @@ print("Max at (y, x): ", y0, x0, ' Max = ', int(data[y0, x0]))
 
 plt.figure()
 plt.imshow(np.log10(data), vmin=0)
-plt.title('masked data - frame'+str(image_nb))
+plt.title(plot_title)
 plt.colorbar()
-plt.savefig(savedir + '/frame_'+str(image_nb)+'.png')
+plt.savefig(savedir + filename)
 plt.show()
