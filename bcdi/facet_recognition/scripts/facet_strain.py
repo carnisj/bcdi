@@ -344,7 +344,7 @@ gc.collect()
 edges = pu.calc_coordination(support, kernel=np.ones((9, 9, 9)), debugging=False)
 edges[support == 0] = 0
 if debug:
-    gu.multislices_plot(edges, invert_yaxis=True, vmin=0, title='Coordination matrix')
+    gu.multislices_plot(edges, vmin=0, title='Coordination matrix')
 edges[edges > edges_coord] = 0  # remove facets and bulk
 edges[np.nonzero(edges)] = 1  # edge support
 gu.scatter_plot(array=np.asarray(np.nonzero(edges)).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'),
@@ -356,7 +356,7 @@ gu.scatter_plot(array=np.asarray(np.nonzero(edges)).T, markersize=2, markercolor
 corners = pu.calc_coordination(support, kernel=np.ones((9, 9, 9)), debugging=False)
 corners[support == 0] = 0
 if debug:
-    gu.multislices_plot(corners, invert_yaxis=True, vmin=0, title='Coordination matrix')
+    gu.multislices_plot(corners, vmin=0, title='Coordination matrix')
 corners[corners > corners_coord] = 0  # remove edges, facets and bulk
 corners[np.nonzero(corners)] = 1  # corner support
 gu.scatter_plot(array=np.asarray(np.nonzero(corners)).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'),
