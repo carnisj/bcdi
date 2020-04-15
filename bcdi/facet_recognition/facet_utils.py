@@ -655,10 +655,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     ax3.add_artist(circle)
     plt.pause(0.1)
 
-    # Generate the markers as local minima of the distance to the background
+    ##########################################################################
+    # Generate the markers as local minima of the distance to the background #
+    ##########################################################################
     distances_top = ndimage.distance_transform_edt(density_top)
     distances_bottom = ndimage.distance_transform_edt(density_bottom)
-
     if debugging:
         fig = plt.figure(figsize=(15, 10))
         fig.add_subplot(121)
@@ -671,10 +672,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
         plt.gca().invert_yaxis()
         plt.pause(0.1)
 
-    # find peaks
     local_maxi_top = corner_peaks(distances_top, exclude_border=False, min_distance=min_distance, indices=False)
     local_maxi_bottom = corner_peaks(distances_bottom, exclude_border=False, min_distance=min_distance, indices=False)
-
     if debugging:
         fig = plt.figure(figsize=(15, 10))
         ax0 = fig.add_subplot(121)
@@ -691,13 +690,12 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
         ax1.add_artist(circle)
         plt.pause(0.1)
 
-    # define markers for each peak
+    # define the marker for each peak
     markers_top = ndimage.label(local_maxi_top)[0]  # range from 0 to nb_peaks
-    # define non overlaping markers for bottom projection
+    # define non overlaping markers for the bottom projection
     markers_bottom = ndimage.label(local_maxi_bottom)[0] + markers_top.max()
     # markers_bottom.min() should be 0 since it is the background
     markers_bottom[markers_bottom == markers_top.max()] = 0
-
     if debugging:
         fig = plt.figure(figsize=(15, 10))
         ax0 = fig.add_subplot(121)
@@ -714,9 +712,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
         ax1.add_artist(circle)
         plt.pause(0.1)
 
-    # watershed segmentation
+    ##########################
+    # watershed segmentation #
+    ##########################
     labels_top = watershed(-distances_top, markers_top, mask=mask_top)
-    labels_bottom = watershed(-markers_bottom, markers_bottom, mask=mask_bottom)
+    labels_bottom = watershed(-markers_bottom, markers_bottom, mask=mask_bottom)  # TODO: check this line, something seems wrong, or comment it
     fig = plt.figure(figsize=(15, 10))
     ax0 = fig.add_subplot(121)
     plt.imshow(labels_top, cmap=cmap, interpolation='nearest')
