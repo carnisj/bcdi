@@ -405,9 +405,9 @@ fu.update_logfile(support=corners, strain_array=strain, summary_file=summary_fil
 del bulk, corners
 gc.collect()
 
-##################################################################
-# fit points by a plane, exclude points far away, refine the fit #
-##################################################################
+##############################################################################################
+# fit points by a plane, exclude points far away, loof for the surface layer, refine the fit #
+##############################################################################################
 for label in updated_label:
     # raw fit including all points
     plane = np.copy(all_planes)
