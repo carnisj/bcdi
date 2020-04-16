@@ -572,8 +572,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     # regrid stereo_proj
     yi, xi = np.mgrid[-max_angle:max_angle:381j, -max_angle:max_angle:381j]  # vertical, horizontal
     nby, nbx = xi.shape
-    density_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), intensity, (yi, xi), method='linear')
-    density_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), intensity, (yi, xi), method='linear')
+    density_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), intensity, (yi, xi), method='linear')  # South
+    density_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), intensity, (yi, xi), method='linear')  # North
     density_top = density_top / density_top[density_top > 0].max() * 10000  # normalize for plotting
     density_bottom = density_bottom / density_bottom[density_bottom > 0].max() * 10000  # normalize for plotting
 
@@ -592,8 +592,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
         gc.collect()
 
     # inverse densities for watershed segmentation
-    density_top = -1 * density_top
-    density_bottom = -1 * density_bottom
+    density_top = -1 * density_top  # South
+    density_bottom = -1 * density_bottom  # North
 
     fig = plt.figure(figsize=(15, 10))
     ax0 = fig.add_subplot(121)
@@ -615,11 +615,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     plt.pause(0.1)
 
     # identification of local minima
-    density_top[density_top > background_threshold] = 0  # define the background
+    density_top[density_top > background_threshold] = 0  # South, define the background
     mask_top = np.copy(density_top)
     mask_top[mask_top != 0] = 1
 
-    density_bottom[density_bottom > background_threshold] = 0  # define the background
+    density_bottom[density_bottom > background_threshold] = 0  # North, define the background
     mask_bottom = np.copy(density_bottom)
     mask_bottom[mask_bottom != 0] = 1
 
@@ -658,8 +658,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     ##########################################################################
     # Generate the markers as local minima of the distance to the background #
     ##########################################################################
-    distances_top = ndimage.distance_transform_edt(density_top)
-    distances_bottom = ndimage.distance_transform_edt(density_bottom)
+    distances_top = ndimage.distance_transform_edt(density_top)  # South
+    distances_bottom = ndimage.distance_transform_edt(density_bottom)  # North
     if debugging:
         fig = plt.figure(figsize=(15, 10))
         fig.add_subplot(121)
@@ -691,10 +691,10 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
         plt.pause(0.1)
 
     # define the marker for each peak
-    markers_top = ndimage.label(local_maxi_top)[0]  # range from 0 to nb_peaks
-    # define non overlaping markers for the bottom projection
-    markers_bottom = ndimage.label(local_maxi_bottom)[0] + markers_top.max()
-    # markers_bottom.min() should be 0 since it is the background
+    markers_top = ndimage.label(local_maxi_top)[0]  # South, range from 0 to nb_peaks
+    # define non overlaping markers for the bottom projection: the first marker value is (markers_top.max()+1)
+    markers_bottom = ndimage.label(local_maxi_bottom)[0] + markers_top.max()  # North
+    # markers_bottom.min() is 0 since it is the background
     markers_bottom[markers_bottom == markers_top.max()] = 0
     if debugging:
         fig = plt.figure(figsize=(15, 10))
@@ -716,7 +716,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     # watershed segmentation #
     ##########################
     labels_top = watershed(-distances_top, markers_top, mask=mask_top)
-    labels_bottom = watershed(-markers_bottom, markers_bottom, mask=mask_bottom)  # TODO: check this line, something seems wrong, or comment it
+    labels_bottom = watershed(-distances_bottom, markers_bottom, mask=mask_bottom)
     fig = plt.figure(figsize=(15, 10))
     ax0 = fig.add_subplot(121)
     plt.imshow(labels_top, cmap=cmap, interpolation='nearest')
@@ -946,7 +946,7 @@ def upsample(array, upsampling_factor, voxelsizes, debugging=False):
     if not isinstance(upsampling_factor, int):
         raise ValueError('upsampling_factor should be an integer')
     if debugging:
-        gu.multislices_plot(array, sum_frames=False, invert_yaxis=True, title='Array before upsampling')
+        gu.multislices_plot(array, sum_frames=False, title='Array before upsampling')
 
     nbz, nby, nbx = array.shape
     numz, numy, numx = nbz * upsampling_factor, nby * upsampling_factor, nbx * upsampling_factor
@@ -968,7 +968,7 @@ def upsample(array, upsampling_factor, voxelsizes, debugging=False):
     obj = obj.reshape((numz, numy, numx)).astype(array.dtype)
 
     if debugging:
-        gu.multislices_plot(obj, sum_frames=False, invert_yaxis=True, title='Array after upsampling')
+        gu.multislices_plot(obj, sum_frames=False, title='Array after upsampling')
 
     return obj, newvoxelsizes
 
