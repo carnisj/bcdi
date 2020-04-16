@@ -19,7 +19,7 @@ from skimage import measure
 import logging
 import sys
 import gc
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.facet_recognition.facet_utils as fu
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -28,13 +28,11 @@ helptext = """
 Script for detecting facets on a 3D crytal reconstructed by a phasing algorithm (Bragg CDI) and making some statistics
 about strain by facet. The correct threshold for support determination should be given as input,
 as well as voxel sizes for a correct calculation of facet angle.
-For now the stereographic projection considers that the measurement direction is aligned with
-the second axis of the 3D array (to be modified).
 
 Input: a reconstruction .npz file with fields: 'amp' and 'strain' 
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
-# TODO: include surface estimation for the facets
+
 scan = 1  # spec scan number
 datadir = 'D:/data/PtRh/matlab_reconstructions/2019.11/ArCOO2(83x55x120)/'
 support_threshold = 0.52  # threshold for support determination
