@@ -1189,8 +1189,14 @@ def init_qconversion(setup):
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'P10':
         offsets = (0, 0, 0, 0, offset_inplane, 0)  # mu, omega, chi, phi, gamma del
-        qconv = xu.experiment.QConversion(['z+', 'y-', 'x+', 'z-'], ['z+', 'y-'], r_i=beam_direction)  # for CRISTAL
+        qconv = xu.experiment.QConversion(['z+', 'y-', 'x+', 'z-'], ['z+', 'y-'], r_i=beam_direction)  # for P10
         # 4S+2D goniometer (P10 goniometer, sample: mu, omega, chi,phi   detector: gamma, delta
+        # the vector is giving the direction of the primary beam
+        # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
+    elif beamline == '34ID':
+        offsets = (0, 0, 0, 0, offset_inplane, 0)  # mu, chi, theta, phi, gamma del
+        qconv = xu.experiment.QConversion(['z+', 'y-', 'x+', 'z-'], ['z+', 'y-'], r_i=beam_direction)  # for 34ID
+        # 4S+2D goniometer (34ID goniometer, sample: mu, chi, theta,phi   detector: gamma, delta
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     else:
@@ -1342,12 +1348,14 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, debug
     return data, mask3d, monitor, frames_logical
 
 
-def load_custom_data(custom_images, custom_monitor, detector, flatfield, hotpixels, background, debugging=False):
+def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfield, hotpixels, background,
+                     debugging=False):
     """
     Load a dataset measured without a scan, such as a set of images measured in a macro.
 
     :param custom_images: the list of image numbers
     :param custom_monitor: list of monitor values for normalization
+    :param beamline: supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
@@ -1356,14 +1364,29 @@ def load_custom_data(custom_images, custom_monitor, detector, flatfield, hotpixe
     :return:
     """
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-    nb_img = len(custom_images)
-    data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
+    if len(custom_images) == 0:
+        raise ValueError("No image number provided in 'custom_images'")
 
+    if len(custom_images) > 1:
+        nb_img = len(custom_images)
+        stack = False
+    else:  # the data is stacked into a single file
+        tmp_data = np.load(ccdfiletmp % custom_images[0])
+        nb_img = tmp_data.shape[0]
+        stack = True
+
+    data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
     for idx in range(nb_img):
-        i = int(custom_images[idx])
-        e = fabio.open(ccdfiletmp % i)
-        ccdraw = e.data
+        if stack:
+            ccdraw = tmp_data[idx, :, :]
+        else:
+            i = int(custom_images[idx])
+            if beamline == 'ID01':
+                e = fabio.open(ccdfiletmp % i)
+                ccdraw = e.data
+            else:
+                raise ValueError("Custom scan implementation missing for this beamline")
         ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Eiger2M":
@@ -1371,7 +1394,7 @@ def load_custom_data(custom_images, custom_monitor, detector, flatfield, hotpixe
         elif detector.name == "Maxipix":
             ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
         else:
-            raise ValueError('Detector ', detector.name, 'not supported for ID01')
+            pass
         ccdraw = flatfield * ccdraw
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
         data[idx, :, :] = ccdraw
@@ -1420,9 +1443,10 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     if setup.custom_scan and not setup.filtered_data:
         data, mask3d, monitor, frames_logical = load_custom_data(custom_images=setup.custom_images,
                                                                  custom_monitor=setup.custom_monitor,
+                                                                 beamline=setup.beamline,
                                                                  detector=detector, flatfield=flatfield,
                                                                  hotpixels=hotpixels, background=background,
-                                                                 debugging=False)
+                                                                 debugging=debugging)
     elif setup.filtered_data:
         data, mask3d, monitor, frames_logical = load_filtered_data(detector=detector)
 
