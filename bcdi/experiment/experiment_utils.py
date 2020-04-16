@@ -624,6 +624,18 @@ class Detector(object):
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = ''  # unused
+        elif name == 'Timepix':
+            try:
+                self.nb_pixel_x = nb_pixel_x
+            except NameError:  # nb_pixel_x not declared
+                self.nb_pixel_x = 256
+            try:
+                self.nb_pixel_y = nb_pixel_y
+            except NameError:  # nb_pixel_y not declared
+                self.nb_pixel_y = 256
+            self.pixelsize_x = 55e-06  # m
+            self.pixelsize_y = 55e-06  # m
+            self.counter = ''  # unused
         else:
             raise ValueError('Unknown detector name')
 
