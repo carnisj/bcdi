@@ -1194,9 +1194,10 @@ def init_qconversion(setup):
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == '34ID':
-        offsets = (0, 0, 0, 0, offset_inplane, 0)  # mu, chi, theta, phi, gamma del
+        offsets = (0, 0, 0, 0, offset_inplane, 0)  # mu, tilt, chi, theta (inplane), delta (inplane), gamma (outofplane)
         qconv = xu.experiment.QConversion(['z+', 'y-', 'x+', 'z-'], ['z+', 'y-'], r_i=beam_direction)  # for 34ID
-        # 4S+2D goniometer (34ID goniometer, sample: mu, chi, theta,phi   detector: gamma, delta
+        # TODO: check the motor names and directions
+        # 4S+2D goniometer (34ID goniometer, sample: mu, tilt, chi, theta (inplane)   detector: delta, gamma
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     else:
@@ -1928,6 +1929,29 @@ def mean_filter(data, nb_neighbours, mask, min_count=3, interpolate='mask_isolat
     return data, nb_pixels, mask
 
 
+def motor_positions_34id(setup):
+    """
+    Load the scan data and extract motor positions.
+
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :return: (mu, tilt, chi, theta, delta, gamma) motor positions
+    """
+    if setup.rocking_angle != 'energy':
+        raise ValueError('Only energy scan implemented for 34ID')
+
+    if not setup.custom_scan:
+        raise ValueError('Only custom_scan implemented for 34ID')
+    else:
+        mu = setup.custom_motors["mu"]
+        tilt = setup.custom_motors["tilt"]
+        chi = setup.custom_motors["chi"]
+        theta = setup.custom_motors["theta"]
+        gamma = setup.custom_motors["gamma"]
+        delta = setup.custom_motors["delta"]
+
+    return mu, tilt, chi, theta, delta, gamma
+
+
 def motor_positions_cristal(logfile, setup):
     """
     Load the scan data and extract motor positions.
@@ -2347,11 +2371,11 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         if (setup.beamline == 'ID01') or (setup.beamline == 'SIXS_2018') or (setup.beamline == 'SIXS_2019'):
             _, _, _, frames_logical = load_data(logfile=logfile, scan_number=scan_number,
                                                 detector=detector, setup=setup)
-        else:  # frames_logical parameter not used yet for CRISTAL and P10
+        else:  # frames_logical parameter not used yet for other beamlines
             pass
 
     if follow_bragg and setup.beamline != 'ID01':
-        raise ValueError('Energy scan implemented only for ID01 beamline')
+        raise ValueError('"follow_bragg" option implemented only for ID01 beamline')
 
     if setup.beamline == 'ID01':
         eta, chi, phi, nu, delta, energy, frames_logical = \
@@ -2472,6 +2496,46 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         mu, om, chi, phi, gamma, delta = bin_parameters(binning=binning[0], nb_frames=nb_frames,
                                                         params=[mu, om, chi, phi, gamma, delta])
         qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
+
+    elif setup.beamline == '34ID':
+        mu, tilt, chi, theta, delta, gamma = motor_positions_34id(setup)
+        chi = chi + setup.sample_offsets[0]
+        theta = theta + setup.sample_offsets[1]
+        tilt = tilt + setup.sample_offsets[2]
+        if setup.rocking_angle == 'outofplane':  # tilt rocking curve
+            nb_steps = len(tilt)
+            tilt_angle = tilt[1] - tilt[0]
+
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                tilt = np.concatenate((tilt[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                       tilt,
+                                       tilt[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                tilt = tilt[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == 'inplane':  # theta rocking curve
+            nb_steps = len(theta)
+            tilt_angle = theta[1] - theta[0]
+
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                theta = np.concatenate((theta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                        theta,
+                                        theta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                theta = theta[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == 'energy':
+            pass
+
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+        mu, tilt, chi, theta, delta, gamma = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                            params=[mu, tilt, chi, theta, delta, gamma])
+        qx, qy, qz = hxrd.Ang2Q.area(mu, tilt, chi, theta, delta, gamma, en=setup.energy, delta=detector.offsets)
 
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
