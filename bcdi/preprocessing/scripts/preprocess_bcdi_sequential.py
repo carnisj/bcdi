@@ -30,7 +30,7 @@ import bcdi.preprocessing.preprocessing_utils as pru
 helptext = """
 Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and filter the data.
 
-Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS and PETRAIII P10.
+Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS, PETRAIII P10 and APS 34ID-C.
 
 Output: data and mask as numpy .npz or Matlab .mat 3D arrays for phasing
 
@@ -264,7 +264,7 @@ if not use_rawdata:
     # first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
     cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
     cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
-    hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
+    hxrd.Ang2Q.init_area(setup.detector_ver, setup.detector_hor, cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
                          Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize_y,
                          pwidth2=detector.pixelsize_x, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
     # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS

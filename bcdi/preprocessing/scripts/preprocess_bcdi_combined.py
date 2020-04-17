@@ -30,7 +30,7 @@ import bcdi.preprocessing.preprocessing_utils as pru
 helptext = """
 Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and filter the data.
 
-Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS and PETRAIII P10.
+Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS, PETRAIII P10 and APS 34ID-C.
 
 Output: data and mask as numpy .npz or Matlab .mat 3D arrays for phasing
 
@@ -49,7 +49,7 @@ debug = False  # set to True to see plots
 binning = (1, 1, 1)  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
-flag_interact = False  # True to interact with plots, False to close it automatically
+flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ###########################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
@@ -149,7 +149,7 @@ beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 offset_inplane = 0  # outer detector angle offset, not important if you use raw data
-sample_offsets = (-90, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
+sample_offsets = (0, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
 # the sample offsets will be added to the motor values
 cch1 = 128  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
 cch2 = 128  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
@@ -306,7 +306,7 @@ if not use_rawdata:
     # first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
     cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
     cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
-    hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
+    hxrd.Ang2Q.init_area(setup.detector_ver, setup.detector_hor, cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
                          Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize_y,
                          pwidth2=detector.pixelsize_x, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
     # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
