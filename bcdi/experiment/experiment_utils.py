@@ -553,6 +553,15 @@ class SetupPreprocessing(object):
         self.sample_offsets = sample_offsets  # tuple
         self.offset_inplane = offset_inplane  # in degrees
 
+        # detector orientation convention depending on the beamline
+        # the frame convetion is the one of xrayutilities: x downstream, y outboard, z vertical up
+        if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019']:
+            self.detector_hor = 'y+'
+        else:  # 'CRISTAL', 'P10', '34ID'
+            # TODO: check for Cristal, I am not sure
+            self.detector_hor = 'y-'
+        self.detector_ver = 'z-'
+
 
 class Detector(object):
     """
