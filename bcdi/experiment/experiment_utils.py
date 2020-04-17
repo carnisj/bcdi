@@ -370,8 +370,8 @@ class SetupPostprocessing(object):
         if self.beamline == '34ID':
             print('using APS 34ID geometry')
             if self.rocking_angle == "outofplane":
-                print('rocking angle is tilt')
-                # rocking tilt angle anti-clockwise around x (th does not matter, above tilt)
+                print('rocking angle is phi')
+                # rocking phi angle anti-clockwise around x (theta does not matter, above phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
                                                                        -pixel_x * np.sin(inplane)])
@@ -384,8 +384,8 @@ class SetupPostprocessing(object):
                                                                        -tilt * distance * np.sin(outofplane)])
 
             elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
-                print('rocking angle is th, with tilt non zero')
-                # rocking th angle anti-clockwise around y, incident angle is non zero
+                print('rocking angle is theta, with phi non zero')
+                # rocking theta angle anti-clockwise around y, incident angle is non zero (theta is above phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
                                                                        -pixel_x * np.sin(inplane)])
@@ -399,8 +399,8 @@ class SetupPostprocessing(object):
                               np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
 
             elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                print('rocking angle is th, tilt=0')
-                # rocking th angle anti-clockwise around y, assuming incident angle is zero (th above tilt)
+                print('rocking angle is theta, phi=0')
+                # rocking theta angle anti-clockwise around y, assuming incident angle is zero (theta is above phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
                                                                        -pixel_x * np.sin(inplane)])
