@@ -555,10 +555,9 @@ class SetupPreprocessing(object):
 
         # detector orientation convention depending on the beamline
         # the frame convetion is the one of xrayutilities: x downstream, y outboard, z vertical up
-        if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019']:
+        if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL']:  # we look at the detector from downstream
             self.detector_hor = 'y+'
-        else:  # 'CRISTAL', 'P10', '34ID'
-            # TODO: check for Cristal, I am not sure
+        else:  # 'P10', '34ID', we look at the detector from upstream
             self.detector_hor = 'y-'
         self.detector_ver = 'z-'
 
