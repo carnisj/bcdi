@@ -41,15 +41,15 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [1301]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
-root_folder = "D:/data/SIXS_2019_Ni/"
+scans = [3]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
+root_folder = "D:/data/Dzhigaev/data/"
 sample_name = "S"  # "SN"  #
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = (1, 1, 1)  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
-flag_interact = True  # True to interact with plots, False to close it automatically
+flag_interact = False  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ###########################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
@@ -60,7 +60,7 @@ fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg] consid
 fix_size = []  # crop the array to predefined size considering the full detector,
 # leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop]. ROI will be defaulted to []
 ###########################
-center_fft = 'crop_asym_ZYX'
+center_fft = 'do_nothing'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'do_nothing'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
@@ -85,21 +85,16 @@ save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'SIXS_2019'  # name of the beamline, used for data loading and normalization by monitor
-# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+beamline = '34ID'  # name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 is_series = False  # specific to series measurement at P10
 
-custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
-custom_images = []  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
-custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
-custom_motors = {}
-# {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
-# ID01: eta, phi, nu, delta
-# CRISTAL: mgomega, gamma, delta
-# P10: om, phi, chi, mu, gamma, delta
-# SIXS: beta, mu, gamma, delta
+custom_scan = True  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
+# there is no spec/log file available
+custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
+custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan
 
-rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
+rocking_angle = "energy"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
@@ -108,15 +103,16 @@ specfile_name = ''
 # template for SIXS_2019: ''
 # template for P10: sample_name + '_%05d'
 # template for CRISTAL: ''
+# template for 34ID: ''
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Timepix"    # "Eiger2M", "Maxipix", "Eiger4M" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 147  # horizontal pixel number of the Bragg peak
-y_bragg = 178  # vertical pixel number of the Bragg peak
+x_bragg = 147  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 178  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = [0, 303, 0, 296]
+roi_detector = []
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -125,24 +121,38 @@ roi_detector = [0, 303, 0, 296]
 photon_threshold = 0  # data[data < photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'Pt_ascan_mu_%05d.nxs'
+template_imagefile = 'Sample%dC_ES_data_51_256_256.npz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_master.h5'
+# template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
+sdd = 1.95  # in m, sample to detector distance in m, not important if you use raw data
+energy = np.linspace(11100, 10900, num=51)  # x-ray energy in eV, not important if you use raw data
+custom_motors = {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
+# use this to declare motor positions if there is not log file
+# example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
+# ID01: eta, phi, nu, delta
+# CRISTAL: mgomega, gamma, delta
+# P10: om, phi, chi, mu, gamma, delta
+# SIXS: beta, mu, gamma, delta
+# 34ID: mu, phi (incident angle), chi, theta (inplane), delta (inplane), gamma (outofplane)
+#########################################################################
+# parameters for xrayutilities to orthogonalize the data before phasing #
+#########################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
-sdd = 1.3  # in m, sample to detector distance in m, not important if you use raw data
-energy = 9000  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 offset_inplane = 0  # outer detector angle offset, not important if you use raw data
-cch1 = 1273.5  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-cch2 = 390.8  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+sample_offsets = (-90, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
+# the sample offsets will be added to the motor values
+cch1 = 128  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch2 = 128  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
 tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
@@ -238,7 +248,7 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                                beam_direction=beam_direction, sample_inplane=sample_inplane,
                                sample_outofplane=sample_outofplane, offset_inplane=offset_inplane,
-                               custom_scan=custom_scan, custom_images=custom_images,
+                               custom_scan=custom_scan, custom_images=custom_images, sample_offsets=sample_offsets,
                                custom_monitor=custom_monitor, custom_motors=custom_motors)
 
 #############################################
@@ -246,7 +256,7 @@ setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=r
 #############################################
 if rocking_angle == "energy":
     use_rawdata = False  # you need to interpolate the data in QxQyQz for energy scans
-    print("Energy scan: defaulting use_rawdata to False")
+    print("Energy scan: defaulting use_rawdata to False, the data will be interpolated using xrayutilities")
 if not use_rawdata:
     qconv, offsets = pru.init_qconversion(setup)
     detector.offsets = offsets
@@ -270,6 +280,11 @@ plt.rcParams["keymap.quit"] = ["ctrl+w", "cmd+w"]  # this one to avoid that q cl
 ############################
 root = tk.Tk()
 root.withdraw()
+try:
+    len(scans)
+except TypeError:  # a single number was provided, not a list
+    scans = [scans]
+
 if len(scans) > 1:
     if center_fft not in ['crop_asymmetric_ZYX', 'pad_Z', 'pad_asymmetric_ZYX']:
         center_fft = 'do_nothing'
@@ -811,7 +826,15 @@ for scan_nb in range(len(scans)):
             savemat(savedir + 'S' + str(scans[scan_nb]) + '_qx.mat', {'qx': q_vector[0]})
             savemat(savedir + 'S' + str(scans[scan_nb]) + '_qy.mat', {'qy': q_vector[1]})
             savemat(savedir + 'S' + str(scans[scan_nb]) + '_qz.mat', {'qz': q_vector[2]})
-    print('saving to directory:', savedir)
+
+        fig, _, _ = gu.contour_slices(data, (q_vector[0], q_vector[1], q_vector[2]), sum_frames=True,
+                                      title='Final data', plot_colorbar=True, scale='log', is_orthogonal=True,
+                                      levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
+                                      reciprocal_space=True)
+        fig.savefig(detector.savedir + 'final_reciprocal_space_S' + str(scans[scan_nb]) + comment + '.png')
+        plt.close(fig)
+
+    print('\nsaving to directory:', savedir)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
     np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
 

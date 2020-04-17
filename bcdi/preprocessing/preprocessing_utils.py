@@ -1194,10 +1194,11 @@ def init_qconversion(setup):
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == '34ID':
-        offsets = (0, 0, 0, 0, offset_inplane, 0)  # mu, tilt, chi, theta (inplane), delta (inplane), gamma (outofplane)
-        qconv = xu.experiment.QConversion(['z+', 'y-', 'x+', 'z-'], ['z+', 'y-'], r_i=beam_direction)  # for 34ID
-        # TODO: check the motor names and directions
-        # 4S+2D goniometer (34ID goniometer, sample: mu, tilt, chi, theta (inplane)   detector: delta, gamma
+        offsets = (0, 0, 0, 0, offset_inplane, 0)
+        # mu, phi (incident angle), chi, theta (inplane), delta (inplane), gamma (outofplane)
+        qconv = xu.experiment.QConversion(['z+', 'y+', 'x+', 'z+'], ['z+', 'y-'], r_i=beam_direction)  # for 34ID
+        # TODO: check the motor directions for mu and chi
+        # 4S+2D goniometer (34ID goniometer, sample: mu, phi, chi, theta (inplane)   detector: delta (inplane), gamma
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     else:
@@ -1373,7 +1374,8 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
         nb_img = len(custom_images)
         stack = False
     else:  # the data is stacked into a single file
-        tmp_data = np.load(ccdfiletmp % custom_images[0])
+        npzfile = np.load(ccdfiletmp % custom_images[0])
+        tmp_data = npzfile[list(npzfile.files)[0]]
         nb_img = tmp_data.shape[0]
         stack = True
 
@@ -1943,7 +1945,7 @@ def motor_positions_34id(setup):
         raise ValueError('Only custom_scan implemented for 34ID')
     else:
         mu = setup.custom_motors["mu"]
-        tilt = setup.custom_motors["tilt"]
+        tilt = setup.custom_motors["phi"]
         chi = setup.custom_motors["chi"]
         theta = setup.custom_motors["theta"]
         gamma = setup.custom_motors["gamma"]
@@ -2498,22 +2500,22 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == '34ID':
-        mu, tilt, chi, theta, delta, gamma = motor_positions_34id(setup)
+        mu, phi, chi, theta, delta, gamma = motor_positions_34id(setup)
         chi = chi + setup.sample_offsets[0]
-        theta = theta + setup.sample_offsets[1]
-        tilt = tilt + setup.sample_offsets[2]
-        if setup.rocking_angle == 'outofplane':  # tilt rocking curve
-            nb_steps = len(tilt)
-            tilt_angle = tilt[1] - tilt[0]
+        theta = theta + setup.sample_offsets[1]  # theta is the inplane rotation
+        phi = phi + setup.sample_offsets[2]  # phi is the incident angle
+        if setup.rocking_angle == 'outofplane':  # phi rocking curve
+            nb_steps = len(phi)
+            tilt_angle = phi[1] - phi[0]
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
                 pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
-                tilt = np.concatenate((tilt[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                                       tilt,
-                                       tilt[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+                phi = np.concatenate((phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                      phi,
+                                      phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
             if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
-                tilt = tilt[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+                phi = phi[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
 
         elif setup.rocking_angle == 'inplane':  # theta rocking curve
             nb_steps = len(theta)
@@ -2533,9 +2535,9 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
-        mu, tilt, chi, theta, delta, gamma = bin_parameters(binning=binning[0], nb_frames=nb_frames,
-                                                            params=[mu, tilt, chi, theta, delta, gamma])
-        qx, qy, qz = hxrd.Ang2Q.area(mu, tilt, chi, theta, delta, gamma, en=setup.energy, delta=detector.offsets)
+        mu, phi, chi, theta, delta, gamma = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                           params=[mu, phi, chi, theta, delta, gamma])
+        qx, qy, qz = hxrd.Ang2Q.area(mu, phi, chi, theta, delta, gamma, en=setup.energy, delta=detector.offsets)
 
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
