@@ -6,6 +6,35 @@
 Scripts Reference
 =================
 
+.. _experiment:
+
+Experiment
+----------
+
+ccd_calib.py
+^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/experiment/scripts/ccd_calib.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+ccd_calib_cristal.py
+^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/experiment/scripts/ccd_calib_cristal.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+ccd_calib_sixs.py
+^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/experiment/scripts/ccd_calib_sixs.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 .. _graph:
 
 Graph
@@ -405,30 +434,6 @@ apodize.py
 ^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/utils/scripts/apodize.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
-ccd_calib.py
-^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/ccd_calib.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
-ccd_calib_cristal.py
-^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/ccd_calib_cristal.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
-ccd_calib_sixs.py
-^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/ccd_calib_sixs.py
    :start-after: helptext
    :end-before: """
    :language: rst
