@@ -462,10 +462,10 @@ cross_corr_fast_live_macro.py
    :end-before: """
    :language: rst
 
-`fit_background.py`:
-^^^^^^^^^^^^^^^^^^^^
+`fit_1D_background.py`:
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/fit_background.py
+.. literalinclude:: ../../bcdi/utils/scripts/fit_1D_background.py
    :start-after: helptext
    :end-before: """
    :language: rst
