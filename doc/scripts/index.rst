@@ -85,14 +85,6 @@ Facet recognition
 Postprocessing
 --------------
 
-`fit_1Dcurve.py`:
-^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/fit_1Dcurve.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
 `strain.py`:
 ^^^^^^^^^^^^
 
@@ -464,7 +456,15 @@ cross_corr_fast_live_macro.py
    :start-after: helptext
    :end-before: """
    :language: rst
-   
+
+`fit_1Dcurve.py`:
+^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/fit_1Dcurve.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 parse_fio2spec.py
 ^^^^^^^^^^^^^^^^^
 
