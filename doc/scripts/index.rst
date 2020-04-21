@@ -258,6 +258,14 @@ readimage_P10.py
    :end-before: """
    :language: rst
 
+`rescale_support.py`:
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/rescale_support.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 .. _publi:
 
 Publication
@@ -384,14 +392,6 @@ simu_signe_phase.py
 
 Utilities
 ---------
-
-`rescale_support.py`:
-^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/rescale_support.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
    
 angular_average.py
 ^^^^^^^^^^^^^^^^^^
@@ -452,7 +452,7 @@ cross_corr_fast_live_macro.py
 parse_fio2spec.py
 ^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/rescale_support.py
+.. literalinclude:: ../../bcdi/utils/scripts/parse_fio2spec.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -460,7 +460,7 @@ parse_fio2spec.py
 plane_angle.py
 ^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/rescale_support.py
+.. literalinclude:: ../../bcdi/utils/scripts/plane_angle.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -468,7 +468,7 @@ plane_angle.py
 primes.py
 ^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/rescale_support.py
+.. literalinclude:: ../../bcdi/utils/scripts/primes.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -476,7 +476,7 @@ primes.py
 read_edf.py
 ^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/rescale_support.py
+.. literalinclude:: ../../bcdi/utils/scripts/read_edf.py
    :start-after: helptext
    :end-before: """
    :language: rst
