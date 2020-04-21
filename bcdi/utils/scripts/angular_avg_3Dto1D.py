@@ -22,10 +22,10 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_August2019/data/gold2_2_00515/pynx/441_486_441_1_4_4_masked/'
+root_folder = 'D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/'
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
-origin = [220, 243, 221]  # [np.nan, np.nan, np.nan] #
+origin = [281,216,236]  # [np.nan, np.nan, np.nan] #
 # position in pixels of the origin of the angular average in the array.
 # if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
 threshold = 1  # data < threshold will be set to 0

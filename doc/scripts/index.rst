@@ -422,10 +422,10 @@ simu_signe_phase.py
 Utilities
 ---------
    
-angular_average.py
-^^^^^^^^^^^^^^^^^^
+angular_avg_3Dto1D.py
+^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/angular_average.py
+.. literalinclude:: ../../bcdi/utils/scripts/angular_avg_3Dto1D.py
    :start-after: helptext
    :end-before: """
    :language: rst

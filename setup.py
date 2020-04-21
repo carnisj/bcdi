@@ -77,7 +77,7 @@ setup(name='bcdi', version='0.0.8',
                'bcdi/utils/scripts/fit_1D_background.py',
                'bcdi/utils/scripts/parse_fio2spec.py',
                'bcdi/utils/scripts/primes.py',
-               'bcdi/utils/scripts/angular_average.py',
+               'bcdi/utils/scripts/angular_avg_3Dto1D.py',
                'bcdi/utils/scripts/save_to_mat.py',
                ],
       # metadata
