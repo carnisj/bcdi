@@ -250,6 +250,14 @@ Preprocessing
    :end-before: """
    :language: rst
 
+read_edf.py
+^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/read_edf.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 readimage_P10.py
 ^^^^^^^^^^^^^^^^
 
@@ -469,14 +477,6 @@ primes.py
 ^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/utils/scripts/primes.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
-read_edf.py
-^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/read_edf.py
    :start-after: helptext
    :end-before: """
    :language: rst
