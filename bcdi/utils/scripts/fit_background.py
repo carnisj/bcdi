@@ -22,7 +22,7 @@ Determination of the background in a reciprocal space linecut using an interacti
 data is saved in a different .npz file with the original field names.
 """
 
-datadir = 'D:/data/P10_August2019/data/gold2_2_00515/pynx/441_486_441_1_4_4/'
+datadir = 'D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/'
 method = 'manual'  # method for background determination: only 'manual' for now
 xlim = None  # limits used for the horizontal axis of plots, leave None otherwise
 ylim = None  # limits used for the vertical axis of plots, leave None otherwise
