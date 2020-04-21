@@ -371,7 +371,15 @@ Simulation
    :start-after: helptext
    :end-before: """
    :language: rst
-   
+
+plane_angle.py
+^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/simulation/scripts/plane_angle.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 simu_diffpattern_BCDI.py
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -461,14 +469,6 @@ parse_fio2spec.py
 ^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/utils/scripts/parse_fio2spec.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
-plane_angle.py
-^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/plane_angle.py
    :start-after: helptext
    :end-before: """
    :language: rst
