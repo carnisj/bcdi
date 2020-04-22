@@ -138,7 +138,7 @@ np.savez_compressed(root_folder + 'q+angular_avg.npz', distances=q_axis, average
 ################################
 # prepare for masking arrays - 'conventional' arrays won't do it
 y_values = np.ma.array(angular_avg)
-# mask values below a certain threshold
+# mask nan values
 y_values_masked = np.ma.masked_where(np.isnan(y_values), y_values)
 
 fig, ax0 = plt.subplots(1, 1)
