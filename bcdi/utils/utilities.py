@@ -15,7 +15,7 @@ sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 
 
-def angular_avg(data, q_values, mask=None, origin=None, debugging=False):
+def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debugging=False):
     """
     Calculate an angular average of a 3D reciprocal space dataset given q values and the position of the origin of the
     reciprocal space.
@@ -24,6 +24,7 @@ def angular_avg(data, q_values, mask=None, origin=None, debugging=False):
     :param q_values: tuple of 3 1-D arrays: (qx downstream, qz vertical up, qy outboard)
     :param mask: 3D array of the same shape as data. 1 for a masked voxel, 0 otherwise
     :param origin: position in pixels of the origin of the reciprocal space
+    :param nb_bins: number of points where to calculate the average
     :param debugging: True to see plots
     :return: q_axis, angular mean average, angular median average
     """
@@ -46,6 +47,9 @@ def angular_avg(data, q_values, mask=None, origin=None, debugging=False):
     elif len(origin) != 3:
         raise ValueError("origin should be a tuple of 3 elements")
 
+    if np.isnan(nb_bins):
+        nb_bins = nz // 4
+
     # calculate ditance matrix
     distances = np.sqrt((qx[:, np.newaxis, np.newaxis] - qx[origin[0]]) ** 2 +
                         (qz[np.newaxis, :, np.newaxis] - qz[origin[1]]) ** 2 +
@@ -59,7 +63,6 @@ def angular_avg(data, q_values, mask=None, origin=None, debugging=False):
           np.unravel_index(abs(distances).argmax(), distances.shape))
     print('Distance:', distances[origin[0], origin[1], origin[2]], ' (1/nm) at voxel:',
           origin)
-    nb_bins = nz // 4
     ang_avg = np.zeros(nb_bins)  # angular average using the mean value
     ang_median = np.zeros(nb_bins)  # angular average using the median value
     q_axis = np.linspace(0, distances.max(), endpoint=True, num=nb_bins + 1)  # in pixels or 1/nm
