@@ -8,10 +8,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
-import gc
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 
 helptext = """
 Plot a 1D angular average of a 3D reciprocal space map, based on the position of the origin (direct beam or Bragg peak). 
@@ -25,7 +25,7 @@ If q values are not provided, the data is supposed to be in an orthonormal frame
 root_folder = 'D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/'
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
-origin = [281,216,236]  # [np.nan, np.nan, np.nan] #
+origin = [281, 216, 236]  # [np.nan, np.nan, np.nan] #
 # position in pixels of the origin of the angular average in the array.
 # if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
 threshold = 1  # data < threshold will be set to 0
@@ -67,9 +67,8 @@ if load_mask:
     npzfile = np.load(file_path)
     mask = npzfile[list(npzfile.files)[0]]
     diff_pattern[np.nonzero(mask)] = np.nan
-    del mask
-    gc.collect()
-
+else:
+    mask = None
 #######################
 # check origin values #
 #######################
@@ -95,54 +94,11 @@ else:  # work with pixels, supposing that the data is in an orthonormal frame
     qz = np.arange(ny) - origin[1]
     qy = np.arange(nx) - origin[2]
 
-qxCOM = qx[origin[0]]
-qzCOM = qz[origin[1]]
-qyCOM = qy[origin[2]]
-
-############################
-# calculate ditance matrix #
-############################
-distances = np.sqrt((qx[:, np.newaxis, np.newaxis] - qxCOM)**2 +
-                    (qz[np.newaxis, :, np.newaxis] - qzCOM)**2 +
-                    (qy[np.newaxis, np.newaxis, :] - qyCOM)**2)
-if debug:
-    gu.multislices_plot(distances, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
-                        title='distances_q', scale='linear', vmin=np.nan, vmax=np.nan,
-                        reciprocal_space=True, is_orthogonal=True)
-
-#################################
-# average over spherical shells #
-#################################
-print('Distance max:', distances.max(), ' (1/nm) at voxel:', np.unravel_index(abs(distances).argmax(), distances.shape))
-print('Distance:', distances[origin[0], origin[1], origin[2]], ' (1/nm) at voxel:', origin)
-nb_bins = nz // 4
-angular_avg = np.zeros(nb_bins)
-dq = distances.max() / nb_bins  # in 1/A
-q_axis = np.linspace(0, distances.max(), endpoint=True, num=nb_bins+1)  # in pixels or 1/nm
-
-for index in range(nb_bins):
-    temp = diff_pattern[np.logical_and((distances < q_axis[index+1]), (distances >= q_axis[index]))]
-    angular_avg[index] = temp[np.logical_and((~np.isnan(temp)), (temp != 0))].mean()
-q_axis = q_axis[:-1]
-
-del diff_pattern
-gc.collect()
-
-########################
-# save angular average #
-########################
-np.savez_compressed(root_folder + 'q+angular_avg.npz', distances=q_axis, average=angular_avg)
-
-################################
-# plot and save the 1D average #
-################################
-# prepare for masking arrays - 'conventional' arrays won't do it
-y_values = np.ma.array(angular_avg)
-# mask nan values
-y_values_masked = np.ma.masked_where(np.isnan(y_values), y_values)
+q_axis, y_mean_masked, y_median_masked = util.angular_avg(data=diff_pattern, q_values=(qx, qz, qy), origin=origin,
+                                                          mask=mask, debugging=debug)
 
 fig, ax0 = plt.subplots(1, 1)
-plt0 = ax0.plot(q_axis, np.log10(y_values_masked), 'r')
+plt0 = ax0.plot(q_axis, np.log10(y_mean_masked), 'r')
 plt.xlabel('q (1/nm)')
 plt.ylabel('Angular average (A.U.)')
 if xlim is not None:
@@ -154,5 +110,13 @@ ax0.tick_params(labelbottom=False, labelleft=False)
 plt.xlabel('')
 plt.ylabel('')
 plt.savefig(root_folder + 'angular_avg.png')
+
+fig, ax = plt.subplots(1, 1)
+ax.plot(q_axis, np.log10(y_mean_masked), 'r', label='mean')
+ax.plot(q_axis, np.log10(y_median_masked), 'b', label='median')
+ax.set_xlabel('q (1/nm)')
+ax.set_ylabel('Angular average (A.U.)')
+ax.legend()
+
 plt.ioff()
 plt.show()
