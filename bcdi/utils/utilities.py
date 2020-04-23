@@ -50,7 +50,7 @@ def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debuggin
     if np.isnan(nb_bins):
         nb_bins = nz // 4
 
-    # calculate ditance matrix
+    # calculate the matrix of distances from the origin of reciprocal space
     distances = np.sqrt((qx[:, np.newaxis, np.newaxis] - qx[origin[0]]) ** 2 +
                         (qz[np.newaxis, :, np.newaxis] - qz[origin[1]]) ** 2 +
                         (qy[np.newaxis, np.newaxis, :] - qy[origin[2]]) ** 2)
