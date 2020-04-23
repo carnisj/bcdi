@@ -27,50 +27,51 @@ and beamline-related parameters. Assign 3D Gaussians to each lattice point and r
 maximize the cross-correlation of the simulated data with experimental data. The experimental data should be sparse 
 (using a photon threshold), and Bragg peaks maximum must be clearly identifiable. 
 
-Laboratory frame convention (CXI): z downstream, y vertical up, x outboard."""
+Laboratory frame convention (CXI): z downstream, y vertical up, x outboard.
+Reciprocal space basis:            qx downstream, qz vertical up, qy outboard."""
 
-datadir = "D:/data/P10_August2019/data/gold2_2_00515/pynx/1_4_4_masked_40_full_detector_peak1/"
-savedir = "D:/data/P10_August2019/data/gold2_2_00515/simu/"
+datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx/"
+savedir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/simu/"
 comment = ''  # should start with _
 ################
 # sample setup #
 ################
 unitcell = 'fcc'  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 # It can be a number or tuple of numbers depending on the unit cell.
-unitcell_ranges = [23.2, 23.3]  # in nm, values of the unit cell parameters to test
+unitcell_ranges = [22.9, 22.9]  # in nm, values of the unit cell parameters to test
 # cubic, FCC or BCC unit cells: [start, stop]. BCT unit cell: [start1, stop1, start2, stop2]   (stop is included)
 unitcell_step = 0.05  # in nm
 #########################
 # unit cell orientation #
 #########################
-angles_ranges = [-10, -7, 32, 35, -26, -23]  # [start, stop, start, stop, start, stop], in degrees
+angles_ranges = [-45, -45, -45, 45, -45, 45]  # [start, stop, start, stop, start, stop], in degrees
 # ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is included)
-angular_step = 0.25  # in degrees
+angular_step = 5  # in degrees
 #######################
 # beamline parameters #
 #######################
 sdd = 4.95  # in m, sample to detector distance
-energy = 8700  # in ev X-ray energy
+energy = 8250  # in ev X-ray energy
 ##################
 # detector setup #
 ##################
 detector = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
-direct_beam = (1195, 1187)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
+direct_beam = (1303, 1127)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = [direct_beam[0] - 972, direct_beam[0] + 972, direct_beam[1] - 883, direct_beam[1] + 883]
+roi_detector = []  # [direct_beam[0] - 972, direct_beam[0] + 972, direct_beam[1] - 883, direct_beam[1] + 883]
 # [Vstart, Vstop, Hstart, Hstop], leave [] to use the full detector
 binning = [4, 4, 4]  # binning of the detector
 ##########################
 # peak detection options #
 ##########################
-photon_threshold = 5  # intensity below this value will be set to 0
-min_distance = 20  # minimum distance between Bragg peaks in pixels
+photon_threshold = 1000  # intensity below this value will be set to 0
+min_distance = 50  # minimum distance between Bragg peaks in pixels
 peak_width = 0  # the total width will be (2*peak_width+1)
 ###########
 # options #
 ###########
 kernel_length = 11  # width of the 3D gaussian window
-debug = False  # True to see more plots
+debug = True  # True to see more plots
 correct_background = False  # True to create a 3D background
 bckg_method = 'normalize'  # 'subtract' or 'normalize'
 
@@ -127,6 +128,7 @@ except FileNotFoundError:
 # apply photon threshold #
 ##########################
 data[data < photon_threshold] = 0
+print('Sparsity of the data after photon threshold:', str('{:.2f}'.format((data == 0).sum()/(nz*ny*nx)*100)), '%')
 
 ######################
 # calculate q values #
