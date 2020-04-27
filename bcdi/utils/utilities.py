@@ -87,27 +87,27 @@ def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debuggin
     return q_axis, y_mean_masked, y_median_masked
 
 
-def find_nearest(original_array, array_values):
+def find_nearest(reference_array, test_values):
     """
     Find the indices where original_array is nearest to array_values.
 
-    :param original_array: a 1D array where to look for the nearest values
-    :param array_values: a number or a 1D array of numbers
+    :param reference_array: a 1D array where to look for the nearest values
+    :param test_values: a number or a 1D array of numbers to be tested
     :return: index or indices from original_array nearest to values, of length len(array_values)
     """
-    original_array, array_values = np.asarray(original_array), np.asarray(array_values)
+    original_array, test_values = np.asarray(reference_array), np.asarray(test_values)
 
     if original_array.ndim != 1:
         raise ValueError('original_array should be 1D')
-    if array_values.ndim > 1:
+    if test_values.ndim > 1:
         raise ValueError('array_values should be a number or a 1D array')
-    if array_values.ndim == 0:
-        nearest_index = (np.abs(original_array - array_values)).argmin()
+    if test_values.ndim == 0:
+        nearest_index = (np.abs(original_array - test_values)).argmin()
     else:
-        nb_values = len(array_values)
+        nb_values = len(test_values)
         nearest_index = np.zeros(nb_values, dtype=int)
         for idx in range(nb_values):
-            nearest_index[idx] = (np.abs(original_array - array_values[idx])).argmin()
+            nearest_index[idx] = (np.abs(original_array - test_values[idx])).argmin()
 
     return nearest_index
 
