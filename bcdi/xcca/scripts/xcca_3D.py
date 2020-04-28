@@ -31,8 +31,8 @@ Reciprocal space basis:            qx downstream, qz vertical up, qy outboard.""
 datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/"
 savedir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/simu/"
 comment = ''  # should start with _
-interp_factor = 50  # the number of point for the interpolation on a sphere will be the number of voxels in the q range
-# divided by interp_factor
+interp_factor = 150  # the number of point for the interpolation on a sphere will be the number of voxels at the defined
+# q value divided by interp_factor
 plot_avg = False  # True to plot the angular average of the data
 debug = False  # set to True to see more plots
 origin_qspace = (281, 216, 236)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
@@ -139,7 +139,7 @@ for counter, value in enumerate(q_xcca):
 
         # remove nan values here, then we do not need to care about it anymore in the for loop following
         nan_indices = np.argwhere(np.isnan(sphere_int))
-        print('removing', nan_indices.size, 'nan values')
+        print('Removing', nan_indices.size, 'nan values')
         # for idx in range(len(nan_indices)):
         theta = np.delete(theta, nan_indices)
         phi = np.delete(phi, nan_indices)
@@ -176,11 +176,11 @@ if same_q:
 else:
     key_q2 = 'q2'
 
+print('The CCF will be calculated over', nb_points[0], 'bins')
 ang_corr_count = np.zeros((nb_points[0], 3))  # the first column contains the angular values, the second column the
 # correlations, the third column the number of points for the averaging
 ang_corr_count[:, 0] = np.linspace(start=0, stop=np.pi, num=nb_points[0])
 delta_step = (ang_corr_count[1, 0] - ang_corr_count[0, 0]) / 2
-# TODO: how to choose the bin width for the CCF? This will define the resolution.
 
 start = time.time()
 for idx in range(nb_points[0]):  # loop over the points of the first q value
@@ -203,8 +203,11 @@ for idx in range(nb_points[0]):  # loop over the points of the first q value
     gc.collect()
 end = time.time()
 print('Time ellapsed for the calculation of the CCF:', int(end - start), 's')
+
 # normalize the cross-correlation by the counter
-ang_corr_count[:, 1] = ang_corr_count[:, 1] / ang_corr_count[:, 2]
+ang_corr_count[(ang_corr_count[:, 2] == 0), 1] = np.nan  # discard these values of the CCF
+indices = np.nonzero(ang_corr_count[:, 2])
+ang_corr_count[indices, 1] = ang_corr_count[indices, 1] / ang_corr_count[indices, 2]
 
 #######################################
 # save the cross-correlation function #
@@ -219,7 +222,16 @@ ax.plot(180*ang_corr_count[:, 0]/np.pi, ang_corr_count[:, 1])
 ax.set_xlim(0, 180)
 ax.set_xlabel('Angle (deg)')
 ax.set_ylabel('Cross-correlation')
-ax.set_title('CCF at q1 ={:.3f} 1/nm  and q2={:.3f} 1/nm '.format(q_xcca[0], q_xcca[1]))
+ax.set_xticks(np.arange(0, 181, 30))
+ax.set_title('CCF at q1={:.3f} 1/nm  and q2={:.3f} 1/nm'.format(q_xcca[0], q_xcca[1]))
 plt.savefig(savedir + 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) + '.png')
+
+fig, ax = plt.subplots()
+ax.plot(180*ang_corr_count[:, 0]/np.pi, ang_corr_count[:, 2])
+ax.set_xlim(0, 180)
+ax.set_xlabel('Angle (deg)')
+ax.set_ylabel('Number of points')
+ax.set_xticks(np.arange(0, 181, 30))
+ax.set_title('Points per angular bin')
 plt.ioff()
 plt.show()
