@@ -840,7 +840,7 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
 def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None, width_y=None, width_x=None,
                      plot_colorbar=False, cmap=my_cmap, title='', scale='linear', vmin=np.nan, vmax=np.nan,
                      tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=None,
-                     is_orthogonal=False, reciprocal_space=False,ipynb_layout=False):
+                     is_orthogonal=False, reciprocal_space=False, ipynb_layout=False):
     """
     Create a figure with three 2D imshow plots from a 3D dataset.
 
@@ -862,7 +862,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot titles.
     :param vmin: lower boundary for the colorbar. Float or tuple of 3 floats
     :param vmax: higher boundary for the colorbar. Float or tuple of 3 floats
-    :param ipynb_layout: toggle for 3 plots in a row, cleaner in an ipynb
+    :param ipynb_layout: toggle for 3 plots in a row, cleaner in an Jupyter Notebook
     :return: fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) instances
     """
     nb_dim = array.ndim
@@ -921,7 +921,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         width_x = nbx
 
     if ipynb_layout:
-        fig, ((ax0, ax1, ax2)) = plt.subplots(nrows=1, ncols=3, figsize=(15, 4.5))
+        fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(15, 4.5))
     else:
         fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
 
