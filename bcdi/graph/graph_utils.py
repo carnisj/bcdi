@@ -1167,7 +1167,10 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
 
 def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 0, 0), amplitude_threshold=0.01):
     """
-    Save arrays defined by their name in a single vti file.
+    Save arrays defined by their name in a single vti file. Paraview expects data in an orthonormal basis (x,y,z). For
+    BCDI data in the .cxi convention (hence: z,y,x) it is necessary to flip the last axis. The data sent to Paraview
+    will be in the orthonormal frame (z,y,-x), therefore Paraview_x is z (downstream), Paraview_y is y (vertical up),
+    Paraview_z is -x (inboard) of the .cxi convention.
 
     :param filename: the file name of the vti file
     :param voxel_size: tuple (voxel_size_axis0, voxel_size_axis1, voxel_size_axis2)
