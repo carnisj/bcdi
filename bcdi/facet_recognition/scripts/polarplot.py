@@ -39,7 +39,7 @@ root_folder = "D:/review paper/Pt growth/CH5309/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
-radius_mean = 0.02  # q from Bragg peak
+radius_mean = 0.035  # q from Bragg peak
 dq = 0.0002  # width in q of the shell to be projected
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
@@ -67,13 +67,13 @@ reconstructed_data = True  # set it to True if the data is a BCDI reconstruction
 # the reconstruction should be in the crystal orthogonal frame
 reflection_axis = 1  # array axis along which is aligned the measurement direction (0, 1 or 2)
 threshold_amp = 0.3  # threshold for support determination from amplitude, if reconstructed_data=1
-use_phase = True  # set to False to use only a support, True to use the compex amplitude
-binary_support = False  # if True, the modulus of the reconstruction will be set to a binary support
+use_phase = False  # set to False to use only a support, True to use the complex amplitude
+binary_support = True  # if True, the modulus of the reconstruction will be set to a binary support
 phase_factor = -1  # 1, -1, -2*np.pi/d depending on what is in the field phase (phase, -phase, displacement...)
 voxel_size = [6.0, 6.0, 6.0]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
-pad_size = [1, 1, 1]  # list of three int >= 1, will pad to get this number times the initial array size
+pad_size = [2, 2, 2]  # list of three int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
-upsampling_ratio = 1  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
+upsampling_ratio = 2  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
 # it corresponds to increasing the size of the detector while keeping detector pixel size constant
 ###################
 # various options #
@@ -148,7 +148,10 @@ planes = dict()  # create dictionnary
 planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
 planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
 planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-# planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
+planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
+planes['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
+planes['1 -1 0'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 0]))
+planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
 ###################
 # define colormap #
 ###################
@@ -721,7 +724,7 @@ if flag_plotplanes:
                        (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
                        np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
                        (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                       key, fontsize=20, color='k', fontweight='bold')
+                       key, fontsize=14, color='k', fontweight='bold')
             indx = indx + 5
         print(key + ": ", str('{:.2f}'.format(value)))
 myax0.set_title('Top projection\nfrom South pole S' + str(scan)+'\n')
@@ -784,7 +787,7 @@ if flag_plotplanes:
                        (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
                        np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
                        (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                       key, fontsize=20, color='k', fontweight='bold')
+                       key, fontsize=14, color='k', fontweight='bold')
             indx = indx + 5
         print(key + ": ", str('{:.2f}'.format(value)))
 plt.title('Bottom projection\nfrom North pole S' + str(scan) + '\n')
