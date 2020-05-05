@@ -68,7 +68,7 @@ reconstructed_data = True  # set it to True if the data is a BCDI reconstruction
 reflection_axis = 1  # array axis along which is aligned the measurement direction (0, 1 or 2)
 threshold_amp = 0.3  # threshold for support determination from amplitude, if reconstructed_data=1
 use_phase = False  # set to False to use only a support, True to use the complex amplitude
-binary_support = True  # if True, the modulus of the reconstruction will be set to a binary support
+binary_support = False  # if True, the modulus of the reconstruction will be set to a binary support
 phase_factor = -1  # 1, -1, -2*np.pi/d depending on what is in the field phase (phase, -phase, displacement...)
 voxel_size = [6.0, 6.0, 6.0]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
 pad_size = [2, 2, 2]  # list of three int >= 1, will pad to get this number times the initial array size
@@ -487,7 +487,7 @@ if reconstructed_data == 0:
     fig.text(0.60, 0.20, "offset_phi=" + str(offset_phi), size=20)
     fig.text(0.60, 0.15, "offset_chi=" + str(offset_chi), size=20)
 plt.pause(0.1)
-plt.savefig(homedir + 'diffpattern' + comment + 'S' + str(scan) + '_q=' + str(radius_mean) + '.png')
+plt.savefig(homedir + 'diffpattern' + comment + '_S' + str(scan) + '_q=' + str(radius_mean) + '.png')
 
 ####################################################################
 #  plot upper and lower part of intensity with intersecting sphere #
