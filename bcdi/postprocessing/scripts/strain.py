@@ -56,7 +56,8 @@ original_size = [140, 512, 350]  # size of the FFT array before binning. It will
 binning = (2, 2, 2)  # binning factor applied during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
-fix_voxel = 6.0  # in nm, put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
+fix_voxel = 6.0  # voxel size in nm for the interpolation during the geometrical transformation
+# put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 plot_margin = (60, 30, 30)  # (z, y, x) margin in pixel to leave outside the support in each direction when cropping,
 # it can be negative. It is useful in order to avoid cutting the object during the orthogonalization.
 #############################################################
