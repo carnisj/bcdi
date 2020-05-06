@@ -33,7 +33,6 @@ savedir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/simu/"
 comment = ''  # should start with _
 interp_factor = 150  # the number of point for the interpolation on a sphere will be the number of voxels at the defined
 # q value divided by interp_factor
-plot_avg = False  # True to plot the angular average of the data
 debug = False  # set to True to see more plots
 origin_qspace = (281, 216, 236)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
 q_xcca = (0.479, 0.479)  # q values in 1/nm where to calculate the angular cross-correlation
@@ -91,20 +90,19 @@ qy = qvalues['qy']
 del qvalues
 gc.collect()
 
-#########################################################
-# plot the angular average using mean and median values #
-#########################################################
-if plot_avg:
-    q_axis, y_mean_masked, y_median_masked = util.angular_avg(data=data, q_values=(qx, qz, qy), origin=origin_qspace,
-                                                              nb_bins=nz//4, debugging=debug)
-    fig, ax = plt.subplots(1, 1)
-    ax.plot(q_axis, np.log10(y_mean_masked), 'r', label='mean')
-    ax.plot(q_axis, np.log10(y_median_masked), 'b', label='median')
-    ax.axvline(x=q_xcca[0], ymin=0, ymax=1, color='g', linestyle='--', label='q1')
-    ax.axvline(x=q_xcca[1], ymin=0, ymax=1, color='r', linestyle=':', label='q2')
-    ax.set_xlabel('q (1/nm)')
-    ax.set_ylabel('Angular average (A.U.)')
-    ax.legend()
+##############################################################
+# calculate the angular average using mean and median values #
+##############################################################
+q_axis, y_mean_masked, y_median_masked = util.angular_avg(data=data, q_values=(qx, qz, qy), origin=origin_qspace,
+                                                          nb_bins=nz//4, debugging=debug)
+fig, ax = plt.subplots(1, 1)
+ax.plot(q_axis, np.log10(y_mean_masked), 'r', label='mean')
+ax.plot(q_axis, np.log10(y_median_masked), 'b', label='median')
+ax.axvline(x=q_xcca[0], ymin=0, ymax=1, color='g', linestyle='--', label='q1')
+ax.axvline(x=q_xcca[1], ymin=0, ymax=1, color='r', linestyle=':', label='q2')
+ax.set_xlabel('q (1/nm)')
+ax.set_ylabel('Angular average (A.U.)')
+ax.legend()
 
 ##############################################################
 # interpolate the data onto spheres at user-defined q values #
@@ -122,7 +120,7 @@ for counter, value in enumerate(q_xcca):
     if (counter == 0) or ((counter == 1) and not same_q):
         nb_pixels = int((np.logical_and((distances < q_xcca[counter]+dq), (distances > q_xcca[counter]-dq))).sum()
                         / interp_factor)
-        print('Number of voxels for the sphere of radius q ={:.3f} 1/nm'.format(q_xcca[counter]), nb_pixels)
+        print('Number of voxels for the sphere of radius q ={:.3f} 1/nm:'.format(q_xcca[counter]), nb_pixels)
         indices = np.arange(0, nb_pixels, dtype=float) + 0.5
 
         theta = np.arccos(1 - 2*indices/nb_pixels)  # theta, phi are the angles from the spherical coordinates
@@ -139,8 +137,6 @@ for counter, value in enumerate(q_xcca):
 
         # remove nan values here, then we do not need to care about it anymore in the for loop following
         nan_indices = np.argwhere(np.isnan(sphere_int))
-        print('Removing', nan_indices.size, 'nan values')
-        # for idx in range(len(nan_indices)):
         theta = np.delete(theta, nan_indices)
         phi = np.delete(phi, nan_indices)
         sphere_int = np.delete(sphere_int, nan_indices)
@@ -149,7 +145,7 @@ for counter, value in enumerate(q_xcca):
                                                               sphere_int[:, np.newaxis]), axis=1)
         # update the number of points without nan
         nb_points.append(len(theta))
-
+        print('Removing', nan_indices.size, 'nan values,', nb_points[counter], 'remain')
         if debug:
             fig = plt.figure()
             ax = Axes3D(fig)
@@ -182,27 +178,59 @@ ang_corr_count = np.zeros((nb_points[0], 3))  # the first column contains the an
 ang_corr_count[:, 0] = np.linspace(start=0, stop=np.pi, num=nb_points[0])
 delta_step = (ang_corr_count[1, 0] - ang_corr_count[0, 0]) / 2
 
-start = time.time()
-for idx in range(nb_points[0]):  # loop over the points of the first q value
-    # calculate the angle between the current point and all points from the second q value (delta in [0 pi])
-    delta = np.arccos(np.sin(theta_phi_int['q1'][idx, 0]) * np.sin(theta_phi_int[key_q2][:, 0]) *
-                      np.cos(theta_phi_int[key_q2][:, 1] - theta_phi_int['q1'][idx, 1]) +
-                      np.cos(theta_phi_int['q1'][idx, 0]) * np.cos(theta_phi_int[key_q2][:, 0]))
+try:  # try to calculate the CCF in one round using vectorization
+    start = time.time()
+    # calculate the angle between the all points from both q values (delta in [0 pi])
+    # values for q1 will be in raw, values for q2 in column
+    theta1 = theta_phi_int['q1'][:, 0]
+    theta2 = theta_phi_int[key_q2][:, 0]
+    phi1 = theta_phi_int['q1'][:, 1]
+    phi2 = theta_phi_int[key_q2][:, 1]
+    int1 = theta_phi_int['q1'][:, 2]
+    int2 = theta_phi_int[key_q2][:, 2]
 
-    # find the nearest angular bin value for each value of the array delta
-    indices = util.find_nearest(test_values=delta, reference_array=ang_corr_count[:, 0])
+    delta = np.arccos(np.sin(theta1[:, np.newaxis]) * np.sin(theta2[np.newaxis, :]) *
+                      np.cos(phi2[np.newaxis, :] - phi1[:, np.newaxis]) +
+                      np.cos(theta1[:, np.newaxis]) * np.cos(theta2[np.newaxis, :]))
 
-    # update the cross-correlation function with correlations for the current point. Nan values are already removed.
-    ang_corr_count[indices, 1] = theta_phi_int['q1'][idx, 2] * theta_phi_int[key_q2][indices, 2]
+    for angle in range(nb_points[0]):  # loop over the bins of the CCF
+        raw, col = np.nonzero(np.logical_and((delta < ang_corr_count[angle, 0] + delta_step),
+                                             (delta >= ang_corr_count[angle, 0] - delta_step)))
 
-    # update the counter of bin indices
-    index, counts = np.unique(indices, return_counts=True)
-    ang_corr_count[index, 2] = ang_corr_count[index, 2] + counts
+        # update the cross-correlation function. Nan values are already removed.
+        ang_corr_count[angle, 1] = np.multiply(int1[raw], int2[col]).sum()
 
-    del index, counts, indices, delta
+        # update the counter of bin indices
+        ang_corr_count[angle, 2] = len(raw)  # or equivalently len(col)
+
+    del theta1, theta2, phi1, phi2, int1, int2, delta
     gc.collect()
-end = time.time()
-print('Time ellapsed for the calculation of the CCF:', int(end - start), 's')
+    end = time.time()
+    print('Time ellapsed for the calculation of the CCF using vectorization:', int(end - start), 's')
+
+except MemoryError:  # switch to the for loop, not enough memory to calculate the CCF using vectorization
+    print('Not enough memory, switching to the iterative calculation')
+    start = time.time()
+    for idx in range(nb_points[0]):  # loop over the points of the first q value
+        # calculate the angle between the current point and all points from the second q value (delta in [0 pi])
+        delta = np.arccos(np.sin(theta_phi_int['q1'][idx, 0]) * np.sin(theta_phi_int[key_q2][:, 0]) *
+                          np.cos(theta_phi_int[key_q2][:, 1] - theta_phi_int['q1'][idx, 1]) +
+                          np.cos(theta_phi_int['q1'][idx, 0]) * np.cos(theta_phi_int[key_q2][:, 0]))
+
+        # find the nearest angular bin value for each value of the array delta
+        indices = util.find_nearest(test_values=delta, reference_array=ang_corr_count[:, 0])
+
+        # update the cross-correlation function with correlations for the current point. Nan values are already removed.
+        ang_corr_count[indices, 1] = theta_phi_int['q1'][idx, 2] * theta_phi_int[key_q2][indices, 2]
+
+        # update the counter of bin indices
+        index, counts = np.unique(indices, return_counts=True)
+        ang_corr_count[index, 2] = ang_corr_count[index, 2] + counts
+
+        del index, counts, indices, delta
+        gc.collect()
+    end = time.time()
+    print('Time ellapsed for the calculation of the CCF:', int(end - start), 's')
 
 # normalize the cross-correlation by the counter
 ang_corr_count[(ang_corr_count[:, 2] == 0), 1] = np.nan  # discard these values of the CCF
@@ -212,7 +240,8 @@ ang_corr_count[indices, 1] = ang_corr_count[indices, 1] / ang_corr_count[indices
 #######################################
 # save the cross-correlation function #
 #######################################
-np.savez_compressed(savedir + 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) + '.npz', obj=ang_corr_count)
+np.savez_compressed(savedir + 'CCF_q1={:.3f}_q2={:.3f}_interp{:d}'.format(q_xcca[0], q_xcca[1], interp_factor) + '.npz',
+                    obj=ang_corr_count)
 
 #######################################
 # plot the cross-correlation function #
@@ -224,9 +253,9 @@ ax.set_xlabel('Angle (deg)')
 ax.set_ylabel('Cross-correlation')
 ax.set_xticks(np.arange(0, 181, 30))
 ax.set_title('CCF at q1={:.3f} 1/nm  and q2={:.3f} 1/nm'.format(q_xcca[0], q_xcca[1]))
-plt.savefig(savedir + 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) + '.png')
+fig.savefig(savedir + 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) + '.png')
 
-fig, ax = plt.subplots()
+_, ax = plt.subplots()
 ax.plot(180*ang_corr_count[:, 0]/np.pi, ang_corr_count[:, 2])
 ax.set_xlim(0, 180)
 ax.set_xlabel('Angle (deg)')
