@@ -665,10 +665,12 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
         fig.add_subplot(121)
         plt.imshow(distances_top, cmap=cmap, interpolation='nearest')
         plt.title('Distances South')
+        plt.colorbar()
         plt.gca().invert_yaxis()
         fig.add_subplot(122)
         plt.imshow(distances_bottom, cmap=cmap, interpolation='nearest')
         plt.title('Distances North')
+        plt.colorbar()
         plt.gca().invert_yaxis()
         plt.pause(0.1)
 
