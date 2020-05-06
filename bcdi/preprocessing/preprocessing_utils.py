@@ -175,12 +175,15 @@ def beamstop_correction(data, detector, setup, debugging=False):
     small_border = small_square - temp_array
 
     if debugging:
-        gu.combined_plots(tuple_array=(data, large_square, small_square, large_border, small_border),
-                          tuple_sum_frames=(True, False, False, False, False),
+        gu.imshow_plot(data, sum_frames=True, sum_axis=0, vmin=0, vmax=11, plot_colorbar=True, scale='log',
+                       title='data before absorption correction', is_orthogonal=False, reciprocal_space=True)
+
+        gu.combined_plots(tuple_array=(large_square, small_square, large_border, small_border),
+                          tuple_sum_frames=(False, False, False, False),
                           tuple_sum_axis=0, tuple_width_v=None, tuple_width_h=None, tuple_colorbar=False,
-                          tuple_vmin=0, tuple_vmax=np.nan, is_orthogonal=False, reciprocal_space=True,
-                          tuple_title=('data', 'large_square', 'small_square', 'larger border', 'small border'),
-                          tuple_scale=('log', 'linear', 'linear', 'linear', 'linear'))
+                          tuple_vmin=0, tuple_vmax=11, is_orthogonal=False, reciprocal_space=True,
+                          tuple_title=('large_square', 'small_square', 'larger border', 'small border'),
+                          tuple_scale=('linear', 'linear', 'linear', 'linear'))
 
     # absorption correction for the large and small square beam stops
     for idx in range(nbz):
@@ -190,8 +193,8 @@ def beamstop_correction(data, detector, setup, debugging=False):
         data[idx, :, :] = tempdata
 
     if debugging:
-        gu.imshow_plot(data, sum_frames=True, sum_axis=0, vmin=0, title='data after absorption correction', scale='log',
-                       is_orthogonal=False, reciprocal_space=True)
+        gu.imshow_plot(data, sum_frames=True, sum_axis=0, vmin=0, vmax=11, plot_colorbar=True, scale='log',
+                       title='data after absorption correction', is_orthogonal=False, reciprocal_space=True)
 
     # interpolation for the border of the large square beam stop
     indices = np.argwhere(large_border == 1)
@@ -218,7 +221,7 @@ def beamstop_correction(data, detector, setup, debugging=False):
         data[frame, :, :] = tempdata
 
     if debugging:
-        gu.imshow_plot(data, sum_frames=True, sum_axis=0, vmin=0, scale='log',
+        gu.imshow_plot(data, sum_frames=True, sum_axis=0, vmin=0, vmax=11, plot_colorbar=True, scale='log',
                        title='data after interpolating the border of beam stops',
                        is_orthogonal=False, reciprocal_space=True)
     return data
@@ -1477,7 +1480,7 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     # remove indices where frames_logical=0
     nbz, nby, nbx = data.shape
     nb_frames = (frames_logical != 0).sum()
-
+    # TODO: try to load data more efficiently memorywise
     newdata = np.zeros((nb_frames, nby, nbx))
     newmask = np.zeros((nb_frames, nby, nbx))
     # do not process the monitor here, it is done in normalize_dataset()
