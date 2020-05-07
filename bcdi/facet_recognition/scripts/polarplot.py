@@ -654,37 +654,37 @@ qx1_bottom = qx1*np.ones(intensity_bottom.shape)
 qy1_bottom = qy1*np.ones(intensity_bottom.shape)
 qz1_bottom = qz1_bottom*np.ones(intensity_bottom.shape)
 
-u_temp_top = np.divide((qx1_top - qxCOM)*radius_mean, (radius_mean+(qz1_top - qzCOM)))  # projection from South
-v_temp_top = np.divide((qy1_top - qyCOM)*radius_mean, (radius_mean+(qz1_top - qzCOM)))  # projection from South
-u_temp_bottom = np.divide((qx1_bottom - qxCOM)*radius_mean, (radius_mean+(qzCOM-qz1_bottom)))  # projection from North
-v_temp_bottom = np.divide((qy1_bottom - qyCOM)*radius_mean, (radius_mean+(qzCOM-qz1_bottom)))  # projection from North
+u_temp_south = np.divide((qx1_top - qxCOM)*radius_mean, (radius_mean+(qz1_top - qzCOM)))  # projection from South
+v_temp_south = np.divide((qy1_top - qyCOM)*radius_mean, (radius_mean+(qz1_top - qzCOM)))  # projection from South
+u_temp_north = np.divide((qx1_bottom - qxCOM)*radius_mean, (radius_mean+(qzCOM-qz1_bottom)))  # projection from North
+v_temp_north = np.divide((qy1_bottom - qyCOM)*radius_mean, (radius_mean+(qzCOM-qz1_bottom)))  # projection from North
 # TODO: implement projection in the two other directions
-u_top = u_temp_top[mask_top]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
-v_top = v_temp_top[mask_top]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
-u_bottom = u_temp_bottom[mask_bottom]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
-v_bottom = v_temp_bottom[mask_bottom]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
+u_south = u_temp_south[mask_top]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
+v_south = v_temp_south[mask_top]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
+u_north = u_temp_north[mask_bottom]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
+v_north = v_temp_north[mask_bottom]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
 
-int_temp_top = I_masked_top[mask_top]
-int_temp_bottom = I_masked_bottom[mask_bottom]
+int_temp_south = I_masked_top[mask_top]
+int_temp_north = I_masked_bottom[mask_bottom]
 
 u_grid, v_grid = np.mgrid[-91:91:365j, -91:91:365j]
 
-int_grid_top = griddata((u_top, v_top), int_temp_top, (u_grid, v_grid), method='linear')
-int_grid_bottom = griddata((u_bottom, v_bottom), int_temp_bottom, (u_grid, v_grid), method='linear')
+int_grid_south = griddata((u_south, v_south), int_temp_south, (u_grid, v_grid), method='linear')
+int_grid_north = griddata((u_north, v_north), int_temp_north, (u_grid, v_grid), method='linear')
 
-int_grid_top = int_grid_top / int_grid_top[int_grid_top > 0].max() * 10000  # normalize for easier plotting
-int_grid_bottom = int_grid_bottom / int_grid_bottom[int_grid_bottom > 0].max() * 10000  # normalize for easier plotting
+int_grid_south = int_grid_south / int_grid_south[int_grid_south > 0].max() * 10000  # normalize for easier plotting
+int_grid_north = int_grid_north / int_grid_north[int_grid_north > 0].max() * 10000  # normalize for easier plotting
 
-int_grid_top[np.isnan(int_grid_top)] = 0
-int_grid_bottom[np.isnan(int_grid_bottom)] = 0
+int_grid_south[np.isnan(int_grid_south)] = 0
+int_grid_north[np.isnan(int_grid_north)] = 0
 
 ###########################################
 # plot the projection from the South pole #
 ###########################################
-int_grid_top[int_grid_top < background_polarplot] = np.nan
+int_grid_south[int_grid_south < background_polarplot] = np.nan
 
 fig, _ = gu.plot_stereographic(euclidian_u=u_grid.flatten(), euclidian_v=v_grid.flatten(),
-                               color=int_grid_top.flatten(), radius_mean=radius_mean, planes=planes_south,
+                               color=int_grid_south.flatten(), radius_mean=radius_mean, planes=planes_south,
                                title="Projection from\nSouth pole S" + str(scan), plot_planes=plot_planes,
                                contour_range=range(range_min, range_max, range_step))
 
@@ -699,9 +699,9 @@ fig.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
 ############################################
 # plot the projection from the  North pole #
 ############################################
-int_grid_bottom[int_grid_bottom < background_polarplot] = np.nan
+int_grid_north[int_grid_north < background_polarplot] = np.nan
 fig, _ = gu.plot_stereographic(euclidian_u=u_grid.flatten(), euclidian_v=v_grid.flatten(),
-                               color=int_grid_bottom.flatten(), radius_mean=radius_mean, planes=planes_south,
+                               color=int_grid_north.flatten(), radius_mean=radius_mean, planes=planes_north,
                                title="Projection from\nNorth pole S" + str(scan), plot_planes=plot_planes,
                                contour_range=range(range_min, range_max, range_step))
 
@@ -723,8 +723,8 @@ fichier = open(homedir + 'Poles' + comment + '_S' + str(scan) + '.dat', "w")
 for ii in range(len(u_grid)):
     for jj in range(len(v_grid)):
         fichier.write(str(u_grid[ii, 0]) + '\t' + str(v_grid[0, jj]) + '\t' +
-                      str(int_grid_top[ii, jj]) + '\t' + str(u_grid[ii, 0]) + '\t' +
-                      str(v_grid[0, jj]) + '\t' + str(int_grid_bottom[ii, jj]) + '\n')
+                      str(int_grid_south[ii, jj]) + '\t' + str(u_grid[ii, 0]) + '\t' +
+                      str(v_grid[0, jj]) + '\t' + str(int_grid_north[ii, jj]) + '\n')
 fichier.close()
 plt.ioff()
 plt.show()
