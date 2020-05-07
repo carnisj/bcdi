@@ -144,14 +144,21 @@ tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
 ##################################################################################################
 # calculate theoretical angles between the measured reflection and other planes - only for cubic #
 ##################################################################################################
-planes = dict()  # create dictionnary
-planes['2 1 0'] = fu.plane_angle_cubic(reflection, np.array([2, 1, 0]))
-planes['2 -1 0'] = fu.plane_angle_cubic(reflection, np.array([2, -1, 0]))
-planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
-planes['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
-planes['1 -1 0'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 0]))
-planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
+planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
+planes_south['1 1 1'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 1]))
+planes_south['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
+planes_south['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
+planes_south['-1 1 0'] = fu.plane_angle_cubic(reflection, np.array([-1, 1, 0]))
+planes_south['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
+planes_south['-1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([-1, -1, 1]))
+
+planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
+planes_north['-1 -1 -1'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, -1]))
+planes_north['-1 0 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, 0, 0]))
+planes_north['-1 -1 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, 0]))
+planes_north['-1 1 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, 1, 0]))
+planes_north['-1 -1 1'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, 1]))
+planes_north['-1 1 1'] = fu.plane_angle_cubic(-reflection, np.array([-1, 1, 1]))
 ###################
 # define colormap #
 ###################
@@ -651,7 +658,7 @@ u_temp_top = np.divide((qx1_top - qxCOM)*radius_mean, (radius_mean+(qz1_top - qz
 v_temp_top = np.divide((qy1_top - qyCOM)*radius_mean, (radius_mean+(qz1_top - qzCOM)))  # projection from South
 u_temp_bottom = np.divide((qx1_bottom - qxCOM)*radius_mean, (radius_mean+(qzCOM-qz1_bottom)))  # projection from North
 v_temp_bottom = np.divide((qy1_bottom - qyCOM)*radius_mean, (radius_mean+(qzCOM-qz1_bottom)))  # projection from North
-
+# TODO: implement projection in the two other directions
 u_top = u_temp_top[mask_top]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
 v_top = v_temp_top[mask_top]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
 u_bottom = u_temp_bottom[mask_bottom]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
@@ -714,7 +721,7 @@ for ii in range(0, 365, 20):
 # draw circles corresponding to particular reflection
 if flag_plotplanes:
     indx = 5
-    for key, value in planes.items():
+    for key, value in planes_south.items():
         circle = plt.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
                             (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
                             color='r', fill=False, linestyle='dotted', linewidth=2)
@@ -777,7 +784,7 @@ for ii in range(0, 365, 20):
 # draw circles corresponding to particular reflection
 if flag_plotplanes:
     indx = 0
-    for key, value in planes.items():
+    for key, value in planes_north.items():
         circle = plt.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
                             (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
                             color='r', fill=False, linestyle='dotted', linewidth=2)
