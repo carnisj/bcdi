@@ -1107,7 +1107,7 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     """
     from scipy.interpolate import griddata
 
-    u_grid, v_grid = np.mgrid[-91:91:183j, -91:91:183j]  # vertical, horizontal
+    u_grid, v_grid = np.mgrid[-91:91:365j, -91:91:365j]  # vertical, horizontal
     intensity_grid = griddata((euclidian_u, euclidian_v), color, (u_grid, v_grid), method='linear')
     intensity_grid = intensity_grid / intensity_grid[intensity_grid > 0].max() * 10000  # normalize for easier plotting
 
