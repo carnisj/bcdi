@@ -79,7 +79,7 @@ upsampling_ratio = 2  # int >=1, upsample the real space object by this factor (
 # various options #
 ###################
 flag_medianfilter = False  # set to True for applying med2filter [3,3]
-flag_plotplanes = True  # if True, plot red dotted circle with plane index
+plot_planes = True  # if True, plot red dotted circle with planes indices
 flag_plottext = True  # if True, will plot plane indices and angles in the figure
 normalize_flux = True  # will normalize the intensity by the default monitor.
 debug = False  # True to show more plots, False otherwise
@@ -678,135 +678,41 @@ int_grid_bottom = int_grid_bottom / int_grid_bottom[int_grid_bottom > 0].max() *
 int_grid_top[np.isnan(int_grid_top)] = 0
 int_grid_bottom[np.isnan(int_grid_bottom)] = 0
 
-#########################################
-# create top projection from South pole #
-#########################################
+###########################################
+# plot the projection from the South pole #
+###########################################
 int_grid_top[int_grid_top < background_polarplot] = np.nan
-# plot the stereographic projection
-myfig0, myax0 = plt.subplots(1, 1, figsize=(15, 10), facecolor='w', edgecolor='k')
-# plot top part (projection from South pole on equator)
-plt0 = myax0.contourf(u_grid, v_grid, int_grid_top, range(range_min, range_max, range_step),
-                      cmap=my_cmap)
-plt.colorbar(plt0, ax=myax0)
-myax0.axis('equal')
-myax0.axis('off')
 
-# add the projection of the elevation angle, depending on the center of projection
-for ii in range(15, 90, 5):
-    circle = plt.Circle((0, 0),
-                        radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                        color='grey', fill=False, linestyle='dotted', linewidth=0.2)
-    myax0.add_artist(circle)
-for ii in range(10, 90, 20):
-    circle = plt.Circle((0, 0),
-                        radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                        color='grey', fill=False, linestyle='dotted', linewidth=0.5)
-    myax0.add_artist(circle)
+fig, _ = gu.plot_stereographic(euclidian_u=u_grid.flatten(), euclidian_v=v_grid.flatten(),
+                               color=int_grid_top.flatten(), radius_mean=radius_mean, planes=planes_south,
+                               title="Projection from\nSouth pole S" + str(scan), plot_planes=plot_planes,
+                               contour_range=range(range_min, range_max, range_step))
 
-if flag_plottext:
-    for ii in range(10, 95, 20):
-        myax0.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
-                   str(ii) + '$^\circ$', fontsize=18, color='k', fontweight='bold')
-circle = plt.Circle((0, 0), 90, color='k', fill=False, linewidth=1)
-myax0.add_artist(circle)
-
-# add azimutal lines every 5 and 45 degrees
-for ii in range(5, 365, 5):
-    myax0.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
-               linestyle='dotted', linewidth=0.2)
-for ii in range(0, 365, 20):
-    myax0.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
-               linestyle='dotted', linewidth=0.5)
-
-# draw circles corresponding to particular reflection
-if flag_plotplanes:
-    indx = 5
-    for key, value in planes_south.items():
-        circle = plt.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
-                            (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                            color='r', fill=False, linestyle='dotted', linewidth=2)
-        myax0.add_artist(circle)
-        if flag_plottext:
-            myax0.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                       np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                       key, fontsize=14, color='k', fontweight='bold')
-            indx = indx + 5
-        print(key + ": ", str('{:.2f}'.format(value)))
-myax0.set_title('Top projection\nfrom South pole S' + str(scan)+'\n')
-if reconstructed_data == 0:
-    myfig0.text(0.05, 0.02, "q=" + str(radius_mean) +
-                " dq=" + str(dq) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
-                " offset_chi=" + str(offset_chi), size=20)
-
+if not reconstructed_data:
+    fig.text(0.05, 0.02, "q=" + str(radius_mean) + " dq=" + str(dq) + " offset_eta=" + str(offset_eta) +
+             " offset_phi=" + str(offset_phi) + " offset_chi=" + str(offset_chi), size=20)
 else:
-    myfig0.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dq), size=20)
-plt.pause(0.1)
-plt.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
+    fig.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dq), size=20)
+
+fig.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
+
 ############################################
-# create bottom projection from North pole #
+# plot the projection from the  North pole #
 ############################################
 int_grid_bottom[int_grid_bottom < background_polarplot] = np.nan
-myfig1, myax1 = plt.subplots(1, 1, figsize=(15, 10), facecolor='w', edgecolor='k')
-plt1 = myax1.contourf(u_grid, v_grid, int_grid_bottom, range(range_min, range_max, range_step),
-                      cmap=my_cmap)
-plt.colorbar(plt1, ax=myax1)
-myax1.axis('equal')
-myax1.axis('off')
+fig, _ = gu.plot_stereographic(euclidian_u=u_grid.flatten(), euclidian_v=v_grid.flatten(),
+                               color=int_grid_bottom.flatten(), radius_mean=radius_mean, planes=planes_south,
+                               title="Projection from\nNorth pole S" + str(scan), plot_planes=plot_planes,
+                               contour_range=range(range_min, range_max, range_step))
 
-# add the projection of the elevation angle, depending on the center of projection
-for ii in range(15, 90, 5):
-    circle = plt.Circle((0, 0),
-                        radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                        color='grey', fill=False, linestyle='dotted', linewidth=0.2)
-    myax1.add_artist(circle)
-for ii in range(10, 90, 20):
-    circle = plt.Circle((0, 0),
-                        radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                        color='grey', fill=False, linestyle='dotted', linewidth=0.5)
-    myax1.add_artist(circle)
-if flag_plottext:
-    for ii in range(10, 95, 20):
-        myax1.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
-                   str(ii) + '$^\circ$', fontsize=18, color='k', fontweight='bold')
-circle = plt.Circle((0, 0), 90, color='k', fill=False, linewidth=1)
-myax1.add_artist(circle)
 
-# add azimutal lines every 5 and 45 degrees
-for ii in range(5, 365, 5):
-    myax1.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
-               linestyle='dotted', linewidth=0.2)
-for ii in range(0, 365, 20):
-    myax1.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
-               linestyle='dotted', linewidth=0.5)
-
-# draw circles corresponding to particular reflection
-if flag_plotplanes:
-    indx = 0
-    for key, value in planes_north.items():
-        circle = plt.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
-                            (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                            color='r', fill=False, linestyle='dotted', linewidth=2)
-        myax1.add_artist(circle)
-        if flag_plottext:
-            myax1.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                       np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                       (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                       key, fontsize=14, color='k', fontweight='bold')
-            indx = indx + 5
-        print(key + ": ", str('{:.2f}'.format(value)))
-plt.title('Bottom projection\nfrom North pole S' + str(scan) + '\n')
-# save figure
-if reconstructed_data == 0:
-    myfig1.text(0.05, 0.02, "q=" + str(radius_mean) +
-                " dq=" + str(dq) + " offset_eta=" + str(offset_eta) + " offset_phi=" + str(offset_phi) +
-                " offset_chi=" + str(offset_chi), size=20)
+if not reconstructed_data:
+    fig.text(0.05, 0.02, "q=" + str(radius_mean) + " dq=" + str(dq) + " offset_eta=" + str(offset_eta) +
+             " offset_phi=" + str(offset_phi) + " offset_chi=" + str(offset_chi), size=20)
 
 else:
-    myfig1.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dq), size=20)
-plt.pause(0.1)
+    fig.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dq), size=20)
+
 plt.savefig(homedir + 'North pole' + comment + '_S' + str(scan) + '.png')
 
 ################################
