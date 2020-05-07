@@ -570,7 +570,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     density_south = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), intensity, (yi, xi), method='linear')  # South
     density_north = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), intensity, (yi, xi), method='linear')  # North
     density_south = density_south / density_south[density_south > 0].max() * 10000  # normalize for plotting
-    density_north= density_north / density_north[density_north > 0].max() * 10000  # normalize for plotting
+    density_north = density_north / density_north[density_north > 0].max() * 10000  # normalize for plotting
 
     if save_txt:
         # save metric coordinates in text file
