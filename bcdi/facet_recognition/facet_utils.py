@@ -26,9 +26,9 @@ def calc_stereoproj_facet(reflection_axis, normals, radius_mean, stereo_center):
     :param reflection_axis: array axis along which is aligned the measurement direction (0, 1 or 2)
     :param normals: array of normals to mesh triangles (nb_normals rows x 3 columns)
     :param radius_mean: q radius from which the projection will be done
-    :param stereo_center: offset of the projection plane
-    :return: the coordinates of the stereographic projection both top projection (1st and 2nd columns) and bottom
-     (3rd and 4th columns) projection, rescale from radius_mean to 90 degrees
+    :param stereo_center: offset of the projection plane along the reflection axis, in the same unit as radius_mean
+    :return: the coordinates of the stereographic projection for the projection from the South pole(1st and 2nd columns)
+      and from the North pole (3rd and 4th columns) projection, rescaled from radius_mean to 90 degrees
     """
 
     if reflection_axis not in [0, 1, 2]:
@@ -36,13 +36,11 @@ def calc_stereoproj_facet(reflection_axis, normals, radius_mean, stereo_center):
 
     # calculate u and v from xyz
     stereo_proj = np.zeros((normals.shape[0], 4), dtype=normals.dtype)
-    # stereo_proj[:, 0] is the euclidian u_top, stereo_proj[:, 1] is the euclidian v_top
-    # stereo_proj[:, 2] is the euclidian u_bottom, stereo_proj[:, 3] is the euclidian v_bottom
+    # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
+    # stereo_proj[:, 2] is the euclidian u_north, stereo_proj[:, 3] is the euclidian v_north
 
     if reflection_axis == 0:  # q aligned along the 1st axis (Z downstream in CXI convention)
         for idx in range(normals.shape[0]):
-            # if normals[idx, 1] == 0 and normals[idx, 0] == 0:
-            #     continue
             stereo_proj[idx, 0] = radius_mean * normals[idx, 1] / (radius_mean + normals[idx, 0] - stereo_center)
             stereo_proj[idx, 1] = radius_mean * normals[idx, 2] / (radius_mean + normals[idx, 0] - stereo_center)
             stereo_proj[idx, 2] = radius_mean * normals[idx, 1] / (stereo_center - radius_mean + normals[idx, 0])
@@ -50,8 +48,6 @@ def calc_stereoproj_facet(reflection_axis, normals, radius_mean, stereo_center):
 
     elif reflection_axis == 1:  # q aligned along the 2nd axis (Y vertical up in CXI convention)
         for idx in range(normals.shape[0]):
-            # if normals[idx, 1] == 0 and normals[idx, 0] == 0:
-            #     continue
             stereo_proj[idx, 0] = radius_mean * normals[idx, 0] / (radius_mean + normals[idx, 1] - stereo_center)
             stereo_proj[idx, 1] = radius_mean * normals[idx, 2] / (radius_mean + normals[idx, 1] - stereo_center)
             stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (stereo_center - radius_mean + normals[idx, 1])
@@ -59,8 +55,6 @@ def calc_stereoproj_facet(reflection_axis, normals, radius_mean, stereo_center):
 
     else:  # q aligned along the 3rd axis (X outboard in CXI convention)
         for idx in range(normals.shape[0]):
-            # if normals[idx, 1] == 0 and normals[idx, 0] == 0:
-            #     continue
             stereo_proj[idx, 0] = radius_mean * normals[idx, 0] / (radius_mean + normals[idx, 2] - stereo_center)
             stereo_proj[idx, 1] = radius_mean * normals[idx, 1] / (radius_mean + normals[idx, 2] - stereo_center)
             stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (stereo_center - radius_mean + normals[idx, 2])
