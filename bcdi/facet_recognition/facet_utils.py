@@ -30,7 +30,7 @@ def calc_stereoproj_facet(reflection_axis, normals, radius_mean, stereo_center):
     :return: the coordinates of the stereographic projection for the projection from the South pole(1st and 2nd columns)
       and from the North pole (3rd and 4th columns) projection, rescaled from radius_mean to 90 degrees
     """
-
+    # TODO: keep track of where is u and v depending on reflection_axis
     if reflection_axis not in [0, 1, 2]:
         raise ValueError('reflection_axis should be a basis axis of the reconstructed array')
 
@@ -43,22 +43,22 @@ def calc_stereoproj_facet(reflection_axis, normals, radius_mean, stereo_center):
         for idx in range(normals.shape[0]):
             stereo_proj[idx, 0] = radius_mean * normals[idx, 1] / (radius_mean + normals[idx, 0] - stereo_center)
             stereo_proj[idx, 1] = radius_mean * normals[idx, 2] / (radius_mean + normals[idx, 0] - stereo_center)
-            stereo_proj[idx, 2] = radius_mean * normals[idx, 1] / (stereo_center - radius_mean + normals[idx, 0])
-            stereo_proj[idx, 3] = radius_mean * normals[idx, 2] / (stereo_center - radius_mean + normals[idx, 0])
+            stereo_proj[idx, 2] = radius_mean * normals[idx, 1] / (radius_mean + stereo_center - normals[idx, 0])
+            stereo_proj[idx, 3] = radius_mean * normals[idx, 2] / (radius_mean + stereo_center - normals[idx, 0])
 
     elif reflection_axis == 1:  # q aligned along the 2nd axis (Y vertical up in CXI convention)
         for idx in range(normals.shape[0]):
             stereo_proj[idx, 0] = radius_mean * normals[idx, 0] / (radius_mean + normals[idx, 1] - stereo_center)
             stereo_proj[idx, 1] = radius_mean * normals[idx, 2] / (radius_mean + normals[idx, 1] - stereo_center)
-            stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (stereo_center - radius_mean + normals[idx, 1])
-            stereo_proj[idx, 3] = radius_mean * normals[idx, 2] / (stereo_center - radius_mean + normals[idx, 1])
+            stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (radius_mean + stereo_center - normals[idx, 1])
+            stereo_proj[idx, 3] = radius_mean * normals[idx, 2] / (radius_mean + stereo_center - normals[idx, 1])
 
     else:  # q aligned along the 3rd axis (X outboard in CXI convention)
         for idx in range(normals.shape[0]):
             stereo_proj[idx, 0] = radius_mean * normals[idx, 0] / (radius_mean + normals[idx, 2] - stereo_center)
             stereo_proj[idx, 1] = radius_mean * normals[idx, 1] / (radius_mean + normals[idx, 2] - stereo_center)
-            stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (stereo_center - radius_mean + normals[idx, 2])
-            stereo_proj[idx, 3] = radius_mean * normals[idx, 1] / (stereo_center - radius_mean + normals[idx, 2])
+            stereo_proj[idx, 2] = radius_mean * normals[idx, 0] / (radius_mean + stereo_center - normals[idx, 2])
+            stereo_proj[idx, 3] = radius_mean * normals[idx, 1] / (radius_mean + stereo_center - normals[idx, 2])
 
     stereo_proj = stereo_proj / radius_mean * 90  # rescale from radius_mean to 90
 
