@@ -1094,8 +1094,8 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     """
     Plot the stereographic projection with some cosmetics.
 
-    :param euclidian_u: flattened array, normalized Euclidian metric coordinate
-    :param euclidian_v: flattened array, normalized Euclidian metric coordinate
+    :param euclidian_u: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
+    :param euclidian_v: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
     :param color: flattened array, intensity of density kernel estimation at radius_mean
     :param radius_mean: radius of the sphere in reciprocal space from which the projection is done
     :param planes: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
