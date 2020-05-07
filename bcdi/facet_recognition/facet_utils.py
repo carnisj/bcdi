@@ -493,8 +493,8 @@ def surface_indices(surface, plane_indices, margin=3):
 
 
 def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, reflection_axis, min_distance=10,
-                       background_threshold=-1000, save_txt=False, cmap=default_cmap, planes={}, plot_planes=True,
-                       debugging=False):
+                       background_threshold=-1000, save_txt=False, cmap=default_cmap, planes_south={}, planes_north={},
+                       plot_planes=True, debugging=False):
     """
     Detect facets in an object using a stereographic projection of normals to mesh triangles
      and watershed segmentation.
@@ -509,7 +509,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     :param background_threshold: threshold for background determination (depth of the KDE)
     :param save_txt: if True, will save coordinates in a .txt file
     :param cmap: colormap used for plotting pole figures
-    :param planes: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
+    :param planes_south: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
+    :param planes_north: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
     :param plot_planes: if True, will draw circles corresponding to crystallographic planes in the pole figure
     :param debugging: show plots for debugging
     :return: labels for each projection from South and North, one array for each projection from South and North,
@@ -556,11 +557,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     # plot the stereographic projection
     if True:
         fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 1], euclidian_v=stereo_proj[:, 0], color=intensity,
-                                       radius_mean=radius_mean, planes=planes, title="South pole",
+                                       radius_mean=radius_mean, planes=planes_south, title="South pole",
                                        plot_planes=plot_planes)
         fig.savefig(savedir + 'South pole.png')
         fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 3], euclidian_v=stereo_proj[:, 2], color=intensity,
-                                       radius_mean=radius_mean, planes=planes, title="North pole",
+                                       radius_mean=radius_mean, planes=planes_north, title="North pole",
                                        plot_planes=plot_planes)
         fig.savefig(savedir + 'North pole.png')
 

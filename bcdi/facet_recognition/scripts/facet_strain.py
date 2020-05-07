@@ -62,18 +62,24 @@ max_angle = 95  # maximum angle in degree of the stereographic projection (shoul
 #########################################################
 bw_method = 0.03  # bandwidth in the gaussian kernel density estimation
 kde_threshold = -0.2  # threshold for defining the background in the density estimation of normals
-##############################################################################################
-# define crystallographic planes of interest for the stereographic projection (cubic lattice #
-##############################################################################################
-planes = dict()  # create dictionnary
-planes['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
-planes['-1 0 0'] = fu.plane_angle_cubic(reflection, np.array([-1, 0, 0]))
-planes['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
-planes['-1 1 0'] = fu.plane_angle_cubic(reflection, np.array([-1, 1, 0]))
-planes['-1 -1 0'] = fu.plane_angle_cubic(reflection, np.array([-1, -1, 0]))
-planes['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-planes['1 -1 -1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, -1]))
-planes['-1 -1 -1'] = fu.plane_angle_cubic(reflection, np.array([-1, -1, -1]))
+###############################################################################################
+# define crystallographic planes of interest for the stereographic projection (cubic lattice) #
+###############################################################################################
+planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
+planes_south['1 1 1'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 1]))
+planes_south['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
+planes_south['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
+planes_south['-1 1 0'] = fu.plane_angle_cubic(reflection, np.array([-1, 1, 0]))
+planes_south['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
+planes_south['-1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([-1, -1, 1]))
+
+planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
+planes_north['-1 -1 -1'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, -1]))
+planes_north['-1 0 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, 0, 0]))
+planes_north['-1 -1 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, 0]))
+planes_north['-1 1 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, 1, 0]))
+planes_north['-1 -1 1'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, 1]))
+planes_north['-1 1 1'] = fu.plane_angle_cubic(-reflection, np.array([-1, 1, 1]))
 ##########################
 # end of user parameters #
 ##########################
@@ -155,9 +161,9 @@ nb_normals = normals.shape[0]
 if projection_method == 'stereographic':
     labels_top, labels_bottom, stereo_proj, remove_row =\
         fu.stereographic_proj(normals=normals, intensity=intensity, background_threshold=threshold_stereo,
-                              min_distance=peak_min_distance, savedir=savedir, save_txt=False, planes=planes,
-                              plot_planes=True, max_angle=max_angle, voxel_size=voxel_size,
-                              reflection_axis=reflection_axis, debugging=True)
+                              min_distance=peak_min_distance, savedir=savedir, save_txt=False, plot_planes=True,
+                              planes_south=planes_south, planes_north=planes_north, max_angle=max_angle,
+                              voxel_size=voxel_size, reflection_axis=reflection_axis, debugging=debug)
     if len(remove_row) != 0:
         for raw in remove_row:
             normals = np.delete(normals, raw, axis=0)
