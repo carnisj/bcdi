@@ -1089,7 +1089,8 @@ def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped becaus
     return fig, ax0
 
 
-def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, title="", plot_planes=True):
+def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, title="", plot_planes=True,
+                       contour_range=range(100, 6100, 250), cmap=my_cmap):
     """
     Plot the stereographic projection with some cosmetics.
 
@@ -1100,6 +1101,8 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     :param planes: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
     :param title: title for the stereographic plot
     :param plot_planes: if True, will draw circle corresponding to crystallographic planes in the pole figure
+    :param contour_range: range for the plot contours
+    :param cmap: colormap to be used
     :return: figure and axe instances
     """
     from scipy.interpolate import griddata
@@ -1111,7 +1114,7 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     # plot the stereographic projection
     plt.ion()
     fig, ax0 = plt.subplots(1, 1, figsize=(12, 6), dpi=80, facecolor='w', edgecolor='k')
-    plt0 = ax0.contourf(u_grid, v_grid, abs(intensity_grid), range(100, 6100, 250), cmap='hsv')
+    plt0 = ax0.contourf(u_grid, v_grid, abs(intensity_grid), contour_range, cmap=cmap)
     plt.colorbar(plt0, ax=ax0)
     ax0.axis('equal')
     ax0.axis('off')
