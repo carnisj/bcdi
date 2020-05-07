@@ -512,7 +512,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     :param planes: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
     :param plot_planes: if True, will draw circles corresponding to crystallographic planes in the pole figure
     :param debugging: show plots for debugging
-    :return: labels for the top and bottom projections, array of top and bottom projections, list of rows to remove
+    :return: labels for each projection from South and North, one array for each projection from South and North,
+     list of rows to remove
     """
     from scipy.interpolate import griddata
     from scipy import ndimage
@@ -566,83 +567,83 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     # regrid stereo_proj
     yi, xi = np.mgrid[-max_angle:max_angle:381j, -max_angle:max_angle:381j]  # vertical, horizontal
     nby, nbx = xi.shape
-    density_top = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), intensity, (yi, xi), method='linear')  # South
-    density_bottom = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), intensity, (yi, xi), method='linear')  # North
-    density_top = density_top / density_top[density_top > 0].max() * 10000  # normalize for plotting
-    density_bottom = density_bottom / density_bottom[density_bottom > 0].max() * 10000  # normalize for plotting
+    density_south = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), intensity, (yi, xi), method='linear')  # South
+    density_north = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), intensity, (yi, xi), method='linear')  # North
+    density_south = density_south / density_south[density_south > 0].max() * 10000  # normalize for plotting
+    density_north= density_north / density_north[density_north > 0].max() * 10000  # normalize for plotting
 
     if save_txt:
         # save metric coordinates in text file
-        density_top[np.isnan(density_top)] = 0.0
-        density_bottom[np.isnan(density_bottom)] = 0.0
+        density_south[np.isnan(density_south)] = 0.0
+        density_north[np.isnan(density_north)] = 0.0
         fichier = open(savedir + 'CDI_poles.dat', "w")
         for ii in range(len(yi)):
             for jj in range(len(xi)):
                 fichier.write(str(yi[ii, 0]) + '\t' + str(xi[0, jj]) + '\t' +
-                              str(density_top[ii, jj]) + '\t' + str(yi[ii, 0]) + '\t' +
-                              str(xi[0, jj]) + '\t' + str(density_bottom[ii, jj]) + '\n')
+                              str(density_south[ii, jj]) + '\t' + str(yi[ii, 0]) + '\t' +
+                              str(xi[0, jj]) + '\t' + str(density_north[ii, jj]) + '\n')
         fichier.close()
         del intensity
         gc.collect()
 
     # inverse densities for watershed segmentation
-    density_top = -1 * density_top  # South
-    density_bottom = -1 * density_bottom  # North
+    density_south = -1 * density_south
+    density_north = -1 * density_north
 
     fig = plt.figure(figsize=(15, 10))
     ax0 = fig.add_subplot(121)
-    scatter_top = ax0.scatter(xi, yi, c=density_top, cmap=cmap)
+    scatter_south = ax0.scatter(xi, yi, c=density_south, cmap=cmap)
     ax0.set_xlim(-max_angle, max_angle)
     ax0.set_ylim(-max_angle, max_angle)
-    fig.colorbar(scatter_top)
+    fig.colorbar(scatter_south)
     plt.axis('scaled')
     plt.title('KDE \nSouth pole')
     plt.pause(0.1)
 
     ax1 = fig.add_subplot(122)
-    scatter_bottom = ax1.scatter(xi, yi, c=density_bottom, cmap=cmap)
+    scatter_north = ax1.scatter(xi, yi, c=density_north, cmap=cmap)
     ax1.set_xlim(-max_angle, max_angle)
     ax1.set_ylim(-max_angle, max_angle)
-    fig.colorbar(scatter_bottom)
+    fig.colorbar(scatter_north)
     plt.axis('scaled')
     plt.title('KDE \nNorth pole')
     plt.pause(0.1)
 
     # identification of local minima
-    density_top[density_top > background_threshold] = 0  # South, define the background
-    mask_top = np.copy(density_top)
-    mask_top[mask_top != 0] = 1
+    density_south[density_south > background_threshold] = 0  # define the background in the density of normals
+    mask_south = np.copy(density_south)
+    mask_south[mask_south != 0] = 1
 
-    density_bottom[density_bottom > background_threshold] = 0  # North, define the background
-    mask_bottom = np.copy(density_bottom)
-    mask_bottom[mask_bottom != 0] = 1
+    density_north[density_north > background_threshold] = 0  # define the background in the density of normals
+    mask_north = np.copy(density_north)
+    mask_north[mask_north != 0] = 1
 
     fig = plt.figure(figsize=(15, 10))
     ax0 = fig.add_subplot(221)
-    ax0.imshow(mask_top, cmap=cmap, interpolation='nearest')
+    ax0.imshow(mask_south, cmap=cmap, interpolation='nearest')
     plt.title('Background mask South')
     plt.gca().invert_yaxis()
 
     ax1 = fig.add_subplot(223)
-    scatter_top = ax1.scatter(xi, yi, c=density_top, cmap=cmap)
+    scatter_south = ax1.scatter(xi, yi, c=density_south, cmap=cmap)
     ax1.set_xlim(-max_angle, max_angle)
     ax1.set_ylim(-max_angle, max_angle)
-    fig.colorbar(scatter_top)
+    fig.colorbar(scatter_south)
     plt.axis('scaled')
     plt.title('KDE South pole\nafter background definition')
     circle = patches.Circle((0, 0), 90, color='w', fill=False, linewidth=1.5)
     ax1.add_artist(circle)
 
     ax2 = fig.add_subplot(222)
-    ax2.imshow(mask_bottom, cmap=cmap, interpolation='nearest')
+    ax2.imshow(mask_north, cmap=cmap, interpolation='nearest')
     plt.title('Background mask North')
     plt.gca().invert_yaxis()
 
     ax3 = fig.add_subplot(224)
-    scatter_bottom = ax3.scatter(xi, yi, c=density_bottom, cmap=cmap)
+    scatter_north = ax3.scatter(xi, yi, c=density_north, cmap=cmap)
     ax3.set_xlim(-max_angle, max_angle)
     ax3.set_ylim(-max_angle, max_angle)
-    fig.colorbar(scatter_bottom)
+    fig.colorbar(scatter_north)
     plt.axis('scaled')
     plt.title('KDE North pole\nafter background definition')
     circle = patches.Circle((0, 0), 90, color='w', fill=False, linewidth=1.5)
@@ -652,34 +653,34 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     ##########################################################################
     # Generate the markers as local maxima of the distance to the background #
     ##########################################################################
-    distances_top = ndimage.distance_transform_edt(density_top)  # South
-    distances_bottom = ndimage.distance_transform_edt(density_bottom)  # North
+    distances_south = ndimage.distance_transform_edt(density_south)
+    distances_north = ndimage.distance_transform_edt(density_north)
     if debugging:
         fig = plt.figure(figsize=(15, 10))
         fig.add_subplot(121)
-        plt.imshow(distances_top, cmap=cmap, interpolation='nearest')
+        plt.imshow(distances_south, cmap=cmap, interpolation='nearest')
         plt.title('Distances South')
         plt.colorbar()
         plt.gca().invert_yaxis()
         fig.add_subplot(122)
-        plt.imshow(distances_bottom, cmap=cmap, interpolation='nearest')
+        plt.imshow(distances_north, cmap=cmap, interpolation='nearest')
         plt.title('Distances North')
         plt.colorbar()
         plt.gca().invert_yaxis()
         plt.pause(0.1)
 
-    local_maxi_top = corner_peaks(distances_top, exclude_border=False, min_distance=min_distance, indices=False)
-    local_maxi_bottom = corner_peaks(distances_bottom, exclude_border=False, min_distance=min_distance, indices=False)
+    local_maxi_south = corner_peaks(distances_south, exclude_border=False, min_distance=min_distance, indices=False)
+    local_maxi_north = corner_peaks(distances_north, exclude_border=False, min_distance=min_distance, indices=False)
     if debugging:
         fig = plt.figure(figsize=(15, 10))
         ax0 = fig.add_subplot(121)
-        plt.imshow(local_maxi_top, interpolation='nearest')
+        plt.imshow(local_maxi_south, interpolation='nearest')
         plt.title('local_maxi South before filtering')
         plt.gca().invert_yaxis()
         circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
         ax0.add_artist(circle)
         ax1 = fig.add_subplot(122)
-        plt.imshow(local_maxi_bottom, interpolation='nearest')
+        plt.imshow(local_maxi_north, interpolation='nearest')
         plt.title('local_maxi North before filtering')
         plt.gca().invert_yaxis()
         circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
@@ -687,21 +688,21 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
         plt.pause(0.1)
 
     # define the marker for each peak
-    markers_top = ndimage.label(local_maxi_top)[0]  # South, range from 0 to nb_peaks
-    # define non overlaping markers for the bottom projection: the first marker value is (markers_top.max()+1)
-    markers_bottom = ndimage.label(local_maxi_bottom)[0] + markers_top.max()  # North
-    # markers_bottom.min() is 0 since it is the background
-    markers_bottom[markers_bottom == markers_top.max()] = 0
+    markers_south = ndimage.label(local_maxi_south)[0]  # range from 0 to nb_peaks
+    # define non overlaping markers for the North projection: the first marker value is (markers_south.max()+1)
+    markers_north = ndimage.label(local_maxi_north)[0] + markers_south.max()
+    # markers_north.min() is 0 since it is the background
+    markers_north[markers_north == markers_south.max()] = 0
     if debugging:
         fig = plt.figure(figsize=(15, 10))
         ax0 = fig.add_subplot(121)
-        plt.imshow(markers_top, interpolation='nearest', cmap='binary', vmin=0, vmax=1)
+        plt.imshow(markers_south, interpolation='nearest', cmap='binary', vmin=0, vmax=1)
         plt.title('markers South')
         plt.gca().invert_yaxis()
         circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
         ax0.add_artist(circle)
         ax1 = fig.add_subplot(122)
-        plt.imshow(markers_bottom, interpolation='nearest', cmap='binary', vmin=0, vmax=1)
+        plt.imshow(markers_north, interpolation='nearest', cmap='binary', vmin=0, vmax=1)
         plt.title('markers North')
         plt.gca().invert_yaxis()
         circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
@@ -711,24 +712,24 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     ##########################
     # watershed segmentation #
     ##########################
-    labels_top = watershed(-distances_top, markers_top, mask=mask_top)
-    labels_bottom = watershed(-distances_bottom, markers_bottom, mask=mask_bottom)
+    labels_south = watershed(-distances_south, markers_south, mask=mask_south)
+    labels_north = watershed(-distances_north, markers_north, mask=mask_north)
     fig = plt.figure(figsize=(15, 10))
     ax0 = fig.add_subplot(121)
-    plt.imshow(labels_top, cmap=cmap, interpolation='nearest')
+    plt.imshow(labels_south, cmap=cmap, interpolation='nearest')
     plt.title('Separated objects South')
     plt.gca().invert_yaxis()
     circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
     ax0.add_artist(circle)
     ax1 = fig.add_subplot(122)
-    plt.imshow(labels_bottom, cmap=cmap, interpolation='nearest')
+    plt.imshow(labels_north, cmap=cmap, interpolation='nearest')
     plt.title('Separated objects North')
     plt.gca().invert_yaxis()
     circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
     ax1.add_artist(circle)
     plt.pause(0.1)
 
-    return labels_top, labels_bottom, stereo_proj, remove_row
+    return labels_south, labels_north, stereo_proj, remove_row
 
 
 def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33, mu=0.34, debugging=0):
