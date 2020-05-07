@@ -522,7 +522,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     from skimage.morphology import watershed
 
     radius_mean = 1  # normals are normalized
-    stereo_center = 0  # COM of the weighted point density
+    stereo_center = 0  # COM of the weighted point density, where the projection plane intersects the reference axis
 
     # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
