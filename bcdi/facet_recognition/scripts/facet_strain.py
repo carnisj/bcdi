@@ -38,7 +38,7 @@ datadir = 'D:/data/PtRh/matlab_reconstructions/2019.11/ArCOO2(83x55x120)/'
 support_threshold = 0.52  # threshold for support determination
 voxel_size = [3.64, 5.53, 2.53]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
 upsampling_factor = 2  # integer, factor for upsampling the reconstruction in order to have a smoother surface
-savedir = datadir + "isosurface_" + str(support_threshold) + " 3.64x5.53x2.53nm3/"
+savedir = datadir + "testisosurface_" + str(support_threshold) + " 3.64x5.53x2.53nm3/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
@@ -153,13 +153,13 @@ gc.collect()
 #####################################################################
 nb_normals = normals.shape[0]
 if projection_method == 'stereographic':
-    labels_top, labels_bottom, stereo_proj, remove_raw =\
+    labels_top, labels_bottom, stereo_proj, remove_row =\
         fu.stereographic_proj(normals=normals, intensity=intensity, background_threshold=threshold_stereo,
                               min_distance=peak_min_distance, savedir=savedir, save_txt=False, planes=planes,
                               plot_planes=True, max_angle=max_angle, voxel_size=voxel_size,
-                              reflection_axis=reflection_axis, debugging=debug)
-    if len(remove_raw) != 0:
-        for raw in remove_raw:
+                              reflection_axis=reflection_axis, debugging=True)
+    if len(remove_row) != 0:
+        for raw in remove_row:
             normals = np.delete(normals, raw, axis=0)
             faces = np.delete(faces, raw, axis=0)
 
