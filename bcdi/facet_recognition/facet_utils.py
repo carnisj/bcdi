@@ -518,7 +518,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     :param planes: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
     :param plot_planes: if True, will draw circles corresponding to crystallographic planes in the pole figure
     :param debugging: show plots for debugging
-    :return: labels for the top and bottom projections, array of top and bottom projections, list of raws to remove
+    :return: labels for the top and bottom projections, array of top and bottom projections, list of rows to remove
     """
     from scipy.interpolate import griddata
     from scipy import ndimage
@@ -551,13 +551,13 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     # remove intensity where stereo_proj is infinite
     list_inf = np.argwhere(np.isinf(stereo_proj))
     if len(list_inf) != 0:
-        remove_raw = list(set(list_inf[:, 0]))  # remove duplicated raw indices
-        print('stereographic_proj() remove raws: ', remove_raw, '\n')
-        for raw in remove_raw:
-            stereo_proj = np.delete(stereo_proj, raw, axis=0)
-            intensity = np.delete(intensity, raw, axis=0)
+        remove_row = list(set(list_inf[:, 0]))  # remove duplicated row indices
+        print('stereographic_proj() remove rows: ', remove_row, '\n')
+        for row in remove_row:
+            stereo_proj = np.delete(stereo_proj, row, axis=0)
+            intensity = np.delete(intensity, row, axis=0)
     else:
-        remove_raw = []
+        remove_row = []
     # plot the stereographic projection
     if True:
         fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 1], euclidian_v=stereo_proj[:, 0], color=intensity,
@@ -656,7 +656,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     plt.pause(0.1)
 
     ##########################################################################
-    # Generate the markers as local minima of the distance to the background #
+    # Generate the markers as local maxima of the distance to the background #
     ##########################################################################
     distances_top = ndimage.distance_transform_edt(density_top)  # South
     distances_bottom = ndimage.distance_transform_edt(density_bottom)  # North
@@ -734,7 +734,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     ax1.add_artist(circle)
     plt.pause(0.1)
 
-    return labels_top, labels_bottom, stereo_proj, remove_raw
+    return labels_top, labels_bottom, stereo_proj, remove_row
 
 
 def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33, mu=0.34, debugging=0):
