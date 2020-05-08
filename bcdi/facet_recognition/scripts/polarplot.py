@@ -136,8 +136,10 @@ beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 offset_inplane = -1.3645  # outer detector angle offset, not important if you use raw data
-cch1 = 82.85  # 1273.5  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-cch2 = -174.21  # 390.8  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch1 = 82.85  # 1273.5
+# cch1 parameter from xrayutilities 2D detector calibration, the detector roi is taken into account below
+cch2 = -174.21  # 390.8
+# cch2 parameter from xrayutilities 2D detector calibration, the detector roi is taken into account below
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
 tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
@@ -196,7 +198,7 @@ cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropp
 hxrd.Ang2Q.init_area('z-', 'y+', cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
                      Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize_y,
                      pwidth2=detector.pixelsize_x, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
-# first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
+# the first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
 #############
 # load data #
@@ -431,51 +433,29 @@ if debug:
 ####################################
 # plot 2D diffrated intensity maps #
 ####################################
-fig, ax = plt.subplots(figsize=(20, 15), facecolor='w', edgecolor='k')
-plt.subplot(2, 2, 1)
-plt.contourf(qz, qx, np.log10(data.sum(axis=2)), 150, cmap=my_cmap)
-plt.plot([min(qz), max(qz)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
-plt.plot([qzCOM, qzCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-fig.gca().add_artist(circle)
-circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-fig.gca().add_artist(circle)
-plt.colorbar()
-plt.xlabel(r"Q$_z$ ($1/\AA$)")
-plt.ylabel(r"Q$_x$ ($1/\AA$)")
-plt.axis('scaled')
-plt.title('Sum(I) over Qy')
-plt.subplot(2, 2, 2)
-plt.contourf(qy, qx, np.log10(data.sum(axis=1)), 150, cmap=my_cmap)
-plt.plot([min(qy), max(qy)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
-plt.plot([qyCOM, qyCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-circle = plt.Circle((qyCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-fig.gca().add_artist(circle)
-circle = plt.Circle((qyCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-fig.gca().add_artist(circle)
-plt.colorbar()
-plt.xlabel(r"Q$_y$ ($1/\AA$)")
-plt.ylabel(r"Q$_x$ ($1/\AA$)")
-plt.axis('scaled')
-plt.title('Sum(I) over Qz')
-plt.subplot(2, 2, 3)
-plt.contourf(qy, qz, np.log10(data.sum(axis=0)), 150, cmap=my_cmap)
-plt.plot([qyCOM, qyCOM], [min(qz), max(qz)], color='k', linestyle='-', linewidth=2)
-plt.plot([min(qy), max(qy)], [qzCOM, qzCOM], color='k', linestyle='-', linewidth=2)
+fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) = \
+    gu.contour_slices(data, (qx, qz, qy), sum_frames=True, title='Regridded data', levels=150, plot_colorbar=True,
+                      scale='log', is_orthogonal=True, reciprocal_space=True)
+
 circle = plt.Circle((qyCOM, qzCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-fig.gca().add_artist(circle)
+ax0.add_artist(circle)
 circle = plt.Circle((qyCOM, qzCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-fig.gca().add_artist(circle)
-plt.colorbar()
-plt.xlabel(r"Q$_y$ ($1/\AA$)")
-plt.ylabel(r"Q$_z$ ($1/\AA$)")
-plt.axis('scaled')
-plt.title('Sum(I) over Qx')
+ax0.add_artist(circle)
+circle = plt.Circle((qyCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
+ax1.add_artist(circle)
+circle = plt.Circle((qyCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
+ax1.add_artist(circle)
+circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
+ax2.add_artist(circle)
+circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
+ax2.add_artist(circle)
+
 fig.text(0.60, 0.30, "Scan " + str(scan), size=20)
 if reconstructed_data == 0:
     fig.text(0.60, 0.25, "offset_eta=" + str(offset_eta), size=20)
     fig.text(0.60, 0.20, "offset_phi=" + str(offset_phi), size=20)
     fig.text(0.60, 0.15, "offset_chi=" + str(offset_chi), size=20)
+    
 plt.pause(0.1)
 plt.savefig(homedir + 'diffpattern' + comment + '_S' + str(scan) + '_q=' + str(radius_mean) + '.png')
 
