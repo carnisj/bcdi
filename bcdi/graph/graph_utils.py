@@ -497,7 +497,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     """
     nb_dim = array.ndim
     plt.ion()
-    fig, axis = plt.subplots(1, 1)
+    fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
 
     if nb_dim == 3:
         if sum_frames:
@@ -957,7 +957,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     if ipynb_layout:
         fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(15, 4.5))
     else:
-        fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
+        fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 9))
 
     # axis 0
     temp_array = np.copy(array)
@@ -1125,7 +1125,7 @@ def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped becaus
 
 
 def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, title="", plot_planes=True,
-                       contour_range=range(100, 6100, 250), cmap=my_cmap):
+                       contour_range=range(100, 6100, 250), cmap=my_cmap, hide_axis=False):
     """
     Plot the stereographic projection with some cosmetics.
 
@@ -1138,21 +1138,21 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     :param plot_planes: if True, will draw circle corresponding to crystallographic planes in the pole figure
     :param contour_range: range for the plot contours
     :param cmap: colormap to be used
+    :param hide_axis: hide the axis frame, ticks and ticks labels
     :return: figure and axe instances
     """
     from scipy.interpolate import griddata
 
-    u_grid, v_grid = np.mgrid[-91:91:365j, -91:91:365j]  # vertical, horizontal
-    intensity_grid = griddata((euclidian_u, euclidian_v), color, (u_grid, v_grid), method='linear')
+    v_grid, u_grid = np.mgrid[-101:101:405j, -101:101:405j]  # vertical axis, horizontal axis
+    intensity_grid = griddata((euclidian_v, euclidian_u), color, (v_grid, u_grid), method='linear')
     intensity_grid = intensity_grid / intensity_grid[intensity_grid > 0].max() * 10000  # normalize for easier plotting
 
     # plot the stereographic projection
     plt.ion()
-    fig, ax0 = plt.subplots(1, 1, figsize=(12, 6), dpi=80, facecolor='w', edgecolor='k')
+    fig, ax0 = plt.subplots(nrows=1, ncols=1, figsize=(12, 9), facecolor='w', edgecolor='k')
     plt0 = ax0.contourf(u_grid, v_grid, abs(intensity_grid), contour_range, cmap=cmap)
     plt.colorbar(plt0, ax=ax0)
     ax0.axis('equal')
-    ax0.axis('off')
 
     # add the projection of the elevation angle, depending on the center of projection
     for ii in range(15, 90, 5):
@@ -1197,7 +1197,13 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
             indx = indx + 6
             print(key + ": ", str('{:.2f}'.format(value)))
         print('\n')
-    ax0.set_title(title)
+    ax0.set_xlabel('u')
+    ax0.set_ylabel('v')
+    if hide_axis:
+        ax0.axis('off')
+        ax0.set_title(title + '\nu horizontal, v vertical')
+    else:
+        ax0.set_title(title)
     plt.pause(0.5)
     plt.ioff()
     return fig, ax0
