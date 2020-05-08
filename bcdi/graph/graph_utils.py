@@ -73,6 +73,25 @@ class Colormap(object):
         self.cmap.set_bad(color=bad_color)
 
 
+def colorbar(mappable):
+    """
+    Generate a colorbar whose height (or width) in sync with the master axes.
+
+    :param mappable: the image where to put the colorbar
+    :return: the colorbar instance
+    """
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    import matplotlib.pyplot as plt
+    last_axes = plt.gca()
+    ax = mappable.axes
+    fig = ax.figure
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbar = fig.colorbar(mappable, cax=cax)
+    plt.sca(last_axes)
+    return cbar
+
+
 def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, tuple_colorbar, tuple_vmin,
                    tuple_vmax, tuple_title, tuple_scale, tuple_sum_axis=0, cmap=my_cmap, tick_direction='inout',
                    tick_width=1, tick_length=3, pixel_spacing=np.nan, is_orthogonal=False, reciprocal_space=False,
