@@ -432,8 +432,21 @@ plt.savefig(homedir + 'diffpattern' + comment + '_S' + str(scan) + '_q=' + str(r
 ###########################################
 # apply the mask to the data and q values #
 ###########################################
+# qx downstream, qz vertical up, qy outboard
 data_masked = data[mask]
-qx, qz, qy = np.meshgrid(qx-qxCOM, qz-qzCOM, qy-qyCOM, indexing='ij')  # qx downstream, qz vertical up, qy outboard
+if projection_axis == 0:
+    qx, qz, qy = np.meshgrid(qx, qz - qzCOM, qy - qyCOM, indexing='ij')
+    stereo_center = qxCOM
+elif projection_axis == 1:
+    qx, qz, qy = np.meshgrid(qx - qxCOM, qz, qy - qyCOM, indexing='ij')
+    stereo_center = qzCOM
+elif projection_axis == 2:
+    qx, qz, qy = np.meshgrid(qx - qxCOM, qz - qzCOM, qy, indexing='ij')
+    stereo_center = qyCOM
+else:
+    print('Invalid value for the parameter "projection_axis"')
+    sys.exit()
+
 qx, qz, qy = qx[mask].reshape((data_masked.size, 1)),\
              qz[mask].reshape((data_masked.size, 1)),\
              qy[mask].reshape((data_masked.size, 1))
@@ -442,7 +455,7 @@ qx, qz, qy = qx[mask].reshape((data_masked.size, 1)),\
 # calculate the stereographic projection #
 ##########################################
 stereo_proj = fu.calc_stereoproj_facet(projection_axis=projection_axis, vectors=np.concatenate((qx, qz, qy), axis=1),
-                                       radius_mean=radius_mean, stereo_center=0)
+                                       radius_mean=radius_mean, stereo_center=stereo_center)
 
 ###########################################
 # plot the projection from the South pole #
