@@ -523,6 +523,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
 
     radius_mean = 1  # normals are normalized
     stereo_center = 0  # COM of the weighted point density, where the projection plane intersects the reference axis
+    # since the diffraction pattern is calculated from the fft of the reconstructed object, it is already centered
 
     # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
