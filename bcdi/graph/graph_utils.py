@@ -1063,12 +1063,11 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
                 min_value[2] = 0
         if np.isnan(max_value[2]):
             max_value[2] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
-        ax2.set_xlabel(hor_labels[2])
-        ax2.set_ylabel(ver_labels[2])
         plt2 = ax2.imshow(np.log10(abs(temp_array)), vmin=min_value[2], vmax=max_value[2], cmap=cmap)
     else:
         raise ValueError('Wrong value for scale')
-
+    ax2.set_xlabel(hor_labels[2])
+    ax2.set_ylabel(ver_labels[2])
     ax2.set_title(title + slice_names[2])
     plt.axis('scaled')
 
