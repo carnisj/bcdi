@@ -1144,7 +1144,7 @@ def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped becaus
 
 
 def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, title="", plot_planes=True,
-                       contour_range=range(100, 6100, 250), cmap=my_cmap, hide_axis=False):
+                       contour_range=None, max_angle=95, cmap=my_cmap, hide_axis=False):
     """
     Plot the stereographic projection with some cosmetics.
 
@@ -1156,15 +1156,21 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     :param title: title for the stereographic plot
     :param plot_planes: if True, will draw circle corresponding to crystallographic planes in the pole figure
     :param contour_range: range for the plot contours
+    :param max_angle: maximum angle in degrees of the stereographic projection (should be larger than 90)
     :param cmap: colormap to be used
     :param hide_axis: hide the axis frame, ticks and ticks labels
     :return: figure and axe instances
     """
     from scipy.interpolate import griddata
 
-    v_grid, u_grid = np.mgrid[-101:101:405j, -101:101:405j]  # vertical axis, horizontal axis
+    nb_points = 4 * max_angle + 1
+    v_grid, u_grid = np.mgrid[-max_angle:max_angle:(nb_points*1j), -max_angle:max_angle:(nb_points*1j)]
+    # v_grid is changing along the vertical axis, u_grid is changing along the horizontal axis
     intensity_grid = griddata((euclidian_v, euclidian_u), color, (v_grid, u_grid), method='linear')
     intensity_grid = intensity_grid / intensity_grid[intensity_grid > 0].max() * 10000  # normalize for easier plotting
+
+    if contour_range is None:
+        contour_range = range(0, 10001, 250)
 
     # plot the stereographic projection
     plt.ion()
@@ -1223,6 +1229,7 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
         ax0.set_title(title + '\nu horizontal, v vertical')
     else:
         ax0.set_title(title)
+    ax0.axis('scaled')
     plt.pause(0.5)
     plt.ioff()
     return fig, ax0

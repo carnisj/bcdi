@@ -54,9 +54,9 @@ offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation arou
 q_offset = [0, 0, 0]  # offset of the projection plane in [qx, qy, qz] (0 = equatorial plane)
 # q_offset applies only to measured diffraction pattern (not obtained from a reconstruction)
 photon_threshold = 0  # threshold applied to the measured diffraction pattern
-range_min = 250  # low limit for the colorbar in polar plots, every below will be set to nan
-range_max = 2600  # high limit for the colorbar in polar plots
-range_step = 250  # step for color change in polar plots
+contour_range = None  # range(250, 2600, 250)
+# range for the plot contours range(min, max, step), leave it to None for default
+max_angle = 120  # maximum angle in degrees of the stereographic projection (should be larger than 90)
 flag_medianfilter = False  # set to True to apply med2filter [3,3] to the reciprocal space data
 plot_planes = True  # if True, plot dotted circles corresponding to planes_south and planes_north indices
 hide_axis = False  # if True, the default axis frame, ticks and ticks labels will be hidden
@@ -449,8 +449,8 @@ stereo_proj = fu.calc_stereoproj_facet(projection_axis=projection_axis, vectors=
 ###########################################
 fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=data_masked,
                                radius_mean=radius_mean, planes=planes_south, title="Projection from the South pole",
-                               hide_axis=hide_axis, plot_planes=plot_planes,
-                               contour_range=range(range_min, range_max, range_step))
+                               hide_axis=hide_axis, plot_planes=plot_planes, max_angle=max_angle,
+                               contour_range=contour_range)
 
 
 if not reconstructed_data:
@@ -466,8 +466,8 @@ fig.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
 ############################################
 fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=data_masked,
                                radius_mean=radius_mean, planes=planes_north, title="Projection from the North pole",
-                               hide_axis=hide_axis, plot_planes=plot_planes,
-                               contour_range=range(range_min, range_max, range_step))
+                               hide_axis=hide_axis, plot_planes=plot_planes, max_angle=max_angle,
+                               contour_range=contour_range)
 
 if not reconstructed_data:
     fig.text(0.05, 0.02, "q=" + str(radius_mean) + " dq=" + str(dq) + " offset_eta=" + str(offset_eta) +
