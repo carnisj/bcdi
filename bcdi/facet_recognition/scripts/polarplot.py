@@ -334,12 +334,14 @@ else:
         obj = obj.reshape((nz, ny, nx)).astype(amp.dtype)
         print('voxel size after upsampling (nm)', newvoxelsize/upsampling_ratio)
 
-        gu.multislices_plot(abs(obj), sum_frames=False, reciprocal_space=False, is_orthogonal=True,
-                            title='upsampled object')
+        if debug:
+            gu.multislices_plot(abs(obj), sum_frames=False, reciprocal_space=False, is_orthogonal=True,
+                                title='upsampled object')
 
     #####################################################
     # rotate array to have q along axis 1 (vertical up) #
     #####################################################
+    # TODO: remove this since we can project with other axes also
     if reflection_axis == 0:  # q along z
         axis_to_align = np.array([0, 0, 1])  # in order x y z for rotate_crystal()
     elif reflection_axis == 1:  # q along y
@@ -368,8 +370,9 @@ else:
         if binary_support:  # create a binary support
             obj[np.nonzero(obj)] = 1
             comment = comment + '_binary'
-    gu.multislices_plot(abs(obj), sum_frames=False, reciprocal_space=False, is_orthogonal=True,
-                        title='abs(object) after threshold')
+    if debug:
+        gu.multislices_plot(abs(obj), sum_frames=False, reciprocal_space=False, is_orthogonal=True,
+                            title='abs(object) after threshold')
 
     #######################################
     # calculate the diffraction intensity #
@@ -408,42 +411,22 @@ else:
 print("Center of mass [qx, qy, qz]: [",
       str('{:.5f}'.format(qxCOM)), str('{:.5f}'.format(qyCOM)), str('{:.5f}'.format(qzCOM)), ']')
 
-##########################
-# select the half sphere #
-##########################
-# take only the upper part of the sphere
-intensity_top = data[:, np.where(qz > qzCOM)[0].min():np.where(qz > qzCOM)[0].max(), :]
-qz_top = qz[np.where(qz > qzCOM)[0].min():np.where(qz > qzCOM)[0].max()]
-
-# take only the lower part of the sphere
-intensity_bottom = data[:, np.where(qz < qzCOM)[0].min():np.where(qz < qzCOM)[0].max(), :]
-qz_bottom = qz[np.where(qz < qzCOM)[0].min():np.where(qz < qzCOM)[0].max()]
-
-################################################
-# create a 3D array of distances in q from COM #
-################################################
-qx1 = qx[:, np.newaxis, np.newaxis]  # broadcast array
-qy1 = qy[np.newaxis, np.newaxis, :]  # broadcast array
-qz1_top = qz_top[np.newaxis, :, np.newaxis]   # broadcast array
-qz1_bottom = qz_bottom[np.newaxis, :, np.newaxis]   # broadcast array
-distances_top = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_top - qzCOM)**2)
-distances_bottom = np.sqrt((qx1 - qxCOM)**2 + (qy1 - qyCOM)**2 + (qz1_bottom - qzCOM)**2)
+###############################################################
+# create a 3D array of distances in q from the center of mass #
+###############################################################
+distances = np.sqrt((qx[:, np.newaxis, np.newaxis] - qxCOM)**2 + (qy[np.newaxis, np.newaxis, :] - qyCOM)**2 +
+                    (qz[np.newaxis, :, np.newaxis] - qzCOM)**2)
 if debug:
-    gu.multislices_plot(distances_top, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
-                        title='distances_top')
-    gu.multislices_plot(distances_bottom, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
-                        title='distances_bottom')
+    gu.multislices_plot(distances, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
+                        title='distances')
 
-######################################
-# define matrix of radii radius_mean #
-######################################
-mask_top = np.logical_and((distances_top < (radius_mean+dq)), (distances_top > (radius_mean-dq)))
-mask_bottom = np.logical_and((distances_bottom < (radius_mean+dq)), (distances_bottom > (radius_mean-dq)))
+#########################################
+# define the mask at radius radius_mean #
+#########################################
+mask = np.logical_and((distances < (radius_mean+dq)), (distances > (radius_mean-dq)))
 if debug:
-    gu.multislices_plot(mask_top, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
-                        title='mask_top')
-    gu.multislices_plot(mask_bottom, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
-                        title='mask_bottom')
+    gu.multislices_plot(mask, sum_frames=False, reciprocal_space=True, is_orthogonal=True,
+                        title='mask')
 
 ####################################
 # plot 2D diffrated intensity maps #
@@ -496,197 +479,29 @@ if reconstructed_data == 0:
 plt.pause(0.1)
 plt.savefig(homedir + 'diffpattern' + comment + '_S' + str(scan) + '_q=' + str(radius_mean) + '.png')
 
-#########################################################################
-#  plot the upper and lower parts of intensity with intersecting sphere #
-#########################################################################
-if debug:
-    fig, ax = plt.subplots(figsize=(20, 15), facecolor='w', edgecolor='k')
-    plt.subplot(2, 3, 1)
-    plt.contourf(qz_top, qx, np.log10(intensity_top.sum(axis=2), 6, 1), 75, cmap=my_cmap)
-    plt.plot([qzCOM, max(qz)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
-    plt.plot([qzCOM, qzCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_z$ ($1/\AA$)")
-    plt.ylabel(r"Q$_x$ ($1/\AA$)")
-    plt.title('Top\nSum(I) over Q$_y$')
-    plt.axis('scaled')
-    plt.subplot(2, 3, 2)
-    plt.contourf(qy, qx, np.log10(intensity_top.sum(axis=1), 6, 1), 75, cmap=my_cmap)
-    plt.plot([min(qy), max(qy)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
-    plt.plot([qyCOM, qyCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_y$ ($1/\AA$)")
-    plt.ylabel(r"Q$_x$ ($1/\AA$)")
-    plt.title('Top\nSum(I) over Q$_z$>Q$_z$COM')
-    plt.axis('scaled')
-    plt.subplot(2, 3, 3)
-    plt.contourf(qy, qz_top, np.log10(intensity_top.sum(axis=0), 6, 1), 75, cmap=my_cmap)
-    plt.plot([qyCOM, qyCOM], [qzCOM, max(qz)], color='k', linestyle='-', linewidth=2)
-    plt.plot([min(qy), max(qy)], [qzCOM, qzCOM], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_y$ ($1/\AA$)")
-    plt.ylabel(r"Q$_z$ ($1/\AA$)")
-    plt.title('Top\nSum(I) over Q$_x$')
-    plt.axis('scaled')
-    plt.subplot(2, 3, 4)
-    plt.contourf(qz_bottom, qx, np.log10(intensity_bottom.sum(axis=2), 6, 1), 75, cmap=my_cmap)
-    plt.plot([min(qz), qzCOM], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
-    plt.plot([qzCOM, qzCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_z$ ($1/\AA$)")
-    plt.ylabel(r"Q$_x$ ($1/\AA$)")
-    plt.title('Bottom\nSum(I) over Q$_y$')
-    plt.axis('scaled')
-    plt.subplot(2, 3, 5)
-    plt.contourf(qy, qx, np.log10(intensity_bottom.sum(axis=1), 6, 1), 75, cmap=my_cmap)
-    plt.plot([min(qy), max(qy)], [qxCOM, qxCOM], color='k', linestyle='-', linewidth=2)
-    plt.plot([qyCOM, qyCOM], [min(qx), max(qx)], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_y$ ($1/\AA$)")
-    plt.ylabel(r"Q$_x$ ($1/\AA$)")
-    plt.title('Bottom\nSum(I) over Q$_z$<Q$_z$COM')
-    plt.axis('scaled')
-    plt.subplot(2, 3, 6)
-    plt.contourf(qy, qz_bottom, np.log10(intensity_bottom.sum(axis=0), 6, 1), 75, cmap=my_cmap)
-    plt.plot([qyCOM, qyCOM], [min(qz), qzCOM], color='k', linestyle='-', linewidth=2)
-    plt.plot([min(qy), max(qy)], [qzCOM, qzCOM], color='k', linestyle='-', linewidth=2)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_y$ ($1/\AA$)")
-    plt.ylabel(r"Q$_z$ ($1/\AA$)")
-    plt.title('Bottom\nSum(I) over Q$_x$')
-    plt.axis('scaled')
-    plt.pause(0.1)
+###########################################
+# apply the mask to the data and q values #
+###########################################
+data_masked = data[mask]
+qx, qz, qy = np.meshgrid(qx-qxCOM, qz-qzCOM, qy-qyCOM, indexing='ij')  # qx downstream, qz vertical up, qy outboard
+qx, qz, qy = qx[mask].reshape((data_masked.size, 1)),\
+             qz[mask].reshape((data_masked.size, 1)),\
+             qy[mask].reshape((data_masked.size, 1))
 
-##############
-# apply mask #
-##############
-I_masked_top = np.multiply(intensity_top, mask_top)
-I_masked_bottom = np.multiply(intensity_bottom, mask_bottom)
-if debug:
-    fig, ax = plt.subplots(figsize=(20, 15), facecolor='w', edgecolor='k')
-    plt.subplot(2, 3, 1)
-    plt.contourf(qz_top, qx, np.log10(I_masked_top.sum(axis=2), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_z$ ($1/\AA$)")
-    plt.ylabel(r"Q$_x$ ($1/\AA$)")
-    plt.title('Top\nSum(I*mask) over Q$_y$')
-    plt.axis('scaled')
-    plt.subplot(2, 3, 2)
-    plt.contourf(qy, qx, np.log10(I_masked_top.sum(axis=1), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_y$ ($1/\AA$)")
-    plt.ylabel(r"Q$_x$ ($1/\AA$)")
-    plt.title('Top\nSum(I*mask) over Q$_z$>Q$_z$COM')
-    plt.axis('scaled')
-    plt.subplot(2, 3, 3)
-    plt.contourf(qy, qz_top, np.log10(I_masked_top.sum(axis=0), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_y$ ($1/\AA$)")
-    plt.ylabel(r"Q$_z$ ($1/\AA$)")
-    plt.title('Top\nSum(I*mask) over Q$_x$')
-    plt.axis('scaled')
-    plt.subplot(2, 3, 4)
-    plt.contourf(qz_bottom, qx, np.log10(I_masked_bottom.sum(axis=2), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_z$ ($1/\AA$)")
-    plt.ylabel(r"Q$_x$ ($1/\AA$)")
-    plt.title('Bottom\nSum(I*mask) over Q$_y$')
-    plt.axis('scaled')
-    plt.subplot(2, 3, 5)
-    plt.contourf(qy, qx, np.log10(I_masked_bottom.sum(axis=1), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_y$ ($1/\AA$)")
-    plt.ylabel(r"Q$_x$ ($1/\AA$)")
-    plt.title('Bottom\nSum(I*mask) over Q$_z$<Q$_z$COM')
-    plt.axis('scaled')
-    plt.subplot(2, 3, 6)
-    plt.contourf(qy, qz_bottom, np.log10(I_masked_bottom.sum(axis=0), 5, 1), 75, cmap=my_cmap)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean + dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    circle = plt.Circle((qyCOM, qzCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
-    fig.gca().add_artist(circle)
-    plt.xlabel(r"Q$_y$ ($1/\AA$)")
-    plt.ylabel(r"Q$_z$ ($1/\AA$)")
-    plt.title('Bottom\nSum(I*mask) over Q$_x$')
-    plt.axis('scaled')
-    plt.pause(0.1)
-
-###############################################
-# calculation of Euclidian metric coordinates #
-###############################################
-qx1_top = qx1*np.ones(intensity_top.shape)
-qy1_top = qy1*np.ones(intensity_top.shape)
-qz1_top = qz1_top*np.ones(intensity_top.shape)
-qx1_bottom = qx1*np.ones(intensity_bottom.shape)
-qy1_bottom = qy1*np.ones(intensity_bottom.shape)
-qz1_bottom = qz1_bottom*np.ones(intensity_bottom.shape)
-
-u_temp_south = np.divide((qx1_top - qxCOM)*radius_mean, (radius_mean+(qz1_top - qzCOM)))  # projection from South
-v_temp_south = np.divide((qy1_top - qyCOM)*radius_mean, (radius_mean+(qz1_top - qzCOM)))  # projection from South
-u_temp_north = np.divide((qx1_bottom - qxCOM)*radius_mean, (radius_mean+(qzCOM-qz1_bottom)))  # projection from North
-v_temp_north = np.divide((qy1_bottom - qyCOM)*radius_mean, (radius_mean+(qzCOM-qz1_bottom)))  # projection from North
-# TODO: implement projection in the two other directions
-u_south = u_temp_south[mask_top]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
-v_south = v_temp_south[mask_top]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
-u_north = u_temp_north[mask_bottom]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
-v_north = v_temp_north[mask_bottom]/radius_mean*90    # create 1D array and rescale from radius_mean to 90
-
-int_temp_south = I_masked_top[mask_top]
-int_temp_north = I_masked_bottom[mask_bottom]
-
-u_grid, v_grid = np.mgrid[-91:91:365j, -91:91:365j]
-
-int_grid_south = griddata((u_south, v_south), int_temp_south, (u_grid, v_grid), method='linear')
-int_grid_north = griddata((u_north, v_north), int_temp_north, (u_grid, v_grid), method='linear')
-
-int_grid_south = int_grid_south / int_grid_south[int_grid_south > 0].max() * 10000  # normalize for easier plotting
-int_grid_north = int_grid_north / int_grid_north[int_grid_north > 0].max() * 10000  # normalize for easier plotting
-
-int_grid_south[np.isnan(int_grid_south)] = 0
-int_grid_north[np.isnan(int_grid_north)] = 0
+##########################################
+# calculate the stereographic projection #
+##########################################
+stereo_proj = fu.calc_stereoproj_facet(reflection_axis=reflection_axis, vectors=np.concatenate((qx, qz, qy), axis=1),
+                                       radius_mean=radius_mean, stereo_center=0)
 
 ###########################################
 # plot the projection from the South pole #
 ###########################################
-int_grid_south[int_grid_south < background_polarplot] = np.nan
+fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=data_masked,
+                               radius_mean=radius_mean, planes=planes_south,
+                               title="Projection from\nSouth pole",
+                               contour_range=range(range_min, range_max, range_step), plot_planes=plot_planes)
 
-fig, _ = gu.plot_stereographic(euclidian_u=u_grid.flatten(), euclidian_v=v_grid.flatten(),
-                               color=int_grid_south.flatten(), radius_mean=radius_mean, planes=planes_south,
-                               title="Projection from\nSouth pole S" + str(scan), plot_planes=plot_planes,
-                               contour_range=range(range_min, range_max, range_step))
 
 if not reconstructed_data:
     fig.text(0.05, 0.02, "q=" + str(radius_mean) + " dq=" + str(dq) + " offset_eta=" + str(offset_eta) +
@@ -699,12 +514,10 @@ fig.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
 ############################################
 # plot the projection from the  North pole #
 ############################################
-int_grid_north[int_grid_north < background_polarplot] = np.nan
-fig, _ = gu.plot_stereographic(euclidian_u=u_grid.flatten(), euclidian_v=v_grid.flatten(),
-                               color=int_grid_north.flatten(), radius_mean=radius_mean, planes=planes_north,
-                               title="Projection from\nNorth pole S" + str(scan), plot_planes=plot_planes,
-                               contour_range=range(range_min, range_max, range_step))
-
+fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=data_masked,
+                               radius_mean=radius_mean, planes=planes_north,
+                               title="Projection from\nNorth pole",
+                               contour_range=range(range_min, range_max, range_step), plot_planes=plot_planes)
 
 if not reconstructed_data:
     fig.text(0.05, 0.02, "q=" + str(radius_mean) + " dq=" + str(dq) + " offset_eta=" + str(offset_eta) +
@@ -720,11 +533,11 @@ plt.savefig(homedir + 'North pole' + comment + '_S' + str(scan) + '.png')
 ################################
 fichier = open(homedir + 'Poles' + comment + '_S' + str(scan) + '.dat', "w")
 # save metric coordinates in text file
-for ii in range(len(u_grid)):
-    for jj in range(len(v_grid)):
-        fichier.write(str(u_grid[ii, 0]) + '\t' + str(v_grid[0, jj]) + '\t' +
-                      str(int_grid_south[ii, jj]) + '\t' + str(u_grid[ii, 0]) + '\t' +
-                      str(v_grid[0, jj]) + '\t' + str(int_grid_north[ii, jj]) + '\n')
+nb_points = stereo_proj.shape[0]
+for ii in range(nb_points):
+    fichier.write(str(stereo_proj[ii, 0]) + '\t' + str(stereo_proj[ii, 1]) + '\t' +
+                  str(stereo_proj[ii, 2]) + '\t' + str(stereo_proj[ii, 3]) + '\t' +
+                  str(data_masked[ii]) + '\n')
 fichier.close()
 plt.ioff()
 plt.show()
