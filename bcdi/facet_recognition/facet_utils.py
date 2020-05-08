@@ -41,28 +41,30 @@ def calc_stereoproj_facet(projection_axis, vectors, radius_mean, stereo_center):
 
     if projection_axis == 0:  # q aligned along the 1st axis (Z downstream in CXI convention)
         for idx in range(vectors.shape[0]):
-            stereo_proj[idx, 0] = radius_mean * vectors[idx, 1] / (radius_mean + vectors[idx, 0] - stereo_center)
-            stereo_proj[idx, 1] = radius_mean * vectors[idx, 2] / (radius_mean + vectors[idx, 0] - stereo_center)
-            stereo_proj[idx, 2] = radius_mean * vectors[idx, 1] / (radius_mean + stereo_center - vectors[idx, 0])
-            stereo_proj[idx, 3] = radius_mean * vectors[idx, 2] / (radius_mean + stereo_center - vectors[idx, 0])
+            stereo_proj[idx, 0] = radius_mean * vectors[idx, 1] / (radius_mean + vectors[idx, 0] - stereo_center)  # u_s
+            stereo_proj[idx, 1] = radius_mean * vectors[idx, 2] / (radius_mean + vectors[idx, 0] - stereo_center)  # v_s
+            stereo_proj[idx, 2] = radius_mean * vectors[idx, 1] / (radius_mean + stereo_center - vectors[idx, 0])  # u_n
+            stereo_proj[idx, 3] = radius_mean * vectors[idx, 2] / (radius_mean + stereo_center - vectors[idx, 0])  # v_n
+        uv_labels = ('axis 1', 'axis 2')  # axes corresponding to u and v respectively, used in plots
 
     elif projection_axis == 1:  # q aligned along the 2nd axis (Y vertical up in CXI convention)
         for idx in range(vectors.shape[0]):
-            stereo_proj[idx, 0] = radius_mean * vectors[idx, 0] / (radius_mean + vectors[idx, 1] - stereo_center)
-            stereo_proj[idx, 1] = radius_mean * vectors[idx, 2] / (radius_mean + vectors[idx, 1] - stereo_center)
-            stereo_proj[idx, 2] = radius_mean * vectors[idx, 0] / (radius_mean + stereo_center - vectors[idx, 1])
-            stereo_proj[idx, 3] = radius_mean * vectors[idx, 2] / (radius_mean + stereo_center - vectors[idx, 1])
+            stereo_proj[idx, 0] = radius_mean * vectors[idx, 0] / (radius_mean + vectors[idx, 1] - stereo_center)  # u_s
+            stereo_proj[idx, 1] = radius_mean * vectors[idx, 2] / (radius_mean + vectors[idx, 1] - stereo_center)  # v_s
+            stereo_proj[idx, 2] = radius_mean * vectors[idx, 0] / (radius_mean + stereo_center - vectors[idx, 1])  # u_n
+            stereo_proj[idx, 3] = radius_mean * vectors[idx, 2] / (radius_mean + stereo_center - vectors[idx, 1])  # v_n
+        uv_labels = ('axis 0', 'axis 2')  # axes corresponding to u and v respectively, used in plots
 
     else:  # q aligned along the 3rd axis (X outboard in CXI convention)
         for idx in range(vectors.shape[0]):
-            stereo_proj[idx, 0] = radius_mean * vectors[idx, 0] / (radius_mean + vectors[idx, 2] - stereo_center)
-            stereo_proj[idx, 1] = radius_mean * vectors[idx, 1] / (radius_mean + vectors[idx, 2] - stereo_center)
-            stereo_proj[idx, 2] = radius_mean * vectors[idx, 0] / (radius_mean + stereo_center - vectors[idx, 2])
-            stereo_proj[idx, 3] = radius_mean * vectors[idx, 1] / (radius_mean + stereo_center - vectors[idx, 2])
-
+            stereo_proj[idx, 0] = radius_mean * vectors[idx, 0] / (radius_mean + vectors[idx, 2] - stereo_center)  # u_s
+            stereo_proj[idx, 1] = radius_mean * vectors[idx, 1] / (radius_mean + vectors[idx, 2] - stereo_center)  # v_s
+            stereo_proj[idx, 2] = radius_mean * vectors[idx, 0] / (radius_mean + stereo_center - vectors[idx, 2])  # u_n
+            stereo_proj[idx, 3] = radius_mean * vectors[idx, 1] / (radius_mean + stereo_center - vectors[idx, 2])  # v_n
+        uv_labels = ('axis 0', 'axis 1')  # axes corresponding to u and v respectively, used in plots
     stereo_proj = stereo_proj / radius_mean * 90  # rescale from radius_mean to 90
 
-    return stereo_proj
+    return stereo_proj, uv_labels
 
 
 def detect_edges(faces):
@@ -523,7 +525,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
 
     radius_mean = 1  # normals are normalized
     stereo_center = 0  # COM of the weighted point density, where the projection plane intersects the reference axis
-    # since the diffraction pattern is calculated from the fft of the reconstructed object, it is already centered
+    # since the normals have their origin at 0, the projection plane is the equator and stereo_center=0
 
     # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
@@ -543,8 +545,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     iso_normals = iso_normals / iso_normals_length[:, np.newaxis]
 
     # calculate u and v from xyz
-    stereo_proj = calc_stereoproj_facet(projection_axis=projection_axis, vectors=iso_normals, radius_mean=radius_mean,
-                                        stereo_center=stereo_center)
+    stereo_proj, uv_labels = calc_stereoproj_facet(projection_axis=projection_axis, vectors=iso_normals,
+                                                   radius_mean=radius_mean, stereo_center=stereo_center)
     # remove intensity where stereo_proj is infinite
     list_inf = np.argwhere(np.isinf(stereo_proj))
     if len(list_inf) != 0:
@@ -559,11 +561,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
 
     fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=intensity,
                                    radius_mean=radius_mean, planes=planes_south, max_angle=max_angle,
-                                   title="Projection from\nSouth pole", plot_planes=plot_planes)
+                                   title="Projection from\nSouth pole", plot_planes=plot_planes, uv_labels=uv_labels)
     fig.savefig(savedir + 'South pole.png')
     fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=intensity,
                                    radius_mean=radius_mean, planes=planes_north, max_angle=max_angle,
-                                   title="Projection from\nNorth pole", plot_planes=plot_planes)
+                                   title="Projection from\nNorth pole", plot_planes=plot_planes, uv_labels=uv_labels)
     fig.savefig(savedir + 'North pole.png')
 
     # regrid stereo_proj

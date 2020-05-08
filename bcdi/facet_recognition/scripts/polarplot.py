@@ -454,15 +454,15 @@ qx, qz, qy = qx[mask].reshape((data_masked.size, 1)),\
 ##########################################
 # calculate the stereographic projection #
 ##########################################
-stereo_proj = fu.calc_stereoproj_facet(projection_axis=projection_axis, vectors=np.concatenate((qx, qz, qy), axis=1),
-                                       radius_mean=radius_mean, stereo_center=stereo_center)
+stereo_proj, uv_labels = fu.calc_stereoproj_facet(projection_axis=projection_axis, vectors=np.concatenate((qx, qz, qy), axis=1),
+                                                  radius_mean=radius_mean, stereo_center=stereo_center)
 
 ###########################################
 # plot the projection from the South pole #
 ###########################################
 fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=data_masked,
                                radius_mean=radius_mean, planes=planes_south, title="Projection from the South pole",
-                               hide_axis=hide_axis, plot_planes=plot_planes, max_angle=max_angle,
+                               hide_axis=hide_axis, plot_planes=plot_planes, max_angle=max_angle, uv_labels=uv_labels,
                                contour_range=contour_range)
 
 
@@ -479,7 +479,7 @@ fig.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
 ############################################
 fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=data_masked,
                                radius_mean=radius_mean, planes=planes_north, title="Projection from the North pole",
-                               hide_axis=hide_axis, plot_planes=plot_planes, max_angle=max_angle,
+                               hide_axis=hide_axis, plot_planes=plot_planes, max_angle=max_angle, uv_labels=uv_labels,
                                contour_range=contour_range)
 
 if not reconstructed_data:

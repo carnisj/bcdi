@@ -1144,7 +1144,7 @@ def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped becaus
 
 
 def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, title="", plot_planes=True,
-                       contour_range=None, max_angle=95, cmap=my_cmap, hide_axis=False):
+                       contour_range=None, max_angle=95, cmap=my_cmap, uv_labels=('', ''), hide_axis=False):
     """
     Plot the stereographic projection with some cosmetics.
 
@@ -1158,6 +1158,7 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     :param contour_range: range for the plot contours
     :param max_angle: maximum angle in degrees of the stereographic projection (should be larger than 90)
     :param cmap: colormap to be used
+    :param uv_labels: tuple of strings, labels for the u axis and the v axis, respectively
     :param hide_axis: hide the axis frame, ticks and ticks labels
     :return: figure and axe instances
     """
@@ -1222,8 +1223,8 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
             indx = indx + 6
             print(key + ": ", str('{:.2f}'.format(value)))
         print('\n')
-    ax0.set_xlabel('u')
-    ax0.set_ylabel('v')
+    ax0.set_xlabel('u ' + uv_labels[0])
+    ax0.set_ylabel('v ' + uv_labels[1])
     if hide_axis:
         ax0.axis('off')
         ax0.set_title(title + '\nu horizontal, v vertical')
