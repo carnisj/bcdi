@@ -59,6 +59,7 @@ range_max = 2600  # high limit for the colorbar in polar plots
 range_step = 250  # step for color change in polar plots
 flag_medianfilter = False  # set to True to apply med2filter [3,3] to the reciprocal space data
 plot_planes = True  # if True, plot dotted circles corresponding to planes_south and planes_north indices
+hide_axis = False  # if True, the default axis frame, ticks and ticks labels will be hidden
 planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
 planes_south['1 1 1'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 1]))
 planes_south['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
@@ -447,16 +448,16 @@ stereo_proj = fu.calc_stereoproj_facet(projection_axis=projection_axis, vectors=
 # plot the projection from the South pole #
 ###########################################
 fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=data_masked,
-                               radius_mean=radius_mean, planes=planes_south,
-                               title="Projection from\nSouth pole",
-                               contour_range=range(range_min, range_max, range_step), plot_planes=plot_planes)
+                               radius_mean=radius_mean, planes=planes_south, title="Projection from the South pole",
+                               hide_axis=hide_axis, plot_planes=plot_planes,
+                               contour_range=range(range_min, range_max, range_step))
 
 
 if not reconstructed_data:
     fig.text(0.05, 0.02, "q=" + str(radius_mean) + " dq=" + str(dq) + " offset_eta=" + str(offset_eta) +
-             " offset_phi=" + str(offset_phi) + " offset_chi=" + str(offset_chi), size=20)
+             " offset_phi=" + str(offset_phi) + " offset_chi=" + str(offset_chi), size=14)
 else:
-    fig.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dq), size=20)
+    fig.text(0.05, 0.92, "q=" + str(radius_mean) + " dq=" + str(dq), size=14)
 
 fig.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
 
@@ -464,16 +465,16 @@ fig.savefig(homedir + 'South pole' + comment + '_S' + str(scan) + '.png')
 # plot the projection from the  North pole #
 ############################################
 fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=data_masked,
-                               radius_mean=radius_mean, planes=planes_north,
-                               title="Projection from\nNorth pole",
-                               contour_range=range(range_min, range_max, range_step), plot_planes=plot_planes)
+                               radius_mean=radius_mean, planes=planes_north, title="Projection from the North pole",
+                               hide_axis=hide_axis, plot_planes=plot_planes,
+                               contour_range=range(range_min, range_max, range_step))
 
 if not reconstructed_data:
     fig.text(0.05, 0.02, "q=" + str(radius_mean) + " dq=" + str(dq) + " offset_eta=" + str(offset_eta) +
-             " offset_phi=" + str(offset_phi) + " offset_chi=" + str(offset_chi), size=20)
+             " offset_phi=" + str(offset_phi) + " offset_chi=" + str(offset_chi), size=14)
 
 else:
-    fig.text(0.05, 0.9, "q=" + str(radius_mean) + " dq=" + str(dq), size=20)
+    fig.text(0.05, 0.92, "q=" + str(radius_mean) + " dq=" + str(dq), size=14)
 
 plt.savefig(homedir + 'North pole' + comment + '_S' + str(scan) + '.png')
 
