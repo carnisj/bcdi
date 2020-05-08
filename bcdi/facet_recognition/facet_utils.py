@@ -31,7 +31,6 @@ def calc_stereoproj_facet(projection_axis, vectors, radius_mean, stereo_center):
     :return: the coordinates of the stereographic projection for the projection from the South pole(1st and 2nd columns)
       and from the North pole (3rd and 4th columns) projection, rescaled from radius_mean to 90 degrees
     """
-    # TODO: keep track of where is u and v depending on reflection_axis
     if projection_axis not in [0, 1, 2]:
         raise ValueError('reflection_axis should be a basis axis of the reconstructed array')
 
@@ -620,7 +619,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     mask_north = np.copy(density_north)
     mask_north[mask_north != 0] = 1
 
-    fig = plt.figure(figsize=(15, 10))
+    fig = plt.figure(figsize=(12, 9))
     ax0 = fig.add_subplot(221)
     ax0.imshow(mask_south, cmap=cmap, interpolation='nearest')
     plt.title('Background mask South')
@@ -658,7 +657,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     distances_south = ndimage.distance_transform_edt(density_south)
     distances_north = ndimage.distance_transform_edt(density_north)
     if debugging:
-        fig = plt.figure(figsize=(15, 10))
+        fig = plt.figure(figsize=(12, 9))
         fig.add_subplot(121)
         plt.imshow(distances_south, cmap=cmap, interpolation='nearest')
         plt.title('Distances South')
@@ -674,7 +673,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     local_maxi_south = corner_peaks(distances_south, exclude_border=False, min_distance=min_distance, indices=False)
     local_maxi_north = corner_peaks(distances_north, exclude_border=False, min_distance=min_distance, indices=False)
     if debugging:
-        fig = plt.figure(figsize=(15, 10))
+        fig = plt.figure(figsize=(12, 9))
         ax0 = fig.add_subplot(121)
         plt.imshow(local_maxi_south, interpolation='nearest')
         plt.title('local_maxi South before filtering')
@@ -696,7 +695,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     # markers_north.min() is 0 since it is the background
     markers_north[markers_north == markers_south.max()] = 0
     if debugging:
-        fig = plt.figure(figsize=(15, 10))
+        fig = plt.figure(figsize=(12, 9))
         ax0 = fig.add_subplot(121)
         plt.imshow(markers_south, interpolation='nearest', cmap='binary', vmin=0, vmax=1)
         plt.title('markers South')
@@ -716,7 +715,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     ##########################
     labels_south = watershed(-distances_south, markers_south, mask=mask_south)
     labels_north = watershed(-distances_north, markers_north, mask=mask_north)
-    fig = plt.figure(figsize=(15, 10))
+    fig = plt.figure(figsize=(12, 9))
     ax0 = fig.add_subplot(121)
     plt.imshow(labels_south, cmap=cmap, interpolation='nearest')
     plt.title('Separated objects South')
