@@ -1195,7 +1195,7 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
         ax0.add_artist(circle)
     for ii in range(10, 95, 20):
         ax0.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
-                 str(ii) + '$^\circ$', fontsize=10, color='k')
+                 str(ii) + r'$^\circ$', fontsize=10, color='k')
     circle = patches.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
     ax0.add_artist(circle)
 

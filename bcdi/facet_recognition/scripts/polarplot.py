@@ -454,7 +454,8 @@ qx, qz, qy = qx[mask].reshape((data_masked.size, 1)),\
 ##########################################
 # calculate the stereographic projection #
 ##########################################
-stereo_proj, uv_labels = fu.calc_stereoproj_facet(projection_axis=projection_axis, vectors=np.concatenate((qx, qz, qy), axis=1),
+stereo_proj, uv_labels = fu.calc_stereoproj_facet(projection_axis=projection_axis,
+                                                  vectors=np.concatenate((qx, qz, qy), axis=1),
                                                   radius_mean=radius_mean, stereo_center=stereo_center)
 
 ###########################################
