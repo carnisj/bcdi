@@ -1515,7 +1515,7 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
 
 
 def rotate_crystal(array, axis_to_align, reference_axis, width_z=None, width_y=None, width_x=None,
-                   debugging=False):
+                   is_orthogonal=False, reciprocal_space=False, debugging=False):
     """
     Rotate myobj to align axis_to_align onto reference_axis.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
@@ -1527,6 +1527,8 @@ def rotate_crystal(array, axis_to_align, reference_axis, width_z=None, width_y=N
     :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
     :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
     :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
+    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :param debugging: set to True to see plots before and after rotation
     :type debugging: bool
     :return: rotated myobj
@@ -1536,7 +1538,8 @@ def rotate_crystal(array, axis_to_align, reference_axis, width_z=None, width_y=N
 
     nbz, nby, nbx = array.shape
     if debugging:
-        gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, title='Before rotating')
+        gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, title='Before rotating',
+                            is_orthogonal=is_orthogonal, reciprocal_space=reciprocal_space)
 
     v = np.cross(axis_to_align, reference_axis)
     skew_sym_matrix = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
@@ -1559,7 +1562,8 @@ def rotate_crystal(array, axis_to_align, reference_axis, width_z=None, width_y=N
                                    new_x.reshape((1, new_z.size)))).transpose())
     new_array = new_array.reshape((nbz, nby, nbx)).astype(array.dtype)
     if debugging:
-        gu.multislices_plot(new_array, width_z=width_z, width_y=width_y, width_x=width_x, title='After rotating')
+        gu.multislices_plot(new_array, width_z=width_z, width_y=width_y, width_x=width_x, title='After rotating',
+                            is_orthogonal=is_orthogonal, reciprocal_space=reciprocal_space)
     return new_array
 
 
