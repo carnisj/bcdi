@@ -557,11 +557,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
         remove_row = []
     # plot the stereographic projection
 
-    fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 1], euclidian_v=stereo_proj[:, 0], color=intensity,
+    fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=intensity,
                                    radius_mean=radius_mean, planes=planes_south,
                                    title="Projection from\nSouth pole", plot_planes=plot_planes)
     fig.savefig(savedir + 'South pole.png')
-    fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 3], euclidian_v=stereo_proj[:, 2], color=intensity,
+    fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=intensity,
                                    radius_mean=radius_mean, planes=planes_north,
                                    title="Projection from\nNorth pole", plot_planes=plot_planes)
     fig.savefig(savedir + 'North pole.png')
