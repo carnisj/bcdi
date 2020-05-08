@@ -35,11 +35,12 @@ The coordinate system follows the CXI convention: Z downstream, Y vertical up an
 Q values follow the more classical convention: qx downstream, qz vertical up, qy outboard.
 """
 
-scan = 589    # spec scan number
-root_folder = "D:/review paper/Pt growth/CH5309/"
+scan = 11    # spec scan number
+root_folder = "D:/data/PtRh/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
+projection_axis = 1  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
 radius_mean = 0.035  # q from Bragg peak
 dq = 0.0002  # width in q of the shell to be projected
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
@@ -54,7 +55,6 @@ photon_threshold = 0  # threshold applied to the measured diffraction pattern
 range_min = 250  # low limit for the colorbar in polar plots, every below will be set to nan
 range_max = 2600  # high limit for the colorbar in polar plots
 range_step = 250  # step for color change in polar plots
-background_polarplot = 1  # everything below this value is set to np.nan in the polar plot
 #######################################################################################################
 # parameters for plotting the stereographic projection starting from the measured diffraction pattern #
 #######################################################################################################
@@ -66,12 +66,11 @@ binning = [1, 1, 1]  # binning for the measured diffraction pattern in each dime
 ###################################################################################################
 reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
-reflection_axis = 1  # array axis along which is aligned the measurement direction (0, 1 or 2)
 threshold_amp = 0.3  # threshold for support determination from amplitude, if reconstructed_data=1
 use_phase = False  # set to False to use only a support, True to use the complex amplitude
 binary_support = False  # if True, the modulus of the reconstruction will be set to a binary support
 phase_factor = -1  # 1, -1, -2*np.pi/d depending on what is in the field phase (phase, -phase, displacement...)
-voxel_size = [6.0, 6.0, 6.0]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
+voxel_size = [3.0, 3.0, 3.0]  # in nm, voxel size of the CDI reconstruction in each directions.  Put [] if unknown
 pad_size = [2, 2, 2]  # list of three int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
 upsampling_ratio = 2  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
@@ -81,7 +80,6 @@ upsampling_ratio = 2  # int >=1, upsample the real space object by this factor (
 ###################
 flag_medianfilter = False  # set to True for applying med2filter [3,3]
 plot_planes = True  # if True, plot red dotted circle with planes indices
-flag_plottext = True  # if True, will plot plane indices and angles in the figure
 normalize_flux = True  # will normalize the intensity by the default monitor.
 debug = False  # True to show more plots, False otherwise
 #######################################################################
@@ -341,27 +339,6 @@ else:
             gu.multislices_plot(abs(obj), sum_frames=False, reciprocal_space=False, is_orthogonal=True,
                                 title='upsampled object')
 
-    #####################################################
-    # rotate array to have q along axis 1 (vertical up) #
-    #####################################################
-    # TODO: remove this since we can project with other axes also
-    if reflection_axis == 0:  # q along z
-        axis_to_align = np.array([0, 0, 1])  # in order x y z for rotate_crystal()
-    elif reflection_axis == 1:  # q along y
-        axis_to_align = np.array([0, 1, 0])  # in order x y z for rotate_crystal()
-    else:  # q along x
-        axis_to_align = np.array([1, 0, 0])  # in order x y z for rotate_crystal()
-
-    if reflection_axis != 1:
-        print('Rotating object to have q along axis 1 (y vertical up)')
-        amp = pu.rotate_crystal(array=abs(obj), axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
-                                debugging=True)
-        phase = pu.rotate_crystal(array=np.angle(obj), axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
-                                  debugging=False)
-        obj = amp * np.exp(1j * phase)
-        del amp, phase
-        gc.collect()
-
     #########################################
     # normalize and apply modulus threshold #
     #########################################
@@ -472,7 +449,7 @@ qx, qz, qy = qx[mask].reshape((data_masked.size, 1)),\
 ##########################################
 # calculate the stereographic projection #
 ##########################################
-stereo_proj = fu.calc_stereoproj_facet(reflection_axis=reflection_axis, vectors=np.concatenate((qx, qz, qy), axis=1),
+stereo_proj = fu.calc_stereoproj_facet(projection_axis=projection_axis, vectors=np.concatenate((qx, qz, qy), axis=1),
                                        radius_mean=radius_mean, stereo_center=0)
 
 ###########################################

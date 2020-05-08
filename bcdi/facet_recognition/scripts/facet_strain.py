@@ -40,7 +40,7 @@ voxel_size = [3.64, 5.53, 2.53]   # tuple of 3 numbers, voxel size of the real-s
 upsampling_factor = 2  # integer, factor for upsampling the reconstruction in order to have a smoother surface
 savedir = datadir + "testisosurface_" + str(support_threshold) + " 3.64x5.53x2.53nm3/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
-reflection_axis = 2  # array axis along which is aligned the measurement direction (0, 1 or 2)
+projection_axis = 2  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
 smoothing_iterations = 30  # number of iterations in Taubin smoothing
 smooth_lamda = 0.33  # lambda parameter in Taubin smoothing
@@ -163,7 +163,7 @@ if projection_method == 'stereographic':
         fu.stereographic_proj(normals=normals, intensity=intensity, background_threshold=threshold_stereo,
                               min_distance=peak_min_distance, savedir=savedir, save_txt=False, plot_planes=True,
                               planes_south=planes_south, planes_north=planes_north, max_angle=max_angle,
-                              voxel_size=voxel_size, reflection_axis=reflection_axis, debugging=debug)
+                              voxel_size=voxel_size, projection_axis=projection_axis, debugging=debug)
     if len(remove_row) != 0:
         for raw in remove_row:
             normals = np.delete(normals, raw, axis=0)
@@ -724,17 +724,17 @@ for label in updated_label:
     plane_normal = plane_normal / np.linalg.norm(plane_normal)
 
     # check where is the measurement direction
-    if reflection_axis == 0:  # q aligned along the 1st axis
+    if projection_axis == 0:  # q aligned along the 1st axis
         ref_axis = np.array([1, 0, 0])
-    elif reflection_axis == 1:  # q aligned along the 2nd axis
+    elif projection_axis == 1:  # q aligned along the 2nd axis
         ref_axis = np.array([0, 1, 0])
-    elif reflection_axis == 2:  # q aligned along the 3rd axis
+    elif projection_axis == 2:  # q aligned along the 3rd axis
         ref_axis = np.array([0, 0, 1])
     else:
-        print('reflection_axis should be a basis axis of the reconstructed array')
+        print('projection_axis should be a basis axis of the reconstructed array')
         sys.exit()
 
-    # calculate the angle of the plane normal to the measurement direction, which is aligned along reflection_axis
+    # calculate the angle of the plane normal to the measurement direction, which is aligned along projection_axis
     angle_plane = 180 / np.pi * np.arccos(np.dot(ref_axis, plane_normal))
 
     # update the log files

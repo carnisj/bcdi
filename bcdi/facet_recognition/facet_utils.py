@@ -18,12 +18,12 @@ colormap = gu.Colormap()
 default_cmap = colormap.cmap
 
 
-def calc_stereoproj_facet(reflection_axis, vectors, radius_mean, stereo_center):
+def calc_stereoproj_facet(projection_axis, vectors, radius_mean, stereo_center):
     """
     Calculate the coordinates of normals in the stereographic projection depending on the reference axis
      see Nanoscale 10, 4833 (2018).
 
-    :param reflection_axis: array axis along which is aligned the measurement direction (0, 1 or 2)
+    :param projection_axis: the projection is performed on q plane perpendicular to that axis (0, 1 or 2)
     :param vectors: array of vectors to be projected (nb_vectors rows x 3 columns)
     :param radius_mean: q radius from which the projection will be done
     :param stereo_center: offset of the projection plane along the reflection axis, in the same unit as radius_mean
@@ -32,7 +32,7 @@ def calc_stereoproj_facet(reflection_axis, vectors, radius_mean, stereo_center):
       and from the North pole (3rd and 4th columns) projection, rescaled from radius_mean to 90 degrees
     """
     # TODO: keep track of where is u and v depending on reflection_axis
-    if reflection_axis not in [0, 1, 2]:
+    if projection_axis not in [0, 1, 2]:
         raise ValueError('reflection_axis should be a basis axis of the reconstructed array')
 
     # calculate u and v from xyz
@@ -40,14 +40,14 @@ def calc_stereoproj_facet(reflection_axis, vectors, radius_mean, stereo_center):
     # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
     # stereo_proj[:, 2] is the euclidian u_north, stereo_proj[:, 3] is the euclidian v_north
 
-    if reflection_axis == 0:  # q aligned along the 1st axis (Z downstream in CXI convention)
+    if projection_axis == 0:  # q aligned along the 1st axis (Z downstream in CXI convention)
         for idx in range(vectors.shape[0]):
             stereo_proj[idx, 0] = radius_mean * vectors[idx, 1] / (radius_mean + vectors[idx, 0] - stereo_center)
             stereo_proj[idx, 1] = radius_mean * vectors[idx, 2] / (radius_mean + vectors[idx, 0] - stereo_center)
             stereo_proj[idx, 2] = radius_mean * vectors[idx, 1] / (radius_mean + stereo_center - vectors[idx, 0])
             stereo_proj[idx, 3] = radius_mean * vectors[idx, 2] / (radius_mean + stereo_center - vectors[idx, 0])
 
-    elif reflection_axis == 1:  # q aligned along the 2nd axis (Y vertical up in CXI convention)
+    elif projection_axis == 1:  # q aligned along the 2nd axis (Y vertical up in CXI convention)
         for idx in range(vectors.shape[0]):
             stereo_proj[idx, 0] = radius_mean * vectors[idx, 0] / (radius_mean + vectors[idx, 1] - stereo_center)
             stereo_proj[idx, 1] = radius_mean * vectors[idx, 2] / (radius_mean + vectors[idx, 1] - stereo_center)
@@ -493,7 +493,7 @@ def surface_indices(surface, plane_indices, margin=3):
     return surf0, surf1, surf2
 
 
-def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, reflection_axis, min_distance=10,
+def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, projection_axis, min_distance=10,
                        background_threshold=-1000, save_txt=False, cmap=default_cmap, planes_south={}, planes_north={},
                        plot_planes=True, debugging=False):
     """
@@ -505,7 +505,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     :param max_angle: maximum angle in degree of the stereographic projection (should be larger than 90)
     :param savedir: directory for saving figures
     :param voxel_size: tuple of three numbers corresponding to the real-space voxel size in each dimension
-    :param reflection_axis: array axis along which is aligned the measurement direction (0, 1 or 2)
+    :param projection_axis: the projection is performed on a plane perpendicular to that axis (0, 1 or 2)
     :param min_distance: min_distance of corner_peaks()
     :param background_threshold: threshold for background determination (depth of the KDE)
     :param save_txt: if True, will save coordinates in a .txt file
@@ -543,7 +543,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, refle
     iso_normals = iso_normals / iso_normals_length[:, np.newaxis]
 
     # calculate u and v from xyz
-    stereo_proj = calc_stereoproj_facet(reflection_axis=reflection_axis, vectors=iso_normals, radius_mean=radius_mean,
+    stereo_proj = calc_stereoproj_facet(projection_axis=projection_axis, vectors=iso_normals, radius_mean=radius_mean,
                                         stereo_center=stereo_center)
     # remove intensity where stereo_proj is infinite
     list_inf = np.argwhere(np.isinf(stereo_proj))
