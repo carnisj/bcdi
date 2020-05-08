@@ -97,8 +97,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
     :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm)
-    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame)
-    :param reciprocal_space: True if the data is in reciprocal space, False otherwise
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
+    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :param kwargs: optional 'xlabel' and 'ylabel', labels for plots
     :return:  the figure instance
     """
@@ -329,8 +329,8 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
     :param cmap: colormap to be used
     :param title: string to include in the plot
     :param scale: 'linear' or 'log'
-    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame)
-    :param reciprocal_space: True if the data is in reciprocal space, False otherwise
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
+    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :return: fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) instances
     """
     nb_dim = array.ndim
@@ -491,8 +491,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
     :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm)
-    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame)
-    :param reciprocal_space: True if the data is in reciprocal space, False otherwise
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
+    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :return:  fig, axis, plot instances
     """
     nb_dim = array.ndim
@@ -884,8 +884,8 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
     :param pixel_spacing: pixel_spacing=desired tick_spacing (in nm)/voxel_size of the reconstruction(in nm)
-    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame)
-    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot titles.
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
+    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :param vmin: lower boundary for the colorbar. Float or tuple of 3 floats
     :param vmax: higher boundary for the colorbar. Float or tuple of 3 floats
     :param ipynb_layout: toggle for 3 plots in a row, cleaner in an Jupyter Notebook
