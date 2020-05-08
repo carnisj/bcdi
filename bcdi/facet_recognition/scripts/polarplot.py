@@ -28,9 +28,10 @@ import bcdi.preprocessing.preprocessing_utils as pru
 
 helptext = """
 Stereographic projection of a measured 3D diffraction pattern or calculated from a real-space BCDI reconstruction.
-A shell dq of reciprocal space located a radius_mean (in q) from the Bragg peak is projected onto the equatorial plane.
+A shell dq of reciprocal space located a radius_mean (in q) from the Bragg peak is projected from the South pole and
+the North onto the equatorial plane.
 
-The coordinate system follows the CXI convetion: Z downstream, Y vertical up and X outboard.
+The coordinate system follows the CXI convention: Z downstream, Y vertical up and X outboard.
 Q values follow the more classical convention: qx downstream, qz vertical up, qy outboard.
 """
 
