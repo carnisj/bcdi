@@ -209,7 +209,7 @@ else:
 
 detector.savedir = homedir
 
-if not reconstructed_data:
+if not reconstructed_data:  # load reciprocal space data
     flatfield = pru.load_flatfield(flatfield_file)
     hotpix_array = pru.load_hotpixels(hotpixels_file)
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan,
@@ -236,7 +236,7 @@ if not reconstructed_data:
 
     # apply photon threshold
     data[data < photon_threshold] = 0
-else:
+else:  # load a reconstructed real space object
     comment = comment + "_CDI"
     file_path = filedialog.askopenfilename(initialdir=homedir,
                                            title="Select 3D data", filetypes=[("NPZ", "*.npz")])
