@@ -34,7 +34,9 @@ the North onto the equatorial plane.
 The coordinate system follows the CXI convention: Z downstream, Y vertical up and X outboard.
 Q values follow the more classical convention: qx downstream, qz vertical up, qy outboard.
 """
-
+######################
+# generic parameters #
+######################
 scan = 11    # spec scan number
 root_folder = "D:/data/PtRh/"
 sample_name = "S"  # "S"  #
@@ -55,15 +57,26 @@ photon_threshold = 0  # threshold applied to the measured diffraction pattern
 range_min = 250  # low limit for the colorbar in polar plots, every below will be set to nan
 range_max = 2600  # high limit for the colorbar in polar plots
 range_step = 250  # step for color change in polar plots
-#######################################################################################################
-# parameters for plotting the stereographic projection starting from the measured diffraction pattern #
-#######################################################################################################
-filtered_data = False  # set to True if the data is already a 3D array, False otherwise
-is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
-binning = [1, 1, 1]  # binning for the measured diffraction pattern in each dimension
-###################################################################################################
-# parameters for plotting the stereographic projection starting from the phased real space object #
-###################################################################################################
+flag_medianfilter = False  # set to True to apply med2filter [3,3] to the reciprocal space data
+plot_planes = True  # if True, plot dotted circles corresponding to planes_south and planes_north indices
+planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
+planes_south['1 1 1'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 1]))
+planes_south['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
+planes_south['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
+planes_south['-1 1 0'] = fu.plane_angle_cubic(reflection, np.array([-1, 1, 0]))
+planes_south['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
+planes_south['-1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([-1, -1, 1]))
+planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
+planes_north['-1 -1 -1'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, -1]))
+planes_north['-1 0 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, 0, 0]))
+planes_north['-1 -1 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, 0]))
+planes_north['-1 1 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, 1, 0]))
+planes_north['-1 -1 1'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, 1]))
+planes_north['-1 1 1'] = fu.plane_angle_cubic(-reflection, np.array([-1, 1, 1]))
+debug = False  # True to show more plots, False otherwise
+########################################################################################################
+# parameters for plotting the stereographic projection starting from the phased real space object only #
+########################################################################################################
 reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
 threshold_amp = 0.3  # threshold for support determination from amplitude, if reconstructed_data=1
@@ -75,19 +88,11 @@ pad_size = [2, 2, 2]  # list of three int >= 1, will pad to get this number time
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
 upsampling_ratio = 2  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
 # it corresponds to increasing the size of the detector while keeping detector pixel size constant
-###################
-# various options #
-###################
-flag_medianfilter = False  # set to True for applying med2filter [3,3]
-plot_planes = True  # if True, plot red dotted circle with planes indices
-normalize_flux = True  # will normalize the intensity by the default monitor.
-debug = False  # True to show more plots, False otherwise
-#######################################################################
-# define beamline related parameters, not used for reconstructed data #
-#######################################################################
+#################################################################################
+# define beamline related parameters, not used for the phased real space object #
+#################################################################################
 beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
-
 custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = None  # np.arange(11665, 11764, 1)  # list of image numbers for the custom_scan
 custom_monitor = None  # np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
@@ -97,7 +102,6 @@ custom_motors = None
 # CRISTAL: mgomega, gamma, delta
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
-
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = 'align'
@@ -107,9 +111,12 @@ specfile_name = 'align'
 # template for SIXS_2019: ''
 # template for P10: sample_name + '_%05d'
 # template for CRISTAL: ''
-##############################################################################################
-# define detector related parameters and region of interest, not used for reconstructed data #
-##############################################################################################
+filtered_data = False  # set to True if the data is already a 3D array, False otherwise
+is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
+normalize_flux = True  # will normalize the diffraction intensity by the default monitor
+########################################################################################################
+# define detector related parameters and region of interest, not used for the phased real space object #
+########################################################################################################
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 451  # horizontal pixel number of the Bragg peak
 y_bragg = 1450  # vertical pixel number of the Bragg peak
@@ -125,9 +132,10 @@ template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_data_%06d.h5'
-####################################################################################################
-# define parameters for xrayutilities, used for orthogonalization, not used for reconstructed data #
-####################################################################################################
+binning = [1, 1, 1]  # binning to apply to the measured diffraction pattern in each dimension
+##############################################################################################################
+# define parameters for xrayutilities, used for orthogonalization, not used for the phased real space object #
+##############################################################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
 sdd = 1.0137  # 0.865  # sample to detector distance in m, not important if you use raw data
 energy = 10000  # x-ray energy in eV, not important if you use raw data
@@ -142,33 +150,16 @@ cch2 = -174.21  # 390.8
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
 tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
-##################################################################################################
-# calculate theoretical angles between the measured reflection and other planes - only for cubic #
-##################################################################################################
-planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
-planes_south['1 1 1'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 1]))
-planes_south['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
-planes_south['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
-planes_south['-1 1 0'] = fu.plane_angle_cubic(reflection, np.array([-1, 1, 0]))
-planes_south['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-planes_south['-1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([-1, -1, 1]))
+##################################
+# end of user-defined parameters #
+##################################
 
-planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
-planes_north['-1 -1 -1'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, -1]))
-planes_north['-1 0 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, 0, 0]))
-planes_north['-1 -1 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, 0]))
-planes_north['-1 1 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, 1, 0]))
-planes_north['-1 -1 1'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, 1]))
-planes_north['-1 1 1'] = fu.plane_angle_cubic(-reflection, np.array([-1, 1, 1]))
 ###################
 # define colormap #
 ###################
 bad_color = '1.0'  # white background
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
-##################################
-# end of user-defined parameters #
-##################################
 
 #######################
 # Initialize detector #
