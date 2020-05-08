@@ -303,8 +303,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
                              length=tick_length, width=tick_width)
         if plot_colorbar:
             plt.colorbar(plot, ax=axis)
-        plt.tight_layout()
 
+    plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.5)
     plt.ioff()
 
@@ -341,13 +341,21 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
     if reciprocal_space:
         if is_orthogonal:
             slice_names = (' QyQz', ' QyQx', ' QzQx')
+            ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
+            hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
         else:  # detector frame
             slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+            ver_labels = ('Y', 'rocking angle', 'rocking angle')
+            hor_labels = ('X', 'X', 'Y')
     else:
         if is_orthogonal:
             slice_names = (' xy', ' xz', ' yz')
+            ver_labels = ('y', 'z', 'z')
+            hor_labels = ('x', 'x', 'y')
         else:  # detector frame
             slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+            ver_labels = ('Y', 'rocking angle', 'rocking angle')
+            hor_labels = ('X', 'X', 'Y')
 
     if nb_dim != 3:  # wrong array dimension
         print('multislices_plot() needs a 3D array')
@@ -373,7 +381,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
             else:
                 slice_position = [int(position) for position in slice_position]
 
-        fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
+        fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 9))
 
         # axis 0
         temp_array = np.copy(array)
@@ -395,6 +403,8 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
             raise ValueError('Wrong value for scale')
 
         ax0.set_aspect("equal")
+        ax0.set_xlabel(hor_labels[0])
+        ax0.set_ylabel(ver_labels[0])
         ax0.set_title(title + slice_names[0])
         if plot_colorbar:
             plt.colorbar(plt0, ax=ax0)
@@ -419,6 +429,8 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
             raise ValueError('Wrong value for scale')
 
         ax1.set_aspect("equal")
+        ax1.set_xlabel(hor_labels[1])
+        ax1.set_ylabel(ver_labels[1])
         ax1.set_title(title + slice_names[1])
         if plot_colorbar:
             plt.colorbar(plt1, ax=ax1)
@@ -443,13 +455,15 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
             raise ValueError('Wrong value for scale')
 
         ax2.set_aspect("equal")
+        ax2.set_xlabel(hor_labels[2])
+        ax2.set_ylabel(ver_labels[2])
         ax2.set_title(title + slice_names[2])
         if plot_colorbar:
             plt.colorbar(plt2, ax=ax2)
 
         # axis 3
         ax3.set_visible(False)
-    # plt.tight_layout()
+    plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.5)
     plt.ioff()
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
@@ -493,16 +507,24 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
             if is_orthogonal:
                 invert_yaxis = True
                 slice_names = (' QyQz', ' QyQx', ' QzQx')
+                ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
+                hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
             else:  # detector frame
                 invert_yaxis = False
                 slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                ver_labels = ('Y', 'rocking angle', 'rocking angle')
+                hor_labels = ('X', 'X', 'Y')
         else:
             if is_orthogonal:
                 invert_yaxis = True
                 slice_names = (' xy', ' xz', ' yz')
+                ver_labels = ('y', 'z', 'z')
+                hor_labels = ('x', 'x', 'y')
             else:  # detector frame
                 invert_yaxis = False
                 slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                ver_labels = ('Y', 'rocking angle', 'rocking angle')
+                hor_labels = ('X', 'X', 'Y')
 
         nbz, nby, nbx = array.shape
         if width_v is None:
@@ -535,6 +557,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
             print('sum_axis should be only equal to 0, 1 or 2')
             return
         slice_name = slice_names[sum_axis]
+        ver_label = ver_labels[sum_axis]
+        hor_label = hor_labels[sum_axis]
 
     elif nb_dim == 2:
         invert_yaxis = False
@@ -546,7 +570,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
 
         dim_v = nby
         dim_h = nbx
-        slice_name = ''
+        slice_name, ver_label, hor_label = '', '', ''
 
     else:  # wrong array dimension
         print('imshow_plot() needs a 2D or 3D array')
@@ -588,8 +612,10 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         raise ValueError('Wrong value for scale')
 
     if invert_yaxis and sum_axis == 0:  # Y is axis 0, need to be flipped
-        ax = plt.gca()
-        ax.invert_yaxis()
+        axis = plt.gca()
+        axis.invert_yaxis()
+    axis.set_xlabel(hor_label)
+    axis.set_ylabel(ver_label)
     plt.title(title + slice_name)
     plt.axis('scaled')
     if not np.isnan(pixel_spacing):
@@ -599,7 +625,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                          length=tick_length, width=tick_width)
     if plot_colorbar:
         plt.colorbar(plot, ax=axis)
-    plt.tight_layout()
+    plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.5)
     plt.ioff()
     return fig, axis, plot
@@ -902,16 +928,24 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         if is_orthogonal:
             invert_yaxis = True
             slice_names = (' QyQz', ' QyQx', ' QzQx')
+            ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
+            hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
         else:  # detector frame
             invert_yaxis = False
             slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+            ver_labels = ('Y', 'rocking angle', 'rocking angle')
+            hor_labels = ('X', 'X', 'Y')
     else:
         if is_orthogonal:
             invert_yaxis = True
             slice_names = (' xy', ' xz', ' yz')
+            ver_labels = ('y', 'z', 'z')
+            hor_labels = ('x', 'x', 'y')
         else:  # detector frame
             invert_yaxis = False
             slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+            ver_labels = ('Y', 'rocking angle', 'rocking angle')
+            hor_labels = ('X', 'X', 'Y')
 
     if width_z is None:
         width_z = nbz
@@ -936,7 +970,6 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
                             int(np.rint(nby // 2 - min(width_y, nby) // 2)) + min(width_y, nby),
                             int(np.rint(nbx // 2 - min(width_x, nbx) // 2)):
                             int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
-
     if scale == 'linear':
         if np.isnan(min_value[0]):
             min_value[0] = temp_array[~np.isnan(temp_array)].min()
@@ -953,7 +986,8 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         plt0 = ax0.imshow(np.log10(abs(temp_array)), vmin=min_value[0], vmax=max_value[0], cmap=cmap)
     else:
         raise ValueError('Wrong value for scale')
-
+    ax0.set_xlabel(hor_labels[0])
+    ax0.set_ylabel(ver_labels[0])
     ax0.set_title(title + slice_names[0])
     if invert_yaxis:  # Y is axis 0, need to be flipped
         ax0.invert_yaxis()
@@ -977,7 +1011,6 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
                             int(np.rint(nbz // 2 - min(width_z, nbz) // 2)) + min(width_z, nbz),
                             int(np.rint(nbx // 2 - min(width_x, nbx) // 2)):
                             int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
-
     if scale == 'linear':
         if np.isnan(min_value[1]):
             min_value[1] = temp_array[~np.isnan(temp_array)].min()
@@ -994,6 +1027,8 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         plt1 = ax1.imshow(np.log10(abs(temp_array)), vmin=min_value[1], vmax=max_value[1], cmap=cmap)
     else:
         raise ValueError('Wrong value for scale')
+    ax1.set_xlabel(hor_labels[1])
+    ax1.set_ylabel(ver_labels[1])
     ax1.set_title(title + slice_names[1])
     plt.axis('scaled')
     if plot_colorbar:
@@ -1015,7 +1050,6 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
                             int(np.rint(nbz // 2 - min(width_z, nbz) // 2)) + min(width_z, nbz),
                             int(np.rint(nby // 2 - min(width_y, nby) // 2)):
                             int(np.rint(nby // 2 - min(width_y, nby) // 2)) + min(width_y, nby)]
-
     if scale == 'linear':
         if np.isnan(min_value[2]):
             min_value[2] = temp_array[~np.isnan(temp_array)].min()
@@ -1029,6 +1063,8 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
                 min_value[2] = 0
         if np.isnan(max_value[2]):
             max_value[2] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
+        ax2.set_xlabel(hor_labels[2])
+        ax2.set_ylabel(ver_labels[2])
         plt2 = ax2.imshow(np.log10(abs(temp_array)), vmin=min_value[2], vmax=max_value[2], cmap=cmap)
     else:
         raise ValueError('Wrong value for scale')
@@ -1047,7 +1083,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         # axis 3
         ax3.set_visible(False)
 
-    plt.tight_layout()
+    plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.5)
     plt.ioff()
     
