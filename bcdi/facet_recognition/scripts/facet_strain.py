@@ -141,10 +141,10 @@ if debug:
 #######################################
 # smooth the mesh using taubin_smooth #
 #######################################
-vertices_new, normals, areas, intensity, _ = \
+vertices_new, normals, _, intensity, _ = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
                      debugging=True)
-nb_vertices = vertices_old.shape[0]
+nb_vertices = vertices_new.shape[0]
 
 # Display smoothed triangular mesh
 if debug:
@@ -164,10 +164,10 @@ if projection_method == 'stereographic':
                               min_distance=peak_min_distance, savedir=savedir, save_txt=False, plot_planes=True,
                               planes_south=planes_south, planes_north=planes_north, max_angle=max_angle,
                               voxel_size=voxel_size, projection_axis=projection_axis, debugging=debug)
-    if len(remove_row) != 0:
-        for row in remove_row:
-            normals = np.delete(normals, row, axis=0)
-            faces = np.delete(faces, row, axis=0)
+
+    # remove rows containing nan values
+    normals = np.delete(normals, remove_row, axis=0)
+    faces = np.delete(faces, remove_row, axis=0)
 
     nb_normals = normals.shape[0]
     numy, numx = labels_top.shape  # identical to labels_bottom.shape
