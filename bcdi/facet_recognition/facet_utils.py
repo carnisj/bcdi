@@ -526,7 +526,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     radius_mean = 1  # normals are normalized
     stereo_center = 0  # COM of the weighted point density, where the projection plane intersects the reference axis
     # since the normals have their origin at 0, the projection plane is the equator and stereo_center=0
-
+    # TODO: check this
     # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
     if len(list_nan) != 0:
@@ -550,6 +550,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
     # stereo_proj[:, 2] is the euclidian u_north, stereo_proj[:, 3] is the euclidian v_north
 
+    # TODO: check this
     # remove intensity where stereo_proj is infinite
     list_inf = np.argwhere(np.isinf(stereo_proj))
     if len(list_inf) != 0:
@@ -769,7 +770,6 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
             indices = neighbours[i]  # list of indices
             distances = np.sqrt(np.sum((vertices[indices, :]-vertices[i, :])**2, axis=1))
             weights = distances**(-1)
-            # weights[np.argwhere(np.isnan(weights))] = 0
             vectoren = weights[:, np.newaxis] * vertices[indices, :]
             totaldist = sum(weights)
             new_vertices[i, :] = vertices[i, :] - mu*(sum(vectoren)/totaldist - vertices[i, :])
@@ -783,7 +783,7 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     tris = new_vertices[faces]
     # Calculate the normal for all the triangles, by taking the cross product of the vectors v1-v0,
     # and v2-v0 in each triangle
-    normals = np.cross(tris[::, 1] - tris[::, 0], tris[::, 2] - tris[::, 0])
+    normals = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[::, 0])
     areas = np.array([1/2 * np.linalg.norm(normal) for normal in normals])
     normals_length = np.sqrt(normals[:, 0]**2 + normals[:, 1]**2 + normals[:, 2]**2)
     normals = -1 * normals / normals_length[:, np.newaxis]   # flip and normalize normals
@@ -809,13 +809,13 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
         ax.set_ylabel('y')
         ax.set_zlim(-1, 1)
         ax.set_zlabel('x')
-#         ax.set_aspect('equal', 'box')
         plt.title('Weighted point densities before KDE')
         plt.pause(0.1)
     err_normals = np.argwhere(np.isnan(normals[:, 0]))
     normals[err_normals, :] = normals[err_normals-1, :]
     plt.ioff()
-
+    
+    # TODO: check this
     # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
     if len(list_nan) != 0:
