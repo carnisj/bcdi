@@ -544,9 +544,12 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     iso_normals_length = np.sqrt(iso_normals[:, 0] ** 2 + iso_normals[:, 1] ** 2 + iso_normals[:, 2] ** 2)
     iso_normals = iso_normals / iso_normals_length[:, np.newaxis]
 
-    # calculate u and v from xyz
+    # calculate the normalized Euclidian metric coordinates u and v from xyz
     stereo_proj, uv_labels = calc_stereoproj_facet(projection_axis=projection_axis, vectors=iso_normals,
                                                    radius_mean=radius_mean, stereo_center=stereo_center)
+    # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
+    # stereo_proj[:, 2] is the euclidian u_north, stereo_proj[:, 3] is the euclidian v_north
+
     # remove intensity where stereo_proj is infinite
     list_inf = np.argwhere(np.isinf(stereo_proj))
     if len(list_inf) != 0:
@@ -569,10 +572,14 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     fig.savefig(savedir + 'North pole.png')
 
     # regrid stereo_proj
-    yi, xi = np.mgrid[-max_angle:max_angle:381j, -max_angle:max_angle:381j]  # vertical, horizontal
-    nby, nbx = xi.shape
-    density_south = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), intensity, (yi, xi), method='linear')  # South
-    density_north = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), intensity, (yi, xi), method='linear')  # North
+    # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
+    # stereo_proj[:, 2] is the euclidian u_north, stereo_proj[:, 3] is the euclidian v_north
+    nb_points = 4 * max_angle + 1
+    v_grid, u_grid = np.mgrid[-max_angle:max_angle:(nb_points*1j), -max_angle:max_angle:(nb_points*1j)]
+    # v_grid changes vertically, u_grid horizontally
+    nby, nbx = u_grid.shape
+    density_south = griddata((stereo_proj[:, 0], stereo_proj[:, 1]), intensity, (u_grid, v_grid), method='linear')  # S
+    density_north = griddata((stereo_proj[:, 2], stereo_proj[:, 3]), intensity, (u_grid, v_grid), method='linear')  # N
     density_south = density_south / density_south[density_south > 0].max() * 10000  # normalize for plotting
     density_north = density_north / density_north[density_north > 0].max() * 10000  # normalize for plotting
 
@@ -581,11 +588,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
         density_south[np.isnan(density_south)] = 0.0
         density_north[np.isnan(density_north)] = 0.0
         fichier = open(savedir + 'CDI_poles.dat', "w")
-        for ii in range(len(yi)):
-            for jj in range(len(xi)):
-                fichier.write(str(yi[ii, 0]) + '\t' + str(xi[0, jj]) + '\t' +
-                              str(density_south[ii, jj]) + '\t' + str(yi[ii, 0]) + '\t' +
-                              str(xi[0, jj]) + '\t' + str(density_north[ii, jj]) + '\n')
+        for ii in range(len(v_grid)):
+            for jj in range(len(u_grid)):
+                fichier.write(str(v_grid[ii, 0]) + '\t' + str(u_grid[0, jj]) + '\t' +
+                              str(density_south[ii, jj]) + '\t' + str(v_grid[ii, 0]) + '\t' +
+                              str(u_grid[0, jj]) + '\t' + str(density_north[ii, jj]) + '\n')
         fichier.close()
         del intensity
         gc.collect()
@@ -595,13 +602,13 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     density_north = -1 * density_north
 
     fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2, figsize=(12, 9))
-    img0 = ax0.scatter(xi, yi, c=density_south, cmap=cmap)
+    img0 = ax0.scatter(u_grid, v_grid, c=density_south, cmap=cmap)
     ax0.set_xlim(-max_angle, max_angle)
     ax0.set_ylim(-max_angle, max_angle)
     ax0.axis('scaled')
     gu.colorbar(img0)
     ax0.set_title('KDE \nSouth pole')
-    img1 = ax1.scatter(xi, yi, c=density_north, cmap=cmap)
+    img1 = ax1.scatter(u_grid, v_grid, c=density_north, cmap=cmap)
     ax1.set_xlim(-max_angle, max_angle)
     ax1.set_ylim(-max_angle, max_angle)
     ax1.axis('scaled')
@@ -623,7 +630,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     ax0.imshow(mask_south, cmap=cmap, interpolation='nearest')
     ax0.set_title('Background mask South')
     ax0.invert_yaxis()
-    img1 = ax1.scatter(xi, yi, c=density_south, cmap=cmap)
+    img1 = ax1.scatter(u_grid, v_grid, c=density_south, cmap=cmap)
     ax1.set_xlim(-max_angle, max_angle)
     ax1.set_ylim(-max_angle, max_angle)
     ax1.axis('scaled')
@@ -634,7 +641,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     ax2.imshow(mask_north, cmap=cmap, interpolation='nearest')
     ax2.set_title('Background mask North')
     ax2.invert_yaxis()
-    img3 = ax3.scatter(xi, yi, c=density_north, cmap=cmap)
+    img3 = ax3.scatter(u_grid, v_grid, c=density_north, cmap=cmap)
     ax3.set_xlim(-max_angle, max_angle)
     ax3.set_ylim(-max_angle, max_angle)
     ax3.axis('scaled')
