@@ -144,12 +144,10 @@ def equirectangular_proj(normals, intensity, cmap=default_cmap, bw_method=0.03, 
     from skimage.morphology import watershed
 
     # check normals for nan
-    # TODO: check this part
     list_nan = np.argwhere(np.isnan(normals))
-    if len(list_nan) != 0:
-        for i in range(list_nan.shape[0]//3):
-            normals = np.delete(normals, list_nan[i*3, 0], axis=0)
-            intensity = np.delete(intensity, list_nan[i*3, 0], axis=0)
+    normals = np.delete(normals, list_nan[::3, 0], axis=0)
+    intensity = np.delete(intensity, list_nan[::3, 0], axis=0)
+
     # calculate latitude and longitude from xyz, this is equal to the equirectangular flat square projection
     long_lat = np.zeros((normals.shape[0], 2), dtype=normals.dtype)
     for i in range(normals.shape[0]):
@@ -527,13 +525,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     radius_mean = 1  # normals are normalized
     stereo_center = 0  # COM of the weighted point density, where the projection plane intersects the reference axis
     # since the normals have their origin at 0, the projection plane is the equator and stereo_center=0
-    # TODO: check this
+
     # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
-    if len(list_nan) != 0:
-        for idx in range(list_nan.shape[0]//3):
-            normals = np.delete(normals, list_nan[idx*3, 0], axis=0)
-            intensity = np.delete(intensity, list_nan[idx*3, 0], axis=0)
+    normals = np.delete(normals, list_nan[::3, 0], axis=0)
+    intensity = np.delete(intensity, list_nan[::3, 0], axis=0)
 
     # recalculate normals considering the anisotropy of voxel sizes (otherwise angles are wrong)
     # the stereographic projection is in reciprocal space, therefore we need to use the reciprocal voxel sizes
@@ -551,16 +547,13 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
     # stereo_proj[:, 2] is the euclidian u_north, stereo_proj[:, 3] is the euclidian v_north
 
-    # TODO: check this
     # remove intensity where stereo_proj is infinite
     list_inf = np.argwhere(np.isinf(stereo_proj))
-    if len(list_inf) != 0:
-        remove_row = list(set(list_inf[:, 0]))  # remove duplicated row indices
-        print('stereographic_proj() remove rows: ', remove_row, '\n')
-        stereo_proj = np.delete(stereo_proj, remove_row, axis=0)
-        intensity = np.delete(intensity, remove_row, axis=0)
-    else:
-        remove_row = []
+    remove_row = list(set(list_inf[:, 0]))  # remove duplicated row indices
+    print('stereographic_proj() remove rows: ', remove_row, '\n')
+    stereo_proj = np.delete(stereo_proj, remove_row, axis=0)
+    intensity = np.delete(intensity, remove_row, axis=0)
+
     # plot the stereographic projection
 
     fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=intensity,
@@ -733,15 +726,15 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
 
 def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33, mu=0.34, debugging=0):
     """
-    Taubinsmooth: performs a back and forward Laplacian smoothing "without shrinking" of a triangulated mesh,
+    Performs a back and forward Laplacian smoothing "without shrinking" of a triangulated mesh,
      as described by Gabriel Taubin (ICCV '95)
 
     :param faces: m*3 ndarray of m faces defined by 3 indices of vertices
     :param vertices: n*3 ndarray of n vertices defined by 3 positions
     :param cmap: colormap used for plotting
-    :param iterations: number of iterations for smoothing (default 30)
-    :param lamda: smoothing variable 0 < lambda < mu < 1 (default 0.5)
-    :param mu: smoothing variable 0 < lambda < mu < 1 (default 0.53)
+    :param iterations: number of iterations for smoothing
+    :param lamda: smoothing variable 0 < lambda < mu < 1
+    :param mu: smoothing variable 0 < lambda < mu < 1
     :param debugging: show plots for debugging
     :return: smoothened vertices (ndarray n*3), normals to triangle (ndarray m*3), weighted density of normals, errors
     """
@@ -802,7 +795,6 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
         fig = plt.figure()
         ax = Axes3D(fig)
         ax.scatter(normals[:, 0], normals[:, 1], normals[:, 2], c=intensity, cmap=cmap)
-        # ax.scatter(normals[:, 2], normals[:, 1], normals[:, 0], c=intensity, cmap=cmap)
         ax.set_xlim(-1, 1)
         ax.set_xlabel('z')
         ax.set_ylim(-1, 1)
@@ -815,13 +807,10 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     normals[err_normals, :] = normals[err_normals-1, :]
     plt.ioff()
 
-    # TODO: check this
     # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
-    if len(list_nan) != 0:
-        for i in range(list_nan.shape[0]//3):
-            normals = np.delete(normals, list_nan[i*3, 0], axis=0)
-            intensity = np.delete(intensity, list_nan[i*3, 0], axis=0)
+    normals = np.delete(normals, list_nan[::3, 0], axis=0)
+    intensity = np.delete(intensity, list_nan[::3, 0], axis=0)
 
     return new_vertices, normals, areas, intensity, err_normals
 
