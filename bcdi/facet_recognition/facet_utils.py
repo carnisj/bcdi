@@ -144,6 +144,7 @@ def equirectangular_proj(normals, intensity, cmap=default_cmap, bw_method=0.03, 
     from skimage.morphology import watershed
 
     # check normals for nan
+    # TODO: check this part
     list_nan = np.argwhere(np.isnan(normals))
     if len(list_nan) != 0:
         for i in range(list_nan.shape[0]//3):
@@ -556,9 +557,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     if len(list_inf) != 0:
         remove_row = list(set(list_inf[:, 0]))  # remove duplicated row indices
         print('stereographic_proj() remove rows: ', remove_row, '\n')
-        for row in remove_row:
-            stereo_proj = np.delete(stereo_proj, row, axis=0)
-            intensity = np.delete(intensity, row, axis=0)
+        stereo_proj = np.delete(stereo_proj, remove_row, axis=0)
+        intensity = np.delete(intensity, remove_row, axis=0)
     else:
         remove_row = []
     # plot the stereographic projection
@@ -814,7 +814,7 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     err_normals = np.argwhere(np.isnan(normals[:, 0]))
     normals[err_normals, :] = normals[err_normals-1, :]
     plt.ioff()
-    
+
     # TODO: check this
     # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
