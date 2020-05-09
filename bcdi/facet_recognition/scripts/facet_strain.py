@@ -126,7 +126,6 @@ if upsampling_factor > 1:
 # Use marching cubes to obtain the surface mesh of these ellipsoids #
 #####################################################################
 vertices_old, faces, _, _ = measure.marching_cubes_lewiner(amp, level=support_threshold, step_size=1)
-nb_vertices = vertices_old.shape[0]
 # vertices is a list of 3d coordinates of all vertices points
 # faces is a list of facets defined by the indices of 3 vertices
 
@@ -145,6 +144,7 @@ if debug:
 vertices_new, normals, areas, intensity, _ = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
                      debugging=True)
+nb_vertices = vertices_old.shape[0]
 
 # Display smoothed triangular mesh
 if debug:
@@ -165,9 +165,9 @@ if projection_method == 'stereographic':
                               planes_south=planes_south, planes_north=planes_north, max_angle=max_angle,
                               voxel_size=voxel_size, projection_axis=projection_axis, debugging=debug)
     if len(remove_row) != 0:
-        for raw in remove_row:
-            normals = np.delete(normals, raw, axis=0)
-            faces = np.delete(faces, raw, axis=0)
+        for row in remove_row:
+            normals = np.delete(normals, row, axis=0)
+            faces = np.delete(faces, row, axis=0)
 
     nb_normals = normals.shape[0]
     numy, numx = labels_top.shape  # identical to labels_bottom.shape
