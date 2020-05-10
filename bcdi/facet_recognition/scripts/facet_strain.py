@@ -125,9 +125,10 @@ if upsampling_factor > 1:
 #####################################################################
 # Use marching cubes to obtain the surface mesh of these ellipsoids #
 #####################################################################
-vertices_old, faces, _, _ = measure.marching_cubes_lewiner(amp, level=support_threshold, step_size=1)
-# vertices is a list of 3d coordinates of all vertices points
-# faces is a list of facets defined by the indices of 3 vertices
+vertices_old, faces, _, _ = measure.marching_cubes_lewiner(amp, level=support_threshold, allow_degenerate=False,
+                                                           step_size=1)
+# vertices_old is a list of 3d coordinates of all vertices points
+# faces is a list of facets defined by the indices of 3 vertices_old
 
 # from scipy.io import savemat
 # savemat('//win.desy.de/home/carnisj/My Documents/MATLAB/TAUBIN/vertices.mat', {'V': vertices_old})
