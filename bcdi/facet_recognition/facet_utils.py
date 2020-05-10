@@ -771,7 +771,7 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
 
         # TODO: add a check here for degenerated vertices (index different but same position in space)
     tfind = np.argwhere(np.isnan(new_vertices[:, 0]))
-    print('Number of nan in new_vertices:', tfind.shape[0])
+    print('Number of nan in new_vertices:', tfind.shape[0], 'total number of vertices:', new_vertices.shape[0])
     new_vertices[tfind, :] = old_vertices[tfind, :]
 
     # Create an indexed view into the vertex array using the array of three indices for triangles
