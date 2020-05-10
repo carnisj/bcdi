@@ -142,7 +142,7 @@ if debug:
 #######################################
 # smooth the mesh using taubin_smooth #
 #######################################
-vertices_new, normals, _, intensity, _ = \
+vertices_new, normals, _, intensity, faces, _ = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
                      debugging=True)
 nb_vertices = vertices_new.shape[0]

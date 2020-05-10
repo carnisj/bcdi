@@ -736,7 +736,8 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     :param lamda: smoothing variable 0 < lambda < mu < 1
     :param mu: smoothing variable 0 < lambda < mu < 1
     :param debugging: show plots for debugging
-    :return: smoothened vertices (ndarray n*3), normals to triangle (ndarray m*3), weighted density of normals, errors
+    :return: smoothened vertices (ndarray n*3), normals to triangle (ndarray m*3), weighted density of normals,
+     updated faces, errors
     """
     from mpl_toolkits.mplot3d import Axes3D
     plt.ion()
@@ -814,7 +815,7 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     normals = np.delete(normals, list_nan[::3, 0], axis=0)
     intensity = np.delete(intensity, list_nan[::3, 0], axis=0)
 
-    return new_vertices, normals, areas, intensity, err_normals
+    return new_vertices, normals, areas, intensity, faces, err_normals
 
 
 def update_logfile(support, strain_array, summary_file, allpoints_file, label=0, angle_plane=0, plane_coeffs=(0, 0, 0),
