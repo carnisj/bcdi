@@ -550,7 +550,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     # remove intensity where stereo_proj is infinite
     list_inf = np.argwhere(np.isinf(stereo_proj))
     remove_row = list(set(list_inf[:, 0]))  # remove duplicated row indices
-    print('stereographic_proj() remove rows: ', remove_row, '\n')
+    print('stereographic_proj() remove_row indices: ', remove_row, '\n')
     stereo_proj = np.delete(stereo_proj, remove_row, axis=0)
     intensity = np.delete(intensity, remove_row, axis=0)
 
