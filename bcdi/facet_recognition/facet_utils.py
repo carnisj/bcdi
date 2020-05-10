@@ -748,25 +748,67 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     new_vertices = np.copy(vertices)
 
     for k in range(iterations):
+        # neighbours = find_neighbours(new_vertices, faces)  # get the indices of neighboring vertices for each vertex
+        # indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
         vertices = np.copy(new_vertices)
+        # duplicated_vertices = []
         for i in range(vertices.shape[0]):
+            # duplicated_index = []
             indices = neighbours[i]  # list of indices
             distances = np.sqrt(np.sum((vertices[indices, :]-vertices[i, :]) ** 2, axis=1))
+            # if (distances == 0).sum() != 0:
+            #     [duplicated_index.append(index) for index in list(np.argwhere(distances == 0)[:, 0])]
+            #     [duplicated_vertices.append([i, indices[index]) for index in duplicated_index]
+            #     indices = [value for counter, value in enumerate(indices) if counter not in duplicated_index]
+            #     distances = np.delete(distances, duplicated_index)
             weights = distances**(-1)
             vectoren = weights[:, np.newaxis] * vertices[indices, :]
             totaldist = sum(weights)
             new_vertices[i, :] = vertices[i, :] + lamda*(np.sum(vectoren, axis=0)/totaldist-vertices[i, :])
+        # replace the duplicated vertices in faces
+        # for idx in range(len(duplicated_vertices[:, 0])):
+        #     faces[duplicated_vertices[idx, 0]] = duplicated_vertices[idx, 1]  # if more than 2 duplicated indices?
+        # check if some faces have a duplicated vertex
+        # remove_faces = []
+        # for idx in range(len(faces[:, 0]):
+        #     temp = faces[idx, :]
+        #     if len(np.unique(temp) != len(temp):  # remove this one
+        #         remove.face.append(idx)
+        #     faces = np.delete(faces, remove_faces, axis=0)
+        # remove the duplicated vertices from new_vertices
+        # new_vertices = np.delete(new_vertices, duplicated_vertices[:, 0], axis=0)
         if indices_edges.size != 0:
             new_vertices[indices_edges, :] = vertices[indices_edges, :]
 
+        # neighbours = find_neighbours(new_vertices, faces)  # get the indices of neighboring vertices for each vertex
+        # indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
         vertices = np.copy(new_vertices)
+        # duplicated_vertices = []
         for i in range(vertices.shape[0]):
+            # duplicated_index = []
             indices = neighbours[i]  # list of indices
             distances = np.sqrt(np.sum((vertices[indices, :]-vertices[i, :])**2, axis=1))
+            # if (distances == 0).sum() != 0:
+            #     [duplicated_index.append(index) for index in list(np.argwhere(distances == 0)[:, 0])]
+            #     [duplicated_vertices.append([i, indices[index]) for index in duplicated_index]
+            #     indices = [value for counter, value in enumerate(indices) if counter not in duplicated_index]
+            #     distances = np.delete(distances, duplicated_index)
             weights = distances**(-1)
             vectoren = weights[:, np.newaxis] * vertices[indices, :]
             totaldist = sum(weights)
             new_vertices[i, :] = vertices[i, :] - mu*(sum(vectoren)/totaldist - vertices[i, :])
+        # replace the duplicated vertices in faces
+        # for idx in range(len(duplicated_vertices[:, 0])):
+        #     faces[duplicated_vertices[idx, 0]] = duplicated_vertices[idx, 1]  # if more than 2 duplicated indices?
+        # check if some faces have a duplicated vertex
+        # remove_faces = []
+        # for idx in range(len(faces[:, 0]):
+        #     temp = faces[idx, :]
+        #     if len(np.unique(temp) != len(temp):  # remove this one
+        #         remove.face.append(idx)
+        #     faces = np.delete(faces, remove_faces, axis=0)
+        # remove the duplicated vertices from new_vertices
+        # new_vertices = np.delete(new_vertices, duplicated_vertices[:, 0], axis=0)
         if indices_edges.size != 0:
             new_vertices[indices_edges, :] = vertices[indices_edges, :]
 
