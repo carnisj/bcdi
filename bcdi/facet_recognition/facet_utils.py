@@ -848,6 +848,11 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
         if indices_edges.size != 0:
             new_vertices[indices_edges, :] = vertices[indices_edges, :]
 
+    # check the unicity of vertices otherwise 0 distance would happen
+    if np.unique(new_vertices, axis=0).shape[0] != new_vertices.shape[0]:
+        print('\nTaubin smoothing / exiting loop: duplicated vertices')
+        new_vertices, faces = remove_duplicates(vertices=new_vertices, faces=faces)
+
     nan_vertices = np.argwhere(np.isnan(new_vertices[:, 0]))
     print('Number of nan in new_vertices:', nan_vertices.shape[0], '; Total number of vertices:', new_vertices.shape[0])
 
