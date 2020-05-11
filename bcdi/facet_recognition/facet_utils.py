@@ -472,12 +472,13 @@ def plane_angle_cubic(ref_plane, plane):
     return angle
 
 
-def remove_duplicates(vertices, faces):
+def remove_duplicates(vertices, faces, debugging=False):
     """
     Remove duplicates in a list of vertices and faces (a face is atriangle made of tree vertices).
 
     :param vertices: a ndarray of vertices, shape (N, 3)
     :param faces: a ndarray of vertex indices, shape (M, 3)
+    :param debugging: True to see which vertices are duplicated and how lists are modified
     :return: the updated vertices and faces with duplicates removed in place
     """
     # find indices which are duplicated
@@ -490,7 +491,7 @@ def remove_duplicates(vertices, faces):
     for idx in range(len(duplicated_indices)):
         same_vertices = np.argwhere(vertices == uniq_vertices[duplicated_indices[idx], :])
         # same_vertices is a ndarray of the form [[ind0, 0], [ind0, 1], [ind0, 2], [ind1, 0], [ind1, 1], [ind1, 2],...]
-        list_duplicated.append(same_vertices[::3, 0])
+        list_duplicated.append(list(same_vertices[::3, 0]))
 
     # remove duplicates in vertices
     remove_vertices = []  # this list will be use to remove duplicated indices in vertices using np.delete()
@@ -511,15 +512,17 @@ def remove_duplicates(vertices, faces):
             # all indices above temp_list[idy] have to be decreased by 1 to keep the match with the number of vertices
             for idz in range(duplicated_value+1, faces.shape[0]):
                 faces[faces == idz] = idz - 1
-                # update accordingly all indices above temp_array[idy]
-                temp_array[temp_array > duplicated_value] += -1
-                temp_list = np.asarray(list_duplicated)
-                try:
-                    temp_list[temp_list > duplicated_value] += -1
-                except ValueError:
-                    # TODO: error here , temp_list if not an array as it should be
-                    print('')
-                list_duplicated = list(temp_list)
+
+            # update accordingly all indices above temp_array[idy]
+            if debugging:
+                print('temp_array before', temp_array)
+                print('list_duplicated before', list_duplicated)
+            temp_array = [(value-1) if value > duplicated_value else value for value in temp_array]
+            list_duplicated = [[(value-1) if value > duplicated_value else value for value in sublist]
+                               for sublist in list_duplicated]
+            if debugging:
+                print('temp_array after', temp_array)
+                print('list_duplicated after', list_duplicated)
 
     # look for faces with 2 identical vertices (cannot define later a normal to these faces)
     remove_faces = []
@@ -804,17 +807,14 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     from mpl_toolkits.mplot3d import Axes3D
     plt.ion()
 
-    # neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
-    old_vertices = np.copy(vertices)
-    print('Original number of vertices:', old_vertices.shape[0])
+    print('Original number of vertices:', vertices.shape[0])
     print('Original number of faces:', faces.shape[0])
-    # indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
     new_vertices = np.copy(vertices)
 
     for k in range(iterations):
         # check the unicity of vertices otherwise 0 distance would happen
         if np.unique(new_vertices, axis=0).shape[0] != new_vertices.shape[0]:
-            print('Taubin smoothing: duplicated vertices at iteration', k)
+            print('\nTaubin smoothing / lambda: duplicated vertices at iteration', k)
             new_vertices, faces = remove_duplicates(vertices=new_vertices, faces=faces)
         vertices = np.copy(new_vertices)
         neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
@@ -833,6 +833,7 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
 
         # check the unicity of vertices otherwise 0 distance would happen
         if np.unique(new_vertices, axis=0).shape[0] != new_vertices.shape[0]:
+            print('\nTaubin smoothing / mu: duplicated vertices at iteration', k)
             new_vertices, faces = remove_duplicates(vertices=new_vertices, faces=faces)
         vertices = np.copy(new_vertices)
         neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
@@ -850,10 +851,8 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
         if indices_edges.size != 0:
             new_vertices[indices_edges, :] = vertices[indices_edges, :]
 
-        # TODO: add a check here for degenerated vertices (index different but same position in space)
-    tfind = np.argwhere(np.isnan(new_vertices[:, 0]))
-    print('Number of nan in new_vertices:', tfind.shape[0], 'total number of vertices:', new_vertices.shape[0])
-    new_vertices[tfind, :] = old_vertices[tfind, :]
+    nan_vertices = np.argwhere(np.isnan(new_vertices[:, 0]))
+    print('Number of nan in new_vertices:', nan_vertices.shape[0], '; Total number of vertices:', new_vertices.shape[0])
 
     # Create an indexed view into the vertex array using the array of three indices for triangles
     tris = new_vertices[faces]
