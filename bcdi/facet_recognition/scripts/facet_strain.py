@@ -145,15 +145,15 @@ if debug:
 vertices_new, normals, _, intensity, faces, _ = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
                      radius=0.1, debugging=True)
+del vertices_old
+gc.collect()
+
 nb_vertices = vertices_new.shape[0]
 
 # Display smoothed triangular mesh
 if debug:
     gu.plot_3dmesh(vertices_new, faces, (nz, ny, nx), title='Mesh after Taubin smoothing')
     plt.ion()
-
-# del vertices_new
-# gc.collect()
 
 #####################################################################
 # 2D projection of normals, peak finding and watershed segmentation #
@@ -317,7 +317,7 @@ for idx in range(nb_vertices):
         all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = \
                 vertices_label[idx]
 print('Rounded vertices belonging to multiple labels = ', duplicated_counter)
-del planes_counter, vertices_label, vertices_old
+del planes_counter, vertices_label, vertices_new
 gc.collect()
 
 #####################################################
