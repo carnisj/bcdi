@@ -42,7 +42,7 @@ savedir = datadir + "testisosurface_" + str(support_threshold) + " 3.64x5.53x2.5
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 projection_axis = 2  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
-smoothing_iterations = 10  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
+smoothing_iterations = 15  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
 smooth_lamda = 0.33  # lambda parameter in Taubin smoothing
 smooth_mu = 0.34  # mu parameter in Taubin smoothing
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
@@ -144,7 +144,7 @@ if debug:
 #######################################
 vertices_new, normals, _, intensity, faces, _ = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
-                     debugging=True)
+                     radius=0.1, debugging=True)
 nb_vertices = vertices_new.shape[0]
 
 # Display smoothed triangular mesh
@@ -152,8 +152,8 @@ if debug:
     gu.plot_3dmesh(vertices_new, faces, (nz, ny, nx), title='Mesh after Taubin smoothing')
     plt.ion()
 
-del vertices_new
-gc.collect()
+# del vertices_new
+# gc.collect()
 
 #####################################################################
 # 2D projection of normals, peak finding and watershed segmentation #
@@ -304,7 +304,7 @@ all_planes = np.zeros((nz, ny, nx), dtype=int)
 planes_counter = np.zeros((nz, ny, nx), dtype=int)  # check if a voxel is used several times
 duplicated_counter = 0
 for idx in range(nb_vertices):
-    temp_indices = np.rint(vertices_old[idx, :]).astype(int)
+    temp_indices = np.rint(vertices_new[idx, :]).astype(int)
     planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] = \
         planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] + 1
     # check duplicated pixels (appearing several times) and remove them if they belong to different planes
