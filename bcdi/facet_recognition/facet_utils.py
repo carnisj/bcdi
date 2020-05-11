@@ -470,6 +470,17 @@ def plane_angle_cubic(ref_plane, plane):
     return angle
 
 
+def remove_duplicates(vertices, faces):
+    """
+    Remove duplicates in a list of vertices and faces (a face is atriangle made of tree vertices).
+
+    :param vertices: a ndarray of vertices, shape (N, 3)
+    :param faces: a ndarray of vertex indices, shape (M, 3)
+    :return: the updated vertices and faces with duplicates removed in place
+    """
+    return vertices, faces
+
+
 def surface_indices(surface, plane_indices, margin=3):
     """
     Crop surface around the plane with a certain margin, and find corresponding surface indices.
@@ -748,15 +759,19 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     new_vertices = np.copy(vertices)
 
     for k in range(iterations):
-        # neighbours = find_neighbours(new_vertices, faces)  # get the indices of neighboring vertices for each vertex
-        # indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
+        # check the unicity of vertices otherwise 0 distance would happen
         vertices = np.copy(new_vertices)
+        if np.unique(vertices, axis=0).shape[0] != vertices.shape[0]:
+            vertices, faces = remove_duplicates(vertices=vertices, faces=faces)
+        # neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
+        # indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
         # duplicated_vertices = []
         for i in range(vertices.shape[0]):
             # duplicated_index = []
             indices = neighbours[i]  # list of indices
             distances = np.sqrt(np.sum((vertices[indices, :]-vertices[i, :]) ** 2, axis=1))
             # if (distances == 0).sum() != 0:
+            #     print('distance=0 for i=', i)
             #     [duplicated_index.append(index) for index in list(np.argwhere(distances == 0)[:, 0])]
             #     [duplicated_vertices.append([i, indices[index]) for index in duplicated_index]
             #     indices = [value for counter, value in enumerate(indices) if counter not in duplicated_index]
@@ -780,9 +795,12 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
         if indices_edges.size != 0:
             new_vertices[indices_edges, :] = vertices[indices_edges, :]
 
-        # neighbours = find_neighbours(new_vertices, faces)  # get the indices of neighboring vertices for each vertex
-        # indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
+        # check the unicity of vertices otherwise 0 distance would happen
         vertices = np.copy(new_vertices)
+        if np.unique(vertices, axis=0).shape[0] != vertices.shape[0]:
+            vertices, faces = remove_duplicates(vertices=vertices, faces=faces)
+        # neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
+        # indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
         # duplicated_vertices = []
         for i in range(vertices.shape[0]):
             # duplicated_index = []
