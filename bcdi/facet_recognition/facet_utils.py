@@ -494,12 +494,7 @@ def remove_duplicates(vertices, faces, debugging=False):
         list_duplicated.append(list(same_vertices[::3, 0]))
 
     # remove duplicates in vertices
-    remove_vertices = []  # this list will be use to remove duplicated indices in vertices using np.delete()
-    # TODO: use a list comprehension instead of a nested for loop
-    for idx in range(len(list_duplicated)):
-        temp_array = list_duplicated[idx]
-        for idy in range(1, len(temp_array)):  # temp_array[0] is the unique value, others are duplicates
-            remove_vertices.append(temp_array[idy])
+    remove_vertices = [value for sublist in list_duplicated for value in sublist[1:]]
     vertices = np.delete(vertices, remove_vertices, axis=0)
     print(len(remove_vertices), 'duplicated vertices removed')
 
@@ -509,9 +504,9 @@ def remove_duplicates(vertices, faces, debugging=False):
         for idy in range(1, len(temp_array)):
             duplicated_value = temp_array[idy]
             faces[faces == duplicated_value] = temp_array[0]  # temp_array[0] is the unique value, others are duplicates
-            # all indices above temp_list[idy] have to be decreased by 1 to keep the match with the number of vertices
-            for idz in range(duplicated_value+1, faces.shape[0]):
-                faces[faces == idz] = idz - 1
+
+            # all indices above duplicated_value have to be decreased by 1 to keep the match with the number of vertices
+            faces[faces > duplicated_value] = faces[faces > duplicated_value] - 1
 
             # update accordingly all indices above temp_array[idy]
             if debugging:
