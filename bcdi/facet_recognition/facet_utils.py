@@ -277,9 +277,11 @@ def find_neighbours(vertices, faces):
         else:
             neighbors[faces[indx, 2]].append(faces[indx, 0])
             neighbors[faces[indx, 2]].append(faces[indx, 1])
-    neighbors = [point for point in neighbors if point is not None]
-    for indx in range(vertices.shape[0]):
-        neighbors[indx] = list(set(neighbors[indx]))  # remove redundant indices in each sublist
+
+    for indx in range(len(neighbors)):
+        temp_list = [point for point in neighbors[indx] if point is not None]  # remove None values
+        neighbors[indx] = list(set(temp_list))  # remove redundant indices in each sublist
+
     return neighbors
 
 
@@ -490,13 +492,34 @@ def remove_duplicates(vertices, faces):
         # same_vertices is a ndarray of the form [[ind0, 0], [ind0, 1], [ind0, 2], [ind1, 0], [ind1, 1], [ind1, 2],...]
         list_duplicated.append(same_vertices[::3, 0])
 
-    # remove duplicated_vertices in faces
+    # remove duplicates in vertices
     remove_vertices = []  # this list will be use to remove duplicated indices in vertices using np.delete()
+    # TODO: use a list comprehension instead of a nested for loop
     for idx in range(len(list_duplicated)):
-        temp_list = list_duplicated[idx]
-        for idy in range(1, len(temp_list)):
-            faces[faces == temp_list[idy]] = temp_list[0]  # temp_list[0] is the unique vertex, others are duplicates
-            remove_vertices.append(temp_list[idy])
+        temp_array = list_duplicated[idx]
+        for idy in range(1, len(temp_array)):  # temp_array[0] is the unique value, others are duplicates
+            remove_vertices.append(temp_array[idy])
+    vertices = np.delete(vertices, remove_vertices, axis=0)
+    print(len(remove_vertices), 'duplicated vertices removed')
+
+    # remove duplicated_vertices in faces
+    for idx in range(len(list_duplicated)):
+        temp_array = list_duplicated[idx]
+        for idy in range(1, len(temp_array)):
+            duplicated_value = temp_array[idy]
+            faces[faces == duplicated_value] = temp_array[0]  # temp_array[0] is the unique value, others are duplicates
+            # all indices above temp_list[idy] have to be decreased by 1 to keep the match with the number of vertices
+            for idz in range(duplicated_value+1, faces.shape[0]):
+                faces[faces == idz] = idz - 1
+                # update accordingly all indices above temp_array[idy]
+                temp_array[temp_array > duplicated_value] += -1
+                temp_list = np.asarray(list_duplicated)
+                try:
+                    temp_list[temp_list > duplicated_value] += -1
+                except ValueError:
+                    # TODO: error here , temp_list if not an array as it should be
+                    print('')
+                list_duplicated = list(temp_list)
 
     # look for faces with 2 identical vertices (cannot define later a normal to these faces)
     remove_faces = []
@@ -505,10 +528,6 @@ def remove_duplicates(vertices, faces):
             remove_faces.append(idx)
     faces = np.delete(faces, remove_faces, axis=0)
     print(len(remove_faces), 'faces with identical vertices removed')
-
-    # remove duplicates in vertices
-    vertices = np.delete(vertices, remove_vertices, axis=0)
-    print(len(remove_vertices), 'duplicated vertices removed')
 
     return vertices, faces
 
@@ -785,80 +804,49 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     from mpl_toolkits.mplot3d import Axes3D
     plt.ion()
 
-    neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
+    # neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
     old_vertices = np.copy(vertices)
-    indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
+    print('Original number of vertices:', old_vertices.shape[0])
+    print('Original number of faces:', faces.shape[0])
+    # indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
     new_vertices = np.copy(vertices)
 
     for k in range(iterations):
         # check the unicity of vertices otherwise 0 distance would happen
+        if np.unique(new_vertices, axis=0).shape[0] != new_vertices.shape[0]:
+            print('Taubin smoothing: duplicated vertices at iteration', k)
+            new_vertices, faces = remove_duplicates(vertices=new_vertices, faces=faces)
         vertices = np.copy(new_vertices)
-        if np.unique(vertices, axis=0).shape[0] != vertices.shape[0]:
-            vertices, faces = remove_duplicates(vertices=vertices, faces=faces)
-        # neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
-        # indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
-        # duplicated_vertices = []
+        neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
+        indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
+
         for i in range(vertices.shape[0]):
-            # duplicated_index = []
             indices = neighbours[i]  # list of indices
             distances = np.sqrt(np.sum((vertices[indices, :]-vertices[i, :]) ** 2, axis=1))
-            # if (distances == 0).sum() != 0:
-            #     print('distance=0 for i=', i)
-            #     [duplicated_index.append(index) for index in list(np.argwhere(distances == 0)[:, 0])]
-            #     [duplicated_vertices.append([i, indices[index]) for index in duplicated_index]
-            #     indices = [value for counter, value in enumerate(indices) if counter not in duplicated_index]
-            #     distances = np.delete(distances, duplicated_index)
             weights = distances**(-1)
             vectoren = weights[:, np.newaxis] * vertices[indices, :]
             totaldist = sum(weights)
             new_vertices[i, :] = vertices[i, :] + lamda*(np.sum(vectoren, axis=0)/totaldist-vertices[i, :])
-        # replace the duplicated vertices in faces
-        # for idx in range(len(duplicated_vertices[:, 0])):
-        #     faces[duplicated_vertices[idx, 0]] = duplicated_vertices[idx, 1]  # if more than 2 duplicated indices?
-        # check if some faces have a duplicated vertex
-        # remove_faces = []
-        # for idx in range(len(faces[:, 0]):
-        #     temp = faces[idx, :]
-        #     if len(np.unique(temp) != len(temp):  # remove this one
-        #         remove.face.append(idx)
-        #     faces = np.delete(faces, remove_faces, axis=0)
-        # remove the duplicated vertices from new_vertices
-        # new_vertices = np.delete(new_vertices, duplicated_vertices[:, 0], axis=0)
+
         if indices_edges.size != 0:
             new_vertices[indices_edges, :] = vertices[indices_edges, :]
 
         # check the unicity of vertices otherwise 0 distance would happen
+        if np.unique(new_vertices, axis=0).shape[0] != new_vertices.shape[0]:
+            new_vertices, faces = remove_duplicates(vertices=new_vertices, faces=faces)
         vertices = np.copy(new_vertices)
-        if np.unique(vertices, axis=0).shape[0] != vertices.shape[0]:
-            vertices, faces = remove_duplicates(vertices=vertices, faces=faces)
-        # neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
-        # indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
-        # duplicated_vertices = []
+        neighbours = find_neighbours(vertices, faces)  # get the indices of neighboring vertices for each vertex
+        indices_edges = detect_edges(faces)  # find indices of vertices defining non-shared edges (near hole...)
+
         for i in range(vertices.shape[0]):
-            # duplicated_index = []
+
             indices = neighbours[i]  # list of indices
             distances = np.sqrt(np.sum((vertices[indices, :]-vertices[i, :])**2, axis=1))
-            # if (distances == 0).sum() != 0:
-            #     [duplicated_index.append(index) for index in list(np.argwhere(distances == 0)[:, 0])]
-            #     [duplicated_vertices.append([i, indices[index]) for index in duplicated_index]
-            #     indices = [value for counter, value in enumerate(indices) if counter not in duplicated_index]
-            #     distances = np.delete(distances, duplicated_index)
             weights = distances**(-1)
             vectoren = weights[:, np.newaxis] * vertices[indices, :]
             totaldist = sum(weights)
             new_vertices[i, :] = vertices[i, :] - mu*(sum(vectoren)/totaldist - vertices[i, :])
-        # replace the duplicated vertices in faces
-        # for idx in range(len(duplicated_vertices[:, 0])):
-        #     faces[duplicated_vertices[idx, 0]] = duplicated_vertices[idx, 1]  # if more than 2 duplicated indices?
-        # check if some faces have a duplicated vertex
-        # remove_faces = []
-        # for idx in range(len(faces[:, 0]):
-        #     temp = faces[idx, :]
-        #     if len(np.unique(temp) != len(temp):  # remove this one
-        #         remove.face.append(idx)
-        #     faces = np.delete(faces, remove_faces, axis=0)
-        # remove the duplicated vertices from new_vertices
-        # new_vertices = np.delete(new_vertices, duplicated_vertices[:, 0], axis=0)
+
         if indices_edges.size != 0:
             new_vertices[indices_edges, :] = vertices[indices_edges, :]
 
@@ -879,6 +867,7 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
 
     # calculate the colormap for plotting the weighted point density of normals on a sphere
     local_radius = 0.1
+    # TODO: create a parameter for local_radius and see how it evolves
     intensity = np.zeros(normals.shape[0], dtype=normals.dtype)
     for i in range(normals.shape[0]):
         distances = np.sqrt(np.sum((normals - normals[i, :]) ** 2, axis=1))  # ndarray of  normals.shape[0]
