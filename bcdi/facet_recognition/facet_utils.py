@@ -478,6 +478,38 @@ def remove_duplicates(vertices, faces):
     :param faces: a ndarray of vertex indices, shape (M, 3)
     :return: the updated vertices and faces with duplicates removed in place
     """
+    # find indices which are duplicated
+    uniq_vertices, uniq_inverse = np.unique(vertices, axis=0, return_inverse=True)
+    indices, count = np.unique(uniq_inverse, return_counts=True)
+    duplicated_indices = indices[count != 1]  # list of vertices which are not unique
+
+    # for each duplicated vertex, build the list of the corresponding identical vertices
+    list_duplicated = []
+    for idx in range(len(duplicated_indices)):
+        same_vertices = np.argwhere(vertices == uniq_vertices[duplicated_indices[idx], :])
+        # same_vertices is a ndarray of the form [[ind0, 0], [ind0, 1], [ind0, 2], [ind1, 0], [ind1, 1], [ind1, 2],...]
+        list_duplicated.append(same_vertices[::3, 0])
+
+    # remove duplicated_vertices in faces
+    remove_vertices = []  # this list will be use to remove duplicated indices in vertices using np.delete()
+    for idx in range(len(list_duplicated)):
+        temp_list = list_duplicated[idx]
+        for idy in range(1, len(temp_list)):
+            faces[faces == temp_list[idy]] = temp_list[0]  # temp_list[0] is the unique vertex, others are duplicates
+            remove_vertices.append(temp_list[idy])
+
+    # look for faces with 2 identical vertices (cannot define later a normal to these faces)
+    remove_faces = []
+    for idx in range(faces.shape[0]):
+        if np.unique(faces[idx, :], axis=0).shape[0] != faces[idx, :].shape[0]:
+            remove_faces.append(idx)
+    faces = np.delete(faces, remove_faces, axis=0)
+    print(len(remove_faces), 'faces with identical vertices removed')
+
+    # remove duplicates in vertices
+    vertices = np.delete(vertices, remove_vertices, axis=0)
+    print(len(remove_vertices), 'duplicated vertices removed')
+
     return vertices, faces
 
 
