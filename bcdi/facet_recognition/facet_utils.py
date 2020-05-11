@@ -789,7 +789,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     return labels_south, labels_north, stereo_proj, remove_row
 
 
-def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33, mu=0.34, debugging=0):
+def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33, mu=0.34, radius=0.1,
+                  debugging=0):
     """
     Performs a back and forward Laplacian smoothing "without shrinking" of a triangulated mesh,
      as described by Gabriel Taubin (ICCV '95)
@@ -800,6 +801,7 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     :param iterations: number of iterations for smoothing
     :param lamda: smoothing variable 0 < lambda < mu < 1
     :param mu: smoothing variable 0 < lambda < mu < 1
+    :param radius: radius around which the normals are integrated in the calculation of the density of normals
     :param debugging: show plots for debugging
     :return: smoothened vertices (ndarray n*3), normals to triangle (ndarray m*3), weighted density of normals,
      updated faces, errors
@@ -865,12 +867,10 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     # n is now an array of normalized normals, one per triangle.
 
     # calculate the colormap for plotting the weighted point density of normals on a sphere
-    local_radius = 0.1
-    # TODO: create a parameter for local_radius and see how it evolves
     intensity = np.zeros(normals.shape[0], dtype=normals.dtype)
     for i in range(normals.shape[0]):
         distances = np.sqrt(np.sum((normals - normals[i, :]) ** 2, axis=1))  # ndarray of  normals.shape[0]
-        intensity[i] = np.multiply(areas[distances < local_radius], distances[distances < local_radius]).sum()
+        intensity[i] = np.multiply(areas[distances < radius], distances[distances < radius]).sum()
         # normals are weighted by the area of mesh triangles
 
     intensity = intensity / max(intensity)
