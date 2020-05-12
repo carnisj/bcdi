@@ -311,10 +311,11 @@ for idx in range(nb_vertices):
     temp_indices = np.rint(vertices_new[idx, :]).astype(int)
     planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] = \
         planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] + 1
-    # check duplicated pixels (appearing several times) and remove them if they belong to different planes
+    # check duplicated voxels and discard them if they belong to different planes
+    # it happens when some vertices are close and they give the same voxel after rounding their position to integers
     if planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] > 1:
         if all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] != vertices_label[idx]:
-            # belongs to different groups, therefore it is set as background (label 0)
+            # belongs to different labels, therefore it is set as background (label 0)
             all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = 0
             duplicated_counter = duplicated_counter + 1
     else:  # non duplicated pixel
