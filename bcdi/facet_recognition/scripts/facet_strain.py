@@ -145,7 +145,7 @@ if debug:
 #######################################
 vertices_new, normals, _, intensity, faces, _ = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
-                     radius=radius_normals, debugging=True)
+                     radius=radius_normals, debugging=debug)
 del vertices_old
 gc.collect()
 
