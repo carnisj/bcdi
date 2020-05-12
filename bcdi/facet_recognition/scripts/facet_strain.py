@@ -45,6 +45,7 @@ debug = False  # set to True to see all plots for debugging
 smoothing_iterations = 15  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
 smooth_lamda = 0.33  # lambda parameter in Taubin smoothing
 smooth_mu = 0.34  # mu parameter in Taubin smoothing
+radius_normals = 0.1  # radius of integration for the calculation of the density of normals
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
 peak_min_distance = 25  # pixel separation between peaks in corner_peaks()
 max_distance_plane = 0.75  # in pixels, maximum allowed distance to the facet plane of a voxel
@@ -144,7 +145,7 @@ if debug:
 #######################################
 vertices_new, normals, _, intensity, faces, _ = \
     fu.taubin_smooth(faces, vertices_old, iterations=smoothing_iterations, lamda=smooth_lamda, mu=smooth_mu,
-                     radius=0.1, debugging=True)
+                     radius=radius_normals, debugging=True)
 del vertices_old
 gc.collect()
 
@@ -414,6 +415,7 @@ gc.collect()
 # fit points by a plane, exclude points far away, loof for the surface layer, refine the fit #
 ##############################################################################################
 for label in updated_label:
+    print('\nPlane', label)
     # raw fit including all points
     plane = np.copy(all_planes)
     plane[plane != label] = 0
@@ -603,7 +605,7 @@ for label in updated_label:
         if plane[plane == 1].sum() == previous_nb:
             break
     grown_points = plane[plane == 1].sum().astype(int)
-    print('Plane ', label, ', ', str(grown_points), 'points after growing facet at the surface\n')
+    print('Plane ', label, ', ', str(grown_points), 'points after growing facet at the surface')
 
     if debug:
         plane_indices = np.nonzero(plane == 1)
@@ -667,7 +669,7 @@ for label in updated_label:
             break
     grown_points = plane[plane == 1].sum().astype(int)
     # plot plane points overlaid with the support
-    print('Plane ', label, ', ', str(grown_points), 'points after the final growth of the facet\n')
+    print('Plane ', label, ', ', str(grown_points), 'points after the final growth of the facet')
 
     if debug:
         plane_indices = np.nonzero(plane)
@@ -693,7 +695,7 @@ for label in updated_label:
                              markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
                              title='Plane' + str(label) + ' after edge removal\nPoints number='
                                    + str(len(plane_indices[0])))
-    print('Plane ', label, ', ', str(len(plane_indices[0])), 'points after removing edges\n')
+    print('Plane ', label, ', ', str(len(plane_indices[0])), 'points after removing edges')
     #################################################################
     # calculate quantities of interest and update log and VTK files #
     #################################################################
@@ -716,7 +718,7 @@ for label in updated_label:
     plane_normal = np.array([coeffs[0], coeffs[1], -1])  # normal is [a, b, c] if ax+by+cz+d=0
     plane_normal = plane_normal / np.linalg.norm(plane_normal)
     if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
-        print('Flip normal direction plane', str(label), '\n')
+        print('Flip normal direction plane', str(label))
         plane_normal = -1 * plane_normal
     # correct plane_normal for anisotropic voxel size
     plane_normal = np.array([plane_normal[0] * 2 * np.pi / voxel_size[0],
@@ -771,6 +773,6 @@ writer = vtk.vtkXMLImageDataWriter()
 writer.SetFileName(os.path.join(savedir, "S" + str(scan) + "_refined planes.vti"))
 writer.SetInputData(image_data)
 writer.Write()
-print('End of script')
+print('\nnd of script')
 plt.ioff()
 plt.show()
