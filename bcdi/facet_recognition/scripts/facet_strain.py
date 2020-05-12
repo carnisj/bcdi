@@ -179,7 +179,8 @@ if projection_method == 'stereographic':
         sys.exit()
 
     # look for potentially duplicated labels (labels crossing the 90 degree circle)
-    duplicated_label = [0]  # it will store bottom_labels which are duplicate from top_labels
+    duplicated_label = [0]  # do not consider background points when looking for duplicates (label 0 is the background)
+    # duplicated_label stores bottom_labels which are duplicate from top_labels [0 duplicated_label unique_label ...]
     for label in range(1, labels_top.max()+1, 1):
         label_points = np.argwhere(labels_top == label)
         label_points[:, 0] = (label_points[:, 0] * 2*max_angle / numy) - max_angle  # rescale to [-max_angle max_angle]
@@ -194,23 +195,28 @@ if projection_method == 'stereographic':
             print('Label ', str(label), 'is potentially duplicated')
             # look for the corresponding label in the bottom projection
             for idx in range(nb_normals):
-                if 85 < np.sqrt(stereo_proj[idx, 0]**2 + stereo_proj[idx, 1]**2) < 90:  # point near the 90deg border
-                    # calculate the corresponding index coordinates
-                    # by rescaling from [-max_angle max_angle] to [0 numy] or [0 numx]
-                    u_top = int((stereo_proj[idx, 0] + max_angle) * numy / (2*max_angle))
-                    v_top = int((stereo_proj[idx, 1] + max_angle) * numx / (2*max_angle))
-                    u_bottom = int((stereo_proj[idx, 2] + max_angle) * numy / (2*max_angle))
-                    v_bottom = int((stereo_proj[idx, 3] + max_angle) * numx / (2*max_angle))
-                    try:
-                        if labels_top[u_top, v_top] == label and \
-                                labels_bottom[u_bottom, v_bottom] not in duplicated_label:
-                            # only the first duplicated point will be checked, then the whole bottom_label is changed
-                            # and there is no need to checked anymore
-                            duplicated_label.append(labels_bottom[u_bottom, v_bottom])
-                            print('    Corresponding label=', str(labels_bottom[u_bottom, v_bottom]))
-                            labels_bottom[labels_bottom == labels_bottom[u_bottom, v_bottom]] = label
-                    except IndexError:
-                        continue
+                # calculate the corresponding index coordinates
+                # by rescaling from [-max_angle max_angle] to [0 numy] or [0 numx]
+                u_top = int((stereo_proj[idx, 0] + max_angle) * numx / (2*max_angle))  # u axis horizontal
+                v_top = int((stereo_proj[idx, 1] + max_angle) * numy / (2*max_angle))  # v axis vertical
+                u_bottom = int((stereo_proj[idx, 2] + max_angle) * numx / (2*max_angle))  # u axis horizontal
+                v_bottom = int((stereo_proj[idx, 3] + max_angle) * numy / (2*max_angle))  # v axis vertical
+
+                try:
+                    if labels_top[u_top, v_top] == label and \
+                            labels_bottom[u_bottom, v_bottom] not in duplicated_label:
+                        # only the first duplicated point will be checked, then the whole bottom_label is changed
+                        # to label and there is no need to check anymore
+                        duplicated_label.append(labels_bottom[u_bottom, v_bottom])
+                        duplicated_label.append(label)
+                        print('Duplicated labels:', duplicated_label)
+                        print('  Corresponding label=', labels_bottom[u_bottom, v_bottom], 'changed to', label)
+                        labels_bottom[labels_bottom == labels_bottom[u_bottom, v_bottom]] = label
+                except IndexError:
+                    # the IndexError exception arises because we are spanning all normals for labels_top, even those
+                    # whose stereographic projection is farther than max_angle.
+                    continue
+
         del label_points, label_distances
         gc.collect()
 
