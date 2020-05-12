@@ -173,14 +173,15 @@ if projection_method == 'stereographic':
 
     nb_normals = normals.shape[0]
     numy, numx = labels_top.shape  # identical to labels_bottom.shape
+    max_label = max(labels_top.max(), labels_bottom.max())
 
     if stereo_proj.shape[0] != nb_normals:
         print(projection_method, 'projection output: incompatible number of normals')
         sys.exit()
 
     # look for potentially duplicated labels (labels crossing the 90 degree circle)
-    duplicated_label = [0]  # do not consider background points when looking for duplicates (label 0 is the background)
-    # duplicated_label stores bottom_labels which are duplicate from top_labels [0 duplicated_label unique_label ...]
+    duplicated_labels = [0]  # do not consider background points when looking for duplicates (label 0 is the background)
+    # duplicated_labels stores bottom_labels which are duplicate from top_labels [0 duplicated_labels unique_label ...]
     for label in range(1, labels_top.max()+1, 1):
         label_points = np.argwhere(labels_top == label)
         label_points[:, 0] = (label_points[:, 0] * 2*max_angle / numy) - max_angle  # rescale to [-max_angle max_angle]
@@ -204,11 +205,11 @@ if projection_method == 'stereographic':
 
                 try:
                     if labels_top[u_top, v_top] == label and \
-                            labels_bottom[u_bottom, v_bottom] not in duplicated_label:
+                            labels_bottom[u_bottom, v_bottom] not in duplicated_labels:
                         # only the first duplicated point will be checked, then the whole bottom_label is changed
                         # to label and there is no need to check anymore
-                        duplicated_label.append(labels_bottom[u_bottom, v_bottom])
-                        duplicated_label.append(label)
+                        duplicated_labels.append(labels_bottom[u_bottom, v_bottom])
+                        duplicated_labels.append(label)
                         print('  Corresponding label :', labels_bottom[u_bottom, v_bottom], 'changed to', label)
                         labels_bottom[labels_bottom == labels_bottom[u_bottom, v_bottom]] = label
                 except IndexError:
@@ -239,7 +240,6 @@ if projection_method == 'stereographic':
     pole_proj[:, 1] = (pole_proj[:, 1] + max_angle) * numx / (2*max_angle)
     # change pole_proj to an array of integer indices
     coordinates = pole_proj.astype(int)
-    max_label = max(labels_top.max(), labels_bottom.max())
 
     del pole_proj
     gc.collect()
@@ -274,6 +274,7 @@ elif projection_method == 'equirectangular':
     longitude_latitude[:, 1] = (longitude_latitude[:, 1] + np.pi / 2) * numy / np.pi  # latitude
     # change longitude_latitude to an array of integer indices
     coordinates = np.fliplr(longitude_latitude).astype(int)  # put the vertical axis in first position
+    duplicated_labels = []
     max_label = labels.max()
 
     del longitude_latitude
@@ -293,13 +294,10 @@ else:
     print('Invalid value for projection_method')
     sys.exit()
 
-updated_label = []
+unique_labels = [label for label in np.arange(1, max_label+1) if label not in duplicated_labels[1::2]]
 print('\nBackground: ', str((normals_label == 0).sum()), 'normals')
-for idx in range(1, max_label+1):
-    print("Facet", str(idx), ': ', str((normals_label == idx).sum()), 'normals detected')
-    if (normals_label == idx).sum() != 0:
-        updated_label.append(idx)
-
+for label in unique_labels:
+    print("Facet", str(label), ': ', str((normals_label == label).sum()), 'normals detected')
 del normals_label, coordinates, faces
 gc.collect()
 
@@ -322,7 +320,7 @@ for idx in range(nb_vertices):
     else:  # non duplicated pixel
         all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = \
                 vertices_label[idx]
-print('Rounded vertices belonging to multiple labels = ', duplicated_counter)
+print('\nRounded vertices belonging to multiple labels = ', duplicated_counter)
 del planes_counter, vertices_label, vertices_new
 gc.collect()
 
@@ -419,7 +417,7 @@ gc.collect()
 ##############################################################################################
 # fit points by a plane, exclude points far away, loof for the surface layer, refine the fit #
 ##############################################################################################
-for label in updated_label:
+for label in unique_labels:
     print('\nPlane', label)
     # raw fit including all points
     plane = np.copy(all_planes)
