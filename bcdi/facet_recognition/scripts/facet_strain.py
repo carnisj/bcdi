@@ -209,8 +209,7 @@ if projection_method == 'stereographic':
                         # to label and there is no need to check anymore
                         duplicated_label.append(labels_bottom[u_bottom, v_bottom])
                         duplicated_label.append(label)
-                        print('Duplicated labels:', duplicated_label)
-                        print('  Corresponding label=', labels_bottom[u_bottom, v_bottom], 'changed to', label)
+                        print('  Corresponding label :', labels_bottom[u_bottom, v_bottom], 'changed to', label)
                         labels_bottom[labels_bottom == labels_bottom[u_bottom, v_bottom]] = label
                 except IndexError:
                     # the IndexError exception arises because we are spanning all normals for labels_top, even those
@@ -295,7 +294,7 @@ else:
     sys.exit()
 
 updated_label = []
-print('Background: ', str((normals_label == 0).sum()), 'normals')
+print('\nBackground: ', str((normals_label == 0).sum()), 'normals')
 for idx in range(1, max_label+1):
     print("Facet", str(idx), ': ', str((normals_label == idx).sum()), 'normals detected')
     if (normals_label == idx).sum() != 0:
