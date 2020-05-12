@@ -1,3 +1,5 @@
+* Refactor: solve instabilities resulting from duplicate vertices after smoothing in facet_strain.py
+
 * Refactor: modify polarplot.py to use module functions instead of inline script
 
 * Feature: implement coefficient_variation.py to compare several reconstructed modulus of a BCDI dataset
