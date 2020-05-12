@@ -595,12 +595,12 @@ for label in unique_labels:
     #######################################
     # grow again the facet on the surface #
     #######################################
-    print('Growing again the facet')
+    print('Growing the facet at the surface')
     iterate = 0
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=2.5*max_distance_plane, debugging=False)  # 3
+                                    max_distance=1.5*max_distance_plane, debugging=False)
         # here the distance threshold is larger in order to reach voxels missed by the first plane fit
         # when rounding vertices to integer. Anyway we intersect it with the surface therefore it can not go crazy.
         plane_indices = np.nonzero(plane)
@@ -621,6 +621,7 @@ for label in unique_labels:
                                  markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
                                  title='Plane' + str(label) + ' after 1st growth at the surface\n iteration' +
                                        str(iterate) + '- Points number=' + str(len(plane_indices[0])))
+
     ################################################################
     # refine plane fit, now we are sure that we are at the surface #
     ################################################################
@@ -641,7 +642,7 @@ for label in unique_labels:
 
     # update plane by filtering out pixels too far from the fit plane
     plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
-                                        max_distance=1.5*max_distance_plane)  # 2
+                                        max_distance=max_distance_plane)
     if stop == 1:  # no points on the plane
         print('Refined fit: no points for plane', label)
         continue
@@ -666,7 +667,7 @@ for label in unique_labels:
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=1.5*max_distance_plane, debugging=debug)  # 2
+                                    max_distance=1.5*max_distance_plane, debugging=debug)
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
         iterate = iterate + 1
         if plane[plane == 1].sum() == previous_nb:
@@ -700,6 +701,7 @@ for label in unique_labels:
                              title='Plane' + str(label) + ' after edge removal\nPoints number='
                                    + str(len(plane_indices[0])))
     print('Plane ', label, ', ', str(len(plane_indices[0])), 'points after removing edges')
+
     #################################################################
     # calculate quantities of interest and update log and VTK files #
     #################################################################
