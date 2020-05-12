@@ -785,7 +785,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
 
 
 def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33, mu=0.34, radius=0.1,
-                  debugging=0):
+                  debugging=False):
     """
     Performs a back and forward Laplacian smoothing "without shrinking" of a triangulated mesh,
      as described by Gabriel Taubin (ICCV '95)
