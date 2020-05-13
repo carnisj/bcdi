@@ -66,11 +66,14 @@ for idx in range(1, nbfiles):
 ############################
 # decomposition into modes #
 ############################
-modes, eigenvectors, weights = pu.ortho_modes(array_stack=stack, nb_mode=nb_mode)
+modes, eigenvectors, weights = pu.ortho_modes(array_stack=stack, nb_mode=nb_mode, method='eig')
 
 print('\nWeights of the', len(weights), ' modes:', weights)
 
-fig, _, _ = gu.multislices_plot(abs(modes[0]), scale='linear', sum_frames=False, plot_colorbar=True,
+highest_weight = np.unravel_index(np.argmax(weights), shape=weights.shape)[0]
+fig, _, _ = gu.multislices_plot(abs(modes[highest_weight]), scale='linear', sum_frames=False, plot_colorbar=True,
                                 reciprocal_space=False, is_orthogonal=True, title='')
-fig.text(0.60, 0.25, "1st mode =" + str('{:.2f}'.format(weights[0]*100) + "%"), size=20)
+fig.text(0.6, 0.30, "Strongest mode = {:d}".format(highest_weight), size=20)
+fig.text(0.6, 0.25, "weight = {:.2f}%".format(weights[highest_weight]*100), size=20)
+plt.pause(0.1)
 plt.show()
