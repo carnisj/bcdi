@@ -25,7 +25,7 @@ ideally the first mode should be as high as possible. Adapted from PyNX.
 
 datadir = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/maximum_likelihood/good"
 user_comment = '_test'  # string, should start with "_"
-nb_mode = 2  # number of modes to return in the mode array (starting from 0)
+nb_mode = 5  # number of modes to return in the mode array (starting from 0)
 ################
 # Load objects #
 ################
