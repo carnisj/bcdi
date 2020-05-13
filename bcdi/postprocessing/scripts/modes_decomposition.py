@@ -23,9 +23,9 @@ Eigendecomposition of a set of 3D reconstructed objects from phase retrieval,
 ideally the first mode should be as high as possible. Adapted from PyNX.
 """
 
-datadir = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/maximum_likelihood/"
-user_comment = ''  # string, should start with "_"
-nb_mode = 2  # number of modes to save in the file (starting from 0)
+datadir = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/maximum_likelihood/good"
+user_comment = '_test'  # string, should start with "_"
+nb_mode = 2  # number of modes to return in the mode array (starting from 0)
 ################
 # Load objects #
 ################
@@ -66,7 +66,7 @@ for idx in range(1, nbfiles):
 ############################
 # decomposition into modes #
 ############################
-modes, eigenvectors, weights = pu.ortho_modes(stack=stack, nb_mode=nb_mode)
+modes, eigenvectors, weights = pu.ortho_modes(array_stack=stack, nb_mode=nb_mode)
 
 print('\nWeights of the', len(weights), ' modes:', weights)
 
