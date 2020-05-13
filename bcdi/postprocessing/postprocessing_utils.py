@@ -6,9 +6,9 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import h5py
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
+from scipy.linalg import svd
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('D:/myscripts/bcdi/')
@@ -20,7 +20,6 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.stats import multivariate_normal
 from scipy.stats import pearsonr
 import gc
-import os
 
 
 def align_obj(reference_obj, obj, precision=1000, debugging=False):
@@ -1116,7 +1115,7 @@ def mean_filter(phase, support, half_width=0, width_z=None, width_y=None, width_
     return phase
 
 
-def ortho_modes(array_stack, nb_mode=None, verbose=False):
+def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
     """
     Orthogonalize modes from a N+1 dimensional array or a list/tuple of N-dimensional arrays.
      The decomposition is such that the total intensity (i.e. (abs(m)**2).sum()) is conserved.
@@ -1125,6 +1124,7 @@ def ortho_modes(array_stack, nb_mode=None, verbose=False):
      :param array_stack: the stack of modes to orthogonalize along the first dimension.
      :param nb_mode: the maximum number of modes to be returned. If None, all are returned.
       This is useful if nb_mode is used, and only a partial list of modes is returned.
+     :param method: either 'eig' to use eigenvalue decomposition or 'svd' to use singular value decomposition.
      :param verbose: set it to True to have more printed comments
      :return: an array (modes) with the same shape as given in input, but with orthogonal modes,
       i.e. (mo[i]*mo[j].conj()).sum()=0 for i!=j
@@ -1134,10 +1134,23 @@ def ortho_modes(array_stack, nb_mode=None, verbose=False):
     if array_stack[0].ndim != 3:
         raise ValueError('A stack of 3D arrays is expected')
 
-    nb_arrays = len(array_stack)
-    my_matrix = np.array([[np.vdot(array2, array1) for array1 in array_stack] for array2 in array_stack])
-    # array of shape (nb_arrays,nb_arrays)
-    eigenvalues, eigenvectors = np.linalg.eig(my_matrix)  # the number of eigenvalues is nb_arrays
+    # array stack has the shape: (nb_arrays, L, M, N)
+    nb_arrays = array_stack.shape[0]
+    array_size = array_stack[0].size  # the size of individual arrays is L x M x N
+
+    if method == 'eig':
+        my_matrix = np.array([[np.vdot(array2, array1) for array1 in array_stack] for array2 in array_stack])
+        # array of shape (nb_arrays,nb_arrays)
+        eigenvalues, eigenvectors = np.linalg.eig(my_matrix)  # the number of eigenvalues is nb_arrays
+    elif method == 'svd':  # Singular value decomposition
+        my_matrix = np.reshape(array_stack, (nb_arrays, array_size))
+        eigenvectors, eigenvalues, vh = svd(my_matrix, compute_uv=True, full_matrices=False)  # scipy.linalg.svd
+        # my_matrix = eigenvectors x S x Vh, where S is a suitably shaped matrix of zeros with main diagonal s
+        # The shapes are (M, K) for the eigenvectors and (K, N) for the unitary matrix Vh where K = min(M, N)
+        # Here, M is the number of reconstructions nb_arrays, N is the size of a reconstruction array_size
+    else:
+        raise ValueError('Incorrect value for parameter "method"')
+
     sort_indices = (-eigenvalues).argsort()  # returns the indices that would sort eigenvalues in descending order
     eigenvectors = eigenvectors[:, sort_indices]  # sort eigenvectors using sort_indices, same shape as my_matrix
 
@@ -1148,13 +1161,12 @@ def ortho_modes(array_stack, nb_mode=None, verbose=False):
     modes = np.array([sum(array_stack[i] * eigenvectors[i, j] for i in range(nb_arrays)) for j in range(nb_arrays)])
     # # the double nested comprehension list above is equivalent to the following code:
     # modes = np.zeros(array_stack.shape, dtype=complex)
-    # for column in range(nb_arrays):
+    # for j in range(nb_arrays):
     #     temp = np.zeros(array_stack[0].shape, dtype=complex)
-    #     for raw in range(nb_arrays):
-    #         temp += array_stack[raw] * eigenvectors[raw, column]
-    #     modes[column] = temp
+    #     for i in range(nb_arrays):
+    #         temp += array_stack[i] * eigenvectors[i, j]
+    #     modes[j] = temp
 
-    # same shape as array_stack
     if verbose:
         print("Orthonormal decomposition coefficients (rows)")
         print(np.array2string((eigenvectors.transpose()), threshold=10, precision=3, floatmode='fixed',
