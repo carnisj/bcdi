@@ -12,6 +12,7 @@ import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 Plot a 1D angular average of a 3D reciprocal space map, based on the position of the origin (direct beam or Bragg peak). 
@@ -22,13 +23,15 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/'
+root_folder = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/'
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
-origin = [281, 216, 236]  # [np.nan, np.nan, np.nan] #
+origin = [np.nan, np.nan, np.nan]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
+bin_factor = 2  # the data will be binned by bin_factor is the three directions
+vertical_lines = [0.104, 0.144, 0.172, 0.208]  # plot vertical dashed lines at these q values, leave [] otherwise
 # position in pixels of the origin of the angular average in the array.
 # if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
-threshold = 1  # data < threshold will be set to 0
+threshold = 0  # data < threshold will be set to 0
 debug = False  # True to show more plots
 xlim = None  # limits used for the horizontal axis of the angular plot, leave None otherwise
 ylim = None  # limits used for the vertical axis of plots, leave None otherwise
@@ -51,10 +54,11 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the diffraction pattern",
                                        filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
-diff_pattern = npzfile[list(npzfile.files)[0]].astype(float)
+diff_pattern = pu.bin_data(npzfile[list(npzfile.files)[0]].astype(int), (bin_factor, bin_factor, bin_factor),
+                           debugging=False)
 diff_pattern[diff_pattern < threshold] = 0
 nz, ny, nx = diff_pattern.shape
-print('Data shape:', nz, ny, nx)
+print('Data shape after binning:', nz, ny, nx)
 gu.multislices_plot(diff_pattern, sum_frames=True, plot_colorbar=True, cmap=my_cmap,
                     title='diffraction pattern', scale='log', vmin=np.nan, vmax=np.nan,
                     reciprocal_space=True, is_orthogonal=True)
@@ -65,8 +69,7 @@ if load_mask:
     file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the mask",
                                            filetypes=[("NPZ", "*.npz")])
     npzfile = np.load(file_path)
-    mask = npzfile[list(npzfile.files)[0]]
-    diff_pattern[np.nonzero(mask)] = np.nan
+    mask = pu.bin_data(npzfile[list(npzfile.files)[0]], (bin_factor, bin_factor, bin_factor), debugging=False)
 else:
     mask = None
 #######################
@@ -86,9 +89,9 @@ if load_qvalues:
     file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select q values",
                                            filetypes=[("NPZ", "*.npz")])
     npzfile = np.load(file_path)
-    qx = npzfile['qx']  # downstream
-    qz = npzfile['qz']  # vertical up
-    qy = npzfile['qy']  # outboard
+    qx = npzfile['qx'][::bin_factor]  # downstream
+    qz = npzfile['qz'][::bin_factor]  # vertical up
+    qy = npzfile['qy'][::bin_factor]  # outboard
 else:  # work with pixels, supposing that the data is in an orthonormal frame
     qx = np.arange(nz) - origin[0]
     qz = np.arange(ny) - origin[1]
@@ -96,6 +99,7 @@ else:  # work with pixels, supposing that the data is in an orthonormal frame
 
 q_axis, y_mean_masked, y_median_masked = util.angular_avg(data=diff_pattern, q_values=(qx, qz, qy), origin=origin,
                                                           mask=mask, debugging=debug)
+q_axvline = util.find_nearest(q_axis, vertical_lines)
 
 fig, ax0 = plt.subplots(1, 1)
 plt0 = ax0.plot(q_axis, np.log10(y_mean_masked), 'r')
@@ -105,6 +109,9 @@ if xlim is not None:
     plt.xlim(xlim[0], xlim[1])
 if ylim is not None:
     plt.ylim(ylim[0], ylim[1])
+ymax = np.log10(y_mean_masked.max())
+for counter, value in enumerate(vertical_lines):
+    ax0.axvline(x=value, ymax=np.log10(y_mean_masked[q_axvline[counter]])/ymax, linestyle='--')
 plt.savefig(root_folder + 'angular_avg_labels.png')
 ax0.tick_params(labelbottom=False, labelleft=False)
 plt.xlabel('')
