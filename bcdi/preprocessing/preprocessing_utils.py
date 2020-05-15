@@ -2161,9 +2161,11 @@ def motor_positions_p10_saxs(logfile, setup):
             this_line = line.strip()
             words = this_line.split()
 
-            if 'Col' in words and ('sprz' or 'hprz' in words):  # sprz or hprz (SAXS) scanned
-                # template = ' Col 0 sprz DOUBLE\n'
-                index_phi = int(words[1]) - 1  # python index starts at 0
+            if 'Col' in words:
+                if 'sprz' in words or 'hprz' in words:  # sprz or hprz (SAXS) scanned
+                    # template = ' Col 0 sprz DOUBLE\n'
+                    index_phi = int(words[1]) - 1  # python index starts at 0
+                    print(words, '  Index Phi=', index_phi)
             try:
                 float(words[0])  # if this does not fail, we are reading data
                 phi.append(float(words[index_phi]))
