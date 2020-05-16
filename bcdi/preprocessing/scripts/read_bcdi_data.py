@@ -46,6 +46,7 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # SIXS: beta, mu, gamma, delta
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
+is_series = True  # specific to series measurement at P10
 specfile_name = 'align'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
@@ -74,7 +75,7 @@ template_imagefile = 'data_mpx4_%05d.edf.gz'
 #################################################
 # Initialize detector, setup, paths and logfile #
 #################################################
-detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile)
+detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, is_series=is_series)
 
 setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, custom_scan=custom_scan,
                                custom_images=custom_images, custom_monitor=custom_monitor, custom_motors=custom_motors)
