@@ -24,15 +24,15 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 614
+scan = 174
 root_folder = "D:/data/CH5309/"
-sample_name = "S"  # "S"
+sample_name = "ht_align1"  # "S"
 save_mask = False  # set to True to save the mask
-fit_rockingcurve = True  # set to True if you want a fit of the rocking curve
+fit_rockingcurve = False  # set to True if you want a fit of the rocking curve
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'ID01'  # name of the beamlis[scan_nb]ne, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamlis[scan_nb]ne, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
 
@@ -45,9 +45,9 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 
-rocking_angle = "outofplane"  # "outofplane" or "inplane"
+rocking_angle = "inplane"  # "outofplane" or "inplane"
 is_series = True  # specific to series measurement at P10
-specfile_name = 'align'
+specfile_name = sample_name + '_%05d'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -57,12 +57,12 @@ specfile_name = 'align'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 bragg_position = []  # Bragg peak position [vertical, horizontal], leave it as [] if there is a single peak
 peak_method = 'max'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -71,6 +71,15 @@ template_imagefile = 'data_mpx4_%05d.edf.gz'
 ##################################
 # end of user-defined parameters #
 ##################################
+
+###################
+# define colormap #
+###################
+bad_color = '1.0'  # white background
+colormap = gu.Colormap(bad_color=bad_color)
+my_cmap = colormap.cmap
+plt.ion()
+
 
 #################################################
 # Initialize detector, setup, paths and logfile #
@@ -164,14 +173,14 @@ if save_mask:
 
 gu.combined_plots(tuple_array=(monitor, mask), tuple_sum_frames=False, tuple_sum_axis=(0, 0),
                   tuple_width_v=None, tuple_width_h=None, tuple_colorbar=(True, False), tuple_vmin=np.nan,
-                  tuple_vmax=np.nan, tuple_title=('monitor', 'mask'), tuple_scale='linear',
+                  tuple_vmax=np.nan, tuple_title=('monitor', 'mask'), tuple_scale='linear', cmap=my_cmap,
                   ylabel=('Counts (a.u.)', ''))
 
 y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
 print("Max at (y, x): ", y0, x0, ' Max = ', int(data[y0, x0]))
 
 fig = plt.figure()
-plt.imshow(np.log10(data), vmin=0)
+plt.imshow(np.log10(data), vmin=-2, vmax=4, cmap=my_cmap)
 plt.title('data.sum(axis=0)\nMax at (y, x): (' + str(y0) + ',' + str(x0) + ')   Max = ' + str(int(data[y0, x0])))
 plt.colorbar()
 plt.savefig(detector.datadir + 'sum_S' + str(scan) + '.png')
