@@ -40,9 +40,9 @@ data in:                                                       /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [13]  # list or array of scan numbers
-root_folder = "/nfs/fs/fscxi/experiments/2019/PETRA/P10/11007170/raw/"
-sample_name = "magnetite_A2_new"  # "S"
+scans = [54]  # list or array of scan numbers
+root_folder = "D:/data/P10_March2020_CDI/data/"
+sample_name = "ht_pillar1"  # "S"
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = [1, 4, 4]  # binning that will be used for phasing
@@ -80,9 +80,6 @@ reload_previous = False  # True to resume a previous masking (load data and mask
 ###########################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
-interpolate_qmax = False  # parameter defining the interpolation interval when use_rawdata is False
-# if True, will interpolate using the q spacing at the outer boundary of the data array
-# if False, the output data will have the same shape as the ungridded data
 fit_datarange = False  # if True, crop the final array within data range, avoiding areas at the corners of the window
 # viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
 save_rawdata = False  # save also the raw data when use_rawdata is False
@@ -107,9 +104,9 @@ specfile_name = sample_name + '_%05d'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-direct_beam = (1195, 1187)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
+direct_beam = (1255, 1161)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = []  # [direct_beam[0] - 1172, direct_beam[0] + 972, direct_beam[1] - 883, direct_beam[1] + 883]
+roi_detector = [direct_beam[0] - 400, direct_beam[0] + 400, direct_beam[1] - 400, direct_beam[1] + 400]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
@@ -128,7 +125,7 @@ template_imagefile = '_master.h5'  # ''_data_%06d.h5'
 # define parameters below if you want to regrid the data before phasing #
 #########################################################################
 sdd = 4.95  # sample to detector distance in m, not important if you use raw data
-energy = 8700  # x-ray energy in eV, not important if you use raw data
+energy = 10000  # x-ray energy in eV, not important if you use raw data
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -388,16 +385,16 @@ for scan_nb in range(len(scans)):
                                      root_folder=root_folder, filename=specfile)
 
         if photon_filter == 'loading':
-            data, mask, frames_logical, monitor = pru.load_cdi(logfile=logfile, scan_number=scans[scan_nb],
-                                                               detector=detector, setup=setup, flatfield=flatfield,
-                                                               hotpixels=hotpix_array, background=background,
-                                                               normalize=normalize_flux, debugging=debug,
-                                                               photon_threshold=photon_threshold)
+            data, mask, frames_logical, monitor = pru.load_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                    detector=detector, setup=setup, flatfield=flatfield,
+                                                                    hotpixels=hotpix_array, background=background,
+                                                                    normalize=normalize_flux, debugging=debug,
+                                                                    photon_threshold=photon_threshold)
         else:  # photon_filter == 'postprocessing':
-            data, mask, frames_logical, monitor = pru.load_cdi(logfile=logfile, scan_number=scans[scan_nb],
-                                                               detector=detector, setup=setup, flatfield=flatfield,
-                                                               hotpixels=hotpix_array, background=background,
-                                                               normalize=normalize_flux, debugging=debug)
+            data, mask, frames_logical, monitor = pru.load_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                    detector=detector, setup=setup, flatfield=flatfield,
+                                                                    hotpixels=hotpix_array, background=background,
+                                                                    normalize=normalize_flux, debugging=debug)
         nz, ny, nx = np.shape(data)
         print('\nRaw data shape:', nz, ny, nx)
 
@@ -472,8 +469,7 @@ for scan_nb in range(len(scans)):
             binning_comment = '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2])
             data, mask, q_values, frames_logical = \
                 pru.regrid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
-                               frames_logical=frames_logical, correct_curvature=correct_curvature,
-                               interpolate_qmax=interpolate_qmax, debugging=debug)
+                               frames_logical=frames_logical, correct_curvature=correct_curvature, debugging=debug)
 
     ##########################################
     # plot normalization by incident monitor #

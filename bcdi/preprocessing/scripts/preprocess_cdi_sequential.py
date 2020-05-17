@@ -80,9 +80,6 @@ reload_previous = True  # True to resume a previous masking (load data and mask)
 ###########################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
-interpolate_qmax = False  # parameter defining the interpolation interval when use_rawdata is False
-# if True, will interpolate using the q spacing at the outer boundary of the data array
-# if False, the output data will have the same shape as the ungridded data
 fit_datarange = False  # if True, crop the final array within data range, avoiding areas at the corners of the window
 # viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
 save_rawdata = False  # save also the raw data when use_rawdata is False
@@ -344,16 +341,16 @@ for scan_nb in range(len(scans)):
                                      root_folder=root_folder, filename=specfile)
 
         if photon_filter == 'loading':
-            data, mask, frames_logical, monitor = pru.load_cdi(logfile=logfile, scan_number=scans[scan_nb],
-                                                               detector=detector, setup=setup, flatfield=flatfield,
-                                                               hotpixels=hotpix_array, background=background,
-                                                               normalize=normalize_flux, debugging=debug,
-                                                               photon_threshold=photon_threshold)
+            data, mask, frames_logical, monitor = pru.load_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                    detector=detector, setup=setup, flatfield=flatfield,
+                                                                    hotpixels=hotpix_array, background=background,
+                                                                    normalize=normalize_flux, debugging=debug,
+                                                                    photon_threshold=photon_threshold)
         else:  # photon_filter == 'postprocessing':
-            data, mask, frames_logical, monitor = pru.load_cdi(logfile=logfile, scan_number=scans[scan_nb],
-                                                               detector=detector, setup=setup, flatfield=flatfield,
-                                                               hotpixels=hotpix_array, background=background,
-                                                               normalize=normalize_flux, debugging=debug)
+            data, mask, frames_logical, monitor = pru.load_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                    detector=detector, setup=setup, flatfield=flatfield,
+                                                                    hotpixels=hotpix_array, background=background,
+                                                                    normalize=normalize_flux, debugging=debug)
         nz, ny, nx = np.shape(data)
         print('\nRaw data shape:', nz, ny, nx)
 
@@ -425,8 +422,7 @@ for scan_nb in range(len(scans)):
             binning_comment = '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2])
             data, mask, q_values, frames_logical = \
                 pru.regrid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
-                               frames_logical=frames_logical, correct_curvature=correct_curvature,
-                               interpolate_qmax=interpolate_qmax, debugging=debug)
+                               frames_logical=frames_logical, correct_curvature=correct_curvature, debugging=debug)
 
     ##########################################
     # plot normalization by incident monitor #
