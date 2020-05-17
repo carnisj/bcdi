@@ -265,6 +265,65 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
     return params
 
 
+def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
+    """
+    Find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis.
+
+    :param nb_pixels: number of pixels of the axis of the squared grid
+    :param pivot: position in pixels of the origin of the polar coordinates system
+    :param offset_angle: reference angle for the angle wrapping
+    :param debugging: True to see more plots
+    :return: the corresponding 1D array of angular coordinates, 1D array of radial coordinates
+    """
+
+    z_interp, x_interp = np.meshgrid(np.linspace(-pivot, -pivot + nb_pixels, num=nb_pixels, endpoint=False),
+                                     np.linspace(pivot - nb_pixels, pivot, num=nb_pixels, endpoint=False),
+                                     indexing='ij')  # z_interp changes along rows, x_interp along columns
+    # z_interp downstream, same direction as detector X rotated by +90deg
+    # x_interp along outboard opposite to detector X
+
+    # map these points to (cdi_angle, X), the measurement polar coordinates
+    interp_angle = wrap(obj=np.arctan2(z_interp, -x_interp), start_angle=offset_angle * np.pi / 180,
+                        range_angle=np.pi)  # in radians, located in the range [start_angle, start_angle+np.pi[
+
+    sign_array = -1 * np.sign(np.cos(interp_angle)) * np.sign(x_interp)
+    sign_array[x_interp == 0] = np.sign(z_interp[x_interp == 0]) * np.sign(interp_angle[x_interp == 0])
+
+    interp_radius = np.multiply(sign_array, np.sqrt(x_interp ** 2 + z_interp ** 2))
+
+    if debugging:
+        fig, ax, _ = \
+            gu.imshow_plot(interp_angle*180/np.pi, sum_frames=False, sum_axis=0, plot_colorbar=True,
+                           reciprocal_space=False, scale='linear', is_orthogonal=True,
+                           title='calculated polar angle for the 2D grid\n z_interp vertical, x_interp horizontal')
+        ax.invert_xaxis()
+        ax.set_xlabel('x_interp')
+        ax.invert_yaxis()
+        ax.set_ylabel('z_interp')
+        plt.draw()
+
+        fig, ax, _ = \
+            gu.imshow_plot(sign_array, sum_frames=False, sum_axis=0, plot_colorbar=True, reciprocal_space=False,
+                           title='sign_array\n z_interp vertical, x_interp horizontal', scale='linear',
+                           is_orthogonal=True)
+        ax.invert_xaxis()
+        ax.set_xlabel('x_interp')
+        ax.invert_yaxis()
+        ax.set_ylabel('z_interp')
+        plt.draw()
+
+        fig, ax, _ =  \
+            gu.imshow_plot(interp_radius, sum_frames=False, sum_axis=0, plot_colorbar=True, reciprocal_space=False,
+                           title='calculated polar radius for the 2D grid\n z_interp vertical, x_interp horizontal',
+                           scale='linear', is_orthogonal=True)
+        ax.invert_xaxis()
+        ax.set_xlabel('x_interp')
+        ax.invert_yaxis()
+        ax.set_ylabel('z_interp')
+        plt.draw()
+    return interp_angle, interp_radius
+
+
 def center_fft(data, mask, detector, frames_logical, centering='max', fft_option='crop_asymmetric_ZYX', **kwargs):
     """
     Center and crop/pad the dataset depending on user parameters
@@ -1015,6 +1074,37 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         return q_values, rawdata, gridder.data, rawmask, mask, frames_logical, monitor
 
 
+def grid_cdi(array, cdi_angle, pivot, interp_angle, interp_radius):
+    """
+
+    :param array:
+    :param cdi_angle:
+    :param pivot:
+    :param interp_angle:
+    :param interp_radii:
+    :return:
+    """
+    _, nby, nbx = array.shape
+    interp_size = interp_angle.size
+    _, numx = interp_angle.shape  # data shape is (numx, numx) by construction
+    interp_array = np.zeros((numx, nby, numx), dtype=array.dtype)
+    for idx in range(nby):  # loop over 2D frames perpendicular to the rotation axis
+        # position of the experimental data points
+        rgi = RegularGridInterpolator((cdi_angle * np.pi / 180, np.arange(-pivot, -pivot + nbx, 1)),
+                                      array[:, idx, :], method='linear', bounds_error=False,
+                                      fill_value=np.nan)
+
+        # interpolate the data onto the new points
+        temp_array = rgi(np.concatenate((interp_angle.reshape((1, interp_size)),
+                                         interp_radius.reshape((1, interp_size)))).transpose())
+        temp_array = temp_array.reshape(interp_angle.shape).astype(array.dtype)
+
+        # stack the 2D interpolated frame along the rotation axis, taking into account the flip of the
+        # detector Y axis (pointing down) compare to the laboratory frame vertical axis (pointing up)
+        interp_array[:, nby - (idx + 1), :] = temp_array
+    return interp_array
+
+
 def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False, hxrd=None,
             normalize=False, debugging=False, **kwargs):
     """
@@ -1228,8 +1318,8 @@ def load_background(background_file):
     return background
 
 
-def load_cdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
-             normalize=False, debugging=False, **kwargs):
+def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
+                  normalize=False, debugging=False, **kwargs):
     """
     Load the forward CDI data, apply filters and optionally regrid it for phasing.
 
@@ -2550,13 +2640,12 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
     return qx, qz, qy, frames_logical
 
 
-def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate_qmax=False,
-               correct_curvature=False, debugging=False):
+def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curvature=False, debugging=False):
     """
     Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in cartesian coordinates.
      Note that it is based on PetraIII P10 beamline (counterclockwise rotation, detector seen from the front).
 
-    :param data: the 3D data
+    :param data: the 3D data, already binned in the detector frame
     :param mask: the corresponding 3D mask
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param detector: the detector object: Class experiment_utils.Detector(). The detector orientation is supposed to
@@ -2564,9 +2653,6 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param interpolate_qmax: set to True if you want to calculate the interpolation voxel size from the difference in q
-     between two angular steps at the farthest position away from the direct beam. If False the interpolated data will
-     have the same shape as the original data.
     :param correct_curvature: if True, will correct for the curvature of the Ewald sphere
     :param debugging: set to True to see plots
     :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard)
@@ -2586,8 +2672,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
 
     wavelength = setup.wavelength * 1e9  # convert to nm
     distance = setup.distance * 1e9  # convert to nm
-    pixel_x = detector.pixelsize_x * 1e9  # convert to nm, pixel size in the horizontal direction
-    pixel_y = detector.pixelsize_y * 1e9  # convert to nm, pixel size in the vertical direction
+    pixel_x = detector.pixelsize_x * 1e9  # convert to nm, binned pixel size in the horizontal direction
+    pixel_y = detector.pixelsize_y * 1e9  # convert to nm, binned pixel size in the vertical direction
     lambdaz = wavelength * distance
     directbeam_y = int((setup.direct_beam[0] - detector.roi[0]) / detector.binning[1])  # vertical
     directbeam_x = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
@@ -2599,7 +2685,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     nbz, nby, nbx = data.shape
     print('\nData shape after check_cdi_angle and before regridding:', nbz, nby, nbx)
     print('\nAngle range:', cdi_angle.min(), cdi_angle.max())
-    angular_step = (cdi_angle[1] - cdi_angle[0]) * np.pi / 180  # switch to radians
+    # angular_step = (cdi_angle[1] - cdi_angle[0]) * np.pi / 180  # switch to radians
 
     if debugging:
         # calculate and plot measured voxels in a cartesian 2D grid xz (z downstream x outboard y vertical up)
@@ -2611,121 +2697,74 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
                                                 zstar_exp.flatten()[:, np.newaxis]), axis=1),
                                 labels=('x', 'z'), markersize=1)
 
-    if interpolate_qmax:
-        # calculate interpolation voxel size along x and z based on the difference at largest q
-        voxelsize_z = nbx // 2 * np.sin(angular_step / 2) - nbx // 2 * np.sin(-angular_step / 2)  # in pixels
-        voxelsize_y = 1  # in pixels, y axis is not affected by the rotation
-        voxelsize_x = nbx // 2 * np.sin(angular_step / 2) - nbx // 2 * np.sin(-angular_step / 2)  # in pixels
-
-        # calculate the number of pixels in each direction using above voxel sizes and make it even (for FFT)
-        numz = int(np.ceil(nbx/voxelsize_z))  # number of voxels in z direction (should be an integer)
-        if (numz % 2) != 0:
-            numz = numz + 1
-        numy = int(np.floor(nby/voxelsize_y))  # number of voxels in y direction (should be an integer)
-        if (numy % 2) != 0:
-            numy = numy - 1
-        numx = int(np.ceil(nbx/voxelsize_x))  # number of voxels in x direction (should be an integer)
-        if (numx % 2) != 0:
-            numx = numx + 1
-        # update accordingly voxel sizes
-        voxelsize_z = nbx / numz  # in pixels
-        voxelsize_y = nby / numy  # in pixels
-        voxelsize_x = nbx / numx  # in pixels
-
-    else:  # interpolated data will have the same shape as the original data
-        numz, numy, numx = (nbx, nby, nbx)
-        voxelsize_z, voxelsize_y, voxelsize_x = (1, 1, 1)  # in pixels
-
-    print('\nVoxel sizes for interpolation (z,y,x)=', str('{:.2f}'.format(voxelsize_z)),
-          str('{:.2f}'.format(voxelsize_y)), str('{:.2f}'.format(voxelsize_x)))
-    print('\nData shape after regridding:', numz, numy, numx)
+    # calculate the number of voxels available to accomodate the gridded data
+    # directbeam_x and directbeam_y already are already taking into account the ROI and binning
+    # TODO: check this with full detector
+    numx = 2 * max(directbeam_x, nbx - directbeam_x)  # number of voxels in the plane perpendicular to the rotation axis
+    numy = nby  # no change of the voxel numbers along the rotation axis
+    print('\nData shape after regridding:', numx, numy, numx)
 
     if not correct_curvature:
-        # calculate q spacing and q values using above voxel sizes
-        dqx = 2 * np.pi / lambdaz * (pixel_x * voxelsize_z)  # in 1/nm, downstream
-        dqz = 2 * np.pi / lambdaz * (pixel_y * voxelsize_y)  # in 1/nm, vertical up
-        dqy = 2 * np.pi / lambdaz * (pixel_x * voxelsize_x)  # in 1/nm, outboard
+        dqx = 2 * np.pi / lambdaz * pixel_x  # in 1/nm, downstream, pixel_x is the binned pixel size
+        dqz = 2 * np.pi / lambdaz * pixel_y  # in 1/nm, vertical up, pixel_y is the binned pixel size
+        dqy = 2 * np.pi / lambdaz * pixel_x  # in 1/nm, outboard, pixel_x is the binned pixel size
 
         # calculation of q based on P10 geometry
-        qx = np.arange(-directbeam_x, -directbeam_x + numz, 1) * dqx
+        qx = np.arange(-directbeam_x, -directbeam_x + numx, 1) * dqx
         # downstream, same direction as detector X rotated by +90deg
-        qz = np.arange(-(numy-directbeam_y), -(numy-directbeam_y) + numy, 1) * dqz  # vertical up opposite to detector Y
-        qy = np.arange(-(numx-directbeam_x), -(numx-directbeam_x) + numx, 1) * dqy  # outboard opposite to detector X
+        qz = np.arange(directbeam_y-numy, directbeam_y, 1) * dqz  # vertical up opposite to detector Y
+        qy = np.arange(directbeam_x-numx, directbeam_x, 1) * dqy  # outboard opposite to detector X
         print('q spacing for interpolation (z,y,x)=', str('{:.6f}'.format(dqx)), str('{:.6f}'.format(dqz)),
               str('{:.6f}'.format(dqy)), ' (1/nm)')
 
-        # create a set of cartesian coordinates to interpolate onto (in z y x reciprocal frame):
-        # based on P10 geometry, it should use the same range as q values defined aboved
-        # the range along z is nbx because the frame is rotating aroung y
-        z_interp, y_interp, x_interp =\
-            np.meshgrid(np.linspace(-directbeam_x, -directbeam_x + nbx, num=numz, endpoint=False),
-                        np.linspace(-(nby-directbeam_y), -(nby-directbeam_y) + nby, num=numy, endpoint=False),
-                        np.linspace(-(nbx-directbeam_x), -(nbx-directbeam_x) + nbx, num=numx, endpoint=False),
-                        indexing='ij')
+        # find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis
+        interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=directbeam_x, offset_angle=cdi_angle[0],
+                                                      debugging=True)
 
-        # map these points to (angle, Y, X), the measurement cylindrical coordinates
-        angle_det = wrap(obj=np.arctan2(z_interp, -x_interp), start_angle=cdi_angle[0]*np.pi/180, range_angle=np.pi)
-        # angle_det in radians, located in the range [start_angle, start_angle+np.pi[
-        y_det = -1*y_interp  # vertical up opposite to detector Y
-        sign_array = sign(angle=angle_det, z_coord=z_interp, x_coord=x_interp)
-        x_det = np.multiply(sign_array, np.sqrt(x_interp**2 + z_interp**2))
-        # if angle_det in [0, np.pi/2[ X axis of the detector is opposite to x
-        # if angle_det in ]np.pi/2, np.pi[ X axis of the detector is in the same direction as x
+        interp_data = grid_cdi(array=data, cdi_angle=cdi_angle, pivot=directbeam_x, interp_angle=interp_angle,
+                               interp_radius=interp_radius)
 
-        # interpolate the data onto the new points
-        rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
-                                       np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
-                                      data, method='linear', bounds_error=False, fill_value=np.nan)
-        newdata = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
-                                      y_det.reshape((1, z_interp.size)),
-                                      x_det.reshape((1, z_interp.size)))).transpose())
-        newdata = newdata.reshape((numz, numy, numx)).astype(data.dtype)
+        interp_mask = grid_cdi(array=mask, cdi_angle=cdi_angle, pivot=directbeam_x, interp_angle=interp_angle,
+                               interp_radius=interp_radius)
 
-        # interpolate the mask onto the new points
-        rgi = RegularGridInterpolator((cdi_angle*np.pi/180, np.arange(-directbeam_y, -directbeam_y + nby, 1),
-                                       np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
-                                      mask, method='linear', bounds_error=False, fill_value=np.nan)
-        newmask = rgi(np.concatenate((angle_det.reshape((1, z_interp.size)),
-                                      y_det.reshape((1, z_interp.size)),
-                                      x_det.reshape((1, z_interp.size)))).transpose())
-        newmask = newmask.reshape((numz, numy, numx)).astype(mask.dtype)
-        newmask[np.nonzero(newmask)] = 1
+        interp_mask[np.nonzero(interp_mask)] = 1
 
     else:
+        # TODO: refactor this sequentially in 2D slices also
         from scipy.interpolate import griddata
         # calculate exact q values for each voxel of the 3D dataset
         old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
 
         # create the grid for interpolation
-        qx = np.linspace(old_qz.min(), old_qz.max(), numz, endpoint=False)  # z downstream
+        qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
         qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
         qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
 
         new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
 
         # interpolate the data onto the new points using griddata (the original grid is not regular)
-        newdata = griddata(
+        interp_data = griddata(
             np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
             np.ndarray.flatten(data),
             np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
             method='linear', fill_value=np.nan)
-        newdata = newdata.reshape((numz, numy, numx)).astype(data.dtype)
+        interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
 
         # interpolate the mask onto the new points
-        newmask = griddata(
+        interp_mask = griddata(
             np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
             np.ndarray.flatten(mask),
             np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
             method='linear', fill_value=np.nan)
-        newmask = newmask.reshape((numz, numy, numx)).astype(mask.dtype)
+        interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
 
     # check for Nan
-    newmask[np.isnan(newdata)] = 1
-    newdata[np.isnan(newdata)] = 0
-    newmask[np.isnan(newmask)] = 1
+    interp_mask[np.isnan(interp_data)] = 1
+    interp_data[np.isnan(interp_data)] = 0
+    interp_mask[np.isnan(interp_mask)] = 1
     
     # apply the mask to the data
-    newdata[np.nonzero(newmask)] = 0
+    interp_data[np.nonzero(interp_mask)] = 0
 
     # calculate the position in pixels of the origin of the reciprocal space
     pivot_z = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
@@ -2738,27 +2777,28 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, interpolate
     # plot the gridded data
     binning = detector.binning  # only used for figure name when saving
     # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
-    fig, _, _ = gu.contour_slices(newdata, (qx, qz, qy), sum_frames=True, title='Regridded data',
-                                  levels=np.linspace(0, int(np.log10(newdata.max())), 150, endpoint=False),
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
+                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space_' + str(numz)+'_' + str(numy) + '_' + str(numx) +
+    fig.savefig(detector.savedir + 'reciprocal_space_' + str(numx)+'_' + str(numy) + '_' + str(numx) +
                 '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
-    plt.close(fig)
-    fig, _, _ = gu.contour_slices(newdata, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
-                                  levels=np.linspace(0, int(np.log10(newdata.max())), 150, endpoint=False),
+
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
+                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space_central_'+str(numz)+'_'+str(numy)+'_'+str(numx) +
+    fig.savefig(detector.savedir + 'reciprocal_space_central_'+str(numx)+'_'+str(numy)+'_'+str(numx) +
                 '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
-    plt.close(fig)
-    fig, _, _ = gu.multislices_plot(newdata, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+
+    fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space_central_pix_' + str(numz) + '_' + str(numy) + '_' + str(
+    fig.savefig(detector.savedir + 'reciprocal_space_central_pix_' + str(numx) + '_' + str(numy) + '_' + str(
         numx) + '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
     plt.close(fig)
     if debugging:
-        gu.multislices_plot(newmask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
+        gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                             title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
-    return newdata, newmask, [qx, qz, qy], frames_logical
+
+    return interp_data, interp_mask, [qx, qz, qy], frames_logical
 
 
 def remove_hotpixels(data, mask, hotpixels=None):
@@ -2798,23 +2838,6 @@ def remove_hotpixels(data, mask, hotpixels=None):
     else:
         raise ValueError('2D or 3D data array expected, got ', data.ndim, 'D')
     return data, mask
-
-
-def sign(angle, z_coord, x_coord):
-    """
-    Define the sign to apply to coordinates calculate for forward CDI data. The reciprocal frame follows the CXI
-    convention z* downstream, y* vertical up and x* outboard. The detector frame follows the convention Y vertical
-    down and X opposite to x* at zero detector angles. The rotation is around y*
-
-    :param angle: ndarray, angle to be assessed in radians
-    :param z_coord: ndarrray, coordinates along z*
-    :param x_coord: ndarrray, coordinates along x*
-    :return: sign_array, array of the same shape filled with -1 and 1
-    """
-    sign_array = -1 * np.sign(np.cos(angle)) * np.sign(x_coord)
-    sign_array[angle == np.pi/2] = np.sign(z_coord[angle == np.pi/2])
-    sign_array[angle == -np.pi/2] = -1 * np.sign(z_coord[angle == -np.pi/2])
-    return sign_array
 
 
 def smaller_primes(number, maxprime=13, required_dividers=(4,)):
