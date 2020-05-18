@@ -143,12 +143,28 @@ def beamstop_correction(data, detector, setup, debugging=False):
     :return: the corrected data
     """
     print('Applying beamstop correction')
+
+    energy = setup.energy
+    if energy not in [8200, 8700, 10000]:
+        print('no beam stop information for the X-ray energy of {:d}eV, defaulting to 8700 eV'.format(int(energy)))
+        energy = 8700
+
     directbeam_y = setup.direct_beam[0] - detector.roi[0]  # vertical
     directbeam_x = setup.direct_beam[1] - detector.roi[2]  # horizontal
 
+    # at 8200eV, the transmission of 100um Si is 0.26273
     # at 8700eV, the transmission of 100um Si is 0.32478
-    factor_large = 1/0.32478  # 5mm*5mm (100um thick) Si wafer
-    factor_small = 1/0.32478  # 3mm*3mm (100um thick) Si wafer
+    # at 10000eV, the transmission of 100um Si is 0.47337
+    if energy == 8200:
+        factor_large = 1 / 0.26273  # 5mm*5mm (100um thick) Si wafer
+        factor_small = 1 / 0.26273  # 3mm*3mm (100um thick) Si wafer
+    elif energy == 8700:
+        factor_large = 1 / 0.32478  # 5mm*5mm (100um thick) Si wafer
+        factor_small = 1 / 0.32478  # 3mm*3mm (100um thick) Si wafer
+    else:  # 10000 eV
+        factor_large = 2/0.47337  # 5mm*5mm (200um thick) Si wafer
+        factor_small = 3/0.47337   # 3mm*3mm (300um thick) Si wafer
+
     ndim = data.ndim
     if ndim == 3:
         pass
@@ -1106,6 +1122,9 @@ def grid_cylindrical(array, rotation_angle, pivot, interp_angle, interp_radius):
         # stack the 2D interpolated frame along the rotation axis, taking into account the flip of the
         # detector Y axis (pointing down) compare to the laboratory frame vertical axis (pointing up)
         interp_array[:, nby - (idx + 1), :] = temp_array
+        sys.stdout.write('\rGridding progress: {:d}%'.format(int((idx+1)/nby*100)))
+        sys.stdout.flush()
+    print('')
     return interp_array
 
 
@@ -1793,8 +1812,9 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, debugging
         else:
             data = np.asarray(series_data)
             break
-        print('Loading frame', file_idx)
-
+        sys.stdout.write('\rLoading frame {:d}'.format(file_idx))
+        sys.stdout.flush()
+    print('')
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
@@ -2703,8 +2723,8 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
 
     # calculate the number of voxels available to accomodate the gridded data
     # directbeam_x and directbeam_y already are already taking into account the ROI and binning
-    # TODO: check this with full detector
-    numx = 2 * max(directbeam_x, nbx - directbeam_x)  # number of voxels in the plane perpendicular to the rotation axis
+    numx = 2 * max(directbeam_x, nbx - directbeam_x)  # number of interpolated voxels in the plane perpendicular
+    # to the rotation axis. It will accomodate the full data range.
     numy = nby  # no change of the voxel numbers along the rotation axis
     print('\nData shape after regridding:', numx, numy, numx)
 
