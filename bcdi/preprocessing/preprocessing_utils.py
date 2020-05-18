@@ -321,6 +321,7 @@ def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
         ax.invert_yaxis()
         ax.set_ylabel('z_interp')
         plt.draw()
+        plt.pause(0.1)
     return interp_angle, interp_radius
 
 
