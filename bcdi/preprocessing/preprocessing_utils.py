@@ -2743,7 +2743,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
 
         # find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis
         interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=directbeam_x, offset_angle=cdi_angle[0],
-                                                      debugging=True)
+                                                      debugging=debugging)
 
         interp_data = grid_cylindrical(array=data, rotation_angle=cdi_angle, pivot=directbeam_x,
                                        interp_angle=interp_angle, interp_radius=interp_radius)
