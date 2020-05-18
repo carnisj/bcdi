@@ -1074,23 +1074,26 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         return q_values, rawdata, gridder.data, rawmask, mask, frames_logical, monitor
 
 
-def grid_cdi(array, cdi_angle, pivot, interp_angle, interp_radius):
+def grid_cylindrical(array, rotation_angle, pivot, interp_angle, interp_radius):
     """
+    Interpolate a 3D array in cylindrical coordinated (tomographic dataset) onto cartesian coordinates.
 
-    :param array:
-    :param cdi_angle:
-    :param pivot:
-    :param interp_angle:
-    :param interp_radii:
-    :return:
+    :param array: 3D array of intensities measured in the detector frame
+    :param rotation_angle: array, rotation angle values for the rocking scan
+    :param pivot: position in pixels of the rotation pivot in the direction perpendicular to the rotation axis
+    :param interp_angle: 2D array, polar angles for the interpolation in a plane perpendicular to the rotation axis
+    :param interp_radius: 2D array, polar radii for the interpolation in a plane perpendicular to the rotation axis
+    :return: the 3D array interpolated onto the 3D cartesian grid
     """
+    assert array.ndim == 3, 'a 3D array is expected'
+
     _, nby, nbx = array.shape
     interp_size = interp_angle.size
     _, numx = interp_angle.shape  # data shape is (numx, numx) by construction
     interp_array = np.zeros((numx, nby, numx), dtype=array.dtype)
     for idx in range(nby):  # loop over 2D frames perpendicular to the rotation axis
         # position of the experimental data points
-        rgi = RegularGridInterpolator((cdi_angle * np.pi / 180, np.arange(-pivot, -pivot + nbx, 1)),
+        rgi = RegularGridInterpolator((rotation_angle * np.pi / 180, np.arange(-pivot, -pivot + nbx, 1)),
                                       array[:, idx, :], method='linear', bounds_error=False,
                                       fill_value=np.nan)
 
@@ -2721,11 +2724,11 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
         interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=directbeam_x, offset_angle=cdi_angle[0],
                                                       debugging=True)
 
-        interp_data = grid_cdi(array=data, cdi_angle=cdi_angle, pivot=directbeam_x, interp_angle=interp_angle,
-                               interp_radius=interp_radius)
+        interp_data = grid_cylindrical(array=data, rotation_angle=cdi_angle, pivot=directbeam_x,
+                                       interp_angle=interp_angle, interp_radius=interp_radius)
 
-        interp_mask = grid_cdi(array=mask, cdi_angle=cdi_angle, pivot=directbeam_x, interp_angle=interp_angle,
-                               interp_radius=interp_radius)
+        interp_mask = grid_cylindrical(array=mask, rotation_angle=cdi_angle, pivot=directbeam_x,
+                                       interp_angle=interp_angle, interp_radius=interp_radius)
 
         interp_mask[np.nonzero(interp_mask)] = 1
 
