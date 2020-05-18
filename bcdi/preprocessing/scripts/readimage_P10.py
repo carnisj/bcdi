@@ -48,8 +48,11 @@ else:
     filename = '/image_' + str(image_nb) + '.png'
 
 print(data.shape)
+if series:
+    data_start = data[0, :, :]
+    data_stop = data[-1, :, :]
+
 data = data.sum(axis=0)
-# data = data[109, :, :]
 mask = np.zeros((2167, 2070))
 mask[:, 1029:1041] = 1
 mask[513:552, :] = 1
@@ -75,4 +78,11 @@ plt.imshow(np.log10(data), vmin=0)
 plt.title(plot_title)
 plt.colorbar()
 plt.savefig(savedir + filename)
+
+if series:
+    plt.figure()
+    plt.imshow(data_stop-data_start)
+    plt.title('difference between the last and the first frames')
+    plt.colorbar
+    
 plt.show()
