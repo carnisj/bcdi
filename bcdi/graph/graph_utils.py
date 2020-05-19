@@ -188,9 +188,6 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
         title = tuple_title[idx]
         scale = tuple_scale[idx]
 
-        if sum_frames:
-            title = title + ' sum'
-
         nb_dim = array.ndim
 
         if nb_dim == 0 or nb_dim > 3:
@@ -382,8 +379,6 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
     """
     nb_dim = array.ndim
     plt.ion()
-    if sum_frames:
-        title = title + ' sum'
 
     if reciprocal_space:
         if is_orthogonal:
@@ -553,9 +548,6 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
 
     if nb_dim == 3:
-        if sum_frames:
-            title = title + ' sum'
-
         if reciprocal_space:
             if is_orthogonal:
                 invert_yaxis = True
@@ -981,8 +973,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             slice_position = [int(position) for position in slice_position]
 
     plt.ion()
-    if sum_frames:
-        title = title + ' sum'
+
     if reciprocal_space:
         if is_orthogonal:
             invert_yaxis = True
