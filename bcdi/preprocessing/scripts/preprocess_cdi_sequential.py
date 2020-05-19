@@ -45,8 +45,8 @@ root_folder = "D:/data/P10_August2019/data/"
 sample_name = "magnetite_A2_new"  # "S"
 user_comment = '_full_peak3'  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 4, 4]  # binning that will be used for phasing
-# (stacking dimension, detector vertical axis, detector horizontal axis)
+binning = [1, 4, 4]  # binning to apply to the data (stacking axis, detector vertical axis, detector horizontal axis)
+# if you want to grid the data in the orthonormal laboratory frame, leave the first value to 1
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking

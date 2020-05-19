@@ -897,7 +897,7 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     Correct the data for the curvature of Ewald sphere. Based on the CXI detector geometry convention:
      Laboratory frame: z downstream, y vertical up, x outboard
      Detector axes: Y vertical and X horizontal
-     Y is vertical down at out-of-plane angle=0, X is opposite to x at inplane angle=0)
+     (detector Y is vertical down at out-of-plane angle=0, detector X is opposite to x at inplane angle=0)
 
     :param cdi_angle: 1D array of measurement angles in degrees
     :param detector: the detector object: Class experiment_utils.Detector()
