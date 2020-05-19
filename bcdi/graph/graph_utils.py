@@ -223,14 +223,28 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
 
             if reciprocal_space:
                 if is_orthogonal:
-                    slice_names = (' QyQz', ' QyQx', ' QzQx')
+                    if sum_frames:
+                        slice_names = (' sum along Qx', ' sum along Qz', ' sum along Qy')
+                    else:
+                        slice_names = (' QyQz', ' QyQx', ' QzQx')
+                    ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
+                    hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
                 else:  # detector frame
                     slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                    ver_labels = ('Y', 'rocking angle', 'rocking angle')
+                    hor_labels = ('X', 'X', 'Y')
             else:
                 if is_orthogonal:
-                    slice_names = (' xy', ' xz', ' yz')
+                    if sum_frames:
+                        slice_names = (' sum along z', ' sum along y', ' sum along x')
+                    else:
+                        slice_names = (' xy', ' xz', ' yz')
+                    ver_labels = ('y', 'z', 'z')
+                    hor_labels = ('x', 'x', 'y')
                 else:  # detector frame
                     slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                    ver_labels = ('Y', 'rocking angle', 'rocking angle')
+                    hor_labels = ('X', 'X', 'Y')
 
             nbz, nby, nbx = array.shape
             if width_v is None:
@@ -245,6 +259,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
                     array = array[nbz // 2, :, :]
                 else:
                     array = array.sum(axis=sum_axis)
+                default_xlabel = hor_labels[0]
+                default_ylabel = ver_labels[0]
             elif sum_axis == 1:
                 dim_v = nbz
                 dim_h = nbx
@@ -252,6 +268,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
                     array = array[:, nby // 2, :]
                 else:
                     array = array.sum(axis=sum_axis)
+                default_xlabel = hor_labels[1]
+                default_ylabel = ver_labels[1]
             elif sum_axis == 2:
                 dim_v = nbz
                 dim_h = nby
@@ -259,6 +277,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
                     array = array[:, :, nbx // 2]
                 else:
                     array = array.sum(axis=sum_axis)
+                default_xlabel = hor_labels[2]
+                default_ylabel = ver_labels[2]
             else:
                 print('sum_axis should be only equal to 0, 1 or 2')
                 return
@@ -274,6 +294,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
             dim_v = nby
             dim_h = nbx
             slice_name = ''
+            default_xlabel = ''
+            default_ylabel = ''
 
         # now array is 2D
         width_v = min(width_v, dim_v)
@@ -312,8 +334,14 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, 
             raise ValueError('Wrong value for scale')
 
         axis.set_title(title + slice_name)
-        axis.set_xlabel(xlabel[idx])
-        axis.set_ylabel(ylabel[idx])
+        if len(xlabel[idx]) != 0:
+            axis.set_xlabel(xlabel[idx])
+        else:
+            axis.set_xlabel(default_xlabel)
+        if len(ylabel[idx]) != 0:
+            axis.set_ylabel(ylabel[idx])
+        else:
+            axis.set_ylabel(default_ylabel)
         plt.axis('scaled')
         if not np.isnan(pixel_spacing):
             axis.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -359,7 +387,10 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
 
     if reciprocal_space:
         if is_orthogonal:
-            slice_names = (' QyQz', ' QyQx', ' QzQx')
+            if sum_frames:
+                slice_names = (' sum along Qx', ' sum along Qz', ' sum along Qy')
+            else:
+                slice_names = (' QyQz', ' QyQx', ' QzQx')
             ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
             hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
         else:  # detector frame
@@ -368,7 +399,10 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
             hor_labels = ('X', 'X', 'Y')
     else:
         if is_orthogonal:
-            slice_names = (' xy', ' xz', ' yz')
+            if sum_frames:
+                slice_names = (' sum along z', ' sum along y', ' sum along x')
+            else:
+                slice_names = (' xy', ' xz', ' yz')
             ver_labels = ('y', 'z', 'z')
             hor_labels = ('x', 'x', 'y')
         else:  # detector frame
@@ -525,7 +559,10 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         if reciprocal_space:
             if is_orthogonal:
                 invert_yaxis = True
-                slice_names = (' QyQz', ' QyQx', ' QzQx')
+                if sum_frames:
+                    slice_names = (' sum along Qx', ' sum along Qz', ' sum along Qy')
+                else:
+                    slice_names = (' QyQz', ' QyQx', ' QzQx')
                 ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
                 hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
             else:  # detector frame
@@ -536,7 +573,10 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         else:
             if is_orthogonal:
                 invert_yaxis = True
-                slice_names = (' xy', ' xz', ' yz')
+                if sum_frames:
+                    slice_names = (' sum along z', ' sum along y', ' sum along x')
+                else:
+                    slice_names = (' xy', ' xz', ' yz')
                 ver_labels = ('y', 'z', 'z')
                 hor_labels = ('x', 'x', 'y')
             else:  # detector frame
@@ -946,7 +986,10 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     if reciprocal_space:
         if is_orthogonal:
             invert_yaxis = True
-            slice_names = (' QyQz', ' QyQx', ' QzQx')
+            if sum_frames:
+                slice_names = (' sum along Qx', ' sum along Qz', ' sum along Qy')
+            else:
+                slice_names = (' QyQz', ' QyQx', ' QzQx')
             ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
             hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
         else:  # detector frame
@@ -957,7 +1000,10 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     else:
         if is_orthogonal:
             invert_yaxis = True
-            slice_names = (' xy', ' xz', ' yz')
+            if sum_frames:
+                slice_names = (' sum along z', ' sum along y', ' sum along x')
+            else:
+                slice_names = (' xy', ' xz', ' yz')
             ver_labels = ('y', 'z', 'z')
             hor_labels = ('x', 'x', 'y')
         else:  # detector frame
