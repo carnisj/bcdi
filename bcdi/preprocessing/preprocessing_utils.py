@@ -2806,13 +2806,13 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_' + str(numx)+'_' + str(numy) + '_' + str(numx) +
                 '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
-
+    plt.close(fig)
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
                                   levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_central_'+str(numx)+'_'+str(numy)+'_'+str(numx) +
                 '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
-
+    plt.close(fig)
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_central_pix_' + str(numx) + '_' + str(numy) + '_' + str(
