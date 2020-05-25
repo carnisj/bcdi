@@ -142,9 +142,9 @@ def beamstop_correction(data, detector, setup, debugging=False):
     :param debugging: set to True to see plots
     :return: the corrected data
     """
-    print('Applying beamstop correction')
-
     energy = setup.energy
+    print('Applying beamstop correction for the X-ray energy of {:d}eV'.format(int(energy)))
+
     if energy not in [8200, 8700, 10000]:
         print('no beam stop information for the X-ray energy of {:d}eV, defaulting to 8700 eV'.format(int(energy)))
         energy = 8700
@@ -2754,7 +2754,6 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
         interp_mask[np.nonzero(interp_mask)] = 1
 
     else:
-        # TODO: refactor this sequentially in 2D slices also
         from scipy.interpolate import griddata
         # calculate exact q values for each voxel of the 3D dataset
         old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
