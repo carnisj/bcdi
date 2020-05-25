@@ -1554,8 +1554,9 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     if background is None:
         background = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
-    print('Detector size defined by the ROI:', detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2])
-    print('Detector physical size:', detector.nb_pixel_y, detector.nb_pixel_x)
+    print('Detector size defined by the ROI (VxH):',
+          detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2])
+    print('Detector physical size (VxH):', detector.nb_pixel_y, detector.nb_pixel_x)
     if detector.roi[1]-detector.roi[0] > detector.nb_pixel_y or detector.roi[3]-detector.roi[2] > detector.nb_pixel_x:
         print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
 
