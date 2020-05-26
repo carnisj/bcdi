@@ -8,7 +8,7 @@
 
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
-from scipy.linalg import svd
+import scipy
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('D:/myscripts/bcdi/')
@@ -1144,7 +1144,7 @@ def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
         eigenvalues, eigenvectors = np.linalg.eig(my_matrix)  # the number of eigenvalues is nb_arrays
     elif method == 'svd':  # Singular value decomposition
         my_matrix = np.reshape(array_stack, (nb_arrays, array_size))
-        eigenvectors, eigenvalues, vh = svd(my_matrix, compute_uv=True, full_matrices=False)  # scipy.linalg.svd
+        eigenvectors, eigenvalues, vh = scipy.linalg.svd(my_matrix, full_matrices=False, compute_uv=True)
         # my_matrix = eigenvectors x S x Vh, where S is a suitably shaped matrix of zeros with main diagonal s
         # The shapes are (M, K) for the eigenvectors and (K, N) for the unitary matrix Vh where K = min(M, N)
         # Here, M is the number of reconstructions nb_arrays, N is the size of a reconstruction array_size
@@ -1152,9 +1152,10 @@ def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
         raise ValueError('Incorrect value for parameter "method"')
 
     sort_indices = (-eigenvalues).argsort()  # returns the indices that would sort eigenvalues in descending order
+    print("\neigenvalues", eigenvalues)
     eigenvectors = eigenvectors[:, sort_indices]  # sort eigenvectors using sort_indices, same shape as my_matrix
 
-    for idx in range(nb_arrays):
+    for idx in range(len(sort_indices)):
         if eigenvectors[abs(eigenvectors[:, idx]).argmax(), idx].real < 0:
             eigenvectors[:, idx] *= -1
 
