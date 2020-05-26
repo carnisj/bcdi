@@ -65,7 +65,9 @@ center_fft = 'do_nothing'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
 # used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'
 ###########################
-normalize_flux = True  # will normalize the intensity by the default monitor.
+normalize_flux = 'skip'  # 'skip' for no normalization, 'monitor' to use the default monitor, 'sum_roi' to normalize by
+# the intensity summed in normalize_roi
+normalize_roi = []  # roi for the integration of intensity used as a monitor for data normalization
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
@@ -368,7 +370,7 @@ for scan_nb in range(len(scans)):
         center_fft = 'do_nothing'  # we assume that crop/pad/centering was already performed
         frames_logical = np.ones(data.shape[0])  # we assume that all frames will be used
         fix_size = []  # we assume that crop/pad/centering was already performed
-        normalize_flux = False  # we assume that normalization was already performed
+        normalize_flux = 'skip'  # we assume that normalization was already performed
         monitor = []  # we assume that normalization was already performed
         binning_comment = ''
         # binning along axis 0 is done after masking
@@ -474,7 +476,7 @@ for scan_nb in range(len(scans)):
     ##########################################
     # plot normalization by incident monitor #
     ##########################################
-    if normalize_flux:
+    if normalize_flux != 'skip':
         plt.ion()
         fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
                                 tuple_sum_axis=(0, 1), tuple_width_v=None,
