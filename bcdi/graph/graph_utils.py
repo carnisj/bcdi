@@ -92,10 +92,10 @@ def colorbar(mappable):
     return cbar
 
 
-def combined_plots(tuple_array, tuple_sum_frames, tuple_width_v, tuple_width_h, tuple_colorbar, tuple_vmin,
-                   tuple_vmax, tuple_title, tuple_scale, tuple_sum_axis=0, cmap=my_cmap, tick_direction='inout',
-                   tick_width=1, tick_length=3, pixel_spacing=np.nan, is_orthogonal=False, reciprocal_space=False,
-                   **kwargs):
+def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, tuple_scale, tuple_sum_axis=0,
+                   cmap=my_cmap, tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
+                   tuple_width_v=None, tuple_width_h=None, tuple_vmin=np.nan, tuple_vmax=np.nan, is_orthogonal=False,
+                   reciprocal_space=False, **kwargs):
     """
     Subplots of a 1D, 2D or 3D datasets using user-defined parameters.
 
