@@ -306,31 +306,36 @@ def sum_roi(array, roi, debugging=False):
      frame, the iteration being peformed over the first axis.
     :param roi: [Vstart, Vstop, Hstart, Hstop] region of interest for the sum
     :param debugging: True to see plots
-    :return: a 1D array of summed intensities, of lenght 1 (for 2D) of array.shape[0] (for 3D)
+    :return: a number (if array.ndim=2) or a 1D array of length array.shape[0] (if array.ndim=3) of summed intensities
     """
-
-    if array.ndim == 2:
-        array = array[np.newaxis, :]
-    elif array.ndim != 3:
+    ndim = array.ndim
+    if ndim == 2:
+        nby, nbx = array.shape
+    elif ndim == 3:
+        nbz, nby, nbx = array.shape
+    else:
         raise ValueError('array should be 2D or 3D')
-    nbz, nby, nbx = array.shape
 
     if not 0 <= roi[0] < roi[1] <= nby:
         raise ValueError('0 <= roi[0] < roi[1] <= nby   expected')
     if not 0 <= roi[2] < roi[3] <= nbx:
         raise ValueError('0 <= roi[2] < roi[3] <= nbx   expected')
 
-    sum_array = np.zeros(nbz)
-    for idx in range(nbz):
-        sum_array[idx] = array[idx, roi[0]:roi[1], roi[2]:roi[3]].sum()
+    if ndim == 2:
+        sum_array = array[roi[0]:roi[1], roi[2]:roi[3]].sum()
+    else:  # ndim = 3
+        sum_array = np.zeros(nbz)
+        for idx in range(nbz):
+            sum_array[idx] = array[idx, roi[0]:roi[1], roi[2]:roi[3]].sum()
+        array = array.sum(axis=0)
 
     if debugging:
-        val = array.sum(axis=0).max()
-        array[:, roi[0]:roi[1], roi[2]:roi[2]+3] = val
-        array[:, roi[0]:roi[1], roi[3]-3:roi[3]] = val
-        array[:, roi[0]:roi[0]+3, roi[2]:roi[3]] = val
-        array[:, roi[1]-3:roi[1], roi[2]:roi[3]] = val
-        gu.combined_plots(tuple_array=(array, sum_array), tuple_sum_frames=(True, False), tuple_sum_axis=0,
+        val = array.max()
+        array[roi[0]:roi[1], roi[2]:roi[2]+3] = val
+        array[roi[0]:roi[1], roi[3]-3:roi[3]] = val
+        array[roi[0]:roi[0]+3, roi[2]:roi[3]] = val
+        array[roi[1]-3:roi[1], roi[2]:roi[3]] = val
+        gu.combined_plots(tuple_array=(array, sum_array), tuple_sum_frames=False, tuple_sum_axis=0,
                           tuple_scale='log', tuple_title=('summed array', 'ROI integrated intensity'),
                           tuple_colorbar=True)
     return sum_array
