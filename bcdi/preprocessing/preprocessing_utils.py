@@ -1865,7 +1865,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
         if is_series:
             data[file_idx, :, :] = np.asarray(series_data).sum(axis=0)
             if normalize == 'sum_roi':
-                monitor[idx] = np.asarray(series_monitor).sum()
+                monitor[file_idx] = np.asarray(series_monitor).sum()
             sys.stdout.write('\rSeries: loading frame {:d}'.format(file_idx))
             sys.stdout.flush()
         else:
