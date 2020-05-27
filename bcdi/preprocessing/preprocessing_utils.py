@@ -436,13 +436,13 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
         if len(fix_bragg) != 3:
             raise ValueError('fix_bragg should be a list of 3 integers')
         z0, y0, x0 = fix_bragg
-        print("Bragg peak position defined by user on the full detector: ", z0, y0, x0)
+        print("Peak intensity position defined by user on the full detector: ", z0, y0, x0)
         y0 = (y0 - detector.roi[0]) / detector.binning[1]
         x0 = (x0 - detector.roi[2]) / detector.binning[2]
-        print("Bragg peak position after considering detector ROI and binning in detector plane: ", z0, y0, x0)
+        print("Peak intensity position after considering detector ROI and binning in detector plane: ", z0, y0, x0)
 
     iz0, iy0, ix0 = int(round(z0)), int(round(y0)), int(round(x0))
-    print('data at Bragg peak = ', data[iz0, iy0, ix0])
+    print('Data peak value = ', data[iz0, iy0, ix0])
 
     # Max symmetrical box around center of mass
     nbz, nby, nbx = np.shape(data)
