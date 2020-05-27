@@ -60,9 +60,9 @@ fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg] consid
 fix_size = []  # crop the array to predefined size considering the full detector,
 # leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop]. ROI will be defaulted to []
 ###########################
-center_fft = 'do_nothing'
+center_fft = 'skip'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
-# 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'do_nothing'
+# 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'skip'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
 # used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'
 ###########################
@@ -117,7 +117,7 @@ roi_detector = []
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
 # [Vstart, Vstop, Hstart, Hstop]
-# leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
+# leave it as [] to use the full detector. Use with center_fft='skip' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
@@ -287,7 +287,7 @@ except TypeError:  # a single number was provided, not a list
 
 if len(scans) > 1:
     if center_fft not in ['crop_asymmetric_ZYX', 'pad_Z', 'pad_asymmetric_ZYX']:
-        center_fft = 'do_nothing'
+        center_fft = 'skip'
         # avoid croping the detector plane XY while centering the Bragg peak
         # otherwise outputs may have a different size, which will be problematic for combining or comparing them
 if len(fix_size) != 0:
@@ -341,8 +341,8 @@ for scan_nb in range(len(scans)):
     if not fix_size:  # output_size not defined, default to actual size
         pass
     else:
-        print("'fix_size' parameter provided, defaulting 'center_fft' to 'do_nothing'")
-        center_fft = 'do_nothing'
+        print("'fix_size' parameter provided, defaulting 'center_fft' to 'skip'")
+        center_fft = 'skip'
 
     ####################################
     # Load data
@@ -366,7 +366,7 @@ for scan_nb in range(len(scans)):
             q_values = [reload_qvalues['qx'], reload_qvalues['qz'], reload_qvalues['qy']]
         except FileNotFoundError:
             q_values = []  # cannot orthogonalize since we do not know the original array size
-        center_fft = 'do_nothing'  # we assume that crop/pad/centering was already performed
+        center_fft = 'skip'  # we assume that crop/pad/centering was already performed
         frames_logical = np.ones(data.shape[0])  # we assume that all frames will be used
         fix_size = []  # we assume that crop/pad/centering was already performed
         normalize_flux = False  # we assume that normalization was already performed

@@ -366,7 +366,7 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
      - 'pad_asym_Z': keep detector size and pad the rocking angle without centering the Brag peak
      - 'pad_sym_ZYX': pad all dimensions based on 'pad_size', Brag peak centered
      - 'pad_asym_ZYX': pad all dimensions based on 'pad_size' without centering the Brag peak
-     - 'do_nothing': keep the full dataset or crop it to the size defined by fix_size
+     - 'skip': keep the full dataset or crop it to the size defined by fix_size
     :param kwargs:
      - 'fix_bragg' = user-defined position in pixels of the Bragg peak [z_bragg, y_bragg, x_bragg]
      - 'fix_size' = user defined output array size [zstart, zstop, ystart, ystop, xstart, xstop]
@@ -451,8 +451,8 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
     max_nx = abs(2 * min(ix0, nbx - ix0))
     print("Max symmetrical box (qx, qz, qy): ", max_nz, max_ny, max_nx)
     if max_nz == 0 or max_ny == 0 or max_nx == 0:
-        print('Empty images or presence of hotpixel at the border, defaulting fft_option to "do_nothing"!')
-        fft_option = 'do_nothing'
+        print('Empty images or presence of hotpixel at the border, defaulting fft_option to "skip"!')
+        fft_option = 'skip'
 
     # Crop/pad data to fulfill FFT size and user requirements
     if fft_option == 'crop_sym_ZYX':
@@ -707,7 +707,7 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
             qy = qy0 + np.arange(nx1) * dqy
             qz = qz0 + np.arange(ny1) * dqz
 
-    elif fft_option == 'do_nothing':
+    elif fft_option == 'skip':
         # keep the full dataset or use 'fix_size' parameter
         pad_width = np.zeros(6, dtype=int)  # do nothing or crop the data, starting_frame should be 0
         if len(fix_size) == 6:
