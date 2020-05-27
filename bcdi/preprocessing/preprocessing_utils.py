@@ -1807,6 +1807,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
 
     h5file = h5py.File(ccdfiletmp, 'r')
     nb_img = len(list(h5file['entry/data']))
+    print('Number of points :', nb_img)
     data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
@@ -1855,6 +1856,9 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
                     series_monitor.append(temp_mon)
                 ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
                 series_data.append(ccdraw)
+                if not is_series:
+                    sys.stdout.write('\rLoading frame {:d}'.format(idx))
+                    sys.stdout.flush()
                 idx = idx + 1
             except ValueError:  # reached the end of the series
                 break
@@ -1868,7 +1872,6 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
             data = np.asarray(series_data)
             if normalize == 'sum_roi':
                 monitor = np.asarray(series_monitor)
-            print('Loading P10 data')
             break
     print('')
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
