@@ -13,16 +13,12 @@ from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
-import xrayutilities as xu
 from scipy.interpolate import interp1d
 import gc
 import sys
-import os
 sys.path.append('D:/myscripts/bcdi/')
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
-import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.utilities as util
 
@@ -38,15 +34,15 @@ For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 scan = 22
 root_folder = 'D:/data/P10_August2019/data/'  # location of the .spec or log file
 sample_name = "gold_2_2_2_000"  # "SN"  #
-datadir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/'
+datadir = root_folder + sample_name + str(scan) + '/pynx/1000_2_debug/'
 comment = "_hotpixel"  # should start with _
-binning = (2, 2, 2)  # binning factor during phasing: axis0=downstream, axis1=vertical up, axis2=outboard
+binning = (1, 1, 1)  # binning factor used during phasing: axis0=downstream, axis1=vertical up, axis2=outboard
 # leave it to (1, 1, 1) if the binning factor is the same between the input data and the phasing output
-original_shape = (1000, 1000, 1000)  # shape of the array used during phasing, before an eventual crop of the result
+original_shape = (500, 500, 500)  # shape of the array used during phasing, before an eventual crop of the result
 ###########
 # options #
 ###########
-normalize_prtf = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
+normalize_prtf = False  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = False  # True to show more plots
 save = True  # True to save the prtf figure
 q_max = None  # in 1/nm, PRTF normalization using only points smaller than q_max. Leave it to None otherwise.
