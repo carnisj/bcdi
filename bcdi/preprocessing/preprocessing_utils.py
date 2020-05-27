@@ -1378,7 +1378,8 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
 
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
-                                                          background=background, debugging=debugging)
+                                                          background=background, normalize=normalize,
+                                                          debugging=debugging)
 
     print((rawdata < 0).sum(), ' negative data points set to 0')  # can happen when subtracting a background
     rawdata[rawdata < 0] = 0
@@ -1386,15 +1387,13 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     rawdata = beamstop_correction(data=rawdata, detector=detector, setup=setup, debugging=debugging)
 
     # normalize by the incident X-ray beam intensity
-    if normalize == 'monitor':
-        rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                             norm_to_min=True, debugging=debugging)
-    elif normalize == 'sum_roi':
-        monitor = util.sum_roi(array=rawdata, roi=detector.sum_roi, debugging=True)
-        rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                             norm_to_min=True, debugging=debugging)
-    else:
+    if normalize == 'skip':
         print('Skip intensity normalization')
+    else:
+        print('Intensity normalization using ' + normalize)
+        rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
+                                             norm_to_min=True, debugging=debugging)
+
     nbz, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
     if detector.roi[1] - detector.roi[0] > nby or detector.roi[3] - detector.roi[2] > nbx:
@@ -1425,7 +1424,7 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     return rawdata, rawmask, frames_logical, monitor
 
 
-def load_cristal_data(logfile, detector, flatfield, hotpixels, background, debugging=False):
+def load_cristal_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
     """
     Load CRISTAL data, apply filters and concatenate it for phasing. The address of dataset and monitor in the h5 file
      may have to be modified.
@@ -1435,6 +1434,9 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, debug
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
+    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
+     integrated intensity in the region of interest defined by detector.sum_roi
+     by the integrated intensity in a defined region of interest
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1448,6 +1450,10 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, debug
 
     nb_img = tmp_data.shape[0]
     data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+    if normalize == 'sum_roi':
+        monitor = np.zeros(nb_img)
+    else:
+        monitor = logfile['/' + group_key + '/scan_data/data_04'][:]
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
@@ -1458,6 +1464,8 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, debug
         else:
             raise ValueError('Detector ', detector.name, 'not supported for CRISTAL')
         ccdraw = flatfield * ccdraw
+        if normalize == 'sum_roi':
+            monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
         data[idx, :, :] = ccdraw
 
@@ -1468,8 +1476,6 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, debug
     data[np.isnan(data)] = 0
 
     frames_logical = np.ones(nb_img)
-
-    monitor = logfile['/' + group_key + '/scan_data/data_04'][:]
 
     return data, mask3d, monitor, frames_logical
 
@@ -1537,7 +1543,8 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
     return data, mask3d, custom_monitor, frames_logical
 
 
-def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None, debugging=False):
+def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
+              normalize='monitor', debugging=False):
     """
     Load data, apply filters and concatenate it for phasing.
 
@@ -1548,6 +1555,9 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
+    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
+     integrated intensity in the region of interest defined by detector.sum_roi
+     by the integrated intensity in a defined region of interest
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1582,20 +1592,21 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         data, mask3d, monitor, frames_logical = load_id01_data(logfile=logfile, scan_number=scan_number,
                                                                detector=detector, flatfield=flatfield,
                                                                hotpixels=hotpixels, background=background,
-                                                               debugging=debugging)
+                                                               normalize=normalize, debugging=debugging)
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
         data, mask3d, monitor, frames_logical = load_sixs_data(logfile=logfile, beamline=setup.beamline,
                                                                detector=detector, flatfield=flatfield,
                                                                hotpixels=hotpixels, background=background,
-                                                               debugging=debugging)
+                                                               normalize=normalize, debugging=debugging)
     elif setup.beamline == 'CRISTAL':
         data, mask3d, monitor, frames_logical = load_cristal_data(logfile=logfile, detector=detector,
                                                                   flatfield=flatfield, hotpixels=hotpixels,
-                                                                  background=background, debugging=debugging)
+                                                                  background=background, normalize=normalize,
+                                                                  debugging=debugging)
     elif setup.beamline == 'P10':
         data, mask3d, monitor, frames_logical = load_p10_data(logfile=logfile, detector=detector, flatfield=flatfield,
                                                               hotpixels=hotpixels, background=background,
-                                                              debugging=debugging)
+                                                              normalize=normalize, debugging=debugging)
     else:
         raise ValueError('Wrong value for "beamline" parameter')
 
@@ -1687,7 +1698,8 @@ def load_hotpixels(hotpixels_file):
     return hotpixels
 
 
-def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, background, debugging=False):
+def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, background, normalize='monitor',
+                   debugging=False):
     """
     Load ID01 data, apply filters and concatenate it for phasing.
 
@@ -1697,6 +1709,9 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
+    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
+     integrated intensity in the region of interest defined by detector.sum_roi
+     by the integrated intensity in a defined region of interest
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1723,6 +1738,18 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
 
     nb_img = len(ccdn)
     data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+    if normalize == 'sum_roi':
+        monitor = np.zeros(nb_img)
+    else:
+        try:
+            monitor = labels_data[labels.index('exp1'), :]  # mon2 monitor at ID01
+        except ValueError:
+            try:
+                monitor = labels_data[labels.index('mon2'), :]  # exp1 for old data at ID01
+            except ValueError:  # no monitor data
+                print('No available monitor data')
+                monitor = np.ones(nb_img)
+
     for idx in range(nb_img):
         i = int(ccdn[idx])
         e = fabio.open(ccdfiletmp % i)
@@ -1736,6 +1763,8 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
         else:
             raise ValueError('Detector ', detector.name, 'not supported for ID01')
         ccdraw = flatfield * ccdraw
+        if normalize == 'sum_roi':
+            monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
         data[idx, :, :] = ccdraw
 
@@ -1747,19 +1776,10 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
 
     frames_logical = np.ones(nb_img)
 
-    try:
-        monitor = labels_data[labels.index('exp1'), :]  # mon2 monitor at ID01
-    except ValueError:
-        try:
-            monitor = labels_data[labels.index('mon2'), :]  # exp1 for old data at ID01
-        except ValueError:  # no monitor data
-            print('No available monitor data')
-            monitor = np.ones(nb_img)
-
     return data, mask3d, monitor, frames_logical
 
 
-def load_p10_data(logfile, detector, flatfield, hotpixels, background, debugging=False):
+def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
     """
     Load P10 data, apply filters and concatenate it for phasing.
 
@@ -1768,6 +1788,9 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, debugging
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
+    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
+     integrated intensity in the region of interest defined by detector.sum_roi
+     by the integrated intensity in a defined region of interest
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1785,18 +1808,35 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, debugging
     h5file = h5py.File(ccdfiletmp, 'r')
     nb_img = len(list(h5file['entry/data']))
     data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+    if normalize == 'sum_roi':
+        monitor = np.zeros(nb_img)
+    else:
+        fio = open(logfile, 'r')
+        monitor = []
+        fio_lines = fio.readlines()
+        for line in fio_lines:
+            this_line = line.strip()
+            words = this_line.split()
+            if 'Col' in words and ('ipetra' in words or 'curpetra' in words):
+                # template = ' Col 6 ipetra DOUBLE\n' (2018) or ' Col 6 curpetra DOUBLE\n' (2019)
+                index_monitor = int(words[1]) - 1  # python index starts at 0
+            try:
+                float(words[0])  # if this does not fail, we are reading data
+                monitor.append(float(words[index_monitor]))
+            except ValueError:  # first word is not a number, skip this line
+                continue
+        fio.close()
+        monitor = np.asarray(monitor, dtype=float)
 
     is_series = detector.is_series
-
     for file_idx in range(nb_img):
-
         idx = 0
         series_data = []
+        series_monitor = []
         if is_series:
             data_path = 'data_' + str('{:06d}'.format(file_idx+1))
         else:
             data_path = 'data_000001'
-
         while True:
             try:
                 try:
@@ -1810,18 +1850,24 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, debugging
                 else:
                     raise ValueError('Detector ', detector.name, 'not supported for P10')
                 ccdraw = flatfield * ccdraw
+                if normalize == 'sum_roi':
+                    temp_mon = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
+                    series_monitor.append(temp_mon)
                 ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
                 series_data.append(ccdraw)
                 idx = idx + 1
             except ValueError:  # reached the end of the series
                 break
-
         if is_series:
             data[file_idx, :, :] = np.asarray(series_data).sum(axis=0)
+            if normalize == 'sum_roi':
+                monitor[idx] = np.asarray(series_monitor).sum()
             sys.stdout.write('\rSeries: loading frame {:d}'.format(file_idx))
             sys.stdout.flush()
         else:
             data = np.asarray(series_data)
+            if normalize == 'sum_roi':
+                monitor = np.asarray(series_monitor)
             print('Loading P10 data')
             break
     print('')
@@ -1832,28 +1878,11 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, debugging
     data[np.isnan(data)] = 0
 
     frames_logical = np.ones(nb_img)
-    fio = open(logfile, 'r')
 
-    monitor = []
-    fio_lines = fio.readlines()
-    for line in fio_lines:
-        this_line = line.strip()
-        words = this_line.split()
-        if 'Col' in words and ('ipetra' in words or 'curpetra' in words):
-            # template = ' Col 6 ipetra DOUBLE\n' (2018) or ' Col 6 curpetra DOUBLE\n' (2019)
-            index_monitor = int(words[1])-1  # python index starts at 0
-        try:
-            float(words[0])  # if this does not fail, we are reading data
-            monitor.append(float(words[index_monitor]))
-        except ValueError:  # first word is not a number, skip this line
-            continue
-
-    fio.close()
-    monitor = np.asarray(monitor, dtype=float)
     return data, mask3d, monitor, frames_logical
 
 
-def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background, debugging=False):
+def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
     """
     Load SIXS data, apply filters and concatenate it for phasing.
 
@@ -1863,6 +1892,9 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
+    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
+     integrated intensity in the region of interest defined by detector.sum_roi
+     by the integrated intensity in a defined region of interest
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1873,24 +1905,29 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
 
     if beamline == 'SIXS_2018':
         tmp_data = logfile.mfilm[:]
-        monitor = logfile.imon1[:]
     else:
         try:
             tmp_data = logfile.mpx_image[:]
-            monitor = logfile.imon0[:]
         except AttributeError:
             try:
                 tmp_data = logfile.maxpix[:]
-                monitor = logfile.imon0[:]
             except AttributeError:  # the alias dictionnary was probably not provided
                 tmp_data = logfile.image[:]
-                monitor = logfile.intensity[:]
 
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
     frames_logical = np.ones(tmp_data.shape[0])
     nb_img = tmp_data.shape[0]
     data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+    if normalize == 'sum_roi':
+        monitor = np.zeros(nb_img)
+    else:
+        if beamline == 'SIXS_2018':
+            monitor = logfile.imon1[:]
+        else:
+            try:
+                monitor = logfile.imon0[:]
+            except AttributeError:  # the alias dictionnary was probably not provided
+                monitor = logfile.intensity[:]
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
@@ -1901,6 +1938,8 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
         else:
             raise ValueError('Detector ', detector.name, 'not supported for SIXS')
         ccdraw = flatfield * ccdraw
+        if normalize == 'sum_roi':
+            monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
         data[idx, :, :] = ccdraw
 
