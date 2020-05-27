@@ -219,7 +219,7 @@ except NameError:  # is_series not declared
     pass
 
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
-                        binning=binning, **kwargs)
+                        sum_roi=normalize_roi, binning=binning, **kwargs)
 
 ####################
 # Initialize setup #
