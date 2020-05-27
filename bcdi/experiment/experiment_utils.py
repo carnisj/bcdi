@@ -566,7 +566,8 @@ class Detector(object):
     """
     Class to handle the configuration of the detector used for data acquisition.
     """
-    def __init__(self, name, datadir='', savedir='', template_imagefile='', roi=(), binning=(1, 1, 1), **kwargs):
+    def __init__(self, name, datadir='', savedir='', template_imagefile='', roi=(), sum_roi=(), binning=(1, 1, 1),
+                 **kwargs):
         """
         Initialize parameters of the detector.
 
@@ -579,6 +580,7 @@ class Detector(object):
          - Cristal: 'S%d.nxs'
          - P10: sample_name + str('{:05d}'.format(scans[scan_nb])) + '_data_%06d.h5'
         :param roi: region of interest in the detector, use [] to use the full detector
+        :param sum_roi: optional region of interest used for calculated an integrated intensity
         :param binning: binning of the 3D dataset (stacking dimension, detector vertical axis, detector horizontal axis)
         :param kwargs:
          - 'is_series' = boolean, True is the measurement is a series at P10 beamline
@@ -657,6 +659,13 @@ class Detector(object):
             self.roi = roi
         else:
             raise ValueError("Incorrect value for parameter 'roi'")
+
+        if len(sum_roi) == 0:
+            self.sum_roi = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+        elif len(sum_roi) == 4:
+            self.sum_roi = sum_roi
+        else:
+            raise ValueError("Incorrect value for parameter 'sum_roi'")
 
         self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
         self.pixelsize_y = self.pixelsize_y * binning[1]
