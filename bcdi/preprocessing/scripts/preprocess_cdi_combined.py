@@ -68,6 +68,7 @@ pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the a
 normalize_flux = 'skip'  # 'skip' for no normalization, 'monitor' to use the default monitor, 'sum_roi' to normalize by
 # the intensity summed in normalize_roi
 normalize_roi = []  # roi for the integration of intensity used as a monitor for data normalization
+# [Vstart, Vstop, Hstart, Hstop]
 ###########################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 ###########################
