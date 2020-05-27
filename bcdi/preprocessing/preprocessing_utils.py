@@ -19,6 +19,7 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
 from bcdi.utils import image_registration as reg
+import bcdi.utils.utilities as util
 
 
 def align_diffpattern(reference_data, data, mask=None, method='registration', combining_method='rgi'):
@@ -1024,8 +1025,8 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
                                                           debugging=debugging)
     # normalize by the incident X-ray beam intensity
     if normalize:
-        rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                                norm_to_min=True, debugging=debugging)
+        rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
+                                             norm_to_min=True, debugging=debugging)
 
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
@@ -1170,8 +1171,8 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
 
     # normalize by the incident X-ray beam intensity
     if normalize:
-        rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                                norm_to_min=True, debugging=debugging)
+        rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
+                                             norm_to_min=True, debugging=debugging)
 
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
@@ -1342,7 +1343,7 @@ def load_background(background_file):
 
 
 def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
-                  normalize=False, debugging=False, **kwargs):
+                  normalize='skip', debugging=False, **kwargs):
     """
     Load the forward CDI data, apply filters and optionally regrid it for phasing.
 
@@ -1354,7 +1355,8 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
-    :param normalize: set to True to normalize the diffracted intensity by the incident X-ray beam intensity
+    :param normalize: 'skip' to skip, 'monitor'  to normalize by the default monitor, 'sum_roi' to normalize
+     by the integrated intensity in a defined region of interest
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
@@ -1384,9 +1386,15 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     rawdata = beamstop_correction(data=rawdata, detector=detector, setup=setup, debugging=debugging)
 
     # normalize by the incident X-ray beam intensity
-    if normalize:
-        rawdata, monitor, _ = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                                norm_to_min=True, debugging=debugging)
+    if normalize == 'monitor':
+        rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
+                                             norm_to_min=True, debugging=debugging)
+    elif normalize == 'sum_roi':
+        monitor = util.sum_roi(array=rawdata, roi=detector.sum_roi, debugging=True)
+        rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
+                                             norm_to_min=True, debugging=debugging)
+    else:
+        print('Skip intensity normalization')
     nbz, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
     if detector.roi[1] - detector.roi[0] > nby or detector.roi[3] - detector.roi[2] > nbx:
@@ -1810,11 +1818,12 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, debugging
 
         if is_series:
             data[file_idx, :, :] = np.asarray(series_data).sum(axis=0)
+            sys.stdout.write('\rSeries: loading frame {:d}'.format(file_idx))
+            sys.stdout.flush()
         else:
             data = np.asarray(series_data)
+            print('Loading P10 data')
             break
-        sys.stdout.write('\rLoading frame {:d}'.format(file_idx))
-        sys.stdout.flush()
     print('')
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
@@ -2384,7 +2393,7 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
     return tilt, grazing, inplane, outofplane
 
 
-def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, debugging=False):
+def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=True, debugging=False):
     """
     Normalize array using the monitor values.
 
@@ -2392,7 +2401,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, deb
     :param raw_monitor: the monitor values
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param norm_to_min: normalize to min(monitor) instead of max(monitor)
+    :param norm_to_min: normalize to min(monitor) instead of max(monitor), avoid multiplying the noise
     :type norm_to_min: bool
     :param debugging: set to True to see plots
     :type debugging: bool
@@ -2401,17 +2410,21 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, deb
      - updated monitor
      - a title for plotting
     """
-    print('Data normalization by monitor')
+    if norm_to_min:
+        print('Data normalization by monitor.min()/monitor')
+    else:
+        print('Data normalization by monitor.max()/monitor')
+
     ndim = array.ndim
     if ndim != 3:
         raise ValueError('Array should be 3D')
 
     if debugging:
         gu.imshow_plot(array=array, sum_frames=True, sum_axis=1, vmin=0, scale='log', title='Data before normalization')
+        print('frames_logical: length=', frames_logical.shape, 'value=\n', frames_logical)
 
     # crop/pad monitor depending on frames_logical array
     monitor = np.zeros((frames_logical != 0).sum())
-    print('frames_logical: length=', frames_logical.shape, 'value=\n', frames_logical)
     nb_overlap = 0
     nb_padded = 0
     for idx in range(len(frames_logical)):
@@ -2429,11 +2442,9 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, deb
         print('Monitor value set to 1 for ', nb_padded, ' frames padded')
 
     if norm_to_min:
-        monitor = monitor.min() / monitor
-        title = 'monitor.min() / monitor'
+        monitor = monitor.min() / monitor  # will divide higher intensities
     else:  # norm to max
-        monitor = monitor / monitor.max()
-        title = 'monitor / monitor.max()'
+        monitor = monitor.max() / monitor  # will multiply lower intensities
 
     nbz = array.shape[0]
     if len(monitor) != nbz:
@@ -2443,7 +2454,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=False, deb
     for idx in range(nbz):
         array[idx, :, :] = array[idx, :, :] * monitor[idx]
 
-    return array, monitor, title
+    return array, monitor
 
 
 def primes(number):
