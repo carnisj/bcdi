@@ -1881,7 +1881,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
     data[np.isnan(data)] = 0
 
     frames_logical = np.ones(nb_img)
-
+    print('Monitor min max mean:', monitor.min(), monitor.max(), monitor.mean())
     return data, mask3d, monitor, frames_logical
 
 
