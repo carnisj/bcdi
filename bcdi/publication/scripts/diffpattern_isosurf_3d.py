@@ -15,7 +15,7 @@ from tkinter import filedialog
 from scipy.interpolate import RegularGridInterpolator
 import gc
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 # sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 
@@ -29,13 +29,13 @@ Note that qy values (axis 2) are opposite to the correct ones, because there is 
 The diffraction pattern is supposed to be in an orthonormal frame and q values need to be provided.
 """
 
-scan = 22    # spec scan number
-root_folder = "D:/data/P10_August2019/data/"
-sample_name = "gold_2_2_2_000"
-homedir = root_folder + sample_name + str(scan) + '/pynx/800_800_800_1_1_1/new_geometry/'
+scan = 58    # spec scan number
+root_folder = "D:/data/P10_March2020_CDI/data/"
+sample_name = "non_ht_pillar1"
+homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/'
 comment = ""
-binning = [2, 2, 2]  # binning for the measured diffraction pattern in each dimension
-tick_spacing = 0.1  # in 1/nm, spacing between ticks
+binning = [1, 1, 1]  # binning for the measured diffraction pattern in each dimension
+tick_spacing = 0.2  # in 1/nm, spacing between ticks
 threshold_isosurface = 4.5  # log scale
 ##########################
 # end of user parameters #
@@ -126,14 +126,17 @@ grid_qx, grid_qz, grid_qy = np.mgrid[-tick_spacing*half_labels:tick_spacing*half
 # for q: classical convention qx downstream, qz vertical and qy outboard
 myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=(1000, 1000))
 mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(newdata),
-               contours=[0.9*threshold_isosurface, threshold_isosurface, 1.1*threshold_isosurface, 1.2*threshold_isosurface],
+               contours=[0.5*threshold_isosurface, 0.6*threshold_isosurface, 0.7*threshold_isosurface, 0.8*threshold_isosurface, 0.9*threshold_isosurface, threshold_isosurface, 1.1*threshold_isosurface, 1.2*threshold_isosurface],
                opacity=0.2, colormap='hsv', vmin=3.5, vmax=5.5)  # , color=(0.7, 0.7, 0.7))
 
-mlab.view(azimuth=38, elevation=63, distance=3*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max())
+mlab.view(azimuth=38, elevation=63, distance=5*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max())
 # azimut is the rotation around z axis of mayavi (x)
 mlab.roll(0)
 
 ax = mlab.axes(line_width=2.0, nb_labels=2*half_labels+1)
+mlab.xlabel('Qx (1/nm)')
+mlab.ylabel('Qz (1/nm)')
+mlab.zlabel('-Qy (1/nm)')
 mlab.savefig(homedir + 'S' + str(scan) + '_labels.png', figure=myfig)
 ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
