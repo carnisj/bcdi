@@ -23,16 +23,16 @@ import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 
-scan = 22  # scan number as it appears in the folder name
+scan = 0  # scan number as it appears in the folder name
 sample_name = "gold_2_2_2"  # without _ at the end
 rootdir = "D:/data/P10_August2019/data/"
-image_nb = np.arange(1, 381+1)
+image_nb = 1  # np.arange(1, 381+1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 high_threshold = 9  # data points where log10(data) > high_threshold will be masked
 # if data is a series, the condition becomes log10(data.sum(axis=0)) > high_threshold
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
-is_scan = True  # set to True is the measurement is a scan or a time series, False for a single image
+is_scan = False  # set to True is the measurement is a scan or a time series, False for a single image
 compare_ends = True  # set to True to plot the difference between the last frame and the first frame
 save_mask = False  # True to save the mask as 'hotpixels.npz'
 ##########################
@@ -106,7 +106,7 @@ if is_scan:
     filename = 'S' + str(scan) + '_scan.png'
 else:  # single image
     plot_title = 'masked data'
-    filename = 'image_' + str(image_nb[idx]) + '.png'
+    filename = 'S' + str(scan) + '_image_' + str(image_nb[idx]) + '.png'
 
 sumdata, mask = pru.mask_eiger4m(data=sumdata, mask=mask)
 if save_mask:
