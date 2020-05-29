@@ -24,7 +24,7 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 174
+scan = 22
 root_folder = "D:/data/CH5309/"
 sample_name = "ht_align1"  # "S"
 save_mask = False  # set to True to save the mask
@@ -146,7 +146,7 @@ if data.ndim == 3 and fit_rockingcurve:
     interp_tilt = np.linspace(tilt.min(), tilt.max(), interp_points)
     interp_curve = interpolation(interp_tilt)
     interp_fwhm = len(np.argwhere(interp_curve >= interp_curve.max() / 2)) * \
-                  (tilt.max() - tilt.min()) / (interp_points - 1)
+                     (tilt.max() - tilt.min()) / (interp_points - 1)
     print('FWHM by interpolation', str('{:.3f}'.format(interp_fwhm)), 'deg')
 
     fig, (ax0, ax1) = plt.subplots(2, 1, sharex='col', figsize=(10, 5))
