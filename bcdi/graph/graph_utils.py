@@ -544,6 +544,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     :return:  fig, axis, plot instances
     """
     nb_dim = array.ndim
+    array = array.astype(float)
     plt.ion()
     fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
 
