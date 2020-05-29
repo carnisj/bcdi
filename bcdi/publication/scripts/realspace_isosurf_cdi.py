@@ -28,7 +28,7 @@ scan = 22    # spec scan number
 root_folder = "D:/data/P10_August2019/data/"
 sample_name = "gold_2_2_2"
 homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/1000_1000_1000_1_1_1/v1/'
-comment = ""
+comment = ""  # should start with _
 
 save_YZ = True  # True to save the modulus in YZ plane
 save_XZ = True  # True to save the modulus in XZ plane

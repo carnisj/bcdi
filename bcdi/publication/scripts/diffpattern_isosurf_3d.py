@@ -29,11 +29,11 @@ Note that qy values (axis 2) are opposite to the correct ones, because there is 
 The diffraction pattern is supposed to be in an orthonormal frame and q values need to be provided.
 """
 
-scan = 58    # spec scan number
+scan = 76    # spec scan number
 root_folder = "D:/data/P10_March2020_CDI/data/"
-sample_name = "non_ht_pillar1"
+sample_name = "non_ht_sphere_c"
 homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/'
-comment = ""
+comment = ""  # should start with _
 binning = [1, 1, 1]  # binning for the measured diffraction pattern in each dimension
 tick_spacing = 0.2  # in 1/nm, spacing between ticks
 threshold_isosurface = 4.5  # log scale
@@ -137,12 +137,12 @@ ax = mlab.axes(line_width=2.0, nb_labels=2*half_labels+1)
 mlab.xlabel('Qx (1/nm)')
 mlab.ylabel('Qz (1/nm)')
 mlab.zlabel('-Qy (1/nm)')
-mlab.savefig(homedir + 'S' + str(scan) + '_labels.png', figure=myfig)
+mlab.savefig(homedir + 'S' + str(scan) + comment + '_labels.png', figure=myfig)
 ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
-mlab.savefig(homedir + 'S' + str(scan) + '_axes.png', figure=myfig)
+mlab.savefig(homedir + 'S' + str(scan) + comment + '_axes.png', figure=myfig)
 ax.axes.x_axis_visibility = False
 ax.axes.y_axis_visibility = False
 ax.axes.z_axis_visibility = False
-mlab.savefig(homedir + 'S' + str(scan) + '.png', figure=myfig)
+mlab.savefig(homedir + 'S' + str(scan) + comment + '.png', figure=myfig)
 mlab.show()
