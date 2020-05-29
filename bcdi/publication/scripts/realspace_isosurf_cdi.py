@@ -26,8 +26,8 @@ Open a CDI reconstruction file and save individual figures including a length sc
 
 scan = 22    # spec scan number
 root_folder = "D:/data/P10_August2019/data/"
-sample_name = "gold_2_2_2_000"
-homedir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/'
+sample_name = "gold_2_2_2"
+homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/1000_1000_1000_1_1_1/v1/'
 comment = ""
 
 save_YZ = True  # True to save the modulus in YZ plane
@@ -45,6 +45,8 @@ field_of_view = [2000, 2000, 2000]  # [z,y,x] in nm, can be larger than the tota
 # therefore it is better to use an isotropic field_of_view
 threshold_isosurface = 0.4  # threshold for the 3D isosurface plot  #0.4 without ML
 threshold_modulus = 0.06  # threshold for 2D plots  # 0.06 without ML
+axis_outofplane = np.array([0.2, 1, 0.02])  # in order x y z for rotate_crystal(), axis to align on y vertical up
+axis_inplane = np.array([1, 0, -0.06])  # in order x y z for rotate_crystal(), axis to align on x downstream
 ##########################
 # end of user parameters #
 ##########################
@@ -87,11 +89,9 @@ numz, numy, numx = obj.shape
 
 print("Cropped/padded data size before rotating: (", numz, ',', numy, ',', numx, ')')
 print('Rotating object to have the crystallographic axes along array axes')
-axis_to_align = np.array([0.2, 1, 0.02])  # in order x y z for rotate_crystal()
-obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
+obj = pu.rotate_crystal(array=obj, axis_to_align=axis_outofplane, reference_axis=np.array([0, 1, 0]),
                         debugging=True)  # out of plane alignement
-axis_to_align = np.array([1, 0, -0.06])  # in order x y z for rotate_crystal()
-obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([1, 0, 0]),
+obj = pu.rotate_crystal(array=obj, axis_to_align=axis_inplane, reference_axis=np.array([1, 0, 0]),
                         debugging=True)  # inplane alignement
 
 #################################################
