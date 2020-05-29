@@ -26,7 +26,7 @@ import bcdi.preprocessing.preprocessing_utils as pru
 scan = 22  # scan number as it appears in the folder name
 sample_name = "gold_2_2_2"  # without _ at the end
 rootdir = "D:/data/P10_August2019/data/"
-image_nb = 1  # np.arange(1, 381+1)
+image_nb = np.arange(1, 381+1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 high_threshold = 9  # data points where log10(data) > high_threshold will be masked
@@ -79,7 +79,7 @@ for idx in range(nb_files):
     data = h5file['entry']['data']['data'][:]
     nbz, nby, nbx = data.shape
 
-    if compare_ends:
+    if compare_ends and nb_files == 1:
         data_start, _ = pru.mask_eiger4m(data=data[0, :, :], mask=mask)
         data_start[np.log10(data_start) > high_threshold] = 0
         data_start = data_start.astype(float)
