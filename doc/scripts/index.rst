@@ -162,10 +162,10 @@ extract_bulk_surface.py
    :end-before: """
    :language: rst
    
-isosurface_npz.py
-^^^^^^^^^^^^^^^^^
+amp_histogram.py
+^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/postprocessing/scripts/isosurface_npz.py
+.. literalinclude:: ../../bcdi/postprocessing/scripts/amp_histogram.py
    :start-after: helptext
    :end-before: """
    :language: rst
