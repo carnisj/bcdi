@@ -271,10 +271,10 @@ read_edf.py
    :end-before: """
    :language: rst
 
-readimage_P10.py
+read_data_P10.py
 ^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/readimage_P10.py
+.. literalinclude:: ../../bcdi/preprocessing/scripts/read_data_P10.py
    :start-after: helptext
    :end-before: """
    :language: rst
