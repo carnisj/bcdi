@@ -14,6 +14,7 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.graph.graph_utils as gu
 import bcdi.algorithms.algorithms_utils as au
+import bcdi.utils.utilities as util
 
 helptext = """
 Create a support from a reconstruction, using the indicated threshold.
@@ -101,7 +102,7 @@ root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the reconstruction",
                                        filetypes=[("HDF5", "*.h5"), ("NPZ", "*.npz"), ("CXI", "*.cxi")])
-data, _ = pu.load_reconstruction(file_path)
+data, _ = util.load_file(file_path)
 mask = np.zeros(data.shape)
 nz, ny, nx = data.shape
 data = np.roll(data, roll_modes, axis=(0, 1, 2))
