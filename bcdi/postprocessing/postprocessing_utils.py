@@ -409,9 +409,9 @@ def calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=None, width_y=
 
     if debugging:
         gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x,
-                            vmin=0, title='Input support')
-        gu.multislices_plot(mycoord, width_z=width_z, width_y=width_y, width_x=width_x,
-                            vmin=0, title='Coordination matrix')
+                            vmin=0, is_orthogonal=True, reciprocal_space=False, title='Input support')
+        gu.multislices_plot(mycoord, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                            vmin=0, is_orthogonal=True, reciprocal_space=False, title='Coordination matrix')
     return mycoord
 
 
