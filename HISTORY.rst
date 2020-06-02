@@ -1,3 +1,7 @@
+* Refactor: converted /postprocessing/scripts/extract_bulk_surface.py
+
+* Bug: treat correctly the case angle=pi/2 during the interpolation of CDI data onto the laboratory frame
+
 * Refactor: solve instabilities resulting from duplicate vertices after smoothing in facet_strain.py
 
 * Refactor: modify polarplot.py to use module functions instead of inline script
