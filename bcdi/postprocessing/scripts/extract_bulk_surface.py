@@ -17,7 +17,10 @@ import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-# TODO refactor
+Extract the surface voxel layer of an object recontructed by BCDI phase retrieval and plot histograms of the strain at
+the surface and in the remaining bulk.
+
+Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_strain.npz)
 """
 
 scan = 1301  # spec scan number
@@ -26,10 +29,10 @@ sample_name = "S"  # "S"
 datadir = root_folder + sample_name + str(scan) + "/pynxraw/"
 support_threshold = 0.30  # threshold applied to the modulus for determining the support
 normalize = False  # if True, will normalize the histograms to the respective number of points
-plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
-xlim = [-0.002, 0.002]  # limits used for the horizontal axis of histograms, leave None otherwise
+plot_scale = 'log'  # 'log' or 'linear', Y scale for the histograms
+xlim = None  # limits used for the horizontal axis of histograms, leave None otherwise
 ylim = None  # limits used for the vertical axis of histograms, leave None otherwise
-save_txt = False  # True to save the strain values for the surface, the bulk and the full support in txt files
+save_txt = True  # True to save the strain values for the surface, the bulk and the full support in txt files
 debug = True  # True to see more plots
 ##########################
 # end of user parameters #
