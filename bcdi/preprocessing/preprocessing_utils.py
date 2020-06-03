@@ -750,17 +750,23 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
 
 def check_cdi_angle(data, mask, cdi_angle, frames_logical):
     """
-    In forward CDI experiment, check if there is no overlap in the measurement angles, crop it otherwise.
+    In forward CDI experiment, check if there is no overlap in the measurement angles, crop it otherwise. Flip the
+    rotation direction to convert sample angles into detector angles.
      Update data, mask and frames_logical accordingly.
 
     :param data: 3D forward CDI dataset before gridding.
     :param mask: 3D mask
-    :param cdi_angle: array of measurement angles in degrees
+    :param cdi_angle: array of measurement sample angles in degrees
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :return: updated data, mask, cdi_angle, frames_logical
+    :return: updated data, mask, detector cdi_angle, frames_logical
     """
-    wrap_angle = wrap(obj=cdi_angle, start_angle=cdi_angle[0], range_angle=180)
+    # TODO: implement flip_angle to compensate the rotation of the Ewald sphere
+    # angular_step = cdi_angle[1]-cdi_angle[0]
+    # flip_angle = cdi_angle[0] - angular_step * np.arange(len(cdi_angle))  # flip the rotation axis in order to
+    # compensate the rotation of the Ewald sphere due to sample rotation
+    flip_angle = cdi_angle
+    wrap_angle = wrap(obj=flip_angle, start_angle=flip_angle[0], range_angle=180)
     for idx in range(len(wrap_angle)):
         duplicate = (wrap_angle[:idx] == wrap_angle[idx]).sum()  # will be different from 0 if duplicated
         frames_logical[idx] = frames_logical[idx] * (duplicate == 0)  # set frames_logical to 0 if duplicated angle
@@ -772,7 +778,8 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical):
         index_duplicated = np.where(frames_logical == 0)[0][0]
 
         # change the angle by a negligeable amount to still be able to use it for interpolation
-        cdi_angle[index_duplicated] = cdi_angle[index_duplicated] - 0.0001
+        flip_angle[index_duplicated] = flip_angle[index_duplicated] - 0.0001
+        # cdi_angle[index_duplicated] = cdi_angle[index_duplicated] - 0.0001
         print('shifting frame', index_duplicated, 'by 1/10000 degrees for interpolation')
 
         frames_logical[index_duplicated] = 1
@@ -781,8 +788,9 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical):
 
     data = data[np.nonzero(frames_logical)[0], :, :]
     mask = mask[np.nonzero(frames_logical)[0], :, :]
-    cdi_angle = cdi_angle[np.nonzero(frames_logical)]
-    return data, mask, cdi_angle, frames_logical
+    # cdi_angle = cdi_angle[np.nonzero(frames_logical)]
+    flip_angle = flip_angle[np.nonzero(frames_logical)]
+    return data, mask, flip_angle, frames_logical
 
 
 def check_pixels(data, mask, debugging=False):
@@ -1092,26 +1100,26 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         return q_values, rawdata, gridder.data, rawmask, mask, frames_logical, monitor
 
 
-def grid_cylindrical(array, rotation_angle, pivot, interp_angle, interp_radius):
+def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_radius):
     """
     Interpolate a 3D array in cylindrical coordinated (tomographic dataset) onto cartesian coordinates.
 
     :param array: 3D array of intensities measured in the detector frame
     :param rotation_angle: array, rotation angle values for the rocking scan
-    :param pivot: position in pixels of the rotation pivot in the direction perpendicular to the rotation axis
+    :param direct_beam: position in pixels of the rotation pivot in the direction perpendicular to the rotation axis
     :param interp_angle: 2D array, polar angles for the interpolation in a plane perpendicular to the rotation axis
     :param interp_radius: 2D array, polar radii for the interpolation in a plane perpendicular to the rotation axis
     :return: the 3D array interpolated onto the 3D cartesian grid
     """
     assert array.ndim == 3, 'a 3D array is expected'
-
+    # TODO: flip data when angles are decreasing (RGI needs a strictly increasing vector)
     _, nby, nbx = array.shape
     interp_size = interp_angle.size
     _, numx = interp_angle.shape  # data shape is (numx, numx) by construction
     interp_array = np.zeros((numx, nby, numx), dtype=array.dtype)
     for idx in range(nby):  # loop over 2D frames perpendicular to the rotation axis
         # position of the experimental data points
-        rgi = RegularGridInterpolator((rotation_angle * np.pi / 180, np.arange(-pivot, -pivot + nbx, 1)),
+        rgi = RegularGridInterpolator((rotation_angle * np.pi / 180, np.arange(-direct_beam, -direct_beam + nbx, 1)),
                                       array[:, idx, :], method='linear', bounds_error=False,
                                       fill_value=np.nan)
 
@@ -2755,7 +2763,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
     lambdaz = wavelength * distance
     directbeam_y = int((setup.direct_beam[0] - detector.roi[0]) / detector.binning[1])  # vertical
     directbeam_x = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
-    print('\nCorrected direct beam (y, x):', directbeam_y, directbeam_x)
+    print('\nDirect beam for the ROI and binning (y, x):', directbeam_y, directbeam_x)
 
     data, mask, cdi_angle, frames_logical = check_cdi_angle(data=data, mask=mask, cdi_angle=cdi_angle,
                                                             frames_logical=frames_logical)
@@ -2763,17 +2771,6 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
     nbz, nby, nbx = data.shape
     print('\nData shape after check_cdi_angle and before regridding:', nbz, nby, nbx)
     print('\nAngle range:', cdi_angle.min(), cdi_angle.max())
-    # angular_step = (cdi_angle[1] - cdi_angle[0]) * np.pi / 180  # switch to radians
-
-    if debugging:
-        # calculate and plot measured voxels in a cartesian 2D grid xz (z downstream x outboard y vertical up)
-        x_span = np.arange(-directbeam_x, -directbeam_x + nbx, 1)  # np.arange(-nbx // 2, nbx // 2, 1)
-        xstar_exp = - x_span[:, np.newaxis] * np.cos(cdi_angle[np.newaxis, :] * np.pi / 180)
-        # x along raws, angle along columns, X axis of the detector is opposite to x
-        zstar_exp = x_span[:, np.newaxis] * np.sin(cdi_angle[np.newaxis, :] * np.pi / 180)
-        _, ax = gu.scatter_plot(np.concatenate((xstar_exp.flatten()[:, np.newaxis],
-                                                zstar_exp.flatten()[:, np.newaxis]), axis=1),
-                                labels=('x', 'z'), markersize=1)
 
     # calculate the number of voxels available to accomodate the gridded data
     # directbeam_x and directbeam_y already are already taking into account the ROI and binning
@@ -2781,6 +2778,12 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
     # to the rotation axis. It will accomodate the full data range.
     numy = nby  # no change of the voxel numbers along the rotation axis
     print('\nData shape after regridding:', numx, numy, numx)
+
+    # update the direct beam position due to an eventual padding along X
+    if nbx-directbeam_x < directbeam_x:
+        pivot = directbeam_x
+    else:  # padding to the left along x, need to correct the pivot position
+        pivot = nbx - directbeam_x
 
     if not correct_curvature:
         dqx = 2 * np.pi / lambdaz * pixel_x  # in 1/nm, downstream, pixel_x is the binned pixel size
@@ -2796,18 +2799,21 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
               str('{:.6f}'.format(dqy)), ' (1/nm)')
 
         # find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis
-        interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=directbeam_x, offset_angle=cdi_angle[0],
+        interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=pivot, offset_angle=cdi_angle[0],
                                                       debugging=debugging)
 
-        interp_data = grid_cylindrical(array=data, rotation_angle=cdi_angle, pivot=directbeam_x,
+        interp_data = grid_cylindrical(array=data, rotation_angle=cdi_angle, direct_beam=directbeam_x,
                                        interp_angle=interp_angle, interp_radius=interp_radius)
 
-        interp_mask = grid_cylindrical(array=mask, rotation_angle=cdi_angle, pivot=directbeam_x,
+        interp_mask = grid_cylindrical(array=mask, rotation_angle=cdi_angle, direct_beam=directbeam_x,
                                        interp_angle=interp_angle, interp_radius=interp_radius)
 
         interp_mask[np.nonzero(interp_mask)] = 1
 
     else:
+        import sys
+        print('#TODO check this part')
+        sys.exit()
         from scipy.interpolate import griddata
         # calculate exact q values for each voxel of the 3D dataset
         old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
