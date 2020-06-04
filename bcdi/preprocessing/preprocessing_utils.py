@@ -309,30 +309,14 @@ def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
     interp_radius = np.multiply(sign_array, np.sqrt(x_interp ** 2 + z_interp ** 2))
 
     if debugging:
-        fig, ax, _ = \
-            gu.imshow_plot(interp_angle*180/np.pi, sum_frames=False, sum_axis=0, plot_colorbar=True,
-                           reciprocal_space=False, scale='linear', is_orthogonal=True,
-                           title='calculated polar angle for the 2D grid')
-        ax.set_xlabel('Qy (x_interp)')
-        ax.set_ylabel('Qx (z_interp)')
-        plt.draw()
+        gu.imshow_plot(interp_angle*180/np.pi, plot_colorbar=True, scale='linear',
+                       labels=('Qx (z_interp)', 'Qy (x_interp)'), title='calculated polar angle for the 2D grid')
 
-        fig, ax, _ = \
-            gu.imshow_plot(sign_array, sum_frames=False, sum_axis=0, plot_colorbar=True, reciprocal_space=False,
-                           title='sign_array', scale='linear',
-                           is_orthogonal=True)
-        ax.set_xlabel('Qy (x_interp)')
-        ax.set_ylabel('Qx (z_interp)')
-        plt.draw()
+        gu.imshow_plot(sign_array, plot_colorbar=True, scale='linear',
+                       labels=('Qx (z_interp)', 'Qy (x_interp)'), title='sign_array')
 
-        fig, ax, _ =  \
-            gu.imshow_plot(interp_radius, sum_frames=False, sum_axis=0, plot_colorbar=True, reciprocal_space=False,
-                           title='calculated polar radius for the 2D grid',
-                           scale='linear', is_orthogonal=True)
-        ax.set_xlabel('Qy (x_interp)')
-        ax.set_ylabel('Qx (z_interp)')
-        plt.draw()
-        plt.pause(0.1)
+        gu.imshow_plot(interp_radius, plot_colorbar=True, scale='linear', labels=('Qx (z_interp)', 'Qy (x_interp)'),
+                       title='calculated polar radius for the 2D grid')
     return interp_angle, interp_radius
 
 
@@ -774,9 +758,9 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
         index_duplicated = np.where(frames_logical == 0)[0][0]
         # change the angle by a negligeable amount to still be able to use it for interpolation
         if angular_step > 0:
-            detector_angle[index_duplicated] = detector_angle[index_duplicated] + 0.0001
-        else:
             detector_angle[index_duplicated] = detector_angle[index_duplicated] - 0.0001
+        else:
+            detector_angle[index_duplicated] = detector_angle[index_duplicated] + 0.0001
         print('RegularGridInterpolator cannot take dupicated values: shifting frame', index_duplicated,
               'by 1/10000 degrees for the interpolation')
 
