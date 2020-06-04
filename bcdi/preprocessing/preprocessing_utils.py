@@ -312,31 +312,25 @@ def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
         fig, ax, _ = \
             gu.imshow_plot(interp_angle*180/np.pi, sum_frames=False, sum_axis=0, plot_colorbar=True,
                            reciprocal_space=False, scale='linear', is_orthogonal=True,
-                           title='calculated polar angle for the 2D grid\n z_interp vertical, x_interp horizontal')
-        ax.invert_xaxis()
-        ax.set_xlabel('x_interp')
-        ax.invert_yaxis()
-        ax.set_ylabel('z_interp')
+                           title='calculated polar angle for the 2D grid')
+        ax.set_xlabel('Qy (x_interp)')
+        ax.set_ylabel('Qx (z_interp)')
         plt.draw()
 
         fig, ax, _ = \
             gu.imshow_plot(sign_array, sum_frames=False, sum_axis=0, plot_colorbar=True, reciprocal_space=False,
-                           title='sign_array\n z_interp vertical, x_interp horizontal', scale='linear',
+                           title='sign_array', scale='linear',
                            is_orthogonal=True)
-        ax.invert_xaxis()
-        ax.set_xlabel('x_interp')
-        ax.invert_yaxis()
-        ax.set_ylabel('z_interp')
+        ax.set_xlabel('Qy (x_interp)')
+        ax.set_ylabel('Qx (z_interp)')
         plt.draw()
 
         fig, ax, _ =  \
             gu.imshow_plot(interp_radius, sum_frames=False, sum_axis=0, plot_colorbar=True, reciprocal_space=False,
-                           title='calculated polar radius for the 2D grid\n z_interp vertical, x_interp horizontal',
+                           title='calculated polar radius for the 2D grid',
                            scale='linear', is_orthogonal=True)
-        ax.invert_xaxis()
-        ax.set_xlabel('x_interp')
-        ax.invert_yaxis()
-        ax.set_ylabel('z_interp')
+        ax.set_xlabel('Qy (x_interp)')
+        ax.set_ylabel('Qx (z_interp)')
         plt.draw()
         plt.pause(0.1)
     return interp_angle, interp_radius
@@ -748,7 +742,7 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
     return data, mask, pad_width, q_values, frames_logical
 
 
-def check_cdi_angle(data, mask, cdi_angle, frames_logical):
+def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     """
     In forward CDI experiment, check if there is no overlap in the measurement angles, crop it otherwise. Flip the
     rotation direction to convert sample angles into detector angles.
@@ -759,28 +753,32 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical):
     :param cdi_angle: array of measurement sample angles in degrees
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param debugging: True to have more printed comments
     :return: updated data, mask, detector cdi_angle, frames_logical
     """
-    # TODO: implement flip_angle to compensate the rotation of the Ewald sphere
-    # angular_step = cdi_angle[1]-cdi_angle[0]
-    # flip_angle = cdi_angle[0] - angular_step * np.arange(len(cdi_angle))  # flip the rotation axis in order to
+    angular_step = cdi_angle[1]-cdi_angle[0]
+    detector_angle = cdi_angle[0] - angular_step * np.arange(len(cdi_angle))  # flip the rotation axis in order to
     # compensate the rotation of the Ewald sphere due to sample rotation
-    flip_angle = cdi_angle
-    wrap_angle = wrap(obj=flip_angle, start_angle=flip_angle[0], range_angle=180)
+    print('Reverse the rotation direction to compensate the rotation of the Ewald sphere')
+
+    wrap_angle = wrap(obj=detector_angle, start_angle=detector_angle.min(), range_angle=180)
     for idx in range(len(wrap_angle)):
         duplicate = (wrap_angle[:idx] == wrap_angle[idx]).sum()  # will be different from 0 if duplicated
         frames_logical[idx] = frames_logical[idx] * (duplicate == 0)  # set frames_logical to 0 if duplicated angle
 
-    print('frames_logical after checking duplicated angles:\n', frames_logical)
+    if debugging:
+        print('frames_logical after checking duplicated angles:\n', frames_logical)
 
     # find first duplicated angle
     try:
         index_duplicated = np.where(frames_logical == 0)[0][0]
-
         # change the angle by a negligeable amount to still be able to use it for interpolation
-        flip_angle[index_duplicated] = flip_angle[index_duplicated] - 0.0001
-        # cdi_angle[index_duplicated] = cdi_angle[index_duplicated] - 0.0001
-        print('shifting frame', index_duplicated, 'by 1/10000 degrees for interpolation')
+        if angular_step > 0:
+            detector_angle[index_duplicated] = detector_angle[index_duplicated] + 0.0001
+        else:
+            detector_angle[index_duplicated] = detector_angle[index_duplicated] - 0.0001
+        print('RegularGridInterpolator cannot take dupicated values: shifting frame', index_duplicated,
+              'by 1/10000 degrees for the interpolation')
 
         frames_logical[index_duplicated] = 1
     except IndexError:  # no duplicated angle
@@ -788,9 +786,8 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical):
 
     data = data[np.nonzero(frames_logical)[0], :, :]
     mask = mask[np.nonzero(frames_logical)[0], :, :]
-    # cdi_angle = cdi_angle[np.nonzero(frames_logical)]
-    flip_angle = flip_angle[np.nonzero(frames_logical)]
-    return data, mask, flip_angle, frames_logical
+    detector_angle = detector_angle[np.nonzero(frames_logical)]
+    return data, mask, detector_angle, frames_logical
 
 
 def check_pixels(data, mask, debugging=False):
@@ -1112,7 +1109,13 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
     :return: the 3D array interpolated onto the 3D cartesian grid
     """
     assert array.ndim == 3, 'a 3D array is expected'
-    # TODO: flip data when angles are decreasing (RGI needs a strictly increasing vector)
+
+    rotation_step = rotation_angle[1]-rotation_angle[0]
+    if rotation_step < 0:
+        # flip rotation_angle and the data accordingly, RegularGridInterpolator takes only increasing position vectors
+        rotation_angle = np.flip(rotation_angle)
+        array = np.flip(array, axis=0)
+
     _, nby, nbx = array.shape
     interp_size = interp_angle.size
     _, numx = interp_angle.shape  # data shape is (numx, numx) by construction
@@ -2766,8 +2769,9 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
     print('\nDirect beam for the ROI and binning (y, x):', directbeam_y, directbeam_x)
 
     data, mask, cdi_angle, frames_logical = check_cdi_angle(data=data, mask=mask, cdi_angle=cdi_angle,
-                                                            frames_logical=frames_logical)
-    print('\ncdi_angle', cdi_angle)
+                                                            frames_logical=frames_logical, debugging=debugging)
+    if debugging:
+        print('\ncdi_angle', cdi_angle)
     nbz, nby, nbx = data.shape
     print('\nData shape after check_cdi_angle and before regridding:', nbz, nby, nbx)
     print('\nAngle range:', cdi_angle.min(), cdi_angle.max())
@@ -2799,7 +2803,7 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
               str('{:.6f}'.format(dqy)), ' (1/nm)')
 
         # find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis
-        interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=pivot, offset_angle=cdi_angle[0],
+        interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=pivot, offset_angle=cdi_angle.min(),
                                                       debugging=debugging)
 
         interp_data = grid_cylindrical(array=data, rotation_angle=cdi_angle, direct_beam=directbeam_x,
@@ -2812,8 +2816,9 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
 
     else:
         import sys
-        print('#TODO check this part')
+        print('#TODO check Ewald sphere curvature correction')
         sys.exit()
+        # TODO check Ewald sphere curvature correction
         from scipy.interpolate import griddata
         # calculate exact q values for each voxel of the 3D dataset
         old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
