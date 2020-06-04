@@ -518,7 +518,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
 
 
 def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None, plot_colorbar=False,
-                vmin=np.nan, vmax=np.nan, cmap=my_cmap, title='', scale='linear',
+                vmin=np.nan, vmax=np.nan, cmap=my_cmap, title='', labels=None, scale='linear',
                 tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
                 is_orthogonal=False, reciprocal_space=False):
     """
@@ -534,6 +534,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     :param vmax: higher boundary for the colorbar
     :param cmap: colormap to be used
     :param title: string to include in the plot
+    :param labels: tuple of two strings (vertical label, horizontal label)
     :param scale: 'linear' or 'log'
     :param tick_direction: 'out', 'in', 'inout'
     :param tick_width: width of tickes in plots
@@ -548,6 +549,10 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     plt.ion()
     fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
 
+    if labels is None:
+        labels = ('', '')
+    else:
+        assert len(labels) == 2, 'labels should be a tuple of two strings (vertical label, horizontal label)'
     if nb_dim == 3:
         if reciprocal_space:
             if is_orthogonal:
@@ -556,13 +561,15 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                     slice_names = (' sum along Qx', ' sum along Qz', ' sum along Qy')
                 else:
                     slice_names = (' QyQz', ' QyQx', ' QzQx')
-                ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
-                hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
+                ver_labels = (labels[0] + r" Q$_z$ ($1/\AA$)", labels[0] + r" Q$_x$ ($1/\AA$)",
+                              labels[0] + r" Q$_x$ ($1/\AA$)")
+                hor_labels = (labels[1] + r" Q$_y$ ($1/\AA$)", labels[1] + r" Q$_y$ ($1/\AA$)",
+                              labels[1] + r" Q$_z$ ($1/\AA$)")
             else:  # detector frame
                 invert_yaxis = False
                 slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
-                ver_labels = ('Y', 'rocking angle', 'rocking angle')
-                hor_labels = ('X', 'X', 'Y')
+                ver_labels = (labels[0] + ' Y', labels[0] + ' rocking angle', labels[0] + ' rocking angle')
+                hor_labels = (labels[1] + ' X', labels[1] + ' X', labels[1] + ' Y')
         else:
             if is_orthogonal:
                 invert_yaxis = True
@@ -570,13 +577,13 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                     slice_names = (' sum along z', ' sum along y', ' sum along x')
                 else:
                     slice_names = (' xy', ' xz', ' yz')
-                ver_labels = ('y', 'z', 'z')
-                hor_labels = ('x', 'x', 'y')
+                ver_labels = (labels[0] + ' y', labels[0] + ' z', labels[0] + ' z')
+                hor_labels = (labels[1] + ' x', labels[1] + ' x', labels[1] + ' y')
             else:  # detector frame
                 invert_yaxis = False
                 slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
-                ver_labels = ('Y', 'rocking angle', 'rocking angle')
-                hor_labels = ('X', 'X', 'Y')
+                ver_labels = (labels[0] + ' Y', labels[0] + ' rocking angle', labels[0] + ' rocking angle')
+                hor_labels = (labels[1] + ' X', labels[1] + ' X', labels[1] + ' Y')
 
         nbz, nby, nbx = array.shape
         if width_v is None:
@@ -622,7 +629,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
 
         dim_v = nby
         dim_h = nbx
-        slice_name, ver_label, hor_label = '', '', ''
+        slice_name, ver_label, hor_label = '', labels[0], labels[1]
 
     else:  # wrong array dimension
         print('imshow_plot() needs a 2D or 3D array')
@@ -677,7 +684,6 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                          length=tick_length, width=tick_width)
     if plot_colorbar:
         plt.colorbar(plot, ax=axis)
-    plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.5)
     plt.ioff()
     return fig, axis, plot
@@ -1407,7 +1413,7 @@ def scatter_plot(array, labels, markersize=4, markercolor='b', title=''):
         plt.title(title)
         ax.set_xlabel(labels[0])  # first dimension is x for scatter plots, but z for NEXUS convention
         ax.set_ylabel(labels[1])
-        plt.pause(0.1)
+        plt.pause(0.5)
     elif ndim == 3:
         ax = plt.subplot(111, projection='3d')
         ax.scatter(array[:, 0], array[:, 1], array[:, 2], s=markersize, color=markercolor)
