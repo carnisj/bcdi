@@ -1,3 +1,5 @@
+* Refactor: when gridding forward CDI data, reverse the rotation direction to compensate the rotation of Ewald sphere
+
 * Refactor: converted /postprocessing/scripts/extract_bulk_surface.py
 
 * Bug: treat correctly the case angle=pi/2 during the interpolation of CDI data onto the laboratory frame
