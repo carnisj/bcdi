@@ -1376,7 +1376,8 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
                                                           background=background, normalize=normalize,
                                                           debugging=debugging)
 
-    print((rawdata < 0).sum(), ' negative data points set to 0')  # can happen when subtracting a background
+    print((rawdata < 0).sum(), ' negative data points masked')  # can happen when subtracting a background
+    rawmask[rawdata < 0] = 1
     rawdata[rawdata < 0] = 0
 
     rawdata = beamstop_correction(data=rawdata, detector=detector, setup=setup, debugging=debugging)
@@ -3654,7 +3655,7 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
 
 
 def update_mask_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, flag_pause,
-                         points, xy, width, dim, click_dim, vmax, vmin=0, invert_yaxis=False):
+                         points, xy, width, dim, click_dim, info_text, vmax, vmin=0, invert_yaxis=False):
     """
     Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
 
@@ -3673,6 +3674,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     :param width: the half_width of the masking window
     :param dim: the axis currently under review (axis 0, 1 or 2)
     :param click_dim: the dimension (0, 1 or 2) here the selection of mask polygon vertices by clicking was performed
+    :param info_text: text instance in the figure
     :param vmax: the higher boundary for the colorbar
     :param vmin: the lower boundary for the colorbar
     :param invert_yaxis: True to invert the y axis of imshow plots
