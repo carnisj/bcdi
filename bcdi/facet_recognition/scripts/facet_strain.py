@@ -33,14 +33,14 @@ Input: a reconstruction .npz file with fields: 'amp' and 'strain'
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
 
-scan = 1  # spec scan number
-datadir = 'D:/data/PtRh/matlab_reconstructions/2019.11/ArCOO2(83x55x120)/'
-support_threshold = 0.52  # threshold for support determination
-voxel_size = [3.64, 5.53, 2.53]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
-upsampling_factor = 2  # integer, factor for upsampling the reconstruction in order to have a smoother surface
-savedir = datadir + "testisosurface_" + str(support_threshold) + " 3.64x5.53x2.53nm3/"
+scan = 1478  # spec scan number
+datadir = 'D:/data/SIXS_2019_Ni/S{:d}/pynxraw/'.format(scan)
+support_threshold = 0.45  # threshold for support determination
+voxel_size = [9.74, 9.74, 9.74]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+upsampling_factor = 1  # integer, factor for upsampling the reconstruction in order to have a smoother surface
+savedir = datadir
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
-projection_axis = 2  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
+projection_axis = 1  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
 smoothing_iterations = 15  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
 smooth_lamda = 0.33  # lambda parameter in Taubin smoothing
@@ -115,10 +115,10 @@ strain = npzfile['strain']
 # upsample data #
 #################
 if upsampling_factor > 1:
-    amp, voxel_size = fu.upsample(array=amp, upsampling_factor=upsampling_factor, voxelsizes=voxel_size,
-                                  debugging=debug)
-    strain, _ = fu.upsample(array=strain, upsampling_factor=upsampling_factor, voxelsizes=voxel_size,
-                            debugging=debug)
+    amp, _ = fu.upsample(array=amp, upsampling_factor=upsampling_factor, voxelsizes=voxel_size,
+                         title='modulus', debugging=debug)
+    strain, voxel_size = fu.upsample(array=strain, upsampling_factor=upsampling_factor, voxelsizes=voxel_size,
+                                     title='strain', debugging=debug)
     nz, ny, nx = amp.shape
     print("Upsampled data size: (", nz, ',', ny, ',', nx, ')')
     print("New voxel sizes: ", voxel_size)

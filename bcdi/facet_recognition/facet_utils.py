@@ -995,13 +995,14 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
                            '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
 
 
-def upsample(array, upsampling_factor, voxelsizes, debugging=False):
+def upsample(array, upsampling_factor, voxelsizes, title='', debugging=False):
     """
     Upsample array using a factor of upsampling.
 
     :param array: the real array to be upsampled
     :param upsampling_factor: int, the upsampling factor
     :param voxelsizes: list, the voxel sizes of array
+    :param title: title for the debugging plot
     :param debugging: True to see plots
     :return: the upsampled array
     """
@@ -1012,9 +1013,12 @@ def upsample(array, upsampling_factor, voxelsizes, debugging=False):
 
     if not isinstance(upsampling_factor, int):
         raise ValueError('upsampling_factor should be an integer')
-    if debugging:
-        gu.multislices_plot(array, sum_frames=False, title='Array before upsampling')
 
+    vmin, vmax = array.min(), array.max()
+
+    if debugging:
+        gu.multislices_plot(array, sum_frames=False, title=title+' before upsampling', vmin=vmin, vmax=vmax,
+                            scale='linear', plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
     nbz, nby, nbx = array.shape
     numz, numy, numx = nbz * upsampling_factor, nby * upsampling_factor, nbx * upsampling_factor
     newvoxelsizes = [voxsize/upsampling_factor for voxsize in voxelsizes]
@@ -1035,7 +1039,8 @@ def upsample(array, upsampling_factor, voxelsizes, debugging=False):
     obj = obj.reshape((numz, numy, numx)).astype(array.dtype)
 
     if debugging:
-        gu.multislices_plot(obj, sum_frames=False, title='Array after upsampling')
+        gu.multislices_plot(obj, sum_frames=False, title=title+' after upsampling', vmin=vmin, vmax=vmax,
+                            scale='linear', plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
 
     return obj, newvoxelsizes
 
