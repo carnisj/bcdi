@@ -554,8 +554,8 @@ def surface_indices(surface, plane_indices, margin=3):
 
 
 def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, projection_axis, min_distance=10,
-                       background_threshold=-1000, save_txt=False, cmap=default_cmap, planes_south={}, planes_north={},
-                       plot_planes=True, debugging=False):
+                       background_south=-1000, background_north=-1000, save_txt=False, cmap=default_cmap,
+                       planes_south={}, planes_north={}, plot_planes=True, debugging=False):
     """
     Detect facets in an object using a stereographic projection of normals to mesh triangles
      and watershed segmentation.
@@ -567,7 +567,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     :param voxel_size: tuple of three numbers corresponding to the real-space voxel size in each dimension
     :param projection_axis: the projection is performed on a plane perpendicular to that axis (0, 1 or 2)
     :param min_distance: min_distance of corner_peaks()
-    :param background_threshold: threshold for background determination (depth of the KDE)
+    :param background_south: threshold for background determination in the projection from South
+    :param background_north: threshold for background determination in the projection from North
     :param save_txt: if True, will save coordinates in a .txt file
     :param cmap: colormap used for plotting pole figures
     :param planes_south: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
@@ -672,11 +673,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     plt.pause(0.1)
 
     # identification of local minima
-    density_south[density_south > background_threshold] = 0  # define the background in the density of normals
+    density_south[density_south > background_south] = 0  # define the background in the density of normals
     mask_south = np.copy(density_south)
     mask_south[mask_south != 0] = 1
 
-    density_north[density_north > background_threshold] = 0  # define the background in the density of normals
+    density_north[density_north > background_north] = 0  # define the background in the density of normals
     mask_north = np.copy(density_north)
     mask_north[mask_north != 0] = 1
 

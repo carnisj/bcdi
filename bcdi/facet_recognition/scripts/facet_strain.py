@@ -56,7 +56,8 @@ corners_coord = 280  # coordination threshold for isolating corners, 260 seems t
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
-threshold_stereo = -1200  # threshold for defining the background in the density estimation of normals
+threshold_south = -1200  # background threshold in the stereographic projection from South of the density of normals
+threshold_north = -400  # background threshold in the stereographic projection from North of the density of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 #########################################################
 # parameters only used in the equirectangular projection #
@@ -162,10 +163,11 @@ if debug:
 nb_normals = normals.shape[0]
 if projection_method == 'stereographic':
     labels_top, labels_bottom, stereo_proj, remove_row =\
-        fu.stereographic_proj(normals=normals, intensity=intensity, background_threshold=threshold_stereo,
-                              min_distance=peak_min_distance, savedir=savedir, save_txt=False, plot_planes=True,
-                              planes_south=planes_south, planes_north=planes_north, max_angle=max_angle,
-                              voxel_size=voxel_size, projection_axis=projection_axis, debugging=debug)
+        fu.stereographic_proj(normals=normals, intensity=intensity, background_south=threshold_south,
+                              background_north=threshold_north, min_distance=peak_min_distance, savedir=savedir,
+                              save_txt=False, plot_planes=True, planes_south=planes_south, planes_north=planes_north,
+                              max_angle=max_angle, voxel_size=voxel_size, projection_axis=projection_axis,
+                              debugging=debug)
 
     # remove rows containing nan values
     normals = np.delete(normals, remove_row, axis=0)
