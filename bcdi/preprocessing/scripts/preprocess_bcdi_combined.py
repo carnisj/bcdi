@@ -648,7 +648,7 @@ for scan_nb in range(len(scans)):
         fig_mask.text(0.60, 0.40, "x to pause/resume polygon masking for pan/zoom", size=12)
         fig_mask.text(0.60, 0.35, "p plot mask ; r reset current points", size=12)
         fig_mask.text(0.60, 0.30, "m square mask ; b unmask ; right darker ; left brighter", size=12)
-        fig_mask.text(0.60, 0.35, "up larger masking box ; down smaller masking box", size=12)
+        fig_mask.text(0.60, 0.25, "up larger masking box ; down smaller masking box", size=12)
         fig_mask.text(0.60, 0.20, "a restart ; q quit", size=12)
         info_text = fig_mask.text(0.60, 0.05, "masking enabled", size=16)
         plt.tight_layout()
