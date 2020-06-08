@@ -3622,6 +3622,9 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
             updated_mask[ind] = 1
         xy = []  # allow to mask a different area
 
+    elif key == 'r':
+        xy = []
+
     elif key == 'x':
         if not flag_pause:
             flag_pause = True
@@ -3798,6 +3801,9 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
         xy = []  # allow to mask a different area
         click_dim = None
 
+    elif key == 'r':
+        xy = []
+
     elif key == 'x':
         if not flag_pause:
             flag_pause = True
@@ -3949,6 +3955,9 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
 
         updated_data[updated_mask == 1] = masked_color
         xy = []  # allow to mask a different area
+
+    elif key == 'r':
+        xy = []
 
     elif key == 'x':
         if not flag_pause:
