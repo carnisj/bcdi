@@ -3777,7 +3777,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
         ymin1, ymax1 = nbz - 0.5, -0.5  # pointing down
         xmin2, xmax2 = -0.5, nby - 0.5
         ymin2, ymax2 = nbz - 0.5, -0.5  # pointing down
-        if len(xy) != 0:
+        if not flag_pause and len(xy) != 0:
             xy.append(xy[0])
             print(xy)
             if click_dim == 0:
@@ -3835,9 +3835,15 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     axes[2].axis('scaled')
     axes[2].set_xlim([xmin2, xmax2])
     axes[2].set_ylim([ymin2, ymax2])
+    fig = plt.gcf()
+    info_text.remove()
+    if flag_pause:
+        info_text = fig.text(0.6, 0.05, 'masking paused', size=16)
+    else:
+        info_text = fig.text(0.6, 0.05, 'masking enabled', size=16)
     plt.draw()
 
-    return updated_data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking
+    return updated_data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking, info_text
 
 
 def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, flag_pause, points,

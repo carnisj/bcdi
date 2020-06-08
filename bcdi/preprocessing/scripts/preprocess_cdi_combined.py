@@ -40,13 +40,13 @@ data in:                                                       /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [54]  # list or array of scan numbers
-root_folder = "D:/data/P10_March2020_CDI/data/"
-sample_name = "ht_pillar1"  # "S"
-user_comment = ''  # string, should start with "_"
+scans = [22]  # list or array of scan numbers
+root_folder = "D:/data/P10_August2019/data/"  # "/nfs/fs/fscxi/experiments/2019/PETRA/P10/11007170/raw/"
+sample_name = "gold_2_2_2"  # "S"
+user_comment = '_test_flip'  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 4, 4]  # binning to apply to the data (stacking axis, detector vertical axis, detector horizontal axis)
-# if you want to grid the data in the orthonormal laboratory frame, leave the first value to 1
+binning = [1, 4, 4]  # binning that will be used for phasing
+# (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
@@ -107,9 +107,9 @@ specfile_name = sample_name + '_%05d'
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-direct_beam = (1255, 1161)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
+direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = [direct_beam[0] - 400, direct_beam[0] + 400, direct_beam[1] - 400, direct_beam[1] + 400]
+roi_detector = [direct_beam[0] - 200, direct_beam[0] + 200, direct_beam[1] - 200, direct_beam[1] + 200]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='skip' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
@@ -166,6 +166,8 @@ def on_click(event):
             print('Please select mask polygon vertices within the same subplot: restart masking...')
             xy = []
             previous_axis = None
+    else:
+        xy = []
     return
 
 
@@ -177,7 +179,7 @@ def press_key(event):
     :return: updated data, mask and controls
     """
     global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, detector_plane
+    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, detector_plane, info_text
 
     try:
         if event.inaxes == ax0:
@@ -219,13 +221,14 @@ def press_key(event):
                     click_dim = None
                     points = None
 
-                data, updated_mask, flag_pause, xy, width, max_colorbar, click_dim, stop_masking = \
+                data, updated_mask, flag_pause, xy, width, max_colorbar, click_dim, stop_masking, info_text = \
                     pru.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
                                              piy=int(np.rint(event.ydata)), original_data=original_data,
                                              original_mask=mask, updated_data=data, updated_mask=updated_mask,
                                              axes=(ax0, ax1, ax2, ax3), flag_pause=flag_pause, points=points,
-                                             xy=xy, width=width, dim=dim, click_dim=click_dim, vmin=0,
-                                             vmax=max_colorbar, invert_yaxis=invert_yaxis)
+                                             xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
+                                             vmin=0, vmax=max_colorbar, invert_yaxis=invert_yaxis)
+
                 if click_dim is None:
                     previous_axis = None
             else:
@@ -440,6 +443,7 @@ for scan_nb in range(len(scans)):
             fig_mask.text(0.60, 0.25, "up larger masking box ; down smaller masking box", size=12)
             fig_mask.text(0.60, 0.20, "m mask ; b unmask ; right darker ; left brighter", size=12)
             fig_mask.text(0.60, 0.15, "p plot mask ; a restart ; q quit", size=12)
+            info_text = fig_mask.text(0.60, 0.05, "masking enabled", size=16)
             plt.tight_layout()
             plt.connect('key_press_event', press_key)
             plt.connect('button_press_event', on_click)
@@ -668,6 +672,7 @@ for scan_nb in range(len(scans)):
         fig_mask.text(0.60, 0.25, "up larger masking box ; down smaller masking box", size=12)
         fig_mask.text(0.60, 0.20, "m mask ; b unmask ; right darker ; left brighter", size=12)
         fig_mask.text(0.60, 0.15, "p plot full masked data ; a restart ; q quit", size=12)
+        info_text = fig_mask.text(0.60, 0.05, "masking enabled", size=16)
         plt.tight_layout()
         plt.connect('key_press_event', press_key)
         plt.connect('button_press_event', on_click)
