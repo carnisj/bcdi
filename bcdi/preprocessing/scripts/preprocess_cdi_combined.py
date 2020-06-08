@@ -166,8 +166,6 @@ def on_click(event):
             print('Please select mask polygon vertices within the same subplot: restart masking...')
             xy = []
             previous_axis = None
-    else:
-        xy = []
     return
 
 
@@ -438,11 +436,12 @@ for scan_nb in range(len(scans)):
             ax0.set_title("XY")
             ax1.set_title("XZ")
             ax2.set_title("YZ")
-            fig_mask.text(0.60, 0.40, "click to select the vertices of a polygon mask", size=12)
-            fig_mask.text(0.60, 0.30, "x to pause/resume masking for pan/zoom", size=12)
-            fig_mask.text(0.60, 0.25, "up larger masking box ; down smaller masking box", size=12)
-            fig_mask.text(0.60, 0.20, "m mask ; b unmask ; right darker ; left brighter", size=12)
-            fig_mask.text(0.60, 0.15, "p plot mask ; a restart ; q quit", size=12)
+            fig_mask.text(0.60, 0.45, "click to select the vertices of a polygon mask", size=12)
+            fig_mask.text(0.60, 0.40, "x to pause/resume polygon masking for pan/zoom", size=12)
+            fig_mask.text(0.60, 0.35, "p plot mask ; r reset current points", size=12)
+            fig_mask.text(0.60, 0.30, "m square mask ; b unmask ; right darker ; left brighter", size=12)
+            fig_mask.text(0.60, 0.35, "up larger masking box ; down smaller masking box", size=12)
+            fig_mask.text(0.60, 0.20, "a restart ; q quit", size=12)
             info_text = fig_mask.text(0.60, 0.05, "masking enabled", size=16)
             plt.tight_layout()
             plt.connect('key_press_event', press_key)

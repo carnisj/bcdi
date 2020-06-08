@@ -158,8 +158,6 @@ def on_click(event):
     if not flag_pause:
         _x, _y = int(np.rint(event.xdata)), int(np.rint(event.ydata))
         xy.append([_x, _y])
-    else:
-        xy = []
     return
 
 
@@ -390,9 +388,9 @@ for scan_nb in range(len(scans)):
             fig_mask = plt.figure()
             fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
             plt.imshow(np.log10(abs(data.sum(axis=0))), vmin=0, vmax=max_colorbar)
-            plt.title('x to pause/resume masking for pan/zoom \n'
+            plt.title('x to pause/resume polygon masking; r reset current points\n'
                       'p plot mask ; a restart ; click to select vertices\n'
-                      "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                      "m square mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
                       "up larger ; down smaller ; right darker ; left brighter")
             plt.connect('key_press_event', press_key)
             plt.connect('button_press_event', on_click)

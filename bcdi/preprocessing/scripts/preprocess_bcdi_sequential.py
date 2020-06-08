@@ -185,8 +185,6 @@ def on_click(event):
     if not flag_pause:
         _x, _y = int(np.rint(event.xdata)), int(np.rint(event.ydata))
         xy.append([_x, _y])
-    else:
-        xy = []
     return
 
 
