@@ -3610,7 +3610,7 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
         else:  # dim=2
             xmin, xmax = -0.5, nby - 0.5
             ymin, ymax = nbz - 0.5, -0.5  # pointing down
-        if len(xy) != 0:
+        if not flag_pause and len(xy) != 0:
             xy.append(xy[0])
             print(xy)
             if dim == 0:
@@ -3941,7 +3941,7 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
             ymin, ymax = -0.5, nby - 0.5  # pointing up
         else:
             ymin, ymax = nby - 0.5, -0.5  # pointing down
-        if len(xy) != 0:
+        if not flag_pause and len(xy) != 0:
             xy.append(xy[0])
             print(xy)
             ind = Path(np.array(xy)).contains_points(points).reshape((nby, nbx))
