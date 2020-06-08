@@ -34,7 +34,8 @@ vertical_lines = [0.104, 0.144, 0.172, 0.208]  # plot vertical dashed lines at t
 threshold = 0  # data < threshold will be set to 0
 debug = False  # True to show more plots
 xlim = None  # limits used for the horizontal axis of the angular plot, leave None otherwise
-ylim = None  # limits used for the vertical axis of plots, leave None otherwise
+ylim = None  # limits used for the vertical axis of++ plots, leave None otherwise
+save_txt = True  # True to save q values and the average in .txt format
 ##########################
 # end of user parameters #
 ##########################
@@ -99,6 +100,20 @@ else:  # work with pixels, supposing that the data is in an orthonormal frame
 
 q_axis, y_mean_masked, y_median_masked = util.angular_avg(data=diff_pattern, q_values=(qx, qz, qy), origin=origin,
                                                           mask=mask, debugging=debug)
+#############
+# save data #
+#############
+np.savez_compressed(root_folder + 'q+angular_avg.npz', q=q_axis, avg=y_mean_masked, median=y_median_masked)
+if save_txt:
+    file = open(root_folder + 'q+angular_avg.txt', "w")
+    file.write('{:8s}'.format('q') + '\t' + '{:10s}'.format('avg') + '\n')
+    for idx in range(len(q_axis)):
+        file.write('{:8.6f}'.format(q_axis[idx]) + '\t' + '{:10.1f}'.format(y_mean_masked[idx]) + '\n')
+    file.close()
+
+#############
+# plot data #
+#############
 q_axvline = util.find_nearest(q_axis, vertical_lines)
 
 fig, ax0 = plt.subplots(1, 1)
