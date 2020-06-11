@@ -150,22 +150,6 @@ def beamstop_correction(data, detector, setup, debugging=False):
         print('no beam stop information for the X-ray energy of {:d}eV, defaulting to 8700 eV'.format(int(energy)))
         energy = 8700
 
-    directbeam_y = setup.direct_beam[0] - detector.roi[0]  # vertical
-    directbeam_x = setup.direct_beam[1] - detector.roi[2]  # horizontal
-
-    # at 8200eV, the transmission of 100um Si is 0.26273
-    # at 8700eV, the transmission of 100um Si is 0.32478
-    # at 10000eV, the transmission of 100um Si is 0.47337
-    if energy == 8200:
-        factor_large = 1 / 0.26273  # 5mm*5mm (100um thick) Si wafer
-        factor_small = 1 / 0.26273  # 3mm*3mm (100um thick) Si wafer
-    elif energy == 8700:
-        factor_large = 1 / 0.32478  # 5mm*5mm (100um thick) Si wafer
-        factor_small = 1 / 0.32478  # 3mm*3mm (100um thick) Si wafer
-    else:  # 10000 eV
-        factor_large = 2/0.47337  # 5mm*5mm (200um thick) Si wafer
-        factor_small = 3/0.47337   # 3mm*3mm (300um thick) Si wafer
-
     ndim = data.ndim
     if ndim == 3:
         pass
@@ -175,20 +159,46 @@ def beamstop_correction(data, detector, setup, debugging=False):
         raise ValueError('2D or 3D data expected')
     nbz, nby, nbx = data.shape
 
+    directbeam_y = setup.direct_beam[0] - detector.roi[0]  # vertical
+    directbeam_x = setup.direct_beam[1] - detector.roi[2]  # horizontal
+
+    # at 8200eV, the transmission of 100um Si is 0.26273
+    # at 8700eV, the transmission of 100um Si is 0.32478
+    # at 10000eV, the transmission of 100um Si is 0.47337
+    if energy == 8200:
+        factor_large = 1 / 0.26273  # 5mm*5mm (100um thick) Si wafer
+        factor_small = 1 / 0.26273  # 3mm*3mm (100um thick) Si wafer
+        pixels_large = [-33, 35, -31, 36]  # boundaries of the large wafer relative to the direct beam (V x H)
+        pixels_small = [-14, 14, -11, 16]  # boundaries of the small wafer relative to the direct beam (V x H)
+    elif energy == 8700:
+        factor_large = 1 / 0.32478  # 5mm*5mm (100um thick) Si wafer
+        factor_small = 1 / 0.32478  # 3mm*3mm (100um thick) Si wafer
+        pixels_large = [-33, 35, -31, 36]  # boundaries of the large wafer relative to the direct beam (V x H)
+        pixels_small = [-14, 14, -11, 16]  # boundaries of the small wafer relative to the direct beam (V x H)
+    else:  # 10000 eV
+        factor_large = 2/0.47337  # 5mm*5mm (200um thick) Si wafer
+        factor_small = 3/0.47337   # 3mm*3mm (300um thick) Si wafer
+        pixels_large = [-33, 35, -31, 36]  # boundaries of the large wafer relative to the direct beam (V x H)
+        pixels_small = [-14, 14, -11, 16]  # boundaries of the small wafer relative to the direct beam (V x H)
+
     # define boolean arrays for the large and the small square beam stops
     large_square = np.zeros((nby, nbx))
-    large_square[directbeam_y - 33:directbeam_y + 35, directbeam_x - 31:directbeam_x + 36] = 1
+    large_square[directbeam_y + pixels_large[0]:directbeam_y + pixels_large[1],
+                 directbeam_x + pixels_large[2]:directbeam_x + pixels_large[3]] = 1
     small_square = np.zeros((nby, nbx))
-    small_square[directbeam_y - 14:directbeam_y + 14, directbeam_x - 11:directbeam_x + 16] = 1
+    small_square[directbeam_y + pixels_small[0]:directbeam_y + pixels_small[1],
+                 directbeam_x + pixels_small[2]:directbeam_x + pixels_small[3]] = 1
 
     # define the boolean array for the border of the large square wafer (the border is 1 pixel wide)
     temp_array = np.zeros((nby, nbx))
-    temp_array[directbeam_y - 32:directbeam_y + 34, directbeam_x - 30:directbeam_x + 35] = 1
+    temp_array[directbeam_y + pixels_large[0] + 1:directbeam_y + pixels_large[1] - 1,
+               directbeam_x + pixels_large[2] + 1:directbeam_x + pixels_large[3] - 1] = 1
     large_border = large_square - temp_array
 
     # define the boolean array for the border of the small square wafer (the border is 1 pixel wide)
     temp_array = np.zeros((nby, nbx))
-    temp_array[directbeam_y - 13:directbeam_y + 13, directbeam_x - 10:directbeam_x + 15] = 1
+    temp_array[directbeam_y + pixels_small[0] + 1:directbeam_y + pixels_small[1] - 1,
+               directbeam_x + pixels_small[2] + 1:directbeam_x + pixels_small[3] - 1] = 1
     small_border = small_square - temp_array
 
     if debugging:
