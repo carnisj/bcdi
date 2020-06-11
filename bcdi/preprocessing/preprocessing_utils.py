@@ -181,12 +181,12 @@ def beamstop_correction(data, detector, setup, debugging=False):
     small_square = np.zeros((nby, nbx))
     small_square[directbeam_y - 14:directbeam_y + 14, directbeam_x - 11:directbeam_x + 16] = 1
 
-    # define the boolean array for the border of the large square
+    # define the boolean array for the border of the large square wafer (the border is 1 pixel wide)
     temp_array = np.zeros((nby, nbx))
     temp_array[directbeam_y - 32:directbeam_y + 34, directbeam_x - 30:directbeam_x + 35] = 1
     large_border = large_square - temp_array
 
-    # define the boolean array for the border of the small square
+    # define the boolean array for the border of the small square wafer (the border is 1 pixel wide)
     temp_array = np.zeros((nby, nbx))
     temp_array[directbeam_y - 13:directbeam_y + 13, directbeam_x - 10:directbeam_x + 15] = 1
     small_border = small_square - temp_array
@@ -213,27 +213,29 @@ def beamstop_correction(data, detector, setup, debugging=False):
         gu.imshow_plot(data, sum_frames=True, sum_axis=0, vmin=0, vmax=11, plot_colorbar=True, scale='log',
                        title='data after absorption correction', is_orthogonal=False, reciprocal_space=True)
 
-    # interpolation for the border of the large square beam stop
+    # interpolation for the border of the large square wafer
     indices = np.argwhere(large_border == 1)
-    data[np.nonzero(np.repeat(large_border[np.newaxis, :, :], nbz, axis=0))] = 0  # exclude large border points
-    for frame in range(nbz):
+    data[np.nonzero(np.repeat(large_border[np.newaxis, :, :], nbz, axis=0))] = 0  # exclude border points
+    for frame in range(nbz):  # loop over 2D images in the detector plane
         tempdata = data[frame, :, :]
         for idx in range(indices.shape[0]):
             pixrow = indices[idx, 0]
             pixcol = indices[idx, 1]
-            counter = 9 - large_border[pixrow-1:pixrow+2, pixcol-1:pixcol+2].sum()  # number of pixels not in the border
+            counter = 9 - large_border[pixrow-1:pixrow+2, pixcol-1:pixcol+2].sum()  # number of pixels in a 3x3 window
+            # which do not belong to the border
             tempdata[pixrow, pixcol] = tempdata[pixrow-1:pixrow+2, pixcol-1:pixcol+2].sum() / counter
         data[frame, :, :] = tempdata
 
-    # interpolation for the border of the large square beam stop
+    # interpolation for the border of the small square wafer
     indices = np.argwhere(small_border == 1)
-    data[np.nonzero(np.repeat(small_border[np.newaxis, :, :], nbz, axis=0))] = 0  # exclude large border points
-    for frame in range(nbz):
+    data[np.nonzero(np.repeat(small_border[np.newaxis, :, :], nbz, axis=0))] = 0  # exclude border points
+    for frame in range(nbz):  # loop over 2D images in the detector plane
         tempdata = data[frame, :, :]
         for idx in range(indices.shape[0]):
             pixrow = indices[idx, 0]
             pixcol = indices[idx, 1]
-            counter = 9 - small_border[pixrow-1:pixrow+2, pixcol-1:pixcol+2].sum()  # number of pixels not in the border
+            counter = 9 - small_border[pixrow-1:pixrow+2, pixcol-1:pixcol+2].sum()  # number of pixels in a 3x3 window
+            # which do not belong to the border
             tempdata[pixrow, pixcol] = tempdata[pixrow-1:pixrow+2, pixcol-1:pixcol+2].sum() / counter
         data[frame, :, :] = tempdata
 
