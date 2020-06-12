@@ -350,7 +350,6 @@ for scan_nb in range(len(scans)):
         detector.datadir = homedir + 'e4m/'
         imagefile = specfile + template_imagefile
         detector.template_imagefile = imagefile
-        print('The scan is composed of series:', is_series)
 
     if not use_rawdata:
         comment = comment + '_ortho'

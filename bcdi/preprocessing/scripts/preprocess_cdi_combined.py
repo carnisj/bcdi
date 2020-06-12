@@ -309,7 +309,6 @@ for scan_nb in range(len(scans)):
         detector.datadir = homedir + 'e4m/'
         imagefile = specfile + template_imagefile
         detector.template_imagefile = imagefile
-        print('The scan is composed of series:', is_series)
 
     print('\nScan', scans[scan_nb])
     print('Setup: ', setup.beamline)
