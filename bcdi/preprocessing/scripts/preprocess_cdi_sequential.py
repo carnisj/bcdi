@@ -311,6 +311,8 @@ for scan_nb in range(len(scans)):
         data = np.load(file_path)
         npz_key = data.files
         data = data[npz_key[0]]
+        nz, ny, nx = np.shape(data)
+
         file_path = filedialog.askopenfilename(initialdir=homedir, title="Select mask file",
                                                filetypes=[("NPZ", "*.npz")])
         mask = np.load(file_path)
@@ -330,6 +332,7 @@ for scan_nb in range(len(scans)):
         normalize_flux = 'skip'  # we assume that normalization was already performed
         monitor = []  # we assume that normalization was already performed
         binning_comment = ''
+        min_range = nx // 2  # maximum symmetrical range with defined data
         # binning along axis 0 is done after masking
         np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous' + comment, data=data)
         np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx_previous', mask=mask)
@@ -356,6 +359,10 @@ for scan_nb in range(len(scans)):
                                                                     normalize=normalize_flux, debugging=debug)
         nz, ny, nx = np.shape(data)
         print('\nRaw data shape:', nz, ny, nx)
+
+        dirbeam = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])  # updated horizontal direct beam
+        min_range = min(dirbeam, nx - dirbeam)  # maximum symmetrical range with defined data
+        print('\nMaximum symmetrical range with defined data:', min_range*2)
 
         if save_rawdata:
             np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack', data=data)
@@ -803,7 +810,7 @@ for scan_nb in range(len(scans)):
         ############################################################
         # this is to avoid having large masked areas near the corner of the area
         # which is a side effect of regridding the data from cylindrical coordinates
-        final_nxz = int(np.floor(nx / np.sqrt(2)))
+        final_nxz = int(np.floor(min_range*2 / np.sqrt(2)))
         if (final_nxz % 2) != 0:
             final_nxz = final_nxz - 1  # we want the number of pixels to be even
         data = data[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :, (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
