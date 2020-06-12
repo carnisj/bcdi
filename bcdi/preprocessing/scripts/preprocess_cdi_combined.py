@@ -406,7 +406,8 @@ for scan_nb in range(len(scans)):
 
         dirbeam = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])  # updated horizontal direct beam
         min_range = min(dirbeam, nx - dirbeam)  # maximum symmetrical range with defined data
-        print('\nMaximum symmetrical range with defined data:', min_range*2)
+        print('\nMaximum symmetrical range with defined data along detector horizontal direction:', min_range*2,
+              'pixels')
 
         if save_rawdata:
             np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack', data=data)
