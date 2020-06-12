@@ -439,7 +439,8 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
     max_nz = abs(2 * min(iz0, nbz - iz0))
     max_ny = 2 * min(iy0, nby - iy0)
     max_nx = abs(2 * min(ix0, nbx - ix0))
-    print("Max symmetrical box (qx, qz, qy): ", max_nz, max_ny, max_nx)
+    if fft_option != 'skip':
+        print("Max symmetrical box (qx, qz, qy): ", max_nz, max_ny, max_nx)
     if max_nz == 0 or max_ny == 0 or max_nx == 0:
         print('Empty images or presence of hotpixel at the border, defaulting fft_option to "skip"!')
         fft_option = 'skip'

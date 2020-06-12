@@ -462,7 +462,8 @@ for scan_nb in range(len(scans)):
     # crop/pad/center data #
     ########################
     nz, ny, nx = np.shape(data)
-    print('\nData shape before cropping / padding:', nz, ny, nx)
+    if center_fft != 'skip':
+        print('\nData shape before cropping / padding:', nz, ny, nx)
 
     data, mask, pad_width, q_vector, frames_logical = \
         pru.center_fft(data=data, mask=mask, frames_logical=frames_logical, centering=centering, detector=detector,
@@ -470,9 +471,10 @@ for scan_nb in range(len(scans)):
                        q_values=q_values)
 
     starting_frame = [pad_width[0], pad_width[2], pad_width[4]]  # no need to check padded frames
-    print('\nPad width:', pad_width)
     nz, ny, nx = data.shape
-    print('\nData size after cropping / padding:', nz, ny, nx)
+    if center_fft != 'skip':
+        print('\nPad width:', pad_width)
+        print('\nData size after cropping / padding:', nz, ny, nx)
 
     if mask_zero_event:
         # mask points when there is no intensity along the whole rocking curve - probably dead pixels
