@@ -176,10 +176,10 @@ def beamstop_correction(data, detector, setup, debugging=False):
         pixels_large = [-33, 35, -31, 36]  # boundaries of the large wafer relative to the direct beam (V x H)
         pixels_small = [-14, 14, -11, 16]  # boundaries of the small wafer relative to the direct beam (V x H)
     else:  # 10000 eV
-        factor_large = 2/0.47337  # 5mm*5mm (200um thick) Si wafer
-        factor_small = 3/0.47337   # 3mm*3mm (300um thick) Si wafer
-        pixels_large = [-33, 35, -31, 36]  # boundaries of the large wafer relative to the direct beam (V x H)
-        pixels_small = [-14, 14, -11, 16]  # boundaries of the small wafer relative to the direct beam (V x H)
+        factor_large = 2.1/0.47337  # 5mm*5mm (200um thick) Si wafer
+        factor_small = 4.5/0.47337   # 3mm*3mm (300um thick) Si wafer
+        pixels_large = [-36, 34, -34, 35]  # boundaries of the large wafer relative to the direct beam (V x H)
+        pixels_small = [-21, 21, -21, 21]  # boundaries of the small wafer relative to the direct beam (V x H)
 
     # define boolean arrays for the large and the small square beam stops
     large_square = np.zeros((nby, nbx))
