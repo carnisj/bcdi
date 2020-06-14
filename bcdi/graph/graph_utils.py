@@ -73,14 +73,16 @@ class Colormap(object):
         self.cmap.set_bad(color=bad_color)
 
 
-def colorbar(mappable):
+def colorbar(mappable, nbins=10):
     """
     Generate a colorbar whose height (or width) in sync with the master axes.
 
     :param mappable: the image where to put the colorbar
+    :param nbins: number of bins for the colorbar
     :return: the colorbar instance
     """
     from mpl_toolkits.axes_grid1 import make_axes_locatable
+    from matplotlib import ticker
     import matplotlib.pyplot as plt
     last_axes = plt.gca()
     ax = mappable.axes
@@ -88,6 +90,8 @@ def colorbar(mappable):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     cbar = fig.colorbar(mappable, cax=cax)
+    cbar.locator = ticker.MaxNLocator(nbins=nbins)
+    cbar.update_ticks()
     plt.sca(last_axes)
     return cbar
 
