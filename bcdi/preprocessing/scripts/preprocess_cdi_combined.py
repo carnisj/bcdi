@@ -243,7 +243,7 @@ def press_key(event):
 # check some parameters #
 #########################
 if not use_rawdata:
-    print('Defaulting binning along the stacking dimension to 1 for orthogonalized data')
+    print('use_rawdata=False: defaulting the binning factor along the stacking dimension to 1')
     binning[0] = 1
 
 #######################
