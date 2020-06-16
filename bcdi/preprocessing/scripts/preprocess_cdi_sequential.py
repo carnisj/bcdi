@@ -40,30 +40,16 @@ data in:                                                       /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [13]  # list or array of scan numbers
-root_folder = "D:/data/P10_August2019/data/"
-sample_name = "magnetite_A2_new"  # "S"
-user_comment = '_full_peak3'  # string, should start with "_"
+scans = [22]  # list or array of scan numbers
+root_folder = "D:/data/P10_August2019/data/"  # "/nfs/fs/fscxi/experiments/2019/PETRA/P10/11007170/raw/"
+sample_name = "gold_2_2_2"  # "S"
+user_comment = '_crap'  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 4, 4]  # binning to apply to the data (stacking axis, detector vertical axis, detector horizontal axis)
-# if you want to grid the data in the orthonormal laboratory frame, leave the first value to 1
+binning = [1, 4, 4]  # binning that will be used for phasing
+# (stacking dimension, detector vertical axis, detector horizontal axis)
 ###########################
 flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
-###########################
-centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
-#  It will be overridden by 'fix_bragg' if not empty
-fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg] considering the full detector
-# It is useful if hotpixels or intense aliens. Leave it [] otherwise.
-###########################
-fix_size = []  # [10, 170, 0, 512, 0, 480]  # crop the array to predefined size considering the full detector,
-# leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop]. ROI will be defaulted to []
-###########################
-center_fft = 'skip'
-# 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
-# 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'skip'
-pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
-# used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'
 ###########################
 normalize_flux = 'skip'  # 'skip' for no normalization, 'monitor' to use the default monitor, 'sum_roi' to normalize by
 # the intensity summed in normalize_roi
@@ -79,7 +65,7 @@ flag_medianfilter = 'skip'
 # set to 'skip' will skip filtering
 medfilt_order = 8    # for custom median filter, number of pixels with intensity surrounding the empty pixel
 ###########################
-reload_previous = True  # True to resume a previous masking (load data and mask)
+reload_previous = False  # True to resume a previous masking (load data and mask)
 ###########################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
@@ -109,9 +95,9 @@ specfile_name = sample_name + '_%05d'
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = [direct_beam[0] - 400, direct_beam[0] + 400, direct_beam[1] - 400, direct_beam[1] + 400]
+roi_detector = [direct_beam[0] - 200, direct_beam[0] + 200, direct_beam[1] - 200, direct_beam[1] + 200]
 # [Vstart, Vstop, Hstart, Hstop]
-# leave it as [] to use the full detector. Use with center_fft='skip' if you want this exact size.
+# leave it as [] to use the full detector.
 photon_threshold = 0  # data[data < photon_threshold] = 0
 photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon threshold should be applied
 # if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
@@ -240,14 +226,6 @@ plt.rcParams["keymap.quit"] = ["ctrl+w", "cmd+w"]  # this one to avoid that q cl
 ############################
 root = tk.Tk()
 root.withdraw()
-if len(scans) > 1:
-    if center_fft not in ['crop_asymmetric_ZYX', 'pad_Z', 'pad_asymmetric_ZYX']:
-        center_fft = 'skip'
-        # avoid croping the detector plane XY while centering the Bragg peak
-        # otherwise outputs may have a different size, which will be problematic for combining or comparing them
-if len(fix_size) != 0:
-    print('"fix_size" parameter provided, roi_detector will be set to []')
-    roi_detector = []
 
 for scan_nb in range(len(scans)):
     plt.ion()
@@ -294,12 +272,6 @@ for scan_nb in range(len(scans)):
         print('Output will be non orthogonal, in the detector frame')
         plot_title = ['YZ', 'XZ', 'XY']
 
-    if not fix_size:  # output_size not defined, default to actual size
-        pass
-    else:
-        print("'fix_size' parameter provided, defaulting 'center_fft' to 'skip'")
-        center_fft = 'skip'
-
     ####################################
     # Load data
     ####################################
@@ -325,9 +297,7 @@ for scan_nb in range(len(scans)):
             q_values = [reload_qvalues['qx'], reload_qvalues['qz'], reload_qvalues['qy']]
         except FileNotFoundError:
             q_values = []  # cannot orthogonalize since we do not know the original array size
-        center_fft = 'skip'  # we assume that crop/pad/centering was already performed
         frames_logical = np.ones(data.shape[0])  # we assume that all frames will be used
-        fix_size = []  # we assume that crop/pad/centering was already performed
         normalize_flux = 'skip'  # we assume that normalization was already performed
         monitor = []  # we assume that normalization was already performed
         binning_comment = ''
@@ -458,23 +428,7 @@ for scan_nb in range(len(scans)):
         plt.ioff()
         comment = comment + '_norm'
 
-    ########################
-    # crop/pad/center data #
-    ########################
     nz, ny, nx = np.shape(data)
-    if center_fft != 'skip':
-        print('\nData shape before cropping / padding:', nz, ny, nx)
-
-    data, mask, pad_width, q_vector, frames_logical = \
-        pru.center_fft(data=data, mask=mask, frames_logical=frames_logical, centering=centering, detector=detector,
-                       fft_option=center_fft, pad_size=pad_size, fix_bragg=fix_bragg, fix_size=fix_size,
-                       q_values=q_values)
-
-    starting_frame = [pad_width[0], pad_width[2], pad_width[4]]  # no need to check padded frames
-    nz, ny, nx = data.shape
-    if center_fft != 'skip':
-        print('\nPad width:', pad_width)
-        print('\nData size after cropping / padding:', nz, ny, nx)
 
     if mask_zero_event:
         # mask points when there is no intensity along the whole rocking curve - probably dead pixels
@@ -516,10 +470,10 @@ for scan_nb in range(len(scans)):
     ###############################################
     # save the orthogonalized diffraction pattern #
     ###############################################
-    if not use_rawdata and len(q_vector) != 0:
-        qx = q_vector[0]  # downstream
-        qz = q_vector[1]  # vertical up
-        qy = q_vector[2]  # outboard
+    if not use_rawdata and len(q_values) != 0:
+        qx = q_values[0]  # downstream
+        qz = q_values[1]  # vertical up
+        qy = q_values[2]  # outboard
 
         if save_to_vti:
             nqx, nqz, nqy = data.shape  # in nexus z downstream, y vertical / in q z vertical, x downstream
@@ -550,7 +504,7 @@ for scan_nb in range(len(scans)):
         fig_mask = plt.figure()
         fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
         axs = fig_mask.gca()
-        idx = starting_frame[0]
+        idx = 0
         original_data = np.copy(data)
         original_mask = np.copy(mask)
         plt.imshow(data[idx, :, :], vmin=0, vmax=max_colorbar)
@@ -569,7 +523,7 @@ for scan_nb in range(len(scans)):
         dim = 1
         fig_mask = plt.figure()
         fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
-        idx = starting_frame[1]
+        idx = 0
         original_data = np.copy(data)
         original_mask = np.copy(mask)
         plt.imshow(data[:, idx, :], vmin=0, vmax=max_colorbar)
@@ -586,7 +540,7 @@ for scan_nb in range(len(scans)):
         dim = 2
         fig_mask = plt.figure()
         fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
-        idx = starting_frame[2]
+        idx = 0
         original_data = np.copy(data)
         original_mask = np.copy(mask)
         plt.imshow(data[:, :, idx], vmin=0, vmax=max_colorbar)
@@ -732,7 +686,7 @@ for scan_nb in range(len(scans)):
     if flag_medianfilter == 'mask_isolated' or flag_medianfilter == 'interp_isolated':
         print("\nFiltering isolated pixels")
         nb_pix = 0
-        for idx in range(pad_width[0], nz-pad_width[1]):  # filter only frames whith data (not padded)
+        for idx in range(nz):  # filter only frames whith data (not padded)
             data[idx, :, :], numb_pix, mask[idx, :, :] = \
                 pru.mean_filter(data=data[idx, :, :], nb_neighbours=medfilt_order, mask=mask[idx, :, :],
                                 interpolate=flag_medianfilter, min_count=3, debugging=debug)
@@ -744,7 +698,7 @@ for scan_nb in range(len(scans)):
             print("\nTotal number of interpolated isolated pixels: ", nb_pix)
 
     elif flag_medianfilter == 'median':  # apply median filter
-        for idx in range(pad_width[0], nz-pad_width[1]):  # filter only frames whith data (not padded)
+        for idx in range(nz):  # filter only frames whith data (not padded)
             data[idx, :, :] = scipy.signal.medfilt2d(data[idx, :, :], [3, 3])
         print("\nApplying median filtering")
     else:
@@ -778,35 +732,35 @@ for scan_nb in range(len(scans)):
     if save_asint:
         data = data.astype(int)
 
-    ###################################
-    # plot the prepared data and mask #
-    ###################################
+    ####################
+    # debugging plots  #
+    ####################
+    if debug:
+        z0, y0, x0 = center_of_mass(data)
+        fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                                        title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+        plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
+        if not flag_interact:
+            plt.close(fig)
 
-    z0, y0, x0 = center_of_mass(data)
-    fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                    title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
-                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + binning_comment + '.png')
-    if not flag_interact:
-        plt.close(fig)
+        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+        plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
+        if not flag_interact:
+            plt.close(fig)
 
-    fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
-                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + binning_comment + '.png')
-    if not flag_interact:
-        plt.close(fig)
+        fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                        vmax=(nz, ny, nx), title='Mask', is_orthogonal=not use_rawdata,
+                                        reciprocal_space=True)
+        plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
+        if not flag_interact:
+            plt.close(fig)
 
-    fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                    vmax=(nz, ny, nx), title='Mask', is_orthogonal=not use_rawdata,
-                                    reciprocal_space=True)
-    plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                str(nx) + binning_comment + '.png')
-    if not flag_interact:
-        plt.close(fig)
-
-    if not use_rawdata and fit_datarange and len(q_vector) != 0:
+    if not use_rawdata and fit_datarange and len(q_values) != 0:
         ############################################################
         # select the largest cubic array fitting inside data range #
         ############################################################
@@ -830,7 +784,7 @@ for scan_nb in range(len(scans)):
         data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
         mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
-        if not use_rawdata and len(q_vector) != 0:
+        if not use_rawdata and len(q_values) != 0:
             # sample rotation around the vertical direction at P10: the effective binning in axis 0 was already
             # binning[2], and we bin by binning[0] again
             binning_comment = '_' + str(binning[2] * binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2])
@@ -860,7 +814,7 @@ for scan_nb in range(len(scans)):
     ############################
     # save final data and mask #
     ############################
-    if not use_rawdata and len(q_vector) != 0:
+    if not use_rawdata and len(q_values) != 0:
         np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment, qx=qx, qz=qz, qy=qy)
         if save_to_mat:
             savemat(savedir + 'S' + str(scans[scan_nb]) + '_qx.mat', {'qx': qx})
