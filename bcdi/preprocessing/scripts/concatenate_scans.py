@@ -39,6 +39,7 @@ output_shape = (1160, 1083, 1160)  # the output dataset will be cropped/padded t
 correlation_threshold = 0.95  # only scans having a correlation larger than this threshold will be combined
 reference_scan = 2  # index in scan_list of the scan to be used as the reference for the correlation calculation
 is_orthogonal = True  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
+plot_threshold = 5  # data below this will be set to 0, only in plots
 debug = False  # True or False
 ##################################
 # end of user-defined parameters #
@@ -156,6 +157,7 @@ np.savez_compressed(savedir+'pynx' + template + '.npz', obj=sumdata)
 np.savez_compressed(savedir+'maskpynx' + template + '.npz', obj=summask)
 print('Sum of ', len(combined_list), 'scans')
 
+sumdata[sumdata < plot_threshold] = 0
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True,
                                 title='sum(intensity)', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
 fig.text(0.50, 0.40, "Scans tested: " + str(scan_list), size=14)
