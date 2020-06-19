@@ -24,9 +24,10 @@ The alignment of diffraction patterns is based on the center of mass shift or df
 grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
-scan_list = np.arange(404, 407+1, 3)  # np.arange(404, 407+1, 3)  # list or array of scan numbers
-sample_name = 'dewet5_'
-comment = '_norm_181_512_480_1_1_1.npz'  # the end of the filename template after 'pynx'
+scan_list = [22, 32, 48, 55, 59, 71, 6, 15, 37,45]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
+sample_name = ['ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3',
+               'ht_pillar3_1', 'ht_pillar3_1', 'ht_pillar3_1', 'ht_pillar3_1']
+comment = '_ortho_norm_1134_1083_1134_2_2_2.npz'  # the end of the filename template after 'pynx'
 homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
 savedir = '/home/carnisj/phasing/'  # path of the folder to save data
 alignement_method = 'skip'  # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
@@ -58,7 +59,7 @@ else:
 ###########################
 plt.ion()
 print(scan_list)
-filename = sample_name + str('{:05d}').format(scan_list[reference_scan])
+filename = sample_name[reference_scan] + str('{:05d}').format(scan_list[reference_scan])
 print('Reference scan:', filename)
 refdata = np.load(homedir + filename + '/pynxraw/S' + str(scan_list[reference_scan]) + '_pynx' + comment)['data']
 nbz, nby, nbx = refdata.shape
@@ -73,7 +74,7 @@ corr_coeff = []  # list of correlation coeeficients
 scanlist = []  # list of scans with correlation coeeficient >= threshold
 
 for idx in range(nb_scan):
-    filename = sample_name + str('{:05d}').format(scan_list[idx])
+    filename = sample_name[idx] + str('{:05d}').format(scan_list[idx])
     print('\n Opening ', filename)
     data = np.load(homedir + filename + '/pynxraw/S'+str(scan_list[idx]) + '_pynx' + comment)['data']
     mask = np.load(homedir + filename + '/pynxraw/S'+str(scan_list[idx]) + '_maskpynx' + comment)['mask']
