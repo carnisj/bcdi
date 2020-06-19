@@ -17,36 +17,54 @@ import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-Align diffraction patterns using the center of mass or dft registration 
+Average several BCDI or CDI scans after an optional alignement step, based on a threshold on their Pearson correlation
+coefficient.
 
-and regular grid interpolator or subpixel shift. There are many artefacts
- 
-when using subpixel shift in reciprocal space.
-
-Average the scans if their correlation coefficient is larger than a threshold.
-
-The first scan in the list serves as reference.
+The alignment of diffraction patterns is based on the center of mass shift or dft registration, using Python regular
+grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
 scan_list = np.arange(404, 407+1, 3)  # np.arange(404, 407+1, 3)  # list or array of scan numbers
 sample_name = 'dewet5_'
 comment = '_norm_181_512_480_1_1_1.npz'  # the end of the filename template after 'pynx'
-homedir = "D:/data/Pt_growth/data/"
-method = 'registration'  # method to find the offset, 'center_of_mass' or 'registration'
+homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
+alignement_method = 'skip'  # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
 combining_method = 'subpixel'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
 output_shape = (140, 512, 350)  # the output dataset will be cropped/padded to this shape
-correlation_threshold = 0.95
+correlation_threshold = 0.95  # only scans having a correlation larger than this threshold will be combined
+reference_scan = None  # index in scan_list of the scan to be used as the reference for the correlation calculation
 debug = False  # True or False
 ##################################
 # end of user-defined parameters #
 ##################################
 
+#########################
+# check some parameters #
+#########################
+if reference_scan is None:
+    reference_scan = 0
+
+if type(sample_name) is list:
+    assert len(sample_name) == len(scan_list), 'sample_name and scan_list should have the same length'
+elif type(sample_name) is str:
+    sample_name = [sample_name for idx in range(len(scan_list))]
+else:
+    print('sample_name should be either a string or a list of strings')
+    sys.exit()
+
+###########################
+# load the reference scan #
+###########################
 plt.ion()
 print(scan_list)
-filename = sample_name + str('{:05d}').format(scan_list[0])
-refdata = np.load(homedir + filename + '/pynxraw/S' + str(scan_list[0]) + '_pynx' + comment)['data']
+filename = sample_name + str('{:05d}').format(scan_list[reference_scan])
+print('Reference scan:', filename)
+refdata = np.load(homedir + filename + '/pynxraw/S' + str(scan_list[reference_scan]) + '_pynx' + comment)['data']
 nbz, nby, nbx = refdata.shape
 
+###########################
+# combine the other scans #
+###########################
 nb_scan = len(scan_list)
 sumdata = np.zeros(refdata.shape)
 summask = np.zeros(refdata.shape)
@@ -70,18 +88,19 @@ for idx in range(nb_scan):
     ##################
     # align datasets #
     ##################
-    data, mask = pru.align_diffpattern(reference_data=refdata, data=data, mask=mask, method=method,
-                                       combining_method=combining_method)
-    data[data < 0.5] = 0  # remove interpolated noisy pixels
+    if alignement_method is not 'skip':
+        data, mask = pru.align_diffpattern(reference_data=refdata, data=data, mask=mask, method=alignement_method,
+                                           combining_method=combining_method)
+        data[data < 0.5] = 0  # remove interpolated noisy pixels
 
-    if debug:
-        gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
-                            title='S' + str(scan_list[idx]) + '\n Data after shift', vmin=0,
-                            reciprocal_space=True, is_orthogonal=False)
+        if debug:
+            gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
+                                title='S' + str(scan_list[idx]) + '\n Data after shift', vmin=0,
+                                reciprocal_space=True, is_orthogonal=False)
 
-        gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True,
-                            title='S' + str(scan_list[idx]) + '\n Mask after shift', vmin=0,
-                            reciprocal_space=True, is_orthogonal=False)
+            gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True,
+                                title='S' + str(scan_list[idx]) + '\n Mask after shift', vmin=0,
+                                reciprocal_space=True, is_orthogonal=False)
 
     correlation = pearsonr(np.ndarray.flatten(abs(refdata)), np.ndarray.flatten(abs(data)))[0]
     print('Rocking curve ', idx+1, ': Pearson correlation coefficient = ', str('{:.2f}'.format(correlation)))
