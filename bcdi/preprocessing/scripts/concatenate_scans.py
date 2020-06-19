@@ -87,6 +87,10 @@ else:
         print('Incorrect value for the parameter corr_roi')
         sys.exit()
 
+gu.multislices_plot(refdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
+                    sum_frames=True, scale='log', plot_colorbar=True, title='corr_roi', vmin=0, reciprocal_space=True,
+                    is_orthogonal=is_orthogonal)
+
 ###########################
 # combine the other scans #
 ###########################
@@ -159,7 +163,7 @@ print('Sum of ', len(combined_list), 'scans')
 
 sumdata[sumdata < plot_threshold] = 0
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True,
-                                title='sum(intensity)', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
+                                title='Combined intensity', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
 fig.text(0.50, 0.40, "Scans tested: " + str(scan_list), size=14)
 fig.text(0.50, 0.35, 'Scans concatenated: ' + str(combined_list), size=14)
 fig.text(0.50, 0.30, "Correlation coefficients: " + str(corr_coeff), size=14)
@@ -168,7 +172,7 @@ plt.pause(0.1)
 plt.savefig(savedir + 'data' + template + '.png')
 
 gu.multislices_plot(summask, sum_frames=True, scale='linear', plot_colorbar=True,
-                    title='sum(mask)', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
+                    title='Combined mask', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
 plt.savefig(savedir + 'mask' + template + '.png')
 plt.ioff()
 plt.show()
