@@ -94,13 +94,15 @@ gu.multislices_plot(refdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], co
 ###########################
 # combine the other scans #
 ###########################
-combined_list = [scan_list[reference_scan]]  # list of scans with correlation coeeficient >= threshold
-corr_coeff = [1]  # list of correlation coefficients
+combined_list = []  # list of scans with correlation coeeficient >= threshold
+corr_coeff = []  # list of correlation coefficients
 sumdata = np.copy(refdata)  # refdata must not be modified
 summask = refmask  # refmask is not used elsewhere
 
 for idx in range(len(scan_list)):
     if idx == reference_scan:
+        combined_list.append(scan_list[idx])
+        corr_coeff.append(1.0)
         continue  # sumdata and summask were already initialized with the reference scan
     samplename = sample_name[idx] + '_' + str('{:05d}').format(scan_list[idx])
     print('\n Opening ', samplename)
@@ -165,9 +167,10 @@ sumdata[sumdata < plot_threshold] = 0
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True,
                                 title='Combined intensity', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
 fig.text(0.50, 0.40, "Scans tested: " + str(scan_list), size=14)
-fig.text(0.50, 0.35, 'Scans concatenated: ' + str(combined_list), size=14)
-fig.text(0.50, 0.30, "Correlation coefficients: " + str(corr_coeff), size=14)
-fig.text(0.50, 0.25, "Threshold for correlation: " + str(correlation_threshold), size=14)
+fig.text(0.50, 0.35, "Correlation coefficients: " + str(corr_coeff), size=14)
+fig.text(0.50, 0.30, "Threshold for correlation: " + str(correlation_threshold), size=14)
+fig.text(0.50, 0.25, 'Scans concatenated: ' + str(combined_list), size=14)
+
 plt.pause(0.1)
 plt.savefig(savedir + 'data' + template + '.png')
 
