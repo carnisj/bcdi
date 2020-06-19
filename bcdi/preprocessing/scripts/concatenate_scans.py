@@ -32,9 +32,12 @@ homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent fol
 savedir = '/home/carnisj/phasing/'  # path of the folder to save data
 alignement_method = 'skip'  # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
 combining_method = 'subpixel'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
+corr_roi = [350, 600, 575, 800, 600, 900]  # region of interest where to calculate the correlation between scans.
+# If None, it will use the full
+# array. [zstart, zstop, ystart, ystop, xstart, xstop]
 output_shape = (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
 correlation_threshold = 0.95  # only scans having a correlation larger than this threshold will be combined
-reference_scan = None  # index in scan_list of the scan to be used as the reference for the correlation calculation
+reference_scan = 2  # index in scan_list of the scan to be used as the reference for the correlation calculation
 is_orthogonal = True  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
 debug = False  # True or False
 ##################################
@@ -70,7 +73,18 @@ refdata = np.load(homedir + samplename + parent_folder +
                   'S' + str(scan_list[reference_scan]) + '_pynx' + comment)['data']
 refmask = np.load(homedir + samplename + parent_folder +
                   'S' + str(scan_list[reference_scan]) + '_maskpynx' + comment)['mask']
+assert refdata.ndim == 3 and refmask.ndim == 3, 'data and mask should be 3D arrays'
 nbz, nby, nbx = refdata.shape
+
+if corr_roi is None:
+    corr_roi = [0, nbz, 0, nby, 0, nbx]
+else:
+    assert len(corr_roi) == 6, 'corr_roi should be a tuple or list of lenght 6'
+    if not 0 <= corr_roi[0] < corr_roi[1] <= nbz\
+            or not 0 <= corr_roi[2] < corr_roi[3] <= nby\
+            or not 0 <= corr_roi[4] < corr_roi[5] <= nbx:
+        print('Incorrect value for the parameter corr_roi')
+        sys.exit()
 
 ###########################
 # combine the other scans #
@@ -115,7 +129,9 @@ for idx in range(len(scan_list)):
                                 title='S' + str(scan_list[idx]) + '\n Mask after shift', vmin=0,
                                 reciprocal_space=True, is_orthogonal=is_orthogonal)
 
-    correlation = pearsonr(np.ndarray.flatten(abs(refdata)), np.ndarray.flatten(abs(data)))[0]
+    correlation = pearsonr(
+        np.ndarray.flatten(abs(refdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]])),
+        np.ndarray.flatten(abs(data[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]])))[0]
     print('Rocking curve ', idx+1, ': Pearson correlation coefficient = ', str('{:.2f}'.format(correlation)))
     corr_coeff.append(str('{:.2f}'.format(correlation)))
 
