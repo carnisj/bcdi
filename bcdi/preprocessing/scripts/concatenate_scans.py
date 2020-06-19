@@ -77,11 +77,12 @@ nbz, nby, nbx = refdata.shape
 ###########################
 combined_list = [scan_list[reference_scan]]  # list of scans with correlation coeeficient >= threshold
 corr_coeff = [1]  # list of correlation coefficients
-scan_list.pop(reference_scan)
 sumdata = np.copy(refdata)  # refdata must not be modified
 summask = refmask  # refmask is not used elsewhere
 
-for idx in scan_list:
+for idx in range(len(scan_list)):
+    if idx == reference_scan:
+        continue  # sumdata and summask were already initialized with the reference scan
     samplename = sample_name[idx] + '_' + str('{:05d}').format(scan_list[idx])
     print('\n Opening ', samplename)
     data = np.load(homedir + samplename + parent_folder +
