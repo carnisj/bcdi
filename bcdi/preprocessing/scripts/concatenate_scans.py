@@ -35,6 +35,7 @@ combining_method = 'subpixel'  # 'rgi' for RegularGridInterpolator or 'subpixel'
 output_shape = (140, 512, 350)  # the output dataset will be cropped/padded to this shape
 correlation_threshold = 0.95  # only scans having a correlation larger than this threshold will be combined
 reference_scan = None  # index in scan_list of the scan to be used as the reference for the correlation calculation
+is_orthogonal = True  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
 debug = False  # True or False
 ##################################
 # end of user-defined parameters #
@@ -53,15 +54,20 @@ elif type(sample_name) is str:
 else:
     print('sample_name should be either a string or a list of strings')
     sys.exit()
+if is_orthogonal:
+    parent_folder = '/pynx/'
+else:
+    parent_folder = '/pynxraw/'
 
 ###########################
 # load the reference scan #
 ###########################
 plt.ion()
 print(scan_list)
-filename = sample_name[reference_scan] + str('{:05d}').format(scan_list[reference_scan])
-print('Reference scan:', filename)
-refdata = np.load(homedir + filename + '/pynxraw/S' + str(scan_list[reference_scan]) + '_pynx' + comment)['data']
+samplename = sample_name[reference_scan] + '_' + str('{:05d}').format(scan_list[reference_scan])
+print('Reference scan:', samplename)
+refdata = np.load(homedir + samplename + parent_folder +
+                  'S' + str(scan_list[reference_scan]) + '_pynx' + comment)['data']
 nbz, nby, nbx = refdata.shape
 
 ###########################
@@ -74,19 +80,21 @@ corr_coeff = []  # list of correlation coeeficients
 scanlist = []  # list of scans with correlation coeeficient >= threshold
 
 for idx in range(nb_scan):
-    filename = sample_name[idx] + str('{:05d}').format(scan_list[idx])
-    print('\n Opening ', filename)
-    data = np.load(homedir + filename + '/pynxraw/S'+str(scan_list[idx]) + '_pynx' + comment)['data']
-    mask = np.load(homedir + filename + '/pynxraw/S'+str(scan_list[idx]) + '_maskpynx' + comment)['mask']
+    samplename = sample_name[idx] + '_' + str('{:05d}').format(scan_list[idx])
+    print('\n Opening ', samplename)
+    data = np.load(homedir + samplename + parent_folder +
+                   'S' + str(scan_list[idx]) + '_pynx' + comment)['data']
+    mask = np.load(homedir + samplename + parent_folder +
+                   'S' + str(scan_list[idx]) + '_maskpynx' + comment)['mask']
 
     if debug:
         gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Data before shift', vmin=0,
-                            reciprocal_space=True, is_orthogonal=False)
+                            reciprocal_space=True, is_orthogonal=is_orthogonal)
 
         gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True,
                             title='S' + str(scan_list[idx]) + '\n Mask before shift', vmin=0,
-                            reciprocal_space=True, is_orthogonal=False)
+                            reciprocal_space=True, is_orthogonal=is_orthogonal)
     ##################
     # align datasets #
     ##################
@@ -98,11 +106,11 @@ for idx in range(nb_scan):
         if debug:
             gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
                                 title='S' + str(scan_list[idx]) + '\n Data after shift', vmin=0,
-                                reciprocal_space=True, is_orthogonal=False)
+                                reciprocal_space=True, is_orthogonal=is_orthogonal)
 
             gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True,
                                 title='S' + str(scan_list[idx]) + '\n Mask after shift', vmin=0,
-                                reciprocal_space=True, is_orthogonal=False)
+                                reciprocal_space=True, is_orthogonal=is_orthogonal)
 
     correlation = pearsonr(np.ndarray.flatten(abs(refdata)), np.ndarray.flatten(abs(data)))[0]
     print('Rocking curve ', idx+1, ': Pearson correlation coefficient = ', str('{:.2f}'.format(correlation)))
@@ -130,7 +138,7 @@ np.savez_compressed(savedir+'maskpynx' + template, obj=summask)
 print('Sum of ', len(scanlist), 'scans')
 
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True,
-                                title='sum(intensity)', vmin=0, reciprocal_space=True, is_orthogonal=False)
+                                title='sum(intensity)', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
 fig.text(0.50, 0.40, "Scans tested: " + str(scan_list), size=14)
 fig.text(0.50, 0.35, 'Scans concatenated: ' + str(scanlist), size=14)
 fig.text(0.50, 0.30, "Correlation coefficients: " + str(corr_coeff), size=14)
@@ -139,7 +147,7 @@ plt.pause(0.1)
 plt.savefig(savedir + 'sum_S' + str(scan_list[0]) + '_to_S' + str(scan_list[-1]) + '.png')
 
 gu.multislices_plot(summask, sum_frames=True, scale='linear', plot_colorbar=True,
-                    title='sum(mask)', vmin=0, reciprocal_space=True, is_orthogonal=False)
+                    title='sum(mask)', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
 plt.savefig(savedir + 'sum_mask_S' + str(scan_list[0]) + '_to_S' + str(scan_list[-1]) + '.png')
 plt.ioff()
 plt.show()
