@@ -28,6 +28,7 @@ scan_list = np.arange(404, 407+1, 3)  # np.arange(404, 407+1, 3)  # list or arra
 sample_name = 'dewet5_'
 comment = '_norm_181_512_480_1_1_1.npz'  # the end of the filename template after 'pynx'
 homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
+savedir = '/home/carnisj/phasing/'  # path of the folder to save data
 alignement_method = 'skip'  # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
 combining_method = 'subpixel'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
 output_shape = (140, 512, 350)  # the output dataset will be cropped/padded to this shape
@@ -119,7 +120,6 @@ sumdata = sumdata / len(scanlist)
 summask = pu.crop_pad(array=summask, output_shape=output_shape)
 sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape)
 
-savedir = homedir + sample_name + 'sum_S' + str(scanlist[0]) + '_to_S' + str(scanlist[-1])+'/'
 template = '_S'+str(scanlist[0]) + '_to_S' + str(scanlist[-1]) + '_' +\
            str(output_shape[0]) + '_' + str(output_shape[1]) + '_' + str(output_shape[2]) + '.npz'
 
