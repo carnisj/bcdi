@@ -138,7 +138,7 @@ for idx in range(len(scan_list)):
         np.ndarray.flatten(abs(refdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]])),
         np.ndarray.flatten(abs(data[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]])))[0]
     print('Rocking curve ', idx+1, ': Pearson correlation coefficient = ', str('{:.2f}'.format(correlation)))
-    corr_coeff.append(str('{:.2f}'.format(correlation)))
+    corr_coeff.append(round(correlation, 2))
 
     if correlation >= correlation_threshold:
         combined_list.append(scan_list[idx])
