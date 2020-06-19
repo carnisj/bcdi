@@ -32,11 +32,11 @@ homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent fol
 savedir = '/home/carnisj/phasing/'  # path of the folder to save data
 alignement_method = 'skip'  # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
 combining_method = 'subpixel'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
-corr_roi = [350, 600, 575, 800, 600, 900]  # region of interest where to calculate the correlation between scans.
+corr_roi = [420, 520, 660, 760, 600, 700]  # region of interest where to calculate the correlation between scans.
 # If None, it will use the full
 # array. [zstart, zstop, ystart, ystop, xstart, xstop]
 output_shape = (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
-correlation_threshold = 0.95  # only scans having a correlation larger than this threshold will be combined
+correlation_threshold = 0.50  # only scans having a correlation larger than this threshold will be combined
 reference_scan = 2  # index in scan_list of the scan to be used as the reference for the correlation calculation
 is_orthogonal = True  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
 plot_threshold = 5  # data below this will be set to 0, only in plots
@@ -161,7 +161,7 @@ template = ''.join("_S%s" % ''.join(str(val)) for val in combined_list) +\
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 np.savez_compressed(savedir+'pynx' + template + '.npz', obj=sumdata)
 np.savez_compressed(savedir+'maskpynx' + template + '.npz', obj=summask)
-print('Sum of ', len(combined_list), 'scans')
+print('\nSum of ', len(combined_list), 'scans')
 
 gu.multislices_plot(sumdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
                     sum_frames=True, scale='log', plot_colorbar=True, title='sumdata in corr_roi', vmin=0,
@@ -181,5 +181,8 @@ plt.savefig(savedir + 'data' + template + '.png')
 gu.multislices_plot(summask, sum_frames=True, scale='linear', plot_colorbar=True,
                     title='Combined mask', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
 plt.savefig(savedir + 'mask' + template + '.png')
+
+print('\nEnd of script')
+
 plt.ioff()
 plt.show()
