@@ -24,15 +24,15 @@ The alignment of diffraction patterns is based on the center of mass shift or df
 grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
-scan_list = [22, 32, 48, 55, 59, 71, 6, 15, 37,45]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
+scan_list = [22, 32, 48, 55, 59, 71, 6, 15, 37]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
 sample_name = ['ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3',
-               'ht_pillar3_1', 'ht_pillar3_1', 'ht_pillar3_1', 'ht_pillar3_1']
-comment = '_ortho_norm_1134_1083_1134_2_2_2.npz'  # the end of the filename template after 'pynx'
+               'ht_pillar3_1', 'ht_pillar3_1', 'ht_pillar3_1']
+comment = '_ortho_norm_1160_1083_1160_2_2_2.npz'  # the end of the filename template after 'pynx'
 homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
 savedir = '/home/carnisj/phasing/'  # path of the folder to save data
 alignement_method = 'skip'  # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
 combining_method = 'subpixel'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
-output_shape = (140, 512, 350)  # the output dataset will be cropped/padded to this shape
+output_shape = (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
 correlation_threshold = 0.95  # only scans having a correlation larger than this threshold will be combined
 reference_scan = None  # index in scan_list of the scan to be used as the reference for the correlation calculation
 is_orthogonal = True  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
@@ -68,18 +68,20 @@ samplename = sample_name[reference_scan] + '_' + str('{:05d}').format(scan_list[
 print('Reference scan:', samplename)
 refdata = np.load(homedir + samplename + parent_folder +
                   'S' + str(scan_list[reference_scan]) + '_pynx' + comment)['data']
+refmask = np.load(homedir + samplename + parent_folder +
+                  'S' + str(scan_list[reference_scan]) + '_maskpynx' + comment)['mask']
 nbz, nby, nbx = refdata.shape
 
 ###########################
 # combine the other scans #
 ###########################
-nb_scan = len(scan_list)
-sumdata = np.zeros(refdata.shape)
-summask = np.zeros(refdata.shape)
-corr_coeff = []  # list of correlation coeeficients
-scanlist = []  # list of scans with correlation coeeficient >= threshold
+combined_list = [scan_list[reference_scan]]  # list of scans with correlation coeeficient >= threshold
+corr_coeff = [1]  # list of correlation coefficients
+scan_list.pop(reference_scan)
+sumdata = np.copy(refdata)  # refdata must not be modified
+summask = refmask  # refmask is not used elsewhere
 
-for idx in range(nb_scan):
+for idx in scan_list:
     samplename = sample_name[idx] + '_' + str('{:05d}').format(scan_list[idx])
     print('\n Opening ', samplename)
     data = np.load(homedir + samplename + parent_folder +
@@ -117,37 +119,37 @@ for idx in range(nb_scan):
     corr_coeff.append(str('{:.2f}'.format(correlation)))
 
     if correlation >= correlation_threshold:
-        scanlist.append(scan_list[idx])
+        combined_list.append(scan_list[idx])
         sumdata = sumdata + data
         summask = summask + mask
     else:
         print('Scan ', scan_list[idx], ', correlation below threshold, skip concatenation')
 
 summask[np.nonzero(summask)] = 1  # mask should be 0 or 1
-sumdata = sumdata / len(scanlist)
+sumdata = sumdata / len(combined_list)
 
 summask = pu.crop_pad(array=summask, output_shape=output_shape)
 sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape)
 
-template = '_S'+str(scanlist[0]) + '_to_S' + str(scanlist[-1]) + '_' +\
-           str(output_shape[0]) + '_' + str(output_shape[1]) + '_' + str(output_shape[2]) + '.npz'
+template = ''.join("_S%s" % ''.join(str(val)) for val in combined_list) +\
+           '_{:d}_{:d}_{:d=}'.format(output_shape[0], output_shape[1], output_shape[2])
 
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-np.savez_compressed(savedir+'pynx' + template, obj=sumdata)
-np.savez_compressed(savedir+'maskpynx' + template, obj=summask)
-print('Sum of ', len(scanlist), 'scans')
+np.savez_compressed(savedir+'pynx' + template + '.npz', obj=sumdata)
+np.savez_compressed(savedir+'maskpynx' + template + '.npz', obj=summask)
+print('Sum of ', len(combined_list), 'scans')
 
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True,
                                 title='sum(intensity)', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
 fig.text(0.50, 0.40, "Scans tested: " + str(scan_list), size=14)
-fig.text(0.50, 0.35, 'Scans concatenated: ' + str(scanlist), size=14)
+fig.text(0.50, 0.35, 'Scans concatenated: ' + str(combined_list), size=14)
 fig.text(0.50, 0.30, "Correlation coefficients: " + str(corr_coeff), size=14)
 fig.text(0.50, 0.25, "Threshold for correlation: " + str(correlation_threshold), size=14)
 plt.pause(0.1)
-plt.savefig(savedir + 'sum_S' + str(scan_list[0]) + '_to_S' + str(scan_list[-1]) + '.png')
+plt.savefig(savedir + 'data' + template + '.png')
 
 gu.multislices_plot(summask, sum_frames=True, scale='linear', plot_colorbar=True,
                     title='sum(mask)', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
-plt.savefig(savedir + 'sum_mask_S' + str(scan_list[0]) + '_to_S' + str(scan_list[-1]) + '.png')
+plt.savefig(savedir + 'mask' + template + '.png')
 plt.ioff()
 plt.show()
