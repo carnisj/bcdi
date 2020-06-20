@@ -42,7 +42,8 @@ output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 
 
 scans = [22]  # list or array of scan numbers
 root_folder = "D:/data/P10_August2019/data/"  # "/nfs/fs/fscxi/experiments/2019/PETRA/P10/11007170/raw/"
-sample_name = "gold_2_2_2"  # "S"
+sample_name = ["gold_2_2_2"]  # "S"  # list of sample names. If only one name is indicated,
+# it will be repeated to match the number of scans
 user_comment = '_crap'  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = [1, 4, 4]  # binning that will be used for phasing
@@ -82,12 +83,12 @@ beamline = 'P10'  # name of the beamline, used for data loading and normalizatio
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "inplane"  # "outofplane" or "inplane"
 is_series = True  # specific to series measurement at P10
-specfile_name = sample_name + '_%05d'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
 # template for SIXS_2019: ''
-# template for P10: sample_name + '_%05d'
+# template for P10: ''
 # template for CRISTAL: ''
 #############################################################
 # define detector related parameters and region of interest #
@@ -188,6 +189,16 @@ if not use_rawdata:
     print('use_rawdata=False: defaulting the binning factor along the stacking dimension to 1')
     binning[0] = 1
 
+if type(sample_name) is list:
+    if len(sample_name) == 1:
+        sample_name = [sample_name[0] for idx in range(len(scans))]
+    assert len(sample_name) == len(scans), 'sample_name and scan_list should have the same length'
+elif type(sample_name) is str:
+    sample_name = [sample_name for idx in range(len(scans))]
+else:
+    print('sample_name should be either a string or a list of strings')
+    sys.exit()
+
 #######################
 # Initialize detector #
 #######################
@@ -233,11 +244,11 @@ for scan_nb in range(len(scans)):
     comment = user_comment  # initialize comment
 
     if setup.beamline != 'P10':
-        homedir = root_folder + sample_name + str(scans[scan_nb]) + '/'
+        homedir = root_folder + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
         detector.datadir = homedir + "data/"
         specfile = specfile_name
     else:
-        specfile = specfile_name % scans[scan_nb]
+        specfile = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb])
         homedir = root_folder + specfile + '/'
         detector.datadir = homedir + 'e4m/'
         imagefile = specfile + template_imagefile

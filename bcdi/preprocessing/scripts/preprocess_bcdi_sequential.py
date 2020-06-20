@@ -43,7 +43,8 @@ output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 
 
 scans = [3]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
 root_folder = "D:/data/Dzhigaev/data/"
-sample_name = "S"  # "SN"  #
+sample_name = ["S"]  # "SN"  # list of sample names. If only one name is indicated,
+# it will be repeated to match the number of scans
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = (1, 1, 1)  # binning that will be used for phasing
@@ -101,7 +102,7 @@ specfile_name = ''
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
 # template for SIXS_2019: ''
-# template for P10: sample_name + '_%05d'
+# template for P10: ''
 # template for CRISTAL: ''
 # template for 34ID: ''
 #############################################################
@@ -222,6 +223,19 @@ def press_key(event):
         pass
 
 
+#########################
+# check some parameters #
+#########################
+if type(sample_name) is list:
+    if len(sample_name) == 1:
+        sample_name = [sample_name[0] for idx in range(len(scans))]
+    assert len(sample_name) == len(scans), 'sample_name and scan_list should have the same length'
+elif type(sample_name) is str:
+    sample_name = [sample_name for idx in range(len(scans))]
+else:
+    print('sample_name should be either a string or a list of strings')
+    sys.exit()
+
 #######################
 # Initialize detector #
 #######################
@@ -299,11 +313,11 @@ for scan_nb in range(len(scans)):
 
     comment = user_comment  # initialize comment
     if setup.beamline != 'P10':
-        homedir = root_folder + sample_name + str(scans[scan_nb]) + '/'
+        homedir = root_folder + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
         detector.datadir = homedir + "data/"
         specfile = specfile_name
     else:
-        specfile = specfile_name % scans[scan_nb]
+        specfile = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb])
         homedir = root_folder + specfile + '/'
         detector.datadir = homedir + 'e4m/'
         imagefile = specfile + template_imagefile
