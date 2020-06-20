@@ -26,7 +26,8 @@ grid interpolator or subpixel shift. Note thta there are many artefacts when usi
 
 scan_list = [22, 32, 48, 55, 59, 71, 6, 15, 37]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
 sample_name = ['ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3',
-               'ht_pillar3_1', 'ht_pillar3_1', 'ht_pillar3_1']
+               'ht_pillar3_1', 'ht_pillar3_1', 'ht_pillar3_1']  # list of sample names. If only one name is indicated,
+# it will be repeated to match the length of scan_list
 comment = '_ortho_norm_1160_1083_1160_2_2_2.npz'  # the end of the filename template after 'pynx'
 homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
 savedir = '/home/carnisj/phasing/'  # path of the folder to save data
@@ -52,6 +53,8 @@ if reference_scan is None:
     reference_scan = 0
 
 if type(sample_name) is list:
+    if len(sample_name) == 1:
+        sample_name = [sample_name[0] for idx in range(len(scan_list))]
     assert len(sample_name) == len(scan_list), 'sample_name and scan_list should have the same length'
 elif type(sample_name) is str:
     sample_name = [sample_name for idx in range(len(scan_list))]
