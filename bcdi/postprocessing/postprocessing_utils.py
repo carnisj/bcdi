@@ -512,7 +512,7 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
     assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
 
     if debugging:
-        gu.multislices_plot(abs(array), title='Before crop/pad')
+        gu.multislices_plot(abs(array), sum_frames=True, scale='log', title='Before crop/pad')
 
     # crop/pad along axis 0
     if newz >= nbz:  # pad
@@ -545,7 +545,7 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
         newobj = temp_y[:, :, crop_center[2] - newx//2:crop_center[2] + newx//2]
 
     if debugging:
-        gu.multislices_plot(abs(newobj), title='After crop/pad')
+        gu.multislices_plot(abs(newobj), sum_frames=True, scale='log', title='After crop/pad')
     return newobj
 
 
@@ -579,7 +579,7 @@ def crop_pad_2d(array, output_shape, padwith_ones=False, pad_start=None, crop_ce
     assert len(crop_center) == 2, 'crop_center should be a list or tuple of two indices'
 
     if debugging:
-        gu.imshow_plot(abs(array), title='Before crop/pad')
+        gu.imshow_plot(abs(array), sum_frames=True, scale='log', title='Before crop/pad')
     # crop/pad along axis 0
     if newy >= nby:  # pad
         if not padwith_ones:
@@ -601,7 +601,7 @@ def crop_pad_2d(array, output_shape, padwith_ones=False, pad_start=None, crop_ce
         newobj = temp_y[:, crop_center[1] - newx//2:crop_center[1] + newx//2]
 
     if debugging:
-        gu.imshow_plot(abs(array), title='After crop/pad')
+        gu.imshow_plot(abs(array), sum_frames=True, scale='log', title='After crop/pad')
     return newobj
 
 
