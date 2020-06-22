@@ -482,19 +482,17 @@ def center_max(array, width_z=None, width_y=None, width_x=None, debugging=False)
     return array
 
 
-def crop_pad(array, output_shape, padwith_ones=False, start=(np.nan, np.nan, np.nan), width_z=None, width_y=None,
-             width_x=None, debugging=False):
+def crop_pad(array, output_shape, padwith_ones=False, start=None, crop_center=None, debugging=False):
     """
     Crop or pad the 3D object depending on output_shape.
 
     :param array: 3D complex array to be padded
-    :param output_shape: list of desired output shape [z, y, x]
+    :param output_shape: desired output shape (3D)
     :param padwith_ones: if True, pad with ones instead of zeros
-    :param start: tuple of 3 positions in pixel where the original array should be placed.
-     If a value of np.nan is provided, padding is symmetric along the respective axis.
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :param start: for padding, tuple of 3 positions in pixel where the original array should be placed.
+     If None, padding is symmetric along the respective axis
+    :param crop_center: for cropping, [z, y, x] position in the original array (in pixels) of the center of the ourput
+     array. If None, it will be set to the center of the original array
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: myobj cropped or padded with zeros
@@ -505,47 +503,49 @@ def crop_pad(array, output_shape, padwith_ones=False, start=(np.nan, np.nan, np.
     nbz, nby, nbx = array.shape
     newz, newy, newx = output_shape
 
+    if start is None:
+        start = [(newz - nbz) // 2, (newy - nby) // 2, (newx - nbx) // 2]
+    assert len(start) == 3, 'start should be a list or tuple of three indices'
+
+    if crop_center is None:
+        crop_center = [nbz//2, nby//2, nbx//2]
+    assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
+
     if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before crop/pad')
-    # z
+        gu.multislices_plot(abs(array), title='Before crop/pad')
+
+    # crop/pad along axis 0
     if newz >= nbz:  # pad
         if not padwith_ones:
             temp_z = np.zeros((output_shape[0], nby, nbx), dtype=array.dtype)
         else:
             temp_z = np.ones((output_shape[0], nby, nbx), dtype=array.dtype)
-        if np.isnan(start[0]):
-            temp_z[(newz - nbz) // 2:(newz + nbz) // 2, :, :] = array
-        else:
-            temp_z[start[0]:start[0]+nbz, :, :] = array
+        temp_z[start[0]:start[0]+nbz, :, :] = array
     else:  # crop
-        temp_z = array[(nbz - newz) // 2:(newz + nbz) // 2, :, :]
-    # y
+        temp_z = array[crop_center[0] - newz//2:crop_center[0] + newz//2, :, :]
+
+    # crop/pad along axis 1
     if newy >= nby:  # pad
         if not padwith_ones:
             temp_y = np.zeros((newz, newy, nbx), dtype=array.dtype)
         else:
             temp_y = np.ones((newz, newy, nbx), dtype=array.dtype)
-        if np.isnan(start[1]):
-            temp_y[:, (newy - nby) // 2:(newy + nby) // 2, :] = temp_z
-        else:
-            temp_y[:, start[1]:start[1]+nby, :] = temp_z
+        temp_y[:, start[1]:start[1]+nby, :] = temp_z
     else:  # crop
-        temp_y = temp_z[:, (nby - newy) // 2:(newy + nby) // 2, :]
-    # x
+        temp_y = temp_z[:, crop_center[1] - newy//2:crop_center[1] + newy//2, :]
+
+    # crop/pad along axis 2
     if newx >= nbx:  # pad
         if not padwith_ones:
             newobj = np.zeros((newz, newy, newx), dtype=array.dtype)
         else:
             newobj = np.ones((newz, newy, newx), dtype=array.dtype)
-        if np.isnan(start[2]):
-            newobj[:, :, (newx - nbx) // 2:(newx + nbx) // 2] = temp_y
-        else:
-            newobj[:, :, start[2]:start[2]+nbx] = temp_y
+        newobj[:, :, start[2]:start[2]+nbx] = temp_y
     else:  # crop
-        newobj = temp_y[:, :, (nbx - newx) // 2:(newx + nbx) // 2]
+        newobj = temp_y[:, :, crop_center[2] - newx//2:crop_center[2] + newx//2]
 
     if debugging:
-        gu.multislices_plot(abs(newobj), width_z=width_z, width_y=width_y, width_x=width_x, title='After crop/pad')
+        gu.multislices_plot(abs(newobj), title='After crop/pad')
     return newobj
 
 
