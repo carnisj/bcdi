@@ -1408,10 +1408,10 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     if detector.roi[1] - detector.roi[0] > nby or detector.roi[3] - detector.roi[2] > nbx:
         start = tuple([np.nan, min(0, detector.roi[0]), min(0, detector.roi[2])])
         print('Paddind the data to the shape defined by the ROI')
-        rawdata = pu.crop_pad(array=rawdata, start=start, output_shape=(rawdata.shape[0],
-                                                                        detector.roi[1] - detector.roi[0],
-                                                                        detector.roi[3] - detector.roi[2]))
-        rawmask = pu.crop_pad(array=rawmask, padwith_ones=True, start=start,
+        rawdata = pu.crop_pad(array=rawdata, pad_start=start, output_shape=(rawdata.shape[0],
+                                                                            detector.roi[1] - detector.roi[0],
+                                                                            detector.roi[3] - detector.roi[2]))
+        rawmask = pu.crop_pad(array=rawmask, padwith_ones=True, pad_start=start,
                               output_shape=(rawmask.shape[0], detector.roi[1] - detector.roi[0],
                                             detector.roi[3] - detector.roi[2]))
 
