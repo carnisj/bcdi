@@ -1488,6 +1488,18 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
     return data, mask3d, monitor, frames_logical
 
 
+def load_cristal_monitor(logfile):
+    """
+    Load the default monitor for a dataset measured at CRISTAL.
+
+    :param logfile: h5py File object of CRISTAL .nxs scan file
+    :return: the default monitor values
+    """
+    group_key = list(logfile.keys())[0]
+    monitor = logfile['/' + group_key + '/scan_data/data_04'][:]
+    return monitor
+
+
 def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfield, hotpixels, background,
                      debugging=False):
     """
@@ -1787,6 +1799,51 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
     return data, mask3d, monitor, frames_logical
 
 
+def load_id01_monitor(logfile, scan_number):
+    """
+    Load the default monitor for a dataset measured at ID01.
+
+    :param logfile: Silx SpecFile object containing the information about the scan and image numbers
+    :param scan_number: the scan number to load
+    :return: the default monitor values
+    """
+
+    labels = logfile[str(scan_number) + '.1'].labels  # motor scanned
+    labels_data = logfile[str(scan_number) + '.1'].data  # motor scanned
+    try:
+        monitor = labels_data[labels.index('exp1'), :]  # mon2 monitor at ID01
+    except ValueError:
+        try:
+            monitor = labels_data[labels.index('mon2'), :]  # exp1 for old data at ID01
+        except ValueError:  # no monitor data
+            raise ValueError('No available monitor data')
+    return monitor
+
+
+def load_monitor(scan_number, logfile, setup):
+    """
+    Load the default monitor for intensity normalization of the considered beamline.
+
+    :param scan_number: the scan number to load
+    :param logfile: path of the . fio file containing the information about the scan
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :return: the default monitor values
+    """
+    if setup.custom_scan and not setup.filtered_data:
+        monitor = setup.custom_monitor
+    elif setup.beamline == 'ID01':
+        monitor = load_id01_monitor(logfile=logfile, scan_number=scan_number)
+    elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
+        monitor = load_sixs_monitor(logfile=logfile, beamline=setup.beamline)
+    elif setup.beamline == 'CRISTAL':
+        monitor = load_cristal_monitor(logfile=logfile)
+    elif setup.beamline == 'P10':
+        monitor = load_p10_monitor(logfile=logfile)
+    else:
+        raise ValueError('Wrong value for "beamline" parameter')
+    return monitor
+
+
 def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
     """
     Load P10 data, apply filters and concatenate it for phasing.
@@ -1805,7 +1862,6 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
      - the monitor values for normalization
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-
     """
     import hdf5plugin  # should be imported before h5py
     import h5py
@@ -1893,6 +1949,32 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
     return data, mask3d, monitor, frames_logical
 
 
+def load_p10_monitor(logfile):
+    """
+    Load the default monitor for a dataset measured at P10.
+
+    :param logfile: path of the . fio file containing the information about the scan
+    :return: the default monitor values
+    """
+    fio = open(logfile, 'r')
+    monitor = []
+    fio_lines = fio.readlines()
+    for line in fio_lines:
+        this_line = line.strip()
+        words = this_line.split()
+        if 'Col' in words and ('ipetra' in words or 'curpetra' in words):
+            # template = ' Col 6 ipetra DOUBLE\n' (2018) or ' Col 6 curpetra DOUBLE\n' (2019)
+            index_monitor = int(words[1]) - 1  # python index starts at 0
+        try:
+            float(words[0])  # if this does not fail, we are reading data
+            monitor.append(float(words[index_monitor]))
+        except ValueError:  # first word is not a number, skip this line
+            continue
+    fio.close()
+    monitor = np.asarray(monitor, dtype=float)
+    return monitor
+
+
 def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
     """
     Load SIXS data, apply filters and concatenate it for phasing.
@@ -1960,6 +2042,27 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     mask3d[np.isnan(data)] = 1
     data[np.isnan(data)] = 0
     return data, mask3d, monitor, frames_logical
+
+
+def load_sixs_monitor(logfile, beamline):
+    """
+    Load the default monitor for a dataset measured at SIXS.
+
+    :param logfile: nxsReady Dataset object of SIXS .nxs scan file
+    :param beamline: SIXS_2019 or SIXS_2018
+    :return: the default monitor values
+    """
+    if beamline == 'SIXS_2018':
+        monitor = logfile.imon1[:]
+    else:
+        try:
+            monitor = logfile.imon0[:]
+        except AttributeError:  # the alias dictionnary was probably not provided
+            try:
+                monitor = logfile.intensity[:]
+            except AttributeError:  # no monitor data
+                raise ValueError('No available monitor data')
+    return monitor
 
 
 def mask_eiger(data, mask):
@@ -2938,9 +3041,6 @@ def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize
     nbz, nby, nbx = data.shape
     frames_logical = np.ones(nbz)
 
-    monitor = load_monitor(logfile=logfile, scan_number=scan_number, detector=detector, setup=setup,
-                           method=normalize_method)
-
     print((data < 0).sum(), ' negative data points masked')  # can happen when subtracting a background
     mask[data < 0] = 1
     data[data < 0] = 0
@@ -2948,7 +3048,14 @@ def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize
     # normalize by the incident X-ray beam intensity
     if normalize_method == 'skip':
         print('Skip intensity normalization')
+        monitor = []
     else:
+        if normalize_method == 'sum_roi':
+            monitor = data[:, detector.sum_roi[0]:detector.sum_roi[1],
+                           detector.sum_roi[2]:detector.sum_roi[3]].sum(axis=(1, 2))
+        else:  # use the default monitor of the beamline
+            monitor = load_monitor(logfile=logfile, scan_number=scan_number, setup=setup)
+
         print('Intensity normalization using ' + normalize_method)
         data, monitor = normalize_dataset(array=data, raw_monitor=monitor, frames_logical=frames_logical,
                                           norm_to_min=True, debugging=debugging)
