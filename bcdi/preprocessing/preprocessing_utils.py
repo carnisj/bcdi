@@ -1353,8 +1353,7 @@ def load_background(background_file):
 def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
                   normalize='skip', debugging=False, **kwargs):
     """
-    Load the forward CDI data, apply filters and optionally regrid it for phasing.
-
+    Load forward CDI data, apply beam stop correction and optional threshold, normalization and binning.
 
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param scan_number: the scan number to load
@@ -1369,10 +1368,10 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
     :return:
-     - the 3D data array (in an orthonormal frame or in the detector frame) and the 3D mask array
+     - the 3D data and mask arrays
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-     - the monitor values for normalization
+     - the monitor values used for the intensity normalization
     """
     for k in kwargs.keys():
         if k in ['photon_threshold']:
@@ -2901,6 +2900,86 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
                             title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
 
     return interp_data, interp_mask, [qx, qz, qy], frames_logical
+
+
+def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize_method='skip', debugging=False,
+                    **kwargs):
+    """
+    Reload forward CDI data, apply optional threshold, normalization and binning.
+
+    :param data: the 3D data array
+    :param mask: the 3D mask array
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param normalize_method: 'skip' to skip, 'monitor'  to normalize by the default monitor, 'sum_roi' to normalize
+     by the integrated intensity in a defined region of interest
+    :param debugging:  set to True to see plots
+    :parama kwargs:
+     - 'photon_threshold' = float, photon threshold to apply before binning
+    :return:
+     - the updated 3D data and mask arrays
+     - the monitor values used for the intensity normalization
+    """
+    for k in kwargs.keys():
+        if k in ['photon_threshold']:
+            photon_threshold = kwargs['photon_threshold']
+        else:
+            raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
+    try:
+        photon_threshold
+    except NameError:  # photon_threshold not declared
+        photon_threshold = 0
+
+    if data.ndim != 3 or mask.ndim != 3:
+        raise ValueError('data and mask should be 3D arrays')
+
+    nbz, nby, nbx = data.shape
+    frames_logical = np.ones(nbz)
+
+    monitor = load_monitor(logfile=logfile, scan_number=scan_number, detector=detector, setup=setup,
+                           method=normalize_method)
+
+    print((data < 0).sum(), ' negative data points masked')  # can happen when subtracting a background
+    mask[data < 0] = 1
+    data[data < 0] = 0
+
+    # normalize by the incident X-ray beam intensity
+    if normalize_method == 'skip':
+        print('Skip intensity normalization')
+    else:
+        print('Intensity normalization using ' + normalize_method)
+        data, monitor = normalize_dataset(array=data, raw_monitor=monitor, frames_logical=frames_logical,
+                                          norm_to_min=True, debugging=debugging)
+
+    # pad the data to the shape defined by the ROI
+    if detector.roi[1] - detector.roi[0] > nby or detector.roi[3] - detector.roi[2] > nbx:
+        start = tuple([np.nan, min(0, detector.roi[0]), min(0, detector.roi[2])])
+        print('Paddind the data to the shape defined by the ROI')
+        data = pu.crop_pad(array=data, pad_start=start, output_shape=(data.shape[0],
+                                                                      detector.roi[1] - detector.roi[0],
+                                                                      detector.roi[3] - detector.roi[2]))
+        mask = pu.crop_pad(array=mask, padwith_ones=True, pad_start=start,
+                           output_shape=(mask.shape[0], detector.roi[1] - detector.roi[0],
+                                         detector.roi[3] - detector.roi[2]))
+
+    # apply optional photon threshold before binning
+    if photon_threshold != 0:
+        mask[data < photon_threshold] = 1
+        data[data < photon_threshold] = 0
+        print("Applying photon threshold before binning: < ", photon_threshold)
+
+    # bin data and mask in the detector plane if needed
+    # binning in the stacking dimension is done at the very end of the data processing
+    if (detector.binning[1] != 1) or (detector.binning[2] != 1):
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
+        data = pu.bin_data(data, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        mask = pu.bin_data(mask, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        mask[np.nonzero(mask)] = 1
+
+    return data, mask, frames_logical, monitor
 
 
 def remove_hotpixels(data, mask, hotpixels=None):
