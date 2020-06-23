@@ -177,10 +177,13 @@ gu.multislices_plot(sumdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], co
 sumdata[sumdata < plot_threshold] = 0
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
                                 title='Combined intensity (thresholded)', vmin=0, reciprocal_space=True)
-fig.text(0.50, 0.40, "Scans tested: " + str(scan_list), size=12)
-fig.text(0.50, 0.35, "Correlation coefficients: " + str(corr_coeff), size=12)
-fig.text(0.50, 0.30, "Threshold for correlation: " + str(correlation_threshold), size=12)
-fig.text(0.50, 0.25, 'Scans concatenated: ' + str(combined_list), size=12)
+fig.text(0.50, 0.40, "Scans tested:", size=12)
+fig.text(0.50, 0.35, str(scan_list), size=12)
+fig.text(0.50, 0.30, "Correlation coefficients:", size=12)
+fig.text(0.50, 0.25, str(corr_coeff), size=12)
+fig.text(0.50, 0.20, "Threshold for correlation: " + str(correlation_threshold), size=12)
+fig.text(0.50, 0.15, 'Scans concatenated:', size=12)
+fig.text(0.50, 0.10, str(combined_list), size=12)
 
 plt.pause(0.1)
 plt.savefig(savedir + 'data' + template + '.png')
