@@ -56,8 +56,8 @@ background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual c
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
-normalize_method = 'skip'  # 'skip' for no normalization, 'monitor' to use the default monitor, 'sum_roi' to normalize by
-# the intensity summed in normalize_roi
+normalize_method = 'skip'  # 'skip' for no normalization, 'monitor' to use the default monitor, 'sum_roi' to normalize
+# by the intensity summed in normalize_roi
 normalize_roi = []  # roi for the integration of intensity used as a monitor for data normalization
 # [Vstart, Vstop, Hstart, Hstop]
 #################################
