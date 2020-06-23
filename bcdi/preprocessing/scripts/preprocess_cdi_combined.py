@@ -819,26 +819,9 @@ for scan_nb in range(len(scans)):
             binning_comment = '_' + str(binning[2] * binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2])
             qx = qx[::binning[0]]  # along Z
 
-    ############################
-    # plot final data and mask #
-    ############################
     nz, ny, nx = data.shape
     print('\nData size after binning the stacking dimension:', data.shape)
     comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx) + binning_comment
-
-    fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                    title='Final data', is_orthogonal=not use_rawdata,
-                                    reciprocal_space=True)
-    plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
-    if not flag_interact:
-        plt.close(fig)
-
-    fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                    vmax=(nz, ny, nx), title='Final mask',
-                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
-    if not flag_interact:
-        plt.close(fig)
 
     ############################
     # save final data and mask #
@@ -865,6 +848,25 @@ for scan_nb in range(len(scans)):
                 {'data': np.moveaxis(data.astype(np.float32), [0, 1, 2], [-1, -2, -3])})
         savemat(savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
                 {'data': np.moveaxis(mask.astype(np.int8), [0, 1, 2], [-1, -2, -3])})
+
+    ############################
+    # plot final data and mask #
+    ############################
+    data[np.nonzero(mask)] = 0
+    fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Final data', is_orthogonal=not use_rawdata,
+                                    reciprocal_space=True)
+    plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
+    if not flag_interact:
+        plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                    vmax=(nz, ny, nx), title='Final mask',
+                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
+    plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
+    if not flag_interact:
+        plt.close(fig)
+
 print('\nEnd of script')
 plt.ioff()
 plt.show()
