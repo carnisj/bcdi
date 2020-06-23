@@ -231,7 +231,10 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                     ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
                     hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
                 else:  # detector frame
-                    slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                    if sum_frames:
+                        slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                    else:
+                        slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
                     ver_labels = ('Y', 'rocking angle', 'rocking angle')
                     hor_labels = ('X', 'X', 'Y')
             else:
@@ -243,7 +246,10 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                     ver_labels = ('y', 'z', 'z')
                     hor_labels = ('x', 'x', 'y')
                 else:  # detector frame
-                    slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                    if sum_frames:
+                        slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                    else:
+                        slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
                     ver_labels = ('Y', 'rocking angle', 'rocking angle')
                     hor_labels = ('X', 'X', 'Y')
 
@@ -393,7 +399,10 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
             ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
             hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
         else:  # detector frame
-            slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+            if sum_frames:
+                slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+            else:
+                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
             ver_labels = ('Y', 'rocking angle', 'rocking angle')
             hor_labels = ('X', 'X', 'Y')
     else:
@@ -405,7 +414,10 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
             ver_labels = ('y', 'z', 'z')
             hor_labels = ('x', 'x', 'y')
         else:  # detector frame
-            slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+            if sum_frames:
+                slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+            else:
+                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
             ver_labels = ('Y', 'rocking angle', 'rocking angle')
             hor_labels = ('X', 'X', 'Y')
 
@@ -571,7 +583,10 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                               labels[1] + r" Q$_z$ ($1/\AA$)")
             else:  # detector frame
                 invert_yaxis = False
-                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                if sum_frames:
+                    slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                else:
+                    slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
                 ver_labels = (labels[0] + ' Y', labels[0] + ' rocking angle', labels[0] + ' rocking angle')
                 hor_labels = (labels[1] + ' X', labels[1] + ' X', labels[1] + ' Y')
         else:
@@ -585,7 +600,10 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                 hor_labels = (labels[1] + ' x', labels[1] + ' x', labels[1] + ' y')
             else:  # detector frame
                 invert_yaxis = False
-                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                if sum_frames:
+                    slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                else:
+                    slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
                 ver_labels = (labels[0] + ' Y', labels[0] + ' rocking angle', labels[0] + ' rocking angle')
                 hor_labels = (labels[1] + ' X', labels[1] + ' X', labels[1] + ' Y')
 
@@ -996,7 +1014,10 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
         else:  # detector frame
             invert_yaxis = False
-            slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+            if sum_frames:
+                slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+            else:
+                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
             ver_labels = ('Y', 'rocking angle', 'rocking angle')
             hor_labels = ('X', 'X', 'Y')
     else:
@@ -1010,7 +1031,10 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             hor_labels = ('x', 'x', 'y')
         else:  # detector frame
             invert_yaxis = False
-            slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+            if sum_frames:
+                slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+            else:
+                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
             ver_labels = ('Y', 'rocking angle', 'rocking angle')
             hor_labels = ('X', 'X', 'Y')
 
