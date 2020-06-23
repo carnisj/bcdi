@@ -39,6 +39,7 @@ corr_roi = [420, 520, 660, 760, 600, 700]  # region of interest where to calcula
 output_shape = (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
 correlation_threshold = 0.50  # only scans having a correlation larger than this threshold will be combined
 reference_scan = 2  # index in scan_list of the scan to be used as the reference for the correlation calculation
+combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
 is_orthogonal = True  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
 plot_threshold = 5  # data below this will be set to 0, only in plots
 debug = False  # True or False
@@ -148,7 +149,8 @@ for idx in range(len(scan_list)):
     if correlation >= correlation_threshold:
         combined_list.append(scan_list[idx])
         sumdata = sumdata + data
-        summask = summask + mask
+        if combine_masks:
+            summask = summask + mask
     else:
         print('Scan ', scan_list[idx], ', correlation below threshold, skip concatenation')
 
