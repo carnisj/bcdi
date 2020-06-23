@@ -43,7 +43,7 @@ correlation_threshold = 0.50  # only scans having a correlation larger than this
 reference_scan = 2  # index in scan_list of the scan to be used as the reference for the correlation calculation
 combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
 is_orthogonal = True  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
-plot_threshold = 5  # data below this will be set to 0, only in plots
+plot_threshold = 0  # data below this will be set to 0, only in plots
 debug = False  # True or False
 ##################################
 # end of user-defined parameters #
@@ -174,9 +174,10 @@ gu.multislices_plot(sumdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], co
                     sum_frames=True, scale='log', plot_colorbar=True, title='sumdata in corr_roi', vmin=0,
                     reciprocal_space=True, is_orthogonal=is_orthogonal)
 
+sumdata[np.nonzero(summask)] = 0
 sumdata[sumdata < plot_threshold] = 0
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
-                                title='Combined intensity (thresholded)', vmin=0, reciprocal_space=True)
+                                title='Combined masked intensity', vmin=0, reciprocal_space=True)
 fig.text(0.50, 0.40, "Scans tested:", size=12)
 fig.text(0.50, 0.35, str(scan_list), size=12)
 fig.text(0.50, 0.30, "Correlation coefficients:", size=12)
@@ -184,6 +185,8 @@ fig.text(0.50, 0.25, str(corr_coeff), size=12)
 fig.text(0.50, 0.20, "Threshold for correlation: " + str(correlation_threshold), size=12)
 fig.text(0.50, 0.15, 'Scans concatenated:', size=12)
 fig.text(0.50, 0.10, str(combined_list), size=12)
+if plot_threshold != 0:
+    fig.text(0.50, 0.05, "Threshold for plots only: ", str(plot_threshold), size=12)
 
 plt.pause(0.1)
 plt.savefig(savedir + 'data' + template + '.png')
