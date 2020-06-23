@@ -56,7 +56,7 @@ background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual c
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
-normalize_flux = 'skip'  # 'skip' for no normalization, 'monitor' to use the default monitor, 'sum_roi' to normalize by
+normalize_method = 'skip'  # 'skip' for no normalization, 'monitor' to use the default monitor, 'sum_roi' to normalize by
 # the intensity summed in normalize_roi
 normalize_roi = []  # roi for the integration of intensity used as a monitor for data normalization
 # [Vstart, Vstop, Hstart, Hstop]
@@ -74,6 +74,8 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 # parameters used when reloading processed data #
 #################################################
 reload_previous = False  # True to resume a previous masking (load data and mask)
+reload_orthogonal = True  # True if the reloaded data is already intepolated in an orthonormal frame
+save_previous = False  # if True, will save the previous data and mask
 ######################################################################
 # parameters used for interpolating the data in an orthonormal frame #
 ######################################################################
@@ -240,6 +242,7 @@ def press_key(event):
 #########################
 if not use_rawdata:
     print('use_rawdata=False: defaulting the binning factor along the stacking dimension to 1')
+    # the vertical axis y being the rotation axis, binning along z downstream and x outboard will be the same
     binning[0] = 1
 
 if type(sample_name) is list:
@@ -308,6 +311,9 @@ for scan_nb in range(len(scans)):
         imagefile = specfile + template_imagefile
         detector.template_imagefile = imagefile
 
+    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
+                                 root_folder=root_folder, filename=specfile)
+
     print('\nScan', scans[scan_nb])
     print('Setup: ', setup.beamline)
     print('Direct beam (VxH)', direct_beam)
@@ -355,45 +361,73 @@ for scan_nb in range(len(scans)):
         npz_key = mask.files
         mask = mask[npz_key[0]]
 
-        try:
-            file_path = filedialog.askopenfilename(initialdir=homedir, title="Select q values",
-                                                   filetypes=[("NPZ", "*.npz")])
-            reload_qvalues = np.load(file_path)
-            q_values = [reload_qvalues['qx'], reload_qvalues['qz'], reload_qvalues['qy']]
-        except FileNotFoundError:
-            q_values = []  # cannot orthogonalize since we do not know the original array size
-        frames_logical = np.ones(data.shape[0])  # we assume that all frames will be used
-        normalize_flux = 'skip'  # we assume that normalization was already performed
-        monitor = []  # we assume that normalization was already performed
-        binning_comment = ''
-        min_range = nx // 2  # maximum symmetrical range with defined data
-        # binning along axis 0 is done after masking
-        np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous' + comment, data=data)
-        np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx_previous', mask=mask)
+        if save_previous:
+            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous' + comment, data=data)
+            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx_previous', mask=mask)
+
+        if reload_orthogonal:  # the data is gridded in the orthonormal laboratory frame
+            use_rawdata = False
+            try:
+                file_path = filedialog.askopenfilename(initialdir=homedir, title="Select q values",
+                                                       filetypes=[("NPZ", "*.npz")])
+                reload_qvalues = np.load(file_path)
+                q_values = [reload_qvalues['qx'], reload_qvalues['qz'], reload_qvalues['qy']]
+            except FileNotFoundError:
+                q_values = []
+
+            normalize_method = 'skip'  # we assume that normalization was already performed
+            monitor = []  # we assume that normalization was already performed
+            binning_comment = ''
+            min_range = (nx / 2) * np.sqrt(2)  # used when fit_datarange is True, keep the full array because we do not
+            # know the position of the origin of reciprocal space
+
+            # bin data and mask if needed
+            if (detector.binning[0] != 1) or (detector.binning[1] != 1) or (detector.binning[2] != 1):
+                print('Binning the reloaded orthogonal data by', detector.binning)
+                data = pu.bin_data(data, binning=detector.binning, debugging=False)
+                mask = pu.bin_data(mask, binning=detector.binning, debugging=False)
+                mask[np.nonzero(mask)] = 1
+                if len(q_values) != 0:
+                    qx = q_values[0]
+                    qx = qx[::binning[2]]  # along z downstream, same binning as along x
+                    qz = q_values[1]
+                    qz = qz[::binning[1]]  # along y vertical, the axis of rotation
+                    qy = q_values[2]
+                    qy = qy[::binning[2]]  # along x outboard
+
+        else:  # the data is in the detector frame
+            if photon_filter == 'loading':
+                data, mask, frames_logical, monitor = pru.reload_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                          data=data, mask=mask, detector=detector,
+                                                                          setup=setup, normalize=normalize_method,
+                                                                          debugging=debug,
+                                                                          photon_threshold=photon_threshold)
+            else:  # photon_filter = 'postprocessing'
+                data, mask, frames_logical, monitor = pru.reload_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                          data=data, mask=mask, detector=detector,
+                                                                          setup=setup, normalize=normalize_method,
+                                                                          debugging=debug)
 
     else:  # new masking process
-
+        reload_orthogonal = False  # the data is in the detector plane
         flatfield = pru.load_flatfield(flatfield_file)
         hotpix_array = pru.load_hotpixels(hotpixels_file)
         background = pru.load_background(background_file)
-
-        logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
-                                     root_folder=root_folder, filename=specfile)
 
         if photon_filter == 'loading':
             data, mask, frames_logical, monitor = pru.load_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
                                                                     detector=detector, setup=setup, flatfield=flatfield,
                                                                     hotpixels=hotpix_array, background=background,
-                                                                    normalize=normalize_flux, debugging=debug,
+                                                                    normalize=normalize_method, debugging=debug,
                                                                     photon_threshold=photon_threshold)
-        else:  # photon_filter == 'postprocessing':
+        else:  # photon_filter = 'postprocessing'
             data, mask, frames_logical, monitor = pru.load_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
                                                                     detector=detector, setup=setup, flatfield=flatfield,
                                                                     hotpixels=hotpix_array, background=background,
-                                                                    normalize=normalize_flux, debugging=debug)
-        nz, ny, nx = np.shape(data)
-        print('\nRaw data shape:', nz, ny, nx)
-
+                                                                    normalize=normalize_method, debugging=debug)
+    nz, ny, nx = np.shape(data)
+    print('\nInput data shape:', nz, ny, nx)
+    if not reload_orthogonal:
         dirbeam = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])  # updated horizontal direct beam
         min_range = min(dirbeam, nx - dirbeam)  # maximum symmetrical range with defined data
         print('\nMaximum symmetrical range with defined data along detector horizontal direction:', min_range*2,
@@ -452,22 +486,23 @@ for scan_nb in range(len(scans)):
             del fig_mask, original_data, updated_mask
             gc.collect()
 
-        tmp_data = np.copy(data)  # do not mask the raw data before gridding
-        tmp_data[mask == 1] = 0
-        fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                        title='Data before gridding\n', is_orthogonal=False, reciprocal_space=True)
-        plt.savefig(savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                    str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
-        plt.close(fig)
-        del tmp_data
-        gc.collect()
-
         if use_rawdata:
             q_values = []
             binning_comment = '_' + str(1) + '_' + str(binning[1]) + '_' + str(binning[2])
             # binning along axis 0 is done after masking
             data[np.nonzero(mask)] = 0
         else:
+
+            tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
+            tmp_data[mask == 1] = 0
+            fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                                            title='Data before gridding\n', is_orthogonal=False, reciprocal_space=True)
+            plt.savefig(savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                        str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
+            plt.close(fig)
+            del tmp_data
+            gc.collect()
+
             print('\nGridding the data in the orthonormal laboratory frame')
             # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
             binning_comment = '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2])
@@ -475,10 +510,14 @@ for scan_nb in range(len(scans)):
                 pru.regrid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
                                frames_logical=frames_logical, correct_curvature=correct_curvature, debugging=debug)
 
+    else:  # reload_orthogonal=True, the data is already gridded, nothing to do
+        binning_comment = '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2])
+        # binning was realized along each axis
+
     ##########################################
     # plot normalization by incident monitor #
     ##########################################
-    if normalize_flux != 'skip':
+    if normalize_method != 'skip':
         plt.ion()
         fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
                                 tuple_sum_axis=(0, 1), tuple_width_v=None,
@@ -767,7 +806,7 @@ for scan_nb in range(len(scans)):
         print('\nData size after taking the largest data-defined area:', data.shape)
         # need these numbers to calculate the voxel size
 
-    if detector.binning[0] != 1:
+    if detector.binning[0] != 1 and not reload_orthogonal:
         ################################################################################################
         # bin the stacking axis if needed, the detector plane was already binned when loading the data #
         ################################################################################################
