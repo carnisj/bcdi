@@ -2023,11 +2023,19 @@ def mask_eiger4m(data, mask):
     if data.shape != mask.shape:
         raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
 
-    data[:, 1030:1040] = 1
-    data[514:551, :] = 1
-    data[1065:1102, :] = 1
-    data[1616:1653, :] = 1
+    data[:, 0:1] = 0
+    data[:, -1:] = 0
+    data[0:1, :] = 0
+    data[-1:, :] = 0
+    data[:, 1030:1040] = 0
+    data[514:551, :] = 0
+    data[1065:1102, :] = 0
+    data[1616:1653, :] = 0
 
+    mask[:, 0:1] = 1
+    mask[:, -1:] = 1
+    mask[0:1, :] = 1
+    mask[-1:, :] = 1
     mask[:, 1030:1040] = 1
     mask[514:551, :] = 1
     mask[1065:1102, :] = 1
