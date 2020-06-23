@@ -48,37 +48,51 @@ user_comment = '_crap'  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = [1, 4, 4]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
-###########################
+##############################
+# parameters used in masking #
+##############################
 flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
-###########################
+##############################################
+# parameters used in intensity normalization #
+##############################################
 normalize_flux = 'skip'  # 'skip' for no normalization, 'monitor' to use the default monitor, 'sum_roi' to normalize by
 # the intensity summed in normalize_roi
 normalize_roi = []  # roi for the integration of intensity used as a monitor for data normalization
 # [Vstart, Vstop, Hstart, Hstop]
-###########################
+#################################
+# parameters fir data filtering #
+#################################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
-###########################
 flag_medianfilter = 'skip'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
 # set to 'skip' will skip filtering
 medfilt_order = 8    # for custom median filter, number of pixels with intensity surrounding the empty pixel
-###########################
+#################################################
+# parameters used when reloading processed data #
+#################################################
 reload_previous = False  # True to resume a previous masking (load data and mask)
-###########################
+######################################################################
+# parameters used for interpolating the data in an orthonormal frame #
+######################################################################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 fit_datarange = False  # if True, crop the final array within data range, avoiding areas at the corners of the window
 # viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
+sdd = 4.95  # sample to detector distance in m, used only if use_rawdata is False
+energy = 8700  # x-ray energy in eV, used only if use_rawdata is False
+##################
+# saving options #
+##################
 save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_mat = False  # True to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
 save_asint = False  # if True, the result will be saved as an array of integers (save space)
-######################################
-# define beamline related parameters #
-######################################
+###############################
+# beamline related parameters #
+###############################
 beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "inplane"  # "outofplane" or "inplane"
@@ -90,9 +104,9 @@ specfile_name = ''
 # template for SIXS_2019: ''
 # template for P10: ''
 # template for CRISTAL: ''
-#############################################################
-# define detector related parameters and region of interest #
-#############################################################
+###############################
+# detector related parameters #
+###############################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
@@ -111,11 +125,6 @@ template_imagefile = '_master.h5'  # ''_data_%06d.h5'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_master.h5'
-#########################################################################
-# define parameters below if you want to regrid the data before phasing #
-#########################################################################
-sdd = 4.95  # sample to detector distance in m, not important if you use raw data
-energy = 8700  # x-ray energy in eV, not important if you use raw data
 ##################################
 # end of user-defined parameters #
 ##################################
