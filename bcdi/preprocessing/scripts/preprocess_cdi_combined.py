@@ -40,13 +40,14 @@ data in:                                                       /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [22]  # list or array of scan numbers
-root_folder = "D:/data/P10_August2019/data/"  # "/nfs/fs/fscxi/experiments/2019/PETRA/P10/11007170/raw/"
-sample_name = ["gold_2_2_2"]  # "S"  # # list of sample names. If only one name is indicated,
+scans = [32, 48, 55, 59, 71, 6, 15, 20, 37]  # list or array of scan numbers
+root_folder = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"
+sample_name = ['ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3',
+               'ht_pillar3_1', 'ht_pillar3_1', 'ht_pillar3_1', 'ht_pillar3_1']  # "S"  # # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
-user_comment = 'test'  # string, should start with "_"
+user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 4, 4]  # binning that will be used for phasing
+binning = [1, 2, 2]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
@@ -75,6 +76,7 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 #################################################
 reload_previous = False  # True to resume a previous masking (load data and mask)
 reload_orthogonal = True  # True if the reloaded data is already intepolated in an orthonormal frame
+previous_binning = [1, 1, 1]  # binning factors in each dimension of the binned data to be reloaded
 save_previous = False  # if True, will save the previous data and mask
 ######################################################################
 # parameters used for interpolating the data in an orthonormal frame #
@@ -83,8 +85,8 @@ use_rawdata = False  # False for using data gridded in laboratory frame/ True fo
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 fit_datarange = False  # if True, crop the final array within data range, avoiding areas at the corners of the window
 # viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
-sdd = 4.95  # sample to detector distance in m, used only if use_rawdata is False
-energy = 8700  # x-ray energy in eV, used only if use_rawdata is False
+sdd = 5.0  # sample to detector distance in m, used only if use_rawdata is False
+energy = 10000  # x-ray energy in eV, used only if use_rawdata is False
 ##################
 # saving options #
 ##################
@@ -110,9 +112,9 @@ specfile_name = ''
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
+direct_beam = (1255, 1161)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = [direct_beam[0] - 200, direct_beam[0] + 200, direct_beam[1] - 200, direct_beam[1] + 200]
+roi_detector = []  # [direct_beam[0] - 200, direct_beam[0] + 200, direct_beam[1] - 200, direct_beam[1] + 200]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector.
 photon_threshold = 0  # data[data < photon_threshold] = 0
@@ -241,6 +243,7 @@ def press_key(event):
 # check some parameters #
 #########################
 if not reload_previous:
+    previous_binning = [1, 1, 1]
     reload_orthogonal = False
 
 if reload_orthogonal:
@@ -268,6 +271,8 @@ else:
 # Initialize detector #
 #######################
 kwargs = dict()  # create dictionnary
+kwargs['is_series'] = is_series
+kwargs['previous_binning'] = previous_binning
 try:
     kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 except NameError:  # nb_pixel_x not declared
@@ -275,10 +280,6 @@ except NameError:  # nb_pixel_x not declared
 try:
     kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 except NameError:  # nb_pixel_y not declared
-    pass
-try:
-    kwargs['is_series'] = is_series
-except NameError:  # is_series not declared
     pass
 
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
@@ -497,31 +498,33 @@ for scan_nb in range(len(scans)):
 
         if use_rawdata:
             q_values = []
-            binning_comment = '_' + str(1) + '_' + str(binning[1]) + '_' + str(binning[2])
+            binning_comment = '_' + str(previous_binning[0] * binning[0]) + '_' + str(previous_binning[1] * binning[1])\
+                              + '_' + str(previous_binning[2] * binning[2])
             # binning along axis 0 is done after masking
             data[np.nonzero(mask)] = 0
-        else:
+        else:  # the data will be gridded, binning[0] is set to 1
+            # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
+            binning_comment = '_' + str(previous_binning[0] * binning[2]) + '_' + str(previous_binning[1] * binning[1])\
+                              + '_' + str(previous_binning[2] * binning[2])
 
             tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
             tmp_data[mask == 1] = 0
             fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                             title='Data before gridding\n', is_orthogonal=False, reciprocal_space=True)
             plt.savefig(savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                        str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
+                        str(nx) + binning_comment + '.png')
             plt.close(fig)
             del tmp_data
             gc.collect()
 
             print('\nGridding the data in the orthonormal laboratory frame')
-            # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
-            binning_comment = '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2])
             data, mask, q_values, frames_logical = \
                 pru.regrid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
                                frames_logical=frames_logical, correct_curvature=correct_curvature, debugging=debug)
 
-    else:  # reload_orthogonal=True, the data is already gridded, nothing to do
-        binning_comment = '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2])
-        # binning was realized along each axis
+    else:  # reload_orthogonal=True, the data is already gridded, binning was realized along each axis
+        binning_comment = '_' + str(previous_binning[0] * binning[0]) + '_' + str(previous_binning[1] * binning[1]) +\
+                          '_' + str(previous_binning[2] * binning[2])
 
     ##########################################
     # plot normalization by incident monitor #
@@ -817,23 +820,17 @@ for scan_nb in range(len(scans)):
         else:
             print('fit_datarange: q values are not provided')
 
-    if detector.binning[0] != 1 and not reload_orthogonal:  # only for data in the detector frame
-        ################################################################################################
-        # bin the stacking axis if needed, the detector plane was already binned when loading the data #
-        ################################################################################################
+    ###############################################################################################################
+    # only for non gridded data, bin the stacking axis, the detector plane was already binned during data loading #
+    ###############################################################################################################
+    if detector.binning[0] != 1 and not reload_orthogonal:  # for data to be gridded, binning[0] is set to 1
         data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
         mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
-        if not use_rawdata and len(q_values) != 0:  # this case should never happen since binning[0] is set to 1
-            # sample rotation around the vertical direction at P10: the effective binning in axis 0 was already
-            # binning[2], and we bin by binning[0] again
-            binning_comment = '_' + str(binning[2] * binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2])
-            qx = qx[::binning[0]]  # along Z
 
     nz, ny, nx = data.shape
     print('\nData size after binning the stacking dimension:', data.shape)
     comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx) + binning_comment
-    # ond need the number of pixels to calculate the voxel size
 
     ############################
     # save final data and mask #

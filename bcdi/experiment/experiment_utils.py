@@ -585,6 +585,7 @@ class Detector(object):
         :param kwargs:
          - 'is_series' = boolean, True is the measurement is a series at P10 beamline
          - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
+         - 'previous_binning': tuple or list of the three binning factors for reloaded binned data
         """
         for k in kwargs.keys():
             if k in ['is_series']:
@@ -593,8 +594,15 @@ class Detector(object):
                 nb_pixel_x = kwargs['nb_pixel_x']
             elif k in ['nb_pixel_y']:
                 nb_pixel_y = kwargs['nb_pixel_y']
+            elif k in ['previous_binning']:
+                previous_binning = kwargs['previous_binning']
             else:
                 raise Exception("unknown keyword argument given:", k)
+
+        try:
+            self.previous_binning = previous_binning
+        except NameError:  # previous_binning not declared
+            self.previous_binning = (1, 1, 1)
 
         self.name = name  # string
         self.offsets = ()
@@ -668,5 +676,6 @@ class Detector(object):
             raise ValueError("Incorrect value for parameter 'sum_roi'")
 
         self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
-        self.pixelsize_y = self.pixelsize_y * binning[1]
-        self.pixelsize_x = self.pixelsize_x * binning[2]
+        # correct the pixel sizes by taking into account past and future binning
+        self.pixelsize_y = self.pixelsize_y * self.previous_binning[1] * self.binning[1]
+        self.pixelsize_x = self.pixelsize_x * self.previous_binning[2] * self.binning[2]
