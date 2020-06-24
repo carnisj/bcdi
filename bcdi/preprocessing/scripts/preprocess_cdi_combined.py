@@ -256,6 +256,9 @@ if not use_rawdata:
         print('use_rawdata=False: defaulting the binning factor along the stacking dimension to 1')
         # the vertical axis y being the rotation axis, binning along z downstream and x outboard will be the same
         binning[0] = 1
+        if previous_binning[0] != 1:
+            print('previous_binning along axis 0 should be 1 for reloaded data to be gridded (angles will not match)')
+            sys.exit()
 
 if type(sample_name) is list:
     if len(sample_name) == 1:
@@ -390,7 +393,6 @@ for scan_nb in range(len(scans)):
 
             normalize_method = 'skip'  # we assume that normalization was already performed
             monitor = []  # we assume that normalization was already performed
-            binning_comment = ''
             min_range = (nx / 2) * np.sqrt(2)  # used when fit_datarange is True, keep the full array because we do not
             # know the position of the origin of reciprocal space
 
@@ -506,8 +508,9 @@ for scan_nb in range(len(scans)):
             # binning along axis 0 is done after masking
             data[np.nonzero(mask)] = 0
         else:  # the data will be gridded, binning[0] is set to 1
-            # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
-            binning_comment = '_' + str(previous_binning[0] * binning[2]) + '_' + str(previous_binning[1] * binning[1])\
+            # sample rotation around the vertical direction at P10:
+            # the effective binning in axis 0 is previous_binning[2]*binning[2]
+            binning_comment = '_' + str(previous_binning[2] * binning[2]) + '_' + str(previous_binning[1] * binning[1])\
                               + '_' + str(previous_binning[2] * binning[2])
 
             tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
