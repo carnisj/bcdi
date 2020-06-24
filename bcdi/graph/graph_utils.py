@@ -152,9 +152,14 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     for k in kwargs.keys():
         if k in ['xlabel']:
             xlabel = kwargs['xlabel']
+            if type(tuple_title) is not tuple:
+                xlabel = (xlabel,) * nb_subplots
         elif k in ['ylabel']:
             ylabel = kwargs['ylabel']
+            if type(ylabel) is not tuple:
+                ylabel = (ylabel,) * nb_subplots
         else:
+            print(k)
             raise Exception("unknown keyword argument given: allowed is"
                             "'xlabel' and 'ylabel'")
     try:
