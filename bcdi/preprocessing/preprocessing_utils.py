@@ -2635,6 +2635,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
                                 ylabel=('Counts (a.u.)', 'Rocking dimension', 'Rocking dimension'),
                                 is_orthogonal=False, reciprocal_space=True)
         fig.savefig(savedir + 'monitor_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '.png')
+        plt.close(fig)
 
     return array, monitor
 
