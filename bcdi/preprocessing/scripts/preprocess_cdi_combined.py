@@ -371,6 +371,9 @@ for scan_nb in range(len(scans)):
         npz_key = mask.files
         mask = mask[npz_key[0]]
 
+        # update savedir to save the data in the same directory as the reloaded data
+        detector.savedir = os.path.dirname(file_path)
+
         if save_previous:
             np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous' + comment, data=data)
             np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx_previous', mask=mask)
