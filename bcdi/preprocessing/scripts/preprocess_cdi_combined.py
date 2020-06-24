@@ -369,7 +369,7 @@ for scan_nb in range(len(scans)):
         nz, ny, nx = np.shape(data)
 
         # update savedir to save the data in the same directory as the reloaded data
-        savedir = os.path.dirname(file_path)
+        savedir = os.path.dirname(file_path) + '/'
         detector.savedir = savedir
 
         file_path = filedialog.askopenfilename(initialdir=savedir, title="Select mask file",
@@ -538,7 +538,10 @@ for scan_nb in range(len(scans)):
     ##########################################
     if normalize_method != 'skip':
         plt.ion()
-        fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
+        tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
+        tmp_data[tmp_data < 5] = 0  # threshold the background
+        tmp_data[mask == 1] = 0
+        fig = gu.combined_plots(tuple_array=(monitor, tmp_data), tuple_sum_frames=(False, True),
                                 tuple_sum_axis=(0, 1), tuple_width_v=None,
                                 tuple_width_h=None, tuple_colorbar=(False, False),
                                 tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
@@ -555,6 +558,8 @@ for scan_nb in range(len(scans)):
             plt.disconnect(cid)
         plt.close(fig)
         plt.ioff()
+        del tmp_data
+        gc.collect()
         comment = comment + '_norm'
 
     nz, ny, nx = np.shape(data)
