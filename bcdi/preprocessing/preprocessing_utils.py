@@ -383,6 +383,7 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
         elif k in ['q_values']:
             q_values = kwargs['q_values']
         else:
+            print(k)
             raise Exception("unknown keyword argument given: allowed is"
                             "'fix_bragg', 'fix_size', 'pad_size' and 'q_values'")
     try:
@@ -1016,6 +1017,7 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         if k in ['follow_bragg']:
             follow_bragg = kwargs['follow_bragg']
         else:
+            print(k)
             raise Exception("unknown keyword argument given: allowed is 'follow_bragg'")
     if setup.rocking_angle == 'energy':
         try:
@@ -1164,6 +1166,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
         if k in ['follow_bragg']:
             follow_bragg = kwargs['follow_bragg']
         else:
+            print(k)
             raise Exception("unknown keyword argument given: allowed is 'follow_bragg'")
     if setup.rocking_angle == 'energy':
         try:
@@ -1377,6 +1380,7 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
         if k in ['photon_threshold']:
             photon_threshold = kwargs['photon_threshold']
         else:
+            print(k)
             raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
     try:
         photon_threshold
@@ -3029,6 +3033,7 @@ def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize
         if k in ['photon_threshold']:
             photon_threshold = kwargs['photon_threshold']
         else:
+            print(k)
             raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
     try:
         photon_threshold

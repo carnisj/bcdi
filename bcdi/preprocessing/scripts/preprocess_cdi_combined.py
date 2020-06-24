@@ -415,14 +415,14 @@ for scan_nb in range(len(scans)):
             if photon_filter == 'loading':
                 data, mask, frames_logical, monitor = pru.reload_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
                                                                           data=data, mask=mask, detector=detector,
-                                                                          setup=setup, normalize=normalize_method,
-                                                                          debugging=debug,
+                                                                          setup=setup, debugging=debug,
+                                                                          normalize_method=normalize_method,
                                                                           photon_threshold=photon_threshold)
             else:  # photon_filter = 'postprocessing'
                 data, mask, frames_logical, monitor = pru.reload_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
                                                                           data=data, mask=mask, detector=detector,
-                                                                          setup=setup, normalize=normalize_method,
-                                                                          debugging=debug)
+                                                                          setup=setup, debugging=debug,
+                                                                          normalize_method=normalize_method)
 
     else:  # new masking process
         reload_orthogonal = False  # the data is in the detector plane
