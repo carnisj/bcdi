@@ -177,7 +177,7 @@ def press_key(event):
     :return: updated data, mask and controls
     """
     global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, detector_plane, info_text
+    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text
 
     try:
         if event.inaxes == ax0:
@@ -200,7 +200,7 @@ def press_key(event):
                     pru.update_aliens_combined(key=event.key, pix=int(np.rint(event.xdata)),
                                                piy=int(np.rint(event.ydata)), original_data=original_data,
                                                original_mask=original_mask, updated_data=data, updated_mask=mask,
-                                               axes=(ax0, ax1, ax2, ax3), width=width, dim=dim, frame_index=frame_index,
+                                               axes=(ax0, ax1, ax2), width=width, dim=dim, frame_index=frame_index,
                                                vmin=0, vmax=max_colorbar, invert_yaxis=invert_yaxis)
             elif flag_mask:
                 if previous_axis == ax0:
@@ -223,7 +223,7 @@ def press_key(event):
                     pru.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
                                              piy=int(np.rint(event.ydata)), original_data=original_data,
                                              original_mask=mask, updated_data=data, updated_mask=updated_mask,
-                                             axes=(ax0, ax1, ax2, ax3), flag_pause=flag_pause, points=points,
+                                             axes=(ax0, ax1, ax2), flag_pause=flag_pause, points=points,
                                              xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
                                              vmin=0, vmax=max_colorbar, invert_yaxis=invert_yaxis)
 
@@ -468,7 +468,10 @@ for scan_nb in range(len(scans)):
             previous_axis = None
             xy = []  # list of points for mask
 
-            fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
+            fig_mask = plt.figure(figsize=(12, 9))
+            ax0 = fig_mask.add_subplot(121)
+            ax1 = fig_mask.add_subplot(322)
+            ax2 = fig_mask.add_subplot(324)
             fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
             original_data = np.copy(data)
             updated_mask = np.zeros((nz, ny, nx))
@@ -476,19 +479,18 @@ for scan_nb in range(len(scans)):
             ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar)
             ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar)
             ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar)
-            ax3.set_visible(False)
             ax0.axis('scaled')
             ax1.axis('scaled')
             ax2.axis('scaled')
             ax0.set_title("XY")
             ax1.set_title("XZ")
             ax2.set_title("YZ")
-            fig_mask.text(0.60, 0.45, "click to select the vertices of a polygon mask", size=12)
-            fig_mask.text(0.60, 0.40, "x to pause/resume polygon masking for pan/zoom", size=12)
-            fig_mask.text(0.60, 0.35, "p plot mask ; r reset current points", size=12)
-            fig_mask.text(0.60, 0.30, "m square mask ; b unmask ; right darker ; left brighter", size=12)
-            fig_mask.text(0.60, 0.25, "up larger masking box ; down smaller masking box", size=12)
-            fig_mask.text(0.60, 0.20, "a restart ; q quit", size=12)
+            fig_mask.text(0.60, 0.27, "click to select the vertices of a polygon mask", size=10)
+            fig_mask.text(0.60, 0.24, "x to pause/resume polygon masking for pan/zoom", size=10)
+            fig_mask.text(0.60, 0.21, "p plot mask ; r reset current points", size=10)
+            fig_mask.text(0.60, 0.18, "m square mask ; b unmask ; right darker ; left brighter", size=10)
+            fig_mask.text(0.60, 0.15, "up larger masking box ; down smaller masking box", size=10)
+            fig_mask.text(0.60, 0.12, "a restart ; q quit", size=10)
             info_text = fig_mask.text(0.60, 0.05, "masking enabled", size=16)
             plt.tight_layout()
             plt.connect('key_press_event', press_key)
