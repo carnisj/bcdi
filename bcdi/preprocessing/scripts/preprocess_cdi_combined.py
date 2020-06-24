@@ -368,14 +368,15 @@ for scan_nb in range(len(scans)):
         data = data[npz_key[0]]
         nz, ny, nx = np.shape(data)
 
-        file_path = filedialog.askopenfilename(initialdir=homedir, title="Select mask file",
+        # update savedir to save the data in the same directory as the reloaded data
+        savedir = os.path.dirname(file_path)
+        detector.savedir = savedir
+
+        file_path = filedialog.askopenfilename(initialdir=savedir, title="Select mask file",
                                                filetypes=[("NPZ", "*.npz")])
         mask = np.load(file_path)
         npz_key = mask.files
         mask = mask[npz_key[0]]
-
-        # update savedir to save the data in the same directory as the reloaded data
-        detector.savedir = os.path.dirname(file_path)
 
         if save_previous:
             np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous' + comment, data=data)
