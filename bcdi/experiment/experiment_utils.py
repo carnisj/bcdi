@@ -608,49 +608,49 @@ class Detector(object):
         self.offsets = ()
         if name == 'Maxipix':
             try:
-                self.nb_pixel_x = nb_pixel_x
+                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
             except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 516
+                self.nb_pixel_x = 516 // previous_binning[2]
             try:
-                self.nb_pixel_y = nb_pixel_y
+                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
             except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 516
+                self.nb_pixel_y = 516 // previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'mpx4inr'
         elif name == 'Eiger2M':
             try:
-                self.nb_pixel_x = nb_pixel_x
+                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
             except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 1030
+                self.nb_pixel_x = 1030 // previous_binning[2]
             try:
-                self.nb_pixel_y = nb_pixel_y
+                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
             except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 2164
+                self.nb_pixel_y = 2164 // previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = 'ei2minr'
         elif name == 'Eiger4M':
             try:
-                self.nb_pixel_x = nb_pixel_x
+                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
             except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 2070
+                self.nb_pixel_x = 2070 // previous_binning[2]
             try:
-                self.nb_pixel_y = nb_pixel_y
+                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
             except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 2167
+                self.nb_pixel_y = 2167 // previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = ''  # unused
         elif name == 'Timepix':
             try:
-                self.nb_pixel_x = nb_pixel_x
+                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
             except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 256
+                self.nb_pixel_x = 256 // previous_binning[2]
             try:
-                self.nb_pixel_y = nb_pixel_y
+                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
             except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 256
+                self.nb_pixel_y = 256 // previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = ''  # unused
