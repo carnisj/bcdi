@@ -1031,7 +1031,7 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     # normalize by the incident X-ray beam intensity
     if normalize:
         rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                             norm_to_min=True, debugging=debugging)
+                                             norm_to_min=True, savedir=detector.savedir, debugging=True)
 
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
@@ -1184,7 +1184,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
     # normalize by the incident X-ray beam intensity
     if normalize:
         rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                             norm_to_min=True, debugging=debugging)
+                                             norm_to_min=True, savedir=detector.savedir, debugging=True)
 
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
@@ -1405,7 +1405,7 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     else:
         print('Intensity normalization using ' + normalize)
         rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                             norm_to_min=True, debugging=debugging)
+                                             norm_to_min=True, savedir=detector.savedir, debugging=True)
 
     nbz, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
@@ -2559,7 +2559,7 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
     return tilt, grazing, inplane, outofplane
 
 
-def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=True, debugging=False):
+def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_min=True, debugging=False):
     """
     Normalize array using the monitor values.
 
@@ -2567,6 +2567,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=True, debu
     :param raw_monitor: the monitor values
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param savedir: path where to save the debugging figure
     :param norm_to_min: normalize to min(monitor) instead of max(monitor), avoid multiplying the noise
     :type norm_to_min: bool
     :param debugging: set to True to see plots
@@ -2582,11 +2583,14 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=True, debu
         print('Data normalization by monitor.max()/monitor')
 
     ndim = array.ndim
+    nbz, nby, nbx = array.shape
     if ndim != 3:
         raise ValueError('Array should be 3D')
 
     if debugging:
-        gu.imshow_plot(array=array, sum_frames=True, sum_axis=1, vmin=0, scale='log', title='Data before normalization')
+        original_data = np.copy(array)
+        original_data[original_data < 5] = 0  # remove the background
+        original_data = original_data.sum(axis=1)  # the first axis is the normalization axis
         print('frames_logical: length=', frames_logical.shape, 'value=\n', frames_logical)
 
     # crop/pad monitor depending on frames_logical array
@@ -2619,6 +2623,18 @@ def normalize_dataset(array, raw_monitor, frames_logical, norm_to_min=True, debu
 
     for idx in range(nbz):
         array[idx, :, :] = array[idx, :, :] * monitor[idx]
+
+    if debugging:
+        norm_data = np.copy(array)
+        norm_data[norm_data < 5] = 0  # remove the background
+        norm_data = norm_data.sum(axis=1)  # the first axis is the normalization axis
+        fig = gu.combined_plots(tuple_array=(monitor, original_data, norm_data), tuple_sum_frames=False,
+                                tuple_colorbar=False, tuple_vmin=(np.nan, 0, 0), tuple_vmax=np.nan,
+                                tuple_title=('monitor.min() / monitor', 'Original data', 'Data after normalization'),
+                                tuple_scale=('linear', 'log', 'log'), xlabel='Frame number',
+                                ylabel=('Counts (a.u.)', 'Rocking dimension', 'Rocking dimension'),
+                                is_orthogonal=False, reciprocal_space=True)
+        fig.savefig(savedir + 'monitor_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '.png')
 
     return array, monitor
 
@@ -3064,7 +3080,7 @@ def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize
 
         print('Intensity normalization using ' + normalize_method)
         data, monitor = normalize_dataset(array=data, raw_monitor=monitor, frames_logical=frames_logical,
-                                          norm_to_min=True, debugging=debugging)
+                                          norm_to_min=True, savedir=detector.savedir, debugging=True)
 
     # pad the data to the shape defined by the ROI
     if detector.roi[1] - detector.roi[0] > nby or detector.roi[3] - detector.roi[2] > nbx:
