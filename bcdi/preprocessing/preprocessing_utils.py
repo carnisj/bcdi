@@ -775,7 +775,7 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
             detector_angle[index_duplicated] = detector_angle[index_duplicated] - 0.0001
         else:
             detector_angle[index_duplicated] = detector_angle[index_duplicated] + 0.0001
-        print('RegularGridInterpolator cannot take dupicated values: shifting frame', index_duplicated,
+        print('RegularGridInterpolator cannot take duplicated values: shifting frame', index_duplicated,
               'by 1/10000 degrees for the interpolation')
 
         frames_logical[index_duplicated] = 1
