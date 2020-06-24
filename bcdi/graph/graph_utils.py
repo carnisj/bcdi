@@ -122,7 +122,10 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm)
     :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
-    :param kwargs: optional 'xlabel' and 'ylabel', labels for plots
+    :param kwargs:
+     - 'xlabel' , label of the horizontal axis for plots: string or tuple of strings
+     - 'ylabel' , label of the vertical axis for plots: string or tuple of strings
+     - 'position' , tuple of subplot positions in the format 231 (2 rows, 3 columns, first subplot)
     :return:  the figure instance
     """
     if type(tuple_array) is not tuple:
@@ -158,6 +161,10 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             ylabel = kwargs['ylabel']
             if type(ylabel) is not tuple:
                 ylabel = (ylabel,) * nb_subplots
+        elif k in ['position']:
+            position = kwargs['position']
+            if type(position) is not tuple or len(position) != nb_subplots:
+                raise ValueError('"position" should be a tuple of subplot positions')
         else:
             print(k)
             raise Exception("unknown keyword argument given: allowed is"
@@ -176,15 +183,18 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         for idx in range(nb_subplots-1):
             ylabel.append('')
 
-    nb_columns = nb_subplots // 2
-
-    nb_raws = nb_subplots // nb_columns + nb_subplots % nb_columns
+    try:
+        position
+    except NameError:
+        nb_columns = nb_subplots // 2
+        nb_raws = nb_subplots // nb_columns + nb_subplots % nb_columns
+        position = [nb_raws*100 + nb_columns*10 + index for index in range(1, nb_subplots+1)]
 
     plt.ion()
     plt.figure()
     for idx in range(nb_subplots):
 
-        axis = plt.subplot(nb_raws, nb_columns, idx+1)
+        axis = plt.subplot(position[idx])
 
         array = tuple_array[idx]
         sum_frames = tuple_sum_frames[idx]
