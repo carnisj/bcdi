@@ -152,7 +152,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     for k in kwargs.keys():
         if k in ['xlabel']:
             xlabel = kwargs['xlabel']
-            if type(tuple_title) is not tuple:
+            if type(xlabel) is not tuple:
                 xlabel = (xlabel,) * nb_subplots
         elif k in ['ylabel']:
             ylabel = kwargs['ylabel']
