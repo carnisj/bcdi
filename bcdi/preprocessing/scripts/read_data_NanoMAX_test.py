@@ -26,7 +26,7 @@ sys.path.append('/mxn/visitors/dzhigd/NanoMAX_beamtimes/python_scripts/bcdi/')
 #import bcdi.preprocessing.preprocessing_utils as pru # preprocessing
 
 # Routing to the data file
-beamtime_id = "20170093/2018032108/"
+beamtime_id = "20200587/2020062408/"
 scan = 1  # scan number as it appears in the folder name
 sample_name = "sample"  # without _ at the end
 # rootdir = ":/data/P10_August2019/data/" : offline processing
@@ -89,6 +89,17 @@ if calculate_degradation:
 	plt.figure(100)
 	plt.plot(R)
 	plt.show()
+
+def crop_auto(data):
+	sum_data = data.sum(2)
+	[x,y] = ndimage.measurements.center_of_mass(sum_data)
+	rows, cols = sum_data.shape
+	w = np.floor(np.min([x,y,rows-x,cols-y]))
+	if len(w) == 2:
+    	w[0] = np.min([window[0],window[1]])
+    	w[1] = np.min([window[0],window[1]])
+	data_cropped = data[x-w[0]+1:x+w[0],y-w[1]+1:y+w[1]]
+	return  data_cropped
 
 def calculate_data_degradation(data):
 	# R function is calculated for each frame with respect to the initial one
