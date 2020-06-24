@@ -2630,10 +2630,11 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
         norm_data = norm_data.sum(axis=1)  # the first axis is the normalization axis
         fig = gu.combined_plots(tuple_array=(monitor, original_data, norm_data), tuple_sum_frames=False,
                                 tuple_colorbar=False, tuple_vmin=(np.nan, 0, 0), tuple_vmax=np.nan,
-                                tuple_title=('monitor.min() / monitor', 'Original data', 'Data after normalization'),
-                                tuple_scale=('linear', 'log', 'log'), xlabel='Frame number',
+                                tuple_title=('monitor.min() / monitor', 'Before norm (thres. 5)',
+                                             'After norm (thres. 5)'), tuple_scale=('linear', 'log', 'log'),
+                                xlabel='Frame number', is_orthogonal=False, reciprocal_space=True,
                                 ylabel=('Counts (a.u.)', 'Rocking dimension', 'Rocking dimension'),
-                                is_orthogonal=False, reciprocal_space=True, position=(211, 223, 224))
+                                position=(211, 223, 224))
         fig.savefig(savedir + 'monitor_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '.png')
         plt.close(fig)
 
