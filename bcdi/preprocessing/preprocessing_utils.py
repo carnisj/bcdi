@@ -2589,6 +2589,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
 
     if debugging:
         original_data = np.copy(array)
+        original_max = original_data.max()
         original_data[original_data < 5] = 0  # remove the background
         original_data = original_data.sum(axis=1)  # the first axis is the normalization axis
         print('frames_logical: length=', frames_logical.shape, 'value=\n', frames_logical)
@@ -2626,6 +2627,8 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
 
     if debugging:
         norm_data = np.copy(array)
+        # rescale norm_data to original_data for easier comparison
+        norm_data = norm_data * original_max / norm_data.max()
         norm_data[norm_data < 5] = 0  # remove the background
         norm_data = norm_data.sum(axis=1)  # the first axis is the normalization axis
         fig = gu.combined_plots(tuple_array=(monitor, original_data, norm_data), tuple_sum_frames=False,
