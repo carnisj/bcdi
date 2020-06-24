@@ -240,10 +240,19 @@ def press_key(event):
 #########################
 # check some parameters #
 #########################
+if not reload_previous:
+    reload_orthogonal = False
+
+if reload_orthogonal:
+    use_rawdata = False
+
 if not use_rawdata:
-    print('use_rawdata=False: defaulting the binning factor along the stacking dimension to 1')
-    # the vertical axis y being the rotation axis, binning along z downstream and x outboard will be the same
-    binning[0] = 1
+    if reload_orthogonal:  # data already gridded, one can bin the first axis
+        pass
+    else:  # data in the detector frame, one cannot bin the first axis because it is done during interpolation
+        print('use_rawdata=False: defaulting the binning factor along the stacking dimension to 1')
+        # the vertical axis y being the rotation axis, binning along z downstream and x outboard will be the same
+        binning[0] = 1
 
 if type(sample_name) is list:
     if len(sample_name) == 1:
@@ -789,7 +798,7 @@ for scan_nb in range(len(scans)):
         if not flag_interact:
             plt.close(fig)
 
-    if not use_rawdata and fit_datarange and len(q_values) != 0:
+    if not use_rawdata and fit_datarange:
         ############################################################
         # select the largest cubic array fitting inside data range #
         ############################################################
@@ -800,20 +809,22 @@ for scan_nb in range(len(scans)):
             final_nxz = final_nxz - 1  # we want the number of pixels to be even
         data = data[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :, (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
         mask = mask[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :, (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
-        qx = qx[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along Z
-        qy = qy[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along X
-        # qz (along Y) keeps the same number of pixels
         print('\nData size after taking the largest data-defined area:', data.shape)
-        # need these numbers to calculate the voxel size
+        if len(q_values) != 0:
+            qx = qx[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along Z
+            qy = qy[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along X
+            # qz (along Y) keeps the same number of pixels
+        else:
+            print('fit_datarange: q values are not provided')
 
-    if detector.binning[0] != 1 and not reload_orthogonal:
+    if detector.binning[0] != 1 and not reload_orthogonal:  # only for data in the detector frame
         ################################################################################################
         # bin the stacking axis if needed, the detector plane was already binned when loading the data #
         ################################################################################################
         data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
         mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
-        if not use_rawdata and len(q_values) != 0:
+        if not use_rawdata and len(q_values) != 0:  # this case should never happen since binning[0] is set to 1
             # sample rotation around the vertical direction at P10: the effective binning in axis 0 was already
             # binning[2], and we bin by binning[0] again
             binning_comment = '_' + str(binning[2] * binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2])
@@ -822,6 +833,7 @@ for scan_nb in range(len(scans)):
     nz, ny, nx = data.shape
     print('\nData size after binning the stacking dimension:', data.shape)
     comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx) + binning_comment
+    # ond need the number of pixels to calculate the voxel size
 
     ############################
     # save final data and mask #
