@@ -2633,7 +2633,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
                                 tuple_title=('monitor.min() / monitor', 'Original data', 'Data after normalization'),
                                 tuple_scale=('linear', 'log', 'log'), xlabel='Frame number',
                                 ylabel=('Counts (a.u.)', 'Rocking dimension', 'Rocking dimension'),
-                                is_orthogonal=False, reciprocal_space=True)
+                                is_orthogonal=False, reciprocal_space=True, position=(211, 223, 224))
         fig.savefig(savedir + 'monitor_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '.png')
         plt.close(fig)
 
