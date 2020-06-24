@@ -754,10 +754,11 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     :param debugging: True to have more printed comments
     :return: updated data, mask, detector cdi_angle, frames_logical
     """
-    angular_step = cdi_angle[1]-cdi_angle[0]
-    detector_angle = cdi_angle[0] - angular_step * np.arange(len(cdi_angle))  # flip the rotation axis in order to
-    # compensate the rotation of the Ewald sphere due to sample rotation
+    detector_angle = np.zeros(len(cdi_angle))
+    # flip the rotation axis in order to compensate the rotation of the Ewald sphere due to sample rotation
     print('Reverse the rotation direction to compensate the rotation of the Ewald sphere')
+    for idx in range(len(cdi_angle)):
+        detector_angle[idx] = cdi_angle[0] - (cdi_angle[idx] - cdi_angle[0])
 
     wrap_angle = wrap(obj=detector_angle, start_angle=detector_angle.min(), range_angle=180)
     for idx in range(len(wrap_angle)):
@@ -771,7 +772,7 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     try:
         index_duplicated = np.where(frames_logical == 0)[0][0]
         # change the angle by a negligeable amount to still be able to use it for interpolation
-        if angular_step > 0:
+        if cdi_angle[1]-cdi_angle[0] > 0:
             detector_angle[index_duplicated] = detector_angle[index_duplicated] - 0.0001
         else:
             detector_angle[index_duplicated] = detector_angle[index_duplicated] + 0.0001
