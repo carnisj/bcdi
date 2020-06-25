@@ -2997,15 +2997,18 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
           + '\n')
 
     # plot the gridded data
-    binning = detector.binning  # only used for figure name when saving
+    final_binning = (detector.previous_binning[2]*detector.binning[2],
+                     detector.previous_binning[1]*detector.binning[1],
+                     detector.previous_binning[2]*detector.binning[2])
+    plot_comment = '_' + str(numx) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' +\
+                   str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
     # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
                                   levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
              '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
-    fig.savefig(detector.savedir + 'reciprocal_space_' + str(numx)+'_' + str(numy) + '_' + str(numx) +
-                '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
+    fig.savefig(detector.savedir + 'reciprocal_space' + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
@@ -3013,16 +3016,14 @@ def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_cur
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
              '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
-    fig.savefig(detector.savedir + 'reciprocal_space_central_'+str(numx)+'_'+str(numy)+'_'+str(numx) +
-                '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
+    fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
              '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
-    fig.savefig(detector.savedir + 'reciprocal_space_central_pix_' + str(numx) + '_' + str(numy) + '_' + str(
-        numx) + '_' + str(binning[2]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
+    fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
     plt.close(fig)
     if debugging:
         gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
