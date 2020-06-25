@@ -2635,9 +2635,9 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
                                 tuple_colorbar=False, tuple_vmin=(np.nan, 0, 0), tuple_vmax=np.nan,
                                 tuple_title=('monitor.min() / monitor', 'Before norm (thres. 5)',
                                              'After norm (thres. 5)'), tuple_scale=('linear', 'log', 'log'),
-                                xlabel='Frame number', is_orthogonal=False, reciprocal_space=True,
-                                ylabel=('Counts (a.u.)', 'Rocking dimension', 'Rocking dimension'),
-                                position=(211, 223, 224))
+                                xlabel=('Frame number', 'Detector X', 'Detector X'), is_orthogonal=False,
+                                ylabel=('Counts (a.u.)', 'Frame number', 'Frame number'),
+                                position=(211, 223, 224), reciprocal_space=True)
         fig.savefig(savedir + 'monitor_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '.png')
         plt.close(fig)
 
