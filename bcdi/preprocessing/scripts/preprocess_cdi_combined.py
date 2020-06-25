@@ -344,17 +344,18 @@ for scan_nb in range(len(scans)):
         comment = comment + '_ortho'
         savedir = homedir + "pynx/"
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-    else:
-        savedir = homedir + "pynxraw/"
-        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-    detector.savedir = savedir
-
-    if not use_rawdata:
         print('Output will interpolated in the orthogonal laboratory frame')
         plot_title = ['QzQx', 'QyQx', 'QyQz']
     else:
+        savedir = homedir + "pynxraw/"
+        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
         print('Output will be non orthogonal, in the detector frame')
         plot_title = ['YZ', 'XZ', 'XY']
+
+    detector.savedir = savedir
+
+    if normalize_method != 'skip':
+        comment = comment + '_norm'
 
     ####################################
     # Load data
@@ -379,7 +380,7 @@ for scan_nb in range(len(scans)):
         mask = mask[npz_key[0]]
 
         if save_previous:
-            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous' + comment, data=data)
+            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous', data=data)
             np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx_previous', mask=mask)
 
         if reload_orthogonal:  # the data is gridded in the orthonormal laboratory frame
@@ -531,49 +532,48 @@ for scan_nb in range(len(scans)):
                 pru.regrid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
                                frames_logical=frames_logical, correct_curvature=correct_curvature, debugging=debug)
 
+            # plot normalization by incident monitor for the gridded data
+            if normalize_method != 'skip':
+                plt.ion()
+                tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
+                tmp_data[tmp_data < 5] = 0  # threshold the background
+                tmp_data[mask == 1] = 0
+                fig = gu.combined_plots(tuple_array=(monitor, tmp_data), tuple_sum_frames=(False, True),
+                                        tuple_sum_axis=(0, 1), tuple_width_v=None,
+                                        tuple_width_h=None, tuple_colorbar=(False, False),
+                                        tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
+                                        tuple_title=('monitor.min() / monitor', 'Gridded data after normalization'),
+                                        tuple_scale=('linear', 'log'), xlabel=('Frame number', 'Qy'),
+                                        ylabel=('Counts (a.u.)', 'Qx'), position=(311, 212),
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+
+                fig.savefig(savedir + 'monitor_gridded_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                            str(nx) + binning_comment + '.png')
+                if flag_interact:
+                    cid = plt.connect('close_event', close_event)
+                    fig.waitforbuttonpress()
+                    plt.disconnect(cid)
+                plt.close(fig)
+                plt.ioff()
+                del tmp_data
+                gc.collect()
+
     else:  # reload_orthogonal=True, the data is already gridded, binning was realized along each axis
         binning_comment = '_' + str(previous_binning[0] * binning[0]) + '_' + str(previous_binning[1] * binning[1]) +\
                           '_' + str(previous_binning[2] * binning[2])
 
-    ##########################################
-    # plot normalization by incident monitor #
-    ##########################################
-    if normalize_method != 'skip':
-        plt.ion()
-        tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
-        tmp_data[tmp_data < 5] = 0  # threshold the background
-        tmp_data[mask == 1] = 0
-        fig = gu.combined_plots(tuple_array=(monitor, tmp_data), tuple_sum_frames=(False, True),
-                                tuple_sum_axis=(0, 1), tuple_width_v=None,
-                                tuple_width_h=None, tuple_colorbar=(False, False),
-                                tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
-                                tuple_title=('monitor.min() / monitor', 'Data after normalization'),
-                                tuple_scale=('linear', 'log'), xlabel=('Frame number', 'Frame number'),
-                                ylabel=('Counts (a.u.)', 'Rocking dimension'),
-                                is_orthogonal=not use_rawdata, reciprocal_space=True)
-
-        fig.savefig(savedir + 'monitor_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                    str(nx) + binning_comment + '.png')
-        if flag_interact:
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
-        plt.close(fig)
-        plt.ioff()
-        del tmp_data
-        gc.collect()
-        comment = comment + '_norm'
-
     nz, ny, nx = np.shape(data)
+    plt.ioff()
 
+    ##########################################
+    # optional masking of zero photon events #
+    ##########################################
     if mask_zero_event:
         # mask points when there is no intensity along the whole rocking curve - probably dead pixels
         temp_mask = np.zeros((ny, nx))
         temp_mask[np.sum(data, axis=0) == 0] = 1
         mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nz, axis=0) == 1] = 1
         del temp_mask
-
-    plt.ioff()
 
     #####################################
     # save data and mask before masking #
