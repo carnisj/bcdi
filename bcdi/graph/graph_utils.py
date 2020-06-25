@@ -243,8 +243,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                         slice_names = (' sum along Qx', ' sum along Qz', ' sum along Qy')
                     else:
                         slice_names = (' QyQz', ' QyQx', ' QzQx')
-                    ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
-                    hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
+                    ver_labels = (r"Q$_z$", r"Q$_x$", r"Q$_x$")
+                    hor_labels = (r"Q$_y$", r"Q$_y$", r"Q$_z$")
                 else:  # detector frame
                     if sum_frames:
                         slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
@@ -411,8 +411,8 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
                 slice_names = (' sum along Qx', ' sum along Qz', ' sum along Qy')
             else:
                 slice_names = (' QyQz', ' QyQx', ' QzQx')
-            ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
-            hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
+            ver_labels = (r"Q$_z$", r"Q$_x$", r"Q$_x$")
+            hor_labels = (r"Q$_y$", r"Q$_y$", r"Q$_z$")
         else:  # detector frame
             if sum_frames:
                 slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
@@ -592,10 +592,10 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                     slice_names = (' sum along Qx', ' sum along Qz', ' sum along Qy')
                 else:
                     slice_names = (' QyQz', ' QyQx', ' QzQx')
-                ver_labels = (labels[0] + r" Q$_z$ ($1/\AA$)", labels[0] + r" Q$_x$ ($1/\AA$)",
-                              labels[0] + r" Q$_x$ ($1/\AA$)")
-                hor_labels = (labels[1] + r" Q$_y$ ($1/\AA$)", labels[1] + r" Q$_y$ ($1/\AA$)",
-                              labels[1] + r" Q$_z$ ($1/\AA$)")
+                ver_labels = (labels[0] + r" Q$_z$", labels[0] + r" Q$_x$",
+                              labels[0] + r" Q$_x$")
+                hor_labels = (labels[1] + r" Q$_y$", labels[1] + r" Q$_y$",
+                              labels[1] + r" Q$_z$")
             else:  # detector frame
                 invert_yaxis = False
                 if sum_frames:
@@ -1025,8 +1025,8 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
                 slice_names = (' sum along Qx', ' sum along Qz', ' sum along Qy')
             else:
                 slice_names = (' QyQz', ' QyQx', ' QzQx')
-            ver_labels = (r"Q$_z$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)", r"Q$_x$ ($1/\AA$)")
-            hor_labels = (r"Q$_y$ ($1/\AA$)", r"Q$_y$ ($1/\AA$)", r"Q$_z$ ($1/\AA$)")
+            ver_labels = (r"Q$_z$", r"Q$_x$", r"Q$_x$")
+            hor_labels = (r"Q$_y$", r"Q$_y$", r"Q$_z$")
         else:  # detector frame
             invert_yaxis = False
             if sum_frames:
