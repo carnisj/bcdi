@@ -2609,8 +2609,14 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
             monitor[idx - nb_overlap] = raw_monitor[idx-nb_padded]
         else:
             nb_overlap = nb_overlap + 1
+
     if nb_padded != 0:
-        print('Monitor value set to 1 for ', nb_padded, ' frames padded')
+        if norm_to_min:
+            print('Monitor value set to raw_monitor.min() for ', nb_padded, ' frames padded')
+        else:  # norm to max
+            print('Monitor value set to raw_monitor.max() for ', nb_padded, ' frames padded')
+
+    print('Monitor min, max, mean:', monitor.min(), monitor.max(), monitor.mean())
 
     if norm_to_min:
         monitor = monitor.min() / monitor  # will divide higher intensities
