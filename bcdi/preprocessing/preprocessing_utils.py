@@ -2577,11 +2577,6 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
      - updated monitor
      - a title for plotting
     """
-    if norm_to_min:
-        print('Data normalization by monitor.min()/monitor')
-    else:
-        print('Data normalization by monitor.max()/monitor')
-
     ndim = array.ndim
     nbz, nby, nbx = array.shape
     if ndim != 3:
@@ -2617,6 +2612,10 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
             print('Monitor value set to raw_monitor.max() for ', nb_padded, ' frames padded')
 
     print('Monitor min, max, mean:', monitor.min(), monitor.max(), monitor.mean())
+    if norm_to_min:
+        print('Data normalization by monitor.min()/monitor')
+    else:
+        print('Data normalization by monitor.max()/monitor')
 
     if norm_to_min:
         monitor = monitor.min() / monitor  # will divide higher intensities
