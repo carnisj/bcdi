@@ -542,7 +542,7 @@ for scan_nb in range(len(scans)):
                                         tuple_sum_axis=(0, 1), tuple_width_v=None,
                                         tuple_width_h=None, tuple_colorbar=(False, False),
                                         tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
-                                        tuple_title=('monitor.min() / monitor', 'Gridded data after normalization'),
+                                        tuple_title=('monitor.min() / monitor', 'Gridded normed data\nthres. 5'),
                                         tuple_scale=('linear', 'log'), xlabel=('Frame number', "Q$_y$"),
                                         ylabel=('Counts (a.u.)', "Q$_x$"), position=(311, 212),
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
