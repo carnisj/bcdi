@@ -2592,7 +2592,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
         original_max = original_data.max()
         original_data[original_data < 5] = 0  # remove the background
         original_data = original_data.sum(axis=1)  # the first axis is the normalization axis
-        print('frames_logical: length=', frames_logical.shape, 'value=\n', frames_logical)
+        # print('frames_logical: length=', frames_logical.shape, 'value=\n', frames_logical)
 
     # crop/pad monitor depending on frames_logical array
     monitor = np.zeros((frames_logical != 0).sum())
