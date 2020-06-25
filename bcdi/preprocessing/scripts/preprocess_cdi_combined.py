@@ -543,8 +543,8 @@ for scan_nb in range(len(scans)):
                                         tuple_width_h=None, tuple_colorbar=(False, False),
                                         tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
                                         tuple_title=('monitor.min() / monitor', 'Gridded data after normalization'),
-                                        tuple_scale=('linear', 'log'), xlabel=('Frame number', 'Qy'),
-                                        ylabel=('Counts (a.u.)', 'Qx'), position=(311, 212),
+                                        tuple_scale=('linear', 'log'), xlabel=('Frame number', "Q$_y$"),
+                                        ylabel=('Counts (a.u.)', "Q$_x$"), position=(311, 212),
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
 
                 fig.savefig(savedir + 'monitor_gridded_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
