@@ -191,7 +191,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         position = [nb_raws*100 + nb_columns*10 + index for index in range(1, nb_subplots+1)]
 
     plt.ion()
-    plt.figure()
+    plt.figure(figsize=(12, 9))
     for idx in range(nb_subplots):
 
         axis = plt.subplot(position[idx])
