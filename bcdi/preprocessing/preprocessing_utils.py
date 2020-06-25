@@ -2611,7 +2611,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
         else:  # norm to max
             print('Monitor value set to raw_monitor.max() for ', nb_padded, ' frames padded')
 
-    print('Monitor min, max, mean:', monitor.min(), monitor.max(), monitor.mean())
+    print('Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}'.format(monitor.min(), monitor.max(), monitor.mean()))
     if norm_to_min:
         print('Data normalization by monitor.min()/monitor')
     else:
