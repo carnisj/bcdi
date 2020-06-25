@@ -242,14 +242,14 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                     if sum_frames:
                         slice_names = (' sum along Q$_x$', ' sum along Q$_z$', ' sum along Q$_y$')
                     else:
-                        slice_names = (' Q$_y$Q$_z$', ' Q$_y$Q$_x$', ' Q$_z$Q$_x$')
+                        slice_names = (' slice in Q$_x$', ' slice in Q$_z$', ' slice in Q$_y$')
                     ver_labels = ("Q$_z$", "Q$_x$", "Q$_x$")
                     hor_labels = ("Q$_y$", "Q$_y$", "Q$_z$")
                 else:  # detector frame
                     if sum_frames:
-                        slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                        slice_names = (' sum along Z', ' sum along Y', ' sum along X')
                     else:
-                        slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                        slice_names = (' slice in Z', ' slice in Y', ' slice in X')
                     ver_labels = ('Y', 'rocking angle', 'rocking angle')
                     hor_labels = ('X', 'X', 'Y')
             else:
@@ -257,14 +257,14 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                     if sum_frames:
                         slice_names = (' sum along z', ' sum along y', ' sum along x')
                     else:
-                        slice_names = (' xy', ' xz', ' yz')
+                        slice_names = (' slice in z', ' slice in y', ' slice in x')
                     ver_labels = ('y', 'z', 'z')
                     hor_labels = ('x', 'x', 'y')
                 else:  # detector frame
                     if sum_frames:
-                        slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                        slice_names = (' sum along Z', ' sum along Y', ' sum along X')
                     else:
-                        slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                        slice_names = (' slice in Z', ' slice in Y', ' slice in X')
                     ver_labels = ('Y', 'rocking angle', 'rocking angle')
                     hor_labels = ('X', 'X', 'Y')
 
@@ -410,14 +410,14 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
             if sum_frames:
                 slice_names = (' sum along Q$_x$', ' sum along Q$_z$', ' sum along Q$_y$')
             else:
-                slice_names = (' Q$_y$Q$_z$', ' Q$_y$Q$_x$', ' Q$_z$Q$_x$')
+                slice_names = (' slice in Q$_x$', ' slice in Q$_z$', ' slice in Q$_y$')
             ver_labels = ("Q$_z$", "Q$_x$", "Q$_x$")
             hor_labels = ("Q$_y$", "Q$_y$", "Q$_z$")
         else:  # detector frame
             if sum_frames:
-                slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                slice_names = (' sum along Z', ' sum along Y', ' sum along X')
             else:
-                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                slice_names = (' slice in Z', ' slice in Y', ' slice in X')
             ver_labels = ('Y', 'rocking angle', 'rocking angle')
             hor_labels = ('X', 'X', 'Y')
     else:
@@ -425,14 +425,14 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
             if sum_frames:
                 slice_names = (' sum along z', ' sum along y', ' sum along x')
             else:
-                slice_names = (' xy', ' xz', ' yz')
+                slice_names = (' slice in z', ' slice in y', ' slice in x')
             ver_labels = ('y', 'z', 'z')
             hor_labels = ('x', 'x', 'y')
         else:  # detector frame
             if sum_frames:
-                slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                slice_names = (' sum along Z', ' sum along Y', ' sum along X')
             else:
-                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                slice_names = (' slice in Z', ' slice in Y', ' slice in X')
             ver_labels = ('Y', 'rocking angle', 'rocking angle')
             hor_labels = ('X', 'X', 'Y')
 
@@ -591,7 +591,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                 if sum_frames:
                     slice_names = (' sum along Q$_x$', ' sum along Q$_z$', ' sum along Q$_y$')
                 else:
-                    slice_names = (' Q$_y$Q$_z$', ' Q$_y$Q$_x$', ' Q$_z$Q$_x$')
+                    slice_names = (' slice in Q$_x$', ' slice in Q$_z$', ' slice in Q$_y$')
                 ver_labels = (labels[0] + r" Q$_z$", labels[0] + r" Q$_x$",
                               labels[0] + r" Q$_x$")
                 hor_labels = (labels[1] + r" Q$_y$", labels[1] + r" Q$_y$",
@@ -599,9 +599,9 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
             else:  # detector frame
                 invert_yaxis = False
                 if sum_frames:
-                    slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                    slice_names = (' sum along Z', ' sum along Y', ' sum along X')
                 else:
-                    slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                    slice_names = (' slice in Z', ' slice in Y', ' slice in X')
                 ver_labels = (labels[0] + ' Y', labels[0] + ' rocking angle', labels[0] + ' rocking angle')
                 hor_labels = (labels[1] + ' X', labels[1] + ' X', labels[1] + ' Y')
         else:
@@ -610,15 +610,15 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                 if sum_frames:
                     slice_names = (' sum along z', ' sum along y', ' sum along x')
                 else:
-                    slice_names = (' xy', ' xz', ' yz')
+                    slice_names = (' slice in z', ' slice in y', ' slice in x')
                 ver_labels = (labels[0] + ' y', labels[0] + ' z', labels[0] + ' z')
                 hor_labels = (labels[1] + ' x', labels[1] + ' x', labels[1] + ' y')
             else:  # detector frame
                 invert_yaxis = False
                 if sum_frames:
-                    slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                    slice_names = (' sum along Z', ' sum along Y', ' sum along X')
                 else:
-                    slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                    slice_names = (' slice in Z', ' slice in Y', ' slice in X')
                 ver_labels = (labels[0] + ' Y', labels[0] + ' rocking angle', labels[0] + ' rocking angle')
                 hor_labels = (labels[1] + ' X', labels[1] + ' X', labels[1] + ' Y')
 
@@ -1024,15 +1024,15 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             if sum_frames:
                 slice_names = (' sum along Q$_x$', ' sum along Q$_z$', ' sum along Q$_y$')
             else:
-                slice_names = (' Q$_y$Q$_z$', ' Q$_y$Q$_x$', ' Q$_z$Q$_x$')
+                slice_names = (' slice in Q$_x$', ' slice in Q$_z$', ' slice in Q$_y$')
             ver_labels = ("Q$_z$", "Q$_x$", "Q$_x$")
             hor_labels = ("Q$_y$", "Q$_y$", "Q$_z$")
         else:  # detector frame
             invert_yaxis = False
             if sum_frames:
-                slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                slice_names = (' sum along Z', ' sum along Y', ' sum along X')
             else:
-                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                slice_names = (' slice in Z', ' slice in Y', ' slice in X')
             ver_labels = ('Y', 'rocking angle', 'rocking angle')
             hor_labels = ('X', 'X', 'Y')
     else:
@@ -1041,15 +1041,15 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             if sum_frames:
                 slice_names = (' sum along z', ' sum along y', ' sum along x')
             else:
-                slice_names = (' xy', ' xz', ' yz')
+                slice_names = (' slice in z', ' slice in y', ' slice in x')
             ver_labels = ('y', 'z', 'z')
             hor_labels = ('x', 'x', 'y')
         else:  # detector frame
             invert_yaxis = False
             if sum_frames:
-                slice_names = (' sum XY', ' sum X_RockingAngle', ' sum Y_RockingAngle')
+                slice_names = (' sum along Z', ' sum along Y', ' sum along X')
             else:
-                slice_names = (' XY', ' X_RockingAngle', ' Y_RockingAngle')
+                slice_names = (' slice in Z', ' slice in Y', ' slice in X')
             ver_labels = ('Y', 'rocking angle', 'rocking angle')
             hor_labels = ('X', 'X', 'Y')
 
