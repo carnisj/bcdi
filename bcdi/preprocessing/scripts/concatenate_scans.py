@@ -186,7 +186,7 @@ fig.text(0.50, 0.20, "Threshold for correlation: " + str(correlation_threshold),
 fig.text(0.50, 0.15, 'Scans concatenated:', size=12)
 fig.text(0.50, 0.10, str(combined_list), size=12)
 if plot_threshold != 0:
-    fig.text(0.50, 0.05, "Threshold for plots only: ", str(plot_threshold), size=12)
+    fig.text(0.50, 0.05, "Threshold for plots only: {:d}".format(plot_threshold), size=12)
 
 plt.pause(0.1)
 plt.savefig(savedir + 'data' + template + '.png')
