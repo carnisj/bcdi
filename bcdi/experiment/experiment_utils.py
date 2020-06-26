@@ -600,10 +600,11 @@ class Detector(object):
                 raise Exception("unknown keyword argument given:", k)
 
         try:
-            self.previous_binning = previous_binning
+            previous_binning
         except NameError:  # previous_binning not declared
-            self.previous_binning = (1, 1, 1)
-
+            previous_binning = (1, 1, 1)
+        self.previous_binning = previous_binning
+        
         self.name = name  # string
         self.offsets = ()
         if name == 'Maxipix':
