@@ -24,17 +24,16 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 22
-root_folder = "D:/data/CH5309/"
-sample_name = "ht_align1"  # "S"
+scan = 1460
+root_folder = "D:/data/P10_OER/data/"
+sample_name = "dewet2_2"  # "S"
 save_mask = False  # set to True to save the mask
-fit_rockingcurve = False  # set to True if you want a fit of the rocking curve
-######################################
-# define beamline related parameters #
-######################################
+fit_rockingcurve = True  # set to True if you want a fit of the rocking curve
+###############################
+# beamline related parameters #
+###############################
 beamline = 'P10'  # name of the beamlis[scan_nb]ne, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
-
 
 custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
@@ -45,18 +44,18 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 
-rocking_angle = "inplane"  # "outofplane" or "inplane"
-is_series = True  # specific to series measurement at P10
-specfile_name = sample_name + '_%05d'
+rocking_angle = "outofplane"  # "outofplane" or "inplane"
+is_series = False  # specific to series measurement at P10
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
 # template for SIXS_2019: ''
-# template for P10: sample_name + '_%05d'
+# template for P10: ''
 # template for CRISTAL: ''
-#############################################################
-# define detector related parameters and region of interest #
-#############################################################
+###############################
+# detector related parameters #
+###############################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 bragg_position = []  # Bragg peak position [vertical, horizontal], leave it as [] if there is a single peak
 peak_method = 'max'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
@@ -90,7 +89,7 @@ setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, c
                                custom_images=custom_images, custom_monitor=custom_monitor, custom_motors=custom_motors)
 
 if setup.beamline == 'P10':
-    specfile_name = specfile_name % scan
+    specfile_name = sample_name + '_{:05d}'.format(scan)
     homedir = root_folder + specfile_name + '/'
     detector.datadir = homedir + 'e4m/'
     template_imagefile = specfile_name + template_imagefile
