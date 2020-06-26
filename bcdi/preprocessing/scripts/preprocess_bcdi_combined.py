@@ -821,5 +821,8 @@ for scan_nb in range(len(scans)):
         savemat(savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
                 {'data': np.moveaxis(mask.astype(np.int8), [0, 1, 2], [-1, -2, -3])})
 
+    del data, mask
+    gc.collect()
+print('\nEnd of script')
 plt.ioff()
 plt.show()

@@ -893,6 +893,8 @@ for scan_nb in range(len(scans)):
     if not flag_interact:
         plt.close(fig)
 
+    del data, mask
+    gc.collect()
 print('\nEnd of script')
 plt.ioff()
 plt.show()
