@@ -801,8 +801,8 @@ for scan_nb in range(len(scans)):
         if not flag_interact:
             plt.close(fig)
 
-        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
-                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                        title='Masked data', is_orthogonal=not use_rawdata, reciprocal_space=True)
         plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
                     str(nx) + binning_comment + '.png')
         if not flag_interact:
