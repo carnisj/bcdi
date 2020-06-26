@@ -91,7 +91,8 @@ energy = 10000  # x-ray energy in eV, used only if use_rawdata is False
 # saving options #
 ##################
 save_rawdata = False  # save also the raw data when use_rawdata is False
-save_to_mat = False  # True to save also in .mat format
+save_to_npz = False  # True to save the processed data in npz format
+save_to_mat = False  # True to save the processed data in mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
 save_asint = False  # if True, the result will be saved as an array of integers (save space)
 ###############################
@@ -371,6 +372,7 @@ for scan_nb in range(len(scans)):
 
         # update savedir to save the data in the same directory as the reloaded data
         savedir = os.path.dirname(file_path) + '/'
+        print('\nSaving directory:', savedir)
         detector.savedir = savedir
 
         file_path = filedialog.askopenfilename(initialdir=savedir, title="Select mask file",
@@ -850,7 +852,8 @@ for scan_nb in range(len(scans)):
     # save final data and mask #
     ############################
     if not use_rawdata and len(q_values) != 0:
-        np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment, qx=qx, qz=qz, qy=qy)
+        if save_to_npz:
+            np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment, qx=qx, qz=qz, qy=qy)
         if save_to_mat:
             savemat(savedir + 'S' + str(scans[scan_nb]) + '_qx.mat', {'qx': qx})
             savemat(savedir + 'S' + str(scans[scan_nb]) + '_qy.mat', {'qy': qy})
@@ -861,9 +864,9 @@ for scan_nb in range(len(scans)):
         fig.savefig(detector.savedir + 'final_reciprocal_space_S' + str(scans[scan_nb]) + comment + '.png')
         plt.close(fig)
 
-    print('\nSaving to directory:', savedir)
-    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
-    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
+    if save_to_npz:
+        np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
+        np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
 
     if save_to_mat:
         # save to .mat, the new order is x y z (outboard, vertical up, downstream)
