@@ -85,7 +85,10 @@ def colorbar(mappable, nbins=10):
     from matplotlib import ticker
     import matplotlib.pyplot as plt
     last_axes = plt.gca()
-    ax = mappable.axes
+    try:
+        ax = mappable.axes
+    except AttributeError:  # QuadContourSet
+        ax = mappable.ax
     fig = ax.figure
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
