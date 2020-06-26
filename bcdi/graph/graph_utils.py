@@ -371,7 +371,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                              length=tick_length, width=tick_width)
         if plot_colorbar:
-            plt.colorbar(plot, ax=axis)
+            colorbar(plot, nbins=5)
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.5)
@@ -486,7 +486,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
         ax0.set_ylabel(ver_labels[0])
         ax0.set_title(title + slice_names[0])
         if plot_colorbar:
-            plt.colorbar(plt0, ax=ax0)
+            colorbar(plt0, nbins=5)
 
         # axis 1
         temp_array = np.copy(array)
@@ -512,7 +512,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
         ax1.set_ylabel(ver_labels[1])
         ax1.set_title(title + slice_names[1])
         if plot_colorbar:
-            plt.colorbar(plt1, ax=ax1)
+            colorbar(plt1, nbins=5)
 
         # axis 2
         temp_array = np.copy(array)
@@ -538,7 +538,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
         ax2.set_ylabel(ver_labels[2])
         ax2.set_title(title + slice_names[2])
         if plot_colorbar:
-            plt.colorbar(plt2, ax=ax2)
+            colorbar(plt2, nbins=5)
 
         # axis 3
         ax3.set_visible(False)
@@ -720,7 +720,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                          length=tick_length, width=tick_width)
     if plot_colorbar:
-        plt.colorbar(plot, ax=axis)
+        colorbar(plot, nbins=5)
     plt.pause(0.5)
     plt.ioff()
     return fig, axis, plot
@@ -734,7 +734,7 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
     :param data: the 3D data array
     :param figure: the figure instance
     :param scale: 'linear' or 'log'
-    :param dim: the axis currently under review (axis 0, 1 or 2)
+    :param dim: the axis over which the loop is performed (axis 0, 1 or 2)
     :param idx: the frame index in the current axis
     :param savedir: path of the directory for saving images
     :param cmap: colormap to be used
@@ -755,128 +755,38 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
     if vmax is None:
         vmax = data.max()
 
-    myaxs = figure.gca()
-    xmin, xmax = myaxs.get_xlim()
-    ymin, ymax = myaxs.get_ylim()
+    axis = figure.gca()
+    xmin, xmax = axis.get_xlim()
+    ymin, ymax = axis.get_ylim()
     if key == 'u':  # show next frame
         idx = idx + 1
-        figure.clear()
         if dim == 0:
             if idx > nbz - 1:
                 idx = 0
-            if scale == 'linear':
-                plt.imshow(data[idx, :, :], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[idx, :, :]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
         elif dim == 1:
             if idx > nby - 1:
                 idx = 0
-            if scale == 'linear':
-                plt.imshow(data[:, idx, :], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nby) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
         elif dim == 2:
             if idx > nbx - 1:
                 idx = 0
-            if scale == 'linear':
-                plt.imshow(data[:, :, idx], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
-        myaxs = figure.gca()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.draw()
 
     elif key == 'd':  # show previous frame
         idx = idx - 1
-        figure.clear()
         if dim == 0:
             if idx < 0:
                 idx = nbz - 1
-            if scale == 'linear':
-                plt.imshow(data[idx, :, :], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[idx, :, :]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
         elif dim == 1:
             if idx < 0:
                 idx = nby - 1
-            if scale == 'linear':
-                plt.imshow(data[:, idx, :], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nby) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
         elif dim == 2:
             if idx < 0:
                 idx = nbx - 1
-            if scale == 'linear':
-                plt.imshow(data[:, :, idx], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
-        myaxs = figure.gca()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.draw()
 
     elif key == 'right':  # increase colobar max
         if scale == 'linear':
             vmax = vmax * 2
         else:
             vmax = vmax + 1
-        figure.clear()
-        if dim == 0:
-            if scale == 'linear':
-                plt.imshow(data[idx, :, :], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[idx, :, :]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
-        elif dim == 1:
-            if scale == 'linear':
-                plt.imshow(data[:, idx, :], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nby) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
-        elif dim == 2:
-            if scale == 'linear':
-                plt.imshow(data[:, :, idx], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
-        myaxs = figure.gca()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.draw()
 
     elif key == 'left':  # reduce colobar max
         if scale == 'linear':
@@ -885,69 +795,17 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
             vmax = vmax - 1
         if vmax < 1:
             vmax = 1
-        figure.clear()
-        if dim == 0:
-            if scale == 'linear':
-                plt.imshow(data[idx, :, :], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[idx, :, :]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
-        elif dim == 1:
-            if scale == 'linear':
-                plt.imshow(data[:, idx, :], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nby) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
-        elif dim == 2:
-            if scale == 'linear':
-                plt.imshow(data[:, :, idx], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
-        myaxs = figure.gca()
-        myaxs.set_xlim([xmin, xmax])
-        myaxs.set_ylim([ymin, ymax])
-        plt.draw()
 
     elif key == 'p':  # plot full image
-        figure.clear()
         if dim == 0:
-            if scale == 'linear':
-                plt.imshow(data[idx, :, ], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[idx, :, ]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
+            xmin, xmax = -0.5, nbx - 0.5
+            ymin, ymax = nby - 0.5, -0.5  # pointing down
         elif dim == 1:
-            if scale == 'linear':
-                plt.imshow(data[:, idx, :], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nby) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
+            xmin, xmax = -0.5, nbx - 0.5
+            ymin, ymax = nbz - 0.5, -0.5  # pointing down
         elif dim == 2:
-            if scale == 'linear':
-                plt.imshow(data[:, :, idx], vmin=vmin, vmax=vmax, cmap=cmap)
-            else:  # 'log'
-                plt.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=vmax, cmap=cmap)
-            plt.title("Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
-                      "q quit ; u next frame ; d previous frame ; p unzoom\n"
-                      "right darker ; left brighter ; r save 2D frame")
-            plt.colorbar()
-        plt.draw()
+            xmin, xmax = -0.5, nby - 0.5
+            ymin, ymax = nbz - 0.5, -0.5  # pointing down
 
     elif key == 'q':
         exit_flag = True
@@ -955,6 +813,45 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
     elif key == 'r':
         filename = 'frame' + str(idx) + '_dim' + str(dim) + '.png'
         plt.savefig(savedir + filename)
+
+    # get the images on axis
+    im = axis.images
+    # get and remove the existing colorbar
+    cb = im[0].colorbar  # there is only one axis in the list im
+    cb.remove()
+
+    axis.cla()
+    if dim == 0:
+        if scale == 'linear':
+            plot = axis.imshow(data[idx, :, :], vmin=vmin, vmax=vmax, cmap=cmap)
+        else:  # 'log'
+            plot = axis.imshow(np.log10(data[idx, :, :]), vmin=vmin, vmax=vmax, cmap=cmap)
+        axis.set_title("Frame " + str(idx + 1) + "/" + str(nbz) +
+                       "\nq quit ; u next frame ; d previous frame ; p unzoom\n"
+                       "right darker ; left brighter ; r save 2D frame")
+        colorbar(plot, nbins=5)
+    elif dim == 1:
+        if scale == 'linear':
+            plot = axis.imshow(data[:, idx, :], vmin=vmin, vmax=vmax, cmap=cmap)
+        else:  # 'log'
+            plot = axis.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=vmax, cmap=cmap)
+        axis.set_title("Frame " + str(idx + 1) + "/" + str(nby) +
+                       "\nq quit ; u next frame ; d previous frame ; p unzoom\n"
+                       "right darker ; left brighter ; r save 2D frame")
+        colorbar(plot, nbins=5)
+    elif dim == 2:
+        if scale == 'linear':
+            plot = axis.imshow(data[:, :, idx], vmin=vmin, vmax=vmax, cmap=cmap)
+        else:  # 'log'
+            plot = axis.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=vmax, cmap=cmap)
+        axis.set_title("Frame " + str(idx + 1) + "/" + str(nbx) +
+                       "\nq quit ; u next frame ; d previous frame ; p unzoom\n"
+                       "right darker ; left brighter ; r save 2D frame")
+        colorbar(plot, nbins=5)
+    axis.set_xlim([xmin, xmax])
+    axis.set_ylim([ymin, ymax])
+    plt.draw()
+
     return vmax, idx, exit_flag
 
 
@@ -1099,7 +996,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         ax0.invert_yaxis()
     plt.axis('scaled')
     if plot_colorbar:
-        plt.colorbar(plt0, ax=ax0)
+        colorbar(plt0, nbins=5)
     if pixel_spacing is not None:
         ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -1138,7 +1035,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     ax1.set_title(title + slice_names[1])
     plt.axis('scaled')
     if plot_colorbar:
-        plt.colorbar(plt1, ax=ax1)
+        colorbar(plt1, nbins=5)
     if pixel_spacing is not None:
         ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -1178,7 +1075,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     plt.axis('scaled')
 
     if plot_colorbar:
-        plt.colorbar(plt2, ax=ax2)
+        colorbar(plt2, nbins=5)
     if pixel_spacing is not None:
         ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -1264,7 +1161,7 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     plt.ion()
     fig, ax0 = plt.subplots(nrows=1, ncols=1, figsize=(12, 9), facecolor='w', edgecolor='k')
     plt0 = ax0.contourf(u_grid, v_grid, abs(intensity_grid), contour_range, cmap=cmap)
-    plt.colorbar(plt0, ax=ax0)
+    colorbar(plt0, nbins=5)
     ax0.axis('equal')
 
     # add the projection of the elevation angle, depending on the center of projection
