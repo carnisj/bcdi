@@ -18,10 +18,10 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
 helptext = """
-Graphical interface to visualize 2D slices through a 3D dataset in an easy way.
+Graphical interface to visualize 2D slices through a 3D stacked dataset.
 """
 
-datadir = "D:/data/P10_August2019/data/gold_2_2_2_00022/Zhe_2_2_2/"
+datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynxraw/"
 savedir = datadir  # "D:/data/CH5309/S614/test/"
 scale = 'log'  # 'linear' or 'log', scale of the 2D plots
 field = None  # data field name. Leave it to None for default.
@@ -98,54 +98,60 @@ if vmax is None:
 plt.ioff()
 nz, ny, nx = np.shape(data)
 max_colorbar = vmax
-print('Init', vmin, vmax)
+
 # in XY
 dim = 0
-fig_loop = plt.figure()
+fig_loop = plt.figure(figsize=(12, 9))
+fig_loop.canvas.mpl_disconnect(fig_loop.canvas.manager.key_press_handler_id)
+axis = fig_loop.add_subplot(111)
 idx = 0
 original_data = np.copy(data)
 if scale == 'linear':
-    plt.imshow(data[idx, :, :], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+    plot = axis.imshow(data[idx, :, :], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
 else:  # 'log'
-    plt.imshow(np.log10(data[idx, :, :]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
-plt.title("Frame " + str(idx + 1) + "/" + str(nz) + "\n"
-          "q quit ; u next frame ; d previous frame ; p unzoom\n"
-          "right darker ; left brighter ; r save 2D frame")
-plt.colorbar()
+    plot = axis.imshow(np.log10(data[idx, :, :]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+axis.set_title("Frame " + str(idx + 1) + "/" + str(nz) + "\n"
+               "q quit ; u next frame ; d previous frame ; p unzoom\n"
+               "right darker ; left brighter ; r save 2D frame")
+gu.colorbar(plot, nbins=5)
 plt.connect('key_press_event', press_key)
 fig_loop.set_facecolor(background_plot)
 plt.show()
-del dim, fig_loop
 
 # in XZ
 dim = 1
-fig_loop = plt.figure()
+fig_loop = plt.figure(figsize=(12, 9))
+fig_loop.canvas.mpl_disconnect(fig_loop.canvas.manager.key_press_handler_id)
+axis = fig_loop.add_subplot(111)
 idx = 0
 if scale == 'linear':
-    plt.imshow(data[:, idx, :], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+    plot = axis.imshow(data[:, idx, :], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
 else:  # 'log'
-    plt.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
-plt.title("Frame " + str(idx + 1) + "/" + str(ny) + "\n"
-          "q quit ; u next frame ; d previous frame ; p unzoom\n"
-          "right darker ; left brighter ; r save 2D frame")
-plt.colorbar()
+    plot = axis.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+axis.set_title("Frame " + str(idx + 1) + "/" + str(ny) + "\n"
+               "q quit ; u next frame ; d previous frame ; p unzoom\n"
+               "right darker ; left brighter ; r save 2D frame")
+gu.colorbar(plot, nbins=5)
 plt.connect('key_press_event', press_key)
 fig_loop.set_facecolor(background_plot)
 plt.show()
-del dim, fig_loop
 
 # in YZ
 dim = 2
-fig_loop = plt.figure()
+fig_loop = plt.figure(figsize=(12, 9))
+fig_loop.canvas.mpl_disconnect(fig_loop.canvas.manager.key_press_handler_id)
+axis = fig_loop.add_subplot(111)
 idx = 0
 if scale == 'linear':
-    plt.imshow(data[:, :, idx], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+    plot = axis.imshow(data[:, :, idx], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
 else:  # 'log'
-    plt.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
-plt.title("Frame " + str(idx + 1) + "/" + str(nx) + "\n"
-          "q quit ; u next frame ; d previous frame ; p unzoom\n"
-          "right darker ; left brighter ; r save 2D frame")
-plt.colorbar()
+    plot = axis.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+axis.set_title("Frame " + str(idx + 1) + "/" + str(nx) + "\n"
+               "q quit ; u next frame ; d previous frame ; p unzoom\n"
+               "right darker ; left brighter ; r save 2D frame")
+gu.colorbar(plot, nbins=5)
 plt.connect('key_press_event', press_key)
 fig_loop.set_facecolor(background_plot)
 plt.show()
+
+print('End of script')
