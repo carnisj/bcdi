@@ -372,7 +372,6 @@ for scan_nb in range(len(scans)):
 
         # update savedir to save the data in the same directory as the reloaded data
         savedir = os.path.dirname(file_path) + '/'
-        print('\nSaving directory:', savedir)
         detector.savedir = savedir
 
         file_path = filedialog.askopenfilename(initialdir=savedir, title="Select mask file",
@@ -851,6 +850,7 @@ for scan_nb in range(len(scans)):
     ############################
     # save final data and mask #
     ############################
+    print('\nSaving directory:', savedir)
     if not use_rawdata and len(q_values) != 0:
         if save_to_npz:
             np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment, qx=qx, qz=qz, qy=qy)
