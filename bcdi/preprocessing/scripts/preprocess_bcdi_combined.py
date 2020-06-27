@@ -47,7 +47,7 @@ sample_name = ["dewet2_2"]  # "SN"  # list of sample names. If only one name is 
 # it will be repeated to match the number of scans
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (1, 1, 1)  # binning that will be used for phasing
+binning = [1, 1, 1]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
@@ -96,6 +96,7 @@ save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_npz = False  # True to save the processed data in npz format
 save_to_mat = False  # True to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
+save_asint = False  # if True, the result will be saved as an array of integers (save space)
 ######################################
 # define beamline related parameters #
 ######################################
@@ -133,6 +134,9 @@ roi_detector = [553, 1063, 1041, 1701]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='skip' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
+photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon threshold should be applied
+# if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
+background_file = ''  # root_folder + 'background.npz'  #
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
 template_imagefile = '_master.h5'
@@ -160,6 +164,7 @@ custom_motors = {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685
 #########################################################################
 use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
+correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
@@ -282,6 +287,24 @@ def press_key(event):
 #########################
 # check some parameters #
 #########################
+if correct_curvature:
+    print('correction of the curvature of Ewalt sphere not yet implemented, defaulting to False')
+    correct_curvature = False  # TODO: implement this
+
+if not reload_previous:
+    previous_binning = [1, 1, 1]
+    reload_orthogonal = False
+
+if reload_orthogonal:
+    use_rawdata = False
+
+if not use_rawdata:
+    if reload_orthogonal:  # data already gridded, one can bin the first axis
+        pass
+    elif previous_binning[0] != 1:
+        print('previous_binning along axis 0 should be 1 for reloaded data to be gridded (angles will not match)')
+        sys.exit()
+
 if type(sample_name) is list:
     if len(sample_name) == 1:
         sample_name = [sample_name[0] for idx in range(len(scans))]
@@ -296,6 +319,8 @@ else:
 # Initialize detector #
 #######################
 kwargs = dict()  # create dictionnary
+kwargs['is_series'] = is_series
+kwargs['previous_binning'] = previous_binning
 try:
     kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 except NameError:  # nb_pixel_x not declared
@@ -303,10 +328,6 @@ except NameError:  # nb_pixel_x not declared
 try:
     kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 except NameError:  # nb_pixel_y not declared
-    pass
-try:
-    kwargs['is_series'] = is_series
-except NameError:  # is_series not declared
     pass
 
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
@@ -334,9 +355,10 @@ if not use_rawdata:
     # first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
     cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
     cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
-    hxrd.Ang2Q.init_area(setup.detector_ver, setup.detector_hor, cch1=cch1, cch2=cch2, Nch1=detector.roi[1] - detector.roi[0],
-                         Nch2=detector.roi[3] - detector.roi[2], pwidth1=detector.pixelsize_y,
-                         pwidth2=detector.pixelsize_x, distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
+    hxrd.Ang2Q.init_area(setup.detector_ver, setup.detector_hor, cch1=cch1, cch2=cch2,
+                         Nch1=detector.roi[1] - detector.roi[0], Nch2=detector.roi[3] - detector.roi[2],
+                         pwidth1=detector.pixelsize_y, pwidth2=detector.pixelsize_x, distance=sdd, detrot=detrot,
+                         tiltazimuth=tiltazimuth, tilt=tilt)
     # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
 ############################################
@@ -345,6 +367,7 @@ if not use_rawdata:
 flag_mask = False
 flag_aliens = False
 plt.rcParams["keymap.quit"] = ["ctrl+w", "cmd+w"]  # this one to avoid that q closes window (matplotlib default)
+
 ############################
 # start looping over scans #
 ############################
@@ -379,14 +402,8 @@ for scan_nb in range(len(scans)):
         imagefile = specfile + template_imagefile
         detector.template_imagefile = imagefile
 
-    if not use_rawdata:
-        comment = comment + '_ortho'
-        savedir = homedir + "pynx/"
-        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-    else:
-        savedir = homedir + "pynxraw/"
-        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-    detector.savedir = savedir
+    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
+                                 root_folder=root_folder, filename=specfile)
 
     print('\nScan', scans[scan_nb])
     print('Setup: ', setup.beamline)
@@ -399,13 +416,20 @@ for scan_nb in range(len(scans)):
     print('Scan type: ', setup.rocking_angle)
 
     if not use_rawdata:
+        comment = comment + '_ortho'
+        savedir = homedir + "pynx/"
+        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
         print('Output will be orthogonalized by xrayutilities')
         print('Energy:', setup.energy, 'ev')
         print('Sample to detector distance: ', setup.distance, 'm')
         plot_title = ['QzQx', 'QyQx', 'QyQz']
     else:
+        savedir = homedir + "pynxraw/"
+        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
         print('Output will be non orthogonal, in the detector frame')
         plot_title = ['YZ', 'XZ', 'XY']
+
+    detector.savedir = savedir
 
     if not fix_size:  # output_size not defined, default to actual size
         pass
@@ -413,9 +437,12 @@ for scan_nb in range(len(scans)):
         print("'fix_size' parameter provided, defaulting 'center_fft' to 'skip'")
         center_fft = 'skip'
 
-    ####################################
-    # Load data
-    ####################################
+    if normalize_flux:
+        comment = comment + '_norm'
+
+    #############
+    # Load data #
+    #############
     if reload_previous:  # resume previous masking
         print('Resuming previous masking')
         file_path = filedialog.askopenfilename(initialdir=homedir, title="Select data file",
@@ -423,81 +450,146 @@ for scan_nb in range(len(scans)):
         data = np.load(file_path)
         npz_key = data.files
         data = data[npz_key[0]]
-        file_path = filedialog.askopenfilename(initialdir=homedir, title="Select mask file",
+        nz, ny, nx = np.shape(data)
+
+        # update savedir to save the data in the same directory as the reloaded data
+        savedir = os.path.dirname(file_path) + '/'
+        detector.savedir = savedir
+
+        file_path = filedialog.askopenfilename(initialdir=savedir, title="Select mask file",
                                                filetypes=[("NPZ", "*.npz")])
         mask = np.load(file_path)
         npz_key = mask.files
         mask = mask[npz_key[0]]
-        try:
-            file_path = filedialog.askopenfilename(initialdir=homedir, title="Select q values",
-                                                   filetypes=[("NPZ", "*.npz")])
-            reload_qvalues = np.load(file_path)
-            q_values = [reload_qvalues['qx'], reload_qvalues['qz'], reload_qvalues['qy']]
-        except FileNotFoundError:
-            q_values = []  # cannot orthogonalize since we do not know the original array size
-        center_fft = 'skip'  # we assume that crop/pad/centering was already performed
-        frames_logical = np.ones(data.shape[0])  # we assume that all frames will be used
-        fix_size = []  # we assume that crop/pad/centering was already performed
-        normalize_flux = False  # we assume that normalization was already performed
-        monitor = []  # we assume that normalization was already performed
 
-        np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous' + comment, data=data)
-        np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx_previous', mask=mask)
+        if save_previous:
+            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous' + comment, data=data)
+            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx_previous', mask=mask)
+
+        if reload_orthogonal:  # the data is gridded in the orthonormal laboratory frame
+            use_rawdata = False
+            try:
+                file_path = filedialog.askopenfilename(initialdir=homedir, title="Select q values",
+                                                       filetypes=[("NPZ", "*.npz")])
+                reload_qvalues = np.load(file_path)
+                q_values = [reload_qvalues['qx'], reload_qvalues['qz'], reload_qvalues['qy']]
+            except FileNotFoundError:
+                q_values = []
+
+            normalize_flux = False  # we assume that normalization was already performed
+            monitor = []  # we assume that normalization was already performed
+            center_fft = 'skip'  # we assume that crop/pad/centering was already performed
+            fix_size = []  # we assume that crop/pad/centering was already performed
+
+            # bin data and mask if needed
+            if (detector.binning[0] != 1) or (detector.binning[1] != 1) or (detector.binning[2] != 1):
+                print('Binning the reloaded orthogonal data by', detector.binning)
+                data = pu.bin_data(data, binning=detector.binning, debugging=False)
+                mask = pu.bin_data(mask, binning=detector.binning, debugging=False)
+                mask[np.nonzero(mask)] = 1
+                if len(q_values) != 0:
+                    qx = q_values[0]
+                    qx = qx[::binning[2]]  # along z downstream, same binning as along x
+                    qz = q_values[1]
+                    qz = qz[::binning[1]]  # along y vertical, the axis of rotation
+                    qy = q_values[2]
+                    qy = qy[::binning[2]]  # along x outboard
+
+        else:  # the data is in the detector frame
+            if photon_filter == 'loading':
+                data, mask, frames_logical, monitor = pru.reload_bcdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                           data=data, mask=mask, detector=detector,
+                                                                           setup=setup, debugging=debug,
+                                                                           normalize=normalize_flux,
+                                                                           photon_threshold=photon_threshold)
+            else:  # photon_filter = 'postprocessing'
+                data, mask, frames_logical, monitor = pru.reload_bcdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                           data=data, mask=mask, detector=detector,
+                                                                           setup=setup, debugging=debug,
+                                                                           normalize=normalize_flux)
 
     else:  # new masking process
-
+        reload_orthogonal = False  # the data is in the detector plane
         flatfield = pru.load_flatfield(flatfield_file)
         hotpix_array = pru.load_hotpixels(hotpixels_file)
+        background = pru.load_background(background_file)
 
-        logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
-                                     root_folder=root_folder, filename=specfile)
+        if photon_filter == 'loading':
+            data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                     detector=detector, setup=setup,
+                                                                     flatfield=flatfield, hotpixels=hotpix_array,
+                                                                     background=background, normalize=normalize_flux,
+                                                                     debugging=debug, photon_threshold=photon_threshold)
+        else:  # photon_filter = 'postprocessing'
+            data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                     detector=detector, setup=setup,
+                                                                     flatfield=flatfield, hotpixels=hotpix_array,
+                                                                     background=background, normalize=normalize_flux,
+                                                                     debugging=debug)
 
-        if use_rawdata:
-            q_values, rawdata, _, mask, _, frames_logical, monitor = \
-                pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
-                            flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=follow_bragg,
-                            normalize=normalize_flux, debugging=debug, orthogonalize=False)
-            data = rawdata
-        else:
-            q_values, rawdata, data, _, mask, frames_logical, monitor = \
-                pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
-                            flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
-                            normalize=normalize_flux, debugging=debug, orthogonalize=True)
+    nz, ny, nx = np.shape(data)
+    print('\nInput data shape:', nz, ny, nx)
 
+    binning_comment = '_' + str(previous_binning[0] * binning[0]) + '_' + str(previous_binning[1] * binning[1]) +\
+                      '_' + str(previous_binning[2] * binning[2])
+
+    if not reload_orthogonal:
         if save_rawdata:
-            np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_data_before_masking_stack', data=rawdata)
+            np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_data_before_masking_stack', data=data)
             if save_to_mat:
                 # save to .mat, the new order is x y z (outboard, vertical up, downstream)
                 savemat(savedir+'S'+str(scans[scan_nb])+'_data_before_masking_stack.mat',
-                        {'data': np.moveaxis(rawdata, [0, 1, 2], [-1, -2, -3])})
-            del rawdata
+                        {'data': np.moveaxis(data, [0, 1, 2], [-1, -2, -3])})
+
+        if use_rawdata:
+            q_values = []
+            # binning along axis 0 is done after masking
+            data[np.nonzero(mask)] = 0
+        else:  # the data will be gridded, binning[0] is set to 1
+            binning_comment = '_' + str(previous_binning[2] * binning[2]) + '_' + str(previous_binning[1] * binning[1]) \
+                              + '_' + str(previous_binning[2] * binning[2])
+
+            tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
+            tmp_data[mask == 1] = 0
+            fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                                            title='Data before gridding\n', is_orthogonal=False, reciprocal_space=True)
+            plt.savefig(savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                        str(nx) + binning_comment + '.png')
+            plt.close(fig)
+            del tmp_data
             gc.collect()
 
-    ##########################################
-    # plot normalization by incident monitor #
-    ##########################################
-    nz, ny, nx = np.shape(data)
-    print('\nData shape:', nz, ny, nx)
-    if normalize_flux:
-        plt.ion()
-        fig = gu.combined_plots(tuple_array=(monitor, data), tuple_sum_frames=(False, True),
-                                tuple_sum_axis=(0, 1), tuple_width_v=None,
-                                tuple_width_h=None, tuple_colorbar=(False, False),
-                                tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
-                                tuple_title=('monitor.min() / monitor', 'Data after normalization'),
-                                tuple_scale=('linear', 'log'), xlabel=('Frame number', 'Frame number'),
-                                ylabel=('Counts (a.u.)', 'Rocking dimension'),
-                                is_orthogonal=not use_rawdata, reciprocal_space=True)
+            print('\nGridding the data in the orthonormal laboratory frame')
+            data, mask, q_values, frames_logical = \
+                pru.grid_bcdi(data=data, mask=mask, scan_number=scans[scan_nb], logfile=logfile, detector=detector,
+                              setup=setup, frames_logical=frames_logical, hxrd=hxrd, follow_bragg=follow_bragg,
+                              correct_curvature=correct_curvature, debugging=debug)
 
-        fig.savefig(savedir + 'monitor_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                    str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
-        if flag_interact:
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
-        plt.close(fig)
-        plt.ioff()
-        comment = comment + '_norm'
+            # plot normalization by incident monitor for the gridded data
+        if normalize_flux:
+            plt.ion()
+            tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
+            tmp_data[tmp_data < 5] = 0  # threshold the background
+            tmp_data[mask == 1] = 0
+            fig = gu.combined_plots(tuple_array=(monitor, tmp_data), tuple_sum_frames=(False, True),
+                                    tuple_sum_axis=(0, 1), tuple_width_v=None,
+                                    tuple_width_h=None, tuple_colorbar=(False, False),
+                                    tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
+                                    tuple_title=('monitor.min() / monitor', 'Gridded normed data (threshold 5)\n'),
+                                    tuple_scale=('linear', 'log'), xlabel=('Frame number', "Q$_y$"),
+                                    ylabel=('Counts (a.u.)', "Q$_x$"), position=(323, 122),
+                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
+
+            fig.savefig(savedir + 'monitor_gridded_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                        str(nx) + binning_comment + '.png')
+            if flag_interact:
+                cid = plt.connect('close_event', close_event)
+                fig.waitforbuttonpress()
+                plt.disconnect(cid)
+            plt.close(fig)
+            plt.ioff()
+            del tmp_data
+            gc.collect()
 
     ########################
     # crop/pad/center data #
@@ -512,6 +604,9 @@ for scan_nb in range(len(scans)):
     nz, ny, nx = data.shape
     print('\nData size after cropping / padding:', nz, ny, nx)
 
+    ##########################################
+    # optional masking of zero photon events #
+    ##########################################
     if mask_zero_event:
         # mask points when there is no intensity along the whole rocking curve - probably dead pixels
         temp_mask = np.zeros((ny, nx))
@@ -519,9 +614,9 @@ for scan_nb in range(len(scans)):
         mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nz, axis=0) == 1] = 1
         del temp_mask
 
-    ##############################
-    # save the raw data and mask #
-    ##############################
+    ###########################################
+    # save data and mask before alien removal #
+    ###########################################
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Data before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
@@ -745,6 +840,8 @@ for scan_nb in range(len(scans)):
     mask[np.isinf(mask)] = 1
 
     data[mask == 1] = 0
+    if save_asint:
+        data = data.astype(int)
 
     ####################
     # debugging plots  #
