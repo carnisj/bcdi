@@ -991,28 +991,27 @@ def find_bragg(data, peak_method):
     return z0, y0, x0
 
 
-def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False, hxrd=None,
-              normalize=False, debugging=False, **kwargs):
+def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, correct_curvature=False,
+              debugging=False, **kwargs):
     """
-    Load the Bragg CDI data, apply filters and concatenate it for phasing.
+    Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in cartesian coordinates.
+     Note that it is based on PetraIII P10 beamline (counterclockwise rotation, detector seen from the front).
 
+    :param data: the 3D data, already binned in the detector frame
+    :param mask: the corresponding 3D mask
+        :param scan_number: the scan number to load
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
+    :param detector: the detector object: Class experiment_utils.Detector(). The detector orientation is supposed to
+     follow the CXI convention: (z downstream, y vertical up, x outboard) Y opposite to y, X opposite to x
     :param setup: the experimental setup: Class SetupPreprocessing()
-    :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
-    :param orthogonalize: if True will interpolate the data and the mask on an orthogonal grid using xrayutilities
+    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
-    :param normalize: set to True to normalize the diffracted intensity by the incident X-ray beam intensity
+    :param correct_curvature: if True, will correct for the curvature of the Ewald sphere
     :param debugging: set to True to see plots
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
-    :return:
-     - the 3D data array (in an orthonormal frame or in the detector frame) and the 3D mask array
-     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-     - the monitor values for normalization
+    :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard)
     """
     for k in kwargs.keys():
         if k in ['follow_bragg']:
@@ -1020,81 +1019,262 @@ def grid_bcdi(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         else:
             print(k)
             raise Exception("unknown keyword argument given: allowed is 'follow_bragg'")
+
     if setup.rocking_angle == 'energy':
         try:
             follow_bragg
         except NameError:
-            raise TypeError("Parameter 'follow_bragg' not provided, defaulting to False")
-    rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
-                                                          setup=setup, flatfield=flatfield, hotpixels=hotpixels,
-                                                          debugging=debugging)
-    # normalize by the incident X-ray beam intensity
-    if normalize:
-        rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                             norm_to_min=True, savedir=detector.savedir, debugging=True)
+            print("Parameter 'follow_bragg' not provided, defaulting to False")
+            follow_bragg = False
 
-    # bin data and mask in the detector plane if needed
-    # binning in the stacking dimension is done at the very end of the data processing
-    if (detector.binning[1] != 1) or (detector.binning[2] != 1):
-        rawdata = pu.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
-        rawmask = pu.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
-        rawmask[np.nonzero(rawmask)] = 1
+    if data.ndim != 3:
+        raise ValueError('data is expected to be a 3D array')
+    if mask.ndim != 3:
+        raise ValueError('mask is expected to be a 3D array')
 
-    if not orthogonalize:
-        return [], rawdata, [], rawmask, [], frames_logical, monitor
-
-    elif setup.is_orthogonal:
-        # load q values, the data is already orthogonalized
-        import tkinter as tk
-        from tkinter import filedialog
-
-        root = tk.Tk()
-        root.withdraw()
-        file_path = filedialog.askopenfilename(title="Select the file containing QxQzQy",
-                                               initialdir=detector.datadir, filetypes=[("NPZ", "*.npz")])
-        npzfile = np.load(file_path)
-        q_values = [npzfile['qx'], npzfile['qz'], npzfile['qy']]
-        return q_values, [], rawdata, [], rawmask, frames_logical, monitor
-
-    else:
-        if setup.filtered_data:
-            print('Trying to orthogonalize a filtered data, the corresponding detector ROI should be provided\n'
-                  'otherwise q values will be wrong.')
-        nbz, nby, nbx = rawdata.shape
+    numz, numy, numx = data.shape
+    if not correct_curvature:
+        print('Grid the data using xrayutilities package')
         qx, qz, qy, frames_logical = \
-            regrid(logfile=logfile, nb_frames=rawdata.shape[0], scan_number=scan_number, detector=detector,
+            regrid(logfile=logfile, nb_frames=numz, scan_number=scan_number, detector=detector,
                    setup=setup, hxrd=hxrd, frames_logical=frames_logical, follow_bragg=follow_bragg)
-        # qx, qz, qy (downstrean, vertical up, outboard) arrays have the same shape as the data
+
         if setup.beamline == 'ID01':
             # below is specific to ID01 energy scans where frames are duplicated for undulator gap change
             if setup.rocking_angle == 'energy':  # frames need to be removed
-                tempdata = np.zeros(((frames_logical != 0).sum(), nby, nbx))
+                tempdata = np.zeros(((frames_logical != 0).sum(), numy, numx))
                 offset_frame = 0
-                for idx in range(nbz):
+                for idx in range(numz):
                     if frames_logical[idx] != 0:  # use frame
-                        tempdata[idx-offset_frame, :, :] = rawdata[idx, :, :]
+                        tempdata[idx - offset_frame, :, :] = data[idx, :, :]
                     else:  # average with the precedent frame
                         offset_frame = offset_frame + 1
-                        tempdata[idx-offset_frame, :, :] = (tempdata[idx-offset_frame, :, :] + rawdata[idx, :, :])/2
-                rawdata = tempdata
-                rawmask = rawmask[0:rawdata.shape[0], :, :]  # truncate the mask to have the correct size
+                        tempdata[idx - offset_frame, :, :] = (tempdata[idx - offset_frame, :, :] + data[idx, :, :]) / 2
+                data = tempdata
+                mask = mask[0:data.shape[0], :, :]  # truncate the mask to have the correct size
+                numz = data.shape[0]
 
-        gridder = xu.Gridder3D(nbz, nby, nbx)
+        gridder = xu.Gridder3D(numz, numy, numx)
         # convert mask to rectangular grid in reciprocal space
-        gridder(qx, qz, qy, rawmask)
-        mask = np.copy(gridder.data)
+        gridder(qx, qz, qy, mask)  # qx downstream, qz vertical up, qy outboard
+        interp_mask = np.copy(gridder.data)
         # convert data to rectangular grid in reciprocal space
-        gridder(qx, qz, qy, rawdata)  # qx downstream, qz vertical up, qy outboard
+        gridder(qx, qz, qy, data)  # qx downstream, qz vertical up, qy outboard
+        interp_data = gridder.data
 
-        q_values = [gridder.xaxis, gridder.yaxis, gridder.zaxis]  # qx downstream, qz vertical up, qy outboard
-        fig, _, _ = gu.contour_slices(gridder.data, (gridder.xaxis, gridder.yaxis, gridder.zaxis), sum_frames=False,
-                                      title='Regridded data',
-                                      levels=np.linspace(0, int(np.log10(gridder.data.max())), 150, endpoint=False),
-                                      plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-        fig.savefig(detector.savedir + 'reciprocal_space_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + '.png')
-        plt.close(fig)
+        qx, qz, qy = [gridder.xaxis, gridder.yaxis, gridder.zaxis]  # downstream, vertical up, outboard
 
-        return q_values, rawdata, gridder.data, rawmask, mask, frames_logical, monitor
+    else:
+        import sys
+        print('#TODO check Ewald sphere curvature correction')
+        sys.exit()
+        # TODO check Ewald sphere curvature correction
+
+    # check for Nan
+    interp_mask[np.isnan(interp_data)] = 1
+    interp_data[np.isnan(interp_data)] = 0
+    interp_mask[np.isnan(interp_mask)] = 1
+
+    # apply the mask to the data
+    interp_data[np.nonzero(interp_mask)] = 0
+
+    # plot the gridded data
+    final_binning = (detector.previous_binning[2] * detector.binning[2],
+                     detector.previous_binning[1] * detector.binning[1],
+                     detector.previous_binning[2] * detector.binning[2])
+    plot_comment = '_' + str(numx) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
+                   str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
+    # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
+                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space' + plot_comment)
+    plt.close(fig)
+
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
+                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
+    plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
+    plt.close(fig)
+    if debugging:
+        gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
+                            title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
+
+    return interp_data, interp_mask, [qx, qz, qy], frames_logical
+
+
+def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curvature=False, debugging=False):
+    """
+    Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in cartesian coordinates.
+     Note that it is based on PetraIII P10 beamline (counterclockwise rotation, detector seen from the front).
+
+    :param data: the 3D data, already binned in the detector frame
+    :param mask: the corresponding 3D mask
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param detector: the detector object: Class experiment_utils.Detector(). The detector orientation is supposed to
+     follow the CXI convention: (z downstream, y vertical up, x outboard) Y opposite to y, X opposite to x
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param correct_curvature: if True, will correct for the curvature of the Ewald sphere
+    :param debugging: set to True to see plots
+    :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard)
+    """
+
+    if data.ndim != 3:
+        raise ValueError('data is expected to be a 3D array')
+    if mask.ndim != 3:
+        raise ValueError('mask is expected to be a 3D array')
+    if setup.beamline == 'P10':
+        if setup.rocking_angle == 'inplane':
+            cdi_angle = motor_positions_p10_saxs(logfile, setup)
+        else:
+            raise ValueError('out-of-plane rotation not yet implemented for forward CDI data')
+    else:
+        raise ValueError('Not yet implemented for beamlines other than P10')
+
+    wavelength = setup.wavelength * 1e9  # convert to nm
+    distance = setup.distance * 1e9  # convert to nm
+    pixel_x = detector.pixelsize_x * 1e9  # convert to nm, binned pixel size in the horizontal direction
+    pixel_y = detector.pixelsize_y * 1e9  # convert to nm, binned pixel size in the vertical direction
+    lambdaz = wavelength * distance
+    directbeam_y = int((setup.direct_beam[0] - detector.roi[0]) / detector.binning[1])  # vertical
+    directbeam_x = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
+    print('\nDirect beam for the ROI and binning (y, x):', directbeam_y, directbeam_x)
+
+    data, mask, cdi_angle, frames_logical = check_cdi_angle(data=data, mask=mask, cdi_angle=cdi_angle,
+                                                            frames_logical=frames_logical, debugging=debugging)
+    if debugging:
+        print('\ncdi_angle', cdi_angle)
+    nbz, nby, nbx = data.shape
+    print('\nData shape after check_cdi_angle and before regridding:', nbz, nby, nbx)
+    print('\nAngle range:', cdi_angle.min(), cdi_angle.max())
+
+    # calculate the number of voxels available to accomodate the gridded data
+    # directbeam_x and directbeam_y already are already taking into account the ROI and binning
+    numx = 2 * max(directbeam_x, nbx - directbeam_x)  # number of interpolated voxels in the plane perpendicular
+    # to the rotation axis. It will accomodate the full data range.
+    numy = nby  # no change of the voxel numbers along the rotation axis
+    print('\nData shape after regridding:', numx, numy, numx)
+
+    # update the direct beam position due to an eventual padding along X
+    if nbx - directbeam_x < directbeam_x:
+        pivot = directbeam_x
+    else:  # padding to the left along x, need to correct the pivot position
+        pivot = nbx - directbeam_x
+
+    if not correct_curvature:
+        dqx = 2 * np.pi / lambdaz * pixel_x  # in 1/nm, downstream, pixel_x is the binned pixel size
+        dqz = 2 * np.pi / lambdaz * pixel_y  # in 1/nm, vertical up, pixel_y is the binned pixel size
+        dqy = 2 * np.pi / lambdaz * pixel_x  # in 1/nm, outboard, pixel_x is the binned pixel size
+
+        # calculation of q based on P10 geometry
+        qx = np.arange(-directbeam_x, -directbeam_x + numx, 1) * dqx
+        # downstream, same direction as detector X rotated by +90deg
+        qz = np.arange(directbeam_y - numy, directbeam_y, 1) * dqz  # vertical up opposite to detector Y
+        qy = np.arange(directbeam_x - numx, directbeam_x, 1) * dqy  # outboard opposite to detector X
+        print('q spacing for interpolation (z,y,x)=', str('{:.6f}'.format(dqx)), str('{:.6f}'.format(dqz)),
+              str('{:.6f}'.format(dqy)), ' (1/nm)')
+
+        # find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis
+        interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=pivot, offset_angle=cdi_angle.min(),
+                                                      debugging=debugging)
+
+        interp_data = grid_cylindrical(array=data, rotation_angle=cdi_angle, direct_beam=directbeam_x,
+                                       interp_angle=interp_angle, interp_radius=interp_radius)
+
+        interp_mask = grid_cylindrical(array=mask, rotation_angle=cdi_angle, direct_beam=directbeam_x,
+                                       interp_angle=interp_angle, interp_radius=interp_radius)
+
+        interp_mask[np.nonzero(interp_mask)] = 1
+
+    else:
+        import sys
+        print('#TODO check Ewald sphere curvature correction')
+        sys.exit()
+        # TODO check Ewald sphere curvature correction
+        from scipy.interpolate import griddata
+        # calculate exact q values for each voxel of the 3D dataset
+        old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
+
+        # create the grid for interpolation
+        qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
+        qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
+        qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
+
+        new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
+
+        # interpolate the data onto the new points using griddata (the original grid is not regular)
+        interp_data = griddata(
+            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
+            np.ndarray.flatten(data),
+            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
+            method='linear', fill_value=np.nan)
+        interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
+
+        # interpolate the mask onto the new points
+        interp_mask = griddata(
+            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
+            np.ndarray.flatten(mask),
+            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
+            method='linear', fill_value=np.nan)
+        interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
+
+    # check for Nan
+    interp_mask[np.isnan(interp_data)] = 1
+    interp_data[np.isnan(interp_data)] = 0
+    interp_mask[np.isnan(interp_mask)] = 1
+
+    # apply the mask to the data
+    interp_data[np.nonzero(interp_mask)] = 0
+
+    # calculate the position in pixels of the origin of the reciprocal space
+    pivot_z = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
+    # 90 degrees conter-clockwise rotation of detector X around qz, downstream
+    pivot_y = int(numy - directbeam_y)  # detector Y vertical down, opposite to qz vertical up
+    pivot_x = int(numx - directbeam_x)  # detector X inboard at P10, opposite to qy outboard
+    print("\nOrigin of the reciprocal space  (Qx,Qz,Qy): " + str(pivot_z) + "," + str(pivot_y) + "," + str(pivot_x)
+          + '\n')
+
+    # plot the gridded data
+    final_binning = (detector.previous_binning[2] * detector.binning[2],
+                     detector.previous_binning[1] * detector.binning[1],
+                     detector.previous_binning[2] * detector.binning[2])
+    plot_comment = '_' + str(numx) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
+                   str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
+    # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
+                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+    fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
+             '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
+    fig.savefig(detector.savedir + 'reciprocal_space' + plot_comment)
+    plt.close(fig)
+
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
+                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+    fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
+             '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
+    fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
+    plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
+    fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
+             '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
+    fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
+    plt.close(fig)
+    if debugging:
+        gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
+                            title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
+
+    return interp_data, interp_mask, [qx, qz, qy], frames_logical
 
 
 def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_radius):
@@ -1393,6 +1573,7 @@ def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpix
         normalize_method = 'monitor'
     else:
         normalize_method = 'skip'
+
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
                                                           background=background, normalize=normalize_method,
@@ -2954,173 +3135,89 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
     return qx, qz, qy, frames_logical
 
 
-def regrid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curvature=False, debugging=False):
+def reload_bcdi_data(data, mask, logfile, scan_number, detector, setup, normalize=False, debugging=False,
+                     **kwargs):
     """
-    Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in cartesian coordinates.
-     Note that it is based on PetraIII P10 beamline (counterclockwise rotation, detector seen from the front).
+    Reload forward CDI data, apply optional threshold, normalization and binning.
 
-    :param data: the 3D data, already binned in the detector frame
-    :param mask: the corresponding 3D mask
+    :param data: the 3D data array
+    :param mask: the 3D mask array
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param detector: the detector object: Class experiment_utils.Detector(). The detector orientation is supposed to
-     follow the CXI convention: (z downstream, y vertical up, x outboard) Y opposite to y, X opposite to x
+    :param scan_number: the scan number to load
+    :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param correct_curvature: if True, will correct for the curvature of the Ewald sphere
-    :param debugging: set to True to see plots
-    :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard)
+    :param normalize: set to True to normalize by the default monitor of the beamline
+    :param debugging:  set to True to see plots
+    :parama kwargs:
+     - 'photon_threshold' = float, photon threshold to apply before binning
+    :return:
+     - the updated 3D data and mask arrays
+     - the monitor values used for the intensity normalization
     """
-
-    if data.ndim != 3:
-        raise ValueError('data is expected to be a 3D array')
-    if mask.ndim != 3:
-        raise ValueError('mask is expected to be a 3D array')
-    if setup.beamline == 'P10':
-        if setup.rocking_angle == 'inplane':
-            cdi_angle = motor_positions_p10_saxs(logfile, setup)
+    for k in kwargs.keys():
+        if k in ['photon_threshold']:
+            photon_threshold = kwargs['photon_threshold']
         else:
-            raise ValueError('out-of-plane rotation not yet implemented for forward CDI data')
+            print(k)
+            raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
+    try:
+        photon_threshold
+    except NameError:  # photon_threshold not declared
+        photon_threshold = 0
+
+    if normalize:
+        normalize_method = 'monitor'
     else:
-        raise ValueError('Not yet implemented for beamlines other than P10')
+        normalize_method = 'skip'
 
-    wavelength = setup.wavelength * 1e9  # convert to nm
-    distance = setup.distance * 1e9  # convert to nm
-    pixel_x = detector.pixelsize_x * 1e9  # convert to nm, binned pixel size in the horizontal direction
-    pixel_y = detector.pixelsize_y * 1e9  # convert to nm, binned pixel size in the vertical direction
-    lambdaz = wavelength * distance
-    directbeam_y = int((setup.direct_beam[0] - detector.roi[0]) / detector.binning[1])  # vertical
-    directbeam_x = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])  # horizontal
-    print('\nDirect beam for the ROI and binning (y, x):', directbeam_y, directbeam_x)
+    if data.ndim != 3 or mask.ndim != 3:
+        raise ValueError('data and mask should be 3D arrays')
 
-    data, mask, cdi_angle, frames_logical = check_cdi_angle(data=data, mask=mask, cdi_angle=cdi_angle,
-                                                            frames_logical=frames_logical, debugging=debugging)
-    if debugging:
-        print('\ncdi_angle', cdi_angle)
     nbz, nby, nbx = data.shape
-    print('\nData shape after check_cdi_angle and before regridding:', nbz, nby, nbx)
-    print('\nAngle range:', cdi_angle.min(), cdi_angle.max())
+    frames_logical = np.ones(nbz)
 
-    # calculate the number of voxels available to accomodate the gridded data
-    # directbeam_x and directbeam_y already are already taking into account the ROI and binning
-    numx = 2 * max(directbeam_x, nbx - directbeam_x)  # number of interpolated voxels in the plane perpendicular
-    # to the rotation axis. It will accomodate the full data range.
-    numy = nby  # no change of the voxel numbers along the rotation axis
-    print('\nData shape after regridding:', numx, numy, numx)
+    print((data < 0).sum(), ' negative data points masked')  # can happen when subtracting a background
+    mask[data < 0] = 1
+    data[data < 0] = 0
 
-    # update the direct beam position due to an eventual padding along X
-    if nbx-directbeam_x < directbeam_x:
-        pivot = directbeam_x
-    else:  # padding to the left along x, need to correct the pivot position
-        pivot = nbx - directbeam_x
+    # normalize by the incident X-ray beam intensity
+    if normalize_method == 'skip':
+        print('Skip intensity normalization')
+        monitor = []
+    else:  # use the default monitor of the beamline
+        monitor = load_monitor(logfile=logfile, scan_number=scan_number, setup=setup)
 
-    if not correct_curvature:
-        dqx = 2 * np.pi / lambdaz * pixel_x  # in 1/nm, downstream, pixel_x is the binned pixel size
-        dqz = 2 * np.pi / lambdaz * pixel_y  # in 1/nm, vertical up, pixel_y is the binned pixel size
-        dqy = 2 * np.pi / lambdaz * pixel_x  # in 1/nm, outboard, pixel_x is the binned pixel size
+        print('Intensity normalization using ' + normalize_method)
+        data, monitor = normalize_dataset(array=data, raw_monitor=monitor, frames_logical=frames_logical,
+                                          norm_to_min=True, savedir=detector.savedir, debugging=True)
 
-        # calculation of q based on P10 geometry
-        qx = np.arange(-directbeam_x, -directbeam_x + numx, 1) * dqx
-        # downstream, same direction as detector X rotated by +90deg
-        qz = np.arange(directbeam_y-numy, directbeam_y, 1) * dqz  # vertical up opposite to detector Y
-        qy = np.arange(directbeam_x-numx, directbeam_x, 1) * dqy  # outboard opposite to detector X
-        print('q spacing for interpolation (z,y,x)=', str('{:.6f}'.format(dqx)), str('{:.6f}'.format(dqz)),
-              str('{:.6f}'.format(dqy)), ' (1/nm)')
+    # pad the data to the shape defined by the ROI
+    if detector.roi[1] - detector.roi[0] > nby or detector.roi[3] - detector.roi[2] > nbx:
+        start = tuple([np.nan, min(0, detector.roi[0]), min(0, detector.roi[2])])
+        print('Paddind the data to the shape defined by the ROI')
+        data = pu.crop_pad(array=data, pad_start=start, output_shape=(data.shape[0],
+                                                                      detector.roi[1] - detector.roi[0],
+                                                                      detector.roi[3] - detector.roi[2]))
+        mask = pu.crop_pad(array=mask, padwith_ones=True, pad_start=start,
+                           output_shape=(mask.shape[0], detector.roi[1] - detector.roi[0],
+                                         detector.roi[3] - detector.roi[2]))
 
-        # find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis
-        interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=pivot, offset_angle=cdi_angle.min(),
-                                                      debugging=debugging)
+    # apply optional photon threshold before binning
+    if photon_threshold != 0:
+        mask[data < photon_threshold] = 1
+        data[data < photon_threshold] = 0
+        print("Applying photon threshold before binning: < ", photon_threshold)
 
-        interp_data = grid_cylindrical(array=data, rotation_angle=cdi_angle, direct_beam=directbeam_x,
-                                       interp_angle=interp_angle, interp_radius=interp_radius)
+    # bin data and mask in the detector plane if needed
+    # binning in the stacking dimension is done at the very end of the data processing
+    if (detector.binning[1] != 1) or (detector.binning[2] != 1):
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
+        data = pu.bin_data(data, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
+        mask = pu.bin_data(mask, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
+        mask[np.nonzero(mask)] = 1
 
-        interp_mask = grid_cylindrical(array=mask, rotation_angle=cdi_angle, direct_beam=directbeam_x,
-                                       interp_angle=interp_angle, interp_radius=interp_radius)
-
-        interp_mask[np.nonzero(interp_mask)] = 1
-
-    else:
-        import sys
-        print('#TODO check Ewald sphere curvature correction')
-        sys.exit()
-        # TODO check Ewald sphere curvature correction
-        from scipy.interpolate import griddata
-        # calculate exact q values for each voxel of the 3D dataset
-        old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
-
-        # create the grid for interpolation
-        qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
-        qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
-        qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
-
-        new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
-
-        # interpolate the data onto the new points using griddata (the original grid is not regular)
-        interp_data = griddata(
-            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
-            np.ndarray.flatten(data),
-            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
-            method='linear', fill_value=np.nan)
-        interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
-
-        # interpolate the mask onto the new points
-        interp_mask = griddata(
-            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
-            np.ndarray.flatten(mask),
-            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
-            method='linear', fill_value=np.nan)
-        interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
-
-    # check for Nan
-    interp_mask[np.isnan(interp_data)] = 1
-    interp_data[np.isnan(interp_data)] = 0
-    interp_mask[np.isnan(interp_mask)] = 1
-    
-    # apply the mask to the data
-    interp_data[np.nonzero(interp_mask)] = 0
-
-    # calculate the position in pixels of the origin of the reciprocal space
-    pivot_z = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
-    # 90 degrees conter-clockwise rotation of detector X around qz, downstream
-    pivot_y = int(numy - directbeam_y)  # detector Y vertical down, opposite to qz vertical up
-    pivot_x = int(numx - directbeam_x)  # detector X inboard at P10, opposite to qy outboard
-    print("\nOrigin of the reciprocal space  (Qx,Qz,Qy): " + str(pivot_z) + "," + str(pivot_y) + "," + str(pivot_x)
-          + '\n')
-
-    # plot the gridded data
-    final_binning = (detector.previous_binning[2]*detector.binning[2],
-                     detector.previous_binning[1]*detector.binning[1],
-                     detector.previous_binning[2]*detector.binning[2])
-    plot_comment = '_' + str(numx) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' +\
-                   str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
-    # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
-    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
-                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
-                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-    fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
-             '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
-    fig.savefig(detector.savedir + 'reciprocal_space' + plot_comment)
-    plt.close(fig)
-
-    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
-                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
-                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-    fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
-             '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
-    fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
-    plt.close(fig)
-
-    fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                    title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
-    fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
-             '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
-    fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
-    plt.close(fig)
-    if debugging:
-        gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
-                            title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
-
-    return interp_data, interp_mask, [qx, qz, qy], frames_logical
+    return data, mask, frames_logical, monitor
 
 
 def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize_method='skip', debugging=False,
@@ -3201,8 +3298,8 @@ def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize
     if (detector.binning[1] != 1) or (detector.binning[2] != 1):
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = pu.bin_data(data, (1, detector.binning[1], detector.binning[2]), debugging=False)
-        mask = pu.bin_data(mask, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        data = pu.bin_data(data, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
+        mask = pu.bin_data(mask, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
         mask[np.nonzero(mask)] = 1
 
     return data, mask, frames_logical, monitor
