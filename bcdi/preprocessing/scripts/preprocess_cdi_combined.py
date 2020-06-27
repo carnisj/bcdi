@@ -445,6 +445,7 @@ for scan_nb in range(len(scans)):
                                                                     normalize=normalize_method, debugging=debug)
     nz, ny, nx = np.shape(data)
     print('\nInput data shape:', nz, ny, nx)
+
     if not reload_orthogonal:
         dirbeam = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])  # updated horizontal direct beam
         min_range = min(dirbeam, nx - dirbeam)  # maximum symmetrical range with defined data
@@ -512,7 +513,7 @@ for scan_nb in range(len(scans)):
                               + '_' + str(previous_binning[2] * binning[2])
             # binning along axis 0 is done after masking
             data[np.nonzero(mask)] = 0
-        else:  # the data will be gridded, binning[0] is set to 1
+        else:  # the data will be gridded, binning[0] is already set to 1
             # sample rotation around the vertical direction at P10:
             # the effective binning in axis 0 is previous_binning[2]*binning[2]
             binning_comment = '_' + str(previous_binning[2] * binning[2]) + '_' + str(previous_binning[1] * binning[1])\
