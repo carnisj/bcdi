@@ -41,61 +41,74 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [3]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
-root_folder = "D:/data/Dzhigaev/data/"
-sample_name = ["S"]  # "SN"  # list of sample names. If only one name is indicated,
+scans = [1460]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
+root_folder = "D:/data/P10_OER/data/"
+sample_name = ["dewet2_2"]  # "SN"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = (1, 1, 1)  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
-###########################
+##############################
+# parameters used in masking #
+##############################
 flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
-###########################
+#########################################################
+# parameters related to data cropping/padding/centering #
+#########################################################
 centering = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
 #  It will be overridden by 'fix_bragg' if not empty
 fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg] considering the full detector
 # It is useful if hotpixels or intense aliens. Leave it [] otherwise.
-###########################
 fix_size = []  # crop the array to predefined size considering the full detector,
 # leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop]. ROI will be defaulted to []
-###########################
 center_fft = 'skip'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'skip'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
 # used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'
-###########################
-normalize_flux = True  # will normalize the intensity by the default monitor.
-###########################
+##############################################
+# parameters used in intensity normalization #
+##############################################
+normalize_flux = False  # will normalize the intensity by the default monitor.
+#################################
+# parameters for data filtering #
+#################################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
-###########################
 flag_medianfilter = 'skip'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
 # set to 'skip' will skip filtering
 medfilt_order = 8    # for custom median filter, number of pixels with intensity surrounding the empty pixel
-###########################
+#################################################
+# parameters used when reloading processed data #
+#################################################
 reload_previous = False  # True to resume a previous masking (load data and mask)
-###########################
-use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
+reload_orthogonal = True  # True if the reloaded data is already intepolated in an orthonormal frame
+previous_binning = [1, 1, 1]  # binning factors in each dimension of the binned data to be reloaded
+save_previous = False  # if True, will save the previous data and mask
+##################
+# saving options #
+##################
+save_rawdata = False  # save also the raw data when use_rawdata is False
+save_to_npz = False  # True to save the processed data in npz format
 save_to_mat = False  # True to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = '34ID'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 is_series = False  # specific to series measurement at P10
 
-custom_scan = True  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
+custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available
 custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan
 
-rocking_angle = "energy"  # "outofplane" or "inplane" or "energy"
+rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
@@ -105,15 +118,15 @@ specfile_name = ''
 # template for P10: ''
 # template for CRISTAL: ''
 # template for 34ID: ''
-#############################################################
-# define detector related parameters and region of interest #
-#############################################################
-detector = "Timepix"    # "Eiger2M", "Maxipix", "Eiger4M" or "Timepix"
+###############################
+# detector related parameters #
+###############################
+detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 147  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 178  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+# x_bragg = 147  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+# y_bragg = 178  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = []
+roi_detector = [553, 1063, 1041, 1701]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -122,7 +135,7 @@ roi_detector = []
 photon_threshold = 0  # data[data < photon_threshold] = 0
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'Sample%dC_ES_data_51_256_256.npz'
+template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -145,6 +158,7 @@ custom_motors = {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685
 #########################################################################
 # parameters for xrayutilities to orthogonalize the data before phasing #
 #########################################################################
+use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
@@ -439,16 +453,18 @@ for scan_nb in range(len(scans)):
                                      root_folder=root_folder, filename=specfile)
 
         if use_rawdata:
-            q_values, data, _, mask, _, frames_logical, monitor = \
+            q_values, rawdata, _, mask, _, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=follow_bragg,
                             normalize=normalize_flux, debugging=debug, orthogonalize=False)
+            data = rawdata
         else:
             q_values, rawdata, data, _, mask, frames_logical, monitor = \
                 pru.gridmap(logfile=logfile, scan_number=scans[scan_nb], detector=detector, setup=setup,
                             flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
                             normalize=normalize_flux, debugging=debug, orthogonalize=True)
 
+        if save_rawdata:
             np.savez_compressed(savedir+'S'+str(scans[scan_nb])+'_data_before_masking_stack', data=rawdata)
             if save_to_mat:
                 # save to .mat, the new order is x y z (outboard, vertical up, downstream)
@@ -758,46 +774,28 @@ for scan_nb in range(len(scans)):
         if not flag_interact:
             plt.close(fig)
 
+    ################################################################################################
+    # bin the stacking axis if needed, the detector plane was already binned when loading the data #
+    ################################################################################################
     if detector.binning[0] != 1:
-        ################################################################################################
-        # bin the stacking axis if needed, the detector plane was already binned when loading the data #
-        ################################################################################################
         data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
         mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
         if not use_rawdata and len(q_vector) != 0:
             qx = qx[::binning[0]]  # along Z
 
-        ############################
-        # plot binned data and mask #
-        ############################
-        nz, ny, nx = data.shape
-        print('\nData size after binning the stacking dimension:', data.shape)
-        comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)
-
-        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                        title='Final data', is_orthogonal=not use_rawdata,
-                                        reciprocal_space=True)
-        plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                    str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
-        if not flag_interact:
-            plt.close(fig)
-
-        fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                        vmax=(nz, ny, nx), title='Final mask',
-                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
-        plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                    str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + comment + '.png')
-        if not flag_interact:
-            plt.close(fig)
+    nz, ny, nx = data.shape
+    print('\nData size after binning the stacking dimension:', data.shape)
+    comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx) + binning_comment
 
     ############################
     # save final data and mask #
     ############################
-    comment = comment + '_' + str(detector.binning[0]) + '_' + str(detector.binning[1]) + '_' + str(detector.binning[2])
+    print('\nSaving directory:', savedir)
     if not use_rawdata and len(q_vector) != 0:
-        np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
-                            qx=q_vector[0], qz=q_vector[1], qy=q_vector[2])
+        if save_to_npz:
+            np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
+                                qx=q_vector[0], qz=q_vector[1], qy=q_vector[2])
         if save_to_mat:
             savemat(savedir + 'S' + str(scans[scan_nb]) + '_qx.mat', {'qx': q_vector[0]})
             savemat(savedir + 'S' + str(scans[scan_nb]) + '_qy.mat', {'qy': q_vector[1]})
@@ -810,9 +808,9 @@ for scan_nb in range(len(scans)):
         fig.savefig(detector.savedir + 'final_reciprocal_space_S' + str(scans[scan_nb]) + comment + '.png')
         plt.close(fig)
 
-    print('\nsaving to directory:', savedir)
-    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
-    np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
+    if save_to_npz:
+        np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
+        np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
 
     if save_to_mat:
         # save to .mat, the new order is x y z (outboard, vertical up, downstream)
@@ -820,6 +818,24 @@ for scan_nb in range(len(scans)):
                 {'data': np.moveaxis(data.astype(np.float32), [0, 1, 2], [-1, -2, -3])})
         savemat(savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
                 {'data': np.moveaxis(mask.astype(np.int8), [0, 1, 2], [-1, -2, -3])})
+
+    ############################
+    # plot final data and mask #
+    ############################
+    data[np.nonzero(mask)] = 0
+    fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Final data', is_orthogonal=not use_rawdata,
+                                    reciprocal_space=True)
+    plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
+    if not flag_interact:
+        plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                    vmax=(nz, ny, nx), title='Final mask',
+                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
+    plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
+    if not flag_interact:
+        plt.close(fig)
 
     del data, mask
     gc.collect()
