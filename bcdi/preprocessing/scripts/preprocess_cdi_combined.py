@@ -531,8 +531,8 @@ for scan_nb in range(len(scans)):
 
             print('\nGridding the data in the orthonormal laboratory frame')
             data, mask, q_values, frames_logical = \
-                pru.regrid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
-                               frames_logical=frames_logical, correct_curvature=correct_curvature, debugging=debug)
+                pru.grid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
+                             frames_logical=frames_logical, correct_curvature=correct_curvature, debugging=debug)
 
             # plot normalization by incident monitor for the gridded data
             if normalize_method != 'skip':
