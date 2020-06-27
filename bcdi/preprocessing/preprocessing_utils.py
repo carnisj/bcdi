@@ -1173,7 +1173,9 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
         try:
             follow_bragg
         except NameError:
-            raise TypeError("Parameter 'follow_bragg' not provided, defaulting to False")
+            print("Parameter 'follow_bragg' not provided, defaulting to False")
+            follow_bragg = False
+
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
                                                           debugging=debugging)
