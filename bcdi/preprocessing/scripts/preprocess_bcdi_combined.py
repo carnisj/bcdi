@@ -52,7 +52,7 @@ binning = [1, 1, 1]  # binning that will be used for phasing
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = True  # True to interact with plots, False to close it automatically
+flag_interact = False  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
@@ -71,7 +71,7 @@ pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the a
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
-normalize_flux = False  # will normalize the intensity by the default monitor.
+normalize_flux = True  # will normalize the intensity by the default monitor.
 #################################
 # parameters for data filtering #
 #################################
@@ -85,15 +85,15 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 #################################################
 # parameters used when reloading processed data #
 #################################################
-reload_previous = False  # True to resume a previous masking (load data and mask)
-reload_orthogonal = True  # True if the reloaded data is already intepolated in an orthonormal frame
-previous_binning = [1, 1, 1]  # binning factors in each dimension of the binned data to be reloaded
+reload_previous = True  # True to resume a previous masking (load data and mask)
+reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
+previous_binning = [1, 2, 2]  # binning factors in each dimension of the binned data to be reloaded
 save_previous = False  # if True, will save the previous data and mask
 ##################
 # saving options #
 ##################
 save_rawdata = False  # save also the raw data when use_rawdata is False
-save_to_npz = False  # True to save the processed data in npz format
+save_to_npz = True  # True to save the processed data in npz format
 save_to_mat = False  # True to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
 save_asint = False  # if True, the result will be saved as an array of integers (save space)
@@ -149,8 +149,10 @@ template_imagefile = '_master.h5'
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-sdd = 1.95  # in m, sample to detector distance in m, not important if you use raw data
-energy = np.linspace(11100, 10900, num=51)  # x-ray energy in eV, not important if you use raw data
+use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
+correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
+sdd = 1.8  # in m, sample to detector distance in m
+energy = 10000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
@@ -162,17 +164,15 @@ custom_motors = {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685
 #########################################################################
 # parameters for xrayutilities to orthogonalize the data before phasing #
 #########################################################################
-use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
-correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 offset_inplane = 0  # outer detector angle offset, not important if you use raw data
 sample_offsets = (0, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
 # the sample offsets will be added to the motor values
-cch1 = 128  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-cch2 = 128  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch1 = 1000 # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch2 = 1000  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
 tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
@@ -298,12 +298,9 @@ if not reload_previous:
 if reload_orthogonal:
     use_rawdata = False
 
-if not use_rawdata:
-    if reload_orthogonal:  # data already gridded, one can bin the first axis
-        pass
-    elif previous_binning[0] != 1:
-        print('previous_binning along axis 0 should be 1 for reloaded data to be gridded (angles will not match)')
-        sys.exit()
+if not use_rawdata and not reload_orthogonal and previous_binning[0] != 1:
+    print('previous_binning along axis 0 should be 1 for reloaded data to be gridded (angles will not match)')
+    sys.exit()
 
 if type(sample_name) is list:
     if len(sample_name) == 1:
@@ -566,30 +563,30 @@ for scan_nb in range(len(scans)):
                               correct_curvature=correct_curvature, debugging=debug)
 
             # plot normalization by incident monitor for the gridded data
-        if normalize_flux:
-            plt.ion()
-            tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
-            tmp_data[tmp_data < 5] = 0  # threshold the background
-            tmp_data[mask == 1] = 0
-            fig = gu.combined_plots(tuple_array=(monitor, tmp_data), tuple_sum_frames=(False, True),
-                                    tuple_sum_axis=(0, 1), tuple_width_v=None,
-                                    tuple_width_h=None, tuple_colorbar=(False, False),
-                                    tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
-                                    tuple_title=('monitor.min() / monitor', 'Gridded normed data (threshold 5)\n'),
-                                    tuple_scale=('linear', 'log'), xlabel=('Frame number', "Q$_y$"),
-                                    ylabel=('Counts (a.u.)', "Q$_x$"), position=(323, 122),
-                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
+            if normalize_flux:
+                plt.ion()
+                tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
+                tmp_data[tmp_data < 5] = 0  # threshold the background
+                tmp_data[mask == 1] = 0
+                fig = gu.combined_plots(tuple_array=(monitor, tmp_data), tuple_sum_frames=(False, True),
+                                        tuple_sum_axis=(0, 1), tuple_width_v=None,
+                                        tuple_width_h=None, tuple_colorbar=(False, False),
+                                        tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
+                                        tuple_title=('monitor.min() / monitor', 'Gridded normed data (threshold 5)\n'),
+                                        tuple_scale=('linear', 'log'), xlabel=('Frame number', "Q$_y$"),
+                                        ylabel=('Counts (a.u.)', "Q$_x$"), position=(323, 122),
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
 
-            fig.savefig(savedir + 'monitor_gridded_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                        str(nx) + binning_comment + '.png')
-            if flag_interact:
-                cid = plt.connect('close_event', close_event)
-                fig.waitforbuttonpress()
-                plt.disconnect(cid)
-            plt.close(fig)
-            plt.ioff()
-            del tmp_data
-            gc.collect()
+                fig.savefig(savedir + 'monitor_gridded_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                            str(nx) + binning_comment + '.png')
+                if flag_interact:
+                    cid = plt.connect('close_event', close_event)
+                    fig.waitforbuttonpress()
+                    plt.disconnect(cid)
+                plt.close(fig)
+                plt.ioff()
+                del tmp_data
+                gc.collect()
 
     ########################
     # crop/pad/center data #
