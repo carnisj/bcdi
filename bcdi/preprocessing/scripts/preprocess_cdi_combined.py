@@ -358,9 +358,9 @@ for scan_nb in range(len(scans)):
     if normalize_method != 'skip':
         comment = comment + '_norm'
 
-    ####################################
-    # Load data
-    ####################################
+    #############
+    # Load data #
+    #############
     if reload_previous:  # resume previous masking
         print('Resuming previous masking')
         file_path = filedialog.askopenfilename(initialdir=homedir, title="Select data file",
