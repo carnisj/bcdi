@@ -62,7 +62,7 @@ normalize_method = 'skip'  # 'skip' for no normalization, 'monitor' to use the d
 normalize_roi = []  # roi for the integration of intensity used as a monitor for data normalization
 # [Vstart, Vstop, Hstart, Hstop]
 #################################
-# parameters fir data filtering #
+# parameters for data filtering #
 #################################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 flag_medianfilter = 'skip'
