@@ -85,9 +85,9 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 #################################################
 # parameters used when reloading processed data #
 #################################################
-reload_previous = True  # True to resume a previous masking (load data and mask)
+reload_previous = False  # True to resume a previous masking (load data and mask)
 reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
-previous_binning = [1, 2, 2]  # binning factors in each dimension of the binned data to be reloaded
+previous_binning = [1, 1, 1]  # binning factors in each dimension of the binned data to be reloaded
 save_previous = False  # if True, will save the previous data and mask
 ##################
 # saving options #
@@ -149,11 +149,11 @@ template_imagefile = '_master.h5'
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
+use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 sdd = 1.8  # in m, sample to detector distance in m
 energy = 10000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
-custom_motors = {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
+custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
 # ID01: eta, phi, nu, delta
@@ -171,8 +171,9 @@ sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 offset_inplane = 0  # outer detector angle offset, not important if you use raw data
 sample_offsets = (0, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
 # the sample offsets will be added to the motor values
-cch1 = 1000 # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-cch2 = 1000  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch1 = 1000  # cch1 parameter from xrayutilities 2D detector calibration, vertical
+cch2 = 1000  # cch2 parameter from xrayutilities 2D detector calibration, horizontal
+# detector roi is taken into account below
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
 tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
@@ -591,7 +592,7 @@ for scan_nb in range(len(scans)):
     ########################
     # crop/pad/center data #
     ########################
-    data, mask, pad_width, q_vector, frames_logical = \
+    data, mask, pad_width, q_values, frames_logical = \
         pru.center_fft(data=data, mask=mask, detector=detector, frames_logical=frames_logical, centering=centering,
                        fft_option=center_fft, pad_size=pad_size, fix_bragg=fix_bragg, fix_size=fix_size,
                        q_values=q_values)
@@ -657,10 +658,10 @@ for scan_nb in range(len(scans)):
     ###############################################
     # save the orthogonalized diffraction pattern #
     ###############################################
-    if not use_rawdata and len(q_vector) != 0:
-        qx = q_vector[0]
-        qz = q_vector[1]
-        qy = q_vector[2]
+    if not use_rawdata and len(q_values) != 0:
+        qx = q_values[0]
+        qz = q_values[1]
+        qy = q_values[2]
 
         if save_to_vti:
             # save diffraction pattern to vti
@@ -875,7 +876,7 @@ for scan_nb in range(len(scans)):
         data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
         mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
-        if not use_rawdata and len(q_vector) != 0:
+        if not use_rawdata and len(q_values) != 0:
             qx = qx[::binning[0]]  # along Z
 
     nz, ny, nx = data.shape
@@ -886,16 +887,16 @@ for scan_nb in range(len(scans)):
     # save final data and mask #
     ############################
     print('\nSaving directory:', savedir)
-    if not use_rawdata and len(q_vector) != 0:
+    if not use_rawdata and len(q_values) != 0:
         if save_to_npz:
             np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
-                                qx=q_vector[0], qz=q_vector[1], qy=q_vector[2])
+                                qx=q_values[0], qz=q_values[1], qy=q_values[2])
         if save_to_mat:
-            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qx.mat', {'qx': q_vector[0]})
-            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qy.mat', {'qy': q_vector[1]})
-            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qz.mat', {'qz': q_vector[2]})
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qx.mat', {'qx': q_values[0]})
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qy.mat', {'qy': q_values[1]})
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qz.mat', {'qz': q_values[2]})
 
-        fig, _, _ = gu.contour_slices(data, (q_vector[0], q_vector[1], q_vector[2]), sum_frames=True,
+        fig, _, _ = gu.contour_slices(data, (q_values[0], q_values[1], q_values[2]), sum_frames=True,
                                       title='Final data', plot_colorbar=True, scale='log', is_orthogonal=True,
                                       levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
                                       reciprocal_space=True)
