@@ -1034,7 +1034,7 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
 
     numz, numy, numx = data.shape
     if not correct_curvature:
-        print('Grid the data using xrayutilities package')
+        print('Gridding the data using xrayutilities package')
         qx, qz, qy, frames_logical = \
             regrid(logfile=logfile, nb_frames=numz, scan_number=scan_number, detector=detector,
                    setup=setup, hxrd=hxrd, frames_logical=frames_logical, follow_bragg=follow_bragg)
@@ -3008,7 +3008,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
         eta, chi, phi, nu, delta, energy = bin_parameters(binning=binning[0], nb_frames=nb_frames,
                                                           params=[eta, chi, phi, nu, delta, energy])
-        qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
+        qx, qz, qy = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
         beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile, frames_logical, setup)
@@ -3029,7 +3029,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
             raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
         beta, mu, beta, gamma, delta = bin_parameters(binning=binning[0], nb_frames=nb_frames,
                                                       params=[beta, mu, beta, gamma, delta])
-        qx, qy, qz = hxrd.Ang2Q.area(beta, mu, beta, gamma, delta, en=setup.energy, delta=detector.offsets)
+        qx, qz, qy = hxrd.Ang2Q.area(beta, mu, beta, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'CRISTAL':
         mgomega, gamma, delta = motor_positions_cristal(logfile, setup)
@@ -3050,7 +3050,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         else:
             raise ValueError('Inplane rocking curve not implemented for CRISTAL')
         mgomega, gamma, delta = bin_parameters(binning=binning[0], nb_frames=nb_frames, params=[mgomega, gamma, delta])
-        qx, qy, qz = hxrd.Ang2Q.area(mgomega, gamma, delta, en=setup.energy, delta=detector.offsets)
+        qx, qz, qy = hxrd.Ang2Q.area(mgomega, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'P10':
         om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile, setup)
@@ -3087,7 +3087,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
             raise ValueError('Wrong value for "rocking_angle" parameter')
         mu, om, chi, phi, gamma, delta = bin_parameters(binning=binning[0], nb_frames=nb_frames,
                                                         params=[mu, om, chi, phi, gamma, delta])
-        qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
+        qx, qz, qy = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == '34ID':
         mu, phi, chi, theta, delta, gamma = motor_positions_34id(setup)
@@ -3127,7 +3127,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
             raise ValueError('Wrong value for "rocking_angle" parameter')
         mu, phi, chi, theta, delta, gamma = bin_parameters(binning=binning[0], nb_frames=nb_frames,
                                                            params=[mu, phi, chi, theta, delta, gamma])
-        qx, qy, qz = hxrd.Ang2Q.area(mu, phi, chi, theta, delta, gamma, en=setup.energy, delta=detector.offsets)
+        qx, qz, qy = hxrd.Ang2Q.area(mu, phi, chi, theta, delta, gamma, en=setup.energy, delta=detector.offsets)
 
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
