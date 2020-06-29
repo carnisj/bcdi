@@ -1079,26 +1079,28 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
     interp_data[np.nonzero(interp_mask)] = 0
 
     # plot the gridded data
-    final_binning = (detector.previous_binning[2] * detector.binning[2],
+    final_binning = (detector.previous_binning[0] * detector.binning[0],
                      detector.previous_binning[1] * detector.binning[1],
                      detector.previous_binning[2] * detector.binning[2])
-    plot_comment = '_' + str(numx) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
+
+    plot_comment = '_' + str(numz) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
                    str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
-    # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
+
+    max_z = interp_data.sum(axis=0).max()
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
-                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+                                  levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space' + plot_comment)
     plt.close(fig)
 
-    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
-                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data',
+                                  levels=np.linspace(0, np.ceil(np.log10(interp_data.max())), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                    title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
+                                    title='Regridded data', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
     plt.close(fig)
     if debugging:
@@ -1248,16 +1250,18 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
     plot_comment = '_' + str(numx) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
                    str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
     # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
+
+    max_z = interp_data.sum(axis=0).max()
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
-                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+                                  levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
              '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
     fig.savefig(detector.savedir + 'reciprocal_space' + plot_comment)
     plt.close(fig)
 
-    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
-                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data',
+                                  levels=np.linspace(0, np.ceil(np.log10(interp_data.max())), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
              '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
@@ -1265,7 +1269,7 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                    title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
+                                    title='Regridded data', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
              '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
     fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
@@ -2954,7 +2958,10 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param follow_bragg: True when in energy scans the detector was also scanned to follow the Bragg peak
     :return:
-     - qx, qz, qy components for the dataset
+     - qx, qz, qy components for the dataset. xrayutilities uses the xyz crystal frame: for incident angle = 0,
+       x is downstream, y outboard, and z vertical up. The output of hxrd.Ang2Q.area is qx, qy, qz is this order.
+       If q values seem wrong, check if diffractometer angles have default values set at 0, otherwise use the parameter
+       setup.sample_offsets to correct it.
      - updated frames_logical
     """
     binning = detector.binning
