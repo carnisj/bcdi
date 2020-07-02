@@ -991,6 +991,24 @@ def find_bragg(data, peak_method):
     return z0, y0, x0
 
 
+def get_motor_pos(logfile, scan_number, setup, motor_name):
+    """
+    Load the scan data and extract motor positions.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param motor_name: name of the motor
+    :return: the position values of the motor
+    """
+    if setup.beamline == 'P10':
+        motor_pos = load_motor_p10(logfile=logfile, motor_name=motor_name)
+    else:
+        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
+
+    return motor_pos
+
+
 def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, correct_curvature=False,
               debugging=False, **kwargs):
     """
@@ -2118,6 +2136,34 @@ def load_monitor(scan_number, logfile, setup):
     else:
         raise ValueError('Wrong value for "beamline" parameter')
     return monitor
+
+
+def load_motor_p10(logfile, motor_name):
+    """
+    Load the .fio file from the scan and extract the considered motor positions.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param motor_name: name of the motor
+    :return: the position values of the motor
+    """
+    motor_pos = []
+    fio = open(logfile, 'r')
+    fio_lines = fio.readlines()
+    for line in fio_lines:
+        this_line = line.strip()
+        words = this_line.split()
+
+        if 'Col' in words and motor_name in words:  # motor_name scanned, template = ' Col 0 motor_name DOUBLE\n'
+            index_motor = int(words[1]) - 1  # python index starts at 0
+
+        try:
+            float(words[0])  # if this does not fail, we are reading data
+            motor_pos.append(float(words[index_motor]))
+        except ValueError:  # first word is not a number, skip this line
+            continue
+
+    fio.close()
+    return motor_pos
 
 
 def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
