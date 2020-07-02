@@ -32,7 +32,7 @@ fit_rockingcurve = True  # set to True if you want a fit of the rocking curve
 ###############################
 # beamline related parameters #
 ###############################
-beamline = 'P10'  # name of the beamlis[scan_nb]ne, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamlisne, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
 custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
