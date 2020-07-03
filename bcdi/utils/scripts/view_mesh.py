@@ -7,7 +7,8 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 helptext = """
-Open images or series data at P10 beamline.
+Open mesh scans and plot interactively the integrated intensity vs. motor positions for a user-defined
+region of interest.
 """
 
 import hdf5plugin  # for lz4 filter
@@ -29,7 +30,7 @@ scan = 30  # scan number as it appears in the folder name
 sample_name = "p15"  # without _ at the end
 root_folder = "D:/data/P10_isosurface/data/"
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
-normalize_flux = True  # will normalize the intensity by the default monitor.
+normalize_flux = True  # will normalize the intensity by the default monitor
 ###########################
 # mesh related parameters #
 ###########################
@@ -48,7 +49,7 @@ invert_yaxis = True  # True to inverse the horizontal axis
 # beamline related parameters #
 ###############################
 beamline = 'P10'  # name of the beamlisne, used for data loading and normalization by monitor
-# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+# supported beamlines: 'P10' only for now, see preprocessing_utils.get_motor_pos()
 is_series = False  # specific to series measurement at P10
 specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
