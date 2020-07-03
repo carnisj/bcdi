@@ -169,7 +169,7 @@ beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 offset_inplane = 0  # outer detector angle offset, not important if you use raw data
-sample_offsets = (0, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
+sample_offsets = (-90, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
 # the sample offsets will be added to the motor values
 cch1 = 1000  # cch1 parameter from xrayutilities 2D detector calibration, vertical
 cch2 = 1000  # cch2 parameter from xrayutilities 2D detector calibration, horizontal
@@ -543,10 +543,7 @@ for scan_nb in range(len(scans)):
             q_values = []
             # binning along axis 0 is done after masking
             data[np.nonzero(mask)] = 0
-        else:  # the data will be gridded, binning[0] is set to 1
-            binning_comment = '_' + str(previous_binning[2] * binning[2]) + '_' + str(previous_binning[1] * binning[1]) \
-                              + '_' + str(previous_binning[2] * binning[2])
-
+        else:
             tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
             tmp_data[mask == 1] = 0
             fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
@@ -826,7 +823,6 @@ for scan_nb in range(len(scans)):
     plt.ion()
     nz, ny, nx = np.shape(data)
     print('\nData size after masking:', nz, ny, nx)
-    comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)  # need these numbers to calculate the voxel size
 
     # check for Nan
     mask[np.isnan(data)] = 1
