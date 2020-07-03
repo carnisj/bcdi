@@ -437,7 +437,15 @@ correlation_realspace.py
    :start-after: helptext
    :end-before: """
    :language: rst
-   
+
+crop_npz.py
+^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/crop_npz.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 cross_corr_fast_live_macro.py
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -482,6 +490,14 @@ save_to_mat.py
 ^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/utils/scripts/save_to_mat.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+view_mesh.py
+^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/view_mesh.py
    :start-after: helptext
    :end-before: """
    :language: rst

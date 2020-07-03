@@ -1,3 +1,9 @@
+* Refactor: allow the reloading of binned data and its orthogonalization in preprocess_cdi_combined.py and preprocess_bcdi_combined.py
+
+* Feature: implement crop_npz.py to crop combined stacked data to the desired size
+
+* Feature: implement view_mesh.py to plot interactively the integrated intensity in an interactive region of interest
+
 * Refactor: when gridding forward CDI data, reverse the rotation direction to compensate the rotation of Ewald sphere
 
 * Refactor: converted /postprocessing/scripts/extract_bulk_surface.py
