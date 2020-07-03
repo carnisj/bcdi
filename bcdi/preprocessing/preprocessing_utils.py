@@ -2163,7 +2163,7 @@ def load_motor_p10(logfile, motor_name):
             continue
 
     fio.close()
-    return motor_pos
+    return np.asarray(motor_pos)
 
 
 def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
