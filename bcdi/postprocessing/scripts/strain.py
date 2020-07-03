@@ -42,18 +42,18 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 3  # spec scan number
+scan = 54  # spec scan number
 
-datadir = 'D:/review paper/Pt growth/P10/dewet5_sum_S200_to_S206/'  # 'D:/data/CH5309/S' + str(scan) + "/pynxraw/"  # 'D:/data/HC3207/ + "/test/"
+datadir = 'D:/data/P10_isosurface/data/p21_00054/pynxraw/'  # 'D:/data/HC3207/ + "/test/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [140, 512, 350]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [200, 1536, 1536]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-binning = (2, 2, 2)  # binning factor applied during phasing
+binning = (1, 3, 3)  # binning factor applied during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
 fix_voxel = 6.0  # voxel size in nm for the interpolation during the geometrical transformation
@@ -80,12 +80,12 @@ beamline = "P10"  # name of the beamline, used for data loading and normalizatio
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 1.83  # sample to detector distance in m
+sdd = 1.84  # sample to detector distance in m
 pixel_size = 75e-6  # detector pixel size in m
-energy = 10300  # x-ray energy in eV, 6eV offset at ID01
+energy = 8820  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 30.5415  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 4.1785  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 42.6527  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = -0.1994  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
 tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
@@ -125,7 +125,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (-2, 15, -15)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (-1, -1, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # setup for phase averaging or apodization #
 ############################################
@@ -143,8 +143,8 @@ ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
 align_inplane = False  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
 ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
 inplane_normal = np.array([1, 0, -0.16])  # facet normal to align with ref_axis_inplane (y should be 0)
-strain_range = 0.004  # for plots
-phase_range = np.pi/3  # for plots
+strain_range = 0.005  # for plots
+phase_range = np.pi  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
 tick_spacing = 50  # for plots, in nm
 tick_direction = 'inout'  # 'out', 'in', 'inout'
@@ -258,7 +258,7 @@ for counter, value in enumerate(sorted_obj):
         centering_method = 'do_nothing'  # do not center, data is already cropped just on support for mode decomposition
         # correct a roll after the decomposition into modes in PyNX
         obj = np.roll(obj, roll_modes, axis=(0, 1, 2))
-        gu.multislices_plot(abs(obj), plot_colorbar=True, title='1st mode after centering')
+        gu.multislices_plot(abs(obj), sum_frames=True, plot_colorbar=True, title='1st mode after centering')
     # use the range of interest defined above
     obj = pu.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
 
