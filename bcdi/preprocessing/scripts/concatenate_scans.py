@@ -166,8 +166,8 @@ template = ''.join("_S%s" % ''.join(str(val)) for val in combined_list) +\
            '_{:d}_{:d}_{:d=}'.format(output_shape[0], output_shape[1], output_shape[2])
 
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-np.savez_compressed(savedir+'pynx' + template + '.npz', data=sumdata)
-np.savez_compressed(savedir+'maskpynx' + template + '.npz', mask=summask)
+np.savez_compressed(savedir+'combined_pynx' + template + '.npz', data=sumdata)
+np.savez_compressed(savedir+'combined_maskpynx' + template + '.npz', mask=summask)
 print('\nSum of ', len(combined_list), 'scans')
 
 gu.multislices_plot(sumdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
