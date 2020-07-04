@@ -1155,7 +1155,7 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     :param cmap: colormap to be used
     :param uv_labels: tuple of strings, labels for the u axis and the v axis, respectively
     :param hide_axis: hide the axis frame, ticks and ticks labels
-    :param scale: scale for the colorbar of the plot
+    :param scale: 'linear' or 'log', scale for the colorbar of the plot
     :return: figure and axe instances
     """
     from scipy.interpolate import griddata
