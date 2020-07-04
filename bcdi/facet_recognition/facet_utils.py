@@ -609,13 +609,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     # stereo_proj[:, 2] is the euclidian u_north, stereo_proj[:, 3] is the euclidian v_north
 
     # remove intensity where stereo_proj is infinite
-    list_inf = np.argwhere(np.isinf(stereo_proj))
-    remove_row = list(set(list_inf[:, 0]))  # remove duplicated row indices
-    print('remove_row indices (the stereographic projection is infinite): ', remove_row, '\n')
+    list_bad = np.argwhere(np.isinf(stereo_proj) | np.isnan(stereo_proj))  # elementwise or
+    remove_row = list(set(list_bad[:, 0]))  # remove duplicated row indices
+    print('remove_row indices (the stereographic projection is infinite or nan): ', remove_row, '\n')
     stereo_proj = np.delete(stereo_proj, remove_row, axis=0)
     intensity = np.delete(intensity, remove_row, axis=0)
-
-    # plot the stereographic projection
 
     fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=intensity,
                                    radius_mean=radius_mean, planes=planes_south, max_angle=max_angle,
