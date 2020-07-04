@@ -73,12 +73,13 @@ class Colormap(object):
         self.cmap.set_bad(color=bad_color)
 
 
-def colorbar(mappable, nbins=10):
+def colorbar(mappable, scale='linear', numticks=10):
     """
     Generate a colorbar whose height (or width) in sync with the master axes.
 
     :param mappable: the image where to put the colorbar
-    :param nbins: number of bins for the colorbar
+    :param scale: 'linear' or 'log', used for tick location
+    :param numticks: number of ticks for the colorbar
     :return: the colorbar instance
     """
     from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -93,7 +94,12 @@ def colorbar(mappable, nbins=10):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     cbar = fig.colorbar(mappable, cax=cax)
-    cbar.locator = ticker.MaxNLocator(nbins=nbins)
+    if scale == 'linear':
+        cbar.locator = ticker.LinearLocator(numticks=numticks)
+    elif scale == 'log':
+        cbar.locator = ticker.LogLocator(numticks=numticks)
+    else:
+        raise ValueError('Incorrect value for the scale parameter')
     cbar.update_ticks()
     plt.sca(last_axes)
     return cbar
@@ -374,7 +380,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                              length=tick_length, width=tick_width)
         if plot_colorbar:
-            colorbar(plot, nbins=5)
+            colorbar(plot, numticks=5)
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.5)
@@ -489,7 +495,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
         ax0.set_ylabel(ver_labels[0])
         ax0.set_title(title + slice_names[0])
         if plot_colorbar:
-            colorbar(plt0, nbins=5)
+            colorbar(plt0, numticks=5)
 
         # axis 1
         temp_array = np.copy(array)
@@ -515,7 +521,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
         ax1.set_ylabel(ver_labels[1])
         ax1.set_title(title + slice_names[1])
         if plot_colorbar:
-            colorbar(plt1, nbins=5)
+            colorbar(plt1, numticks=5)
 
         # axis 2
         temp_array = np.copy(array)
@@ -541,7 +547,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
         ax2.set_ylabel(ver_labels[2])
         ax2.set_title(title + slice_names[2])
         if plot_colorbar:
-            colorbar(plt2, nbins=5)
+            colorbar(plt2, numticks=5)
 
         # axis 3
         ax3.set_visible(False)
@@ -723,7 +729,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                          length=tick_length, width=tick_width)
     if plot_colorbar:
-        colorbar(plot, nbins=5)
+        colorbar(plot, numticks=5)
     plt.pause(0.5)
     plt.ioff()
     return fig, axis, plot
@@ -832,7 +838,7 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
         axis.set_title("Frame " + str(idx + 1) + "/" + str(nbz) +
                        "\nq quit ; u next frame ; d previous frame ; p unzoom\n"
                        "right darker ; left brighter ; r save 2D frame")
-        colorbar(plot, nbins=5)
+        colorbar(plot, numticks=5)
     elif dim == 1:
         if scale == 'linear':
             plot = axis.imshow(data[:, idx, :], vmin=vmin, vmax=vmax, cmap=cmap)
@@ -841,7 +847,7 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
         axis.set_title("Frame " + str(idx + 1) + "/" + str(nby) +
                        "\nq quit ; u next frame ; d previous frame ; p unzoom\n"
                        "right darker ; left brighter ; r save 2D frame")
-        colorbar(plot, nbins=5)
+        colorbar(plot, numticks=5)
     elif dim == 2:
         if scale == 'linear':
             plot = axis.imshow(data[:, :, idx], vmin=vmin, vmax=vmax, cmap=cmap)
@@ -850,7 +856,7 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
         axis.set_title("Frame " + str(idx + 1) + "/" + str(nbx) +
                        "\nq quit ; u next frame ; d previous frame ; p unzoom\n"
                        "right darker ; left brighter ; r save 2D frame")
-        colorbar(plot, nbins=5)
+        colorbar(plot, numticks=5)
     axis.set_xlim([xmin, xmax])
     axis.set_ylim([ymin, ymax])
     plt.draw()
@@ -999,7 +1005,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         ax0.invert_yaxis()
     plt.axis('scaled')
     if plot_colorbar:
-        colorbar(plt0, nbins=5)
+        colorbar(plt0, numticks=5)
     if pixel_spacing is not None:
         ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -1038,7 +1044,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     ax1.set_title(title + slice_names[1])
     plt.axis('scaled')
     if plot_colorbar:
-        colorbar(plt1, nbins=5)
+        colorbar(plt1, numticks=5)
     if pixel_spacing is not None:
         ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -1078,7 +1084,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     plt.axis('scaled')
 
     if plot_colorbar:
-        colorbar(plt2, nbins=5)
+        colorbar(plt2, numticks=5)
     if pixel_spacing is not None:
         ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
         ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -1158,13 +1164,13 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     intensity_grid = intensity_grid / intensity_grid[intensity_grid > 0].max() * 10000  # normalize for easier plotting
 
     if contour_range is None:
-        contour_range = range(0, 10001, 250)
+        contour_range = np.logspace(0, 4, num=20, endpoint=True, base=10.0)
 
     # plot the stereographic projection
     plt.ion()
     fig, ax0 = plt.subplots(nrows=1, ncols=1, figsize=(12, 9), facecolor='w', edgecolor='k')
     plt0 = ax0.contourf(u_grid, v_grid, abs(intensity_grid), contour_range, cmap=cmap)
-    colorbar(plt0, nbins=5)
+    colorbar(plt0, scale='log', numticks=5)
     ax0.axis('equal')
 
     # add the projection of the elevation angle, depending on the center of projection
