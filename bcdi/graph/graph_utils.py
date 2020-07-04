@@ -10,6 +10,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
 import matplotlib.ticker as ticker
+import matplotlib.colors as colors
 from matplotlib.colors import LinearSegmentedColormap
 
 # define a colormap
@@ -1137,7 +1138,8 @@ def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped becaus
 
 
 def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, title="", plot_planes=True,
-                       contour_range=None, max_angle=95, cmap=my_cmap, uv_labels=('', ''), hide_axis=False):
+                       contour_range=None, max_angle=95, cmap=my_cmap, uv_labels=('', ''), hide_axis=False,
+                       scale='linear'):
     """
     Plot the stereographic projection with some cosmetics.
 
@@ -1153,24 +1155,35 @@ def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, 
     :param cmap: colormap to be used
     :param uv_labels: tuple of strings, labels for the u axis and the v axis, respectively
     :param hide_axis: hide the axis frame, ticks and ticks labels
+    :param scale: scale for the colorbar of the plot
     :return: figure and axe instances
     """
     from scipy.interpolate import griddata
 
-    nb_points = 4 * max_angle + 1
+    nb_points = 5 * max_angle + 1
     v_grid, u_grid = np.mgrid[-max_angle:max_angle:(nb_points*1j), -max_angle:max_angle:(nb_points*1j)]
     # v_grid is changing along the vertical axis, u_grid is changing along the horizontal axis
     intensity_grid = griddata((euclidian_v, euclidian_u), color, (v_grid, u_grid), method='linear')
     intensity_grid = intensity_grid / intensity_grid[intensity_grid > 0].max() * 10000  # normalize for easier plotting
 
     if contour_range is None:
-        contour_range = np.logspace(0, 4, num=20, endpoint=True, base=10.0)
+        if scale == 'linear':
+            contour_range = range(0, 10001, 250)
+        elif scale == 'log':
+            contour_range = np.logspace(0, 4, num=20, endpoint=True, base=10.0)
+        else:
+            raise ValueError('Incorrect value for scale parameter')
 
     # plot the stereographic projection
     plt.ion()
     fig, ax0 = plt.subplots(nrows=1, ncols=1, figsize=(12, 9), facecolor='w', edgecolor='k')
-    plt0 = ax0.contourf(u_grid, v_grid, abs(intensity_grid), contour_range, cmap=cmap)
-    colorbar(plt0, scale='log', numticks=5)
+    if scale == 'linear':
+        plt0 = ax0.contourf(u_grid, v_grid, intensity_grid, contour_range, cmap=cmap)
+        colorbar(plt0, scale='linear', numticks=5)
+    else:  # log
+        plt0 = ax0.contourf(u_grid, v_grid, intensity_grid, contour_range, cmap=cmap,
+                            norm=colors.LogNorm(vmin=max(intensity_grid.min(), 1), vmax=intensity_grid.max()))
+        colorbar(plt0, scale='log', numticks=5)
     ax0.axis('equal')
 
     # add the projection of the elevation angle, depending on the center of projection
