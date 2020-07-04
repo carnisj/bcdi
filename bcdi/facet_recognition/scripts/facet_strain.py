@@ -33,16 +33,16 @@ Input: a reconstruction .npz file with fields: 'amp' and 'strain'
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
 
-scan = 1478  # spec scan number
-datadir = 'D:/data/SIXS_2019_Ni/S{:d}/pynxraw/'.format(scan)
-support_threshold = 0.45  # threshold for support determination
-voxel_size = [9.74, 9.74, 9.74]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+scan = 15  # spec scan number
+datadir = 'D:/data/P10_isosurface/data/p15_2_{:05d}/pynxraw/'.format(scan)
+support_threshold = 0.5  # threshold for support determination
+voxel_size = [6, 6, 6]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
 upsampling_factor = 1  # integer, factor for upsampling the reconstruction in order to have a smoother surface
 savedir = datadir
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 projection_axis = 1  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
-smoothing_iterations = 15  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
+smoothing_iterations = 10  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
 smooth_lamda = 0.33  # lambda parameter in Taubin smoothing
 smooth_mu = 0.34  # mu parameter in Taubin smoothing
 radius_normals = 0.1  # radius of integration for the calculation of the density of normals
@@ -56,9 +56,10 @@ corners_coord = 280  # coordination threshold for isolating corners, 260 seems t
 #########################################################
 # parameters only used in the stereographic projection #
 #########################################################
-threshold_south = -1200  # background threshold in the stereographic projection from South of the density of normals
-threshold_north = -400  # background threshold in the stereographic projection from North of the density of normals
+threshold_south = -250  # background threshold in the stereographic projection from South of the density of normals
+threshold_north = -250  # background threshold in the stereographic projection from North of the density of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
+stereo_scale = 'linear'  # 'linear' or 'log', scale of the colorbar in the stereographic plot
 #########################################################
 # parameters only used in the equirectangular projection #
 #########################################################
@@ -68,6 +69,7 @@ kde_threshold = -0.2  # threshold for defining the background in the density est
 # define crystallographic planes of interest for the stereographic projection (cubic lattice) #
 ###############################################################################################
 planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
+# planes_south['0 2 0'] = fu.plane_angle_cubic(reflection, np.array([0, 2, 0]))
 planes_south['1 1 1'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 1]))
 planes_south['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
 planes_south['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
@@ -76,6 +78,7 @@ planes_south['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
 planes_south['-1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([-1, -1, 1]))
 
 planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
+# planes_south['0 -2 0'] = fu.plane_angle_cubic(reflection, np.array([0, -2, 0]))
 planes_north['-1 -1 -1'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, -1]))
 planes_north['-1 0 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, 0, 0]))
 planes_north['-1 -1 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, 0]))
@@ -167,7 +170,7 @@ if projection_method == 'stereographic':
                               background_north=threshold_north, min_distance=peak_min_distance, savedir=savedir,
                               save_txt=False, plot_planes=True, planes_south=planes_south, planes_north=planes_north,
                               max_angle=max_angle, voxel_size=voxel_size, projection_axis=projection_axis,
-                              debugging=debug)
+                              scale=stereo_scale, debugging=debug)
 
     # remove rows containing nan values
     normals = np.delete(normals, remove_row, axis=0)
