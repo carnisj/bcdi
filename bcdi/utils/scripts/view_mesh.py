@@ -26,25 +26,25 @@ import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.postprocessing.postprocessing_utils as pu
 
-scan = 30  # scan number as it appears in the folder name
+scan = 38  # scan number as it appears in the folder name
 sample_name = "p15"  # without _ at the end
 root_folder = "D:/data/P10_isosurface/data/"
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
-normalize_flux = True  # will normalize the intensity by the default monitor
+normalize_flux = False  # will normalize the intensity by the default monitor
 ###########################
 # mesh related parameters #
 ###########################
-fast_motor = 'hpy'  # fast scanning motor for the meshnb_fast = len(fast_positions)
-nb_fast = 11  # number of steps for the fast scanning motor
+fast_motor = 'hpy'  # fast scanning motor for the mesh
+nb_fast = 41  # number of steps for the fast scanning motor
 slow_motor = 'hpx'  # slow scanning motor for the mesh
-nb_slow = 11  # number of steps for the slow scanning motor
+nb_slow = 9  # number of steps for the slow scanning motor
 ###########################
 # plot related parameters #
 ###########################
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort
-fast_axis = 'vertical'  # 'vertical' to plot the fast scanning motor vertically, 'horizontal' otherwise
-invert_xaxis = True  # True to inverse the horizontal axis
-invert_yaxis = True  # True to inverse the horizontal axis
+fast_axis = 'horizontal'  # 'vertical' to plot the fast scanning motor vertically, 'horizontal' otherwise
+invert_xaxis = False  # True to inverse the horizontal axis
+invert_yaxis = False  # True to inverse the horizontal axis
 ###############################
 # beamline related parameters #
 ###############################
@@ -62,7 +62,7 @@ specfile_name = ''
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-binning = [4, 4]  # binning (detector vertical axis, detector horizontal axis)
+binning = [4, 4]  # binning (detector vertical axis, detector horizontal axis) applied during data loading
 template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
@@ -89,12 +89,12 @@ def onselect(click, release):
     ax1.cla()
     if fast_axis == 'vertical':
         ax1.imshow(np.log10(data[:, y_start:y_stop, x_start:x_stop].sum(axis=(1, 2)).reshape((nb_fast, nb_slow))),
-                   cmap=my_cmap, extent=[min_slow, max_slow, min_fast, max_fast])  # extent (left, right, bottom, top)
+                   cmap=my_cmap, extent=[min_slow, max_slow, max_fast, min_fast])  # extent (left, right, bottom, top)
         ax1.set_xlabel(slow_motor)
         ax1.set_ylabel(fast_motor)
     else:
         ax1.imshow(np.log10(data[:, y_start:y_stop, x_start:x_stop].sum(axis=(1, 2)).reshape((nb_slow, nb_fast))),
-                   cmap=my_cmap, extent=[min_fast, max_fast, min_slow, max_slow])  # extent (left, right, bottom, top)
+                   cmap=my_cmap, extent=[min_fast, max_fast, max_slow, min_slow])  # extent (left, right, bottom, top)
         ax1.set_xlabel(fast_motor)
         ax1.set_ylabel(slow_motor)
     if invert_xaxis:
@@ -177,8 +177,8 @@ logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, r
 # load data #
 #############
 data, mask, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number=scan, detector=detector,
-                                                    setup=setup, debugging=False)
-print('Input data shape: ', data.shape)
+                                                    setup=setup, bin_during_loading=True, debugging=False)
+print('Data shape: ', data.shape)
 
 ###########################
 # intensity normalization #
@@ -191,17 +191,17 @@ if normalize_flux:
 ############
 # bin data #
 ############
-# bin data and mask in the detector plane if needed
-if (detector.binning[1] != 1) or (detector.binning[2] != 1):
-    print('Binning the data: detector vertical axis by', detector.binning[1],
-          ', detector horizontal axis by', detector.binning[2])
-    data = pu.bin_data(data, (1, detector.binning[1], detector.binning[2]), debugging=False)
-    mask = pu.bin_data(mask, (1, detector.binning[1], detector.binning[2]), debugging=False)
-    mask[np.nonzero(mask)] = 1
+# # bin data and mask in the detector plane if needed
+# if (detector.binning[1] != 1) or (detector.binning[2] != 1):
+#     print('Binning the data: detector vertical axis by', detector.binning[1],
+#           ', detector horizontal axis by', detector.binning[2])
+#     data = pu.bin_data(data, (1, detector.binning[1], detector.binning[2]), debugging=False)
+#     mask = pu.bin_data(mask, (1, detector.binning[1], detector.binning[2]), debugging=False)
+#     mask[np.nonzero(mask)] = 1
 
 data[np.nonzero(mask)] = 0
 nz, ny, nx = data.shape
-print('Binned data shape:', data.shape)
+# print('Binned data shape:', data.shape)
 
 ########################
 # load motor positions #
@@ -209,8 +209,8 @@ print('Binned data shape:', data.shape)
 fast_positions = pru.get_motor_pos(logfile=logfile, scan_number=scan, setup=setup, motor_name=fast_motor)
 slow_positions = pru.get_motor_pos(logfile=logfile, scan_number=scan, setup=setup, motor_name=slow_motor)
 
-min_fast, max_fast = fast_positions.min(), fast_positions.max()
-min_slow, max_slow = slow_positions.min(), slow_positions.max()
+min_fast, max_fast = fast_positions[0], fast_positions[-1]
+min_slow, max_slow = slow_positions[0], slow_positions[-1]
 
 assert len(fast_positions) == nz, print('Number of fast scanning motor steps:', nb_fast,
                                         'incompatible with data shape:', nz)
@@ -233,12 +233,12 @@ original_data = np.copy(data)
 ax0.imshow(np.log10(sumdata), cmap=my_cmap, vmin=0, vmax=max_colorbar)
 if fast_axis == 'vertical':
     ax1.imshow(np.log10(data.sum(axis=(1, 2)).reshape((nb_fast, nb_slow))),
-               cmap=my_cmap, extent=[min_slow, max_slow, min_fast, max_fast])  # extent (left, right, bottom, top)
+               cmap=my_cmap, extent=[min_slow, max_slow, max_fast, min_fast])  # extent (left, right, bottom, top)
     ax1.set_xlabel(slow_motor)
     ax1.set_ylabel(fast_motor)
 else:
     ax1.imshow(np.log10(data.sum(axis=(1, 2)).reshape((nb_slow, nb_fast))),
-               cmap=my_cmap, extent=[min_fast, max_fast, min_slow, max_slow])  # extent (left, right, bottom, top)
+               cmap=my_cmap, extent=[min_fast, max_fast, max_slow, min_slow])  # extent (left, right, bottom, top)
     ax1.set_xlabel(fast_motor)
     ax1.set_ylabel(slow_motor)
 if invert_xaxis:
