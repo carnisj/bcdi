@@ -671,7 +671,9 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     ax1.set_title('KDE \nNorth pole')
     fig.tight_layout()
     plt.pause(0.1)
-
+    fig.waitforbuttonpress()
+    plt.close(fig)
+    
     # identification of local minima
     density_south[density_south > background_south] = 0  # define the background in the density of normals
     mask_south = np.copy(density_south)

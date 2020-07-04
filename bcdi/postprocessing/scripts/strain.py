@@ -42,16 +42,16 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 54  # spec scan number
+scan = 91  # spec scan number
 
-datadir = 'D:/data/P10_isosurface/data/p21_00054/pynxraw/'  # 'D:/data/HC3207/ + "/test/"
+datadir = 'D:/data/P10_isosurface/data/p15_2_00091/pynxraw/'  # 'D:/data/HC3207/ + "/test/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [200, 1536, 1536]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [160, 1536, 1536]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 3, 3)  # binning factor applied during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
@@ -72,7 +72,7 @@ offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = "_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = "_flipped_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
@@ -84,8 +84,8 @@ sdd = 1.84  # sample to detector distance in m
 pixel_size = 75e-6  # detector pixel size in m
 energy = 8820  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 42.6527  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = -0.1994  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 61.5238  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 1.6310  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
 tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
@@ -125,7 +125,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (-1, -1, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (-1, 0, -4)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # setup for phase averaging or apodization #
 ############################################
@@ -258,7 +258,9 @@ for counter, value in enumerate(sorted_obj):
         centering_method = 'do_nothing'  # do not center, data is already cropped just on support for mode decomposition
         # correct a roll after the decomposition into modes in PyNX
         obj = np.roll(obj, roll_modes, axis=(0, 1, 2))
-        gu.multislices_plot(abs(obj), sum_frames=True, plot_colorbar=True, title='1st mode after centering')
+        fig, _, _ = gu.multislices_plot(abs(obj), sum_frames=True, plot_colorbar=True, title='1st mode after centering')
+        fig.waitforbuttonpress()
+        plt.close(fig)
     # use the range of interest defined above
     obj = pu.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
 
