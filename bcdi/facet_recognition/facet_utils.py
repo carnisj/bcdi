@@ -619,11 +619,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=intensity,
                                    radius_mean=radius_mean, planes=planes_south, max_angle=max_angle, scale=scale,
                                    title="Projection from\nSouth pole", plot_planes=plot_planes, uv_labels=uv_labels)
-    fig.savefig(savedir + 'South pole.png')
+    fig.savefig(savedir + 'South pole_' + scale + '.png')
     fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=intensity,
                                    radius_mean=radius_mean, planes=planes_north, max_angle=max_angle, scale=scale,
                                    title="Projection from\nNorth pole", plot_planes=plot_planes, uv_labels=uv_labels)
-    fig.savefig(savedir + 'North pole.png')
+    fig.savefig(savedir + 'North pole_' + scale + '.png')
 
     # regrid stereo_proj
     # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
