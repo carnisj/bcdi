@@ -1759,13 +1759,15 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
-        ccdraw = ccdraw - background
+        if background is not None:
+            ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Maxipix":
             ccdraw, mask_2d = mask_maxipix(ccdraw, mask_2d)
         else:
             raise ValueError('Detector ', detector.name, 'not supported for CRISTAL')
-        ccdraw = flatfield * ccdraw
+        if flatfield is not None:
+            ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
@@ -1834,7 +1836,8 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
                 ccdraw = e.data
             else:
                 raise ValueError("Custom scan implementation missing for this beamline")
-        ccdraw = ccdraw - background
+        if background is not None:
+            ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Eiger2M":
             ccdraw, mask_2d = mask_eiger(data=ccdraw, mask=mask_2d)
@@ -1842,7 +1845,8 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
             ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
         else:
             pass
-        ccdraw = flatfield * ccdraw
+        if flatfield is not None:
+            ccdraw = flatfield * ccdraw
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
         data[idx, :, :] = ccdraw
 
@@ -1881,13 +1885,6 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     """
-    if flatfield is None:
-        flatfield = np.ones((detector.nb_pixel_y, detector.nb_pixel_x))
-    if hotpixels is None:
-        hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-    if background is None:
-        background = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
     if setup.beamline != 'P10':
         bin_during_loading = False
 
@@ -2074,7 +2071,8 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
         i = int(ccdn[idx])
         e = fabio.open(ccdfiletmp % i)
         ccdraw = e.data
-        ccdraw = ccdraw - background
+        if background is not None:
+            ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Eiger2M":
             ccdraw, mask_2d = mask_eiger(data=ccdraw, mask=mask_2d)
@@ -2082,7 +2080,8 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
             ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
         else:
             raise ValueError('Detector ', detector.name, 'not supported for ID01')
-        ccdraw = flatfield * ccdraw
+        if flatfield is not None:
+            ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
@@ -2246,13 +2245,15 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
                     tmp_data = h5file['entry']['data'][data_path][idx]
                 except OSError:
                     raise OSError('hdf5plugin is not installed')
-                tmp_data = tmp_data - background
+                if background is not None:
+                    tmp_data = tmp_data - background
                 ccdraw, mask2d = remove_hotpixels(data=tmp_data, mask=mask_2d, hotpixels=hotpixels)
                 if detector.name == "Eiger4M":
                     ccdraw, mask_2d = mask_eiger4m(data=ccdraw, mask=mask_2d)
                 else:
                     raise ValueError('Detector ', detector.name, 'not supported for P10')
-                ccdraw = flatfield * ccdraw
+                if flatfield is not None:
+                    ccdraw = flatfield * ccdraw
                 if normalize == 'sum_roi':
                     temp_mon = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
                     series_monitor.append(temp_mon)
@@ -2366,13 +2367,15 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
-        ccdraw = ccdraw - background
+        if background is not None:
+            ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Maxipix":
             ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
         else:
             raise ValueError('Detector ', detector.name, 'not supported for SIXS')
-        ccdraw = flatfield * ccdraw
+        if flatfield is not None:
+            ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
@@ -3400,33 +3403,34 @@ def remove_hotpixels(data, mask, hotpixels=None):
     :return: the data without hotpixels and the updated mask
     """
     if hotpixels is None:
-        hotpixels = np.zeros(data.shape)
-    if hotpixels.ndim == 3:  # 3D array
-        print('Hotpixels is a 3D array, summing along the first axis')
-        hotpixels = hotpixels.sum(axis=0)
-        hotpixels[np.nonzero(hotpixels)] = 1  # hotpixels should be a binary array
-
-    if data.shape != mask.shape:
-        raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
-
-    if data.ndim == 3:  # 3D array
-        if data[0, :, :].shape != hotpixels.shape:
-            raise ValueError('Data and hotpixels must have the same shape\n data is ',
-                             data.shape, ' while hotpixels is ', hotpixels.shape)
-        for idx in range(data.shape[0]):
-            temp_data = data[idx, :, :]
-            temp_mask = mask[idx, :, :]
-            temp_data[hotpixels == 1] = 0  # numpy array is mutable hence data will be modified
-            temp_mask[hotpixels == 1] = 1  # numpy array is mutable hence mask will be modified
-    elif data.ndim == 2:  # 2D array
-        if data.shape != hotpixels.shape:
-            raise ValueError('Data and hotpixels must have the same shape\n data is ',
-                             data.shape, ' while hotpixels is ', hotpixels.shape)
-        data[hotpixels == 1] = 0
-        mask[hotpixels == 1] = 1
+        return data, mask
     else:
-        raise ValueError('2D or 3D data array expected, got ', data.ndim, 'D')
-    return data, mask
+        if hotpixels.ndim == 3:  # 3D array
+            print('Hotpixels is a 3D array, summing along the first axis')
+            hotpixels = hotpixels.sum(axis=0)
+            hotpixels[np.nonzero(hotpixels)] = 1  # hotpixels should be a binary array
+
+        if data.shape != mask.shape:
+            raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
+
+        if data.ndim == 3:  # 3D array
+            if data[0, :, :].shape != hotpixels.shape:
+                raise ValueError('Data and hotpixels must have the same shape\n data is ',
+                                 data.shape, ' while hotpixels is ', hotpixels.shape)
+            for idx in range(data.shape[0]):
+                temp_data = data[idx, :, :]
+                temp_mask = mask[idx, :, :]
+                temp_data[hotpixels == 1] = 0  # numpy array is mutable hence data will be modified
+                temp_mask[hotpixels == 1] = 1  # numpy array is mutable hence mask will be modified
+        elif data.ndim == 2:  # 2D array
+            if data.shape != hotpixels.shape:
+                raise ValueError('Data and hotpixels must have the same shape\n data is ',
+                                 data.shape, ' while hotpixels is ', hotpixels.shape)
+            data[hotpixels == 1] = 0
+            mask[hotpixels == 1] = 1
+        else:
+            raise ValueError('2D or 3D data array expected, got ', data.ndim, 'D')
+        return data, mask
 
 
 def smaller_primes(number, maxprime=13, required_dividers=(4,)):
