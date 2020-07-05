@@ -26,18 +26,18 @@ import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.postprocessing.postprocessing_utils as pu
 
-scan = 38  # scan number as it appears in the folder name
+scan = 37  # scan number as it appears in the folder name
 sample_name = "p15"  # without _ at the end
 root_folder = "D:/data/P10_isosurface/data/"
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
-normalize_flux = False  # will normalize the intensity by the default monitor
+normalize_flux = True  # will normalize the intensity by the default monitor
 ###########################
 # mesh related parameters #
 ###########################
 fast_motor = 'hpy'  # fast scanning motor for the mesh
-nb_fast = 41  # number of steps for the fast scanning motor
+nb_fast = 21  # number of steps for the fast scanning motor
 slow_motor = 'hpx'  # slow scanning motor for the mesh
-nb_slow = 9  # number of steps for the slow scanning motor
+nb_slow = 21  # number of steps for the slow scanning motor
 ###########################
 # plot related parameters #
 ###########################
@@ -178,7 +178,9 @@ logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, r
 #############
 data, mask, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number=scan, detector=detector,
                                                     setup=setup, bin_during_loading=True, debugging=False)
-print('Data shape: ', data.shape)
+nz, ny, nx = data.shape
+print('Data shape: ', nz, ny, nx)
+data[np.nonzero(mask)] = 0
 
 ###########################
 # intensity normalization #
@@ -187,21 +189,6 @@ if normalize_flux:
     print('Intensity normalization using the default monitor')
     data, monitor = pru.normalize_dataset(array=data, raw_monitor=monitor, frames_logical=frames_logical,
                                           norm_to_min=True, savedir=detector.savedir, debugging=True)
-
-############
-# bin data #
-############
-# # bin data and mask in the detector plane if needed
-# if (detector.binning[1] != 1) or (detector.binning[2] != 1):
-#     print('Binning the data: detector vertical axis by', detector.binning[1],
-#           ', detector horizontal axis by', detector.binning[2])
-#     data = pu.bin_data(data, (1, detector.binning[1], detector.binning[2]), debugging=False)
-#     mask = pu.bin_data(mask, (1, detector.binning[1], detector.binning[2]), debugging=False)
-#     mask[np.nonzero(mask)] = 1
-
-data[np.nonzero(mask)] = 0
-nz, ny, nx = data.shape
-# print('Binned data shape:', data.shape)
 
 ########################
 # load motor positions #
