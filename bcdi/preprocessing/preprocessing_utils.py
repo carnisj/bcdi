@@ -2484,6 +2484,10 @@ def mask_eiger4m(data, mask):
     mask[514:551, :] = 1
     mask[1065:1102, :] = 1
     mask[1616:1653, :] = 1
+
+    # mask hot pixels
+    mask[data > 10e6] = 1
+    data[data > 10e6] = 0
     return data, mask
 
 
