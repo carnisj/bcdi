@@ -2450,6 +2450,10 @@ def mask_eiger(data, mask):
     mask[1248:1290, 478] = 1
     mask[1214:1298, 481] = 1
     mask[1649:1910, 620:628] = 1
+
+    # mask hot pixels
+    mask[data > 1e6] = 1
+    data[data > 1e6] = 0
     return data, mask
 
 
@@ -2510,6 +2514,10 @@ def mask_maxipix(data, mask):
 
     mask[:, 255:261] = 1
     mask[255:261, :] = 1
+
+    # mask hot pixels
+    mask[data > 1e6] = 1
+    data[data > 1e6] = 0
     return data, mask
 
 
