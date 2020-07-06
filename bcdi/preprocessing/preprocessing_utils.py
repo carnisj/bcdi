@@ -1002,7 +1002,9 @@ def get_motor_pos(logfile, scan_number, setup, motor_name):
     :return: the position values of the motor
     """
     if setup.beamline == 'P10':
-        motor_pos = load_motor_p10(logfile=logfile, motor_name=motor_name)
+        motor_pos = scan_motor_p10(logfile=logfile, motor_name=motor_name)
+    elif setup.beamline == 'ID01':
+        motor_pos = scan_motor_id01(logfile=logfile, scan_number=scan_number, motor_name=motor_name)
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
 
@@ -2191,34 +2193,6 @@ def load_monitor(scan_number, logfile, setup):
     else:
         raise ValueError('Wrong value for "beamline" parameter')
     return monitor
-
-
-def load_motor_p10(logfile, motor_name):
-    """
-    Load the .fio file from the scan and extract the considered motor positions.
-
-    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param motor_name: name of the motor
-    :return: the position values of the motor
-    """
-    motor_pos = []
-    fio = open(logfile, 'r')
-    fio_lines = fio.readlines()
-    for line in fio_lines:
-        this_line = line.strip()
-        words = this_line.split()
-
-        if 'Col' in words and motor_name in words:  # motor_name scanned, template = ' Col 0 motor_name DOUBLE\n'
-            index_motor = int(words[1]) - 1  # python index starts at 0
-
-        try:
-            float(words[0])  # if this does not fail, we are reading data
-            motor_pos.append(float(words[index_motor]))
-        except ValueError:  # first word is not a number, skip this line
-            continue
-
-    fio.close()
-    return np.asarray(motor_pos)
 
 
 def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor', bin_during_loading=False,
@@ -3499,6 +3473,49 @@ def remove_hotpixels(data, mask, hotpixels=None):
         else:
             raise ValueError('2D or 3D data array expected, got ', data.ndim, 'D')
         return data, mask
+
+
+def scan_motor_id01(logfile, scan_number, motor_name):
+    """
+    Extract the scanned motor positions during the scan at ID01 beamline.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: number of the scan
+    :param motor_name: name of the motor
+    :return: the position values of the motor
+    """
+    labels = logfile[str(scan_number) + '.1'].labels  # motor scanned
+    labels_data = logfile[str(scan_number) + '.1'].data  # motor scanned
+    motor_pos = list(labels_data[labels.index(motor_name), :])
+    return np.asarray(motor_pos)
+
+
+def scan_motor_p10(logfile, motor_name):
+    """
+    Extract the scanned motor positions during the scan at P10 beamline.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param motor_name: name of the motor
+    :return: the position values of the motor
+    """
+    motor_pos = []
+    fio = open(logfile, 'r')
+    fio_lines = fio.readlines()
+    for line in fio_lines:
+        this_line = line.strip()
+        words = this_line.split()
+
+        if 'Col' in words and motor_name in words:  # motor_name scanned, template = ' Col 0 motor_name DOUBLE\n'
+            index_motor = int(words[1]) - 1  # python index starts at 0
+
+        try:
+            float(words[0])  # if this does not fail, we are reading data
+            motor_pos.append(float(words[index_motor]))
+        except ValueError:  # first word is not a number, skip this line
+            continue
+
+    fio.close()
+    return np.asarray(motor_pos)
 
 
 def smaller_primes(number, maxprime=13, required_dividers=(4,)):
