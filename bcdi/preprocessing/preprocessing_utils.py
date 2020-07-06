@@ -1726,7 +1726,8 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     return rawdata, rawmask, frames_logical, monitor
 
 
-def load_cristal_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
+def load_cristal_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor',
+                      bin_during_loading=False, debugging=False):
     """
     Load CRISTAL data, apply filters and concatenate it for phasing. The address of dataset and monitor in the h5 file
      may have to be modified.
@@ -1739,6 +1740,8 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
      integrated intensity in the region of interest defined by detector.sum_roi
      by the integrated intensity in a defined region of interest
+    :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
+     It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1751,7 +1754,15 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
     tmp_data = logfile['/' + group_key + '/scan_data/data_06'][:]
 
     nb_img = tmp_data.shape[0]
-    data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+
+    if bin_during_loading:
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
+        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
+                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+    else:
+        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
     else:
@@ -1771,9 +1782,16 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        if bin_during_loading:
+            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
+        sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
+        sys.stdout.flush()
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    if bin_during_loading:
+        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
@@ -1797,7 +1815,7 @@ def load_cristal_monitor(logfile):
 
 
 def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfield, hotpixels, background,
-                     debugging=False):
+                     bin_during_loading=False, debugging=False):
     """
     Load a dataset measured without a scan, such as a set of images measured in a macro.
 
@@ -1808,6 +1826,8 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
+    :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
+     It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
     """
@@ -1825,7 +1845,14 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
         nb_img = tmp_data.shape[0]
         stack = True
 
-    data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+    if bin_during_loading:
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
+        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
+                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+    else:
+        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+
     for idx in range(nb_img):
         if stack:
             ccdraw = tmp_data[idx, :, :]
@@ -1848,9 +1875,16 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
         if flatfield is not None:
             ccdraw = flatfield * ccdraw
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        if bin_during_loading:
+            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
+        sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
+        sys.stdout.flush()
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    if bin_during_loading:
+        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
@@ -1930,7 +1964,6 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     # remove indices where frames_logical=0
     nbz, nby, nbx = data.shape
     nb_frames = (frames_logical != 0).sum()
-    # TODO: try to load data more efficiently memorywise
     newdata = np.zeros((nb_frames, nby, nbx))
     newmask = np.zeros((nb_frames, nby, nbx))
     # do not process the monitor here, it is done in normalize_dataset()
@@ -2016,7 +2049,7 @@ def load_hotpixels(hotpixels_file):
 
 
 def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, background, normalize='monitor',
-                   debugging=False):
+                   bin_during_loading=False, debugging=False):
     """
     Load ID01 data, apply filters and concatenate it for phasing.
 
@@ -2029,6 +2062,8 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
      integrated intensity in the region of interest defined by detector.sum_roi
      by the integrated intensity in a defined region of interest
+    :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
+     It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -2054,7 +2089,15 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
             raise ValueError(detector.counter, 'not in the list, the detector name may be wrong')
 
     nb_img = len(ccdn)
-    data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+
+    if bin_during_loading:
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
+        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
+                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+    else:
+        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
     else:
@@ -2085,9 +2128,16 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        if bin_during_loading:
+            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
+        sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
+        sys.stdout.flush()
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    if bin_during_loading:
+        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
@@ -2185,7 +2235,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
      integrated intensity in the region of interest defined by detector.sum_roi
      by the integrated intensity in a defined region of interest
     :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
-     It saves a lot of memory space for the large 2D detector.
+     It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -2262,7 +2312,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
                     ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
                 series_data.append(ccdraw)
                 if not is_series:
-                    sys.stdout.write('\rLoading frame {:d}'.format(idx))
+                    sys.stdout.write('\rLoading frame {:d}'.format(idx+1))
                     sys.stdout.flush()
                 idx = idx + 1
             except ValueError:  # reached the end of the series
@@ -2318,7 +2368,8 @@ def load_p10_monitor(logfile):
     return monitor
 
 
-def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
+def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background, normalize='monitor',
+                   bin_during_loading=False, debugging=False):
     """
     Load SIXS data, apply filters and concatenate it for phasing.
 
@@ -2331,6 +2382,8 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
      integrated intensity in the region of interest defined by detector.sum_roi
      by the integrated intensity in a defined region of interest
+    :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
+     It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -2353,7 +2406,15 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
     frames_logical = np.ones(tmp_data.shape[0])
     nb_img = tmp_data.shape[0]
-    data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+
+    if bin_during_loading:
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
+        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
+                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+    else:
+        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
     else:
@@ -2379,9 +2440,16 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        if bin_during_loading:
+            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
+        sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
+        sys.stdout.flush()
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    if bin_during_loading:
+        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
