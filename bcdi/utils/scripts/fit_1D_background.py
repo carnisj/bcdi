@@ -16,6 +16,7 @@ import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.utilities as util
+import bcdi.graph.graph_utils as gu
 
 helptext = """
 Determination of the background in a reciprocal space linecut using an interactive interface. The background-subtracted
@@ -61,8 +62,8 @@ def press_key(event):
 
     try:
         flag_pause, xy, stop_masking = \
-                pru.update_background(key=event.key, distances=distances, data=data, figure=fig_back,
-                                      flag_pause=flag_pause, xy=xy, xlim=xlim, ylim=ylim)
+                gu.update_background(key=event.key, distances=distances, data=data, figure=fig_back,
+                                     flag_pause=flag_pause, xy=xy, xlim=xlim, ylim=ylim)
         if stop_masking:
             plt.close(fig_back)
 

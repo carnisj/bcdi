@@ -202,17 +202,17 @@ def press_key(event):
     try:
         if flag_aliens:
             data, mask, width, max_colorbar, idx, stop_masking = \
-                pru.update_aliens(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
-                                  original_data=original_data, original_mask=original_mask, updated_data=data,
-                                  updated_mask=mask, figure=fig_mask, width=width, dim=dim, idx=idx, vmin=0,
-                                  vmax=max_colorbar, invert_yaxis=not use_rawdata)
+                gu.update_aliens(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
+                                 original_data=original_data, original_mask=original_mask, updated_data=data,
+                                 updated_mask=mask, figure=fig_mask, width=width, dim=dim, idx=idx, vmin=0,
+                                 vmax=max_colorbar, invert_yaxis=not use_rawdata)
         elif flag_mask:
             data, temp_mask, flag_pause, xy, width, max_colorbar, stop_masking = \
-                pru.update_mask(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
-                                original_data=original_data, original_mask=mask, updated_data=data,
-                                updated_mask=temp_mask, figure=fig_mask, flag_pause=flag_pause, points=points,
-                                xy=xy, width=width, dim=dim, vmin=0, vmax=max_colorbar, masked_color=masked_color,
-                                invert_yaxis=not use_rawdata)
+                gu.update_mask(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
+                               original_data=original_data, original_mask=mask, updated_data=data,
+                               updated_mask=temp_mask, figure=fig_mask, flag_pause=flag_pause, points=points,
+                               xy=xy, width=width, dim=dim, vmin=0, vmax=max_colorbar, masked_color=masked_color,
+                               invert_yaxis=not use_rawdata)
         else:
             stop_masking = False
 
