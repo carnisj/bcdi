@@ -1003,6 +1003,8 @@ def get_motor_pos(logfile, scan_number, setup, motor_name):
         motor_pos = scan_motor_p10(logfile=logfile, motor_name=motor_name)
     elif setup.beamline == 'ID01':
         motor_pos = scan_motor_id01(logfile=logfile, scan_number=scan_number, motor_name=motor_name)
+    elif setup.beamline == 'CRISTAL':
+        motor_pos = scan_motor_cristal(logfile=logfile, motor_name=motor_name)
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
 
@@ -3471,6 +3473,19 @@ def remove_hotpixels(data, mask, hotpixels=None):
         else:
             raise ValueError('2D or 3D data array expected, got ', data.ndim, 'D')
         return data, mask
+
+
+def scan_motor_cristal(logfile, motor_name):
+    """
+    Extract the scanned motor positions during the scan at ID01 beamline.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param motor_name: name of the motor
+    :return: the position values of the motor
+    """
+    group_key = list(logfile.keys())[0]
+    motor_pos = logfile['/' + group_key + '/scan_data/' + motor_name][:]
+    return np.asarray(motor_pos)
 
 
 def scan_motor_id01(logfile, scan_number, motor_name):
