@@ -14,7 +14,6 @@ import tkinter as tk
 from tkinter import filedialog
 import sys
 sys.path.append('D:/myscripts/bcdi/')
-import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.utilities as util
 import bcdi.graph.graph_utils as gu
 
