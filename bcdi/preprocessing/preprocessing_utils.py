@@ -1928,7 +1928,9 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
 
     print('Detector size defined by the ROI (VxH):',
           detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2])
-    print('Detector physical size (VxH):', detector.nb_pixel_y, detector.nb_pixel_x)
+    print('Detector physical size without binning (VxH):', detector.nb_pixel_y, detector.nb_pixel_x)
+    print('Detector size with binning (VxH):',
+          detector.nb_pixel_y // detector.binning[1], detector.nb_pixel_x // detector.binning[2])
     if detector.roi[1]-detector.roi[0] > detector.nb_pixel_y or detector.roi[3]-detector.roi[2] > detector.nb_pixel_x:
         print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
 
