@@ -18,6 +18,7 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.widgets import RectangleSelector
+import matplotlib.ticker as ticker
 import os
 import sys
 sys.path.append('D:/myscripts/bcdi/')
@@ -91,13 +92,11 @@ def onselect(click, release):
     ax1.set_ylabel('integrated intensity')
     if invert_xaxis:
         ax1.invert_xaxis()
-    ax2.imshow(np.log10(data[index_peak, :, :]), cmap=my_cmap, vmin=0)
-    ax0.axis('scaled')
-    ax1.set_aspect('equal')
-#     ax1.axis('scaled')
+    ax1.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.0e'))
+    ax1.set_aspect('auto', adjustable='datalim', anchor='S', share=False)
+    ax2.cla()
+    ax2.imshow(np.log10(data[index_peak, y_start:y_stop, x_start:x_stop]), cmap=my_cmap, vmin=0)
     ax2.axis('scaled')
-    ax0.set_title("sum of all images")
-    ax1.set_title("integrated intensity in the ROI")
     ax2.set_title("frame at the vertical line")
     plt.draw()
 
@@ -211,13 +210,15 @@ max_colorbar = 5
 rectprops = dict(edgecolor='black', fill=False)  # rectangle properties
 plt.ioff()
 
-figure = plt.figure(figsize=(12, 9))
-ax0 = figure.add_subplot(221)
+figure = plt.figure()
+ax0 = figure.add_subplot(231)
 ax1 = figure.add_subplot(212)
-ax2 = figure.add_subplot(222)
+ax2 = figure.add_subplot(232)
 figure.canvas.mpl_disconnect(figure.canvas.manager.key_press_handler_id)
 original_data = np.copy(data)
 ax0.imshow(np.log10(sumdata), cmap=my_cmap, vmin=0, vmax=max_colorbar)
+ax0.axis('scaled')
+ax0.set_title("sum of all images")
 sum_int = data[:, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].sum(axis=(1, 2))
 index_peak = np.unravel_index(sum_int.argmax(), nz)[0]
 if scale == 'linear':
@@ -228,13 +229,10 @@ ax1.set_xlabel(motor_name)
 ax1.set_ylabel('integrated intensity')
 if invert_xaxis:
     ax1.invert_xaxis()
-ax2.imshow(np.log10(data[index_peak, :, :]), cmap=my_cmap, vmin=0)
-ax0.axis('scaled')
-ax1.set_aspect('equal')
+ax1.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.0e'))
+ax1.set_aspect('auto', adjustable='datalim', anchor='S', share=False)
+ax2.imshow(np.log10(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]]), cmap=my_cmap, vmin=0)
 ax2.axis('scaled')
-# ax1.axis('scaled')
-ax0.set_title("sum of all images")
-ax1.set_title("integrated intensity in the ROI")
 ax2.set_title("frame at the vertical line")
 plt.tight_layout()
 plt.connect('key_press_event', press_key)
