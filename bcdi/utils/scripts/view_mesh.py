@@ -26,11 +26,13 @@ import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 
 
-scan = 46  # scan number as it appears in the folder name
-sample_name = "p21"  # without _ at the end
+scan = 1  # scan number as it appears in the folder name
+sample_name = "p15_2"  # without _ at the end
 root_folder = "D:/data/P10_isosurface/data/"
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
-normalize_flux = True  # will normalize the intensity by the default monitor
+sum_roi = [50, 150, 100, 300]  # integrate the intensity in this region of interest. [ystart, ystop, xstart, xstop]
+# Leave it to [] to use the full detector
+normalize_flux = False  # will normalize the intensity by the default monitor
 ###########################
 # mesh related parameters #
 ###########################
@@ -128,11 +130,6 @@ def press_key(event):
     plt.draw()
 
 
-#########################
-# check some parameters #
-#########################
-assert fast_axis in ['vertical', 'horizontal'], print('fast_axis parameter value not supported')
-
 ###################
 # define colormap #
 ###################
@@ -146,7 +143,7 @@ plt.ion()
 #################################################
 kwargs = dict()  # create dictionnary
 kwargs['is_series'] = is_series
-detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile,
+detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, sum_roi=sum_roi,
                         binning=[1, binning[0], binning[1]], **kwargs)
 
 setup = exp.SetupPreprocessing(beamline=beamline)
@@ -172,6 +169,17 @@ print('savedir: ', savedir)
 
 logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
                              filename=specfile_name)
+
+#########################
+# check some parameters #
+#########################
+assert fast_axis in ['vertical', 'horizontal'], print('fast_axis parameter value not supported')
+if len(sum_roi) == 0:
+    sum_roi = [0, detector.nb_pixel_y, 0, detector.nb_pixel_x]
+
+assert (sum_roi[0] >= 0 and sum_roi[1] <= detector.nb_pixel_y // binning[0]
+        and sum_roi[2] >= 0 and sum_roi[3] <= detector.nb_pixel_x // binning[1]),\
+    'sum_roi setting does not match the binned detector size'
 
 #############
 # load data #
@@ -240,5 +248,8 @@ plt.tight_layout()
 plt.connect('key_press_event', press_key)
 rectangle = RectangleSelector(ax0, onselect, drawtype='box', useblit=False, button=[1], interactive=True,
                               rectprops=rectprops)  # don't use middle and right buttons
+rectangle.to_draw.set_visible(True)
+figure.canvas.draw()
+rectangle.extents = (sum_roi[2], sum_roi[3], sum_roi[0], sum_roi[1])  # extents (xmin, xmax, ymin, ymax)
 figure.set_facecolor(background_plot)
 plt.show()
