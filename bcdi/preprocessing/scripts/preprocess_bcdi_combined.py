@@ -41,9 +41,9 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [1460]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
-root_folder = "D:/data/P10_OER/data/"
-sample_name = ["dewet2_2"]  # "SN"  # list of sample names. If only one name is indicated,
+scans = [1301]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
+root_folder = "D:/data/SIXS_2019_Ni/"
+sample_name = ["S"]  # "SN"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -52,7 +52,7 @@ binning = [1, 1, 1]  # binning that will be used for phasing
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = False  # True to interact with plots, False to close it automatically
+flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
@@ -100,7 +100,7 @@ save_asint = False  # if True, the result will be saved as an array of integers 
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'SIXS_2019'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 is_series = False  # specific to series measurement at P10
 
@@ -122,12 +122,12 @@ specfile_name = ''
 ###############################
 # detector related parameters #
 ###############################
-detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M" or "Timepix"
+detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
 # x_bragg = 147  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 # y_bragg = 178  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = [553, 1063, 1041, 1701]
+roi_detector = []  # [553, 1063, 1041, 1701]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -139,7 +139,7 @@ photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon thre
 background_file = ''  # root_folder + 'background.npz'  #
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = '_master.h5'
+template_imagefile = 'Pt_ascan_mu_%05d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -149,7 +149,7 @@ template_imagefile = '_master.h5'
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
+use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 sdd = 1.8  # in m, sample to detector distance in m
 energy = 10000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
