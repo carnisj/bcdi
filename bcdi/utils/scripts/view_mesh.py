@@ -227,12 +227,14 @@ figure.canvas.mpl_disconnect(figure.canvas.manager.key_press_handler_id)
 original_data = np.copy(data)
 ax0.imshow(np.log10(sumdata), cmap=my_cmap, vmin=0, vmax=max_colorbar)
 if fast_axis == 'vertical':
-    ax1.imshow(np.log10(data.sum(axis=(1, 2)).reshape((nb_fast, nb_slow))),
+    ax1.imshow(np.log10(data[:, sum_roi[0]:sum_roi[1],
+                        sum_roi[2]:sum_roi[3]].sum(axis=(1, 2)).reshape((nb_fast, nb_slow))),
                cmap=my_cmap, extent=[min_slow, max_slow, max_fast, min_fast])  # extent (left, right, bottom, top)
     ax1.set_xlabel(slow_motor)
     ax1.set_ylabel(fast_motor)
 else:
-    ax1.imshow(np.log10(data.sum(axis=(1, 2)).reshape((nb_slow, nb_fast))),
+    ax1.imshow(np.log10(data[:, sum_roi[0]:sum_roi[1],
+                        sum_roi[2]:sum_roi[3]].sum(axis=(1, 2)).reshape((nb_slow, nb_fast))),
                cmap=my_cmap, extent=[min_fast, max_fast, max_slow, min_slow])  # extent (left, right, bottom, top)
     ax1.set_xlabel(fast_motor)
     ax1.set_ylabel(slow_motor)
