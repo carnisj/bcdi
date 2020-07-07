@@ -77,7 +77,7 @@ def onselect(click, release):
     :param click: position of the mouse click event
     :param release: position of the mouse release event
     """
-    global ax1, ax2, data, my_cmap, motor_name, scale, invert_xaxis, index_peak, sum_int, nz
+    global ax1, ax2, data, my_cmap, motor_name, motor_positions, scale, invert_xaxis, index_peak, sum_int, vline, nz
 
     y_start, y_stop, x_start, x_stop = int(click.ydata), int(release.ydata), int(click.xdata), int(release.xdata)
     sum_int = data[:, y_start:y_stop, x_start:x_stop].sum(axis=(1, 2))
@@ -85,9 +85,10 @@ def onselect(click, release):
 
     ax1.cla()
     if scale == 'linear':
-        ax1.plot(sum_int)
+        ax1.plot(motor_positions, sum_int)
     else:  # 'log'
-        ax1.plot(np.log10(sum_int))
+        ax1.plot(motor_positions, np.log10(sum_int))
+    vline = ax1.axvline(x=motor_positions[index_peak], ymax=sum_int[index_peak], linestyle='--')
     ax1.set_xlabel(motor_name)
     ax1.set_ylabel('integrated intensity')
     if invert_xaxis:
@@ -97,7 +98,7 @@ def onselect(click, release):
     ax2.cla()
     ax2.imshow(np.log10(data[index_peak, y_start:y_stop, x_start:x_stop]), cmap=my_cmap, vmin=0)
     ax2.axis('scaled')
-    ax2.set_title("frame at the vertical line")
+    ax2.set_title("ROI at line")
     plt.draw()
 
 
@@ -222,9 +223,10 @@ ax0.set_title("sum of all images")
 sum_int = data[:, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].sum(axis=(1, 2))
 index_peak = np.unravel_index(sum_int.argmax(), nz)[0]
 if scale == 'linear':
-    ax1.plot(sum_int)
+    ax1.plot(motor_positions, sum_int)
 else:  # 'log'
-    ax1.plot(np.log10(sum_int))
+    ax1.plot(motor_positions, np.log10(sum_int))
+vline = ax1.axvline(x=motor_positions[index_peak], ymax=sum_int[index_peak], linestyle='--')
 ax1.set_xlabel(motor_name)
 ax1.set_ylabel('integrated intensity')
 if invert_xaxis:
@@ -233,7 +235,7 @@ ax1.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.0e'))
 ax1.set_aspect('auto', adjustable='datalim', anchor='S', share=False)
 ax2.imshow(np.log10(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]]), cmap=my_cmap, vmin=0)
 ax2.axis('scaled')
-ax2.set_title("frame at the vertical line")
+ax2.set_title("ROI at line")
 plt.tight_layout()
 plt.connect('key_press_event', press_key)
 rectangle = RectangleSelector(ax0, onselect, drawtype='box', useblit=False, button=[1], interactive=True,
