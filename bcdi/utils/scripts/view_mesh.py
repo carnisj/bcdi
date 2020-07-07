@@ -26,8 +26,8 @@ import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 
 
-scan = 37  # scan number as it appears in the folder name
-sample_name = "p15"  # without _ at the end
+scan = 46  # scan number as it appears in the folder name
+sample_name = "p21"  # without _ at the end
 root_folder = "D:/data/P10_isosurface/data/"
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
 normalize_flux = True  # will normalize the intensity by the default monitor
@@ -35,16 +35,16 @@ normalize_flux = True  # will normalize the intensity by the default monitor
 # mesh related parameters #
 ###########################
 fast_motor = 'hpy'  # fast scanning motor for the mesh
-nb_fast = 21  # number of steps for the fast scanning motor
+nb_fast = 41  # number of steps for the fast scanning motor
 slow_motor = 'hpx'  # slow scanning motor for the mesh
-nb_slow = 21  # number of steps for the slow scanning motor
+nb_slow = 16  # number of steps for the slow scanning motor
 ###########################
 # plot related parameters #
 ###########################
-background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort
+background_plot = '0.7'  # in level of grey in [0,1], 0 being dark. For visual comfort
 fast_axis = 'horizontal'  # 'vertical' to plot the fast scanning motor vertically, 'horizontal' otherwise
 invert_xaxis = False  # True to inverse the horizontal axis
-invert_yaxis = False  # True to inverse the horizontal axis
+invert_yaxis = False  # True to inverse the vertical axis
 ###############################
 # beamline related parameters #
 ###############################
