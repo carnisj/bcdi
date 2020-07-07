@@ -79,6 +79,7 @@ setup(name='bcdi', version='0.0.8',
                'bcdi/utils/scripts/primes.py',
                'bcdi/utils/scripts/angular_avg_3Dto1D.py',
                'bcdi/utils/scripts/save_to_mat.py',
+               'bcdi/utils/scripts/scan_analysis.py',
                'bcdi/utils/scripts/view_mesh.py',
                ],
       # metadata

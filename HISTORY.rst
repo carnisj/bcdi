@@ -2,7 +2,9 @@
 
 * Feature: implement crop_npz.py to crop combined stacked data to the desired size
 
-* Feature: implement view_mesh.py to plot interactively the integrated intensity in an interactive region of interest
+* Feature: implement scan_analysis.py to plot interactively the integrated intensity in a region of interest for a 1D scan
+
+* Feature: implement view_mesh.py to plot interactively the integrated intensity in a region of interest for a 2D mesh
 
 * Refactor: when gridding forward CDI data, reverse the rotation direction to compensate the rotation of Ewald sphere
 

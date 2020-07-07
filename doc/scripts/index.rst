@@ -494,6 +494,14 @@ save_to_mat.py
    :end-before: """
    :language: rst
 
+scan_analysis.py
+^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/scan_analysis.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 view_mesh.py
 ^^^^^^^^^^^^
 
