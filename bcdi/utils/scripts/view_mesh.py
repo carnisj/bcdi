@@ -220,7 +220,7 @@ max_colorbar = 5
 rectprops = dict(edgecolor='black', fill=False)  # rectangle properties
 plt.ioff()
 
-figure = plt.figure(figsize=(12, 9))
+figure = plt.figure()  # figsize=(12, 9))
 ax0 = figure.add_subplot(121)
 ax1 = figure.add_subplot(122)
 figure.canvas.mpl_disconnect(figure.canvas.manager.key_press_handler_id)
