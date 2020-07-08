@@ -178,7 +178,6 @@ def on_click(event):
     if the mouse is out of plot axes, it will not register the click
 
     :param event: mouse click event
-    :return: updated list of vertices which defines a polygon to be masked
     """
     global xy, flag_pause
     if not event.inaxes:
@@ -186,7 +185,6 @@ def on_click(event):
     if not flag_pause:
         _x, _y = int(np.rint(event.xdata)), int(np.rint(event.ydata))
         xy.append([_x, _y])
-    return
 
 
 def press_key(event):
@@ -194,7 +192,6 @@ def press_key(event):
     Interact with a plot for masking parasitic diffraction intensity or detector gaps
 
     :param event: button press event
-    :return: updated data, mask and controls
     """
     global original_data, original_mask, data, mask, temp_mask, dim, idx, width, flag_aliens, flag_mask, flag_pause
     global xy, points, fig_mask, masked_color, max_colorbar
