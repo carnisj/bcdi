@@ -76,6 +76,25 @@ template_imagefile = '_master.h5'
 ##########################
 
 
+def onclick(click_event):
+    """
+    Process mouse click events in the interactive line plot
+
+    :param click_event: mouse click event
+    """
+    global fast_motor, slow_motor, ax1, motor_text, figure
+
+    if click_event.inaxes == ax1:  # click in the 2D scanning map
+        motor_text.remove()
+        if fast_axis == 'horizontal':
+            motor_text = figure.text(0.55, 0.90, fast_motor + ' = {:.2f}, '.format(click_event.xdata) +
+                                     slow_motor + ' = {:.2f}'.format(click_event.ydata), size=12)
+        else:
+            motor_text = figure.text(0.55, 0.90, fast_motor + ' = {:.2f}, '.format(click_event.ydata) +
+                                     slow_motor + ' = {:.2f}'.format(click_event.xdata), size=12)
+        plt.draw()
+
+
 def onselect(click, release):
     """
     Process mouse click and release events in the interactive plot
@@ -84,25 +103,29 @@ def onselect(click, release):
     :param release: position of the mouse release event
     """
     global ax1, data, nb_slow, nb_fast, my_cmap, min_fast, min_slow, max_fast, max_slow, fast_motor
-    global slow_motor, ny, nx, invert_xaxis, invert_yaxis
+    global slow_motor, ny, nx, invert_xaxis, invert_yaxis, motor_text, sum_int, figure
 
     y_start, y_stop, x_start, x_stop = int(click.ydata), int(release.ydata), int(click.xdata), int(release.xdata)
 
     ax1.cla()
     if fast_axis == 'vertical':
-        ax1.imshow(np.log10(data[:, y_start:y_stop, x_start:x_stop].sum(axis=(1, 2)).reshape((nb_fast, nb_slow))),
-                   cmap=my_cmap, extent=[min_slow, max_slow, max_fast, min_fast])  # extent (left, right, bottom, top)
+        sum_int = data[:, y_start:y_stop, x_start:x_stop].sum(axis=(1, 2)).reshape((nb_fast, nb_slow))
+        # extent (left, right, bottom, top)
+        ax1.imshow(np.log10(sum_int), cmap=my_cmap, extent=[min_slow, max_slow, max_fast, min_fast])
         ax1.set_xlabel(slow_motor)
         ax1.set_ylabel(fast_motor)
     else:
-        ax1.imshow(np.log10(data[:, y_start:y_stop, x_start:x_stop].sum(axis=(1, 2)).reshape((nb_slow, nb_fast))),
-                   cmap=my_cmap, extent=[min_fast, max_fast, max_slow, min_slow])  # extent (left, right, bottom, top)
+        sum_int = data[:, y_start:y_stop, x_start:x_stop].sum(axis=(1, 2)).reshape((nb_slow, nb_fast))
+        # extent (left, right, bottom, top)
+        ax1.imshow(np.log10(sum_int), cmap=my_cmap, extent=[min_fast, max_fast, max_slow, min_slow])
         ax1.set_xlabel(fast_motor)
         ax1.set_ylabel(slow_motor)
     if invert_xaxis:
         ax1.invert_xaxis()
     if invert_yaxis:
         ax1.invert_yaxis()
+    motor_text.remove()
+    motor_text = figure.text(0.55, 0.90, '', size=12)
     ax1.axis('scaled')
     ax1.set_title("integrated intensity in the ROI")
     plt.draw()
@@ -227,15 +250,15 @@ figure.canvas.mpl_disconnect(figure.canvas.manager.key_press_handler_id)
 original_data = np.copy(data)
 ax0.imshow(np.log10(sumdata), cmap=my_cmap, vmin=0, vmax=max_colorbar)
 if fast_axis == 'vertical':
-    ax1.imshow(np.log10(data[:, sum_roi[0]:sum_roi[1],
-                        sum_roi[2]:sum_roi[3]].sum(axis=(1, 2)).reshape((nb_fast, nb_slow))),
-               cmap=my_cmap, extent=[min_slow, max_slow, max_fast, min_fast])  # extent (left, right, bottom, top)
+    sum_int = data[:, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].sum(axis=(1, 2)).reshape((nb_fast, nb_slow))
+    # extent (left, right, bottom, top)
+    ax1.imshow(np.log10(sum_int), cmap=my_cmap, extent=[min_slow, max_slow, max_fast, min_fast])
     ax1.set_xlabel(slow_motor)
     ax1.set_ylabel(fast_motor)
 else:
-    ax1.imshow(np.log10(data[:, sum_roi[0]:sum_roi[1],
-                        sum_roi[2]:sum_roi[3]].sum(axis=(1, 2)).reshape((nb_slow, nb_fast))),
-               cmap=my_cmap, extent=[min_fast, max_fast, max_slow, min_slow])  # extent (left, right, bottom, top)
+    sum_int = data[:, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].sum(axis=(1, 2)).reshape((nb_slow, nb_fast))
+    # extent (left, right, bottom, top)
+    ax1.imshow(np.log10(sum_int), cmap=my_cmap, extent=[min_fast, max_fast, max_slow, min_slow])
     ax1.set_xlabel(fast_motor)
     ax1.set_ylabel(slow_motor)
 if invert_xaxis:
@@ -246,8 +269,10 @@ ax0.axis('scaled')
 ax1.axis('scaled')
 ax0.set_title("sum of all images")
 ax1.set_title("integrated intensity in the ROI")
+motor_text = figure.text(0.55, 0.90, '', size=12)
 plt.tight_layout()
 plt.connect('key_press_event', press_key)
+plt.connect('button_press_event', onclick)
 rectangle = RectangleSelector(ax0, onselect, drawtype='box', useblit=False, button=[1], interactive=True,
                               rectprops=rectprops)  # don't use middle and right buttons
 rectangle.to_draw.set_visible(True)
