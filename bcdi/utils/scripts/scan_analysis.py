@@ -32,7 +32,7 @@ scan = 7  # scan number as it appears in the folder name
 sample_name = "p15_2"  # without _ at the end
 root_folder = "D:/data/P10_isosurface/data/"
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
-sum_roi = [50, 150, 100, 300]  # integrate the intensity in this region of interest. [ystart, ystop, xstart, xstop]
+sum_roi = [100, 300, 300, 500]  # integrate the intensity in this region of interest. [ystart, ystop, xstart, xstop]
 # Leave it to [] to use the full detector
 motor_name = 'hpx'  # scanned motor name
 normalize_flux = False  # will normalize the intensity by the default monitor
@@ -77,13 +77,17 @@ def onclick(click_event):
 
     :param click_event: mouse click event
     """
-    global sum_roi, vline, ax1, ax2, index_peak, motor_positions, data, my_cmap, sum_int
+    global sum_roi, vline, ax1, ax2, index_peak, motor_positions, data, my_cmap, sum_int, scale
 
     if click_event.inaxes == ax1:  # click in the line plot
         index_peak = util.find_nearest(motor_positions, click_event.xdata)
         vline.remove()
-        vline = ax1.vlines(x=motor_positions[index_peak], ymin=sum_int.min(), ymax=sum_int[index_peak],
-                           colors='r', linestyle='dotted')
+        if scale == 'linear':
+            vline = ax1.vlines(x=motor_positions[index_peak], ymin=sum_int.min(), ymax=sum_int[index_peak],
+                               colors='r', linestyle='dotted')
+        else:  # 'log'
+            vline = ax1.vlines(x=motor_positions[index_peak], ymin=np.log10(sum_int.min()),
+                               ymax=np.log10(sum_int[index_peak]), colors='r', linestyle='dotted')
         ax2.cla()
         ax2.imshow(np.log10(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]]), cmap=my_cmap, vmin=0)
         ax2.axis('scaled')
@@ -108,15 +112,18 @@ def onselect(click, release):
     ax1.cla()
     if scale == 'linear':
         ax1.plot(motor_positions, sum_int, marker=".")
+        ax1.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.1e'))
+        vline = ax1.vlines(x=motor_positions[index_peak], ymin=sum_int.min(), ymax=sum_int[index_peak],
+                           colors='r', linestyle='dotted')
     else:  # 'log'
         ax1.plot(motor_positions, np.log10(sum_int), marker=".")
-    vline = ax1.vlines(x=motor_positions[index_peak], ymin=sum_int.min(), ymax=sum_int[index_peak],
-                       colors='r', linestyle='dotted')
+        vline = ax1.vlines(x=motor_positions[index_peak], ymin=np.log10(sum_int.min()),
+                           ymax=np.log10(sum_int[index_peak]), colors='r', linestyle='dotted')
+
     ax1.set_xlabel(motor_name)
     ax1.set_ylabel('integrated intensity')
     if invert_xaxis:
         ax1.invert_xaxis()
-    ax1.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.0e'))
     ax1.set_aspect('auto', adjustable='datalim', anchor='S', share=False)
     ax2.cla()
     ax2.imshow(np.log10(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]]), cmap=my_cmap, vmin=0)
@@ -247,15 +254,17 @@ sum_int = data[:, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].sum(axis=(1, 2))
 index_peak = np.unravel_index(sum_int.argmax(), nz)[0]
 if scale == 'linear':
     ax1.plot(motor_positions, sum_int, marker=".")
+    ax1.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.1e'))
+    vline = ax1.vlines(x=motor_positions[index_peak], ymin=sum_int.min(), ymax=sum_int[index_peak],
+                       colors='r', linestyle='dotted')
 else:  # 'log'
     ax1.plot(motor_positions, np.log10(sum_int), marker=".")
-vline = ax1.vlines(x=motor_positions[index_peak], ymin=sum_int.min(), ymax=sum_int[index_peak],
-                   colors='r', linestyle='dotted')
+    vline = ax1.vlines(x=motor_positions[index_peak], ymin=np.log10(sum_int.min()),
+                       ymax=np.log10(sum_int[index_peak]), colors='r', linestyle='dotted')
 ax1.set_xlabel(motor_name)
 ax1.set_ylabel('integrated intensity')
 if invert_xaxis:
     ax1.invert_xaxis()
-ax1.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.0e'))
 ax1.set_aspect('auto', adjustable='datalim', anchor='S', share=False)
 ax2.imshow(np.log10(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]]), cmap=my_cmap, vmin=0)
 ax2.axis('scaled')
