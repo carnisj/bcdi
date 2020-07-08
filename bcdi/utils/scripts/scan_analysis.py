@@ -79,6 +79,7 @@ def onclick(click_event):
     :param click_event: mouse click event
     """
     global sum_roi, vline, ax1, ax2, index_peak, motor_positions, data, my_cmap, sum_int, scale, motor_text, max_text
+    global figure
 
     if click_event.inaxes == ax1:  # click in the line plot
         index_peak = util.find_nearest(motor_positions, click_event.xdata)
@@ -110,7 +111,7 @@ def onselect(click, release):
     :param release: position of the mouse release event
     """
     global ax1, ax2, data, my_cmap, motor_name, motor_positions, scale, invert_xaxis, index_peak, sum_int, vline, nz
-    global sum_roi, roi_text, max_text
+    global sum_roi, roi_text, max_text, figure
 
     sum_roi = int(click.ydata), int(release.ydata), int(click.xdata), int(release.xdata)
     sum_int = data[:, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].sum(axis=(1, 2))
