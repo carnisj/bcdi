@@ -23,6 +23,7 @@ import os
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 
@@ -70,6 +71,26 @@ template_imagefile = '_master.h5'
 ##########################
 
 
+def onclick(click_event):
+    """
+    Process mouse click events in the interactive line plot
+
+    :param click_event: mouse click event
+    """
+    global sum_roi, vline, ax1, ax2, index_peak, motor_positions, data, my_cmap, sum_int
+
+    if click_event.inaxes == ax1:  # click in the line plot
+        index_peak = util.find_nearest(motor_positions, click_event.xdata)
+        vline.remove()
+        vline = ax1.vlines(x=motor_positions[index_peak], ymin=sum_int.min(), ymax=sum_int[index_peak],
+                           colors='r', linestyle='dotted')
+        ax2.cla()
+        ax2.imshow(np.log10(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]]), cmap=my_cmap, vmin=0)
+        ax2.axis('scaled')
+        ax2.set_title("ROI at line")
+        plt.draw()
+
+
 def onselect(click, release):
     """
     Process mouse click and release events in the interactive plot
@@ -78,17 +99,19 @@ def onselect(click, release):
     :param release: position of the mouse release event
     """
     global ax1, ax2, data, my_cmap, motor_name, motor_positions, scale, invert_xaxis, index_peak, sum_int, vline, nz
+    global sum_roi
 
-    y_start, y_stop, x_start, x_stop = int(click.ydata), int(release.ydata), int(click.xdata), int(release.xdata)
-    sum_int = data[:, y_start:y_stop, x_start:x_stop].sum(axis=(1, 2))
+    sum_roi = int(click.ydata), int(release.ydata), int(click.xdata), int(release.xdata)
+    sum_int = data[:, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].sum(axis=(1, 2))
     index_peak = np.unravel_index(sum_int.argmax(), nz)[0]
 
     ax1.cla()
     if scale == 'linear':
-        ax1.plot(motor_positions, sum_int)
+        ax1.plot(motor_positions, sum_int, marker=".")
     else:  # 'log'
-        ax1.plot(motor_positions, np.log10(sum_int))
-    vline = ax1.axvline(x=motor_positions[index_peak], ymax=sum_int[index_peak], linestyle='--')
+        ax1.plot(motor_positions, np.log10(sum_int), marker=".")
+    vline = ax1.vlines(x=motor_positions[index_peak], ymin=sum_int.min(), ymax=sum_int[index_peak],
+                       colors='r', linestyle='dotted')
     ax1.set_xlabel(motor_name)
     ax1.set_ylabel('integrated intensity')
     if invert_xaxis:
@@ -96,7 +119,7 @@ def onselect(click, release):
     ax1.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.0e'))
     ax1.set_aspect('auto', adjustable='datalim', anchor='S', share=False)
     ax2.cla()
-    ax2.imshow(np.log10(data[index_peak, y_start:y_stop, x_start:x_stop]), cmap=my_cmap, vmin=0)
+    ax2.imshow(np.log10(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]]), cmap=my_cmap, vmin=0)
     ax2.axis('scaled')
     ax2.set_title("ROI at line")
     plt.draw()
@@ -108,7 +131,7 @@ def press_key(event):
 
     :param event: button press event
     """
-    global sumdata, max_colorbar, ax0
+    global sumdata, max_colorbar, ax0, my_cmap
 
     if event.key == 'right':
         max_colorbar = max_colorbar + 1
@@ -118,7 +141,7 @@ def press_key(event):
             max_colorbar = 1
 
     ax0.cla()
-    ax0.imshow(np.log10(sumdata), vmin=0, vmax=max_colorbar)
+    ax0.imshow(np.log10(sumdata), vmin=0, vmax=max_colorbar, cmap=my_cmap)
     ax0.set_title("detector plane (sum)")
     ax0.axis('scaled')
     plt.draw()
@@ -223,10 +246,11 @@ ax0.set_title("sum of all images")
 sum_int = data[:, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].sum(axis=(1, 2))
 index_peak = np.unravel_index(sum_int.argmax(), nz)[0]
 if scale == 'linear':
-    ax1.plot(motor_positions, sum_int)
+    ax1.plot(motor_positions, sum_int, marker=".")
 else:  # 'log'
-    ax1.plot(motor_positions, np.log10(sum_int))
-vline = ax1.axvline(x=motor_positions[index_peak], ymax=sum_int[index_peak], linestyle='--')
+    ax1.plot(motor_positions, np.log10(sum_int), marker=".")
+vline = ax1.vlines(x=motor_positions[index_peak], ymin=sum_int.min(), ymax=sum_int[index_peak],
+                   colors='r', linestyle='dotted')
 ax1.set_xlabel(motor_name)
 ax1.set_ylabel('integrated intensity')
 if invert_xaxis:
@@ -238,6 +262,7 @@ ax2.axis('scaled')
 ax2.set_title("ROI at line")
 plt.tight_layout()
 plt.connect('key_press_event', press_key)
+plt.connect('button_press_event', onclick)
 rectangle = RectangleSelector(ax0, onselect, drawtype='box', useblit=False, button=[1], interactive=True,
                               rectprops=rectprops)  # don't use middle and right buttons
 rectangle.to_draw.set_visible(True)
