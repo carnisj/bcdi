@@ -32,7 +32,8 @@ scan = 7  # scan number as it appears in the folder name
 sample_name = "p15_2"  # without _ at the end
 root_folder = "D:/data/P10_isosurface/data/"
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
-sum_roi = [100, 300, 300, 500]  # integrate the intensity in this region of interest. [ystart, ystop, xstart, xstop]
+sum_roi = [100, 300, 300, 500]  # integrate the intensity in this ROI (in units of the binned detector pixels).
+# [ystart, ystop, xstart, xstop]
 # Leave it to [] to use the full detector
 motor_name = 'hpx'  # scanned motor name
 normalize_flux = False  # will normalize the intensity by the default monitor
@@ -77,7 +78,7 @@ def onclick(click_event):
 
     :param click_event: mouse click event
     """
-    global sum_roi, vline, ax1, ax2, index_peak, motor_positions, data, my_cmap, sum_int, scale
+    global sum_roi, vline, ax1, ax2, index_peak, motor_positions, data, my_cmap, sum_int, scale, motor_text, max_text
 
     if click_event.inaxes == ax1:  # click in the line plot
         index_peak = util.find_nearest(motor_positions, click_event.xdata)
@@ -92,6 +93,12 @@ def onclick(click_event):
         ax2.imshow(np.log10(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]]), cmap=my_cmap, vmin=0)
         ax2.axis('scaled')
         ax2.set_title("ROI at line")
+        motor_text.remove()
+        motor_text = figure.text(0.70, 0.75, motor_name + ' = {:.2f}'.format(motor_positions[index_peak]), size=10)
+        max_text.remove()
+        max_text = figure.text(0.70, 0.70, 'ROI max at line = ' +
+                               '{:.0f}'.format(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].max()),
+                               size=10)
         plt.draw()
 
 
@@ -103,7 +110,7 @@ def onselect(click, release):
     :param release: position of the mouse release event
     """
     global ax1, ax2, data, my_cmap, motor_name, motor_positions, scale, invert_xaxis, index_peak, sum_int, vline, nz
-    global sum_roi
+    global sum_roi, roi_text, max_text
 
     sum_roi = int(click.ydata), int(release.ydata), int(click.xdata), int(release.xdata)
     sum_int = data[:, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].sum(axis=(1, 2))
@@ -129,6 +136,17 @@ def onselect(click, release):
     ax2.imshow(np.log10(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]]), cmap=my_cmap, vmin=0)
     ax2.axis('scaled')
     ax2.set_title("ROI at line")
+    roi_text.remove()
+    roi_text = figure.text(0.70, 0.80, "unbinned ROI [y0 y1 x0 x1]\n"
+                                       "[{:d}, {:d}, {:d}, {:d}]".format(sum_roi[0] * binning[0],
+                                                                         sum_roi[1] * binning[0],
+                                                                         sum_roi[2] * binning[1],
+                                                                         sum_roi[3] * binning[1]),
+                           size=10)
+    max_text.remove()
+    max_text = figure.text(0.70, 0.70, 'ROI max at line = ' +
+                           '{:.0f}'.format(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].max()),
+                           size=10)
     plt.draw()
 
 
@@ -269,6 +287,13 @@ ax1.set_aspect('auto', adjustable='datalim', anchor='S', share=False)
 ax2.imshow(np.log10(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]]), cmap=my_cmap, vmin=0)
 ax2.axis('scaled')
 ax2.set_title("ROI at line")
+roi_text = figure.text(0.70, 0.80, "unbinned ROI [y0 y1 x0 x1]\n"
+                                   "[{:d}, {:d}, {:d}, {:d}]".format(sum_roi[0]*binning[0], sum_roi[1]*binning[0],
+                                                                     sum_roi[2]*binning[1], sum_roi[3]*binning[1]),
+                       size=10)
+motor_text = figure.text(0.70, 0.75, motor_name + ' = {:.2f}'.format(motor_positions[index_peak]), size=10)
+max_text = figure.text(0.70, 0.70, 'ROI max at line = ' +
+                       '{:.0f}'.format(data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].max()), size=10)
 plt.tight_layout()
 plt.connect('key_press_event', press_key)
 plt.connect('button_press_event', onclick)
