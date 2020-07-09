@@ -25,10 +25,10 @@ Open a CDI reconstruction file and save individual figures including a length sc
 """
 
 scan = 22    # spec scan number
-root_folder = "D:/data/P10_August2019/data/"
+root_folder = "D:/data/P10_August2019_CDI/data/"
 sample_name = "gold_2_2_2"
-homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/1000_1000_1000_1_1_1/v1/'
-comment = ""  # should start with _
+homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/1000_1000_1000_1_1_1/current_paper//'
+comment = "_current_vmax=1"  # should start with _
 
 save_YZ = True  # True to save the modulus in YZ plane
 save_XZ = True  # True to save the modulus in XZ plane
@@ -37,6 +37,7 @@ grey_background = False  # True to set the background to grey in 2D plots
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
+cmap = 'Greys'  # matplotlib colormap name, or 'custom'
 
 voxel_size = 9.42  # in nm, supposed isotropic
 tick_spacing = 500  # for plots, in nm
@@ -45,8 +46,10 @@ field_of_view = [2000, 2000, 2000]  # [z,y,x] in nm, can be larger than the tota
 # therefore it is better to use an isotropic field_of_view
 threshold_isosurface = 0.4  # threshold for the 3D isosurface plot  #0.4 without ML
 threshold_modulus = 0.06  # threshold for 2D plots  # 0.06 without ML
-axis_outofplane = np.array([0.2, 1, 0.02])  # in order x y z for rotate_crystal(), axis to align on y vertical up
-axis_inplane = np.array([1, 0, -0.06])  # in order x y z for rotate_crystal(), axis to align on x downstream
+axis_outofplane = None  # in order x y z for rotate_crystal(), axis to align on y vertical up
+# leave it to None if you do not need to rotate the object
+axis_inplane = None  # in order x y z for rotate_crystal(), axis to align on x downstream
+# leave it to None if you do not need to rotate the object
 ##########################
 # end of user parameters #
 ##########################
@@ -60,6 +63,8 @@ else:
     bad_color = '1.0'  # white background
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
+if cmap == 'custom':
+    cmap = my_cmap
 
 #############
 # load data #
@@ -83,16 +88,19 @@ print("Initial data size: (", numz, ',', numy, ',', numx, ')')
 #############################
 # rotate the reconstruction #
 #############################
-new_shape = [int(1.2*numz), int(1.2*numy), int(1.2*numx)]
-obj = pu.crop_pad(array=obj, output_shape=new_shape, debugging=False)
-numz, numy, numx = obj.shape
+if axis_outofplane is not None or axis_inplane is not None:
+    new_shape = [int(1.2*numz), int(1.2*numy), int(1.2*numx)]
+    obj = pu.crop_pad(array=obj, output_shape=new_shape, debugging=False)
+    numz, numy, numx = obj.shape
 
-print("Cropped/padded data size before rotating: (", numz, ',', numy, ',', numx, ')')
-print('Rotating object to have the crystallographic axes along array axes')
-obj = pu.rotate_crystal(array=obj, axis_to_align=axis_outofplane, reference_axis=np.array([0, 1, 0]),
-                        debugging=True)  # out of plane alignement
-obj = pu.rotate_crystal(array=obj, axis_to_align=axis_inplane, reference_axis=np.array([1, 0, 0]),
-                        debugging=True)  # inplane alignement
+    print("Cropped/padded data size before rotating: (", numz, ',', numy, ',', numx, ')')
+    print('Rotating object to have the crystallographic axes along array axes')
+    if axis_outofplane is not None:
+        obj = pu.rotate_crystal(array=obj, axis_to_align=axis_outofplane, reference_axis=np.array([0, 1, 0]),
+                                debugging=True)  # out of plane alignement
+    if axis_inplane is not None:
+        obj = pu.rotate_crystal(array=obj, axis_to_align=axis_inplane, reference_axis=np.array([1, 0, 0]),
+                                debugging=True)  # inplane alignement
 
 #################################################
 #  pad array to obtain the desired field of view #
@@ -151,9 +159,8 @@ numz, numy, numx = amp.shape
 print("Cropped/padded data size for 2D plots: (", numz, ',', numy, ',', numx, ')')
 
 fig, ax0 = plt.subplots(1, 1)
-plt0 = ax0.imshow(
-    amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
-        numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1], numx // 2], vmin=0, vmax=1, cmap=my_cmap)
+plt0 = ax0.imshow(amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
+                  numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1], numx // 2], vmin=0, vmax=1, cmap=cmap)
 
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -163,9 +170,8 @@ if save_YZ:
     fig.savefig(homedir + 'amp_YZ' + comment + '.png', bbox_inches="tight")
 
 fig, ax1 = plt.subplots(1, 1)
-plt1 = ax1.imshow(
-    amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
-        numy // 2, numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=my_cmap)
+plt1 = ax1.imshow(amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
+                  numy // 2, numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=cmap)
 ax1.invert_yaxis()
 ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -175,9 +181,8 @@ if save_XZ:
     fig.savefig(homedir + 'amp_XZ' + comment + '.png', bbox_inches="tight")
 
 fig, ax2 = plt.subplots(1, 1)
-plt2 = ax2.imshow(
-    amp[numz // 2, numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1],
-        numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=my_cmap)
+plt2 = ax2.imshow(amp[numz // 2, numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1],
+                  numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=cmap)
 ax2.invert_yaxis()
 ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
