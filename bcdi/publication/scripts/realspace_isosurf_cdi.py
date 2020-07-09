@@ -28,7 +28,7 @@ scan = 22    # spec scan number
 root_folder = "D:/data/P10_August2019_CDI/data/"
 sample_name = "gold_2_2_2"
 homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/1000_1000_1000_1_1_1/current_paper//'
-comment = "_current_vmax=1"  # should start with _
+comment = "_current_color"  # should start with _
 
 save_YZ = True  # True to save the modulus in YZ plane
 save_XZ = True  # True to save the modulus in XZ plane
@@ -37,7 +37,8 @@ grey_background = False  # True to set the background to grey in 2D plots
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
-cmap = 'Greys'  # matplotlib colormap name, or 'custom'
+cmap = 'custom'  # matplotlib colormap name, or 'custom'
+vmax = 'max_slice'  # number or 'max_slice', maximum value of imshow in 2D slices
 
 voxel_size = 9.42  # in nm, supposed isotropic
 tick_spacing = 500  # for plots, in nm
@@ -54,17 +55,18 @@ axis_inplane = None  # in order x y z for rotate_crystal(), axis to align on x d
 # end of user parameters #
 ##########################
 
-###################
-# define colormap #
-###################
+#########################
+# check some parameters #
+#########################
 if grey_background:
     bad_color = '0.7'
 else:
     bad_color = '1.0'  # white background
-colormap = gu.Colormap(bad_color=bad_color)
-my_cmap = colormap.cmap
+
 if cmap == 'custom':
-    cmap = my_cmap
+    # define colormap
+    colormap = gu.Colormap(bad_color=bad_color)
+    cmap = colormap.cmap
 
 #############
 # load data #
@@ -158,20 +160,38 @@ amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
 print("Cropped/padded data size for 2D plots: (", numz, ',', numy, ',', numx, ')')
 
+# middle slice in YZ plane
 fig, ax0 = plt.subplots(1, 1)
-plt0 = ax0.imshow(amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
-                  numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1], numx // 2], vmin=0, vmax=1, cmap=cmap)
-
+if vmax == 1:
+    plt0 = ax0.imshow(amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
+                      numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1], numx // 2], vmin=0, vmax=1, cmap=cmap)
+elif vmax == 'max_slice':
+    slice_data = amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
+                     numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1], numx // 2]
+    plt0 = ax0.imshow(slice_data, vmin=0, vmax=slice_data.max(), cmap=cmap)
+else:
+    print('Incorrect value for vmax parameter')
+    sys.exit()
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
 if save_YZ:
     fig.savefig(homedir + 'amp_YZ' + comment + '.png', bbox_inches="tight")
+    if vmax == 'max_slice':
+        plt.colorbar(plt0, ax=ax0)
+        fig.savefig(homedir + 'amp_YZ' + comment + '_colorbar.png', bbox_inches="tight")
 
+# middle slice in XZ plane
 fig, ax1 = plt.subplots(1, 1)
-plt1 = ax1.imshow(amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
-                  numy // 2, numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=cmap)
+if vmax == 1:
+    plt1 = ax1.imshow(amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
+                      numy // 2, numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=cmap)
+else:  # vmax = 'max_slice'
+    slice_data = amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
+                     numy // 2, numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]]
+    plt1 = ax1.imshow(slice_data, vmin=0, vmax=slice_data.max(), cmap=cmap)
+
 ax1.invert_yaxis()
 ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -179,20 +199,28 @@ ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direct
                 length=tick_length, width=tick_width)
 if save_XZ:
     fig.savefig(homedir + 'amp_XZ' + comment + '.png', bbox_inches="tight")
+    if vmax == 'max_slice':
+        plt.colorbar(plt1, ax=ax1)
+        fig.savefig(homedir + 'amp_XZ' + comment + '_colorbar.png', bbox_inches="tight")
 
+# middle slice in XY plane
 fig, ax2 = plt.subplots(1, 1)
-plt2 = ax2.imshow(amp[numz // 2, numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1],
-                  numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=cmap)
+if vmax == 1:
+    plt2 = ax2.imshow(amp[numz // 2, numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1],
+                          numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=cmap)
+else:  # vmax = 'max_slice'
+    slice_data = amp[numz // 2, numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1],
+                     numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]]
+    plt2 = ax2.imshow(slice_data, vmin=0, vmax=slice_data.max(), cmap=cmap)
 ax2.invert_yaxis()
 ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                 length=tick_length, width=tick_width)
-
 if save_XY:
     fig.savefig(homedir + 'amp_XY' + comment + '.png', bbox_inches="tight")
-plt.colorbar(plt2, ax=ax2)
-fig.savefig(homedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
+    plt.colorbar(plt2, ax=ax2)
+    fig.savefig(homedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
 plt.ioff()
 plt.show()
