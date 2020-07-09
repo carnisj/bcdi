@@ -38,7 +38,7 @@ tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 cmap = 'custom'  # matplotlib colormap name, or 'custom'
-vmax = 'max_slice'  # number or 'max_slice', maximum value of imshow in 2D slices
+vmax = 0.8  # number or 'max_slice', maximum value of imshow in 2D slices
 
 voxel_size = 9.42  # in nm, supposed isotropic
 tick_spacing = 500  # for plots, in nm
@@ -162,16 +162,17 @@ print("Cropped/padded data size for 2D plots: (", numz, ',', numy, ',', numx, ')
 
 # middle slice in YZ plane
 fig, ax0 = plt.subplots(1, 1)
-if vmax == 1:
+try:
     plt0 = ax0.imshow(amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
-                      numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1], numx // 2], vmin=0, vmax=1, cmap=cmap)
-elif vmax == 'max_slice':
-    slice_data = amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
-                     numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1], numx // 2]
-    plt0 = ax0.imshow(slice_data, vmin=0, vmax=slice_data.max(), cmap=cmap)
-else:
-    print('Incorrect value for vmax parameter')
-    sys.exit()
+                      numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1], numx // 2], vmin=0, vmax=vmax, cmap=cmap)
+except ValueError:
+    if vmax == 'max_slice':
+        slice_data = amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
+                         numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1], numx // 2]
+        plt0 = ax0.imshow(slice_data, vmin=0, vmax=slice_data.max(), cmap=cmap)
+    else:
+        print('Incorrect value for vmax parameter')
+        sys.exit()
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
 ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
@@ -184,10 +185,10 @@ if save_YZ:
 
 # middle slice in XZ plane
 fig, ax1 = plt.subplots(1, 1)
-if vmax == 1:
+try:
     plt1 = ax1.imshow(amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
-                      numy // 2, numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=cmap)
-else:  # vmax = 'max_slice'
+                      numy // 2, numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=vmax, cmap=cmap)
+except ValueError:  # vmax = 'max_slice'
     slice_data = amp[numz // 2 - pixel_FOV[0]:numz // 2 + pixel_FOV[0],
                      numy // 2, numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]]
     plt1 = ax1.imshow(slice_data, vmin=0, vmax=slice_data.max(), cmap=cmap)
@@ -205,10 +206,10 @@ if save_XZ:
 
 # middle slice in XY plane
 fig, ax2 = plt.subplots(1, 1)
-if vmax == 1:
+try:
     plt2 = ax2.imshow(amp[numz // 2, numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1],
-                          numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=1, cmap=cmap)
-else:  # vmax = 'max_slice'
+                          numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]], vmin=0, vmax=vmax, cmap=cmap)
+except ValueError:  # vmax = 'max_slice'
     slice_data = amp[numz // 2, numy // 2 - pixel_FOV[1]:numy // 2 + pixel_FOV[1],
                      numx // 2 - pixel_FOV[2]:numx // 2 + pixel_FOV[2]]
     plt2 = ax2.imshow(slice_data, vmin=0, vmax=slice_data.max(), cmap=cmap)
