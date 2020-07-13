@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import time
+import datetime
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -29,16 +30,16 @@ Input: the 3D dataset, an optional 3D mask, (qx, qy, qz) values
 Laboratory frame convention (CXI): z downstream, y vertical up, x outboard.
 Reciprocal space basis:            qx downstream, qz vertical up, qy outboard."""
 
-datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/"
+datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx/"
 savedir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/simu/"
 comment = ''  # should start with _
-interp_factor = 15  # the number of points for the interpolation on a sphere will be the number of voxels
+interp_factor = 100  # the number of points for the interpolation on a sphere will be the number of voxels
 # at the defined q value divided by interp_factor
 debug = False  # set to True to see more plots
 origin_qspace = (281, 216, 236)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
 q_xcca = (0.479, 0.479)  # q values in 1/nm where to calculate the angular cross-correlation
 hotpix_threshold = 1e6  # data above this threshold will be masked
-corr_count = np.zeros((56644, 2))  # put the shape as (x, 2) with x the number of points without nans.
+corr_count = np.zeros((8307, 2))  # put the shape as (x, 2) with x the number of points without nans.
 # You have to run the script one time to know this number. Declaring corr_count here is required for multiprocessing.
 current_point = 0  # do not change this number, it is used as counter in the callback
 single_proc = False  # do not use multiprocessing if True
@@ -103,7 +104,7 @@ def collect_result(result):
     corr_count[result[2], 1] = corr_count[result[2], 1] + result[1]  # this line is ok
 
     current_point += 1
-    if (current_point % 10) == 0:
+    if (current_point % 100) == 0:
         sys.stdout.write('\rPoint {:d}'.format(current_point))
         sys.stdout.flush()
 
@@ -274,7 +275,7 @@ def main():
     pool.close()
     pool.join()  # postpones the execution of next line of code until all processes in the queue are done.
     end = time.time()
-    print('\nTime ellapsed for the calculation of the CCF:', int(end - start), 's')
+    print('\nTime ellapsed for the calculation of the CCF:', str(datetime.timedelta(seconds=int(end - start))))
 
     # normalize the cross-correlation by the counter
     corr_count[(corr_count[:, 1] == 0), 1] = np.nan  # discard these values of the CCF
@@ -299,7 +300,7 @@ def main():
     ax.set_ylabel('Cross-correlation')
     ax.set_xticks(np.arange(0, 181, 30))
     ax.set_title('CCF at q1={:.3f} 1/nm  and q2={:.3f} 1/nm'.format(q_xcca[0], q_xcca[1]))
-    fig.savefig(savedir + 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) + '.png')
+    fig.savefig(savedir + 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) + '_' + str(nb_points[0]) + '.png')
 
     _, ax = plt.subplots()
     ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 1], linestyle="None", marker='.')
