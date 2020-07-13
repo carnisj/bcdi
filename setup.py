@@ -81,6 +81,7 @@ setup(name='bcdi', version='0.0.8',
                'bcdi/utils/scripts/save_to_mat.py',
                'bcdi/utils/scripts/scan_analysis.py',
                'bcdi/utils/scripts/view_mesh.py',
+               'bcdi/xcca/scripts/xcca_3D.py',
                ],
       # metadata
       author="Jerome Carnis",
