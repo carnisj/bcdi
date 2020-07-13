@@ -87,13 +87,15 @@ def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debuggin
     return q_axis, y_mean_masked, y_median_masked
 
 
-def find_nearest(reference_array, test_values):
+def find_nearest(reference_array, test_values, width=None):
     """
     Find the indices where original_array is nearest to array_values.
 
     :param reference_array: a 1D array where to look for the nearest values
     :param test_values: a number or a 1D array of numbers to be tested
-    :return: index or indices from original_array nearest to values, of length len(array_values)
+    :param width: if not None, it will look for the nearest element within the range [x-width/2, x+width/2[
+    :return: index or indices from original_array nearest to values of length len(test_values). Returns the index -1
+     if there is no nearest neighbour in the range defined by width.
     """
     original_array, test_values = np.asarray(reference_array), np.asarray(test_values)
 
@@ -103,12 +105,18 @@ def find_nearest(reference_array, test_values):
         raise ValueError('array_values should be a number or a 1D array')
     if test_values.ndim == 0:
         nearest_index = (np.abs(original_array - test_values)).argmin()
+        return nearest_index
     else:
         nb_values = len(test_values)
         nearest_index = np.zeros(nb_values, dtype=int)
         for idx in range(nb_values):
             nearest_index[idx] = (np.abs(original_array - test_values[idx])).argmin()
-
+        if width is not None:
+            for idx in range(nb_values):
+                if (reference_array[nearest_index[idx]] >= test_values[idx] + width / 2)\
+                        or (reference_array[nearest_index[idx]] < test_values[idx] - width / 2):
+                    # no neighbour in the range defined by width
+                    nearest_index[idx] = -1
     return nearest_index
 
 
@@ -341,8 +349,8 @@ def sum_roi(array, roi, debugging=False):
     return sum_array
 
 
-# if __name__ == "__main__":
-#     import matplotlib.pyplot as plt
-#     mydata, _ = load_file('D:/data/HC3207/SN936/pynxraw/S936_pynx_norm.npz')
-#     sumdata = sum_roi(array=mydata, roi=[0, 25, 3, 96], debugging=True)
-#     plt.show()
+if __name__ == "__main__":
+    import numpy as np
+    ref_array = np.array([-0.048,1,2,3,4,5,6])
+    ind = find_nearest(reference_array=ref_array, test_values=np.array([0.2, 0.5]), width=0.5)
+    print(ind)
