@@ -116,7 +116,7 @@ def find_nearest(reference_array, test_values, width=None):
                 if (reference_array[nearest_index[idx]] >= test_values[idx] + width / 2)\
                         or (reference_array[nearest_index[idx]] < test_values[idx] - width / 2):
                     # no neighbour in the range defined by width
-                    nearest_index[idx] = np.nan
+                    nearest_index[idx] = -1
     return nearest_index
 
 
