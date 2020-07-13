@@ -32,13 +32,14 @@ Reciprocal space basis:            qx downstream, qz vertical up, qy outboard.""
 datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/"
 savedir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/simu/"
 comment = ''  # should start with _
-interp_factor = 50  # the number of point for the interpolation on a sphere will be the number of voxels at the defined
-# q value divided by interp_factor
+interp_factor = 100  # the number of points for the interpolation on a sphere will be the number of voxels
+# at the defined q value divided by interp_factor
 debug = False  # set to True to see more plots
 origin_qspace = (281, 216, 236)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
 q_xcca = (0.479, 0.479)  # q values in 1/nm where to calculate the angular cross-correlation
-# results = []
-corr_count = np.zeros((16997, 2))  # put the shape as (x, 2) with x the number of points without nans.
+hotpix_threshold = 1e6  # data above this threshold will be masked
+corr_count = np.zeros((8498, 2))  # put the shape as (x, 2) with x the number of points without nans.
+# corr_count1 = np.zeros((84, 2))
 # You have to run the script one time to know this number. Declaring corr_count here is required for multiprocessing.
 current_point = 0  # do not change this number, it is used as counter in the callback
 ##################################
@@ -56,33 +57,38 @@ def calc_ccf(point, q2_name, bin_values, polar_azi_int):
     :param polar_azi_int:
     :return:
     """
-
-    # initialize the cross-correlation and bin counter arrays
-    ccf_val = np.zeros(bin_values.shape)
-    counter_array = np.zeros(bin_values.shape)
-
     # calculate the angle between the current point and all points from the second q value (delta in [0 pi])
     delta_val = np.arccos(np.sin(polar_azi_int['q1'][point, 0]) * np.sin(polar_azi_int[q2_name][:, 0]) *
                           np.cos(polar_azi_int[q2_name][:, 1] - polar_azi_int['q1'][point, 1]) +
                           np.cos(polar_azi_int['q1'][point, 0]) * np.cos(polar_azi_int[q2_name][:, 0]))
 
     # find the nearest angular bin value for each value of the array delta
-    nearest_indices = util.find_nearest(test_values=delta_val, reference_array=bin_values)
-
-    # update the cross-correlation function for the current point. Nan values are already removed.
-    ccf_val[nearest_indices] = polar_azi_int['q1'][point, 2] * polar_azi_int[q2_name][nearest_indices, 2]
+    nearest_indices = util.find_nearest(test_values=delta_val, reference_array=bin_values,
+                                        width=bin_values[1]-bin_values[0])
 
     # update the counter of bin indices
-    counter_indices, counter_val = np.unique(nearest_indices, return_counts=True)
-    counter_array[counter_indices] = counter_val
+    counter_indices, counter_val = np.unique(nearest_indices, return_counts=True)  # counter_indices are sorted
 
-    return ccf_val, counter_array
+    # filter out -1 indices which correspond to no neighbour in the range defined by width in find_nearest()
+    counter_val = np.delete(counter_val, np.argwhere(counter_indices == -1))
+    counter_indices = np.delete(counter_indices, np.argwhere(counter_indices == -1))
+
+    # calculate the contribution to the cross-correlation for bins in counter_indices
+    ccf_uniq_val = np.zeros(len(counter_indices))
+    for idx in range(len(counter_indices)):
+        ccf_uniq_val[idx] = (polar_azi_int['q1'][point, 2] *
+                             polar_azi_int[q2_name][nearest_indices == counter_indices[idx], 2]).sum()
+
+    return ccf_uniq_val, counter_val, counter_indices
 
 
 def collect_result(result):
     global corr_count, current_point
-    corr_count[:, 0] = corr_count[:, 0] + result[0]
-    corr_count[:, 1] = corr_count[:, 1] + result[1]
+    # result is a tuple: ccf_uniq_val, counter_val, counter_indices
+    corr_count[result[2], 0] = corr_count[result[2], 0] + result[0]
+
+    corr_count[result[2], 1] = corr_count[result[2], 1] + result[1]  # this line is ok
+
     current_point += 1
     if (current_point % 100) == 0:
         sys.stdout.write('\rPoint {:d}'.format(current_point))
@@ -125,18 +131,16 @@ def main():
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the 3D reciprocal space map",
                                            filetypes=[("NPZ", "*.npz")])
     data = np.load(file_path)['data']
-    nz, ny, nx = data.shape
 
-    try:
-        file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the 3D mask",
-                                               filetypes=[("NPZ", "*.npz")])
-        mask = np.load(file_path)['mask']
+    file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the 3D mask",
+                                           filetypes=[("NPZ", "*.npz")])
+    mask = np.load(file_path)['mask']
 
-        data[np.nonzero(mask)] = np.nan
-        del mask
-        gc.collect()
-    except FileNotFoundError:
-        pass
+    print((data > hotpix_threshold).sum(), ' hotpixels masked')
+    mask[data > hotpix_threshold] = 1
+    data[np.nonzero(mask)] = np.nan
+    del mask
+    gc.collect()
 
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select q values",
                                            filetypes=[("NPZ", "*.npz")])
@@ -238,12 +242,14 @@ def main():
     assert corr_count.shape[0] == nb_points[0],\
         '\nYou need to initialize corr_count.shape[0] with this value: {:d}'.format(nb_points[0])
 
-    angular_bins = np.linspace(start=0, stop=np.pi, num=nb_points[0])
+    angular_bins = np.linspace(start=0, stop=np.pi, num=nb_points[0], endpoint=False)
 
-    # delta_step = (ang_corr_count[1, 0] - ang_corr_count[0, 0])
+    delta_step = (angular_bins[1] - angular_bins[0])
 
-    # # try:  # try to calculate the CCF in one round using vectorization
-    # if False:
+    # print('angular_bins', angular_bins)
+    # print('delta_step', delta_step, '\n')
+
+    # if True:
     #     start = time.time()
     #     # calculate the angle between the all points from both q values (delta in [0 pi])
     #     # values for q1 will be in raw, values for q2 in column
@@ -257,28 +263,25 @@ def main():
     #     delta = np.arccos(np.sin(theta1[:, np.newaxis]) * np.sin(theta2[np.newaxis, :]) *
     #                       np.cos(phi2[np.newaxis, :] - phi1[:, np.newaxis]) +
     #                       np.cos(theta1[:, np.newaxis]) * np.cos(theta2[np.newaxis, :]))
-    #
+    #     print(delta)
     #     for angle in range(nb_points[0]):  # loop over the bins of the CCF
     #         if angle != 0 and (angle % 100) == 0:
     #             sys.stdout.write('\rPoint {:d} / {:d}'.format(angle, nb_points[0]))
     #             sys.stdout.flush()
     #
-    #         raw, col = np.nonzero(np.logical_and((delta < ang_corr_count[angle, 0] + delta_step / 2),
-    #                                              (delta >= ang_corr_count[angle, 0] - delta_step / 2)))
-    #
+    #         raw, col = np.nonzero(np.logical_and((delta < angular_bins[angle] + delta_step / 2),
+    #                                              (delta >= angular_bins[angle] - delta_step / 2)))
+    #         print('angular_bins[angle]', angular_bins[angle], 'raw', raw, 'col', col)
     #         # update the cross-correlation function. Nan values are already removed.
-    #         ang_corr_count[angle, 1] = np.multiply(int1[raw], int2[col]).sum()
+    #         corr_count1[angle, 0] = np.multiply(int1[raw], int2[col]).sum()
     #
     #         # update the counter of bin indices
-    #         ang_corr_count[angle, 2] = len(raw)  # or equivalently len(col)
-    #
+    #         corr_count1[angle, 1] = len(raw)  # or equivalently len(col)
+    #         print('corr_count1', corr_count1)
     #     del theta1, theta2, phi1, phi2, int1, int2, delta
     #     gc.collect()
     #     end = time.time()
     #     print('\nTime ellapsed for the calculation of the CCF using vectorization:', int(end - start), 's')
-    # if True:
-    # # except MemoryError:  # switch to the for loop, not enough memory to calculate the CCF using vectorization
-    #     print('Not enough memory, switching to the iterative calculation')
 
     start = time.time()
 
@@ -296,9 +299,10 @@ def main():
     corr_count[(corr_count[:, 1] == 0), 1] = np.nan  # discard these values of the CCF
     indices = np.nonzero(corr_count[:, 1])
     corr_count[indices, 0] = corr_count[indices, 0] / corr_count[indices, 1]
-    # ang_corr_count[(ang_corr_count[:, 2] == 0), 1] = np.nan  # discard these values of the CCF
-    # indices = np.nonzero(ang_corr_count[:, 2])
-    # ang_corr_count[indices, 1] = ang_corr_count[indices, 1] / ang_corr_count[indices, 2]
+
+    # corr_count1[(corr_count1[:, 1] == 0), 1] = np.nan  # discard these values of the CCF
+    # indices = np.nonzero(corr_count1[:, 1])
+    # corr_count1[indices, 0] = corr_count1[indices, 0] / corr_count1[indices, 1]
 
     #######################################
     # save the cross-correlation function #
@@ -309,8 +313,9 @@ def main():
     #######################################
     # plot the cross-correlation function #
     #######################################
+    plt.ion()
     fig, ax = plt.subplots()
-    ax.plot(180*angular_bins/np.pi, corr_count[:, 0])
+    ax.plot(180*angular_bins/np.pi, corr_count[:, 0], linestyle="None", marker='.')
     ax.set_xlim(0, 180)
     ax.set_xlabel('Angle (deg)')
     ax.set_ylabel('Cross-correlation')
@@ -319,16 +324,33 @@ def main():
     fig.savefig(savedir + 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) + '.png')
 
     _, ax = plt.subplots()
-    ax.plot(180*angular_bins/np.pi, corr_count[:, 1])
+    ax.plot(180*angular_bins/np.pi, corr_count[:, 1], linestyle="None", marker='.')
     ax.set_xlim(0, 180)
     ax.set_xlabel('Angle (deg)')
     ax.set_ylabel('Number of points')
     ax.set_xticks(np.arange(0, 181, 30))
     ax.set_title('Points per angular bin')
+
+    #######################################
+    # fig, ax = plt.subplots()
+    # ax.plot(180*angular_bins/np.pi, corr_count1[:, 0], linestyle="None", marker='.')
+    # ax.set_xlim(0, 180)
+    # ax.set_xlabel('Angle (deg)')
+    # ax.set_ylabel('Cross-correlation')
+    # ax.set_xticks(np.arange(0, 181, 30))
+    # ax.set_title('CCF at q1={:.3f} 1/nm  and q2={:.3f} 1/nm  1 '.format(q_xcca[0], q_xcca[1]))
+    # fig.savefig(savedir + 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) + '.png')
+    #
+    # _, ax = plt.subplots()
+    # ax.plot(180*angular_bins/np.pi, corr_count1[:, 1], linestyle="None", marker='.')
+    # ax.set_xlim(0, 180)
+    # ax.set_xlabel('Angle (deg)')
+    # ax.set_ylabel('Number of points')
+    # ax.set_xticks(np.arange(0, 181, 30))
+    # ax.set_title('Points per angular bin 1')
     plt.ioff()
     plt.show()
 
 
 if __name__ == "__main__":
     main()
-
