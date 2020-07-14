@@ -302,7 +302,7 @@ def main():
     # plot the cross-correlation function #
     #######################################
     # plot only in the range [1, 179] to avoid the autocorrelation peak
-    indices = np.argwhere(np.logical_and((angular_bins >= 1*np.pi/180), (angular_bins <= 179*np.pi/180)))
+    indices = np.argwhere(np.logical_and((angular_bins >= 5*np.pi/180), (angular_bins <= 175*np.pi/180)))
 
     fig, ax = plt.subplots()
     ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 0], color='red', linestyle="-", markerfacecolor='blue',
