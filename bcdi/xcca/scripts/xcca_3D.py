@@ -312,8 +312,8 @@ def main():
     #######################################
     # save the cross-correlation function #
     #######################################
-    filename = 'CCF_q1={:.3f}_q2={:.3f}_interp{:d}_res{:3f}'.format(q_xcca[0], q_xcca[1], interp_factor,
-                                                                    angular_resolution)
+    filename = 'CCF_q1={:.3f}_q2={:.3f}_points{:d}_interp{:d}_res{:.3f}'.format(q_xcca[0], q_xcca[1], nb_points[0],
+                                                                                interp_factor, angular_resolution)
     np.savez_compressed(savedir + filename + '.npz', obj=corr_count)
 
     #######################################
