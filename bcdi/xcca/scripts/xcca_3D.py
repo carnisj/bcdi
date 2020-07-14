@@ -52,13 +52,15 @@ plot_meandata = False  # if True, will plot the 1D average of the data
 
 def calc_ccf(point, q2_name, bin_values, polar_azi_int):
     """
+    Calculate for the cross-correlation of point with all other points and sort the result.
 
-
-    :param point:
-    :param q2_name:
-    :param bin_values:
-    :param polar_azi_int:
-    :return:
+    :param point: the reference point
+    :param q2_name: key for the second q value in the dictionnary polar_azi_int
+    :param bin_values: angular bin values where to calculate the cross-correlation
+    :param polar_azi_int: a dictionnary with fields 'q1' (and 'q2' if different from q1). Each field contains three 1D
+     arrays: polar angle, azimuthal angle and intensity values for each point
+    :return: the sorted cross-correlation values, angular bins indices and number of points contributing to the angular
+     bins
     """
     # calculate the angle between the current point and all points from the second q value (delta in [0 pi])
     delta_val = np.arccos(np.sin(polar_azi_int['q1'][point, 0]) * np.sin(polar_azi_int[q2_name][:, 0]) *
@@ -85,20 +87,13 @@ def calc_ccf(point, q2_name, bin_values, polar_azi_int):
     return ccf_uniq_val, counter_val, counter_indices
 
 
-def collect_result_debug(ccf_uniq_val, counter_val, counter_indices):
-    global corr_count, current_point
-    # result is a tuple: ccf_uniq_val, counter_val, counter_indices
-    corr_count[counter_indices, 0] = corr_count[counter_indices, 0] + ccf_uniq_val
-
-    corr_count[counter_indices, 1] = corr_count[counter_indices, 1] + counter_val  # this line is ok
-
-    current_point += 1
-    if (current_point % 100) == 0:
-        sys.stdout.write('\rPoint {:d}'.format(current_point))
-        sys.stdout.flush()
-
-
 def collect_result(result):
+    """
+    Callback processing the result after asynchronous multiprocessing. Update the global arrays corr_count, corr_point.
+
+    :param result: the output of ccf_val, containing the sorted cross-correlation values, the angular bins indices and
+     the number of points contributing to the angular bins
+    """
     global corr_count, current_point
     # result is a tuple: ccf_uniq_val, counter_val, counter_indices
     corr_count[result[2], 0] = corr_count[result[2], 0] + result[0]
@@ -111,7 +106,32 @@ def collect_result(result):
         sys.stdout.flush()
 
 
+def collect_result_debug(ccf_uniq_val, counter_val, counter_indices):
+    """
+    Similar behaviour as collect_result() when multiprocessing is not used, useful for debugging.
+
+    :param ccf_uniq_val: the sorted cross-correlation values
+    :param counter_val: the number of points contributing to the angular bins defined by counter_indices
+    :param counter_indices: the indices of angular bins where to update the cross-correlation
+    """
+    global corr_count, current_point
+    # result is a tuple: ccf_uniq_val, counter_val, counter_indices
+    corr_count[counter_indices, 0] = corr_count[counter_indices, 0] + ccf_uniq_val
+
+    corr_count[counter_indices, 1] = corr_count[counter_indices, 1] + counter_val  # this line is ok
+
+    current_point += 1
+    if (current_point % 100) == 0:
+        sys.stdout.write('\rPoint {:d}'.format(current_point))
+        sys.stdout.flush()
+
+
 def catch_error(exception):
+    """
+    Callback processing exception in asynchronous multiprocessing.
+
+    :param exception: the arisen exception
+    """
     print(exception)
 
 
