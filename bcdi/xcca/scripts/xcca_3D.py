@@ -35,6 +35,7 @@ savedir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/simu/"
 comment = ''  # should start with _
 interp_factor = 100  # the number of points for the interpolation on a sphere will be the number of voxels
 # at the defined q value divided by interp_factor
+angular_resolution = 0.05  # in degrees, angle between to adjacent points for the calculation of the cross-correlation
 debug = False  # set to True to see more plots
 origin_qspace = (281, 216, 236)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
 q_xcca = (0.479, 0.479)  # q values in 1/nm where to calculate the angular cross-correlation
@@ -197,9 +198,13 @@ def main():
 
     for counter, value in enumerate(q_xcca):
         if (counter == 0) or ((counter == 1) and not same_q):
-            nb_pixels = int((np.logical_and((distances < q_xcca[counter]+dq), (distances > q_xcca[counter]-dq))).sum()
-                            / interp_factor)
+            nb_pixels = (np.logical_and((distances < q_xcca[counter]+dq), (distances > q_xcca[counter]-dq))).sum()
+
             print('Number of voxels for the sphere of radius q ={:.3f} 1/nm:'.format(q_xcca[counter]), nb_pixels)
+
+            nb_pixels = int(nb_pixels / interp_factor)
+            print('Dividing the number of voxels by interp_factor: {:d} voxels remaining'.format(nb_pixels))
+
             indices = np.arange(0, nb_pixels, dtype=float) + 0.5
 
             # angles for interpolation are chosen using the 'golden spiral method', so that the corresponding points are
@@ -257,7 +262,7 @@ def main():
     assert corr_count.shape[0] == nb_points[0],\
         '\nYou need to initialize corr_count.shape[0] with this value: {:d}'.format(nb_points[0])
 
-    angular_bins = np.linspace(start=0, stop=np.pi, num=nb_points[0], endpoint=False)
+    angular_bins = np.linspace(start=0, stop=np.pi, num=int(180/angular_resolution), endpoint=False)
 
     start = time.time()
 
@@ -291,7 +296,8 @@ def main():
     #######################################
     # plot the cross-correlation function #
     #######################################
-    indices = np.argwhere(np.logical_and((angular_bins >= 3*np.pi/180), (angular_bins <= 177*np.pi/180)))
+    # plot only in the range [1, 179] to avoid the autocorrelation peak
+    indices = np.argwhere(np.logical_and((angular_bins >= 1*np.pi/180), (angular_bins <= 179*np.pi/180)))
 
     fig, ax = plt.subplots()
     ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 0], linestyle="None", marker='.')
