@@ -509,3 +509,16 @@ view_mesh.py
    :start-after: helptext
    :end-before: """
    :language: rst
+
+.. _xcca:
+
+XCCA
+----
+
+xcca_3D.py
+^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/xcca_3D.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
