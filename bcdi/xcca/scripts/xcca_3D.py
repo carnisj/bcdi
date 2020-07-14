@@ -44,6 +44,7 @@ corr_count = np.zeros((8307, 2))  # put the shape as (x, 2) with x the number of
 # You have to run the script one time to know this number. Declaring corr_count here is required for multiprocessing.
 current_point = 0  # do not change this number, it is used as counter in the callback
 single_proc = False  # do not use multiprocessing if True
+plot_meandata = False  # if True, will plot the 1D average of the data
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -171,17 +172,20 @@ def main():
     ##############################################################
     # calculate the angular average using mean and median values #
     ##############################################################
-    # TODO: calculate the optimal number of bins
-    # q_axis, y_mean_masked, y_median_masked = util.angular_avg(data=data, q_values=(qx, qz, qy), origin=origin_qspace,
-    #                                                           nb_bins=nz//4, debugging=debug)
-    # fig, ax = plt.subplots(1, 1)
-    # ax.plot(q_axis, np.log10(y_mean_masked), 'r', label='mean')
-    # ax.plot(q_axis, np.log10(y_median_masked), 'b', label='median')
-    # ax.axvline(x=q_xcca[0], ymin=0, ymax=1, color='g', linestyle='--', label='q1')
-    # ax.axvline(x=q_xcca[1], ymin=0, ymax=1, color='r', linestyle=':', label='q2')
-    # ax.set_xlabel('q (1/nm)')
-    # ax.set_ylabel('Angular average (A.U.)')
-    # ax.legend()
+    if plot_meandata:
+        q_axis, y_mean_masked, y_median_masked = util.angular_avg(data=data, q_values=(qx, qz, qy),
+                                                                  origin=origin_qspace, nb_bins=250, debugging=debug)
+        fig, ax = plt.subplots(1, 1)
+        ax.plot(q_axis, np.log10(y_mean_masked), 'r', label='mean')
+        ax.plot(q_axis, np.log10(y_median_masked), 'b', label='median')
+        ax.axvline(x=q_xcca[0], ymin=0, ymax=1, color='g', linestyle='--', label='q1')
+        ax.axvline(x=q_xcca[1], ymin=0, ymax=1, color='r', linestyle=':', label='q2')
+        ax.set_xlabel('q (1/nm)')
+        ax.set_ylabel('Angular average (A.U.)')
+        ax.legend()
+        fig.savefig(savedir + '1D_average.png')
+
+        del q_axis, y_median_masked, y_mean_masked
 
     ##############################################################
     # interpolate the data onto spheres at user-defined q values #
@@ -207,8 +211,8 @@ def main():
 
             indices = np.arange(0, nb_pixels, dtype=float) + 0.5
 
-            # angles for interpolation are chosen using the 'golden spiral method', so that the corresponding points are
-            # evenly distributed on the sphere
+            # angles for interpolation are chosen using the 'golden spiral method', so that the corresponding points
+            # are evenly distributed on the sphere
             theta = np.arccos(1 - 2*indices/nb_pixels)  # theta is the polar angle of the spherical coordinates
             phi = np.pi * (1 + np.sqrt(5)) * indices  # phi is the azimuthal angle of the spherical coordinates
 
@@ -311,7 +315,7 @@ def main():
     fig.savefig(savedir + filename + '.png')
 
     _, ax = plt.subplots()
-    ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 1], color='red', linestyle="-", markerfacecolor='blue',
+    ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 1], linestyle="None", markerfacecolor='blue',
             marker='.')
     ax.set_xlim(0, 180)
     ax.set_xlabel('Angle (deg)')
