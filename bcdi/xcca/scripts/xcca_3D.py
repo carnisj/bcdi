@@ -33,21 +33,23 @@ Reciprocal space basis:            qx downstream, qz vertical up, qy outboard.""
 datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx/"
 savedir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/simu/"
 comment = ''  # should start with _
-interp_factor = 100  # the number of points for the interpolation on a sphere will be the number of voxels
+interp_factor = 50  # the number of points for the interpolation on a sphere will be the number of voxels
 # at the defined q value divided by interp_factor
-angular_resolution = 0.05  # in degrees, angle between to adjacent points for the calculation of the cross-correlation
+angular_resolution = 0.5  # in degrees, angle between to adjacent points for the calculation of the cross-correlation
 debug = False  # set to True to see more plots
 origin_qspace = (281, 216, 236)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
 q_xcca = (0.479, 0.479)  # q values in 1/nm where to calculate the angular cross-correlation
 hotpix_threshold = 1e6  # data above this threshold will be masked
-corr_count = np.zeros((8307, 2))  # put the shape as (x, 2) with x the number of points without nans.
-# You have to run the script one time to know this number. Declaring corr_count here is required for multiprocessing.
-current_point = 0  # do not change this number, it is used as counter in the callback
 single_proc = False  # do not use multiprocessing if True
 plot_meandata = False  # if True, will plot the 1D average of the data
-##################################
-# end of user-defined parameters #
-##################################
+##################################################################
+# end of user-defined parameters, do not change parameters below #
+##################################################################
+corr_count = np.zeros((int(180/angular_resolution), 2))  # initialize the cross-correlation array
+current_point = 0  # do not change this number, it is used as counter in the callback
+####################################
+# define multiprocessing functions #
+####################################
 
 
 def calc_ccf(point, q2_name, bin_values, polar_azi_int):
@@ -280,13 +282,9 @@ def main():
     else:
         key_q2 = 'q2'
 
-    print('The CCF will be calculated over', nb_points[0], 'points and', int(180/angular_resolution), 'angular bins\n')
+    print('The CCF will be calculated over', nb_points[0], 'points and', corr_count.shape[0], 'angular bins\n')
 
-    # check if corr_count was initialized with the correct number of points
-    assert corr_count.shape[0] == nb_points[0],\
-        '\nYou need to initialize corr_count.shape[0] with this value: {:d}'.format(nb_points[0])
-
-    angular_bins = np.linspace(start=0, stop=np.pi, num=int(180/angular_resolution), endpoint=False)
+    angular_bins = np.linspace(start=0, stop=np.pi, num=corr_count.shape[0], endpoint=False)
 
     start = time.time()
 
