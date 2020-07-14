@@ -256,7 +256,7 @@ def main():
     else:
         key_q2 = 'q2'
 
-    print('The CCF will be calculated over', nb_points[0], 'bins\n')
+    print('The CCF will be calculated over', nb_points[0], 'points and', int(180/angular_resolution), 'angles\n')
 
     # check if corr_count was initialized with the correct number of points
     assert corr_count.shape[0] == nb_points[0],\
