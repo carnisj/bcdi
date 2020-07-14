@@ -301,7 +301,8 @@ def main():
     indices = np.argwhere(np.logical_and((angular_bins >= 1*np.pi/180), (angular_bins <= 179*np.pi/180)))
 
     fig, ax = plt.subplots()
-    ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 0], linestyle="None", marker='.')
+    ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 0], color='red', linestyle="-", markerfacecolor='blue',
+            marker='.')
     ax.set_xlim(0, 180)
     ax.set_xlabel('Angle (deg)')
     ax.set_ylabel('Cross-correlation')
@@ -311,7 +312,8 @@ def main():
                                                                                angular_resolution) + '.png')
 
     _, ax = plt.subplots()
-    ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 1], linestyle="None", marker='.')
+    ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 1], color='red', linestyle="-", markerfacecolor='blue',
+            marker='.')
     ax.set_xlim(0, 180)
     ax.set_xlabel('Angle (deg)')
     ax.set_ylabel('Number of points')
