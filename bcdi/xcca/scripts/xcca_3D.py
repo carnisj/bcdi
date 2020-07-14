@@ -30,15 +30,15 @@ Input: the 3D dataset, an optional 3D mask, (qx, qy, qz) values
 Laboratory frame convention (CXI): z downstream, y vertical up, x outboard.
 Reciprocal space basis:            qx downstream, qz vertical up, qy outboard."""
 
-datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx/"
-savedir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/simu/"
+datadir = "D:/data/P10_March2020_CDI/data/ht_pillar3/S32_XCCA/"
+savedir = "D:/data/P10_March2020_CDI/data/ht_pillar3/S32_XCCA/"
 comment = ''  # should start with _
-interp_factor = 50  # the number of points for the interpolation on a sphere will be the number of voxels
+interp_factor = 40  # the number of points for the interpolation on a sphere will be the number of voxels
 # at the defined q value divided by interp_factor
-angular_resolution = 0.5  # in degrees, angle between to adjacent points for the calculation of the cross-correlation
+angular_resolution = 0.1  # in degrees, angle between to adjacent points for the calculation of the cross-correlation
 debug = False  # set to True to see more plots
-origin_qspace = (281, 216, 236)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
-q_xcca = (0.479, 0.479)  # q values in 1/nm where to calculate the angular cross-correlation
+origin_qspace = (290, 228, 290)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
+q_xcca = (0.435, 0.455)  # q values in 1/nm where to calculate the angular cross-correlation
 hotpix_threshold = 1e6  # data above this threshold will be masked
 single_proc = False  # do not use multiprocessing if True
 plot_meandata = False  # if True, will plot the 1D average of the data
@@ -319,13 +319,15 @@ def main():
     #######################################
     # plot the cross-correlation function #
     #######################################
-    # plot only in the range [1, 179] to avoid the autocorrelation peak
+    # find the y limit excluding the peaks at 0 and 180 degrees
     indices = np.argwhere(np.logical_and((angular_bins >= 5*np.pi/180), (angular_bins <= 175*np.pi/180)))
+    ymax = 1.2 * corr_count[indices, 0].max()
 
     fig, ax = plt.subplots()
-    ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 0], color='red', linestyle="-", markerfacecolor='blue',
+    ax.plot(180*angular_bins/np.pi, corr_count[:, 0], color='red', linestyle="-", markerfacecolor='blue',
             marker='.')
     ax.set_xlim(0, 180)
+    ax.set_ylim(0, ymax)
     ax.set_xlabel('Angle (deg)')
     ax.set_ylabel('Cross-correlation')
     ax.set_xticks(np.arange(0, 181, 30))
@@ -333,7 +335,7 @@ def main():
     fig.savefig(savedir + filename + '.png')
 
     _, ax = plt.subplots()
-    ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 1], linestyle="None", markerfacecolor='blue',
+    ax.plot(180*angular_bins/np.pi, corr_count[:, 1], linestyle="None", markerfacecolor='blue',
             marker='.')
     ax.set_xlim(0, 180)
     ax.set_xlabel('Angle (deg)')
