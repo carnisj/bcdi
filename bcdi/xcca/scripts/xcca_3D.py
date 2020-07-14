@@ -291,8 +291,8 @@ def main():
     # save the cross-correlation function #
     #######################################
     np.savez_compressed(savedir +
-                        'CCF_q1={:.3f}_q2={:.3f}_interp{:d}_res'.format(q_xcca[0], q_xcca[1], interp_factor,
-                                                                        angular_resolution) + '.npz', obj=corr_count)
+                        'CCF_q1={:.3f}_q2={:.3f}_interp{:d}_res{:3f}'.format(q_xcca[0], q_xcca[1], interp_factor,
+                                                                             angular_resolution) + '.npz', obj=corr_count)
 
     #######################################
     # plot the cross-correlation function #
@@ -307,8 +307,8 @@ def main():
     ax.set_ylabel('Cross-correlation')
     ax.set_xticks(np.arange(0, 181, 30))
     ax.set_title('CCF at q1={:.3f} 1/nm  and q2={:.3f} 1/nm'.format(q_xcca[0], q_xcca[1]))
-    fig.savefig(savedir + 'CCF_q1={:.3f}_q2={:.3f}_interp{:d}_res'.format(q_xcca[0], q_xcca[1], interp_factor,
-                                                                          angular_resolution) + '.png')
+    fig.savefig(savedir + 'CCF_q1={:.3f}_q2={:.3f}_interp{:d}_res{:3f}'.format(q_xcca[0], q_xcca[1], interp_factor,
+                                                                               angular_resolution) + '.png')
 
     _, ax = plt.subplots()
     ax.plot(180*angular_bins[indices]/np.pi, corr_count[indices, 1], linestyle="None", marker='.')
