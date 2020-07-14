@@ -257,7 +257,8 @@ def main():
                                                                   sphere_int[:, np.newaxis]), axis=1)
             # update the number of points without nan
             nb_points.append(len(theta))
-            print('Removing', nan_indices.size, 'nan values,', nb_points[counter], 'remain')
+            print('q={:.3f}:'.format(q_xcca[counter]), ' removing', nan_indices.size, 'nan values,',
+                  nb_points[counter], 'remain')
             if debug:
                 fig = plt.figure()
                 ax = Axes3D(fig)
