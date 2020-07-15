@@ -2050,7 +2050,7 @@ def load_nanomax_data(logfile, detector, mask_path, debugging=False):
     data = np.flip(data, axis = 1)    
 
 # Test
-#    data = np.rot90(data,axes=(1,2))
+    data = np.rot90(data,axes=(1,2))
 
 #    mask3d[np.isnan(data)] = 1
     data[np.isnan(data)] = 0
