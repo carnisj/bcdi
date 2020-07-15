@@ -14,4 +14,5 @@ API Reference
    preprocessing/index.rst
    simulation/index.rst
    utils/index.rst
+   xcca/index.rst
 
