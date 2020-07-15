@@ -414,14 +414,6 @@ simu_signe_phase.py
 Utilities
 ---------
    
-angular_avg_3Dto1D.py
-^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/angular_avg_3Dto1D.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
 apodize.py
 ^^^^^^^^^^
 
@@ -515,10 +507,18 @@ view_mesh.py
 XCCA
 ----
 
+angular_avg_3Dto1D.py
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/xcca/scripts/angular_avg_3Dto1D.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 xcca_3D.py
 ^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/xcca_3D.py
+.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D.py
    :start-after: helptext
    :end-before: """
    :language: rst
