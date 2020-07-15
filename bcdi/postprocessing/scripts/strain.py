@@ -19,6 +19,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util
 
 helptext = """
@@ -486,7 +487,7 @@ kout = setup.exit_wavevector()  # in laboratory frame z downstream, y vertical, 
 q = kout - kin
 Qnorm = np.linalg.norm(q)
 q = q / Qnorm
-angle = pu.plane_angle(ref_plane=np.array([q[2], q[1], q[0]]), plane=myaxis)
+angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=myaxis)
 print("Angle between q and", ref_axis_outplane, "=", angle, "deg")
 print("Angle with y in zy plane", np.arctan(q[0]/q[1])*180/np.pi, "deg")
 print("Angle with y in xy plane", np.arctan(-q[2]/q[1])*180/np.pi, "deg")

@@ -24,6 +24,7 @@ import bcdi.experiment.experiment_utils as exp
 import bcdi.facet_recognition.facet_utils as fu
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.simulation.simulation_utils as simu
 
 
 helptext = """
@@ -61,19 +62,19 @@ flag_medianfilter = False  # set to True to apply med2filter [3,3] to the recipr
 plot_planes = True  # if True, plot dotted circles corresponding to planes_south and planes_north indices
 hide_axis = False  # if True, the default axis frame, ticks and ticks labels will be hidden
 planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
-planes_south['1 1 1'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 1]))
-planes_south['1 0 0'] = fu.plane_angle_cubic(reflection, np.array([1, 0, 0]))
-planes_south['1 1 0'] = fu.plane_angle_cubic(reflection, np.array([1, 1, 0]))
-planes_south['-1 1 0'] = fu.plane_angle_cubic(reflection, np.array([-1, 1, 0]))
-planes_south['1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([1, -1, 1]))
-planes_south['-1 -1 1'] = fu.plane_angle_cubic(reflection, np.array([-1, -1, 1]))
+planes_south['1 1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 1]))
+planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
+planes_south['1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 0]))
+planes_south['-1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, 1, 0]))
+planes_south['1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, -1, 1]))
+planes_south['-1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
 planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
-planes_north['-1 -1 -1'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, -1]))
-planes_north['-1 0 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, 0, 0]))
-planes_north['-1 -1 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, 0]))
-planes_north['-1 1 0'] = fu.plane_angle_cubic(-reflection, np.array([-1, 1, 0]))
-planes_north['-1 -1 1'] = fu.plane_angle_cubic(-reflection, np.array([-1, -1, 1]))
-planes_north['-1 1 1'] = fu.plane_angle_cubic(-reflection, np.array([-1, 1, 1]))
+planes_north['-1 -1 -1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, -1]))
+planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
+planes_north['-1 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 0]))
+planes_north['-1 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
+planes_north['-1 -1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 1]))
+planes_north['-1 1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
 debug = False  # True to show more plots, False otherwise
 ########################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object only #

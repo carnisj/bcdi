@@ -1191,22 +1191,6 @@ def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
     return modes[:nb_mode], eigenvectors, weights
 
 
-def plane_angle(ref_plane, plane):
-    """
-    Calculate the angle between two crystallographic planes in cubic materials.
-
-    :param ref_plane: measured reflection
-    :param plane: plane for which angle should be calculated
-    :return: the angle in degrees
-    """
-    if np.array_equal(ref_plane, plane):
-        my_angle = 0.0
-    else:
-        my_angle = 180/np.pi*np.arccos(sum(np.multiply(ref_plane, plane)) /
-                                       (np.linalg.norm(ref_plane)*np.linalg.norm(plane)))
-    return my_angle
-
-
 def regrid(array, voxel_zyx, voxel):
     """
     Interpolate real space data on a grid with cubic voxels.

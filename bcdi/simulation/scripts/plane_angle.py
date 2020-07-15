@@ -4,15 +4,19 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import numpy as np
 import sys
 sys.path.append('D:/myscripts/bcdi/')
-import bcdi.facet_recognition.facet_utils as fu
+import bcdi.simulation.simulation_utils as simu
 
 helptext = """
-Calculate the angle between to crystallographic planes in cubic materials.
+Calculate the angle between to crystallographic planes expressed in the crystal basis.
 """
 
 reference_plane = [0, 1, 0]  # [0.37182, 0.78376, -0.49747]  # [0.40975, 0.29201, -0.86420]
 second_plane = [1, 1, 0]  # [-0.22923, 0.76727, -0.59896]  # [-0.19695, 0.27933, -0.93978]
-angle = fu.plane_angle_cubic(reference_plane, second_plane)
+basis = (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))  # components of the basis vectors in the
+# orthonormal basis ((1, 0, 0), (0, 1, 0), (0, 0, 1))
+
+angle = simu.angle_vectors(ref_vector=reference_plane, test_vector=second_plane, basis_vectors=basis)
 print('angle = {:.2f} deg'.format(angle))

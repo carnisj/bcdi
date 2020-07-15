@@ -453,25 +453,6 @@ def offset_plane(indices, offset, plane_normal):
     return new_indices0, new_indices1, new_indices2
 
 
-def plane_angle_cubic(ref_plane, plane):
-    """
-    Calculate the angle between two crystallographic planes in cubic materials
-
-    :param ref_plane: measured reflection
-    :param plane: plane for which angle should be calculated
-    :return: the angle in degrees
-    """
-    if np.array_equal(ref_plane, plane):
-        angle = 0.0
-    else:
-        angle = 180 / np.pi * np.arccos(sum(np.multiply(ref_plane, plane)) /
-                                        (np.linalg.norm(ref_plane) * np.linalg.norm(plane)))
-    if np.isnan(angle):  # the ratin is out of [-1,1] due to Python limited precision
-        angle = 180 / np.pi * np.arccos(np.rint(sum(np.multiply(ref_plane, plane)) /
-                                        (np.linalg.norm(ref_plane) * np.linalg.norm(plane))))
-    return angle
-
-
 def remove_duplicates(vertices, faces, debugging=False):
     """
     Remove duplicates in a list of vertices and faces (a face is atriangle made of tree vertices).
@@ -1048,6 +1029,3 @@ def upsample(array, upsampling_factor, voxelsizes, title='', debugging=False):
 
 
 # if __name__ == "__main__":
-#     ref_plane = np.array([1, 1, 1])
-#     my_plane = np.array([1, 1, -1])
-#     print(plane_angle_cubic(ref_plane, my_plane))

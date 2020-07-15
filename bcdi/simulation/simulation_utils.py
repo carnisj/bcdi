@@ -14,7 +14,7 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.utils.utilities as util
 
 
-def angle_vectors(test_vector, ref_vector,
+def angle_vectors(ref_vector, test_vector,
                   basis_vectors=(np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))):
     """
     Calculate the angle between two vectors expressed in a defined basis, using the Gram matrix.
