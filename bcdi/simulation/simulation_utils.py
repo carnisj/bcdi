@@ -21,18 +21,20 @@ def angle_vectors(ref_vector, test_vector,
 
     :param ref_vector: reference vector
     :param test_vector: vector for which the angle relative to the reference vector should be calculated
-    :param basis_vectors: components of the basis vectors in the orthonormal basis ((1, 0, 0), (0, 1, 0), (0, 0, 1))
+    :param basis_vectors: tuple of the three components of the basis vectors expressed in the orthonormal basis.
+     The convention used for the orthonormal basis is ([1, 0, 0], [0, 1, 0], [0, 0, 1]).
     :return: the angle in degrees
     """
-    gram_matrix = np.array([[np.dot(basis_vectors[0], basis_vectors[0]),
-                             np.dot(basis_vectors[0], basis_vectors[1]),
-                             np.dot(basis_vectors[0], basis_vectors[2])],
-                            [np.dot(basis_vectors[1], basis_vectors[0]),
-                             np.dot(basis_vectors[1], basis_vectors[1]),
-                             np.dot(basis_vectors[1], basis_vectors[2])],
-                            [np.dot(basis_vectors[2], basis_vectors[0]),
-                             np.dot(basis_vectors[2], basis_vectors[1]),
-                             np.dot(basis_vectors[2], basis_vectors[2])]])
+    ref_vector = np.asarray(ref_vector)
+    test_vector = np.asarray(test_vector)
+
+    b1 = np.asarray(basis_vectors[0])
+    b2 = np.asarray(basis_vectors[1])
+    b3 = np.asarray(basis_vectors[2])
+
+    gram_matrix = np.array([[np.dot(b1, b1), np.dot(b1, b2), np.dot(b1, b3)],
+                            [np.dot(b2, b1), np.dot(b2, b2), np.dot(b2, b3)],
+                            [np.dot(b3, b1), np.dot(b3, b2), np.dot(b3, b3)]])
 
     angle = 180 / np.pi * np.arccos(test_vector.dot(gram_matrix).dot(ref_vector) /
                                     (np.sqrt(ref_vector.dot(gram_matrix).dot(ref_vector)) *
