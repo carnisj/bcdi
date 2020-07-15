@@ -865,6 +865,7 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
     """
     if setup.custom_scan:  # no log file in that case
         logfile = ''
+        
     elif setup.beamline == 'CRISTAL':  # no specfile, load directly the dataset
         import h5py
         ccdfiletmp = os.path.join(detector.datadir + detector.template_imagefile % scan_number)
@@ -888,7 +889,13 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
     elif setup.beamline == 'ID01':  # load spec file
         from silx.io.specfile import SpecFile
         logfile = SpecFile(root_folder + filename + '.spec')
-
+        
+    elif setup.beamline == 'NANOMAX':
+        import hdf5plugin
+        import h5py
+        ccdfiletmp = os.path.join(detector.datadir + ('%06d.h5') % scan_number)
+        logfile = h5py.File(ccdfiletmp, 'r')
+        
     else:
         raise ValueError('Incorrect value for beamline parameter')
 
@@ -1299,6 +1306,12 @@ def init_qconversion(setup):
         # 3S+2D goniometer (ID01 goniometer, sample: eta, chi, phi      detector: nu,del
         # the vector beam_direction is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
+    elif beamline == 'NANOMAX':
+        offsets = (0, 0, offset_inplane, 0)  # theta phi gamma delta
+        qconv = xu.experiment.QConversion(['y-', 'z-'], ['z-', 'y-'], r_i=beam_direction)  # for NANOMAX
+        # 2S+2D goniometer (ID01 goniometer, sample: theta, phi      detector: gamma,delta
+        # the vector beam_direction is giving the direction of the primary beam
+        # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)    
     elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
         offsets = (0, 0, 0, offset_inplane, 0)  # beta, mu, beta, gamma del
         qconv = xu.experiment.QConversion(['y-', 'z+'], ['y-', 'z+', 'y-'], r_i=beam_direction)  # for SIXS
@@ -1602,6 +1615,11 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
                                                                detector=detector, flatfield=flatfield,
                                                                hotpixels=hotpixels, background=background,
                                                                normalize=normalize, debugging=debugging)
+    elif setup.beamline == 'NANOMAX':
+        data, mask3d, monitor, frames_logical = load_nanomax_data(logfile=logfile, detector=detector, 
+                                                               mask_path=True, debugging=debugging) #logfile, detector, mask_path, debugging=False
+        print(data.shape) #data, mask3d, 0, frames_logical
+        
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
         data, mask3d, monitor, frames_logical = load_sixs_data(logfile=logfile, beamline=setup.beamline,
                                                                detector=detector, flatfield=flatfield,
@@ -1963,6 +1981,85 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     return data, mask3d, monitor, frames_logical
 
 
+def load_nanomax_data(logfile, detector, mask_path, debugging=False):
+    """
+    Load P10 data, apply filters and concatenate it for phasing.
+
+    :param logfile: path of the . fio file containing the information about the scan
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param flatfield: the 2D flatfield array
+    :param hotpixels: the 2D hotpixels array
+    :param background: the 2D background array to subtract to the data
+    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
+     integrated intensity in the region of interest defined by detector.sum_roi
+     by the integrated intensity in a defined region of interest
+    :param debugging: set to True to see plots
+    :return:
+     - the 3D data array in the detector frame and the 3D mask array
+     - the monitor values for normalization
+     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+
+    """
+    import hdf5plugin  # should be imported before h5py
+    import h5py
+    
+    def read_masterh5_NanoMAX(logfile):
+#        h5file = h5py.File(logfile,'r')
+        command = str(logfile['entry']['description'][()])[3:-2] # Reading only useful symbols
+        motor_positions = {
+                # Detector positions
+                "delta": logfile['entry']['snapshot']['delta'][()],
+                "gamma": logfile['entry']['snapshot']['gamma'][()],           
+                "gonphi": logfile['entry']['snapshot']['gonphi'][()],
+                "gontheta": logfile['entry']['snapshot']['gontheta'][()],
+                "radius": logfile['entry']['snapshot']['radius'][()],
+                "energy": logfile['entry']['snapshot']['energy'][()]
+                }
+        scan_keys = list(logfile['entry']['measurement'].keys())
+        
+        # Check which motor was scanned
+        if 'gonphi' in scan_keys:        
+            scan_info = {'gonphi': logfile['entry']['measurement']['gonphi'][()]}  
+        elif 'gontheta' in scan_keys:
+            scan_info = {'gontheta': logfile['entry']['measurement']['gontheta'][()]}  
+        return command, motor_positions, scan_info
+    
+    command, motor_positions, scan_info = read_masterh5_NanoMAX(logfile)
+    nb_img = len(scan_info['gonphi'])
+    print('Number of points :', nb_img)
+     
+    mask_path = '/home/dzhigd/work/projects/CsPbBr3_NC_BCDI_NanoMAX/data/merlin_mask_190222_14keV.h5'
+    h5mask = h5py.File(mask_path,'r')
+    mask_2d = h5mask['mask'][()]
+    print('Mask is loaded!') 
+
+    ccdfiletmp = os.path.join(detector.template_imagefile)    
+    h5file = h5py.File(ccdfiletmp, 'r')    
+    
+    data = h5file['entry']['measurement']['Merlin']['data'][()]
+    
+    
+#    data = data[:, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]]
+#    mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+#    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
+    mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
+    
+    print(mask3d.shape)
+    data = data*mask3d
+    data = np.flip(data, axis = 1)    
+
+# Test
+#    data = np.rot90(data,axes=(1,2))
+
+#    mask3d[np.isnan(data)] = 1
+    data[np.isnan(data)] = 0
+    
+    frames_logical = np.ones(nb_img)
+#    print('Monitor min max mean:', monitor.min(), monitor.max(), monitor.mean())
+    return data, mask3d, 0, frames_logical
+
+
 def mask_eiger(data, mask):
     """
     Mask data measured with an Eiger2M detector
@@ -2108,6 +2205,25 @@ def mean_filter(data, nb_neighbours, mask, min_count=3, interpolate='mask_isolat
                           tuple_title=('Data after filtering', 'Mask after filtering'), reciprocal_space=True)
     return data, nb_pixels, mask
 
+def motor_positions_nanomax(logfile,setup):
+    import hdf5plugin
+    import h5py
+    
+#    h5file = h5py.File(logfile,'r')
+#        
+    # Detector positions
+    delta = logfile['entry']['snapshot']['delta'][()]
+    gamma = logfile['entry']['snapshot']['gamma'][()],   
+    if setup.rocking_angle == 'inplane':
+        phi = logfile['entry']['measurement']['gonphi'][()]
+        theta = logfile['entry']['snapshot']['gontheta'][()]
+    else:
+        phi = logfile['entry']['snapshot']['gonphi'][()]
+        theta = logfile['entry']['measurement']['gontheta'][()]
+    radius = logfile['entry']['snapshot']['radius'][()]
+    energy = logfile['entry']['snapshot']['energy'][()]
+    
+    return delta, gamma, phi, theta, radius, energy
 
 def motor_positions_34id(setup):
     """
@@ -2404,7 +2520,7 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
     :return: (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
      corrected values
     """
-    if setup.beamline == 'ID01':
+    if setup.beamline == 'ID01': #eta, chi, phi, nu, delta, energy, frames_logical
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
             tilt, _, _, inplane, outofplane, _, _ = \
                 motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
@@ -2412,6 +2528,17 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
             grazing, _, tilt, inplane, outofplane, _, _ = \
                 motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+            
+    elif setup.beamline == 'NANOMAX': #delta, gamma, phi, theta, radius, energy
+        if setup.rocking_angle == 'outofplane':  # theta rocking curve
+            outofplane, inplane, _, tilt, _, _ = \
+                motor_positions_nanomax(logfile,setup)
+            grazing = 0
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            outofplane, inplane, tilt, _, _, _ = \
+                motor_positions_nanomax(logfile,setup)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -2601,6 +2728,46 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         eta, chi, phi, nu, delta, energy = bin_parameters(binning=binning[0], nb_frames=nb_frames,
                                                           params=[eta, chi, phi, nu, delta, energy])
         qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
+    
+    elif setup.beamline == 'NANOMAX': #
+        delta, gamma, phi, theta, radius, energy = \
+            motor_positions_nanomax(logfile,setup)       
+        phi = phi + setup.sample_offsets[0]
+        theta = theta + setup.sample_offsets[1]
+        if setup.rocking_angle == 'outofplane':  # theta rocking curve
+            nb_steps = len(theta)
+            tilt_angle = theta[1] - theta[0]
+
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                theta = np.concatenate((theta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                      theta,
+                                      theta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                theta = theta[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            nb_steps = len(phi)
+            tilt_angle = phi[1] - phi[0]
+
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                phi = np.concatenate((phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                      phi,
+                                      phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                phi = phi[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == 'energy':
+            pass
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        delta, gamma, phi, theta, energy = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                          params=[delta, gamma, phi, theta, energy])
+        qx, qy, qz = hxrd.Ang2Q.area(theta, phi, gamma, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
         beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile, frames_logical, setup)

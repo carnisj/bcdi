@@ -21,7 +21,7 @@ class SetupPostprocessing(object):
         """
         Initialize parameters of the experiment.
 
-        :param beamline: name of the beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL'
+        :param beamline: name of the beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL', 'NANOMAX'
         :param energy: X-ray energy in eV
         :param outofplane_angle: out of plane angle of the detector in degrees
         :param inplane_angle: inplane angle of the detector in degrees
@@ -62,8 +62,10 @@ class SetupPostprocessing(object):
             # gamma is anti-clockwise
             # TODO: check this
         elif self.beamline == 'P10':
-            coeff_inplane = -1
+            coeff_inplane = 1
             # gamma is anti-clockwise, we see the detector from the front
+        elif self.beamline == 'NANOMAX':
+            coeff_inplane = -1
         elif self.beamline == 'CRISTAL':
             coeff_inplane = 1
             # gamma is anti-clockwise
@@ -88,6 +90,12 @@ class SetupPostprocessing(object):
         elif self.beamline == 'ID01':
             # nu is clockwise
             kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 -np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == 'NANOMAX':
+                # gamma is clockwise
+                kout = 2 * np.pi / self.wavelength * np.array(
                 [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
                  np.sin(np.pi * self.outofplane_angle / 180),  # y
                  -np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
@@ -366,7 +374,50 @@ class SetupPostprocessing(object):
                      tilt * distance * np.sin(inplane) * np.cos(outofplane)])
             else:
                 raise ValueError('inplane rocking for phi not yet implemented for P10')
-
+        
+        if self.beamline == 'NANOMAX':
+            print('using NANOMAX geometry')
+            if self.rocking_angle == "outofplane":
+                print('rocking angle is theta')
+                # rocking eta angle clockwise around x (phi does not matter, above eta)
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
+                                                                       0,
+                                                                       pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       -pixel_y * np.cos(outofplane),
+                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array([0,
+                                                                       tilt * distance * (1 - np.cos(inplane) * np.cos(
+                                                                           outofplane)),
+                                                                       tilt * distance * np.sin(outofplane)])
+            elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
+                print('rocking angle is phi, theta=0')
+                # rocking phi angle clockwise around y, assuming incident angle eta is zero (eta below phi)
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
+                                                                       0,
+                                                                       pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       -pixel_y * np.cos(outofplane),
+                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
+                    [-tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
+                     0,
+                     tilt * distance * np.sin(inplane) * np.cos(outofplane)])
+            elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
+                print('rocking angle is phi, with theta non zero')
+                # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
+                                                                       0,
+                                                                       pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       -pixel_y * np.cos(outofplane),
+                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
+                    np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
+                             np.cos(mygrazing_angle) * (np.cos(inplane) * np.cos(outofplane) - 1)),
+                             np.sin(mygrazing_angle) * np.sin(inplane) * np.sin(outofplane),
+                             np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
+                
         if self.beamline == '34ID':
             print('using APS 34ID geometry')
             if self.rocking_angle == "outofplane":
@@ -646,6 +697,18 @@ class Detector(object):
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = ''  # unused
+        elif name == 'Merlin':
+            try:
+                self.nb_pixel_x = nb_pixel_x
+            except NameError:  # nb_pixel_x not declared
+                self.nb_pixel_x = 515
+            try:
+                self.nb_pixel_y = nb_pixel_y
+            except NameError:  # nb_pixel_y not declared
+                self.nb_pixel_y = 515
+            self.pixelsize_x = 55e-06  # m
+            self.pixelsize_y = 55e-06  # m
+            self.counter = 'Merlin'
         else:
             raise ValueError('Unknown detector name')
 
