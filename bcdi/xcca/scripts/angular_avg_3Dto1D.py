@@ -12,6 +12,7 @@ import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+import bcdi.xcca_utils as xcca
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
@@ -98,7 +99,7 @@ else:  # work with pixels, supposing that the data is in an orthonormal frame
     qz = np.arange(ny) - origin[1]
     qy = np.arange(nx) - origin[2]
 
-q_axis, y_mean_masked, y_median_masked = util.angular_avg(data=diff_pattern, q_values=(qx, qz, qy), origin=origin,
+q_axis, y_mean_masked, y_median_masked = xcca.angular_avg(data=diff_pattern, q_values=(qx, qz, qy), origin=origin,
                                                           mask=mask, debugging=debug)
 #############
 # save data #
