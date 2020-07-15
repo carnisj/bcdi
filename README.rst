@@ -11,7 +11,7 @@ BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:
 
 * post-processing phased data (phase offset and phase ramp removal, averaging, apodization, ...)
 
-* data analysis on diffraction data (stereographic projection)
+* data analysis on diffraction data (stereographic projection, angular cross-correlation analysis)
 
 * data analysis on phased data (resolution calculation, statistics on the retrieved strain...)
 
@@ -42,6 +42,8 @@ BCDI can be used as a python library with the following main modules:
    peak positions in 3D for a mesocrystal, knowing the unit cell and unit cell parameter.
 
 8) :mod:`bcdi.utils`: data loading, fitting functions ...
+
+8) :mod:`bcdi.xcca`: X-ray cross-correlation analysis related methods
 
 Acknowledgment and third party packages
 =======================================
@@ -247,3 +249,14 @@ Various non-specific utilities (i/o, ...)
 
 .. bcdi.utils end
 
+BCDI.xcca: X-ray cross-correlation analysis
+===========================================
+
+.. bcdi.xcca section
+
+Description
+-----------
+
+This module provides methods to calculate the angular cross-correlation function for a 3D reciprocal space dataset.
+
+.. bcdi.xcca end
