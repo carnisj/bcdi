@@ -11,6 +11,7 @@ import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 
 
 def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debugging=False):
@@ -83,6 +84,43 @@ def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debuggin
     y_median_masked = np.ma.masked_where(np.isnan(y_median), y_median)
 
     return q_axis, y_mean_masked, y_median_masked
+
+
+def calc_ccf(point, q2_name, bin_values, polar_azi_int):
+    """
+    Calculate for the cross-correlation of point with all other points at the second q value and sort the result.
+
+    :param point: the reference point
+    :param q2_name: key for the second q value in the dictionnary polar_azi_int
+    :param bin_values: angular bin values where to calculate the cross-correlation
+    :param polar_azi_int: a dictionnary with fields 'q1' (and 'q2' if different from q1). Each field contains three 1D
+     arrays: polar angle, azimuthal angle and intensity values for each point
+    :return: the sorted cross-correlation values, angular bins indices and number of points contributing to the angular
+     bins
+    """
+    # calculate the angle between the current point and all points from the second q value (delta in [0 pi])
+    delta_val = np.arccos(np.sin(polar_azi_int['q1'][point, 0]) * np.sin(polar_azi_int[q2_name][:, 0]) *
+                          np.cos(polar_azi_int[q2_name][:, 1] - polar_azi_int['q1'][point, 1]) +
+                          np.cos(polar_azi_int['q1'][point, 0]) * np.cos(polar_azi_int[q2_name][:, 0]))
+
+    # find the nearest angular bin value for each value of the array delta
+    nearest_indices = util.find_nearest(test_values=delta_val, reference_array=bin_values,
+                                        width=bin_values[1]-bin_values[0])
+
+    # update the counter of bin indices
+    counter_indices, counter_val = np.unique(nearest_indices, return_counts=True)  # counter_indices are sorted
+
+    # filter out -1 indices which correspond to no neighbour in the range defined by width in find_nearest()
+    counter_val = np.delete(counter_val, np.argwhere(counter_indices == -1))
+    counter_indices = np.delete(counter_indices, np.argwhere(counter_indices == -1))
+
+    # calculate the contribution to the cross-correlation for bins in counter_indices
+    ccf_uniq_val = np.zeros(len(counter_indices))
+    for idx in range(len(counter_indices)):
+        ccf_uniq_val[idx] = (polar_azi_int['q1'][point, 2] *
+                             polar_azi_int[q2_name][nearest_indices == counter_indices[idx], 2]).sum()
+
+    return ccf_uniq_val, counter_val, counter_indices
 
 
 # if __name__ == "__main__":

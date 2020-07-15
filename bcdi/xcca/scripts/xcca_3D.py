@@ -20,6 +20,7 @@ import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+import bcdi.xcca.xcca_utils as xcca
 
 helptext = """
 Calculate the angular cross-correlation in a 3D reciprocal space dataset at the same q value or between two different q
@@ -33,60 +34,23 @@ Reciprocal space basis:            qx downstream, qz vertical up, qy outboard.""
 datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/"
 savedir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/"
 comment = '_trash'  # should start with _
-interp_factor = 10000  # the number of points for the interpolation on a sphere will be the number of voxels
+interp_factor = 100  # the number of points for the interpolation on a sphere will be the number of voxels
 # at the defined q value divided by interp_factor
 angular_resolution = 0.5  # in degrees, angle between to adjacent points for the calculation of the cross-correlation
 debug = False  # set to True to see more plots
 origin_qspace = (281, 216, 236)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
 q_xcca = (0.479, 0.479)  # q values in 1/nm where to calculate the angular cross-correlation
 hotpix_threshold = 1e6  # data above this threshold will be masked
-single_proc = True  # do not use multiprocessing if True
+single_proc = False  # do not use multiprocessing if True
 plot_meandata = False  # if True, will plot the 1D average of the data
 ##################################################################
 # end of user-defined parameters, do not change parameters below #
 ##################################################################
 corr_count = np.zeros((int(180/angular_resolution), 2))  # initialize the cross-correlation array
 current_point = 0  # do not change this number, it is used as counter in the callback
-####################################
-# define multiprocessing functions #
-####################################
-
-
-def calc_ccf(point, q2_name, bin_values, polar_azi_int):
-    """
-    Calculate for the cross-correlation of point with all other points and sort the result.
-
-    :param point: the reference point
-    :param q2_name: key for the second q value in the dictionnary polar_azi_int
-    :param bin_values: angular bin values where to calculate the cross-correlation
-    :param polar_azi_int: a dictionnary with fields 'q1' (and 'q2' if different from q1). Each field contains three 1D
-     arrays: polar angle, azimuthal angle and intensity values for each point
-    :return: the sorted cross-correlation values, angular bins indices and number of points contributing to the angular
-     bins
-    """
-    # calculate the angle between the current point and all points from the second q value (delta in [0 pi])
-    delta_val = np.arccos(np.sin(polar_azi_int['q1'][point, 0]) * np.sin(polar_azi_int[q2_name][:, 0]) *
-                          np.cos(polar_azi_int[q2_name][:, 1] - polar_azi_int['q1'][point, 1]) +
-                          np.cos(polar_azi_int['q1'][point, 0]) * np.cos(polar_azi_int[q2_name][:, 0]))
-
-    # find the nearest angular bin value for each value of the array delta
-    nearest_indices = util.find_nearest(test_values=delta_val, reference_array=bin_values,
-                                        width=bin_values[1]-bin_values[0])
-
-    # update the counter of bin indices
-    counter_indices, counter_val = np.unique(nearest_indices, return_counts=True)  # counter_indices are sorted
-
-    # filter out -1 indices which correspond to no neighbour in the range defined by width in find_nearest()
-    counter_val = np.delete(counter_val, np.argwhere(counter_indices == -1))
-    counter_indices = np.delete(counter_indices, np.argwhere(counter_indices == -1))
-
-    # calculate the contribution to the cross-correlation for bins in counter_indices
-    ccf_uniq_val = np.zeros(len(counter_indices))
-    for idx in range(len(counter_indices)):
-        ccf_uniq_val[idx] = (polar_azi_int['q1'][point, 2] *
-                             polar_azi_int[q2_name][nearest_indices == counter_indices[idx], 2]).sum()
-
-    return ccf_uniq_val, counter_val, counter_indices
+#############################################
+# define multiprocessing callback functions #
+#############################################
 
 
 def collect_result(result):
@@ -126,15 +90,6 @@ def collect_result_debug(ccf_uniq_val, counter_val, counter_indices):
     if (current_point % 100) == 0:
         sys.stdout.write('\rPoint {:d}'.format(current_point))
         sys.stdout.flush()
-
-
-def catch_error(exception):
-    """
-    Callback processing exception in asynchronous multiprocessing.
-
-    :param exception: the arisen exception
-    """
-    print(exception)
 
 
 def main():
@@ -195,7 +150,7 @@ def main():
     # calculate the angular average using mean and median values #
     ##############################################################
     if plot_meandata:
-        q_axis, y_mean_masked, y_median_masked = util.angular_avg(data=data, q_values=(qx, qz, qy),
+        q_axis, y_mean_masked, y_median_masked = xcca.angular_avg(data=data, q_values=(qx, qz, qy),
                                                                   origin=origin_qspace, nb_bins=250, debugging=debug)
         fig, ax = plt.subplots(1, 1)
         ax.plot(q_axis, np.log10(y_mean_masked), 'r', label='mean')
@@ -292,12 +247,12 @@ def main():
     for idx in range(nb_points[0]):
         if single_proc:
             ccf_uniq_val, counter_val, counter_indices = \
-                 calc_ccf(point=idx, q2_name=key_q2, bin_values=angular_bins, polar_azi_int=theta_phi_int)
+                 xcca.calc_ccf(point=idx, q2_name=key_q2, bin_values=angular_bins, polar_azi_int=theta_phi_int)
             collect_result_debug(ccf_uniq_val, counter_val, counter_indices)
         else:
 
-            pool.apply_async(calc_ccf, args=(idx, key_q2, angular_bins, theta_phi_int), callback=collect_result,
-                             error_callback=catch_error)
+            pool.apply_async(xcca.calc_ccf, args=(idx, key_q2, angular_bins, theta_phi_int), callback=collect_result,
+                             error_callback=util.catch_error)
 
     # close the pool and let all the processes complete
     pool.close()
@@ -312,8 +267,8 @@ def main():
     #######################################
     # save the cross-correlation function #
     #######################################
-    filename = 'CCF_q1={:.3f}_q2={:.3f}_points{:d}_interp{:d}_res{:.3f}'.format(q_xcca[0], q_xcca[1], nb_points[0],
-                                                                                interp_factor, angular_resolution)
+    filename = 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) +\
+               '_points{:d}_interp{:d}_res{:.3f}'.format(nb_points[0], interp_factor, angular_resolution) + comment
     np.savez_compressed(savedir + filename + '.npz', obj=corr_count)
 
     #######################################

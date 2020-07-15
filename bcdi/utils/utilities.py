@@ -16,6 +16,15 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 
 
+def catch_error(exception):
+    """
+    Callback processing exception in asynchronous multiprocessing.
+
+    :param exception: the arisen exception
+    """
+    print(exception)
+
+
 def find_nearest(reference_array, test_values, width=None):
     """
     Find the indices where original_array is nearest to array_values.
