@@ -29,7 +29,7 @@ b3 = 0.108  # length of b3
 ####################################################################################################
 # calculate the basis vector components in the orthonormal basis [[1, 0, 0], [0, 1, 0], [0, 0, 1]] #
 ####################################################################################################
-first_vector = b1 * np.array([1, 0, 0])  # the convention here is to align b1 along x
+first_vector = b1 * np.array([1, 0, 0])  # the convention here is to align b1 along [1, 0, 0]
 second_vector = b2 * np.cos(gamma*np.pi/180) * np.array([1, 0, 0]) + b2 * np.sin(gamma*np.pi/180) * np.array([0, 1, 0])
 # b2 is in the plane defined by the vectors [1, 0, 0] and [0, 1, 0]
 cx = b3 * np.cos(beta*np.pi/180)
