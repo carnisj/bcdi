@@ -232,7 +232,6 @@ def main():
     ############################################
     # calculate the cross-correlation function #
     ############################################
-    # TODO: implement the Gram matrix for non-cubic unit cells
     if same_q:
         key_q2 = 'q1'
     else:
