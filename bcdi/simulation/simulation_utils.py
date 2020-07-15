@@ -14,6 +14,32 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.utils.utilities as util
 
 
+def angle_vectors(test_vector, ref_vector,
+                  basis_vectors=(np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))):
+    """
+    Calculate the angle between two vectors expressed in a defined basis, using the Gram matrix.
+
+    :param ref_vector: reference vector
+    :param test_vector: vector for which the angle relative to the reference vector should be calculated
+    :param basis_vectors: components of the basis vectors in the orthonormal basis ((1, 0, 0), (0, 1, 0), (0, 0, 1))
+    :return: the angle in degrees
+    """
+    gram_matrix = np.array([[np.dot(basis_vectors[0], basis_vectors[0]),
+                             np.dot(basis_vectors[0], basis_vectors[1]),
+                             np.dot(basis_vectors[0], basis_vectors[2])],
+                            [np.dot(basis_vectors[1], basis_vectors[0]),
+                             np.dot(basis_vectors[1], basis_vectors[1]),
+                             np.dot(basis_vectors[1], basis_vectors[2])],
+                            [np.dot(basis_vectors[2], basis_vectors[0]),
+                             np.dot(basis_vectors[2], basis_vectors[1]),
+                             np.dot(basis_vectors[2], basis_vectors[2])]])
+
+    angle = 180 / np.pi * np.arccos(test_vector.dot(gram_matrix).dot(ref_vector) /
+                                    (np.sqrt(ref_vector.dot(gram_matrix).dot(ref_vector)) *
+                                     np.sqrt(test_vector.dot(gram_matrix).dot(test_vector))))
+    return angle
+
+
 def assign_peakshape(array_shape, lattice_list, peak_shape, pivot):
     """
     Assign the 3D peak_shape to lattice points.
@@ -433,7 +459,10 @@ def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, 
     return lattice_pos, peaks
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
+    ref_plane = np.array([2, -1, 1])
+    my_plane = np.array([1, 1, 1])
+    print('gram:', angle_vectors(test_vector=my_plane, ref_vector=ref_plane))
 #     euler_angles = (-8.75, 33.75, -24.75)
 #     rot = Rotation.from_euler('xzy', euler_angles, degrees=True)
 #     vector = [0, 0, 1]  # in the frame (x, y, z) or (qx, qy, qz)
