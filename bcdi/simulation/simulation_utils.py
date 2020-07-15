@@ -10,6 +10,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.utils.utilities as util
 
 
@@ -93,9 +94,9 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
                 # simple cubic unit cell with two point basis (0,0,0), (0.5,0.5,0.5)
                 struct_factor = np.real(1 + np.exp(1j*np.pi*(h+k+l)))
                 if struct_factor != 0:  # find the position of the pixel nearest to q_bragg
-                    pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param)
-                    pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
-                    pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
+                    pix_h = util.find_nearest(reference_array=pad_qx, test_values=h * recipr_param)
+                    pix_k = util.find_nearest(reference_array=pad_qy, test_values=k * recipr_param)
+                    pix_l = util.find_nearest(reference_array=pad_qz, test_values=l * recipr_param)
 
                     lattice_list.append([pix_h, pix_l, pix_k])
                     peaks_list.append([h, l, k])
@@ -167,9 +168,9 @@ def bct_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
                 # unit cell with two point basis (0,0,0), (0.5,0.5,0.5), same structure factor as BCC
                 struct_factor = np.real(1 + np.exp(1j*np.pi*(h+k+l)))
                 if struct_factor != 0:  # find the position of the pixel nearest to q_bragg
-                    pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param[0])
-                    pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param[0])
-                    pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param[1])
+                    pix_h = util.find_nearest(reference_array=pad_qx, test_values=h * recipr_param[0])
+                    pix_k = util.find_nearest(reference_array=pad_qy, test_values=k * recipr_param[0])
+                    pix_l = util.find_nearest(reference_array=pad_qz, test_values=l * recipr_param[1])
 
                     lattice_list.append([pix_h, pix_l, pix_k])
                     peaks_list.append([h, l, k])
@@ -229,9 +230,9 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offse
         for k in hkl:  # k outboard along qy
             for l in hkl:  # l vertical up along qz
                 # one atom basis (0,0,0): struct_factor = 1, all peaks are allowed
-                pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param)
-                pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
-                pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
+                pix_h = util.find_nearest(reference_array=pad_qx, test_values=h * recipr_param)
+                pix_k = util.find_nearest(reference_array=pad_qy, test_values=k * recipr_param)
+                pix_l = util.find_nearest(reference_array=pad_qz, test_values=l * recipr_param)
 
                 lattice_list.append([pix_h, pix_l, pix_k])
                 peaks_list.append([h, l, k])
@@ -293,9 +294,9 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
                 # simple cubic unit cell with four point basis (0,0,0), (0.5,0.5,0), (0,0.5,0.5), (0.5,0,0.5)
                 struct_factor = np.real(1 + np.exp(1j*np.pi*(h+k)) + np.exp(1j*np.pi*(h+l)) + np.exp(1j*np.pi*(k+l)))
                 if struct_factor != 0:  # find the position of the pixel nearest to q_bragg
-                    pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param)
-                    pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
-                    pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
+                    pix_h = util.find_nearest(reference_array=pad_qx, test_values=h * recipr_param)
+                    pix_k = util.find_nearest(reference_array=pad_qy, test_values=k * recipr_param)
+                    pix_l = util.find_nearest(reference_array=pad_qz, test_values=l * recipr_param)
 
                     lattice_list.append([pix_h, pix_l, pix_k])
                     peaks_list.append([h, l, k])
@@ -432,8 +433,8 @@ def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, 
     return lattice_pos, peaks
 
 
-if __name__ == "__main__":
-    euler_angles = (-8.75, 33.75, -24.75)
-    rot = Rotation.from_euler('xzy', euler_angles, degrees=True)
-    vector = [0, 0, 1]  # in the frame (x, y, z) or (qx, qy, qz)
-    print(rot.apply(vector))
+# if __name__ == "__main__":
+#     euler_angles = (-8.75, 33.75, -24.75)
+#     rot = Rotation.from_euler('xzy', euler_angles, degrees=True)
+#     vector = [0, 0, 1]  # in the frame (x, y, z) or (qx, qy, qz)
+#     print(rot.apply(vector))
