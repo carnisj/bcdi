@@ -36,9 +36,11 @@ def angle_vectors(ref_vector, test_vector,
                             [np.dot(b2, b1), np.dot(b2, b2), np.dot(b2, b3)],
                             [np.dot(b3, b1), np.dot(b3, b2), np.dot(b3, b3)]])
 
-    angle = 180 / np.pi * np.arccos(test_vector.dot(gram_matrix).dot(ref_vector) /
-                                    (np.sqrt(ref_vector.dot(gram_matrix).dot(ref_vector)) *
-                                     np.sqrt(test_vector.dot(gram_matrix).dot(test_vector))))
+    cos = test_vector.dot(gram_matrix).dot(ref_vector) / (np.sqrt(ref_vector.dot(gram_matrix).dot(ref_vector)) *
+                                                          np.sqrt(test_vector.dot(gram_matrix).dot(test_vector)))
+    if abs(cos) > 1:  # may append because of the limited precision in floating point calculation
+        cos = np.rint(cos)
+    angle = 180 / np.pi * np.arccos(cos)
     return angle
 
 
@@ -525,14 +527,14 @@ def triclinic_to_basis(alpha, beta, gamma, a1, a2, a3):
     return v1, v2, v3
 
 
-if __name__ == "__main__":
-    alpha_r, beta_r, gamma_r, b1, b2, b3 = reciprocal_lattice(alpha=75, beta=75, gamma=90, a1=63.2, a2=63.2, a3=61.2,
-                                                              input_lattice='direct', verbose=True)
-    print(alpha_r, beta_r, gamma_r, b1, b2, b3)
-
-    alpha, beta, gamma, a1, a2, a3 = reciprocal_lattice(alpha=alpha_r, beta=beta_r, gamma=gamma_r, a1=b1, a2=b2, a3=b3,
-                                                        input_lattice='reciprocal', verbose=True)
-    print(alpha, beta, gamma, a1, a2, a3)
+# if __name__ == "__main__":
+#     alpha_r, beta_r, gamma_r, b1, b2, b3 = reciprocal_lattice(alpha=75, beta=75, gamma=90, a1=63.2, a2=63.2, a3=61.2,
+#                                                               input_lattice='direct', verbose=True)
+#     print(alpha_r, beta_r, gamma_r, b1, b2, b3)
+#
+#     alpha, beta, gamma, a1, a2, a3 = reciprocal_lattice(alpha=alpha_r, beta=beta_r, gamma=gamma_r, a1=b1, a2=b2, a3=b3,
+#                                                         input_lattice='reciprocal', verbose=True)
+#     print(alpha, beta, gamma, a1, a2, a3)
 
 #     euler_angles = (-8.75, 33.75, -24.75)
 #     rot = Rotation.from_euler('xzy', euler_angles, degrees=True)
