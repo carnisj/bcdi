@@ -238,21 +238,21 @@ def main():
     angular_bins = np.linspace(start=0, stop=np.pi, num=corr_count.shape[0], endpoint=False)
 
     start = time.time()
-
-    for idx in range(nb_points[0]):
-        if single_proc:
+    if single_proc:
+        for idx in range(nb_points[0]):
             ccf_uniq_val, counter_val, counter_indices = \
                  xcca.calc_ccf(point=idx, q2_name=key_q2, bin_values=angular_bins, polar_azi_int=theta_phi_int)
             collect_result_debug(ccf_uniq_val, counter_val, counter_indices)
-        else:
-            print("Number of processors: ", mp.cpu_count())
-            mp.freeze_support()
-            pool = mp.Pool(mp.cpu_count())  # use this number of processes
+    else:
+        print("Number of processors: ", mp.cpu_count())
+        mp.freeze_support()
+        pool = mp.Pool(mp.cpu_count())  # use this number of processes
+        for idx in range(nb_points[0]):
             pool.apply_async(xcca.calc_ccf, args=(idx, key_q2, angular_bins, theta_phi_int), callback=collect_result,
                              error_callback=util.catch_error)
-            # close the pool and let all the processes complete
-            pool.close()
-            pool.join()  # postpones the execution of next line of code until all processes in the queue are done.
+        # close the pool and let all the processes complete
+        pool.close()
+        pool.join()  # postpones the execution of next line of code until all processes in the queue are done.
     end = time.time()
     print('\nTime ellapsed for the calculation of the CCF:', str(datetime.timedelta(seconds=int(end - start))))
 
