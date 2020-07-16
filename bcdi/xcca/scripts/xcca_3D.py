@@ -31,18 +31,18 @@ Input: the 3D dataset, an optional 3D mask, (qx, qy, qz) values
 Laboratory frame convention (CXI): z downstream, y vertical up, x outboard.
 Reciprocal space basis:            qx downstream, qz vertical up, qy outboard."""
 
-datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/"
-savedir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/"
-comment = '_trash'  # should start with _
-interp_factor = 100  # the number of points for the interpolation on a sphere will be the number of voxels
+datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
+savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
+comment = '_q1q3'  # should start with _
+interp_factor = 10  # the number of points for the interpolation on a sphere will be the number of voxels
 # at the defined q value divided by interp_factor
-angular_resolution = 0.5  # in degrees, angle between to adjacent points for the calculation of the cross-correlation
+angular_resolution = 0.1  # in degrees, angle between to adjacent points for the calculation of the cross-correlation
 debug = False  # set to True to see more plots
-origin_qspace = (281, 216, 236)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
-q_xcca = (0.479, 0.479)  # q values in 1/nm where to calculate the angular cross-correlation
+origin_qspace = (330, 204, 330)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
+q_xcca = (0.104, 0.172)  # q values in 1/nm where to calculate the angular cross-correlation
 hotpix_threshold = 1e6  # data above this threshold will be masked
 single_proc = False  # do not use multiprocessing if True
-plot_meandata = False  # if True, will plot the 1D average of the data
+plot_meandata = True  # if True, will plot the 1D average of the data
 ##################################################################
 # end of user-defined parameters, do not change parameters below #
 ##################################################################
@@ -160,6 +160,7 @@ def main():
         ax.set_xlabel('q (1/nm)')
         ax.set_ylabel('Angular average (A.U.)')
         ax.legend()
+        plt.pause(0.1)
         fig.savefig(savedir + '1D_average.png')
 
         del q_axis, y_median_masked, y_mean_masked
@@ -268,7 +269,8 @@ def main():
     #######################################
     filename = 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) +\
                '_points{:d}_interp{:d}_res{:.3f}'.format(nb_points[0], interp_factor, angular_resolution) + comment
-    np.savez_compressed(savedir + filename + '.npz', obj=corr_count)
+    np.savez_compressed(savedir + filename + '.npz', angles=180*angular_bins/np.pi, corr=corr_count[:, 0],
+                        points=corr_count[:, 1])
 
     #######################################
     # plot the cross-correlation function #
