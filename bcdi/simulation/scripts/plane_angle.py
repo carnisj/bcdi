@@ -13,8 +13,8 @@ helptext = """
 Calculate the angle between to crystallographic planes expressed in the triclinic crystal system.
 """
 
-reference_plane = [1, 0, 0]  # in the basis (b1, b2, b3)
-test_plane = [1, 0, 1]  # in the basis (b1, b2, b3)
+reference_planes = [[1, 1, 0]]  # list of reference planes in the basis (b1, b2, b3)
+test_planes = [[1, 1, 0]]  # [[1, 0, 0], [0, 1, 0], [0, 0, 1]]  # list of test planes in the basis (b1, b2, b3)
 use_directlattice = True  # if True, it will use the direct lattice parameters to calculate the reciprocal lattice
 #############################
 # define the direct lattice #
@@ -28,12 +28,12 @@ a3 = 61.2  # length of a3 in nm
 #############################################
 # or define direclty the reciprocal lattice #
 #############################################
-alpha_r = 76  # in degrees, angle between b2 and b3
-beta_r = 78  # in degrees, angle between b1 and b3
-gamma_r = 87  # in degrees, angle between b1 and b2
-b1 = 0.103  # length of b1 in 1/nm
-b2 = 0.103  # length of b2 in 1/nm
-b3 = 0.108  # length of b3 in 1/nm
+# alpha_r = 76  # in degrees, angle between b2 and b3
+# beta_r = 78  # in degrees, angle between b1 and b3
+# gamma_r = 87  # in degrees, angle between b1 and b2
+# b1 = 0.103  # length of b1 in 1/nm
+# b2 = 0.103  # length of b2 in 1/nm
+# b3 = 0.108  # length of b3 in 1/nm
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -50,5 +50,9 @@ print('Volume of the reciprocal unit cell: {:.6f} nm\u207B\u00B3'.format(volume)
 ##############################################################
 # calculate the angle between reference_plane and test_plane #
 ##############################################################
-angle = simu.angle_vectors(ref_vector=reference_plane, test_vector=test_plane, basis_vectors=basis)
-print('angle = {:.2f} deg'.format(angle))
+for idx in range(len(reference_planes)):
+    for idy in range(len(test_planes)):
+        print('ref_plane = ' + str(reference_planes[idx]) +
+              '\ttest_plane = ' + str(test_planes[idy]) +
+              '\tangle = {:.2f} deg'.format(simu.angle_vectors(ref_vector=reference_planes[idx],
+                                                               test_vector=test_planes[idy], basis_vectors=basis)))
