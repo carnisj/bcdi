@@ -42,7 +42,7 @@ origin_qspace = (330, 204, 330)  # origin of the reciprocal space in pixels in t
 q_xcca = (0.104, 0.172)  # q values in 1/nm where to calculate the angular cross-correlation
 hotpix_threshold = 1e6  # data above this threshold will be masked
 single_proc = False  # do not use multiprocessing if True
-plot_meandata = True  # if True, will plot the 1D average of the data
+plot_meandata = False  # if True, will plot the 1D average of the data
 ##################################################################
 # end of user-defined parameters, do not change parameters below #
 ##################################################################
@@ -230,10 +230,12 @@ def main():
     ############################################
     if same_q:
         key_q2 = 'q1'
+        print('The CCF will be calculated over {:d} * {:d}'
+              ' points and {:d} angular bins\n'.format(nb_points[0], nb_points[0], corr_count.shape[0]))
     else:
         key_q2 = 'q2'
-
-    print('The CCF will be calculated over', nb_points[0], 'points and', corr_count.shape[0], 'angular bins\n')
+        print('The CCF will be calculated over {:d} * {:d}'
+              ' points and {:d} angular bins\n'.format(nb_points[0], nb_points[1], corr_count.shape[0]))
 
     angular_bins = np.linspace(start=0, stop=np.pi, num=corr_count.shape[0], endpoint=False)
 
