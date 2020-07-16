@@ -24,7 +24,7 @@ beta = 75  # in degrees, angle between a1 and a3
 gamma = 90  # in degrees, angle between a1 and a2
 a1 = 63.2  # length of a1 in nm
 a2 = 63.2  # length of a2 in nm
-a3 = 62.2  # length of a3 in nm
+a3 = 61.2  # length of a3 in nm
 #############################################
 # or define direclty the reciprocal lattice #
 #############################################
@@ -42,7 +42,8 @@ b3 = 0.108  # length of b3 in 1/nm
 # calculate the basis vector components in the orthonormal basis [[1, 0, 0], [0, 1, 0], [0, 0, 1]] #
 ####################################################################################################
 if use_directlattice:
-    alpha_r, beta_r, gamma_r, b1, b2, b3 = simu.real_to_reciprocal_lattice(alpha, beta, gamma, a1, a2, a3, verbose=True)
+    alpha_r, beta_r, gamma_r, b1, b2, b3 = simu.reciprocal_lattice(alpha, beta, gamma, a1, a2, a3,
+                                                                   input_lattice='direct', verbose=True)
 basis = simu.triclinic_to_basis(alpha_r, beta_r, gamma_r, b1, b2, b3)
 volume = basis[0].dot(np.cross(basis[1], basis[2]))
 print('Volume of the reciprocal unit cell: {:.6f} nm\u207B\u00B3'.format(volume))

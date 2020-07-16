@@ -412,7 +412,7 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     return (pivot_z, pivot_y, pivot_x), pad_offset, (qx, qz, qy), lattice_pos, peaks
 
 
-def real_to_reciprocal_lattice(alpha, beta, gamma, a1, a2, a3, verbose=False):
+def reciprocal_lattice(alpha, beta, gamma, a1, a2, a3, input_lattice='direct', verbose=False):
     """
     Calculate the reciprocal lattice given the direct space lattice parameters for the most general triclinic lattice.
 
@@ -422,6 +422,7 @@ def real_to_reciprocal_lattice(alpha, beta, gamma, a1, a2, a3, verbose=False):
     :param a1: length of the first direct lattice basis vector in nm
     :param a2: length of the second direct lattice basis vector in nm
     :param a3: length of the third direct lattice basis vector in nm
+    :param input_lattice: 'direct' or 'reciprocal', used to define the unit for the volume of the unit cell
     :param verbose: True to print comments
     :return: the triclinic reciprocal lattice componenets (alpha_r, beta_r, gamma_r, b1, b2, b3)
     """
@@ -429,7 +430,12 @@ def real_to_reciprocal_lattice(alpha, beta, gamma, a1, a2, a3, verbose=False):
 
     volume = v1.dot(np.cross(v2, v3))
     if verbose:
-        print('Volume of the direct space unit cell: {:.6f} nm\u00B3'.format(volume))
+        if input_lattice == 'direct':
+            print('Volume of the direct space unit cell: {:.6f} nm\u00B3'.format(volume))
+        elif input_lattice == 'reciprocal':
+            print('Volume of the reciprocal unit cell: {:.6f} nm\u207B\u00B3'.format(volume))
+        else:
+            raise ValueError('Unexpected value for input_lattice parameter')
     w1 = 2 * np.pi / volume * np.cross(v2, v3)
     w2 = 2 * np.pi / volume * np.cross(v3, v1)
     w3 = 2 * np.pi / volume * np.cross(v1, v2)
@@ -520,7 +526,14 @@ def triclinic_to_basis(alpha, beta, gamma, a1, a2, a3):
 
 
 if __name__ == "__main__":
-    print(real_to_reciprocal_lattice(alpha=90, beta=90, gamma=90, a1=62, a2=62, a3=62))
+    alpha_r, beta_r, gamma_r, b1, b2, b3 = reciprocal_lattice(alpha=75, beta=75, gamma=90, a1=63.2, a2=63.2, a3=61.2,
+                                                              input_lattice='direct', verbose=True)
+    print(alpha_r, beta_r, gamma_r, b1, b2, b3)
+
+    alpha, beta, gamma, a1, a2, a3 = reciprocal_lattice(alpha=alpha_r, beta=beta_r, gamma=gamma_r, a1=b1, a2=b2, a3=b3,
+                                                        input_lattice='reciprocal', verbose=True)
+    print(alpha, beta, gamma, a1, a2, a3)
+
 #     euler_angles = (-8.75, 33.75, -24.75)
 #     rot = Rotation.from_euler('xzy', euler_angles, degrees=True)
 #     vector = [0, 0, 1]  # in the frame (x, y, z) or (qx, qy, qz)
