@@ -13,6 +13,7 @@ import tkinter as tk
 from tkinter import filedialog
 import gc
 import time
+import datetime
 import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
@@ -291,7 +292,8 @@ else:
                     corr[idz, idy, idx, idw] = np.multiply(bragg_peaks, struct_array[nonzero_indices]).sum()
 
 end = time.time()
-print('Time ellapsed in the loop over angles and lattice parameters', int(end - start), 's')
+print('\nTime ellapsed in the loop over angles and lattice parameters:',
+      str(datetime.timedelta(seconds=int(end - start))))
 
 ##########################################
 # plot the correlation matrix at maximum #
