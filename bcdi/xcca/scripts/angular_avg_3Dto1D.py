@@ -84,6 +84,9 @@ if np.isnan(origin[1]):
 if np.isnan(origin[2]):
     origin[2] = int(nx // 2)
 
+for idx in range(len(origin)):
+    origin[idx] = origin[idx] // bin_factor
+print('origin after binning: ', origin)
 #################
 # load q values #
 #################
