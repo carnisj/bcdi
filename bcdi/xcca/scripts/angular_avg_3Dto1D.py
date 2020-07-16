@@ -139,7 +139,7 @@ else:
     ymin, _ = ax0.get_ylim()
 for counter, value in enumerate(vertical_lines):
     ax0.vlines(x=value, ymin=ymin, ymax=np.log10(y_mean_masked[q_vline[counter]]),
-               colors='r', linestyle='dashed')
+               colors='b', linestyle='dashed')
 plt.savefig(root_folder + 'angular_avg_labels.png')
 ax0.tick_params(labelbottom=False, labelleft=False)
 plt.xlabel('')
