@@ -412,6 +412,39 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     return (pivot_z, pivot_y, pivot_x), pad_offset, (qx, qz, qy), lattice_pos, peaks
 
 
+def real_to_reciprocal_lattice(alpha, beta, gamma, a1, a2, a3, verbose=False):
+    """
+    Calculate the reciprocal lattice given the direct space lattice parameters for the most general triclinic lattice.
+
+    :param alpha: in degrees, angle between a2 and a3
+    :param beta: in degrees, angle between a1 and a3
+    :param gamma: in degrees, angle between a1 and a2
+    :param a1: length of the first direct lattice basis vector in nm
+    :param a2: length of the second direct lattice basis vector in nm
+    :param a3: length of the third direct lattice basis vector in nm
+    :param verbose: True to print comments
+    :return: the triclinic reciprocal lattice componenets (alpha_r, beta_r, gamma_r, b1, b2, b3)
+    """
+    v1, v2, v3 = triclinic_to_basis(alpha, beta, gamma, a1, a2, a3)
+
+    volume = v1.dot(np.cross(v2, v3))
+    if verbose:
+        print('Volume of the unit cell:{:.6f} nm$^3$'.format(volume))
+    w1 = 2 * np.pi / volume * np.cross(v2, v3)
+    w2 = 2 * np.pi / volume * np.cross(v3, v1)
+    w3 = 2 * np.pi / volume * np.cross(v1, v2)
+
+    b1 = np.linalg.norm(w1)
+    b2 = np.linalg.norm(w2)
+    b3 = np.linalg.norm(w3)
+
+    alpha_r = 180 / np.pi * np.arccos(np.dot(w2, w3) / (b2*b3))
+    beta_r = 180 / np.pi * np.arccos(np.dot(w3, w1) / (b3 * b1))
+    gamma_r = 180 / np.pi * np.arccos(np.dot(w1, w2) / (b1 * b2))
+
+    return alpha_r, beta_r, gamma_r, b1, b2, b3
+
+
 def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, euler_angles=(0, 0, 0)):
     """
     Rotate lattice points given Euler angles, the pivot position and an eventual offset of the origin.
@@ -461,10 +494,33 @@ def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, 
     return lattice_pos, peaks
 
 
+def triclinic_to_basis(alpha, beta, gamma, a1, a2, a3):
+    """
+    Calculate the basis vector components in the orthonormal basis [[1, 0, 0], [0, 1, 0], [0, 0, 1]] for the most
+     general triclinic lattice.
+
+    :param alpha: in degrees, angle between a2 and a3
+    :param beta: in degrees, angle between a1 and a3
+    :param gamma: in degrees, angle between a1 and a2
+    :param a1: length of the first basis vector
+    :param a2: length of the second basis vector
+    :param a3: length of the third basis vector
+    :return: the basis vector components expressed in the orthonormal basis as (v1, v2, v3)
+    """
+    v1 = a1 * np.array([1, 0, 0])  # the convention here is to align b1 along [1, 0, 0]
+    v2 = a2 * np.cos(gamma * np.pi / 180) * np.array([1, 0, 0])\
+        + a2 * np.sin(gamma * np.pi / 180) * np.array([0, 1, 0])
+    # b2 is in the plane defined by the vectors [1, 0, 0] and [0, 1, 0]
+    cx = a3 * np.cos(beta * np.pi / 180)
+    cy = a3 * (np.cos(alpha * np.pi / 180) - np.cos(beta * np.pi / 180) * np.cos(gamma * np.pi / 180))\
+        / np.sin(gamma * np.pi / 180)
+    cz = np.sqrt(a3 ** 2 - cx ** 2 - cy ** 2)
+    v3 = cx * np.array([1, 0, 0]) + cy * np.array([0, 1, 0]) + cz * np.array([0, 0, 1])
+    return v1, v2, v3
+
+
 if __name__ == "__main__":
-    ref_plane = np.array([2, -1, 1])
-    my_plane = np.array([1, 1, 1])
-    print('gram:', angle_vectors(test_vector=my_plane, ref_vector=ref_plane))
+    print(real_to_reciprocal_lattice(alpha=90, beta=90, gamma=90, a1=62, a2=62, a3=62))
 #     euler_angles = (-8.75, 33.75, -24.75)
 #     rot = Rotation.from_euler('xzy', euler_angles, degrees=True)
 #     vector = [0, 0, 1]  # in the frame (x, y, z) or (qx, qy, qz)
