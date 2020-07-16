@@ -484,12 +484,13 @@ for scan_nb in range(len(scans)):
                 mask[np.nonzero(mask)] = 1
                 if len(q_values) != 0:
                     qx = q_values[0]
-                    qx = qx[::binning[2]]  # along z downstream, same binning as along x
                     qz = q_values[1]
-                    qz = qz[::binning[1]]  # along y vertical, the axis of rotation
                     qy = q_values[2]
-                    qy = qy[::binning[2]]  # along x outboard
-
+                    numz, numy, numx = len(qx), len(qz), len(qy)
+                    qx = qx[:numz - (numz % binning[0]):binning[0]]  # along z downstream
+                    qz = qz[:numy - (numy % binning[1]):binning[1]]  # along y vertical
+                    qy = qy[:numx - (numx % binning[2]):binning[2]]  # along x outboard
+                    del numz, numy, numx
         else:  # the data is in the detector frame
             if photon_filter == 'loading':
                 data, mask, frames_logical, monitor = pru.reload_bcdi_data(logfile=logfile, scan_number=scans[scan_nb],
@@ -865,13 +866,14 @@ for scan_nb in range(len(scans)):
     ################################################################################################
     # bin the stacking axis if needed, the detector plane was already binned when loading the data #
     ################################################################################################
-    if detector.binning[0] != 1:
+    if detector.binning[0] != 1 and not reload_orthogonal:  # data was already binned for reload_orthogonal
         data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
         mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
         if not use_rawdata and len(q_values) != 0:
-            qx = qx[::binning[0]]  # along Z
-
+            numz = len(qx)
+            qx = qx[:numz - (numz % binning[0]):binning[0]]  # along Z
+            del numz
     nz, ny, nx = data.shape
     print('\nData size after binning the stacking dimension:', data.shape)
     comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx) + binning_comment

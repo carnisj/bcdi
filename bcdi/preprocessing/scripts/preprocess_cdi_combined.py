@@ -404,12 +404,13 @@ for scan_nb in range(len(scans)):
                 mask[np.nonzero(mask)] = 1
                 if len(q_values) != 0:
                     qx = q_values[0]
-                    qx = qx[::binning[2]]  # along z downstream, same binning as along x
                     qz = q_values[1]
-                    qz = qz[::binning[1]]  # along y vertical, the axis of rotation
                     qy = q_values[2]
-                    qy = qy[::binning[2]]  # along x outboard
-
+                    numz, numy, numx = len(qx), len(qz), len(qy)
+                    qx = qx[:numz - (numz % binning[2]):binning[2]]  # along z downstream, same binning as along x
+                    qz = qz[:numy - (numy % binning[1]):binning[1]]  # along y vertical, the axis of rotation
+                    qy = qy[:numx - (numx % binning[2]):binning[2]]  # along x outboard
+                    del numz, numy, numx
         else:  # the data is in the detector frame
             if photon_filter == 'loading':
                 data, mask, frames_logical, monitor = pru.reload_cdi_data(logfile=logfile, scan_number=scans[scan_nb],

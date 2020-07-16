@@ -12,7 +12,7 @@ import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
-import bcdi.xcca_utils as xcca
+import bcdi.xcca.xcca_utils as xcca
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
@@ -24,10 +24,10 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/'
+root_folder = 'D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/'
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
-origin = [np.nan, np.nan, np.nan]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
+origin = [330, 204, 330]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
 bin_factor = 2  # the data will be binned by bin_factor is the three directions
 vertical_lines = [0.104, 0.144, 0.172, 0.208]  # plot vertical dashed lines at these q values, leave [] otherwise
 # position in pixels of the origin of the angular average in the array.
@@ -36,7 +36,7 @@ threshold = 0  # data < threshold will be set to 0
 debug = False  # True to show more plots
 xlim = None  # limits used for the horizontal axis of the angular plot, leave None otherwise
 ylim = None  # limits used for the vertical axis of++ plots, leave None otherwise
-save_txt = True  # True to save q values and the average in .txt format
+save_txt = False  # True to save q values and the average in .txt format
 ##########################
 # end of user parameters #
 ##########################
@@ -91,9 +91,15 @@ if load_qvalues:
     file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select q values",
                                            filetypes=[("NPZ", "*.npz")])
     npzfile = np.load(file_path)
-    qx = npzfile['qx'][::bin_factor]  # downstream
-    qz = npzfile['qz'][::bin_factor]  # vertical up
-    qy = npzfile['qy'][::bin_factor]  # outboard
+    qx = npzfile['qx']  # downstream
+    qz = npzfile['qz']  # vertical up
+    qy = npzfile['qy']  # outboard
+    numz, numy, numx = len(qx), len(qz), len(qy)
+    qx = qx[:numz - (numz % bin_factor):bin_factor]
+    qz = qz[:numy - (numy % bin_factor):bin_factor]
+    qy = qy[:numx - (numx % bin_factor):bin_factor]
+    del numz, numy, numx
+
 else:  # work with pixels, supposing that the data is in an orthonormal frame
     qx = np.arange(nz) - origin[0]
     qz = np.arange(ny) - origin[1]
