@@ -15,15 +15,25 @@ Calculate the angle between to crystallographic planes expressed in the triclini
 
 reference_plane = [1, 0, 0]  # in the basis (b1, b2, b3)
 test_plane = [1, 0, 1]  # in the basis (b1, b2, b3)
-#################################
-# define the reciprocal lattice #
-#################################
-alpha = 76  # in degrees, angle between b2 and b3
-beta = 78  # in degrees, angle between b1 and b3
-gamma = 87  # in degrees, angle between b1 and b2
-b1 = 0.103  # length of b1
-b2 = 0.103  # length of b2
-b3 = 0.108  # length of b3
+use_directlattice = True  # if True, it will use the direct lattice parameters to calculate the reciprocal lattice
+#############################
+# define the direct lattice #
+#############################
+alpha = 75  # in degrees, angle between a2 and a3
+beta = 75  # in degrees, angle between a1 and a3
+gamma = 90  # in degrees, angle between a1 and a2
+a1 = 63.2  # length of a1 in nm
+a2 = 63.2  # length of a2 in nm
+a3 = 62.2  # length of a3 in nm
+#############################################
+# or define direclty the reciprocal lattice #
+#############################################
+alpha_r = 76  # in degrees, angle between b2 and b3
+beta_r = 78  # in degrees, angle between b1 and b3
+gamma_r = 87  # in degrees, angle between b1 and b2
+b1 = 0.103  # length of b1 in 1/nm
+b2 = 0.103  # length of b2 in 1/nm
+b3 = 0.108  # length of b3 in 1/nm
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -31,9 +41,11 @@ b3 = 0.108  # length of b3
 ####################################################################################################
 # calculate the basis vector components in the orthonormal basis [[1, 0, 0], [0, 1, 0], [0, 0, 1]] #
 ####################################################################################################
-basis = simu.triclinic_to_basis(alpha, beta, gamma, b1, b2, b3)
+if use_directlattice:
+    alpha_r, beta_r, gamma_r, b1, b2, b3 = simu.real_to_reciprocal_lattice(alpha, beta, gamma, a1, a2, a3, verbose=True)
+basis = simu.triclinic_to_basis(alpha_r, beta_r, gamma_r, b1, b2, b3)
 volume = basis[0].dot(np.cross(basis[1], basis[2]))
-print('Volume of the reciprocal unit cell: {:.6f} nm$-3$'.format(volume))
+print('Volume of the reciprocal unit cell: {:.6f} nm\u207B\u00B3'.format(volume))
 ##############################################################
 # calculate the angle between reference_plane and test_plane #
 ##############################################################
