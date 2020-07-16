@@ -429,7 +429,7 @@ def real_to_reciprocal_lattice(alpha, beta, gamma, a1, a2, a3, verbose=False):
 
     volume = v1.dot(np.cross(v2, v3))
     if verbose:
-        print('Volume of the unit cell:{:.6f} nm$^3$'.format(volume))
+        print('Volume of the direct space unit cell:{:.6f} nm$^3$'.format(volume))
     w1 = 2 * np.pi / volume * np.cross(v2, v3)
     w2 = 2 * np.pi / volume * np.cross(v3, v1)
     w3 = 2 * np.pi / volume * np.cross(v1, v2)
