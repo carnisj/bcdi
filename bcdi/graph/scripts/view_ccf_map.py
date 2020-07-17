@@ -73,11 +73,11 @@ def press_key(event):
 
     if event.inaxes == ax0:
         if event.key == 'right':
-            max_colorbar = max_colorbar * 2
+            max_colorbar = max_colorbar * 1.5
         elif event.key == 'left':
-            max_colorbar = max_colorbar / 2
+            max_colorbar = max_colorbar / 1.5
             if max_colorbar <= min_colorbar:
-                max_colorbar = min_colorbar * 2
+                max_colorbar = max_colorbar * 1.5
         ax0.cla()
         ax0.imshow(ccf, cmap=my_cmap, vmin=min_colorbar, vmax=max_colorbar,
                    extent=[0, 180, q_range[-1]+dq/2, q_range[0]-dq/2])  # extent (left, right, bottom, top)
@@ -91,11 +91,11 @@ def press_key(event):
 
     if event.inaxes == ax1:
         if event.key == 'right':
-            ymax = ymax + 1
+            ymax = ymax * 1.5
         elif event.key == 'left':
-            ymax = ymax - 1
+            ymax = ymax / 1.5
             if ymax <= ymin:
-                ymax = ymin * 2
+                ymax = ymax * 1.5
         ax1.cla()
         ax1.plot(angles, ccf[current_q, :], linestyle='None', marker='.', markerfacecolor='blue')
         ax1.set_xlim(0, 180)
