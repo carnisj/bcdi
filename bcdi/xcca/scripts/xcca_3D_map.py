@@ -246,8 +246,8 @@ def main():
     #######################################
     filename = 'CCFmap_qstart={:.3f}_qstop={:.3f}'.format(q_range[0], q_range[-1]) +\
                '_interp{:d}_res{:.3f}'.format(interp_factor, angular_resolution) + comment
-    np.savez_compressed(savedir + filename + '.npz', angles=180*angular_bins/np.pi, ccf=corr_count[:, 0],
-                        points=corr_count[:, 1])
+    np.savez_compressed(savedir + filename + '.npz', angles=180*angular_bins/np.pi, q_range=q_range,
+                        ccf=cross_corr[:, :, 0], points=cross_corr[:, :, 1])
 
     #######################################
     # plot the cross-correlation function #
