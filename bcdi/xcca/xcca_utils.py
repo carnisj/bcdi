@@ -86,22 +86,23 @@ def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debuggin
     return q_axis, y_mean_masked, y_median_masked
 
 
-def calc_ccf(point, q2_name, bin_values, polar_azi_int):
+def calc_ccf(point, q1_name, q2_name, bin_values, polar_azi_int):
     """
     Calculate for the cross-correlation of point with all other points at the second q value and sort the result.
 
     :param point: the reference point
+    :param q1_name: key for the first q value in the dictionnary polar_azi_int
     :param q2_name: key for the second q value in the dictionnary polar_azi_int
     :param bin_values: angular bin values where to calculate the cross-correlation
-    :param polar_azi_int: a dictionnary with fields 'q1' (and 'q2' if different from q1). Each field contains three 1D
+    :param polar_azi_int: a dictionnary with fields 'q1', 'q2', ... Each field contains three 1D
      arrays: polar angle, azimuthal angle and intensity values for each point
     :return: the sorted cross-correlation values, angular bins indices and number of points contributing to the angular
      bins
     """
     # calculate the angle between the current point and all points from the second q value (delta in [0 pi])
-    delta_val = np.arccos(np.sin(polar_azi_int['q1'][point, 0]) * np.sin(polar_azi_int[q2_name][:, 0]) *
-                          np.cos(polar_azi_int[q2_name][:, 1] - polar_azi_int['q1'][point, 1]) +
-                          np.cos(polar_azi_int['q1'][point, 0]) * np.cos(polar_azi_int[q2_name][:, 0]))
+    delta_val = np.arccos(np.sin(polar_azi_int[q1_name][point, 0]) * np.sin(polar_azi_int[q2_name][:, 0]) *
+                          np.cos(polar_azi_int[q2_name][:, 1] - polar_azi_int[q1_name][point, 1]) +
+                          np.cos(polar_azi_int[q1_name][point, 0]) * np.cos(polar_azi_int[q2_name][:, 0]))
 
     # It can happen that the value in the arccos is outside [-1, 1] because of the limited floating precision of Python,
     # which result in delta_val = nan. These points would contribute to the 0 and 180 degrees CCF, and can be neglected.
@@ -120,7 +121,7 @@ def calc_ccf(point, q2_name, bin_values, polar_azi_int):
     # calculate the contribution to the cross-correlation for bins in counter_indices
     ccf_uniq_val = np.zeros(len(counter_indices))
     for idx in range(len(counter_indices)):
-        ccf_uniq_val[idx] = (polar_azi_int['q1'][point, 2] *
+        ccf_uniq_val[idx] = (polar_azi_int[q1_name][point, 2] *
                              polar_azi_int[q2_name][nearest_indices == counter_indices[idx], 2]).sum()
 
     return ccf_uniq_val, counter_val, counter_indices
