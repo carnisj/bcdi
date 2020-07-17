@@ -80,7 +80,9 @@ def main():
     ##########################
     global corr_count, current_point
     assert len(origin_qspace) == 3, "origin_qspace should be a tuple of 3 integer pixel values"
-    print('the CCF map will be calculated for {:d} q values: '.format(len(q_range)), q_range)
+    print('the CCF map will be calculated for {:d} q values: '.format(len(q_range)))
+    for idx in range(len(q_range)):
+        print('{:.3f}'.format(q_range[idx]))
     warnings.filterwarnings("ignore")
 
     ###################
