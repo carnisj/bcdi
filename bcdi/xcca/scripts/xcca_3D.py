@@ -39,7 +39,7 @@ interp_factor = 10  # the number of points for the interpolation on a sphere wil
 angular_resolution = 0.1  # in degrees, angle between to adjacent points for the calculation of the cross-correlation
 debug = False  # set to True to see more plots
 origin_qspace = (330, 204, 330)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
-q_xcca = (0.104, 0.172)  # q values in 1/nm where to calculate the angular cross-correlation
+q_xcca = [0.104, 0.172]  # q values in 1/nm where to calculate the angular cross-correlation
 hotpix_threshold = 1e6  # data above this threshold will be masked
 single_proc = False  # do not use multiprocessing if True
 plot_meandata = False  # if True, will plot the 1D average of the data
@@ -98,6 +98,7 @@ def main():
     ##########################
     assert len(q_xcca) == 2, "Two q values should be provided (it can be the same value)"
     assert len(origin_qspace) == 3, "origin_qspace should be a tuple of 3 integer pixel values"
+    q_xcca.sort()
     if q_xcca[0] == q_xcca[1]:
         same_q = True
     else:
@@ -177,7 +178,7 @@ def main():
         if (counter == 0) or ((counter == 1) and not same_q):
             nb_pixels = (np.logical_and((distances < q_xcca[counter]+dq), (distances > q_xcca[counter]-dq))).sum()
 
-            print('Number of voxels for the sphere of radius q ={:.3f} 1/nm:'.format(q_xcca[counter]), nb_pixels)
+            print('\nNumber of voxels for the sphere of radius q ={:.3f} 1/nm:'.format(q_xcca[counter]), nb_pixels)
 
             nb_pixels = int(nb_pixels / interp_factor)
             print('Dividing the number of voxels by interp_factor: {:d} voxels remaining'.format(nb_pixels))
@@ -203,6 +204,10 @@ def main():
             theta = np.delete(theta, nan_indices)
             phi = np.delete(phi, nan_indices)
             sphere_int = np.delete(sphere_int, nan_indices)
+            # normalize the intensity by the median value (remove the influence of the form factor)
+            print('q={:.3f}:'.format(q_xcca[counter]), ' normalizing by the median value', np.median(sphere_int))
+            sphere_int = sphere_int / np.median(sphere_int)
+
             theta_phi_int[dict_fields[counter]] = np.concatenate((theta[:, np.newaxis],
                                                                   phi[:, np.newaxis],
                                                                   sphere_int[:, np.newaxis]), axis=1)
@@ -211,6 +216,7 @@ def main():
             print('q={:.3f}:'.format(q_xcca[counter]), ' removing', nan_indices.size, 'nan values,',
                   nb_points[counter], 'remain')
             if debug:
+                # TODO: plot the stereographic projection instead
                 fig = plt.figure()
                 ax = Axes3D(fig)
                 ax.scatter(qx_sphere, qz_sphere, qy_sphere, c=np.log10(sphere_int), cmap=my_cmap)
@@ -230,12 +236,12 @@ def main():
     ############################################
     if same_q:
         key_q2 = 'q1'
-        print('The CCF will be calculated over {:d} * {:d}'
-              ' points and {:d} angular bins\n'.format(nb_points[0], nb_points[0], corr_count.shape[0]))
+        print('\nThe CCF will be calculated over {:d} * {:d}'
+              ' points and {:d} angular bins'.format(nb_points[0], nb_points[0], corr_count.shape[0]))
     else:
         key_q2 = 'q2'
-        print('The CCF will be calculated over {:d} * {:d}'
-              ' points and {:d} angular bins\n'.format(nb_points[0], nb_points[1], corr_count.shape[0]))
+        print('\nThe CCF will be calculated over {:d} * {:d}'
+              ' points and {:d} angular bins'.format(nb_points[0], nb_points[1], corr_count.shape[0]))
 
     angular_bins = np.linspace(start=0, stop=np.pi, num=corr_count.shape[0], endpoint=False)
 
@@ -246,7 +252,7 @@ def main():
                  xcca.calc_ccf(point=idx, q2_name=key_q2, bin_values=angular_bins, polar_azi_int=theta_phi_int)
             collect_result_debug(ccf_uniq_val, counter_val, counter_indices)
     else:
-        print("Number of processors: ", mp.cpu_count())
+        print("\nNumber of processors: ", mp.cpu_count())
         mp.freeze_support()
         pool = mp.Pool(mp.cpu_count())  # use this number of processes
         for idx in range(nb_points[0]):
