@@ -15,13 +15,13 @@ import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 
 helptext = """
-Calculate the angular cross-correlation in a 3D reciprocal space dataset at the same q value or between two different q
-values. The 3D dataset is expected to be interpolated on an orthonormal grid.
+Load the output file of xcca_3D.py and plot the cross-correlation function.
 
-Input: the 3D dataset, an optional 3D mask, (qx, qy, qz) values
-
-Laboratory frame convention (CXI): z downstream, y vertical up, x outboard.
-Reciprocal space basis:            qx downstream, qz vertical up, qy outboard."""
+Input: a NPZ file with the fields 'angles', 'ccf', 'points': 
+    - 'angles' are the values between [0, 180] where the cross-correlation function was calculated
+    - 'ccf' are the the cross-correlation function values at these angles
+    - 'points' are the number of points contributing to the cross-correlation function at these angles
+"""
 
 datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
 savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
