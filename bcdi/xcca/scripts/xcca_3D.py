@@ -273,7 +273,7 @@ def main():
     #######################################
     filename = 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) +\
                '_points{:d}_interp{:d}_res{:.3f}'.format(nb_points[0], interp_factor, angular_resolution) + comment
-    np.savez_compressed(savedir + filename + '.npz', angles=180*angular_bins/np.pi, corr=corr_count[:, 0],
+    np.savez_compressed(savedir + filename + '.npz', angles=180*angular_bins/np.pi, ccf=corr_count[:, 0],
                         points=corr_count[:, 1])
 
     #######################################
