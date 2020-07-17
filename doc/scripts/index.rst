@@ -522,3 +522,11 @@ xcca_3D.py
    :start-after: helptext
    :end-before: """
    :language: rst
+
+xcca_3D_map.py
+^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D_map.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst

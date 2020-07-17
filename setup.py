@@ -82,6 +82,7 @@ setup(name='bcdi', version='0.0.8',
                'bcdi/utils/scripts/view_mesh.py',
                'bcdi/xcca/scripts/angular_avg_3Dto1D.py',
                'bcdi/xcca/scripts/xcca_3D.py',
+               'bcdi/xcca/scripts/xcca_3D_map.py',
                ],
       # metadata
       author="Jerome Carnis",

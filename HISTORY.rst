@@ -1,4 +1,6 @@
-* implement view_ccf.py to plot the cross-correlation function output
+* Feature: implement xcca_3D_map.py to calculate the angular cross-correlation CCF(q,q) over a range in q
+
+* Feature: implement view_ccf.py to plot the cross-correlation function output
 
 * Remove preprocess_bcdi_sequential.py, which was not maintained anymore. Use preprocess_bcdi_combined.py instead
 
