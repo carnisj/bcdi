@@ -19,6 +19,7 @@ import gc
 import multiprocessing as mp
 import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.xcca.xcca_utils as xcca
