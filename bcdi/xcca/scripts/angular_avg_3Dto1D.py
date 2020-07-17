@@ -35,7 +35,7 @@ vertical_lines = [0.104, 0.144, 0.172, 0.208]  # plot vertical dashed lines at t
 threshold = 0  # data < threshold will be set to 0
 debug = False  # True to show more plots
 xlim = None  # limits used for the horizontal axis of the angular plot, leave None otherwise
-ylim = None  # limits used for the vertical axis of++ plots, leave None otherwise
+ylim = None  # limits used for the vertical axis of plots, leave None otherwise
 save_txt = False  # True to save q values and the average in .txt format
 ##########################
 # end of user parameters #
