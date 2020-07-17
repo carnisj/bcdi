@@ -286,7 +286,7 @@ def main():
     indices = np.argwhere(np.logical_and((angular_bins >= 5*np.pi/180), (angular_bins <= 175*np.pi/180)))
     ymax = 1.2 * corr_count[indices, 0].max()
     print('Discarding CCF values with a zero counter:', (corr_count[:, 1] == 0).sum(), 'points masked')
-    corr_count[(corr_count[:, 1] == 0), 1] = np.nan  # discard these values of the CCF
+    corr_count[(corr_count[:, 1] == 0), 0] = np.nan  # discard these values of the CCF
 
     fig, ax = plt.subplots()
     ax.plot(180*angular_bins/np.pi, corr_count[:, 0], color='red', linestyle="-", markerfacecolor='blue',
