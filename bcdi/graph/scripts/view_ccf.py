@@ -18,9 +18,9 @@ helptext = """
 Load the output file of xcca_3D.py and plot the cross-correlation function.
 
 Input: a NPZ file with the fields 'angles', 'ccf', 'points': 
-    - 'angles' are the values between [0, 180] where the cross-correlation function was calculated
-    - 'ccf' are the the cross-correlation function values at these angles
-    - 'points' are the number of points contributing to the cross-correlation function at these angles
+    - 'angles': values between [0, 180] where the cross-correlation function was calculated
+    - 'ccf': cross-correlation function values at these angles
+    - 'points': number of points contributing to the cross-correlation function at these angles
 """
 
 datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
