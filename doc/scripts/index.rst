@@ -72,6 +72,14 @@ Graph
    :end-before: """
    :language: rst
 
+'view_ccf_map.py':
+^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/graph/scripts/view_ccf_map.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 'view_psf.py':
 ^^^^^^^^^^^^^^
 
