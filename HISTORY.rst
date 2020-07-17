@@ -1,3 +1,5 @@
+* Remove preprocess_bcdi_sequential.py, which was not maintained anymore. Use preprocess_bcdi_combined.py instead
+
 * Feature: implement the 3D angular X-ray cross-correlation analysis in xcca/scripts/xcca_3D.py
 
 * Refactor: allow the reloading of binned data and its orthogonalization in preprocess_cdi_combined.py and preprocess_bcdi_combined.py
