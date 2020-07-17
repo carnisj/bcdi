@@ -223,7 +223,7 @@ def main():
                 ax.set_xlabel('qx')
                 ax.set_ylabel('qz')
                 ax.set_zlabel('qy')
-                plt.title('Intensity interpolated on a sphere of radius q ={:.3f} 1/nm'.format(q_xcca[0]))
+                plt.title('Intensity interpolated on a sphere of radius q ={:.3f} 1/nm'.format(q_xcca[value]))
                 plt.pause(0.1)
 
             del qx_sphere, qz_sphere, qy_sphere, theta, phi, sphere_int, indices, nan_indices
