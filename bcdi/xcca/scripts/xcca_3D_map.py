@@ -79,7 +79,7 @@ def main():
     ##########################
     global corr_count, current_point
     assert len(origin_qspace) == 3, "origin_qspace should be a tuple of 3 integer pixel values"
-    print('the CCF map will be calculated for the q values ', q_range)
+    print('the CCF map will be calculated for {:d} q values: '.format(len(q_range)), q_range)
     warnings.filterwarnings("ignore")
 
     ###################
@@ -256,7 +256,7 @@ def main():
     # plot the cross-correlation function #
     #######################################
     # find the y limit excluding the peaks at 0 and 180 degrees
-    indices = np.argwhere(np.logical_and((angular_bins >= 5*np.pi/180), (angular_bins <= 175*np.pi/180)))
+    indices = np.argwhere(np.logical_and((angular_bins >= 20*np.pi/180), (angular_bins <= 160*np.pi/180)))
     vmax = 1.2 * cross_corr[:, indices, 0].max()
     print('Discarding CCF values with a zero counter:', (cross_corr[:, :, 1] == 0).sum(), 'points masked')
     cross_corr[(cross_corr[:, :, 1] == 0), 0] = np.nan  # discard these values of the CCF
