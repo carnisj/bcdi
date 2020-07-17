@@ -103,6 +103,9 @@ def calc_ccf(point, q2_name, bin_values, polar_azi_int):
                           np.cos(polar_azi_int[q2_name][:, 1] - polar_azi_int['q1'][point, 1]) +
                           np.cos(polar_azi_int['q1'][point, 0]) * np.cos(polar_azi_int[q2_name][:, 0]))
 
+    # It can happen that the value in the arccos is outside [-1, 1] because of the limited floating precision of Python,
+    # which result in delta_val = nan. These points would contribute to the 0 and 180 degrees CCF, and can be neglected.
+
     # find the nearest angular bin value for each value of the array delta
     nearest_indices = util.find_nearest(test_values=delta_val, reference_array=bin_values,
                                         width=bin_values[1]-bin_values[0])
