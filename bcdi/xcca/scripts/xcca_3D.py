@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import time
+import warnings
 import datetime
 import numpy as np
 from matplotlib import pyplot as plt
@@ -105,6 +106,7 @@ def main():
         same_q = True
     else:
         same_q = False
+    warnings.filterwarnings("ignore")
 
     ###################
     # define colormap #

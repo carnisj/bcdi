@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import time
+import warnings
 import datetime
 import numpy as np
 from matplotlib import pyplot as plt
@@ -79,6 +80,8 @@ def main():
     global corr_count, current_point
     assert len(origin_qspace) == 3, "origin_qspace should be a tuple of 3 integer pixel values"
     print('the CCF map will be calculated for the q values ', q_range)
+    warnings.filterwarnings("ignore")
+
     ###################
     # define colormap #
     ###################
