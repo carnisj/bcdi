@@ -96,6 +96,8 @@ def main():
     ##########################
     # check input parameters #
     ##########################
+    global corr_count
+    
     assert len(q_xcca) == 2, "Two q values should be provided (it can be the same value)"
     assert len(origin_qspace) == 3, "origin_qspace should be a tuple of 3 integer pixel values"
     q_xcca.sort()
