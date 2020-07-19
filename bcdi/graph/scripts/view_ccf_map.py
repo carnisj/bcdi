@@ -30,6 +30,7 @@ Input: a NPZ file with the fields 'angles', 'q_range', 'ccf', 'points':
 
 datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
 savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
+scale = 'log'  # 'linear' or 'log', scale for the 2D map
 comment = ''  # should start with _
 ###########################
 # plot related parameters #
@@ -69,18 +70,30 @@ def press_key(event):
 
     :param event: button press event
     """
-    global angles, q_range, ccf, current_q, ax0, ax1, my_cmap, ymin, ymax, min_colorbar, max_colorbar
+    global angles, q_range, ccf, current_q, ax0, ax1, my_cmap, ymin, ymax, min_colorbar, max_colorbar, scale
 
     if event.inaxes == ax0:
         if event.key == 'right':
-            max_colorbar = max_colorbar * 1.5
-        elif event.key == 'left':
-            max_colorbar = max_colorbar / 1.5
-            if max_colorbar <= min_colorbar:
+            if scale == 'linear':
                 max_colorbar = max_colorbar * 1.5
+            else:  # 'log'
+                max_colorbar = max_colorbar + 0.5
+        elif event.key == 'left':
+            if scale == 'linear':
+                max_colorbar = max_colorbar / 1.5
+                if max_colorbar <= min_colorbar:
+                    max_colorbar = max_colorbar * 1.5
+            else:  # 'log'
+                max_colorbar = max_colorbar - 0.5
+                if max_colorbar <= min_colorbar:
+                    max_colorbar = max_colorbar + 0.5
         ax0.cla()
-        ax0.imshow(ccf, cmap=my_cmap, vmin=min_colorbar, vmax=max_colorbar,
-                   extent=[0, 180, q_range[-1]+dq/2, q_range[0]-dq/2])  # extent (left, right, bottom, top)
+        if scale == 'linear':
+            ax0.imshow(ccf, cmap=my_cmap, vmin=min_colorbar, vmax=max_colorbar,
+                       extent=[0, 180, q_range[-1]+dq/2, q_range[0]-dq/2])  # extent (left, right, bottom, top)
+        else:  # 'log'
+            ax0.imshow(np.log10(ccf), cmap=my_cmap, vmin=min_colorbar, vmax=max_colorbar,
+                       extent=[0, 180, q_range[-1]+dq/2, q_range[0]-dq/2])  # extent (left, right, bottom, top)
         ax0.set_xlabel('Angle (deg)')
         ax0.set_ylabel('q (nm$^{-1}$)')
         ax0.set_xticks(np.arange(0, 181, 30))
@@ -142,8 +155,12 @@ indices = np.argwhere(np.logical_and((angles >= 20), (angles <= 160)))[:, 0]
 current_q = 0  # index of the q for the lineplot
 ymin = ccf[current_q, indices].min()  # used for the lineplot
 ymax = 1.2 * ccf[current_q, indices].max()  # used for the lineplot
-min_colorbar = ccf[:, indices].min()  # used for the 2D map
-max_colorbar = 1.2 * ccf[:, indices].max()  # used for the 2D map
+if scale == 'linear':
+    min_colorbar = ccf[:, indices].min()  # used for the 2D map
+    max_colorbar = 1.2 * ccf[:, indices].max()  # used for the 2D map
+else:  # 'log'
+    min_colorbar = np.log10(ccf[:, indices].min())  # used for the 2D map
+    max_colorbar = np.log10(ccf[:, indices].max()) + 0.5  # used for the 2D map
 dq = q_range[1] - q_range[0]
 plt.ioff()
 
@@ -151,9 +168,12 @@ figure = plt.figure()
 ax0 = figure.add_subplot(121)
 ax1 = figure.add_subplot(122)
 figure.canvas.mpl_disconnect(figure.canvas.manager.key_press_handler_id)
-
-ax0.imshow(ccf, cmap=my_cmap, vmin=min_colorbar, vmax=max_colorbar,
-           extent=[0, 180, q_range[-1]+dq/2, q_range[0]-dq/2])  # extent (left, right, bottom, top)
+if scale == 'linear':
+    ax0.imshow(ccf, cmap=my_cmap, vmin=min_colorbar, vmax=max_colorbar,
+               extent=[0, 180, q_range[-1]+dq/2, q_range[0]-dq/2])  # extent (left, right, bottom, top)
+else:  # 'log'
+    ax0.imshow(np.log10(ccf), cmap=my_cmap, vmin=min_colorbar, vmax=max_colorbar,
+               extent=[0, 180, q_range[-1]+dq/2, q_range[0]-dq/2])  # extent (left, right, bottom, top)
 ax0.set_xlabel('Angle (deg)')
 ax0.set_ylabel('q (nm$^{-1}$)')
 ax0.set_xticks(np.arange(0, 181, 30))
