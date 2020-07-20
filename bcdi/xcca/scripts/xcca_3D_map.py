@@ -88,9 +88,14 @@ def main(calc_self, user_comment):
     ##########################
     global corr_count, current_point
     assert len(origin_qspace) == 3, "origin_qspace should be a tuple of 3 integer pixel values"
+    assert type(calc_self) is bool, "unexpected typoe for calc_self"
+
     print('the CCF map will be calculated for {:d} q values: '.format(len(q_range)))
     for idx in range(len(q_range)):
-        print('{:.3f}'.format(q_range[idx]))
+        if calc_self:
+            print('q1 = {:.3f}  q2 = {:.3f}'.format(q_range[idx], q_range[idx]))
+        else:
+            print('q1 = {:.3f}  q2 = {:.3f}'.format(q_range[0], q_range[idx]))
     warnings.filterwarnings("ignore")
 
     ###################
