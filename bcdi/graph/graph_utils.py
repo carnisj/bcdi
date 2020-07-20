@@ -558,6 +558,111 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
 
 
+def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, title="", plot_planes=True,
+                          contour_range=None, max_angle=95, cmap=my_cmap, uv_labels=('', ''), hide_axis=False,
+                          scale='linear'):
+    """
+    Plot the stereographic projection with some cosmetics.
+
+    :param euclidian_u: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
+    :param euclidian_v: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
+    :param color: flattened array, intensity of density kernel estimation at radius_mean
+    :param radius_mean: radius of the sphere in reciprocal space from which the projection is done
+    :param planes: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
+    :param title: title for the stereographic plot
+    :param plot_planes: if True, will draw circle corresponding to crystallographic planes in the pole figure
+    :param contour_range: range for the plot contours
+    :param max_angle: maximum angle in degrees of the stereographic projection (should be larger than 90)
+    :param cmap: colormap to be used
+    :param uv_labels: tuple of strings, labels for the u axis and the v axis, respectively
+    :param hide_axis: hide the axis frame, ticks and ticks labels
+    :param scale: 'linear' or 'log', scale for the colorbar of the plot
+    :return: figure and axe instances
+    """
+    from scipy.interpolate import griddata
+
+    nb_points = 5 * max_angle + 1
+    v_grid, u_grid = np.mgrid[-max_angle:max_angle:(nb_points*1j), -max_angle:max_angle:(nb_points*1j)]
+    # v_grid is changing along the vertical axis, u_grid is changing along the horizontal axis
+    intensity_grid = griddata((euclidian_v, euclidian_u), color, (v_grid, u_grid), method='linear')
+    intensity_grid = intensity_grid / intensity_grid[intensity_grid > 0].max() * 10000  # normalize for easier plotting
+
+    if contour_range is None:
+        if scale == 'linear':
+            contour_range = range(0, 10001, 250)
+        elif scale == 'log':
+            contour_range = np.logspace(0, 4, num=20, endpoint=True, base=10.0)
+        else:
+            raise ValueError('Incorrect value for scale parameter')
+
+    # plot the stereographic projection
+    plt.ion()
+    fig, ax0 = plt.subplots(nrows=1, ncols=1, figsize=(12, 9), facecolor='w', edgecolor='k')
+    if scale == 'linear':
+        plt0 = ax0.contourf(u_grid, v_grid, intensity_grid, contour_range, cmap=cmap)
+        colorbar(plt0, scale='linear', numticks=5)
+    else:  # log
+        plt0 = ax0.contourf(u_grid, v_grid, intensity_grid, contour_range, cmap=cmap,
+                            norm=colors.LogNorm(vmin=max(intensity_grid.min(), 1), vmax=intensity_grid.max()))
+        colorbar(plt0, scale='log', numticks=5)
+    ax0.axis('equal')
+
+    # add the projection of the elevation angle, depending on the center of projection
+    for ii in range(15, 90, 5):
+        circle =\
+            patches.Circle((0, 0), radius_mean * np.sin(ii * np.pi / 180) /
+                           (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
+                           color='grey', fill=False, linestyle='dotted', linewidth=0.5)
+        ax0.add_artist(circle)
+    for ii in range(10, 90, 20):
+        circle =\
+            patches.Circle((0, 0), radius_mean * np.sin(ii * np.pi / 180) /
+                           (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
+                           color='grey', fill=False, linestyle='dotted', linewidth=1)
+        ax0.add_artist(circle)
+    for ii in range(10, 95, 20):
+        ax0.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
+                 str(ii) + r'$^\circ$', fontsize=10, color='k')
+    circle = patches.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
+    ax0.add_artist(circle)
+
+    # add azimutal lines every 5 and 45 degrees
+    for ii in range(5, 365, 5):
+        ax0.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
+                 linestyle='dotted', linewidth=0.5)
+    for ii in range(0, 365, 20):
+        ax0.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
+                 linestyle='dotted', linewidth=1)
+
+    # draw circles corresponding to particular reflection
+    if plot_planes == 1 and len(planes) != 0:
+        indx = 0
+        for key, value in planes.items():
+            circle = patches.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
+                                    (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                                    color='g', fill=False, linestyle='dotted', linewidth=1.5)
+            ax0.add_artist(circle)
+            ax0.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                     (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                     np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
+                     (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
+                     key, fontsize=10, color='k', fontweight='bold')
+            indx = indx + 6
+            print(key + ": ", str('{:.2f}'.format(value)))
+        print('\n')
+    ax0.set_xlabel('u ' + uv_labels[0])
+    ax0.set_ylabel('v ' + uv_labels[1])
+    if hide_axis:
+        ax0.axis('off')
+        ax0.set_title(title + '\nu horizontal, v vertical')
+    else:
+        ax0.set_title(title)
+    ax0.axis('scaled')
+    plt.pause(0.5)
+    plt.ioff()
+    return fig, ax0
+
+
 def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None, plot_colorbar=False,
                 vmin=np.nan, vmax=np.nan, cmap=my_cmap, title='', labels=None, scale='linear',
                 tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
@@ -1132,111 +1237,6 @@ def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped becaus
     ax0.set_zlabel('X')
     plt.title(title)
 
-    plt.pause(0.5)
-    plt.ioff()
-    return fig, ax0
-
-
-def plot_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, title="", plot_planes=True,
-                       contour_range=None, max_angle=95, cmap=my_cmap, uv_labels=('', ''), hide_axis=False,
-                       scale='linear'):
-    """
-    Plot the stereographic projection with some cosmetics.
-
-    :param euclidian_u: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
-    :param euclidian_v: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
-    :param color: flattened array, intensity of density kernel estimation at radius_mean
-    :param radius_mean: radius of the sphere in reciprocal space from which the projection is done
-    :param planes: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
-    :param title: title for the stereographic plot
-    :param plot_planes: if True, will draw circle corresponding to crystallographic planes in the pole figure
-    :param contour_range: range for the plot contours
-    :param max_angle: maximum angle in degrees of the stereographic projection (should be larger than 90)
-    :param cmap: colormap to be used
-    :param uv_labels: tuple of strings, labels for the u axis and the v axis, respectively
-    :param hide_axis: hide the axis frame, ticks and ticks labels
-    :param scale: 'linear' or 'log', scale for the colorbar of the plot
-    :return: figure and axe instances
-    """
-    from scipy.interpolate import griddata
-
-    nb_points = 5 * max_angle + 1
-    v_grid, u_grid = np.mgrid[-max_angle:max_angle:(nb_points*1j), -max_angle:max_angle:(nb_points*1j)]
-    # v_grid is changing along the vertical axis, u_grid is changing along the horizontal axis
-    intensity_grid = griddata((euclidian_v, euclidian_u), color, (v_grid, u_grid), method='linear')
-    intensity_grid = intensity_grid / intensity_grid[intensity_grid > 0].max() * 10000  # normalize for easier plotting
-
-    if contour_range is None:
-        if scale == 'linear':
-            contour_range = range(0, 10001, 250)
-        elif scale == 'log':
-            contour_range = np.logspace(0, 4, num=20, endpoint=True, base=10.0)
-        else:
-            raise ValueError('Incorrect value for scale parameter')
-
-    # plot the stereographic projection
-    plt.ion()
-    fig, ax0 = plt.subplots(nrows=1, ncols=1, figsize=(12, 9), facecolor='w', edgecolor='k')
-    if scale == 'linear':
-        plt0 = ax0.contourf(u_grid, v_grid, intensity_grid, contour_range, cmap=cmap)
-        colorbar(plt0, scale='linear', numticks=5)
-    else:  # log
-        plt0 = ax0.contourf(u_grid, v_grid, intensity_grid, contour_range, cmap=cmap,
-                            norm=colors.LogNorm(vmin=max(intensity_grid.min(), 1), vmax=intensity_grid.max()))
-        colorbar(plt0, scale='log', numticks=5)
-    ax0.axis('equal')
-
-    # add the projection of the elevation angle, depending on the center of projection
-    for ii in range(15, 90, 5):
-        circle =\
-            patches.Circle((0, 0), radius_mean * np.sin(ii * np.pi / 180) /
-                           (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                           color='grey', fill=False, linestyle='dotted', linewidth=0.5)
-        ax0.add_artist(circle)
-    for ii in range(10, 90, 20):
-        circle =\
-            patches.Circle((0, 0), radius_mean * np.sin(ii * np.pi / 180) /
-                           (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean,
-                           color='grey', fill=False, linestyle='dotted', linewidth=1)
-        ax0.add_artist(circle)
-    for ii in range(10, 95, 20):
-        ax0.text(-radius_mean * np.sin(ii * np.pi / 180) / (1 + np.cos(ii * np.pi / 180)) * 90 / radius_mean, 0,
-                 str(ii) + r'$^\circ$', fontsize=10, color='k')
-    circle = patches.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
-    ax0.add_artist(circle)
-
-    # add azimutal lines every 5 and 45 degrees
-    for ii in range(5, 365, 5):
-        ax0.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
-                 linestyle='dotted', linewidth=0.5)
-    for ii in range(0, 365, 20):
-        ax0.plot([0, 90 * np.cos(ii * np.pi / 180)], [0, 90 * np.sin(ii * np.pi / 180)], color='grey',
-                 linestyle='dotted', linewidth=1)
-
-    # draw circles corresponding to particular reflection
-    if plot_planes == 1 and len(planes) != 0:
-        indx = 0
-        for key, value in planes.items():
-            circle = patches.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
-                                    (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                                    color='g', fill=False, linestyle='dotted', linewidth=1.5)
-            ax0.add_artist(circle)
-            ax0.text(np.cos(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                     (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                     np.sin(indx * np.pi / 180) * radius_mean * np.sin(value * np.pi / 180) /
-                     (1 + np.cos(value * np.pi / 180)) * 90 / radius_mean,
-                     key, fontsize=10, color='k', fontweight='bold')
-            indx = indx + 6
-            print(key + ": ", str('{:.2f}'.format(value)))
-        print('\n')
-    ax0.set_xlabel('u ' + uv_labels[0])
-    ax0.set_ylabel('v ' + uv_labels[1])
-    if hide_axis:
-        ax0.axis('off')
-        ax0.set_title(title + '\nu horizontal, v vertical')
-    else:
-        ax0.set_title(title)
-    ax0.axis('scaled')
     plt.pause(0.5)
     plt.ioff()
     return fig, ax0

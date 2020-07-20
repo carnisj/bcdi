@@ -223,19 +223,19 @@ def main(calc_self, user_comment):
                                                                                       qy_sphere[:, np.newaxis]),
                                                                                      axis=1))
             # plot the projection from the South pole
-            fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1],
-                                           color=sphere_int, radius_mean=1, title="Projection from the South pole",
-                                           plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
-            fig.text(0.05, 0.95, 'Projection from the South pole: intensity at q={:.3f}:'.format(q_value),
-                     size=14)
+            fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1],
+                                              color=sphere_int, radius_mean=1,
+                                              title='Projection from the South pole'
+                                                    ' at q={:.3f}'.format(q_value),
+                                              plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
             fig.savefig(savedir + 'South pole_q={:.3f}.png'.format(q_value))
 
             # plot the projection from the North pole
-            fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3],
-                                           color=sphere_int, radius_mean=1, title="Projection from the North pole",
-                                           plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
-            fig.text(0.05, 0.95, 'Projection from the North pole: intensity at q={:.3f}:'.format(q_value),
-                     size=14)
+            fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3],
+                                              color=sphere_int, radius_mean=1,
+                                              title='Projection from the North pole'
+                                                    ' at q={:.3f}'.format(q_value),
+                                              plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
             fig.savefig(savedir + 'North pole_q={:.3f}.png'.format(q_value))
             plt.pause(0.1)
 
