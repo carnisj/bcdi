@@ -585,7 +585,9 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={
     v_grid, u_grid = np.mgrid[-max_angle:max_angle:(nb_points*1j), -max_angle:max_angle:(nb_points*1j)]
     # v_grid is changing along the vertical axis, u_grid is changing along the horizontal axis
     intensity_grid = griddata((euclidian_v, euclidian_u), color, (v_grid, u_grid), method='linear')
-    intensity_grid = intensity_grid / intensity_grid[intensity_grid > 0].max() * 10000  # normalize for easier plotting
+    nan_indices = np.isnan(intensity_grid)
+    # normalize the intensity for easier plotting
+    intensity_grid = intensity_grid / abs(intensity_grid[~nan_indices]).max() * 10000
 
     if contour_range is None:
         if scale == 'linear':
@@ -603,7 +605,8 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={
         colorbar(plt0, scale='linear', numticks=5)
     else:  # log
         plt0 = ax0.contourf(u_grid, v_grid, intensity_grid, contour_range, cmap=cmap,
-                            norm=colors.LogNorm(vmin=max(intensity_grid.min(), 1), vmax=intensity_grid.max()))
+                            norm=colors.LogNorm(vmin=max(intensity_grid[~nan_indices].min(), 1),
+                                                vmax=intensity_grid[~nan_indices].max()))
         colorbar(plt0, scale='log', numticks=5)
     ax0.axis('equal')
 
