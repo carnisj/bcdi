@@ -25,8 +25,8 @@ import bcdi.utils.utilities as util
 import bcdi.xcca.xcca_utils as xcca
 
 helptext = """
-Calculate the angular cross-correlation in a 3D reciprocal space dataset at the same q value or between two different q
-values. The 3D dataset is expected to be interpolated on an orthonormal grid.
+Calculate the angular cross-correlation in a 3D reciprocal space dataset over a range in q values, at the same q value
+or between two different q values. The 3D dataset is expected to be interpolated on an orthonormal grid.
 
 Input: the 3D dataset, an optional 3D mask, (qx, qy, qz) values
 
@@ -42,6 +42,8 @@ angular_resolution = 0.5  # in degrees, angle between to adjacent points for the
 debug = False  # set to True to see more plots
 origin_qspace = (330, 204, 330)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
 q_range = np.arange(start=0.104, stop=0.172, step=0.01)  # q values in 1/nm where to calculate the cross-correlation
+same_q = False  # True if you want to calculate the cross-correlation at the same q. If False, it will calculate the
+# cross-correlation between the first q value and all others
 # the stop value is not included in np.arange()
 hotpix_threshold = 1e6  # data above this threshold will be masked
 plot_meandata = False  # if True, will plot the 1D average of the data
@@ -74,7 +76,7 @@ def collect_result(result):
         sys.stdout.flush()
 
 
-def main():
+def main(calc_self, user_comment):
     ##########################
     # check input parameters #
     ##########################
@@ -224,11 +226,18 @@ def main():
 
     for ind_q in range(len(q_range)):
         pool = mp.Pool(mp.cpu_count())  # use this number of processes
-        key_q = 'q' + str(ind_q + 1)
-        print('\n' + key_q + ': the CCF will be calculated over {:d} * {:d}'
-              ' points and {:d} angular bins'.format(nb_points[ind_q], nb_points[ind_q], corr_count.shape[0]))
+        if calc_self:
+            key_q1 = 'q' + str(ind_q + 1)
+            key_q2 = key_q1
+            print('\n' + key_q2 + ': the CCF will be calculated over {:d} * {:d}'
+                  ' points and {:d} angular bins'.format(nb_points[ind_q], nb_points[ind_q], corr_count.shape[0]))
+        else:
+            key_q1 = 'q1'
+            key_q2 = 'q' + str(ind_q + 1)
+            print('\n' + key_q2 + ': the CCF will be calculated over {:d} * {:d}'
+                  ' points and {:d} angular bins'.format(nb_points[0], nb_points[ind_q], corr_count.shape[0]))
         for ind_point in range(nb_points[ind_q]):
-            pool.apply_async(xcca.calc_ccf, args=(ind_point, key_q, key_q, angular_bins, theta_phi_int),
+            pool.apply_async(xcca.calc_ccf, args=(ind_point, key_q1, key_q2, angular_bins, theta_phi_int),
                              callback=collect_result, error_callback=util.catch_error)
 
         # close the pool and let all the processes complete
@@ -250,8 +259,12 @@ def main():
     #######################################
     # save the cross-correlation function #
     #######################################
+    if calc_self:
+        user_comment = user_comment + '_self'
+    else:
+        user_comment = user_comment + '_cross'
     filename = 'CCFmap_qstart={:.3f}_qstop={:.3f}'.format(q_range[0], q_range[-1]) +\
-               '_interp{:d}_res{:.3f}'.format(interp_factor, angular_resolution) + comment
+               '_interp{:d}_res{:.3f}'.format(interp_factor, angular_resolution) + user_comment
     np.savez_compressed(savedir + filename + '.npz', angles=180*angular_bins/np.pi, q_range=q_range,
                         ccf=cross_corr[:, :, 0], points=cross_corr[:, :, 1])
 
@@ -273,7 +286,10 @@ def main():
     ax.set_xticks(np.arange(0, 181, 30))
     ax.set_yticks(q_range)
     ax.set_aspect('auto')
-    ax.set_title('CCF from q={:.3f} 1/nm  to q={:.3f} 1/nm'.format(q_range[0], q_range[-1]))
+    if calc_self:
+        ax.set_title('self CCF from q={:.3f} 1/nm  to q={:.3f} 1/nm'.format(q_range[0], q_range[-1]))
+    else:
+        ax.set_title('cross CCF from q={:.3f} 1/nm  to q={:.3f} 1/nm'.format(q_range[0], q_range[-1]))
     gu.colorbar(plt0, scale='linear', numticks=5)
     fig.savefig(savedir + filename + '.png')
 
@@ -282,4 +298,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(calc_self=same_q, user_comment=comment)
