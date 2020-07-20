@@ -27,6 +27,7 @@ datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange
 savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
 comment = ''  # should start with _
 ylim = None  # [0, 60]  # limits used for the vertical axis of plots, leave None otherwise
+save = False  # True to save the figure
 ##########################
 # end of user parameters #
 ##########################
@@ -67,7 +68,8 @@ ax.set_xlabel('Angle (deg)')
 ax.set_ylabel('Cross-correlation')
 ax.set_xticks(np.arange(0, 181, 30))
 ax.set_title('CCF' + comment)
-fig.savefig(savedir + filename + comment + '_ylim[{:.1f},{:.1f}]'.format(ymin, ymax)+'.png')
+if save:
+    fig.savefig(savedir + filename + comment + '_ylim[{:.1f},{:.1f}]'.format(ymin, ymax)+'.png')
 
 _, ax = plt.subplots()
 ax.plot(angles, points, linestyle='None', marker='.', markerfacecolor='blue')
