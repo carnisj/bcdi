@@ -35,6 +35,27 @@ ccd_calib_sixs.py
    :end-before: """
    :language: rst
 
+.. _facet:
+
+Facet recognition
+-----------------
+
+`facet_strain.py`:
+^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/facet_recognition/scripts/facet_strain.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+`polarplot.py`:
+^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/facet_recognition/scripts/polarplot.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 .. _graph:
 
 Graph
@@ -104,27 +125,75 @@ Graph
    :end-before: """
    :language: rst
 
-.. _facet:
+.. _preprocess:
 
-Facet recognition
------------------
+Preprocessing
+-------------
 
-`facet_strain.py`:
-^^^^^^^^^^^^^^^^^^
+`apodize.py`:
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/facet_recognition/scripts/facet_strain.py
+.. literalinclude:: ../../bcdi/preprocessing/scripts/apodize.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`polarplot.py`:
-^^^^^^^^^^^^^^^
+`concatenate_scans.py`:
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/facet_recognition/scripts/polarplot.py
+.. literalinclude:: ../../bcdi/preprocessing/scripts/concatenate_scans.py
    :start-after: helptext
    :end-before: """
    :language: rst
-   
+
+`preprocess_bcdi.py`:
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/preprocess_bcdi.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+`preprocess_cdi.py`:
+^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/preprocess_cdi.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+`read_bcdi_data.py`:
+^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/read_bcdi_data.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+read_edf.py
+^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/read_edf.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+read_data_P10.py
+^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/read_data_P10.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+`rescale_support.py`:
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/rescale_support.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 .. _postprocess:
 
 Postprocessing
@@ -214,75 +283,6 @@ volume_phasing.py
 ^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/postprocessing/scripts/volume_phasing.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
-.. _preprocess:
-
-Preprocessing
--------------
-
-`apodize.py`:
-^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/preprocessing/scripts/apodize.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
-`concatenate_scans.py`:
-^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/preprocessing/scripts/concatenate_scans.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-`preprocess_bcdi_combined.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/preprocessing/scripts/preprocess_bcdi_combined.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-`preprocess_cdi_combined.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/preprocessing/scripts/preprocess_cdi_combined.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-`read_bcdi_data.py`:
-^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/preprocessing/scripts/read_bcdi_data.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-read_edf.py
-^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/preprocessing/scripts/read_edf.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-read_data_P10.py
-^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/preprocessing/scripts/read_data_P10.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-`rescale_support.py`:
-^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/preprocessing/scripts/rescale_support.py
    :start-after: helptext
    :end-before: """
    :language: rst
