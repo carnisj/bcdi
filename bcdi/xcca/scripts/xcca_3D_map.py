@@ -23,6 +23,7 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.xcca.xcca_utils as xcca
+import bcdi.facet_recognition.facet_utils as fu
 
 helptext = """
 Calculate the angular cross-correlation in a 3D reciprocal space dataset over a range in q values, at the same q value
@@ -169,10 +170,10 @@ def main(calc_self, user_comment):
     [dict_fields.append('q' + str(idx+1)) for idx in range(len(q_range))]  # ['q1', 'q2', 'q3', ...]
     nb_points = []
 
-    for counter, value in enumerate(q_range):
-        nb_pixels = (np.logical_and((distances < q_range[counter]+dq), (distances > q_range[counter]-dq))).sum()
+    for counter, q_value in enumerate(q_range):
+        nb_pixels = (np.logical_and((distances < q_value+dq), (distances > q_value-dq))).sum()
 
-        print('\nNumber of voxels for the sphere of radius q ={:.3f} 1/nm:'.format(q_range[counter]), nb_pixels)
+        print('\nNumber of voxels for the sphere of radius q ={:.3f} 1/nm:'.format(q_value), nb_pixels)
 
         nb_pixels = int(nb_pixels / interp_factor)
         print('Dividing the number of voxels by interp_factor: {:d} voxels remaining'.format(nb_pixels))
@@ -184,9 +185,9 @@ def main(calc_self, user_comment):
         theta = np.arccos(1 - 2*indices/nb_pixels)  # theta is the polar angle of the spherical coordinates
         phi = np.pi * (1 + np.sqrt(5)) * indices  # phi is the azimuthal angle of the spherical coordinates
 
-        qx_sphere = q_range[counter] * np.cos(phi) * np.sin(theta)
-        qz_sphere = q_range[counter] * np.cos(theta)
-        qy_sphere = q_range[counter] * np.sin(phi) * np.sin(theta)
+        qx_sphere = q_value * np.cos(phi) * np.sin(theta)
+        qz_sphere = q_value * np.cos(theta)
+        qy_sphere = q_value * np.sin(phi) * np.sin(theta)
 
         # interpolate the data onto the new points
         rgi = RegularGridInterpolator((qx, qz, qy), data, method='linear', bounds_error=False, fill_value=np.nan)
@@ -197,9 +198,12 @@ def main(calc_self, user_comment):
         nan_indices = np.argwhere(np.isnan(sphere_int))
         theta = np.delete(theta, nan_indices)
         phi = np.delete(phi, nan_indices)
+        qx_sphere = np.delete(qx_sphere, nan_indices)
+        qz_sphere = np.delete(qz_sphere, nan_indices)
+        qy_sphere = np.delete(qy_sphere, nan_indices)
         sphere_int = np.delete(sphere_int, nan_indices)
         # normalize the intensity by the median value (remove the influence of the form factor)
-        print('q={:.3f}:'.format(q_range[counter]), ' normalizing by the median value', np.median(sphere_int))
+        print('q={:.3f}:'.format(q_value), ' normalizing by the median value', np.median(sphere_int))
         sphere_int = sphere_int / np.median(sphere_int)
 
         theta_phi_int[dict_fields[counter]] = np.concatenate((theta[:, np.newaxis],
@@ -207,17 +211,32 @@ def main(calc_self, user_comment):
                                                               sphere_int[:, np.newaxis]), axis=1)
         # update the number of points without nan
         nb_points.append(len(theta))
-        print('q={:.3f}:'.format(q_range[counter]), ' removing', nan_indices.size, 'nan values,',
+        print('q={:.3f}:'.format(q_value), ' removing', nan_indices.size, 'nan values,',
               nb_points[counter], 'remain')
+
         if debug:
-            # TODO: plot the stereographic projection instead
-            fig = plt.figure()
-            ax = Axes3D(fig)
-            ax.scatter(qx_sphere, qz_sphere, qy_sphere, c=np.log10(sphere_int), cmap=my_cmap)
-            ax.set_xlabel('qx')
-            ax.set_ylabel('qz')
-            ax.set_zlabel('qy')
-            plt.title('Intensity interpolated on a sphere of radius q ={:.3f} 1/nm'.format(q_range[value]))
+            # calculate the stereographic projection
+            stereo_proj, uv_labels = fu.calc_stereoproj_facet(projection_axis=1, radius_mean=q_value,
+                                                              stereo_center=0,
+                                                              vectors=np.concatenate((qx_sphere[:, np.newaxis],
+                                                                                      qz_sphere[:, np.newaxis],
+                                                                                      qy_sphere[:, np.newaxis]),
+                                                                                     axis=1))
+            # plot the projection from the South pole
+            fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1],
+                                           color=sphere_int, radius_mean=1, title="Projection from the South pole",
+                                           plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
+            fig.text(0.05, 0.95, 'Projection from the South pole: intensity at q={:.3f}:'.format(q_value),
+                     size=14)
+            fig.savefig(savedir + 'South pole_q={:.3f}.png'.format(q_value))
+
+            # plot the projection from the North pole
+            fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3],
+                                           color=sphere_int, radius_mean=1, title="Projection from the North pole",
+                                           plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
+            fig.text(0.05, 0.95, 'Projection from the North pole: intensity at q={:.3f}:'.format(q_value),
+                     size=14)
+            fig.savefig(savedir + 'North pole_q={:.3f}.png'.format(q_value))
             plt.pause(0.1)
 
         del qx_sphere, qz_sphere, qy_sphere, theta, phi, sphere_int, indices, nan_indices
