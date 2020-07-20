@@ -94,7 +94,12 @@ def collect_result_debug(ccf_uniq_val, counter_val, counter_indices):
         sys.stdout.flush()
 
 
-def main():
+def main(user_comment):
+    """
+    Protection for multiprocessing.
+
+    :param user_comment: comment to include in the filename when saving results
+    """
     ##########################
     # check input parameters #
     ##########################
@@ -278,7 +283,7 @@ def main():
     # save the cross-correlation function #
     #######################################
     filename = 'CCF_q1={:.3f}_q2={:.3f}'.format(q_xcca[0], q_xcca[1]) +\
-               '_points{:d}_interp{:d}_res{:.3f}'.format(nb_points[0], interp_factor, angular_resolution) + comment
+               '_points{:d}_interp{:d}_res{:.3f}'.format(nb_points[0], interp_factor, angular_resolution) + user_comment
     np.savez_compressed(savedir + filename + '.npz', angles=180*angular_bins/np.pi, ccf=corr_count[:, 0],
                         points=corr_count[:, 1])
 
@@ -315,4 +320,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(user_comment=comment)

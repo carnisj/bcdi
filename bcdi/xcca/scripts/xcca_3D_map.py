@@ -77,6 +77,12 @@ def collect_result(result):
 
 
 def main(calc_self, user_comment):
+    """
+    Protection for multiprocessing.
+
+    :param calc_self: if True, the cross-correlation will be calculated between same q-values
+    :param user_comment: comment to include in the filename when saving results
+    """
     ##########################
     # check input parameters #
     ##########################
