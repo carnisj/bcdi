@@ -147,6 +147,11 @@ except KeyError:
     print('Keys in the NPZ file:', list(npzfile.keys()))
     sys.exit()
 
+#############################################################
+# offset the cross-correlation if there are negative values #
+#############################################################
+for idx in range(ccf.shape[0]):  # loop over the q values
+    ccf[idx, :] = ccf[idx, :] - min(0, ccf[idx, :].min())
 
 #######################################
 # plot the cross-correlation function #
