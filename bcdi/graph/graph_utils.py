@@ -560,7 +560,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
 
 def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, title="", plot_planes=True,
                           contour_range=None, max_angle=95, cmap=my_cmap, uv_labels=('', ''), hide_axis=False,
-                          scale='linear'):
+                          scale='linear', debugging=False):
     """
     Plot the stereographic projection with some cosmetics.
 
@@ -577,9 +577,19 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={
     :param uv_labels: tuple of strings, labels for the u axis and the v axis, respectively
     :param hide_axis: hide the axis frame, ticks and ticks labels
     :param scale: 'linear' or 'log', scale for the colorbar of the plot
+    :param debugging: True to see the scatter plot of euclidian coordinates
     :return: figure and axe instances
     """
     from scipy.interpolate import griddata
+
+    if debugging:
+        _, ax0 = plt.subplots(nrows=1, ncols=1)
+        ax0.scatter(euclidian_u, euclidian_v, s=2)
+        circle = patches.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
+        ax0.add_artist(circle)
+        ax0.axis('scaled')
+        ax0.set_xlim(-max_angle, max_angle)
+        ax0.set_ylim(-max_angle, max_angle)
 
     nb_points = 5 * max_angle + 1
     v_grid, u_grid = np.mgrid[-max_angle:max_angle:(nb_points*1j), -max_angle:max_angle:(nb_points*1j)]
