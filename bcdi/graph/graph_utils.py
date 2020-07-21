@@ -584,12 +584,18 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={
 
     if debugging:
         _, ax0 = plt.subplots(nrows=1, ncols=1)
-        ax0.scatter(euclidian_u, euclidian_v, s=2)
+        plt0 = ax0.scatter(euclidian_u, euclidian_v, s=6, c=color, cmap=my_cmap,
+                           norm=colors.LogNorm(vmin=max(color[~np.isnan(color)].min(), 1),
+                                               vmax=color[~np.isnan(color)].max()))
         circle = patches.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
         ax0.add_artist(circle)
         ax0.axis('scaled')
         ax0.set_xlim(-max_angle, max_angle)
         ax0.set_ylim(-max_angle, max_angle)
+        ax0.set_xlabel('u ' + uv_labels[0])
+        ax0.set_ylabel('v ' + uv_labels[1])
+        ax0.set_title(title)
+        colorbar(plt0, scale='log', numticks=5)
 
     nb_points = 5 * max_angle + 1
     v_grid, u_grid = np.mgrid[-max_angle:max_angle:(nb_points*1j), -max_angle:max_angle:(nb_points*1j)]
