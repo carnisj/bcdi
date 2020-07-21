@@ -43,7 +43,7 @@ angular_resolution = 0.1  # in degrees, angle between to adjacent points for the
 debug = True  # set to True to see more plots
 origin_qspace = (330, 204, 330)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
 q_xcca = [0.104, 0.172]  # q values in 1/nm where to calculate the angular cross-correlation
-hotpix_threshold = 1e6  # data above this threshold will be masked
+hotpix_threshold = 1e9  # data above this threshold will be masked
 single_proc = False  # do not use multiprocessing if True
 plot_meandata = False  # if True, will plot the 1D average of the data
 ##################################################################
@@ -210,14 +210,16 @@ def main(user_comment):
             sphere_int = rgi(np.concatenate((qx_sphere.reshape((1, nb_pixels)), qz_sphere.reshape((1, nb_pixels)),
                                              qy_sphere.reshape((1, nb_pixels)))).transpose())
 
-            # remove nan values here, then we do not need to care about it anymore in the for loop following
+            # look for nan values
             nan_indices = np.argwhere(np.isnan(sphere_int))
+            if debug:
+                sphere_debug = np.copy(sphere_int)  # create a copy to see also nans in the debugging plot
+
+            #  remove nan values before calculating the cross-correlation function
             theta = np.delete(theta, nan_indices)
             phi = np.delete(phi, nan_indices)
-            qx_sphere = np.delete(qx_sphere, nan_indices)
-            qz_sphere = np.delete(qz_sphere, nan_indices)
-            qy_sphere = np.delete(qy_sphere, nan_indices)
             sphere_int = np.delete(sphere_int, nan_indices)
+
             # normalize the intensity by the median value (remove the influence of the form factor)
             print('q={:.3f}:'.format(q_value), ' normalizing by the median value', np.median(sphere_int))
             sphere_int = sphere_int / np.median(sphere_int)
@@ -240,7 +242,7 @@ def main(user_comment):
                                                                                          axis=1))
                 # plot the projection from the South pole
                 fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1],
-                                                  color=sphere_int, radius_mean=1,
+                                                  color=sphere_debug, radius_mean=1, debugging=True,
                                                   title='Projection from the South pole'
                                                         ' at q={:.3f} (1/nm)'.format(q_value),
                                                   plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
@@ -248,12 +250,13 @@ def main(user_comment):
 
                 # plot the projection from the North pole
                 fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3],
-                                                  color=sphere_int, radius_mean=1,
+                                                  color=sphere_debug, radius_mean=1, debugging=True,
                                                   title='Projection from the North pole'
                                                         ' at q={:.3f} (1/nm)'.format(q_value),
                                                   plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
                 fig.savefig(savedir + 'North pole_q={:.3f}.png'.format(q_value))
                 plt.pause(0.1)
+                del sphere_debug
 
             del qx_sphere, qz_sphere, qy_sphere, theta, phi, sphere_int, indices, nan_indices
             gc.collect()
