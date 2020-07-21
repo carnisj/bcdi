@@ -44,6 +44,7 @@ debug = True  # set to True to see more plots
 origin_qspace = (330, 204, 330)  # origin of the reciprocal space in pixels in the order (qx, qz, qy)
 q_xcca = [0.104, 0.172]  # q values in 1/nm where to calculate the angular cross-correlation
 hotpix_threshold = 1e9  # data above this threshold will be masked
+# check once in the stereographic projection that usefull data is not masked, otherwise correlations will be wrong
 single_proc = False  # do not use multiprocessing if True
 plot_meandata = False  # if True, will plot the 1D average of the data
 ##################################################################
