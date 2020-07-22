@@ -6,7 +6,18 @@
 Scripts Reference
 =================
 
-.. _experiment:
+.. _algorithm:
+
+Algorithms
+----------
+
+flatten_modulus.py
+^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/algorithms/scripts/flatten_modulus.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
 
 Experiment
 ----------

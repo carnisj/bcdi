@@ -23,7 +23,8 @@ setup(name='bcdi', version='0.0.8',
       # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},  # the file needs to be in a package
       # data_files=[('bcdi/data', ['bcdi/data/S978_LLKf000.460.cxi'])], # data files will be installed
       # outtside of the package, which is not ideal
-      scripts=['bcdi/experiment/scripts/ccd_calib.py',
+      scripts=['bcdi/algorithms/scripts/flatten_modulus.py',
+               'bcdi/experiment/scripts/ccd_calib.py',
                'bcdi/experiment/scripts/ccd_calib_cristal.py',
                'bcdi/experiment/scripts/ccd_calib_sixs.py',
                'bcdi/facet_recognition/scripts/facet_strain.py',

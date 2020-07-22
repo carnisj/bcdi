@@ -1,3 +1,5 @@
+* Feature: implement flatten_modulus.py to remove low frequency artefacts in the modulus reconstructed by phase retrieval
+
 * Feature: implement xcca_3D_map.py to calculate the angular cross-correlation CCF(q,q) over a range in q
 
 * Feature: implement view_ccf.py and view_ccf_map.py to plot the cross-correlation function output
