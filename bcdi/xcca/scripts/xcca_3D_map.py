@@ -231,6 +231,7 @@ def main(calc_self, user_comment):
                                                     ' at q={:.3f} (1/nm)'.format(q_value),
                                               plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
             fig.savefig(savedir + 'South pole_q={:.3f}.png'.format(q_value))
+            plt.close(fig)
 
             # plot the projection from the North pole
             fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3],
@@ -239,7 +240,7 @@ def main(calc_self, user_comment):
                                                     ' at q={:.3f} (1/nm)'.format(q_value),
                                               plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
             fig.savefig(savedir + 'North pole_q={:.3f}.png'.format(q_value))
-            plt.pause(0.1)
+            plt.close(fig)
             del sphere_debug
 
         del qx_sphere, qz_sphere, qy_sphere, theta, phi, sphere_int, indices, nan_indices
