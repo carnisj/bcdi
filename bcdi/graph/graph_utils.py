@@ -202,7 +202,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         position = [nb_raws*100 + nb_columns*10 + index for index in range(1, nb_subplots+1)]
 
     plt.ion()
-    plt.figure(figsize=(12, 9))
+    fig = plt.figure(figsize=(12, 9))
     for idx in range(nb_subplots):
 
         axis = plt.subplot(position[idx])
@@ -258,6 +258,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                     hor_labels = ("Q$_y$", "Q$_y$", "Q$_z$")
                     if sum_axis == 0:
                         invert_yaxis = True
+                    else:
+                        invert_yaxis = False
                 else:  # detector frame
                     if sum_frames:
                         slice_names = (' sum along Z', ' sum along Y', ' sum along X')
@@ -275,6 +277,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                     hor_labels = ('x', 'x', 'y')
                     if sum_axis == 0:
                         invert_yaxis = True
+                    else:
+                        invert_yaxis = False
                 else:  # detector frame
                     if sum_frames:
                         slice_names = (' sum along Z', ' sum along Y', ' sum along X')
@@ -394,7 +398,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     plt.pause(0.5)
     plt.ioff()
 
-    return plt.gcf()
+    return fig
 
 
 def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, levels=150, width_z=None, width_y=None,
