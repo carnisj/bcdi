@@ -29,14 +29,15 @@ Input: a 3D real intensity array
 datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/current_paper/"
 savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/scratch/"
 comment = ''  # should start with _
-threshold = 0  # the intensity (normalized to 1) below this value will be set to 0
+threshold_bckg = 0.2  # threshold used to define the support for background fitting (intensity normalized to 1)
+threshold_modul = 0.01  # threshold used to define the support for nodulation fitting (intensity normalized to 1)
 roll_modes = (0, -8, 0)   # axis=(0, 1, 2), correct a misalignement of the data
 save = False  # True to save the result as a NPZ file
 ##############################################
 # parameters for the normalization algorithm #
 ##############################################
 nb_phases = 1  # number of encoded phases
-background_order = 4  # degree of the polynomial for background fitting
+background_order = 3  # degree of the polynomial for background fitting
 modulation_order = 4  # degree of the polynomial for modulation fitting
 ##########################
 # end of user parameters #
@@ -85,45 +86,58 @@ nz, ny, nx = obj.shape
 ######################
 # correct a misalignement of the object
 obj = np.roll(obj, roll_modes, axis=(0, 1, 2))
-fig, _, _ = gu.multislices_plot(abs(obj), sum_frames=True, plot_colorbar=True, reciprocal_space=False,
-                                is_orthogonal=True,  title='obj after centering')
+gu.multislices_plot(abs(obj), sum_frames=True, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
+                    title='obj after centering')
 
+obj[np.isnan(obj)] = 0
 obj = abs(obj)
-obj = obj / obj[~np.isnan(obj)].max()  # normalize to 1
-obj[obj < threshold] = 0  # apply intensity threshold
+obj = obj / obj.max()  # normalize to 1
+obj[obj < threshold_bckg] = 0  # apply intensity threshold
+gu.multislices_plot(abs(obj), sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
+                    title='obj after normalization and thresholding')
 
-###########################
-# set up the grid and fit #
-###########################
-grid_z, grid_y, grid_x = np.meshgrid(np.arange(0, nz, 1), np.arange(0, ny, 1), np.arange(0, nx, 1), indexing='ij')
-xdata = np.concatenate((grid_z.reshape((1, obj.size)), grid_y.reshape((1, obj.size)),
-                        grid_x.reshape((1, obj.size))), axis=0)  # xdata should have a 3xN array
+#############################################################
+# fit the background to the points belonging to the support #
+#############################################################
+support = np.zeros(obj.shape)
+support[obj >= threshold_bckg] = obj[obj >= threshold_bckg]
+gu.multislices_plot(support, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
+                    title='support for background fitting')
+xdata = np.nonzero(support)
+nb_nonzero = xdata[0].size
 
 if background_order == 1:
     guess = np.ones(4)
-    params, cov = optimize.curve_fit(fit3d_poly1, xdata=xdata, ydata=obj.reshape(obj.size), p0=guess)
+    params, cov = optimize.curve_fit(fit3d_poly1, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+                                     p0=guess)
 elif background_order == 2:
     guess = np.ones(7)
-    params, cov = optimize.curve_fit(fit3d_poly2, xdata=xdata, ydata=obj.reshape(obj.size), p0=guess)
+    params, cov = optimize.curve_fit(fit3d_poly2, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+                                     p0=guess)
 elif background_order == 3:
     guess = np.ones(10)
-    params, cov = optimize.curve_fit(fit3d_poly3, xdata=xdata, ydata=obj.reshape(obj.size), p0=guess)
-else:  # 4th order polynomial
+    params, cov = optimize.curve_fit(fit3d_poly3, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+                                     p0=guess)
+else:
     guess = np.ones(13)
-    params, cov = optimize.curve_fit(fit3d_poly4, xdata=xdata, ydata=obj.reshape(obj.size), p0=guess)
+    params, cov = optimize.curve_fit(fit3d_poly4, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+                                     p0=guess)
 
 ##############################
 # plot the fitted background #
 ##############################
+grid_z, grid_y, grid_x = np.meshgrid(np.arange(0, nz, 1), np.arange(0, ny, 1), np.arange(0, nx, 1), indexing='ij')
+grid = np.concatenate((grid_z.reshape((1, obj.size)), grid_y.reshape((1, obj.size)),
+                       grid_x.reshape((1, obj.size))), axis=0)  # xdata should have a 3xN array
 if background_order == 1:
-    background = fit3d_poly1(xdata, params[0], params[1], params[2], params[3])
+    background = fit3d_poly1(grid, params[0], params[1], params[2], params[3])
 elif background_order == 2:
-    background = fit3d_poly2(xdata, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
+    background = fit3d_poly2(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
 elif background_order == 3:
-    background = fit3d_poly3(xdata, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
+    background = fit3d_poly3(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                              params[7], params[8], params[9])
-else:  # 4th order polynomial
-    background = fit3d_poly4(xdata, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
+else:
+    background = fit3d_poly4(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                              params[7], params[8], params[9], params[10], params[11], params[12])
 del params, cov
 gc.collect()
@@ -136,43 +150,56 @@ gu.multislices_plot(background, sum_frames=False, plot_colorbar=True, reciprocal
 # subtract the background to the intensity and square #
 #######################################################
 obj_bck = np.square(obj - background)
+obj_bck[np.isnan(obj_bck)] = 0
+obj_bck = obj_bck / obj_bck[np.nonzero(support)].max()
 gu.multislices_plot(obj_bck, sum_frames=False, plot_colorbar=True, reciprocal_space=False,
                     is_orthogonal=True, title='(obj-background)**2')
 
-######################
-# fit the modulation #
-######################
+#############################################################
+# fit the modulation to the points belonging to the support #
+#############################################################
+support = np.zeros((nz, ny, nx))
+support[obj_bck >= threshold_modul] = obj_bck[obj_bck >= threshold_modul]
+gu.multislices_plot(support, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
+                    title='support for modulation fitting')
+xdata = np.nonzero(support)
+nb_nonzero = xdata[0].size
+
 if modulation_order == 1:
     guess = np.ones(4)
-    params, cov = optimize.curve_fit(fit3d_poly1, xdata=xdata, ydata=obj_bck.reshape(obj_bck.size), p0=guess)
+    params, cov = optimize.curve_fit(fit3d_poly1, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+                                     p0=guess)
 elif modulation_order == 2:
     guess = np.ones(7)
-    params, cov = optimize.curve_fit(fit3d_poly2, xdata=xdata, ydata=obj_bck.reshape(obj_bck.size), p0=guess)
+    params, cov = optimize.curve_fit(fit3d_poly2, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+                                     p0=guess)
 elif modulation_order == 3:
     guess = np.ones(10)
-    params, cov = optimize.curve_fit(fit3d_poly3, xdata=xdata, ydata=obj_bck.reshape(obj_bck.size), p0=guess)
-else:  # 4th order polynomial
+    params, cov = optimize.curve_fit(fit3d_poly3, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+                                     p0=guess)
+else:
     guess = np.ones(13)
-    params, cov = optimize.curve_fit(fit3d_poly4, xdata=xdata, ydata=obj_bck.reshape(obj_bck.size), p0=guess)
+    params, cov = optimize.curve_fit(fit3d_poly4, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+                                     p0=guess)
 
 ##############################
 # plot the fitted modulation #
 ##############################
 if modulation_order == 1:
-    modulation = fit3d_poly1(xdata, params[0], params[1], params[2], params[3])
+    modulation = fit3d_poly1(grid, params[0], params[1], params[2], params[3])
 elif modulation_order == 2:
-    modulation = fit3d_poly2(xdata, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
+    modulation = fit3d_poly2(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
 elif modulation_order == 3:
-    modulation = fit3d_poly3(xdata, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
+    modulation = fit3d_poly3(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                              params[7], params[8], params[9])
-else:  # 4th order polynomial
-    modulation = fit3d_poly4(xdata, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
+else:
+    modulation = fit3d_poly4(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                              params[7], params[8], params[9], params[10], params[11], params[12])
 del params, cov
 gc.collect()
 
-modulation = np.sqrt(2*nb_phases*modulation)
 modulation = modulation.reshape((nz, ny, nx))
+modulation = np.sqrt(2*nb_phases*modulation)
 gu.multislices_plot(modulation, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
                     title='fitted modulation')
 
@@ -181,6 +208,7 @@ gu.multislices_plot(modulation, sum_frames=False, plot_colorbar=True, reciprocal
 ############################################
 result = np.divide(obj_bck, modulation)
 result = result / result[~np.isnan(result)].max()
+result[np.isnan(result)] = 0
 if save:
     np.savez_compressed(savedir + filename + comment + '.npz', obj=result)
 
