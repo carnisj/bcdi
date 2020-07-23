@@ -58,6 +58,81 @@ def find_nearest(reference_array, test_values, width=None):
     return nearest_index
 
 
+def fit3d_poly1(x_axis, a, b, c, d):
+    """
+    Calculate the 1st order polynomial function on points in a 3D gridgiven the polynomial parameters.
+
+    :param x_axis: (3xN) tuple or array of 3D coordinates
+    :param a: offset
+    :param b: 1st order parameter for the 1st coordinate
+    :param c: 1st order parameter for the 2nd coordinate
+    :param d: 1st order parameter for the 3rd coordinate
+    :return: the 1st order polynomial calculated on x_axis
+    """
+    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2]
+
+
+def fit3d_poly2(x_axis, a, b, c, d, e, f, g):
+    """
+    Calculate the 2nd order polynomial function on points in a 3D gridgiven the polynomial parameters.
+
+    :param x_axis: (3xN) tuple or array of 3D coordinates
+    :param a: offset
+    :param b: 1st order parameter for the 1st coordinate
+    :param c: 1st order parameter for the 2nd coordinate
+    :param d: 1st order parameter for the 3rd coordinate
+    :param e: 2nd order parameter for the 1st coordinate
+    :param f: 2nd order parameter for the 2nd coordinate
+    :return: the 2nd order polynomial calculated on x_axis
+    """
+    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2] + e*x_axis[0]**2 + f*x_axis[1]**2 + g*x_axis[2]**2
+
+
+def fit3d_poly3(x_axis, a, b, c, d, e, f, g, h, i, j):
+    """
+    Calculate the 3rd order polynomial function on points in a 3D gridgiven the polynomial parameters.
+
+    :param x_axis: (3xN) tuple or array of 3D coordinates
+    :param a: offset
+    :param b: 1st order parameter for the 1st coordinate
+    :param c: 1st order parameter for the 2nd coordinate
+    :param d: 1st order parameter for the 3rd coordinate
+    :param e: 2nd order parameter for the 1st coordinate
+    :param f: 2nd order parameter for the 2nd coordinate
+    :param g: 2nd order parameter for the 3rd coordinate
+    :param h: 3rd order parameter for the 1st coordinate
+    :param i: 3th order parameter for the 2nd coordinate
+    :param j: 3th order parameter for the 3rd coordinate
+    :return: the 3rd order polynomial calculated on x_axis
+    """
+    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2] + e*x_axis[0]**2 + f*x_axis[1]**2 + g*x_axis[2]**2 +\
+        h*x_axis[0]**3 + i*x_axis[1]**3 + j*x_axis[2]**3
+
+
+def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, l, m):
+    """
+    Calculate the 4th order polynomial function on points in a 3D grid given the polynomial parameters.
+
+    :param x_axis: (3xN) tuple or array of 3D coordinates
+    :param a: offset
+    :param b: 1st order parameter for the 1st coordinate
+    :param c: 1st order parameter for the 2nd coordinate
+    :param d: 1st order parameter for the 3rd coordinate
+    :param e: 2nd order parameter for the 1st coordinate
+    :param f: 2nd order parameter for the 2nd coordinate
+    :param g: 2nd order parameter for the 3rd coordinate
+    :param h: 3rd order parameter for the 1st coordinate
+    :param i: 3th order parameter for the 2nd coordinate
+    :param j: 3th order parameter for the 3rd coordinate
+    :param k: 4th order parameter for the 1st coordinate
+    :param l: 4th order parameter for the 2nd coordinate
+    :param m: 4th order parameter for the 3rd coordinate
+    :return: the 4th order polynomial calculated on x_axis
+    """
+    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2] + e*x_axis[0]**2 + f*x_axis[1]**2 + g*x_axis[2]**2 +\
+        h*x_axis[0]**3 + i*x_axis[1]**3 + j*x_axis[2]**3 + k*x_axis[0]**4 + l*x_axis[1]**4 + m*x_axis[2]**4
+
+
 def function_lmfit(params, iterator, x_axis, distribution):
     """
     Calculate distribution using by lmfit Parameters.

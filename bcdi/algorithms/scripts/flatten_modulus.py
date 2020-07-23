@@ -55,25 +55,6 @@ modulation_sigma = 5  # standard deviation of the gaussian for the 'gaussian' me
 # end of user parameters #
 ##########################
 
-
-def fit3d_poly1(x_axis, a, b, c, d):
-    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2]
-
-
-def fit3d_poly2(x_axis, a, b, c, d, e, f, g):
-    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2] + e*x_axis[0]**2 + f*x_axis[1]**2 + g*x_axis[2]**2
-
-
-def fit3d_poly3(x_axis, a, b, c, d, e, f, g, h, i, j):
-    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2] + e*x_axis[0]**2 + f*x_axis[1]**2 + g*x_axis[2]**2 +\
-           h*x_axis[0]**3 + i*x_axis[1]**3 + j*x_axis[2]**3
-
-
-def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, l, m):
-    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2] + e*x_axis[0]**2 + f*x_axis[1]**2 + g*x_axis[2]**2 +\
-           h*x_axis[0]**3 + i*x_axis[1]**3 + j*x_axis[2]**3 + k*x_axis[0]**4 + l*x_axis[1]**4 + m*x_axis[2]**4
-
-
 ####################
 # check parameters #
 ####################
@@ -129,26 +110,26 @@ if background_method == 'polyfit':
                            grid_x.reshape((1, obj.size))), axis=0)  # xdata should have a 3xN array
     if background_order == 1:
         guess = np.ones(4)
-        params, cov = optimize.curve_fit(fit3d_poly1, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
+        params, cov = optimize.curve_fit(util.fit3d_poly1, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
                                          p0=guess)
-        background = fit3d_poly1(grid, params[0], params[1], params[2], params[3])
+        background = util.fit3d_poly1(grid, params[0], params[1], params[2], params[3])
     elif background_order == 2:
         guess = np.ones(7)
-        params, cov = optimize.curve_fit(fit3d_poly2, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
+        params, cov = optimize.curve_fit(util.fit3d_poly2, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
                                          p0=guess)
-        background = fit3d_poly2(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
+        background = util.fit3d_poly2(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
     elif background_order == 3:
         guess = np.ones(10)
-        params, cov = optimize.curve_fit(fit3d_poly3, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
+        params, cov = optimize.curve_fit(util.fit3d_poly3, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
                                          p0=guess)
-        background = fit3d_poly3(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
-                                 params[7], params[8], params[9])
+        background = util.fit3d_poly3(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
+                                      params[7], params[8], params[9])
     else:
         guess = np.ones(13)
-        params, cov = optimize.curve_fit(fit3d_poly4, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
+        params, cov = optimize.curve_fit(util.fit3d_poly4, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
                                          p0=guess)
-        background = fit3d_poly4(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
-                                 params[7], params[8], params[9], params[10], params[11], params[12])
+        background = util.fit3d_poly4(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
+                                      params[7], params[8], params[9], params[10], params[11], params[12])
     del grid_z, grid_y, grid_x, grid
     gc.collect()
 
@@ -201,26 +182,26 @@ if background_method == 'polyfit':
                            grid_x.reshape((1, obj.size))), axis=0)  # xdata should have a 3xN array
     if modulation_order == 1:
         guess = np.ones(4)
-        params, cov = optimize.curve_fit(fit3d_poly1, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
+        params, cov = optimize.curve_fit(util.fit3d_poly1, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
                                          p0=guess)
-        modulation = fit3d_poly1(grid, params[0], params[1], params[2], params[3])
+        modulation = util.fit3d_poly1(grid, params[0], params[1], params[2], params[3])
     elif modulation_order == 2:
         guess = np.ones(7)
-        params, cov = optimize.curve_fit(fit3d_poly2, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
+        params, cov = optimize.curve_fit(util.fit3d_poly2, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
                                          p0=guess)
-        modulation = fit3d_poly2(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
+        modulation = util.fit3d_poly2(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
     elif modulation_order == 3:
         guess = np.ones(10)
-        params, cov = optimize.curve_fit(fit3d_poly3, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
+        params, cov = optimize.curve_fit(util.fit3d_poly3, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
                                          p0=guess)
-        modulation = fit3d_poly3(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
-                                 params[7], params[8], params[9])
+        modulation = util.fit3d_poly3(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
+                                      params[7], params[8], params[9])
     else:  # 4th order
         guess = np.ones(13)
-        params, cov = optimize.curve_fit(fit3d_poly4, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
+        params, cov = optimize.curve_fit(util.fit3d_poly4, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
                                          p0=guess)
-        modulation = fit3d_poly4(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
-                                 params[7], params[8], params[9], params[10], params[11], params[12])
+        modulation = util.fit3d_poly4(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
+                                      params[7], params[8], params[9], params[10], params[11], params[12])
 else:  # 'gaussian'
     modulation = pu.filter_3d(obj_bck, filter_name='gaussian', kernel_length=modulation_kernel,
                               sigma=modulation_sigma, debugging=False)
