@@ -653,7 +653,7 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
     Apply a filter to the array by convoluting with a filtering kernel.
 
     :param array: 2D or 3D array to be filtered
-    :param filter_name: name of the filter, 'gaussian_highpass'
+    :param filter_name: name of the filter, 'gaussian', 'gaussian_highpass'
     :param kernel_length: length in pixels of the filtering kernel
     :param debugging: True to see a plot of the kernel
     :param kwargs:
@@ -683,13 +683,18 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
             sigma = 3
 
         kernel = gaussian_kernel(ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging)
+        return array - convolve(array, kernel, mode='same')
+    elif filter_name == 'gaussian':
+        try:
+            sigma
+        except NameError:  # sigma not declared
+            print('defaulting sigma to 0.5')
+            sigma = 0.5
 
+        kernel = gaussian_kernel(ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging)
+        return convolve(array, kernel, mode='same')
     else:
         raise ValueError('Only the gaussian_kernel is implemented up to now.')
-
-    array = array - convolve(array, kernel, mode='same')
-
-    return array
 
 
 def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=None, width_x=None,
@@ -874,6 +879,8 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     """
 
     from scipy.stats import norm
+    if kernel_length % 2 == 0:
+        raise ValueError('kernel_length should be an even number')
     half_range = kernel_length // 2
     kernel_1d = norm.pdf(np.arange(-half_range, half_range + 1, 1), 0, sigma)
 
