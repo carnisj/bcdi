@@ -142,6 +142,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         raise TypeError('Expected "tuple_array" to be a tuple')
 
     nb_subplots = len(tuple_array)
+    invert_yaxis = False
 
     if type(tuple_sum_frames) is not tuple:
         tuple_sum_frames = (tuple_sum_frames,) * nb_subplots
@@ -255,6 +256,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                         slice_names = (' slice in Q$_x$', ' slice in Q$_z$', ' slice in Q$_y$')
                     ver_labels = ("Q$_z$", "Q$_x$", "Q$_x$")
                     hor_labels = ("Q$_y$", "Q$_y$", "Q$_z$")
+                    if sum_axis == 0:
+                        invert_yaxis = True
                 else:  # detector frame
                     if sum_frames:
                         slice_names = (' sum along Z', ' sum along Y', ' sum along X')
@@ -270,6 +273,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                         slice_names = (' slice in z', ' slice in y', ' slice in x')
                     ver_labels = ('y', 'z', 'z')
                     hor_labels = ('x', 'x', 'y')
+                    if sum_axis == 0:
+                        invert_yaxis = True
                 else:  # detector frame
                     if sum_frames:
                         slice_names = (' sum along Z', ' sum along Y', ' sum along X')
@@ -380,6 +385,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             axis.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
             axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                              length=tick_length, width=tick_width)
+        if invert_yaxis:  # Y is axis 0, need to be flipped
+            axis.invert_yaxis()
         if plot_colorbar:
             colorbar(plot, numticks=5)
 
