@@ -109,7 +109,7 @@ del temp_obj
 gc.collect()
 
 if background_order == 0:
-    pass
+    params = []
 elif background_order == 1:
     guess = np.ones(4)
     params, cov = optimize.curve_fit(fit3d_poly1, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
