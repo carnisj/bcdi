@@ -28,45 +28,44 @@ Input: a 3D real intensity array
 
 datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/current_paper/"
 savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/scratch/"
-comment = ''  # should start with _
-threshold_bckg = 0.2  # threshold used to define the support for background fitting (intensity normalized to 1)
-threshold_modul = 0.01  # threshold used to define the support for nodulation fitting (intensity normalized to 1)
-roll_modes = (0, -8, 0)   # axis=(0, 1, 2), correct a misalignement of the data
-save = False  # True to save the result as a NPZ file
+comment = '_test'  # should start with _
+threshold = 0.2  # threshold used to define the support for background fitting (intensity normalized to 1)
+roll_modes = (0, -10, 0)   # axis=(0, 1, 2), correct a misalignement of the data
+save = True  # True to save the result as a NPZ file
 ##############################################
 # parameters for the normalization algorithm #
 ##############################################
 nb_phases = 1  # number of encoded phases
-background_order = 3  # degree of the polynomial for background fitting
-modulation_order = 4  # degree of the polynomial for modulation fitting
+background_order = 0  # degree of the polynomial for background fitting 0~4. If 0 background is zero.
+modulation_order = 4  # degree of the polynomial for modulation fitting 1~4
 ##########################
 # end of user parameters #
 ##########################
 
 
-def fit3d_poly1(xdata, a, b, c, d):
-    return a + b*xdata[0] + c*xdata[1] + d*xdata[2]
+def fit3d_poly1(x_axis, a, b, c, d):
+    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2]
 
 
-def fit3d_poly2(xdata, a, b, c, d, e, f, g):
-    return a + b*xdata[0] + c*xdata[1] + d*xdata[2] + e*xdata[0]**2 + f*xdata[1]**2 + g*xdata[2]**2
+def fit3d_poly2(x_axis, a, b, c, d, e, f, g):
+    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2] + e*x_axis[0]**2 + f*x_axis[1]**2 + g*x_axis[2]**2
 
 
-def fit3d_poly3(xdata, a, b, c, d, e, f, g, h, i, j):
-    return a + b*xdata[0] + c*xdata[1] + d*xdata[2] + e*xdata[0]**2 + f*xdata[1]**2 + g*xdata[2]**2 + h*xdata[0]**3 +\
-           i*xdata[1]**3 + j*xdata[2]**3
+def fit3d_poly3(x_axis, a, b, c, d, e, f, g, h, i, j):
+    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2] + e*x_axis[0]**2 + f*x_axis[1]**2 + g*x_axis[2]**2 +\
+           h*x_axis[0]**3 + i*x_axis[1]**3 + j*x_axis[2]**3
 
 
-def fit3d_poly4(xdata, a, b, c, d, e, f, g, h, i, j, k, l, m):
-    return a + b*xdata[0] + c*xdata[1] + d*xdata[2] + e*xdata[0]**2 + f*xdata[1]**2 + g*xdata[2]**2 + h*xdata[0]**3 +\
-           i*xdata[1]**3 + j*xdata[2]**3 + k*xdata[0]**4 + l*xdata[1]**4 + m*xdata[2]**4
+def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, l, m):
+    return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2] + e*x_axis[0]**2 + f*x_axis[1]**2 + g*x_axis[2]**2 +\
+           h*x_axis[0]**3 + i*x_axis[1]**3 + j*x_axis[2]**3 + k*x_axis[0]**4 + l*x_axis[1]**4 + m*x_axis[2]**4
 
 
 ####################
 # check parameters #
 ####################
-assert background_order <= 4, 'polynomial fitting of order > 4 not implemented'
-assert modulation_order <= 4, 'polynomial fitting of order > 4 not implemented'
+assert 0 <= background_order <= 4, 'polynomial fitting of order > 4 not implemented'
+assert 1 <= modulation_order <= 4, 'polynomial fitting of order > 4 not implemented'
 
 #################
 # load the data #
@@ -78,6 +77,8 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the CCF
                                        filetypes=[("HDF5", "*.h5"), ("NPZ", "*.npz"),
                                                   ("NPY", "*.npy"), ("CXI", "*.cxi")])
 filename = os.path.splitext(os.path.basename(file_path))[0]  # the extension .npz is removed
+filename = filename + comment
+print('filename:', filename)
 obj, extension = util.load_file(file_path)
 nz, ny, nx = obj.shape
 
@@ -87,40 +88,43 @@ nz, ny, nx = obj.shape
 # correct a misalignement of the object
 obj = np.roll(obj, roll_modes, axis=(0, 1, 2))
 gu.multislices_plot(abs(obj), sum_frames=True, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
-                    title='obj after centering')
+                    vmin=0, title='obj after centering')
 
 obj[np.isnan(obj)] = 0
 obj = abs(obj)
 obj = obj / obj.max()  # normalize to 1
-obj[obj < threshold_bckg] = 0  # apply intensity threshold
-gu.multislices_plot(abs(obj), sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
-                    title='obj after normalization and thresholding')
 
 #############################################################
 # fit the background to the points belonging to the support #
 #############################################################
-support = np.zeros(obj.shape)
-support[obj >= threshold_bckg] = obj[obj >= threshold_bckg]
-gu.multislices_plot(support, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
-                    title='support for background fitting')
-xdata = np.nonzero(support)
+support_bckg = np.zeros((nz, ny, nx))
+support_bckg[obj >= threshold] = 1
+xdata = np.nonzero(support_bckg)
 nb_nonzero = xdata[0].size
+temp_obj = np.copy(obj)
+temp_obj[obj < threshold] = np.nan
+gu.multislices_plot(temp_obj, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
+                    vmin=0, vmax=1, title='points used for background fitting')
+del temp_obj
+gc.collect()
 
-if background_order == 1:
+if background_order == 0:
+    pass
+elif background_order == 1:
     guess = np.ones(4)
-    params, cov = optimize.curve_fit(fit3d_poly1, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+    params, cov = optimize.curve_fit(fit3d_poly1, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
                                      p0=guess)
 elif background_order == 2:
     guess = np.ones(7)
-    params, cov = optimize.curve_fit(fit3d_poly2, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+    params, cov = optimize.curve_fit(fit3d_poly2, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
                                      p0=guess)
 elif background_order == 3:
     guess = np.ones(10)
-    params, cov = optimize.curve_fit(fit3d_poly3, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+    params, cov = optimize.curve_fit(fit3d_poly3, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
                                      p0=guess)
 else:
     guess = np.ones(13)
-    params, cov = optimize.curve_fit(fit3d_poly4, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+    params, cov = optimize.curve_fit(fit3d_poly4, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
                                      p0=guess)
 
 ##############################
@@ -129,7 +133,9 @@ else:
 grid_z, grid_y, grid_x = np.meshgrid(np.arange(0, nz, 1), np.arange(0, ny, 1), np.arange(0, nx, 1), indexing='ij')
 grid = np.concatenate((grid_z.reshape((1, obj.size)), grid_y.reshape((1, obj.size)),
                        grid_x.reshape((1, obj.size))), axis=0)  # xdata should have a 3xN array
-if background_order == 1:
+if background_order == 0:
+    background = np.zeros((nz, ny, nx))
+elif background_order == 1:
     background = fit3d_poly1(grid, params[0], params[1], params[2], params[3])
 elif background_order == 2:
     background = fit3d_poly2(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
@@ -139,47 +145,54 @@ elif background_order == 3:
 else:
     background = fit3d_poly4(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                              params[7], params[8], params[9], params[10], params[11], params[12])
-del params, cov
-gc.collect()
 
 background = background.reshape((nz, ny, nx))
+background[support_bckg == 0] = 0
 gu.multislices_plot(background, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
-                    title='fitted background')
+                    vmin=0, vmax=1, title='fitted background')
 
 #######################################################
 # subtract the background to the intensity and square #
 #######################################################
 obj_bck = np.square(obj - background)
 obj_bck[np.isnan(obj_bck)] = 0
-obj_bck = obj_bck / obj_bck[np.nonzero(support)].max()
+obj_bck = obj_bck / obj_bck[xdata].max()
 gu.multislices_plot(obj_bck, sum_frames=False, plot_colorbar=True, reciprocal_space=False,
-                    is_orthogonal=True, title='(obj-background)**2')
+                    vmin=0, vmax=1, is_orthogonal=True, title='(obj-background)**2')
+del support_bckg, xdata
+gc.collect()
 
 #############################################################
 # fit the modulation to the points belonging to the support #
 #############################################################
-support = np.zeros((nz, ny, nx))
-support[obj_bck >= threshold_modul] = obj_bck[obj_bck >= threshold_modul]
-gu.multislices_plot(support, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
-                    title='support for modulation fitting')
-xdata = np.nonzero(support)
+threshold_modul = threshold**2  # square the threshold since we are fitting (obj-background)**2
+obj_bck[obj_bck < threshold_modul] = 0
+support_modul = np.zeros((nz, ny, nx))
+support_modul[obj_bck >= threshold_modul] = 1
+xdata = np.nonzero(support_modul)
 nb_nonzero = xdata[0].size
+temp_obj = np.copy(obj_bck)
+temp_obj[obj_bck < threshold_modul] = np.nan
+gu.multislices_plot(temp_obj, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
+                    vmin=0, vmax=1, title='points used for modulation fitting')
+del temp_obj
+gc.collect()
 
 if modulation_order == 1:
     guess = np.ones(4)
-    params, cov = optimize.curve_fit(fit3d_poly1, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+    params, cov = optimize.curve_fit(fit3d_poly1, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
                                      p0=guess)
 elif modulation_order == 2:
     guess = np.ones(7)
-    params, cov = optimize.curve_fit(fit3d_poly2, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+    params, cov = optimize.curve_fit(fit3d_poly2, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
                                      p0=guess)
 elif modulation_order == 3:
     guess = np.ones(10)
-    params, cov = optimize.curve_fit(fit3d_poly3, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+    params, cov = optimize.curve_fit(fit3d_poly3, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
                                      p0=guess)
-else:
+else:  # 4th order
     guess = np.ones(13)
-    params, cov = optimize.curve_fit(fit3d_poly4, xdata=xdata, ydata=support[np.nonzero(support)].reshape(nb_nonzero),
+    params, cov = optimize.curve_fit(fit3d_poly4, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
                                      p0=guess)
 
 ##############################
@@ -192,28 +205,35 @@ elif modulation_order == 2:
 elif modulation_order == 3:
     modulation = fit3d_poly3(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                              params[7], params[8], params[9])
-else:
+else:  # 4th order
     modulation = fit3d_poly4(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                              params[7], params[8], params[9], params[10], params[11], params[12])
-del params, cov
-gc.collect()
 
 modulation = modulation.reshape((nz, ny, nx))
 modulation = np.sqrt(2*nb_phases*modulation)
+modulation[support_modul == 0] = 1
+modulation[np.isnan(modulation)] = 1
 gu.multislices_plot(modulation, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
-                    title='fitted modulation')
+                    vmin=0, vmax=1, title='fitted modulation')
 
 ############################################
 # calculate and plot the normalized object #
 ############################################
-result = np.divide(obj_bck, modulation)
-result = result / result[~np.isnan(result)].max()
+result = np.divide(obj - background, modulation)
 result[np.isnan(result)] = 0
-if save:
-    np.savez_compressed(savedir + filename + comment + '.npz', obj=result)
+result = result / result[result >= threshold].max()
 
-gu.combined_plots(tuple_array=(obj, result), tuple_sum_frames=False, tuple_sum_axis=0, tuple_colorbar=True,
-                  tuple_vmin=0, tuple_vmax=1, tuple_title=('before', 'after'), tuple_scale='linear', is_orthogonal=True,
-                  reciprocal_space=False, position=(121, 122))
+del support_modul, threshold_modul, xdata
+gc.collect()
+
+fig = gu.combined_plots(tuple_array=(obj, obj, obj, result, result, result), tuple_sum_frames=False,
+                        tuple_sum_axis=(0, 1, 2, 0, 1, 2), tuple_colorbar=True, tuple_vmin=0, tuple_vmax=1,
+                        tuple_title=('Original', 'Original', 'Original', 'Result', 'Result', 'Result'),
+                        tuple_scale='linear', is_orthogonal=True, reciprocal_space=False,
+                        position=(321, 323, 325, 322, 324, 326))
+
+if save:
+    np.savez_compressed(savedir + filename + '.npz', obj=result)
+    fig.savefig(savedir + filename + '.png')
 plt.ioff()
 plt.show()
