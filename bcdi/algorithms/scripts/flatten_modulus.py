@@ -15,6 +15,7 @@ import tkinter as tk
 from tkinter import filedialog
 import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.utils.utilities as util
 import bcdi.graph.graph_utils as gu
 
