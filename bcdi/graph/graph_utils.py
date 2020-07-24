@@ -1491,6 +1491,37 @@ def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=''):
     return fig, ax
 
 
+def scatter_stereographic(euclidian_u, euclidian_v, color, title="", max_angle=95, cmap=my_cmap, uv_labels=('', '')):
+    """
+    Plot the stereographic projection of the real scattered positions of data points.
+
+    :param euclidian_u: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
+    :param euclidian_v: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
+    :param color: flattened array, intensity of density kernel estimation at radius_mean
+    :param title: title for the stereographic plot
+    :param max_angle: maximum angle in degrees of the stereographic projection (should be larger than 90)
+    :param cmap: colormap to be used
+    :param uv_labels: tuple of strings, labels for the u axis and the v axis, respectively
+    :return: figure and axe instances
+    """
+    fig, ax0 = plt.subplots(nrows=1, ncols=1)
+    plt0 = ax0.scatter(euclidian_u, euclidian_v, s=6, c=color, cmap=cmap,
+                       norm=colors.LogNorm(vmin=max(color[~np.isnan(color)].min(), 1),
+                                           vmax=color[~np.isnan(color)].max()))
+    circle = patches.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
+    ax0.add_artist(circle)
+    ax0.axis('scaled')
+    ax0.set_xlim(-max_angle, max_angle)
+    ax0.set_ylim(-max_angle, max_angle)
+    ax0.set_xlabel('u ' + uv_labels[0])
+    ax0.set_ylabel('v ' + uv_labels[1])
+    ax0.set_title(title)
+    colorbar(plt0, scale='log', numticks=5)
+    plt.pause(0.5)
+    plt.ioff()
+    return fig, ax0
+
+
 def update_aliens(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, width, dim, idx,
                   vmax, vmin=0, invert_yaxis=False):
     """
