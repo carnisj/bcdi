@@ -242,20 +242,18 @@ def main(user_comment):
                                                                                           qy_sphere[:, np.newaxis]),
                                                                                          axis=1))
                 # plot the projection from the South pole
-                fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1],
-                                                  color=sphere_debug, radius_mean=1, debugging=True,
-                                                  title='Projection from the South pole'
-                                                        ' at q={:.3f} (1/nm)'.format(q_value),
-                                                  plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
+                fig, _ = gu.scatter_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1],
+                                                  color=sphere_debug, title='Projection from the South pole'
+                                                                            ' at q={:.3f} (1/nm)'.format(q_value),
+                                                  uv_labels=uv_labels, cmap=my_cmap)
                 fig.savefig(savedir + 'South pole_q={:.3f}.png'.format(q_value))
                 plt.close(fig)
 
                 # plot the projection from the North pole
-                fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3],
-                                                  color=sphere_debug, radius_mean=1, debugging=True,
-                                                  title='Projection from the North pole'
-                                                        ' at q={:.3f} (1/nm)'.format(q_value),
-                                                  plot_planes=False, uv_labels=uv_labels, scale='log', cmap=my_cmap)
+                fig, _ = gu.scatter_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3],
+                                                  color=sphere_debug, title='Projection from the North pole'
+                                                                            ' at q={:.3f} (1/nm)'.format(q_value),
+                                                  uv_labels=uv_labels, cmap=my_cmap)
                 fig.savefig(savedir + 'North pole_q={:.3f}.png'.format(q_value))
                 plt.close(fig)
                 del sphere_debug
