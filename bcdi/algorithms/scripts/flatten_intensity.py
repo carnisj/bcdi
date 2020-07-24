@@ -31,26 +31,26 @@ Input: a 3D real intensity array
 datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/current_paper/"
 savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/scratch/"
 comment = '_gaussian_21_5'  # should start with _
-threshold = 0.2  # threshold used to define the support for background fitting (intensity normalized to 1)
+threshold = 0.075  # threshold used to define the support for background fitting (intensity normalized to 1)
 roll_modes = (0, -10, 0)   # axis=(0, 1, 2), correct a misalignement of the data
 save = True  # True to save the result as a NPZ file
 nb_phases = 1  # number of encoded phases, generally 1 if this is a single measurement
 #########################################
 # parameters for the background fitting #
 #########################################
-background_method = 'skip'  # 'gaussian', 'polyfit' or 'skip': 'gaussian' will convolve a gaussian with the object,
+background_method = 'gaussian'  # 'gaussian', 'polyfit' or 'skip': 'gaussian' will convolve a gaussian with the object,
 # 'polyfit' will fit a polynomial or order background_order to the object. 'skip' defines a zero background
 background_order = 1  # degree of the polynomial for background fitting 1~4.
-background_kernel = 41  # size of the kernel for the 'gaussian' method
-background_sigma = 7  # standard deviation of the gaussian for the 'gaussian' method
+background_kernel = 25  # size of the kernel for the 'gaussian' method
+background_sigma = 5  # standard deviation of the gaussian for the 'gaussian' method
 #########################################
 # parameters for the modulation fitting #
 #########################################
 modulation_method = 'gaussian'  # 'gaussian' or 'polyfit': 'gaussian' will convolve a gaussian with the object,
 # 'polyfit' will fit a polynomial or order modulation_order to the object.
 modulation_order = 4  # degree of the polynomial for modulation fitting 1~4
-modulation_kernel = 21  # size of the kernel for the 'gaussian' method
-modulation_sigma = 5  # standard deviation of the gaussian for the 'gaussian' method
+modulation_kernel = 5  # size of the kernel for the 'gaussian' method
+modulation_sigma = 0.5  # standard deviation of the gaussian for the 'gaussian' method
 ##########################
 # end of user parameters #
 ##########################
@@ -89,6 +89,7 @@ gu.multislices_plot(abs(obj), sum_frames=True, plot_colorbar=True, reciprocal_sp
 obj[np.isnan(obj)] = 0
 obj = abs(obj)
 obj = obj / obj.max()  # normalize to 1
+original_obj = np.copy(obj)
 
 ############################
 # determine the background #
@@ -134,9 +135,9 @@ if background_method == 'polyfit':
     gc.collect()
 
 elif background_method == 'gaussian':
+    obj[obj < threshold] = threshold  # avoid steps at the boundaries of the support
     background = pu.filter_3d(obj, filter_name='gaussian', kernel_length=background_kernel,
-                              sigma=background_sigma, debugging=False)
-
+                              sigma=background_sigma, debugging=True)
 else:  # skip
     print('skipping background determination')
     background = np.zeros((nz, ny, nx))
@@ -144,6 +145,7 @@ else:  # skip
 ##############################
 # plot the fitted background #
 ##############################
+background = background / 2  # often the signal is killed if one subtracts the full background
 background = background.reshape((nz, ny, nx))
 background[support_bckg == 0] = 0
 gu.multislices_plot(background, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
@@ -152,7 +154,7 @@ gu.multislices_plot(background, sum_frames=False, plot_colorbar=True, reciprocal
 #######################################################
 # subtract the background to the intensity and square #
 #######################################################
-obj_bck = np.square(obj - background)
+obj_bck = np.square(original_obj - background)
 obj_bck[np.isnan(obj_bck)] = 0
 obj_bck = obj_bck / obj_bck[xdata].max()
 gu.multislices_plot(obj_bck, sum_frames=False, plot_colorbar=True, reciprocal_space=False,
@@ -203,8 +205,9 @@ if background_method == 'polyfit':
         modulation = util.fit3d_poly4(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                                       params[7], params[8], params[9], params[10], params[11], params[12])
 else:  # 'gaussian'
+    obj_bck[obj_bck < threshold_modul] = threshold_modul  # avoid steps at the boundaries of the support
     modulation = pu.filter_3d(obj_bck, filter_name='gaussian', kernel_length=modulation_kernel,
-                              sigma=modulation_sigma, debugging=False)
+                              sigma=modulation_sigma, debugging=True)
 
 ##############################
 # plot the fitted modulation #
@@ -219,7 +222,7 @@ gu.multislices_plot(modulation, sum_frames=False, plot_colorbar=True, reciprocal
 ############################################
 # calculate and plot the normalized object #
 ############################################
-result = np.divide(obj - background, modulation)
+result = np.divide(original_obj - background, modulation)
 result[np.isnan(result)] = 0
 result = result / result[result >= threshold].max()
 piz, piy, pix = np.unravel_index(result.argmax(), shape=(nz, ny, nx))
@@ -230,9 +233,9 @@ gu.multislices_plot(result, slice_position=(piz, piy, pix), sum_frames=False, pl
 del support_modul, threshold_modul, xdata
 gc.collect()
 
-fig = gu.combined_plots(tuple_array=(obj, obj, obj, result, result, result), tuple_sum_frames=False,
-                        tuple_sum_axis=(0, 1, 2, 0, 1, 2), tuple_colorbar=True, tuple_vmin=0, tuple_vmax=1,
-                        tuple_title=('Original', 'Original', 'Original', 'Result', 'Result', 'Result'),
+fig = gu.combined_plots(tuple_array=(original_obj, original_obj, original_obj, result, result, result),
+                        tuple_sum_frames=False, tuple_sum_axis=(0, 1, 2, 0, 1, 2), tuple_colorbar=True, tuple_vmin=0,
+                        tuple_vmax=1, tuple_title=('Original', 'Original', 'Original', 'Result', 'Result', 'Result'),
                         tuple_scale='linear', is_orthogonal=True, reciprocal_space=False,
                         position=(321, 323, 325, 322, 324, 326))
 
