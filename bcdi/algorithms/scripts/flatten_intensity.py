@@ -41,7 +41,7 @@ nb_phases = 1  # number of encoded phases, generally 1 if this is a single measu
 background_method = 'gaussian'  # 'gaussian', 'polyfit' or 'skip': 'gaussian' will convolve a gaussian with the object,
 # 'polyfit' will fit a polynomial or order background_order to the object. 'skip' defines a zero background
 background_order = 1  # degree of the polynomial for background fitting 1~4.
-background_kernel = 25  # size of the kernel for the 'gaussian' method
+background_kernel = 21  # size of the kernel for the 'gaussian' method  # 2*ceil(2*sigma)+1 in matlab
 background_sigma = 5  # standard deviation of the gaussian for the 'gaussian' method
 #########################################
 # parameters for the modulation fitting #
@@ -49,8 +49,8 @@ background_sigma = 5  # standard deviation of the gaussian for the 'gaussian' me
 modulation_method = 'gaussian'  # 'gaussian' or 'polyfit': 'gaussian' will convolve a gaussian with the object,
 # 'polyfit' will fit a polynomial or order modulation_order to the object.
 modulation_order = 4  # degree of the polynomial for modulation fitting 1~4
-modulation_kernel = 5  # size of the kernel for the 'gaussian' method
-modulation_sigma = 0.5  # standard deviation of the gaussian for the 'gaussian' method
+modulation_kernel = 21  # size of the kernel for the 'gaussian' method  # 2*ceil(2*sigma)+1 in matlab
+modulation_sigma = 5  # standard deviation of the gaussian for the 'gaussian' method
 ##########################
 # end of user parameters #
 ##########################
@@ -81,27 +81,27 @@ nz, ny, nx = obj.shape
 ######################
 # data preprocessing #
 ######################
-# correct a misalignement of the object
-obj = np.roll(obj, roll_modes, axis=(0, 1, 2))
-gu.multislices_plot(abs(obj), sum_frames=True, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
-                    vmin=0, title='obj after centering')
-
 obj[np.isnan(obj)] = 0
 obj = abs(obj)
 obj = obj / obj.max()  # normalize to 1
+
+# correct a misalignement of the object
+obj = np.roll(obj, roll_modes, axis=(0, 1, 2))
+gu.multislices_plot(abs(obj), sum_frames=True, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
+                    title='obj after centering')
 original_obj = np.copy(obj)
 
 ############################
 # determine the background #
 ############################
-support_bckg = np.zeros((nz, ny, nx))
-support_bckg[obj >= threshold] = 1
-xdata = np.nonzero(support_bckg)
-nb_nonzero = xdata[0].size
+support = np.zeros((nz, ny, nx))
+support[obj >= threshold] = 1
+support_points = np.nonzero(support)
+nb_nonzero = support_points[0].size
 temp_obj = np.copy(obj)
 temp_obj[obj < threshold] = np.nan
 gu.multislices_plot(temp_obj, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
-                    vmin=0, vmax=1, title='points used for background fitting')
+                    title='points belonging to the support')
 del temp_obj
 gc.collect()
 
@@ -111,24 +111,24 @@ if background_method == 'polyfit':
                            grid_x.reshape((1, obj.size))), axis=0)  # xdata should have a 3xN array
     if background_order == 1:
         guess = np.ones(4)
-        params, cov = optimize.curve_fit(util.fit3d_poly1, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
-                                         p0=guess)
+        params, cov = optimize.curve_fit(util.fit3d_poly1, xdata=support_points,
+                                         ydata=obj[support_points].reshape(nb_nonzero), p0=guess)
         background = util.fit3d_poly1(grid, params[0], params[1], params[2], params[3])
     elif background_order == 2:
         guess = np.ones(7)
-        params, cov = optimize.curve_fit(util.fit3d_poly2, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
-                                         p0=guess)
+        params, cov = optimize.curve_fit(util.fit3d_poly2, xdata=support_points,
+                                         ydata=obj[support_points].reshape(nb_nonzero), p0=guess)
         background = util.fit3d_poly2(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
     elif background_order == 3:
         guess = np.ones(10)
-        params, cov = optimize.curve_fit(util.fit3d_poly3, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
-                                         p0=guess)
+        params, cov = optimize.curve_fit(util.fit3d_poly3, xdata=support_points,
+                                         ydata=obj[support_points].reshape(nb_nonzero), p0=guess)
         background = util.fit3d_poly3(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                                       params[7], params[8], params[9])
     else:
         guess = np.ones(13)
-        params, cov = optimize.curve_fit(util.fit3d_poly4, xdata=xdata, ydata=obj[xdata].reshape(nb_nonzero),
-                                         p0=guess)
+        params, cov = optimize.curve_fit(util.fit3d_poly4, xdata=support_points,
+                                         ydata=obj[support_points].reshape(nb_nonzero), p0=guess)
         background = util.fit3d_poly4(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                                       params[7], params[8], params[9], params[10], params[11], params[12])
     del grid_z, grid_y, grid_x, grid
@@ -137,7 +137,7 @@ if background_method == 'polyfit':
 elif background_method == 'gaussian':
     obj[obj < threshold] = threshold  # avoid steps at the boundaries of the support
     background = pu.filter_3d(obj, filter_name='gaussian', kernel_length=background_kernel,
-                              sigma=background_sigma, debugging=True)
+                              sigma=background_sigma, debugging=False)
 else:  # skip
     print('skipping background determination')
     background = np.zeros((nz, ny, nx))
@@ -145,98 +145,79 @@ else:  # skip
 ##############################
 # plot the fitted background #
 ##############################
-background = background / 2  # often the signal is killed if one subtracts the full background
 background = background.reshape((nz, ny, nx))
-background[support_bckg == 0] = 0
 gu.multislices_plot(background, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
-                    vmin=0, vmax=1, title='fitted background')
+                    title='fitted background')
 
 #######################################################
 # subtract the background to the intensity and square #
 #######################################################
-obj_bck = np.square(original_obj - background)
+obj_bck = np.square(obj - background)
 obj_bck[np.isnan(obj_bck)] = 0
-obj_bck = obj_bck / obj_bck[xdata].max()
 gu.multislices_plot(obj_bck, sum_frames=False, plot_colorbar=True, reciprocal_space=False,
-                    vmin=0, vmax=1, is_orthogonal=True, title='(obj-background)**2')
-del support_bckg, xdata
-gc.collect()
+                    title='(obj-background)**2')
 
 #############################################################
 # fit the modulation to the points belonging to the support #
 #############################################################
-threshold_modul = threshold**2  # square the threshold since we are fitting (obj-background)**2
-obj_bck[obj_bck < threshold_modul] = 0
-support_modul = np.zeros((nz, ny, nx))
-support_modul[obj_bck >= threshold_modul] = 1
-xdata = np.nonzero(support_modul)
-nb_nonzero = xdata[0].size
-temp_obj = np.copy(obj_bck)
-temp_obj[obj_bck < threshold_modul] = np.nan
-gu.multislices_plot(temp_obj, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
-                    vmin=0, vmax=1, title='points used for modulation fitting')
-del temp_obj
-gc.collect()
-
 if background_method == 'polyfit':
     grid_z, grid_y, grid_x = np.meshgrid(np.arange(0, nz, 1), np.arange(0, ny, 1), np.arange(0, nx, 1), indexing='ij')
     grid = np.concatenate((grid_z.reshape((1, obj.size)), grid_y.reshape((1, obj.size)),
                            grid_x.reshape((1, obj.size))), axis=0)  # xdata should have a 3xN array
     if modulation_order == 1:
         guess = np.ones(4)
-        params, cov = optimize.curve_fit(util.fit3d_poly1, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
-                                         p0=guess)
+        params, cov = optimize.curve_fit(util.fit3d_poly1, xdata=support_points,
+                                         ydata=obj_bck[support_points].reshape(nb_nonzero), p0=guess)
         modulation = util.fit3d_poly1(grid, params[0], params[1], params[2], params[3])
     elif modulation_order == 2:
         guess = np.ones(7)
-        params, cov = optimize.curve_fit(util.fit3d_poly2, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
-                                         p0=guess)
+        params, cov = optimize.curve_fit(util.fit3d_poly2, xdata=support_points,
+                                         ydata=obj_bck[support_points].reshape(nb_nonzero), p0=guess)
         modulation = util.fit3d_poly2(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
     elif modulation_order == 3:
         guess = np.ones(10)
-        params, cov = optimize.curve_fit(util.fit3d_poly3, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
-                                         p0=guess)
+        params, cov = optimize.curve_fit(util.fit3d_poly3, xdata=support_points,
+                                         ydata=obj_bck[support_points].reshape(nb_nonzero), p0=guess)
         modulation = util.fit3d_poly3(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                                       params[7], params[8], params[9])
     else:  # 4th order
         guess = np.ones(13)
-        params, cov = optimize.curve_fit(util.fit3d_poly4, xdata=xdata, ydata=obj_bck[xdata].reshape(nb_nonzero),
-                                         p0=guess)
+        params, cov = optimize.curve_fit(util.fit3d_poly4, xdata=support_points,
+                                         ydata=obj_bck[support_points].reshape(nb_nonzero), p0=guess)
         modulation = util.fit3d_poly4(grid, params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                                       params[7], params[8], params[9], params[10], params[11], params[12])
 else:  # 'gaussian'
-    obj_bck[obj_bck < threshold_modul] = threshold_modul  # avoid steps at the boundaries of the support
     modulation = pu.filter_3d(obj_bck, filter_name='gaussian', kernel_length=modulation_kernel,
-                              sigma=modulation_sigma, debugging=True)
+                              sigma=modulation_sigma, debugging=False)
 
 ##############################
 # plot the fitted modulation #
 ##############################
 modulation = modulation.reshape((nz, ny, nx))
 modulation = np.sqrt(2*nb_phases*modulation)
-modulation[support_modul == 0] = 1
+modulation = modulation / modulation[support_points].max()
 modulation[np.isnan(modulation)] = 1
 gu.multislices_plot(modulation, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
-                    vmin=0, vmax=1, title='fitted modulation')
+                    title='fitted modulation')
 
 ############################################
 # calculate and plot the normalized object #
 ############################################
 result = np.divide(original_obj - background, modulation)
 result[np.isnan(result)] = 0
-result = result / result[result >= threshold].max()
+result = result - result[support_points].min()  # offset intensities such that the min value is 0
+result = result / result[support_points].max()
+result[support == 0] = 0
 piz, piy, pix = np.unravel_index(result.argmax(), shape=(nz, ny, nx))
 print('maximum at voxel:', piz, piy, pix, '   value=', result.max())
-gu.multislices_plot(result, slice_position=(piz, piy, pix), sum_frames=False, plot_colorbar=True,
-                    reciprocal_space=False, is_orthogonal=True, vmin=0, vmax=1, title='result at max')
+gu.multislices_plot(result, slice_position=(piz, piy, pix), sum_frames=False, plot_colorbar=True, vmin=0, vmax=1,
+                    reciprocal_space=False, is_orthogonal=True, title='result at max')
 
-del support_modul, threshold_modul, xdata
-gc.collect()
 
 fig = gu.combined_plots(tuple_array=(original_obj, original_obj, original_obj, result, result, result),
-                        tuple_sum_frames=False, tuple_sum_axis=(0, 1, 2, 0, 1, 2), tuple_colorbar=True, tuple_vmin=0,
-                        tuple_vmax=1, tuple_title=('Original', 'Original', 'Original', 'Result', 'Result', 'Result'),
-                        tuple_scale='linear', is_orthogonal=True, reciprocal_space=False,
+                        tuple_sum_frames=False, tuple_sum_axis=(0, 1, 2, 0, 1, 2), tuple_colorbar=True,
+                        tuple_title=('Original', 'Original', 'Original', 'Result', 'Result', 'Result'),
+                        tuple_scale='linear', is_orthogonal=True, reciprocal_space=False, tuple_vmin=0, tuple_vmax=1,
                         position=(321, 323, 325, 322, 324, 326))
 
 if save:
