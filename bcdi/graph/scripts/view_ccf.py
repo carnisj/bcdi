@@ -15,7 +15,7 @@ import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 
 helptext = """
-Load the output file of xcca_3D.py and plot the cross-correlation function.
+Load the output file of xcca_3D_polar.py or xcca_3D_rect.py and plot the cross-correlation function.
 
 Input: a NPZ file with the fields 'angles', 'ccf', 'points': 
     - 'angles': values between [0, 180] where the cross-correlation function was calculated
@@ -23,8 +23,8 @@ Input: a NPZ file with the fields 'angles', 'ccf', 'points':
     - 'points': number of points contributing to the cross-correlation function at these angles
 """
 
-datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
-savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
+datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/scratch/"
+savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/scratch/"
 comment = ''  # should start with _
 ylim = None  # [0, 60]  # limits used for the vertical axis of plots, leave None otherwise
 save = False  # True to save the figure
@@ -42,11 +42,9 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the CCF
                                        filetypes=[("NPZ", "*.npz")])
 filename = os.path.splitext(os.path.basename(file_path))[0]  # the extension .npz is removed
 npzfile = np.load(file_path)
+
 try:
     ccf = npzfile['ccf']
-except KeyError:
-    ccf = npzfile['corr']
-try:
     angles = npzfile['angles']
     points = npzfile['points']
 except KeyError:
