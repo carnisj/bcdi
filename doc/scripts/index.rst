@@ -542,6 +542,14 @@ xcca_3D_map_polar.py
    :end-before: """
    :language: rst
 
+xcca_3D_map_rect.py
+^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D_map_rect.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 xcca_3D_polar.py
 ^^^^^^^^^^^^^^^^
 
