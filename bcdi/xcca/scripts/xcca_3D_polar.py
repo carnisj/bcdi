@@ -11,7 +11,6 @@ import warnings
 import datetime
 import numpy as np
 from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from scipy.interpolate import RegularGridInterpolator
 import tkinter as tk
 from tkinter import filedialog
@@ -27,7 +26,9 @@ import bcdi.facet_recognition.facet_utils as fu
 
 helptext = """
 Calculate the angular cross-correlation in a 3D reciprocal space dataset at the same q value or between two different q
-values. The 3D dataset is expected to be interpolated on an orthonormal grid.
+values. The 3D dataset is expected to be interpolated on an orthonormal grid. The intensity used for cross-correlation 
+calculation is interpolated using the golden spiral method on a sphere of the desired q radius, using original voxels
+ belonging to a slice at this q value. Downsampling can be applied for faster calculation.
 
 Input: the 3D dataset, an optional 3D mask, (qx, qy, qz) values
 
