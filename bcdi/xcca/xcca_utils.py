@@ -141,7 +141,9 @@ def calc_ccf_rect(point, q1_name, q2_name, bin_values, q_int):
      bins
     """
     # calculate the angle between the current point and all points from the second q value (delta in [0 pi])
-    delta_val = np.arccos(np.dot(q_int[q2_name][:, 0:3], q_int[q1_name][point, 0:3]))
+    delta_val = np.arccos(np.divide(np.dot(q_int[q2_name][:, 0:3], q_int[q1_name][point, 0:3]),
+                                    np.linalg.norm(q_int[q2_name][:, 0:3], axis=1) *
+                                    np.linalg.norm(q_int[q1_name][point, 0:3])))
     # It can happen that the value in the arccos is outside [-1, 1] because of the limited floating precision of Python,
     # which result in delta_val = nan. These points would contribute to the 0 and 180 degrees CCF, and can be neglected.
 
