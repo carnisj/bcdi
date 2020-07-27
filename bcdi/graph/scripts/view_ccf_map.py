@@ -18,8 +18,8 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
 helptext = """
-Load the output file of xcca_3D_map.py and plot the 2D cross-correlation map. When clicking on the 2D map, the 1D 
-cross-correlation at the clicked q value is plotted.
+Load the output file of xcca_3D_map_polar.py or xcca_3D_map_rect.py and plot the 2D cross-correlation map.
+ When clicking on the 2D map, the 1D cross-correlation at the clicked q value is plotted.
 
 Input: a NPZ file with the fields 'angles', 'q_range', 'ccf', 'points': 
     - 'angles': angle values between [0, 180] where the cross-correlation function was calculated
