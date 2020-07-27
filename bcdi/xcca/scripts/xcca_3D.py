@@ -281,15 +281,15 @@ def main(user_comment):
     if single_proc:
         for idx in range(nb_points[0]):
             ccf_uniq_val, counter_val, counter_indices = \
-                 xcca.calc_ccf(point=idx, q1_name='q1', q2_name=key_q2, bin_values=angular_bins,
-                               polar_azi_int=theta_phi_int)
+                 xcca.calc_ccf_polar(point=idx, q1_name='q1', q2_name=key_q2, bin_values=angular_bins,
+                                     polar_azi_int=theta_phi_int)
             collect_result_debug(ccf_uniq_val, counter_val, counter_indices)
     else:
         print("\nNumber of processors: ", mp.cpu_count())
         mp.freeze_support()
         pool = mp.Pool(mp.cpu_count())  # use this number of processes
         for idx in range(nb_points[0]):
-            pool.apply_async(xcca.calc_ccf, args=(idx, 'q1', key_q2, angular_bins, theta_phi_int),
+            pool.apply_async(xcca.calc_ccf_polar, args=(idx, 'q1', key_q2, angular_bins, theta_phi_int),
                              callback=collect_result, error_callback=util.catch_error)
         # close the pool and let all the processes complete
         pool.close()

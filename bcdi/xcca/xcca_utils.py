@@ -86,7 +86,7 @@ def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debuggin
     return q_axis, y_mean_masked, y_median_masked
 
 
-def calc_ccf(point, q1_name, q2_name, bin_values, polar_azi_int):
+def calc_ccf_polar(point, q1_name, q2_name, bin_values, polar_azi_int):
     """
     Calculate for the cross-correlation of point with all other points at the second q value and sort the result.
 
