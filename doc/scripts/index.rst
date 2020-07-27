@@ -534,18 +534,18 @@ angular_avg_3Dto1D.py
    :end-before: """
    :language: rst
 
-xcca_3D.py
-^^^^^^^^^^
+xcca_3D_polar.py
+^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D.py
+.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D_polar.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-xcca_3D_map.py
-^^^^^^^^^^^^^^
+xcca_3D_map_polar.py
+^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D_map.py
+.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D_map_polar.py
    :start-after: helptext
    :end-before: """
    :language: rst
