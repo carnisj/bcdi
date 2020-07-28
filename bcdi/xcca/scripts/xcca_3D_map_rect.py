@@ -244,14 +244,17 @@ def main(calc_self, user_comment):
             key_q2 = key_q1
             print('\n' + key_q2 + ': the CCF will be calculated over {:d} * {:d}'
                   ' points and {:d} angular bins'.format(nb_points[ind_q], nb_points[ind_q], corr_count.shape[0]))
+            for ind_point in range(nb_points[ind_q]):
+                pool.apply_async(xcca.calc_ccf_rect, args=(ind_point, key_q1, key_q2, angular_bins, q_int),
+                                 callback=collect_result, error_callback=util.catch_error)
         else:
             key_q1 = 'q1'
             key_q2 = 'q' + str(ind_q + 1)
             print('\n' + key_q2 + ': the CCF will be calculated over {:d} * {:d}'
                   ' points and {:d} angular bins'.format(nb_points[0], nb_points[ind_q], corr_count.shape[0]))
-        for ind_point in range(nb_points[0]):
-            pool.apply_async(xcca.calc_ccf_rect, args=(ind_point, key_q1, key_q2, angular_bins, q_int),
-                             callback=collect_result, error_callback=util.catch_error)
+            for ind_point in range(nb_points[0]):
+                pool.apply_async(xcca.calc_ccf_rect, args=(ind_point, key_q1, key_q2, angular_bins, q_int),
+                                 callback=collect_result, error_callback=util.catch_error)
 
         # close the pool and let all the processes complete
         pool.close()
