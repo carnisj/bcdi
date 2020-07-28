@@ -24,25 +24,25 @@ The alignment of diffraction patterns is based on the center of mass shift or df
 grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
-scan_list = [22, 32, 48, 55, 59, 71, 6, 15, 37]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
-sample_name = ['ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3',
-               'ht_pillar3_1', 'ht_pillar3_1', 'ht_pillar3_1']  # list of sample names. If only one name is indicated,
+scan_list = [1475, 1484, 1587]  #np.arange(1475, 1511+1, 3)  # list or array of scan numbers
+sample_name = ['dewet2_2']  # list of sample names. If only one name is indicated,
 # it will be repeated to match the length of scan_list
-suffix = '_553_1083_1035_1_2_2.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
+suffix = '_norm_141_580_712_1_1_1.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
 # the end of the filename template after 'pynx'
-homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
-savedir = '/home/carnisj/phasing/'  # path of the folder to save data
-alignement_method = 'skip'  # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
+homedir = "D:/data/P10_OER/data/"  # parent folder of scans folders
+savedir = "D:/data/P10_OER/analysis/test/"  # path of the folder to save data
+alignement_method = 'registration'
+# method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
 combining_method = 'subpixel'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
-corr_roi = [325, 400, 845, 920, 410, 485]
+corr_roi = None  # [325, 400, 845, 920, 410, 485]
 # [420, 520, 660, 760, 600, 700]  # region of interest where to calculate the correlation between scans.
 # If None, it will use the full
 # array. [zstart, zstop, ystart, ystop, xstart, xstop]
-output_shape = (553, 1083, 1035)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
-correlation_threshold = 0.50  # only scans having a correlation larger than this threshold will be combined
-reference_scan = 2  # index in scan_list of the scan to be used as the reference for the correlation calculation
+output_shape = (100, 300, 300)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+correlation_threshold = 0.90  # only scans having a correlation larger than this threshold will be combined
+reference_scan = 0  # index in scan_list of the scan to be used as the reference for the correlation calculation
 combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
-is_orthogonal = True  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
+is_orthogonal = False  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
 plot_threshold = 0  # data below this will be set to 0, only in plots
 debug = False  # True or False
 ##################################
@@ -162,8 +162,9 @@ sumdata = sumdata / len(combined_list)
 summask = pu.crop_pad(array=summask, output_shape=output_shape)
 sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape)
 
-template = ''.join("_S%s" % ''.join(str(val)) for val in combined_list) +\
+template = '_S' + str(combined_list[0]) + 'toS' + str(combined_list[-1]) +\
            '_{:d}_{:d}_{:d=}'.format(output_shape[0], output_shape[1], output_shape[2])
+
 
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 np.savez_compressed(savedir+'combined_pynx' + template + '.npz', data=sumdata)
@@ -184,7 +185,7 @@ fig.text(0.60, 0.30, "Correlation coefficients:", size=12)
 fig.text(0.60, 0.25, str(corr_coeff), size=12)
 fig.text(0.60, 0.20, "Threshold for correlation: " + str(correlation_threshold), size=12)
 fig.text(0.60, 0.15, 'Scans concatenated:', size=12)
-fig.text(0.60, 0.10, str(combined_list), size=12)
+fig.text(0.60, 0.10, str(combined_list), size=10)
 if plot_threshold != 0:
     fig.text(0.60, 0.05, "Threshold for plots only: {:d}".format(plot_threshold), size=12)
 
