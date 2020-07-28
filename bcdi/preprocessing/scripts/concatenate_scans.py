@@ -24,13 +24,13 @@ The alignment of diffraction patterns is based on the center of mass shift or df
 grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
-scan_list = [1475, 1484, 1587]  #np.arange(1475, 1511+1, 3)  # list or array of scan numbers
+scan_list = np.arange(1514, 1541+1, 3)  # list or array of scan numbers
 sample_name = ['dewet2_2']  # list of sample names. If only one name is indicated,
 # it will be repeated to match the length of scan_list
 suffix = '_norm_141_580_712_1_1_1.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
 # the end of the filename template after 'pynx'
 homedir = "D:/data/P10_OER/data/"  # parent folder of scans folders
-savedir = "D:/data/P10_OER/analysis/test/"  # path of the folder to save data
+savedir = "D:/data/P10_OER/analysis/dewet2_2_S1514_to_S1541/"  # path of the folder to save data
 alignement_method = 'registration'
 # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
 combining_method = 'subpixel'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
@@ -38,7 +38,7 @@ corr_roi = None  # [325, 400, 845, 920, 410, 485]
 # [420, 520, 660, 760, 600, 700]  # region of interest where to calculate the correlation between scans.
 # If None, it will use the full
 # array. [zstart, zstop, ystart, ystop, xstart, xstop]
-output_shape = (100, 300, 300)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+output_shape = (140, 300, 300)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
 correlation_threshold = 0.90  # only scans having a correlation larger than this threshold will be combined
 reference_scan = 0  # index in scan_list of the scan to be used as the reference for the correlation calculation
 combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
@@ -179,13 +179,13 @@ sumdata[np.nonzero(summask)] = 0
 sumdata[sumdata < plot_threshold] = 0
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
                                 title='Combined masked intensity', vmin=0, reciprocal_space=True)
-fig.text(0.60, 0.40, "Scans tested:", size=12)
-fig.text(0.60, 0.35, str(scan_list), size=12)
-fig.text(0.60, 0.30, "Correlation coefficients:", size=12)
-fig.text(0.60, 0.25, str(corr_coeff), size=12)
-fig.text(0.60, 0.20, "Threshold for correlation: " + str(correlation_threshold), size=12)
-fig.text(0.60, 0.15, 'Scans concatenated:', size=12)
-fig.text(0.60, 0.10, str(combined_list), size=10)
+fig.text(0.55, 0.40, "Scans tested:", size=12)
+fig.text(0.55, 0.35, str(scan_list), size=8)
+fig.text(0.55, 0.30, "Correlation coefficients:", size=12)
+fig.text(0.55, 0.25, str(corr_coeff), size=8)
+fig.text(0.55, 0.20, "Threshold for correlation: " + str(correlation_threshold), size=12)
+fig.text(0.55, 0.15, 'Scans concatenated:', size=12)
+fig.text(0.55, 0.10, str(combined_list), size=8)
 if plot_threshold != 0:
     fig.text(0.60, 0.05, "Threshold for plots only: {:d}".format(plot_threshold), size=12)
 
