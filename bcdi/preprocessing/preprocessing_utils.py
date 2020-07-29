@@ -1620,7 +1620,7 @@ def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpix
     nbz, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
     if detector.roi[1] - detector.roi[0] > nby or detector.roi[3] - detector.roi[2] > nbx:
-        start = tuple([np.nan, min(0, detector.roi[0]), min(0, detector.roi[2])])
+        start = tuple([0, max(0, abs(detector.roi[0])), max(0, abs(detector.roi[2]))])
         print('Paddind the data to the shape defined by the ROI')
         rawdata = pu.crop_pad(array=rawdata, pad_start=start, output_shape=(rawdata.shape[0],
                                                                             detector.roi[1] - detector.roi[0],
@@ -1703,7 +1703,7 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     nbz, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
     if detector.roi[1] - detector.roi[0] > nby or detector.roi[3] - detector.roi[2] > nbx:
-        start = tuple([np.nan, min(0, detector.roi[0]), min(0, detector.roi[2])])
+        start = tuple([0, max(0, abs(detector.roi[0])), max(0, abs(detector.roi[2]))])
         print('Paddind the data to the shape defined by the ROI')
         rawdata = pu.crop_pad(array=rawdata, pad_start=start, output_shape=(rawdata.shape[0],
                                                                             detector.roi[1] - detector.roi[0],
@@ -1759,13 +1759,20 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
 
     nb_img = tmp_data.shape[0]
 
+    # define the loading ROI, the detector ROI may be larger than the physical detector size
+    if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0 \
+            or detector.roi[3] > detector.nb_pixel_x:
+        print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
+    loadind_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
+                   max(0, detector.roi[2]), min(detector.nb_pixel_x, detector.roi[3])]
+
     if bin_during_loading:
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
-                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+        data = np.empty((nb_img, (loadind_roi[1] - loadind_roi[0]) // detector.binning[1],
+                         (loadind_roi[3] - loadind_roi[2]) // detector.binning[2]), dtype=float)
     else:
-        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+        data = np.empty((nb_img, loadind_roi[1] - loadind_roi[0], loadind_roi[3] - loadind_roi[2]), dtype=float)
 
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
@@ -1785,14 +1792,14 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
             ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        ccdraw = ccdraw[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
         if bin_during_loading:
             ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
-    mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    mask_2d = mask_2d[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
     if bin_during_loading:
         mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
@@ -1849,13 +1856,20 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
         nb_img = tmp_data.shape[0]
         stack = True
 
+    # define the loading ROI, the detector ROI may be larger than the physical detector size
+    if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0 \
+            or detector.roi[3] > detector.nb_pixel_x:
+        print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
+    loadind_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
+                   max(0, detector.roi[2]), min(detector.nb_pixel_x, detector.roi[3])]
+
     if bin_during_loading:
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
-                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+        data = np.empty((nb_img, (loadind_roi[1] - loadind_roi[0]) // detector.binning[1],
+                         (loadind_roi[3] - loadind_roi[2]) // detector.binning[2]), dtype=float)
     else:
-        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+        data = np.empty((nb_img, loadind_roi[1] - loadind_roi[0], loadind_roi[3] - loadind_roi[2]), dtype=float)
 
     for idx in range(nb_img):
         if stack:
@@ -1878,14 +1892,14 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
             pass
         if flatfield is not None:
             ccdraw = flatfield * ccdraw
-        ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        ccdraw = ccdraw[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
         if bin_during_loading:
             ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
-    mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    mask_2d = mask_2d[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
     if bin_during_loading:
         mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
@@ -1931,8 +1945,6 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     print('Detector physical size without binning (VxH):', detector.nb_pixel_y, detector.nb_pixel_x)
     print('Detector size with binning (VxH):',
           detector.nb_pixel_y // detector.binning[1], detector.nb_pixel_x // detector.binning[2])
-    if detector.roi[1]-detector.roi[0] > detector.nb_pixel_y or detector.roi[3]-detector.roi[2] > detector.nb_pixel_x:
-        print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
 
     if setup.custom_scan and not setup.filtered_data:
         data, mask3d, monitor, frames_logical = load_custom_data(custom_images=setup.custom_images,
@@ -2096,13 +2108,20 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
 
     nb_img = len(ccdn)
 
+    # define the loading ROI, the detector ROI may be larger than the physical detector size
+    if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0 \
+            or detector.roi[3] > detector.nb_pixel_x:
+        print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
+    loadind_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
+                   max(0, detector.roi[2]), min(detector.nb_pixel_x, detector.roi[3])]
+
     if bin_during_loading:
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
-                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+        data = np.empty((nb_img, (loadind_roi[1] - loadind_roi[0]) // detector.binning[1],
+                         (loadind_roi[3] - loadind_roi[2]) // detector.binning[2]), dtype=float)
     else:
-        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+        data = np.empty((nb_img, loadind_roi[1] - loadind_roi[0], loadind_roi[3] - loadind_roi[2]), dtype=float)
 
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
@@ -2133,14 +2152,14 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
             ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        ccdraw = ccdraw[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
         if bin_during_loading:
             ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
-    mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    mask_2d = mask_2d[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
     if bin_during_loading:
         mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
@@ -2230,13 +2249,21 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
     h5file = h5py.File(ccdfiletmp, 'r')
     nb_img = len(list(h5file['entry/data']))
     print('Number of points :', nb_img)
+
+    # define the loading ROI, the detector ROI may be larger than the physical detector size
+    if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0\
+            or detector.roi[3] > detector.nb_pixel_x:
+        print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
+    loadind_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
+                   max(0, detector.roi[2]), min(detector.nb_pixel_x, detector.roi[3])]
+
     if bin_during_loading:
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
-                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+        data = np.empty((nb_img, (loadind_roi[1] - loadind_roi[0]) // detector.binning[1],
+                         (loadind_roi[3] - loadind_roi[2]) // detector.binning[2]), dtype=float)
     else:
-        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+        data = np.empty((nb_img, loadind_roi[1] - loadind_roi[0], loadind_roi[3] - loadind_roi[2]), dtype=float)
 
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
@@ -2285,7 +2312,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
                 if normalize == 'sum_roi':
                     temp_mon = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
                     series_monitor.append(temp_mon)
-                ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+                ccdraw = ccdraw[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
                 if bin_during_loading:
                     ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
                 series_data.append(ccdraw)
@@ -2307,7 +2334,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
                 monitor = np.asarray(series_monitor)
             break
     print('')
-    mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    mask_2d = mask_2d[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
     if bin_during_loading:
         mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
@@ -2385,13 +2412,20 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     frames_logical = np.ones(tmp_data.shape[0])
     nb_img = tmp_data.shape[0]
 
+    # define the loading ROI, the detector ROI may be larger than the physical detector size
+    if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0 \
+            or detector.roi[3] > detector.nb_pixel_x:
+        print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
+    loadind_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
+                   max(0, detector.roi[2]), min(detector.nb_pixel_x, detector.roi[3])]
+
     if bin_during_loading:
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
-                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+        data = np.empty((nb_img, (loadind_roi[1] - loadind_roi[0]) // detector.binning[1],
+                         (loadind_roi[3] - loadind_roi[2]) // detector.binning[2]), dtype=float)
     else:
-        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+        data = np.empty((nb_img, loadind_roi[1] - loadind_roi[0], loadind_roi[3] - loadind_roi[2]), dtype=float)
 
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
@@ -2417,14 +2451,14 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
             ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        ccdraw = ccdraw[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
         if bin_during_loading:
             ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
-    mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    mask_2d = mask_2d[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
     if bin_during_loading:
         mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
@@ -3412,7 +3446,7 @@ def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize
 
     # pad the data to the shape defined by the ROI
     if detector.roi[1] - detector.roi[0] > nby or detector.roi[3] - detector.roi[2] > nbx:
-        start = tuple([np.nan, min(0, detector.roi[0]), min(0, detector.roi[2])])
+        start = tuple([0, max(0, abs(detector.roi[0])), max(0, abs(detector.roi[2]))])
         print('Paddind the data to the shape defined by the ROI')
         data = pu.crop_pad(array=data, pad_start=start, output_shape=(data.shape[0],
                                                                       detector.roi[1] - detector.roi[0],
