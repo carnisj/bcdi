@@ -29,9 +29,9 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 404
-root_folder = 'D:/data/Pt_growth/data/'
-sample_name = "dewet5"
+scan = 1544
+root_folder = 'D:/data/P10_OER/data/'
+sample_name = "dewet2_2"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
 peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
@@ -52,19 +52,19 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # SIXS: beta, mu, gamma, delta
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = sample_name + '_%05d'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
-# template for P10: sample_name + '_%05d'
+# template for P10: ''
 # template for CRISTAL: ''
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1387  # horizontal pixel number of the Bragg peak
-y_bragg = 1450  # vertical pixel number of the Bragg peak
-roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]
+x_bragg = 1383  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 812  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = [y_bragg-290, y_bragg+290, x_bragg-356, x_bragg+356]
 # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
@@ -110,12 +110,13 @@ setup_pre = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angl
 if setup_pre.beamline != 'P10':
     homedir = root_folder + sample_name + str(scan) + '/'
     detector.datadir = homedir + "data/"
+    specfile = specfile_name
 else:
-    specfile_name = specfile_name % scan
-    homedir = root_folder + specfile_name + '/'
+    specfile = sample_name + '_{:05d}'.format(scan)
+    homedir = root_folder + specfile + '/'
     detector.datadir = homedir + 'e4m/'
-    template_imagefile = specfile_name + template_imagefile
-    detector.template_imagefile = template_imagefile
+    imagefile = specfile + template_imagefile
+    detector.template_imagefile = imagefile
 
 print('\nScan', scan)
 print('Setup: ', setup_pre.beamline)
@@ -125,6 +126,8 @@ print('Vertical pixel size: ', detector.pixelsize_y, 'm')
 print('Scan type: ', setup_pre.rocking_angle)
 print('Sample to detector distance: ', setup_pre.distance, 'm')
 print('Energy:', setup_pre.energy, 'ev')
+print('Specfile: ', specfile)
+
 ##############
 # load files #
 ##############
@@ -132,7 +135,7 @@ flatfield = pru.load_flatfield(flatfield_file)
 hotpix_array = pru.load_hotpixels(hotpixels_file)
 
 logfile = pru.create_logfile(setup=setup_pre, detector=detector, scan_number=scan,
-                             root_folder=root_folder, filename=specfile_name)
+                             root_folder=root_folder, filename=specfile)
 
 if filtered_data == 0:
     _, data, _, mask, _, frames_logical, monitor = \
