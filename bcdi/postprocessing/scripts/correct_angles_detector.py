@@ -242,6 +242,10 @@ print("\nBragg angles before correction = (gam, del): ", str('{:.4f}'.format(inp
 print("\nBragg angles after correction = (gam, del): ", str('{:.4f}'.format(bragg_inplane)),
       str('{:.4f}'.format(bragg_outofplane)))
 
+# update setup_post with the corrected detector angles
+setup_post.inplane_angle = bragg_inplane
+setup_post.outofplane_angle = bragg_outofplane
+
 d_rocking_angle = tilt[1] - tilt[0]
 
 print("\nGrazing angle=", str('{:.4f}'.format(grazing)), 'deg')
