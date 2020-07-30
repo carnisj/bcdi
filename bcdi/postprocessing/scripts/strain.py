@@ -68,7 +68,7 @@ isosurface_strain = 0.1  # threshold use for removing the outer layer (strain is
 isosurface_method = 'threshold'  # 'threshold' or 'defect', for 'defect' it tries to remove only outer layers even if
 # the amplitude is low inside the crystal
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
-offset_origin = [50, 50, 50]  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
+offset_origin = []  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
 offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the phase
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
@@ -581,13 +581,18 @@ amp, phase, _, _, _ = pu.remove_ramp(amp=amp, phase=phase, initial_shape=origina
                                      amplitude_threshold=isosurface_strain, gradient_threshold=threshold_gradient,
                                      debugging=debug)
 
+if True:
+    gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
+                        sum_frames=False, plot_colorbar=True,
+                        title='Orthogonal phase before offset removal')
+
 if len(offset_origin) == 0:  # use offset_method to remove the phase offset
     support = np.zeros(amp.shape)
     support[amp > isosurface_strain*amp.max()] = 1
     if offset_method == 'COM':
         zcom, ycom, xcom = center_of_mass(support)
-        print("Orthogonal COM in pixels (z, y, x): (", int(zcom), ',', int(ycom), ',', int(xcom), ')')
-        print("Orthogonal Phase offset at COM(amp) of:",
+        print("\nOrthogonal COM in pixels (z, y, x): (", int(zcom), ',', int(ycom), ',', int(xcom), ')')
+        print("Orthogonal phase offset at COM(amp) of:",
               str('{:.2f}'.format(phase[int(zcom), int(ycom), int(xcom)])), "rad")
 
         phase = phase - phase[int(zcom), int(ycom), int(xcom)] + phase_offset
@@ -602,15 +607,24 @@ if len(offset_origin) == 0:  # use offset_method to remove the phase offset
 else:
     if len(offset_origin) != 3:
         sys.exit('Invalid setting for parameter "offset_origin", [z,y,x] pixel position expected')
-    print("Orthogonal Phase offset at voxel ", offset_origin, " of",
+    print("\nOrthogonal phase offset at voxel ", offset_origin, " of",
           str('{:.2f}'.format(phase[offset_origin[0], offset_origin[1], offset_origin[2]])), "rad")
     phase = phase - phase[offset_origin[0], offset_origin[1], offset_origin[2]] + phase_offset
 
-phase = pru.wrap(obj=phase, start_angle=-extent_phase/2, range_angle=extent_phase)
+phase = pru.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+
+if len(offset_origin) == 0:
+    if offset_method == 'COM':
+        print("Orthogonal phase offset after wrapping at COM(amp) of:",
+              str('{:.2f}'.format(phase[int(zcom), int(ycom), int(xcom)])), "rad")
+else:
+    print("Orthogonal phase offset after wrapping at voxel ", offset_origin, " of",
+          str('{:.2f}'.format(phase[offset_origin[0], offset_origin[1], offset_origin[2]])), "rad")
+
 if True:
     gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
                         sum_frames=False, plot_colorbar=True,
-                        title='Orthogonal phase after mean removal')
+                        title='Orthogonal phase after offset removal')
 
 ################################
 # save to VTK before rotations #
@@ -634,7 +648,7 @@ if save_labframe:
 # put back the crystal in its frame, by aligning q onto the reference axis #
 ############################################################################
 if not xrayutils_ortho:
-    print('Aligning Q along ', ref_axis_outplane, ":", myaxis)
+    print('\nAligning Q along ', ref_axis_outplane, ":", myaxis)
     amp = pu.rotate_crystal(array=amp, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
                             reference_axis=myaxis, debugging=True)
     phase = pu.rotate_crystal(array=phase, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
