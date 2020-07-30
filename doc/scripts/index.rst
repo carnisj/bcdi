@@ -281,7 +281,15 @@ post_process_CDI_2D.py
    :start-after: helptext
    :end-before: """
    :language: rst
-   
+
+rocking_curves.py
+^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/rocking_curves.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 strain_mean_var_rms.py
 ^^^^^^^^^^^^^^^^^^^^^^
 
