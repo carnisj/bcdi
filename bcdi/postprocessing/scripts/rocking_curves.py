@@ -9,6 +9,7 @@
 import hdf5plugin  # for P10, should be imported before h5py or PyTables
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
 import sys
 sys.path.append('D:/myscripts/bcdi/')
@@ -22,13 +23,13 @@ Open a series of rocking curve data and track the position of the Bragg peak ove
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scans = np.arange(1686, 1719+1, step=3)  # list or array of scan numbers
+scans = np.arange(1686, 1716+1, step=3)  # list or array of scan numbers
 root_folder = "D:/data/P10_OER/data/"
 sample_name = "dewet2_2"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 savedir = "D:/data/P10_OER/analysis/candidate_12/"
 # images will be saved here, leave it to '' otherwise (default to root_folder)
-x_axis = [0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2]
+x_axis = [0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2]
 # values against which the Bragg peak center of mass evolution will be plotted, leave [] otherwise
 x_label = 'voltage (V)'  # label for the X axis in plots, leave '' otherwise
 comment = '_small_RC'  # comment for the saving filename, should start with _
@@ -72,6 +73,17 @@ template_imagefile = '_master.h5'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_master.h5'
+####################################
+# q calculation related parameters #
+####################################
+convert_to_q = True  # True to convert from pixels to q values using parameters below
+beam_direction = (1, 0, 0)  # beam along z
+directbeam_x = 476  # x horizontal,  cch2 in xrayutilities
+directbeam_y = 1374  # y vertical,  cch1 in xrayutilities
+direct_inplane = -2.0  # outer angle in xrayutilities
+direct_outofplane = 0.8
+sdd = 1.83  # sample to detector distance in m
+energy = 10300  # in eV, offset of 6eV at ID01
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -99,8 +111,7 @@ xcom = []
 ycom = []
 zcom = []
 tilt_com = []
-det_outofplane = []
-det_inplane = []
+q_com = []
 
 #################################
 # Initialize detector and setup #
@@ -109,19 +120,20 @@ kwargs = dict()  # create dictionnary
 kwargs['is_series'] = is_series
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector, **kwargs)
 
-setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, custom_scan=custom_scan,
-                               custom_images=custom_images, custom_monitor=custom_monitor, custom_motors=custom_motors)
+setup_pre = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, custom_scan=custom_scan,
+                                   custom_images=custom_images, custom_monitor=custom_monitor,
+                                   custom_motors=custom_motors)
 
 flatfield = pru.load_flatfield(flatfield_file)
 hotpix_array = pru.load_hotpixels(hotpixels_file)
 
-print('Setup: ', setup.beamline)
+print('Setup: ', setup_pre.beamline)
 print('Detector: ', detector.name)
 print('Pixel number (VxH): ', detector.nb_pixel_y, detector.nb_pixel_x)
 print('Detector ROI:', roi_detector)
 print('Horizontal pixel size with binning: ', detector.pixelsize_x, 'm')
 print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
-print('Scan type: ', setup.rocking_angle)
+print('Scan type: ', setup_pre.rocking_angle)
 
 if savedir == '':
     savedir = root_folder
@@ -133,7 +145,7 @@ print('savedir: ', detector.savedir)
 ###############################################
 for scan_nb in range(len(scans)):
 
-    if setup.beamline != 'P10':
+    if setup_pre.beamline != 'P10':
         homedir = root_folder + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
         detector.datadir = homedir + "data/"
         specfile = specfile_name
@@ -144,19 +156,19 @@ for scan_nb in range(len(scans)):
         imagefile = specfile + template_imagefile
         detector.template_imagefile = imagefile
 
-    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
+    logfile = pru.create_logfile(setup=setup_pre, detector=detector, scan_number=scans[scan_nb],
                                  root_folder=root_folder, filename=specfile)
 
     print('\nScan', scans[scan_nb])
     print('Specfile: ', specfile)
 
     data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scans[scan_nb],
-                                                             detector=detector, setup=setup,
+                                                             detector=detector, setup=setup_pre,
                                                              flatfield=flatfield, hotpixels=hotpix_array,
                                                              normalize=True, debugging=debug)
 
-    tilt, _, inplane, outofplane = pru.motor_values(frames_logical=frames_logical, logfile=logfile,
-                                                    scan_number=scan_nb, setup=setup)
+    tilt, grazing, inplane, outofplane = pru.motor_values(frames_logical=frames_logical, logfile=logfile,
+                                                          scan_number=scan_nb, setup=setup_pre)
 
     piz, piy, pix = center_of_mass(data)
     zcom.append(piz)
@@ -164,12 +176,53 @@ for scan_nb in range(len(scans)):
     xcom.append(pix)
     int_sum.append(data.sum())
     int_max.append(data.max())
-    tilt_com.append(tilt[int(piz)])
-    det_inplane.append(inplane)
-    det_outofplane.append(outofplane)
-    if scan_nb == 0:
+
+    interp_tilt = interp1d(np.arange(data.shape[0]), tilt, kind='linear')
+    tilt_com.append(interp_tilt(piz))
+    # tilt_com.append(tilt[int(piz)])
+    if scan_nb == 0 or scan_nb == len(scans) - 1:
         gu.multislices_plot(data, sum_frames=True, scale='log', reciprocal_space=True, is_orthogonal=False,
                             title='scan {:d}'.format(scans[scan_nb]))
+
+    ##############################
+    # convert pixels to q values #
+    ##############################
+    if convert_to_q:
+        setup_post = exp.SetupPostprocessing(beamline=setup_pre.beamline, energy=setup_pre.energy,
+                                             outofplane_angle=outofplane, inplane_angle=inplane, tilt_angle=tilt,
+                                             rocking_angle=setup_pre.rocking_angle, grazing_angle=grazing,
+                                             distance=setup_pre.distance, pixel_x=detector.pixelsize_x,
+                                             pixel_y=detector.pixelsize_y)
+        bragg_x = detector.roi[2] + pix  # convert it in full detector pixel
+        bragg_y = detector.roi[0] + piy  # convert it in full detector pixel
+
+        x_direct_0 = directbeam_x + setup_post.rotation_direction() * \
+            (direct_inplane * np.pi / 180 * sdd / detector.pixelsize_x)  # rotation_direction is +1 or -1
+        y_direct_0 = directbeam_y - direct_outofplane * np.pi / 180 * sdd / detector.pixelsize_y
+        # outofplane is always clockwise
+
+        bragg_inplane = inplane + setup_post.rotation_direction() * \
+            (detector.pixelsize_x * (bragg_x - x_direct_0) / sdd * 180 / np.pi)  # rotation_direction is +1 or -1
+        bragg_outofplane = outofplane - detector.pixelsize_y * (bragg_y - y_direct_0) / sdd * 180 / np.pi
+        # outofplane always clockwise
+        print("Bragg angles before correction = (gam, del): ", str('{:.4f}'.format(inplane)),
+              str('{:.4f}'.format(outofplane)))
+        print("Bragg angles after correction = (gam, del): ", str('{:.4f}'.format(bragg_inplane)),
+              str('{:.4f}'.format(bragg_outofplane)))
+
+        # update setup_post with the corrected detector angles
+        setup_post.inplane_angle = bragg_inplane
+        setup_post.outofplane_angle = bragg_outofplane
+
+        ##############################################################
+        # wavevector transfer calculations (in the laboratory frame) #
+        ##############################################################
+        kin = 2 * np.pi / setup_post.wavelength * np.asarray(beam_direction)
+        # in lab frame z downstream, y vertical, x outboard
+        kout = setup_post.exit_wavevector()  # in lab.frame z downstream, y vertical, x outboard
+        q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
+        q_com.append(np.linalg.norm(q))
+        print("Wavevector transfer of Bragg peak: ", q, str('{:.4f}'.format(np.linalg.norm(q))))
 
 ##########################################################
 # plot the evolution of the center of mass and intensity #
@@ -197,6 +250,29 @@ ax5.set_ylabel('zcom (pixels)')
 plt.tight_layout()
 plt.pause(0.1)
 fig.savefig(savedir + 'summary' + comment + '.png')
+
+fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)
+ax0.plot(scans, tilt_com, '-o')
+ax0.set_xlabel('Scan number')
+ax0.set_ylabel('Bragg angle (deg)')
+ax1.plot(x_axis, tilt_com, '-o')
+ax1.set_xlabel(x_label)
+ax1.set_ylabel('Bragg angle (deg)')
+plt.tight_layout()
+plt.pause(0.1)
+fig.savefig(savedir + 'Bragg angle' + comment + '.png')
+
+if convert_to_q:
+    fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)
+    ax0.plot(scans, q_com, '-o')
+    ax0.set_xlabel('Scan number')
+    ax0.set_ylabel('q (1/A)')
+    ax1.plot(x_axis, q_com, '-o')
+    ax1.set_xlabel(x_label)
+    ax0.set_ylabel('q (1/A)')
+    plt.tight_layout()
+    plt.pause(0.1)
+    fig.savefig(savedir + 'diffusion vector' + comment + '.png')
 
 plt.ioff()
 plt.show()
