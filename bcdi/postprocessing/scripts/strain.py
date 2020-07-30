@@ -43,18 +43,18 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 91  # spec scan number
+scan = 1484  # spec scan number
 
-datadir = 'D:/data/P10_isosurface/data/p15_2_00091/pynxraw/'  # 'D:/data/HC3207/ + "/test/"
+datadir = "D:/data/P10_OER/analysis/dewet2_2_S1484_to_S1511/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [160, 1536, 1536]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [100, 300, 300]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-binning = (1, 3, 3)  # binning factor applied during phasing
+binning = (1, 2, 2)  # binning factor applied during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
 fix_voxel = 6.0  # voxel size in nm for the interpolation during the geometrical transformation
@@ -64,7 +64,7 @@ plot_margin = (60, 30, 30)  # (z, y, x) margin in pixel to leave outside the sup
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-isosurface_strain = 0.25  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.1  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect', for 'defect' it tries to remove only outer layers even if
 # the amplitude is low inside the crystal
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
@@ -73,7 +73,7 @@ offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = "_flipped_" + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
@@ -81,14 +81,14 @@ beamline = "P10"  # name of the beamline, used for data loading and normalizatio
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 1.84  # sample to detector distance in m
+sdd = 1.83  # sample to detector distance in m
 pixel_size = 75e-6  # detector pixel size in m
-energy = 8820  # x-ray energy in eV, 6eV offset at ID01
+energy = 10300  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 61.5238  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 1.6310  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 30.4944  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 4.3631  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.0086  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 dispersion = 3.2880E-05  # delta
@@ -117,7 +117,7 @@ avg_threshold = 0.90  # minimum correlation within reconstructed object for aver
 ###########
 simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
-flip_reconstruction = False  # True if you want to get the conjugate object
+flip_reconstruction = True  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use for ramp removal
 xrayutils_ortho = False  # True if the data is already orthogonalized
@@ -126,7 +126,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (-1, 0, -4)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (0, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # setup for phase averaging or apodization #
 ############################################
@@ -734,17 +734,16 @@ piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
 print('phase.max() = ', phase[np.nonzero(bulk)].max(), ', at coordinates ', piz, piy, pix)
 strain[bulk == 0] = np.nan
 phase[bulk == 0] = np.nan
-if True:
-    gu.combined_plots((phase[piz, :, :], phase[:, piy, :], phase[:, :, pix]), tuple_sum_frames=False, tuple_sum_axis=0,
-                      tuple_width_v=None, tuple_width_h=None, tuple_colorbar=True, tuple_vmin=np.nan,
-                      tuple_vmax=np.nan, tuple_title=('phase at max in xy', 'phase at max in xz', 'phase at max in yz'),
-                      tuple_scale='linear', cmap=my_cmap, pixel_spacing=pixel_spacing, is_orthogonal=True,
-                      reciprocal_space=False)
+
+# plot the slice at the maximum phase
+gu.combined_plots((phase[piz, :, :], phase[:, piy, :], phase[:, :, pix]), tuple_sum_frames=False, tuple_sum_axis=0,
+                  tuple_width_v=None, tuple_width_h=None, tuple_colorbar=True, tuple_vmin=np.nan,
+                  tuple_vmax=np.nan, tuple_title=('phase at max in xy', 'phase at max in xz', 'phase at max in yz'),
+                  tuple_scale='linear', cmap=my_cmap, is_orthogonal=True, reciprocal_space=False)
 
 # bulk support
 fig, _, _ = gu.multislices_plot(bulk, sum_frames=False, title='Orthogonal bulk', vmin=0, vmax=1,
-                                tick_direction=tick_direction, tick_width=tick_width, tick_length=tick_length,
-                                pixel_spacing=pixel_spacing, is_orthogonal=True, reciprocal_space=False)
+                                is_orthogonal=True, reciprocal_space=False)
 fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
 fig.text(0.60, 0.40, "Bulk - isosurface=" + str('{:.2f}'.format(isosurface_strain)), size=20)
 fig.text(0.60, 0.35, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
