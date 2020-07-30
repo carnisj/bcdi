@@ -43,9 +43,9 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 1484  # spec scan number
+scan = 1544  # spec scan number
 
-datadir = "D:/data/P10_OER/analysis/dewet2_2_S1484_to_S1511/"
+datadir = "D:/data/P10_OER/analysis/dewet2_2_S1544_to_S1586/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
@@ -68,7 +68,7 @@ isosurface_strain = 0.1  # threshold use for removing the outer layer (strain is
 isosurface_method = 'threshold'  # 'threshold' or 'defect', for 'defect' it tries to remove only outer layers even if
 # the amplitude is low inside the crystal
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
-offset_origin = []  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
+offset_origin = [50, 50, 50]  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
 offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the phase
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
@@ -86,7 +86,7 @@ pixel_size = 75e-6  # detector pixel size in m
 energy = 10300  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
 outofplane_angle = 30.4944  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 4.3631  # detector nu ID01, gamma SIXS, tth 34ID
+inplane_angle = 4.3491  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
 tilt_angle = 0.0086  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
@@ -119,7 +119,7 @@ simu_flag = False  # set to True if it is simulation, the parameter invert_phase
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
 flip_reconstruction = True  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
-threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use for ramp removal
+threshold_gradient = 0.1  # upper threshold of the gradient of the phase, use for ramp removal
 xrayutils_ortho = False  # True if the data is already orthogonalized
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
 save_support = False  # True to save the non-orthogonal support for later phase retrieval
@@ -578,7 +578,8 @@ if correct_refraction or correct_absorption:
 # phase ramp and offset removal (mean value) #
 ##############################################
 amp, phase, _, _, _ = pu.remove_ramp(amp=amp, phase=phase, initial_shape=original_size, method=phase_ramp_removal,
-                                     amplitude_threshold=isosurface_strain, gradient_threshold=threshold_gradient)
+                                     amplitude_threshold=isosurface_strain, gradient_threshold=threshold_gradient,
+                                     debugging=debug)
 
 if len(offset_origin) == 0:  # use offset_method to remove the phase offset
     support = np.zeros(amp.shape)
@@ -601,6 +602,8 @@ if len(offset_origin) == 0:  # use offset_method to remove the phase offset
 else:
     if len(offset_origin) != 3:
         sys.exit('Invalid setting for parameter "offset_origin", [z,y,x] pixel position expected')
+    print("Orthogonal Phase offset at voxel ", offset_origin, " of",
+          str('{:.2f}'.format(phase[offset_origin[0], offset_origin[1], offset_origin[2]])), "rad")
     phase = phase - phase[offset_origin[0], offset_origin[1], offset_origin[2]] + phase_offset
 
 phase = pru.wrap(obj=phase, start_angle=-extent_phase/2, range_angle=extent_phase)
