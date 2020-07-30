@@ -7,7 +7,6 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import hdf5plugin  # for P10, should be imported before h5py or PyTables
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
@@ -126,7 +125,8 @@ print('Scan type: ', setup.rocking_angle)
 
 if savedir == '':
     savedir = root_folder
-print('savedir: ', savedir)
+detector.savedir = savedir
+print('savedir: ', detector.savedir)
 
 ###############################################
 # load recursively the scans and update lists #
