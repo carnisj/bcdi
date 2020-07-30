@@ -1,3 +1,5 @@
+* Feature: implement rocking_curves.py to follow the evolution of the Bragg peak between several rocking curves
+
 * Feature: implement flatten_modulus.py to remove low frequency artefacts in the modulus reconstructed by phase retrieval
 
 * Feature: implement xcca_3D_map.py to calculate the angular cross-correlation CCF(q,q) over a range in q
