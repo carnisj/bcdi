@@ -29,7 +29,7 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 1544
+scan = 1638
 root_folder = 'D:/data/P10_OER/data/'
 sample_name = "dewet2_2"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
@@ -154,9 +154,9 @@ else:
 numz, numy, numx = data.shape
 print("Shape of dataset: ", numz, numy, numx)
 
-##############################
-# find motors values in .fio #
-##############################
+###############################
+# load releavant motor values #
+###############################
 tilt, grazing, inplane, outofplane = pru.motor_values(frames_logical, logfile, scan, setup_pre, follow_bragg=False)
 
 setup_post = exp.SetupPostprocessing(beamline=setup_pre.beamline, energy=setup_pre.energy,
