@@ -20,7 +20,8 @@ from bcdi.utils import image_registration as reg
 import bcdi.utils.utilities as util
 
 
-def align_diffpattern(reference_data, data, mask=None, method='registration', combining_method='rgi'):
+def align_diffpattern(reference_data, data, mask=None, method='registration', combining_method='rgi',
+                      return_shift=False):
     """
     Align two diffraction patterns based on the shift of the center of mass or based on dft registration.
 
@@ -29,9 +30,11 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
     :param mask: the 3D or 2D mask corresponding to data
     :param method: 'center_of_mass' or 'registration'. For 'registration', see: Opt. Lett. 33, 156-158 (2008).
     :param combining_method: 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
+    :param return_shift: if True, will return the shifts as a tuple
     :return:
      - the shifted data
      - the shifted mask
+     - if return_shift, returns a tuple containing the shifts
     """
     if reference_data.ndim == 3:
         nbz, nby, nbx = reference_data.shape
@@ -52,7 +55,10 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
         print('z shift', str('{:.2f}'.format(shiftz)), ', y shift',
               str('{:.2f}'.format(shifty)), ', x shift', str('{:.2f}'.format(shiftx)))
         if (shiftz == 0) and (shifty == 0) and (shiftx == 0):
-            return data, mask
+            if not return_shift:
+                return data, mask
+            else:
+                return data, mask, (0, 0, 0)
 
         if combining_method is 'rgi':
             # re-sample data on a new grid based on the shift
@@ -84,6 +90,11 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
         else:
             raise ValueError("Incorrect value for parameter 'combining_method'")
 
+        if not return_shift:
+            return data, mask
+        else:
+            return data, mask, (shiftz, shifty, shiftx)
+
     elif reference_data.ndim == 2:
         nby, nbx = reference_data.shape
         if reference_data.shape != data.shape:
@@ -101,7 +112,10 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
 
         print('y shift', str('{:.2f}'.format(shifty)), ', x shift', str('{:.2f}'.format(shiftx)))
         if (shifty == 0) and (shiftx == 0):
-            return data, mask
+            if not return_shift:
+                return data, mask
+            else:
+                return data, mask, (0, 0)
 
         if combining_method is 'rgi':
             # re-sample data on a new grid based on the shift
@@ -126,9 +140,14 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
                 mask = np.rint(abs(reg.subpixel_shift(mask, shifty, shiftx)))  # mask is integer 0 or 1
         else:
             raise ValueError("Incorrect value for parameter 'combining_method'")
+
+        if not return_shift:
+            return data, mask
+        else:
+            return data, mask, (shifty, shiftx)
+
     else:
         raise ValueError('Expect 2D or 3D arrays as input')
-    return data, mask
 
 
 def beamstop_correction(data, detector, setup, debugging=False):
