@@ -24,21 +24,22 @@ The alignment of diffraction patterns is based on the center of mass shift or df
 grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
-scan_list = np.arange(1514, 1541+1, 3)  # list or array of scan numbers
+scan_list = np.arange(585, 612+1, 3)  # list or array of scan numbers
 sample_name = ['dewet2_2']  # list of sample names. If only one name is indicated,
 # it will be repeated to match the length of scan_list
-suffix = '_norm_141_580_712_1_1_1.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
+suffix = '_norm_161_580_580_1_1_1.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
 # the end of the filename template after 'pynx'
 homedir = "D:/data/P10_OER/data/"  # parent folder of scans folders
-savedir = "D:/data/P10_OER/analysis/dewet2_2_S1514_to_S1541/"  # path of the folder to save data
+savedir = "D:/data/P10_OER/analysis/candidate_11/dewet2_2_S" + str(scan_list[0]) + "_to_S" + str(scan_list[-1]) + "/"
+# path of the folder to save data
 alignement_method = 'registration'
 # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
-combining_method = 'subpixel'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
+combining_method = 'rgi'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
 corr_roi = None  # [325, 400, 845, 920, 410, 485]
 # [420, 520, 660, 760, 600, 700]  # region of interest where to calculate the correlation between scans.
 # If None, it will use the full
 # array. [zstart, zstop, ystart, ystop, xstart, xstop]
-output_shape = (140, 300, 300)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+output_shape = (160, 300, 300)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
 correlation_threshold = 0.90  # only scans having a correlation larger than this threshold will be combined
 reference_scan = 0  # index in scan_list of the scan to be used as the reference for the correlation calculation
 combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
@@ -131,7 +132,6 @@ for idx in range(len(scan_list)):
     if alignement_method is not 'skip':
         data, mask = pru.align_diffpattern(reference_data=refdata, data=data, mask=mask, method=alignement_method,
                                            combining_method=combining_method)
-        data[data < 0.5] = 0  # remove interpolated noisy pixels
 
         if debug:
             gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
