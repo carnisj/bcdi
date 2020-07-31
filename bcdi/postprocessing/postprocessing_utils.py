@@ -491,7 +491,7 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
     :param padwith_ones: if True, pad with ones instead of zeros
     :param pad_start: for padding, tuple of 3 positions in pixel where the original array should be placed.
      If None, padding is symmetric along the respective axis
-    :param crop_center: for cropping, [z, y, x] position in the original array (in pixels) of the center of the ourput
+    :param crop_center: for cropping, [z, y, x] position in the original array (in pixels) of the center of the output
      array. If None, it will be set to the center of the original array
     :param debugging: set to True to see plots
     :type debugging: bool
