@@ -24,10 +24,12 @@ The alignment of diffraction patterns is based on the center of mass shift or df
 grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
-scan_list = np.arange(585, 612+1, 3)  # list or array of scan numbers
+scan_list = np.arange(773, 800+1, 3)  # list or array of scan numbers
+# bad_indices = np.argwhere(scan_list == 738)
+# scan_list = np.delete(scan_list, bad_indices)
 sample_name = ['dewet2_2']  # list of sample names. If only one name is indicated,
 # it will be repeated to match the length of scan_list
-suffix = '_norm_161_580_580_1_1_1.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
+suffix = '_norm_141_580_580_1_1_1.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
 # the end of the filename template after 'pynx'
 homedir = "D:/data/P10_OER/data/"  # parent folder of scans folders
 savedir = "D:/data/P10_OER/analysis/candidate_11/dewet2_2_S" + str(scan_list[0]) + "_to_S" + str(scan_list[-1]) + "/"
@@ -39,7 +41,11 @@ corr_roi = None  # [325, 400, 845, 920, 410, 485]
 # [420, 520, 660, 760, 600, 700]  # region of interest where to calculate the correlation between scans.
 # If None, it will use the full
 # array. [zstart, zstop, ystart, ystop, xstart, xstop]
-output_shape = (160, 300, 300)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+output_shape = (140, 300, 300)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+crop_center = None  # [z, y, x] pixels position in the original array of the center of the cropped output
+# if None, it will be set to the center of the original array
+boundaries = 'crop'  # 'mask' or 'crop'. If 'mask', pixels were not all scans are defined after alignement will be
+# masked, if 'crop' output_shape will be modified to remove these boundary pixels
 correlation_threshold = 0.90  # only scans having a correlation larger than this threshold will be combined
 reference_scan = 0  # index in scan_list of the scan to be used as the reference for the correlation calculation
 combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
@@ -56,6 +62,11 @@ debug = False  # True or False
 if reference_scan is None:
     reference_scan = 0
 
+if type(output_shape) is tuple:
+    output_shape = list(output_shape)
+assert len(output_shape) == 3, 'output_shape should be a list or tuple of three numbers'
+assert np.all(np.asarray(output_shape)%2 == 0), 'output_shape components should be all even due to FFT shape' \
+                                                ' considerations for phase retrieval'
 if type(sample_name) is list:
     if len(sample_name) == 1:
         sample_name = [sample_name[0] for idx in range(len(scan_list))]
@@ -65,6 +76,9 @@ elif type(sample_name) is str:
 else:
     print('sample_name should be either a string or a list of strings')
     sys.exit()
+
+assert boundaries in ['mask', 'crop'], 'boundaries should be either "mask" or "crop"'
+
 if is_orthogonal:
     parent_folder = '/pynx/'
 else:
@@ -84,15 +98,26 @@ refmask = np.load(homedir + samplename + parent_folder +
 assert refdata.ndim == 3 and refmask.ndim == 3, 'data and mask should be 3D arrays'
 nbz, nby, nbx = refdata.shape
 
+if crop_center is None:
+    crop_center = [nbz // 2, nby // 2, nbx // 2]
+elif type(crop_center) is tuple:
+    crop_center = list(crop_center)
+assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
+assert np.all(np.asarray(crop_center)-np.asarray(output_shape)//2 >= 0), 'crop_center incompatible with output_shape'
+if crop_center[0]+output_shape[0]//2 > nbz or crop_center[1]+output_shape[1]//2 > nby\
+        or crop_center[1]+output_shape[1]//2 > nbx:
+    print('crop_center incompatible with output_shape')
+    sys.exit()
+
 if corr_roi is None:
     corr_roi = [0, nbz, 0, nby, 0, nbx]
-else:
-    assert len(corr_roi) == 6, 'corr_roi should be a tuple or list of lenght 6'
-    if not 0 <= corr_roi[0] < corr_roi[1] <= nbz\
-            or not 0 <= corr_roi[2] < corr_roi[3] <= nby\
-            or not 0 <= corr_roi[4] < corr_roi[5] <= nbx:
-        print('Incorrect value for the parameter corr_roi')
-        sys.exit()
+
+assert len(corr_roi) == 6, 'corr_roi should be a tuple or list of lenght 6'
+if not 0 <= corr_roi[0] < corr_roi[1] <= nbz\
+        or not 0 <= corr_roi[2] < corr_roi[3] <= nby\
+        or not 0 <= corr_roi[4] < corr_roi[5] <= nbx:
+    print('Incorrect value for the parameter corr_roi')
+    sys.exit()
 
 gu.multislices_plot(refdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
                     sum_frames=True, scale='log', plot_colorbar=True, title='refdata in corr_roi', vmin=0,
@@ -101,6 +126,8 @@ gu.multislices_plot(refdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], co
 ###########################
 # combine the other scans #
 ###########################
+shift_min = 0  # min of the shift of the first axis after alignement
+shift_max = 0  # max of the shift of the first axis after alignement
 combined_list = []  # list of scans with correlation coeeficient >= threshold
 corr_coeff = []  # list of correlation coefficients
 sumdata = np.copy(refdata)  # refdata must not be modified
@@ -130,9 +157,11 @@ for idx in range(len(scan_list)):
     # align datasets #
     ##################
     if alignement_method is not 'skip':
-        data, mask = pru.align_diffpattern(reference_data=refdata, data=data, mask=mask, method=alignement_method,
-                                           combining_method=combining_method)
-
+        data, mask, shifts = pru.align_diffpattern(reference_data=refdata, data=data, mask=mask,
+                                                   method=alignement_method, combining_method=combining_method,
+                                                   return_shift=True)
+        shift_min = min(shift_min, shifts[0])
+        shift_max = max(shift_max, shifts[0])
         if debug:
             gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
                                 title='S' + str(scan_list[idx]) + '\n Data after shift', vmin=0,
@@ -159,8 +188,38 @@ for idx in range(len(scan_list)):
 summask[np.nonzero(summask)] = 1  # mask should be 0 or 1
 sumdata = sumdata / len(combined_list)
 
-summask = pu.crop_pad(array=summask, output_shape=output_shape)
-sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape)
+##########################################################
+# find the cropping range for the first axis (BCDI case) #
+##########################################################
+if alignement_method is not 'skip':
+    shift_min = int(np.ceil(abs(shift_min)))  # number of pixels to remove at the end of the indices for the first axis
+    shift_max = int(np.ceil(shift_max))  # number of pixels to remove at the beginning of the indices for the first axis
+    print('\nnumber of pixels to remove (start, end) = ({:d}, {:d})'.format(shift_max, shift_min))
+
+    if boundaries == 'mask':
+        sumdata[0:shift_max, :, :] = 0
+        summask[0:shift_max, :, :] = 1
+        sumdata[shift_min:, :, :] = 0
+        summask[shift_min:, :, :] = 1
+    else:  # 'crop'
+        if crop_center[0]-output_shape[0] // 2 < shift_max:  # not enough pixels on the lower indices side
+            delta_z = shift_max - crop_center[0] + output_shape[0] // 2
+            center_z = crop_center[0] + delta_z
+        else:
+            center_z = crop_center[0]
+        # check if this still fit on the larger indices side
+        if center_z + output_shape[0]//2 > nbz - shift_min:  # not enough pixels on the larger indices side
+            print('cannot crop the first axis to {:d}'.format(output_shape[0]))
+            # find the correct output_shape[0] taking into accournt FFT shape considerations
+            output_shape[0] = pru.smaller_primes(nbz-shift_min-shift_max, maxprime=7, required_dividers=(2,))
+            # redefine crop_center[0] if needed
+            if crop_center[0] - output_shape[0] // 2 < shift_max:
+                delta_z = shift_max - crop_center[0] + output_shape[0] // 2
+                crop_center[0] = crop_center[0] + delta_z
+            print('new crop size for the first axis={:d}, new crop_center={:d}'.format(output_shape[0], crop_center[0]))
+
+summask = pu.crop_pad(array=summask, output_shape=output_shape, crop_center=crop_center)
+sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape, crop_center=crop_center)
 
 template = '_S' + str(combined_list[0]) + 'toS' + str(combined_list[-1]) +\
            '_{:d}_{:d}_{:d=}'.format(output_shape[0], output_shape[1], output_shape[2])
