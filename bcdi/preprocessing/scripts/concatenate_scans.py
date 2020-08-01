@@ -65,7 +65,7 @@ if reference_scan is None:
 if type(output_shape) is tuple:
     output_shape = list(output_shape)
 assert len(output_shape) == 3, 'output_shape should be a list or tuple of three numbers'
-assert np.all(np.asarray(output_shape)%2 == 0), 'output_shape components should be all even due to FFT shape' \
+assert np.all(np.asarray(output_shape) % 2 == 0), 'output_shape components should be all even due to FFT shape' \
                                                 ' considerations for phase retrieval'
 if type(sample_name) is list:
     if len(sample_name) == 1:
