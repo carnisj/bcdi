@@ -24,15 +24,16 @@ The alignment of diffraction patterns is based on the center of mass shift or df
 grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
-scan_list = np.arange(805, 832+1, 3)  # list or array of scan numbers
-# bad_indices = np.argwhere(scan_list == 738)
-# scan_list = np.delete(scan_list, bad_indices)
+scans = np.arange(1138, 1141+1, 3)  # list or array of scan numbers
+scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
+# bad_indices = np.argwhere(scans == 738)
+# scans = np.delete(scans, bad_indices)
 sample_name = ['dewet2_2']  # list of sample names. If only one name is indicated,
-# it will be repeated to match the length of scan_list
+# it will be repeated to match the length of scans
 suffix = '_norm_141_580_580_1_1_1.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
 # the end of the filename template after 'pynx'
 homedir = "D:/data/P10_OER/data/"  # parent folder of scans folders
-savedir = "D:/data/P10_OER/analysis/candidate_11/dewet2_2_S" + str(scan_list[0]) + "_to_S" + str(scan_list[-1]) + "/"
+savedir = "D:/data/P10_OER/analysis/candidate_11/dewet2_2_S" + str(scans[0]) + "_to_S" + str(scans[-1]) + "/"
 # path of the folder to save data
 alignement_method = 'registration'
 # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
@@ -47,7 +48,7 @@ crop_center = None  # [z, y, x] pixels position in the original array of the cen
 boundaries = 'crop'  # 'mask' or 'crop'. If 'mask', pixels were not all scans are defined after alignement will be
 # masked, if 'crop' output_shape will be modified to remove these boundary pixels
 correlation_threshold = 0.90  # only scans having a correlation larger than this threshold will be combined
-reference_scan = 0  # index in scan_list of the scan to be used as the reference for the correlation calculation
+reference_scan = 0  # index in scans of the scan to be used as the reference for the correlation calculation
 combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
 is_orthogonal = False  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
 plot_threshold = 0  # data below this will be set to 0, only in plots
@@ -69,10 +70,10 @@ assert np.all(np.asarray(output_shape) % 2 == 0), 'output_shape components shoul
                                                 ' considerations for phase retrieval'
 if type(sample_name) is list:
     if len(sample_name) == 1:
-        sample_name = [sample_name[0] for idx in range(len(scan_list))]
-    assert len(sample_name) == len(scan_list), 'sample_name and scan_list should have the same length'
+        sample_name = [sample_name[0] for idx in range(len(scans))]
+    assert len(sample_name) == len(scans), 'sample_name and scans should have the same length'
 elif type(sample_name) is str:
-    sample_name = [sample_name for idx in range(len(scan_list))]
+    sample_name = [sample_name for idx in range(len(scans))]
 else:
     print('sample_name should be either a string or a list of strings')
     sys.exit()
@@ -88,13 +89,13 @@ else:
 # load the reference scan #
 ###########################
 plt.ion()
-print(scan_list)
-samplename = sample_name[reference_scan] + '_' + str('{:05d}').format(scan_list[reference_scan])
+print(scans)
+samplename = sample_name[reference_scan] + '_' + str('{:05d}').format(scans[reference_scan])
 print('Reference scan:', samplename)
 refdata = np.load(homedir + samplename + parent_folder +
-                  'S' + str(scan_list[reference_scan]) + '_pynx' + suffix)['data']
+                  'S' + str(scans[reference_scan]) + '_pynx' + suffix)['data']
 refmask = np.load(homedir + samplename + parent_folder +
-                  'S' + str(scan_list[reference_scan]) + '_maskpynx' + suffix)['mask']
+                  'S' + str(scans[reference_scan]) + '_maskpynx' + suffix)['mask']
 assert refdata.ndim == 3 and refmask.ndim == 3, 'data and mask should be 3D arrays'
 nbz, nby, nbx = refdata.shape
 
@@ -133,25 +134,25 @@ corr_coeff = []  # list of correlation coefficients
 sumdata = np.copy(refdata)  # refdata must not be modified
 summask = refmask  # refmask is not used elsewhere
 
-for idx in range(len(scan_list)):
+for idx in range(len(scans)):
     if idx == reference_scan:
-        combined_list.append(scan_list[idx])
+        combined_list.append(scans[idx])
         corr_coeff.append(1.0)
         continue  # sumdata and summask were already initialized with the reference scan
-    samplename = sample_name[idx] + '_' + str('{:05d}').format(scan_list[idx])
+    samplename = sample_name[idx] + '_' + str('{:05d}').format(scans[idx])
     print('\n Opening ', samplename)
     data = np.load(homedir + samplename + parent_folder +
-                   'S' + str(scan_list[idx]) + '_pynx' + suffix)['data']
+                   'S' + str(scans[idx]) + '_pynx' + suffix)['data']
     mask = np.load(homedir + samplename + parent_folder +
-                   'S' + str(scan_list[idx]) + '_maskpynx' + suffix)['mask']
+                   'S' + str(scans[idx]) + '_maskpynx' + suffix)['mask']
 
     if debug:
         gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
-                            title='S' + str(scan_list[idx]) + '\n Data before shift', vmin=0,
+                            title='S' + str(scans[idx]) + '\n Data before shift', vmin=0,
                             reciprocal_space=True, is_orthogonal=is_orthogonal)
 
         gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True,
-                            title='S' + str(scan_list[idx]) + '\n Mask before shift', vmin=0,
+                            title='S' + str(scans[idx]) + '\n Mask before shift', vmin=0,
                             reciprocal_space=True, is_orthogonal=is_orthogonal)
     ##################
     # align datasets #
@@ -164,11 +165,11 @@ for idx in range(len(scan_list)):
         shift_max = [max(shift_max[axis], shifts[axis]) for axis in range(3)]
         if debug:
             gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
-                                title='S' + str(scan_list[idx]) + '\n Data after shift', vmin=0,
+                                title='S' + str(scans[idx]) + '\n Data after shift', vmin=0,
                                 reciprocal_space=True, is_orthogonal=is_orthogonal)
 
             gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True,
-                                title='S' + str(scan_list[idx]) + '\n Mask after shift', vmin=0,
+                                title='S' + str(scans[idx]) + '\n Mask after shift', vmin=0,
                                 reciprocal_space=True, is_orthogonal=is_orthogonal)
 
     correlation = pearsonr(
@@ -178,12 +179,12 @@ for idx in range(len(scan_list)):
     corr_coeff.append(round(correlation, 2))
 
     if correlation >= correlation_threshold:
-        combined_list.append(scan_list[idx])
+        combined_list.append(scans[idx])
         sumdata = sumdata + data
         if combine_masks:
             summask = summask + mask
     else:
-        print('Scan ', scan_list[idx], ', correlation below threshold, skip concatenation')
+        print('Scan ', scans[idx], ', correlation below threshold, skip concatenation')
 
 summask[np.nonzero(summask)] = 1  # mask should be 0 or 1
 sumdata = sumdata / len(combined_list)
@@ -293,7 +294,7 @@ sumdata[sumdata < plot_threshold] = 0
 fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
                                 title='Combined masked intensity', vmin=0, reciprocal_space=True)
 fig.text(0.55, 0.40, "Scans tested:", size=12)
-fig.text(0.55, 0.35, str(scan_list), size=8)
+fig.text(0.55, 0.35, str(scans), size=8)
 fig.text(0.55, 0.30, "Correlation coefficients:", size=12)
 fig.text(0.55, 0.25, str(corr_coeff), size=8)
 fig.text(0.55, 0.20, "Threshold for correlation: " + str(correlation_threshold), size=12)
