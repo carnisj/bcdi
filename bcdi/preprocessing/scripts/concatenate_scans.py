@@ -24,7 +24,7 @@ The alignment of diffraction patterns is based on the center of mass shift or df
 grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
-scan_list = np.arange(773, 800+1, 3)  # list or array of scan numbers
+scan_list = np.arange(805, 832+1, 3)  # list or array of scan numbers
 # bad_indices = np.argwhere(scan_list == 738)
 # scan_list = np.delete(scan_list, bad_indices)
 sample_name = ['dewet2_2']  # list of sample names. If only one name is indicated,
@@ -188,9 +188,9 @@ for idx in range(len(scan_list)):
 summask[np.nonzero(summask)] = 1  # mask should be 0 or 1
 sumdata = sumdata / len(combined_list)
 
-##########################################################
-# find the cropping range for the first axis (BCDI case) #
-##########################################################
+##########################################################################################
+# exclude or mask boundaries where not all scans are defined after alignment (BCDI case) #
+##########################################################################################
 if alignement_method is not 'skip':
     shift_min = [int(np.ceil(abs(shift_min[axis]))) for axis in range(3)]
     # shift_min is the number of pixels to remove at the end along each axis
@@ -263,9 +263,15 @@ if alignement_method is not 'skip':
 
         print('new crop size for the first axis=', output_shape, 'new crop_center=', crop_center)
 
+########################################################
+# crop the combined data and mask to the desired shape #
+########################################################
 summask = pu.crop_pad(array=summask, output_shape=output_shape, crop_center=crop_center)
 sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape, crop_center=crop_center)
 
+###################################
+# save the combined data and mask #
+###################################
 template = '_S' + str(combined_list[0]) + 'toS' + str(combined_list[-1]) +\
            '_{:d}_{:d}_{:d=}'.format(output_shape[0], output_shape[1], output_shape[2])
 
@@ -275,6 +281,9 @@ np.savez_compressed(savedir+'combined_pynx' + template + '.npz', data=sumdata)
 np.savez_compressed(savedir+'combined_maskpynx' + template + '.npz', mask=summask)
 print('\nSum of ', len(combined_list), 'scans')
 
+###################################
+# plot the combined data and mask #
+###################################
 gu.multislices_plot(sumdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
                     sum_frames=True, scale='log', plot_colorbar=True, title='sumdata in corr_roi', vmin=0,
                     reciprocal_space=True, is_orthogonal=is_orthogonal)
