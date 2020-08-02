@@ -23,9 +23,9 @@ Input: a NPZ file with the fields 'angles', 'ccf', 'points':
     - 'points': number of points contributing to the cross-correlation function at these angles
 """
 
-datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/scratch/"
-savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/scratch/"
-comment = ''  # should start with _
+datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
+savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
+comment = ''  # comment for the title and the saving filename, should start with _
 ylim = None  # [0, 60]  # limits used for the vertical axis of plots, leave None otherwise
 save = False  # True to save the figure
 ##########################
