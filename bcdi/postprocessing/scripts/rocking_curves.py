@@ -23,13 +23,20 @@ Open a series of rocking curve data and track the position of the Bragg peak ove
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scans = np.arange(1686, 1716+1, step=3)  # list or array of scan numbers
+scans = np.arange(1009, 1075+1, step=3)  # list or array of scan numbers
+scans = np.concatenate((scans, np.arange(1081, 1135+1, 3)))
+scans = np.concatenate((scans, np.arange(1198, 1231+1, 3)))
+scans = np.concatenate((scans, np.arange(1236, 1395+1, 3)))
 root_folder = "D:/data/P10_OER/data/"
 sample_name = "dewet2_2"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
-savedir = "D:/data/P10_OER/analysis/candidate_12/"
+savedir = "D:/data/P10_OER/analysis/candidate_11/"
 # images will be saved here, leave it to '' otherwise (default to root_folder)
-x_axis = [0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2]
+x_axis = [0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0, 0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6,
+          0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4,
+          0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0,
+          0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1,
+          0.2, 0.2, 0.3, 0.3, 0.4, 0.4, 0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1]
 # values against which the Bragg peak center of mass evolution will be plotted, leave [] otherwise
 x_label = 'voltage (V)'  # label for the X axis in plots, leave '' otherwise
 comment = '_small_RC'  # comment for the saving filename, should start with _
@@ -91,6 +98,8 @@ energy = 10300  # in eV, offset of 6eV at ID01
 ########################################
 # check and initialize some parameters #
 ########################################
+print('\n{:d} scans:'.format(len(scans)), scans)
+print('\n {:d} x_axis values provided:'.format(len(x_axis)))
 if len(x_axis) == 0:
     x_axis = np.arange(len(scans))
 assert len(x_axis) == len(scans), 'the length of x_axis should be equal to the number of scans'
@@ -269,7 +278,7 @@ if convert_to_q:
     ax0.set_ylabel('q (1/A)')
     ax1.plot(x_axis, q_com, '-o')
     ax1.set_xlabel(x_label)
-    ax0.set_ylabel('q (1/A)')
+    ax1.set_ylabel('q (1/A)')
     plt.tight_layout()
     plt.pause(0.1)
     fig.savefig(savedir + 'diffusion vector' + comment + '.png')
