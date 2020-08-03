@@ -1,3 +1,13 @@
+* Feature: implement the 3D angular X-ray cross-correlation analysis in xcca/scripts/xcca_3D.py
+
+* Refactor: allow the reloading of binned data and its orthogonalization in preprocess_cdi_combined.py and preprocess_bcdi_combined.py
+
+* Feature: implement crop_npz.py to crop combined stacked data to the desired size
+
+* Feature: implement scan_analysis.py to plot interactively the integrated intensity in a region of interest for a 1D scan
+
+* Feature: implement view_mesh.py to plot interactively the integrated intensity in a region of interest for a 2D mesh
+
 * Refactor: when gridding forward CDI data, reverse the rotation direction to compensate the rotation of Ewald sphere
 
 * Refactor: converted /postprocessing/scripts/extract_bulk_surface.py

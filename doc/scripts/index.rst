@@ -414,14 +414,6 @@ simu_signe_phase.py
 Utilities
 ---------
    
-angular_avg_3Dto1D.py
-^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/angular_avg_3Dto1D.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
 apodize.py
 ^^^^^^^^^^
 
@@ -437,7 +429,15 @@ correlation_realspace.py
    :start-after: helptext
    :end-before: """
    :language: rst
-   
+
+crop_npz.py
+^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/crop_npz.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 cross_corr_fast_live_macro.py
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -482,6 +482,43 @@ save_to_mat.py
 ^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/utils/scripts/save_to_mat.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+scan_analysis.py
+^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/scan_analysis.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+view_mesh.py
+^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/view_mesh.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+.. _xcca:
+
+XCCA
+----
+
+angular_avg_3Dto1D.py
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/xcca/scripts/angular_avg_3Dto1D.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+xcca_3D.py
+^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D.py
    :start-after: helptext
    :end-before: """
    :language: rst

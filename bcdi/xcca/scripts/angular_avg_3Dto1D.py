@@ -12,6 +12,7 @@ import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+import bcdi.xcca_utils as xcca
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
@@ -23,7 +24,7 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/'
+root_folder = 'D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/'
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
 origin = [np.nan, np.nan, np.nan]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
@@ -98,7 +99,7 @@ else:  # work with pixels, supposing that the data is in an orthonormal frame
     qz = np.arange(ny) - origin[1]
     qy = np.arange(nx) - origin[2]
 
-q_axis, y_mean_masked, y_median_masked = util.angular_avg(data=diff_pattern, q_values=(qx, qz, qy), origin=origin,
+q_axis, y_mean_masked, y_median_masked = xcca.angular_avg(data=diff_pattern, q_values=(qx, qz, qy), origin=origin,
                                                           mask=mask, debugging=debug)
 #############
 # save data #
@@ -114,7 +115,7 @@ if save_txt:
 #############
 # plot data #
 #############
-q_axvline = util.find_nearest(q_axis, vertical_lines)
+q_vline = util.find_nearest(q_axis, vertical_lines)
 
 fig, ax0 = plt.subplots(1, 1)
 plt0 = ax0.plot(q_axis, np.log10(y_mean_masked), 'r')
@@ -123,10 +124,13 @@ plt.ylabel('Angular average (A.U.)')
 if xlim is not None:
     plt.xlim(xlim[0], xlim[1])
 if ylim is not None:
+    ymin = ylim[0]
     plt.ylim(ylim[0], ylim[1])
-ymax = np.log10(y_mean_masked.max())
+else:
+    ymin, _ = ax0.get_ylim()
 for counter, value in enumerate(vertical_lines):
-    ax0.axvline(x=value, ymax=np.log10(y_mean_masked[q_axvline[counter]])/ymax, linestyle='--')
+    ax0.vlines(x=value, ymin=ymin, ymax=np.log10(y_mean_masked[q_vline[counter]]),
+               colors='r', linestyle='dashed')
 plt.savefig(root_folder + 'angular_avg_labels.png')
 ax0.tick_params(labelbottom=False, labelleft=False)
 plt.xlabel('')

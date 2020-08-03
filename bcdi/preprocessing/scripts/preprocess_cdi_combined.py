@@ -151,7 +151,6 @@ def on_click(event):
     if the mouse is out of plot axes, it will not register the click
 
     :param event: mouse click event
-    :return: updated list of vertices which defines a polygon to be masked
     """
     global xy, flag_pause, previous_axis
     if not event.inaxes:
@@ -167,7 +166,6 @@ def on_click(event):
             print('Please select mask polygon vertices within the same subplot: restart masking...')
             xy = []
             previous_axis = None
-    return
 
 
 def press_key(event):
@@ -175,7 +173,6 @@ def press_key(event):
     Interact with a plot for masking parasitic diffraction intensity or detector gaps
 
     :param event: button press event
-    :return: updated data, mask and controls
     """
     global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
     global xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text
@@ -198,11 +195,11 @@ def press_key(event):
             invert_yaxis = (not use_rawdata) and (not detector_plane)
             if flag_aliens:
                 data, mask, width, max_colorbar, frame_index, stop_masking = \
-                    pru.update_aliens_combined(key=event.key, pix=int(np.rint(event.xdata)),
-                                               piy=int(np.rint(event.ydata)), original_data=original_data,
-                                               original_mask=original_mask, updated_data=data, updated_mask=mask,
-                                               axes=(ax0, ax1, ax2), width=width, dim=dim, frame_index=frame_index,
-                                               vmin=0, vmax=max_colorbar, invert_yaxis=invert_yaxis)
+                    gu.update_aliens_combined(key=event.key, pix=int(np.rint(event.xdata)),
+                                              piy=int(np.rint(event.ydata)), original_data=original_data,
+                                              original_mask=original_mask, updated_data=data, updated_mask=mask,
+                                              axes=(ax0, ax1, ax2), width=width, dim=dim, frame_index=frame_index,
+                                              vmin=0, vmax=max_colorbar, invert_yaxis=invert_yaxis)
             elif flag_mask:
                 if previous_axis == ax0:
                     click_dim = 0
@@ -221,12 +218,12 @@ def press_key(event):
                     points = None
 
                 data, updated_mask, flag_pause, xy, width, max_colorbar, click_dim, stop_masking, info_text = \
-                    pru.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
-                                             piy=int(np.rint(event.ydata)), original_data=original_data,
-                                             original_mask=mask, updated_data=data, updated_mask=updated_mask,
-                                             axes=(ax0, ax1, ax2), flag_pause=flag_pause, points=points,
-                                             xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
-                                             vmin=0, vmax=max_colorbar, invert_yaxis=invert_yaxis)
+                    gu.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
+                                            piy=int(np.rint(event.ydata)), original_data=original_data,
+                                            original_mask=mask, updated_data=data, updated_mask=updated_mask,
+                                            axes=(ax0, ax1, ax2), flag_pause=flag_pause, points=points,
+                                            xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
+                                            vmin=0, vmax=max_colorbar, invert_yaxis=invert_yaxis)
 
                 if click_dim is None:
                     previous_axis = None

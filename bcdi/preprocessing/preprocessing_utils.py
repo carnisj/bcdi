@@ -7,11 +7,9 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.path import Path
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
 import xrayutilities as xu
-from operator import itemgetter
 import fabio
 import os
 import sys
@@ -991,6 +989,30 @@ def find_bragg(data, peak_method):
     return z0, y0, x0
 
 
+def get_motor_pos(logfile, scan_number, setup, motor_name):
+    """
+    Load the scan data and extract motor positions.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param motor_name: name of the motor
+    :return: the position values of the motor
+    """
+    if setup.beamline == 'P10':
+        motor_pos = scan_motor_p10(logfile=logfile, motor_name=motor_name)
+    elif setup.beamline == 'ID01':
+        motor_pos = scan_motor_id01(logfile=logfile, scan_number=scan_number, motor_name=motor_name)
+    elif setup.beamline == 'CRISTAL':
+        motor_pos = scan_motor_cristal(logfile=logfile, motor_name=motor_name)
+    elif setup.beamline in ['SIXS_2018', 'SIXS_2019']:
+        motor_pos = scan_motor_sixs(logfile=logfile, motor_name=motor_name)
+    else:
+        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
+
+    return motor_pos
+
+
 def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, correct_curvature=False,
               debugging=False, **kwargs):
     """
@@ -1079,26 +1101,28 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
     interp_data[np.nonzero(interp_mask)] = 0
 
     # plot the gridded data
-    final_binning = (detector.previous_binning[2] * detector.binning[2],
+    final_binning = (detector.previous_binning[0] * detector.binning[0],
                      detector.previous_binning[1] * detector.binning[1],
                      detector.previous_binning[2] * detector.binning[2])
-    plot_comment = '_' + str(numx) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
+
+    plot_comment = '_' + str(numz) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
                    str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
-    # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
+
+    max_z = interp_data.sum(axis=0).max()
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
-                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+                                  levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space' + plot_comment)
+    fig.savefig(detector.savedir + 'reciprocal_space_sum' + plot_comment)
     plt.close(fig)
 
-    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
-                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data',
+                                  levels=np.linspace(0, np.ceil(np.log10(interp_data.max())), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                    title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
+                                    title='Regridded data', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
     plt.close(fig)
     if debugging:
@@ -1248,16 +1272,18 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
     plot_comment = '_' + str(numx) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
                    str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
     # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
+
+    max_z = interp_data.sum(axis=0).max()
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
-                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+                                  levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
              '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
-    fig.savefig(detector.savedir + 'reciprocal_space' + plot_comment)
+    fig.savefig(detector.savedir + 'reciprocal_space_sum' + plot_comment)
     plt.close(fig)
 
-    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data - central slice',
-                                  levels=np.linspace(0, int(np.log10(interp_data.max())), 150, endpoint=False),
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data',
+                                  levels=np.linspace(0, np.ceil(np.log10(interp_data.max())), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
              '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
@@ -1265,7 +1291,7 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                    title='Regridded data - pixels', is_orthogonal=True, reciprocal_space=True)
+                                    title='Regridded data', is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
              '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
     fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
@@ -1704,7 +1730,8 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     return rawdata, rawmask, frames_logical, monitor
 
 
-def load_cristal_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
+def load_cristal_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor',
+                      bin_during_loading=False, debugging=False):
     """
     Load CRISTAL data, apply filters and concatenate it for phasing. The address of dataset and monitor in the h5 file
      may have to be modified.
@@ -1717,6 +1744,8 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
      integrated intensity in the region of interest defined by detector.sum_roi
      by the integrated intensity in a defined region of interest
+    :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
+     It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1729,7 +1758,15 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
     tmp_data = logfile['/' + group_key + '/scan_data/data_06'][:]
 
     nb_img = tmp_data.shape[0]
-    data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+
+    if bin_during_loading:
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
+        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
+                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+    else:
+        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
     else:
@@ -1737,19 +1774,28 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
-        ccdraw = ccdraw - background
+        if background is not None:
+            ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Maxipix":
             ccdraw, mask_2d = mask_maxipix(ccdraw, mask_2d)
         else:
             raise ValueError('Detector ', detector.name, 'not supported for CRISTAL')
-        ccdraw = flatfield * ccdraw
+        if flatfield is not None:
+            ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        if bin_during_loading:
+            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
+        sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
+        sys.stdout.flush()
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    if bin_during_loading:
+        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
@@ -1773,7 +1819,7 @@ def load_cristal_monitor(logfile):
 
 
 def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfield, hotpixels, background,
-                     debugging=False):
+                     bin_during_loading=False, debugging=False):
     """
     Load a dataset measured without a scan, such as a set of images measured in a macro.
 
@@ -1784,6 +1830,8 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
+    :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
+     It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
     """
@@ -1801,7 +1849,14 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
         nb_img = tmp_data.shape[0]
         stack = True
 
-    data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+    if bin_during_loading:
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
+        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
+                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+    else:
+        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+
     for idx in range(nb_img):
         if stack:
             ccdraw = tmp_data[idx, :, :]
@@ -1812,7 +1867,8 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
                 ccdraw = e.data
             else:
                 raise ValueError("Custom scan implementation missing for this beamline")
-        ccdraw = ccdraw - background
+        if background is not None:
+            ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Eiger2M":
             ccdraw, mask_2d = mask_eiger(data=ccdraw, mask=mask_2d)
@@ -1820,11 +1876,19 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
             ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
         else:
             pass
-        ccdraw = flatfield * ccdraw
+        if flatfield is not None:
+            ccdraw = flatfield * ccdraw
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        if bin_during_loading:
+            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
+        sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
+        sys.stdout.flush()
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    if bin_during_loading:
+        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
@@ -1836,7 +1900,7 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
 
 
 def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
-              normalize='monitor', debugging=False):
+              normalize='monitor', bin_during_loading=False, debugging=False):
     """
     Load data, apply filters and concatenate it for phasing.
 
@@ -1850,6 +1914,8 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
      integrated intensity in the region of interest defined by detector.sum_roi
      by the integrated intensity in a defined region of interest
+    :param bin_during_loading: only for P10. If True, the data will be binned in the detector frame while loading.
+     It saves a lot of memory for large detectors.
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -1857,16 +1923,14 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     """
-    if flatfield is None:
-        flatfield = np.ones((detector.nb_pixel_y, detector.nb_pixel_x))
-    if hotpixels is None:
-        hotpixels = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-    if background is None:
-        background = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+    if setup.beamline != 'P10':
+        bin_during_loading = False
 
-    print('Detector size defined by the ROI (VxH):',
+    print('Detector ROI loaded (VxH):',
           detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2])
-    print('Detector physical size (VxH):', detector.nb_pixel_y, detector.nb_pixel_x)
+    print('Detector physical size without binning (VxH):', detector.nb_pixel_y, detector.nb_pixel_x)
+    print('Detector size with binning (VxH):',
+          detector.nb_pixel_y // detector.binning[1], detector.nb_pixel_x // detector.binning[2])
     if detector.roi[1]-detector.roi[0] > detector.nb_pixel_y or detector.roi[3]-detector.roi[2] > detector.nb_pixel_x:
         print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
 
@@ -1898,14 +1962,14 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     elif setup.beamline == 'P10':
         data, mask3d, monitor, frames_logical = load_p10_data(logfile=logfile, detector=detector, flatfield=flatfield,
                                                               hotpixels=hotpixels, background=background,
-                                                              normalize=normalize, debugging=debugging)
+                                                              normalize=normalize, debugging=debugging,
+                                                              bin_during_loading=bin_during_loading)
     else:
         raise ValueError('Wrong value for "beamline" parameter')
 
     # remove indices where frames_logical=0
     nbz, nby, nbx = data.shape
     nb_frames = (frames_logical != 0).sum()
-    # TODO: try to load data more efficiently memorywise
     newdata = np.zeros((nb_frames, nby, nbx))
     newmask = np.zeros((nb_frames, nby, nbx))
     # do not process the monitor here, it is done in normalize_dataset()
@@ -1991,7 +2055,7 @@ def load_hotpixels(hotpixels_file):
 
 
 def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, background, normalize='monitor',
-                   debugging=False):
+                   bin_during_loading=False, debugging=False):
     """
     Load ID01 data, apply filters and concatenate it for phasing.
 
@@ -2004,6 +2068,8 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
      integrated intensity in the region of interest defined by detector.sum_roi
      by the integrated intensity in a defined region of interest
+    :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
+     It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -2029,7 +2095,15 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
             raise ValueError(detector.counter, 'not in the list, the detector name may be wrong')
 
     nb_img = len(ccdn)
-    data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+
+    if bin_during_loading:
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
+        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
+                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+    else:
+        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
     else:
@@ -2046,7 +2120,8 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
         i = int(ccdn[idx])
         e = fabio.open(ccdfiletmp % i)
         ccdraw = e.data
-        ccdraw = ccdraw - background
+        if background is not None:
+            ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Eiger2M":
             ccdraw, mask_2d = mask_eiger(data=ccdraw, mask=mask_2d)
@@ -2054,13 +2129,21 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
             ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
         else:
             raise ValueError('Detector ', detector.name, 'not supported for ID01')
-        ccdraw = flatfield * ccdraw
+        if flatfield is not None:
+            ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        if bin_during_loading:
+            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
+        sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
+        sys.stdout.flush()
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    if bin_during_loading:
+        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
@@ -2116,7 +2199,8 @@ def load_monitor(scan_number, logfile, setup):
     return monitor
 
 
-def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
+def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor', bin_during_loading=False,
+                  debugging=False):
     """
     Load P10 data, apply filters and concatenate it for phasing.
 
@@ -2128,6 +2212,8 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
      integrated intensity in the region of interest defined by detector.sum_roi
      by the integrated intensity in a defined region of interest
+    :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
+     It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -2144,7 +2230,14 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
     h5file = h5py.File(ccdfiletmp, 'r')
     nb_img = len(list(h5file['entry/data']))
     print('Number of points :', nb_img)
-    data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+    if bin_during_loading:
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
+        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
+                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+    else:
+        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
     else:
@@ -2180,20 +2273,24 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
                     tmp_data = h5file['entry']['data'][data_path][idx]
                 except OSError:
                     raise OSError('hdf5plugin is not installed')
-                tmp_data = tmp_data - background
+                if background is not None:
+                    tmp_data = tmp_data - background
                 ccdraw, mask2d = remove_hotpixels(data=tmp_data, mask=mask_2d, hotpixels=hotpixels)
                 if detector.name == "Eiger4M":
                     ccdraw, mask_2d = mask_eiger4m(data=ccdraw, mask=mask_2d)
                 else:
                     raise ValueError('Detector ', detector.name, 'not supported for P10')
-                ccdraw = flatfield * ccdraw
+                if flatfield is not None:
+                    ccdraw = flatfield * ccdraw
                 if normalize == 'sum_roi':
                     temp_mon = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
                     series_monitor.append(temp_mon)
                 ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+                if bin_during_loading:
+                    ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
                 series_data.append(ccdraw)
                 if not is_series:
-                    sys.stdout.write('\rLoading frame {:d}'.format(idx))
+                    sys.stdout.write('\rLoading frame {:d}'.format(idx+1))
                     sys.stdout.flush()
                 idx = idx + 1
             except ValueError:  # reached the end of the series
@@ -2211,13 +2308,15 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
             break
     print('')
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    if bin_during_loading:
+        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
     data[np.isnan(data)] = 0
 
     frames_logical = np.ones(nb_img)
-    print('Monitor min max mean:', monitor.min(), monitor.max(), monitor.mean())
     return data, mask3d, monitor, frames_logical
 
 
@@ -2247,7 +2346,8 @@ def load_p10_monitor(logfile):
     return monitor
 
 
-def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background, normalize='monitor', debugging=False):
+def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background, normalize='monitor',
+                   bin_during_loading=False, debugging=False):
     """
     Load SIXS data, apply filters and concatenate it for phasing.
 
@@ -2260,6 +2360,8 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
      integrated intensity in the region of interest defined by detector.sum_roi
      by the integrated intensity in a defined region of interest
+    :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
+     It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
      - the 3D data array in the detector frame and the 3D mask array
@@ -2282,7 +2384,15 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
     frames_logical = np.ones(tmp_data.shape[0])
     nb_img = tmp_data.shape[0]
-    data = np.zeros((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]))
+
+    if bin_during_loading:
+        print('Binning the data: detector vertical axis by', detector.binning[1],
+              ', detector horizontal axis by', detector.binning[2])
+        data = np.empty((nb_img, (detector.roi[1] - detector.roi[0]) // detector.binning[1],
+                         (detector.roi[3] - detector.roi[2]) // detector.binning[2]), dtype=float)
+    else:
+        data = np.empty((nb_img, detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2]), dtype=float)
+
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
     else:
@@ -2296,19 +2406,28 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
-        ccdraw = ccdraw - background
+        if background is not None:
+            ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
         if detector.name == "Maxipix":
             ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
         else:
             raise ValueError('Detector ', detector.name, 'not supported for SIXS')
-        ccdraw = flatfield * ccdraw
+        if flatfield is not None:
+            ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+        if bin_during_loading:
+            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
+        sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
+        sys.stdout.flush()
 
     mask_2d = mask_2d[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
+    if bin_during_loading:
+        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
     mask3d[np.isnan(data)] = 1
@@ -2380,6 +2499,10 @@ def mask_eiger(data, mask):
     mask[1248:1290, 478] = 1
     mask[1214:1298, 481] = 1
     mask[1649:1910, 620:628] = 1
+
+    # mask hot pixels
+    mask[data > 1e6] = 1
+    data[data > 1e6] = 0
     return data, mask
 
 
@@ -2414,6 +2537,10 @@ def mask_eiger4m(data, mask):
     mask[514:551, :] = 1
     mask[1065:1102, :] = 1
     mask[1616:1653, :] = 1
+
+    # mask hot pixels
+    mask[data > 10e6] = 1
+    data[data > 10e6] = 0
     return data, mask
 
 
@@ -2436,6 +2563,10 @@ def mask_maxipix(data, mask):
 
     mask[:, 255:261] = 1
     mask[255:261, :] = 1
+
+    # mask hot pixels
+    mask[data > 1e6] = 1
+    data[data > 1e6] = 0
     return data, mask
 
 
@@ -2954,7 +3085,10 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param follow_bragg: True when in energy scans the detector was also scanned to follow the Bragg peak
     :return:
-     - qx, qz, qy components for the dataset
+     - qx, qz, qy components for the dataset. xrayutilities uses the xyz crystal frame: for incident angle = 0,
+       x is downstream, y outboard, and z vertical up. The output of hxrd.Ang2Q.area is qx, qy, qz is this order.
+       If q values seem wrong, check if diffractometer angles have default values set at 0, otherwise use the parameter
+       setup.sample_offsets to correct it.
      - updated frames_logical
     """
     binning = detector.binning
@@ -3315,33 +3449,102 @@ def remove_hotpixels(data, mask, hotpixels=None):
     :return: the data without hotpixels and the updated mask
     """
     if hotpixels is None:
-        hotpixels = np.zeros(data.shape)
-    if hotpixels.ndim == 3:  # 3D array
-        print('Hotpixels is a 3D array, summing along the first axis')
-        hotpixels = hotpixels.sum(axis=0)
-        hotpixels[np.nonzero(hotpixels)] = 1  # hotpixels should be a binary array
-
-    if data.shape != mask.shape:
-        raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
-
-    if data.ndim == 3:  # 3D array
-        if data[0, :, :].shape != hotpixels.shape:
-            raise ValueError('Data and hotpixels must have the same shape\n data is ',
-                             data.shape, ' while hotpixels is ', hotpixels.shape)
-        for idx in range(data.shape[0]):
-            temp_data = data[idx, :, :]
-            temp_mask = mask[idx, :, :]
-            temp_data[hotpixels == 1] = 0  # numpy array is mutable hence data will be modified
-            temp_mask[hotpixels == 1] = 1  # numpy array is mutable hence mask will be modified
-    elif data.ndim == 2:  # 2D array
-        if data.shape != hotpixels.shape:
-            raise ValueError('Data and hotpixels must have the same shape\n data is ',
-                             data.shape, ' while hotpixels is ', hotpixels.shape)
-        data[hotpixels == 1] = 0
-        mask[hotpixels == 1] = 1
+        return data, mask
     else:
-        raise ValueError('2D or 3D data array expected, got ', data.ndim, 'D')
-    return data, mask
+        if hotpixels.ndim == 3:  # 3D array
+            print('Hotpixels is a 3D array, summing along the first axis')
+            hotpixels = hotpixels.sum(axis=0)
+            hotpixels[np.nonzero(hotpixels)] = 1  # hotpixels should be a binary array
+
+        if data.shape != mask.shape:
+            raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
+
+        if data.ndim == 3:  # 3D array
+            if data[0, :, :].shape != hotpixels.shape:
+                raise ValueError('Data and hotpixels must have the same shape\n data is ',
+                                 data.shape, ' while hotpixels is ', hotpixels.shape)
+            for idx in range(data.shape[0]):
+                temp_data = data[idx, :, :]
+                temp_mask = mask[idx, :, :]
+                temp_data[hotpixels == 1] = 0  # numpy array is mutable hence data will be modified
+                temp_mask[hotpixels == 1] = 1  # numpy array is mutable hence mask will be modified
+        elif data.ndim == 2:  # 2D array
+            if data.shape != hotpixels.shape:
+                raise ValueError('Data and hotpixels must have the same shape\n data is ',
+                                 data.shape, ' while hotpixels is ', hotpixels.shape)
+            data[hotpixels == 1] = 0
+            mask[hotpixels == 1] = 1
+        else:
+            raise ValueError('2D or 3D data array expected, got ', data.ndim, 'D')
+        return data, mask
+
+
+def scan_motor_cristal(logfile, motor_name):
+    """
+    Extract the scanned motor positions during the scan at CRISTAL beamline.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param motor_name: name of the motor
+    :return: the positions of the motor as a numpy array
+    """
+    group_key = list(logfile.keys())[0]
+    motor_pos = logfile['/' + group_key + '/scan_data/' + motor_name][:]
+    return np.asarray(motor_pos)
+
+
+def scan_motor_id01(logfile, scan_number, motor_name):
+    """
+    Extract the scanned motor positions during the scan at ID01 beamline.
+
+    :param logfile: the logfile created in create_logfile()
+    :param scan_number: number of the scan
+    :param motor_name: name of the motor
+    :return: the positions of the motor as a numpy array
+    """
+    labels = logfile[str(scan_number) + '.1'].labels  # motor scanned
+    labels_data = logfile[str(scan_number) + '.1'].data  # motor scanned
+    motor_pos = list(labels_data[labels.index(motor_name), :])
+    return np.asarray(motor_pos)
+
+
+def scan_motor_p10(logfile, motor_name):
+    """
+    Extract the scanned motor positions during the scan at P10 beamline.
+
+    :param logfile: the logfile created in create_logfile()
+    :param motor_name: name of the motor
+    :return: the positions of the motor as a numpy array
+    """
+    motor_pos = []
+    fio = open(logfile, 'r')
+    fio_lines = fio.readlines()
+    for line in fio_lines:
+        this_line = line.strip()
+        words = this_line.split()
+
+        if 'Col' in words and motor_name in words:  # motor_name scanned, template = ' Col 0 motor_name DOUBLE\n'
+            index_motor = int(words[1]) - 1  # python index starts at 0
+
+        try:
+            float(words[0])  # if this does not fail, we are reading data
+            motor_pos.append(float(words[index_motor]))
+        except ValueError:  # first word is not a number, skip this line
+            continue
+
+    fio.close()
+    return np.asarray(motor_pos)
+
+
+def scan_motor_sixs(logfile, motor_name):
+    """
+    Extract the scanned motor positions during the scan at SIXS beamline.
+
+    :param logfile: the logfile created in create_logfile()
+    :param motor_name: name of the motor
+    :return: the positions of the motor as a numpy array
+    """
+    motor_pos = getattr(logfile, motor_name)
+    return np.asarray(motor_pos)
 
 
 def smaller_primes(number, maxprime=13, required_dividers=(4,)):
@@ -3394,1021 +3597,6 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
             if number % k != 0:
                 return False
     return True
-
-
-def update_aliens(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, width, dim, idx,
-                  vmax, vmin=0, invert_yaxis=False):
-    """
-    Update the plot while removing the parasitic diffraction intensity in 3D dataset
-
-    :param key: the keyboard key which was pressed
-    :param pix: the x value of the mouse pointer
-    :param piy: the y value of the mouse pointer
-    :param original_data: the 3D data array before masking aliens
-    :param original_mask: the 3D mask array before masking aliens
-    :param updated_data: the current 3D data array
-    :param updated_mask: the current 3D mask array
-    :param figure: the figure instance
-    :param width: the half_width of the masking window
-    :param dim: the axis currently under review (axis 0, 1 or 2)
-    :param idx: the frame index in the current axis
-    :param vmax: the higher boundary for the colorbar
-    :param vmin: the lower boundary for the colorbar
-    :param invert_yaxis: True to invert the y axis of imshow plots
-    :return: updated data, mask and controls
-    """
-    if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3 or updated_mask.ndim != 3:
-        raise ValueError('original_data, original_mask, updated_data and updated_mask should be 3D arrays')
-
-    nbz, nby, nbx = original_data.shape
-    stop_masking = False
-    if dim not in [0, 1, 2]:
-        raise ValueError('dim should be 0, 1 or 2')
-
-    axs = figure.gca()
-    xmin, xmax = axs.get_xlim()
-    ymin, ymax = axs.get_ylim()
-    if key == 'u':  # show next frame
-        idx = idx + 1
-        if dim == 0:
-            if idx > nbz - 1:
-                idx = 0
-        elif dim == 1:
-            if idx > nby - 1:
-                idx = 0
-        else:  # dim=2
-            if idx > nbx - 1:
-                idx = 0
-
-    elif key == 'd':  # show previous frame
-        idx = idx - 1
-        if dim == 0:
-            if idx < 0:
-                idx = nbz - 1
-        elif dim == 1:
-            if idx < 0:
-                idx = nby - 1
-        else:  # dim=2
-            if idx < 0:
-                idx = nbx - 1
-
-    elif key == 'up':
-        width = width + 1
-
-    elif key == 'down':
-        width = width - 1
-        if width < 0:
-            width = 0
-
-    elif key == 'right':  # increase colobar max
-        vmax = vmax * 2
-
-    elif key == 'left':  # reduce colobar max
-        vmax = vmax / 2
-        if vmax < 1:
-            vmax = 1
-
-    elif key == 'm':  # mask intensities
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        if dim == 0:
-            updated_data[idx, starty:piy + width + 1, startx:pix + width + 1] = 0
-            updated_mask[idx, starty:piy + width + 1, startx:pix + width + 1] = 1
-        elif dim == 1:
-            updated_data[starty:piy + width + 1, idx, startx:pix + width + 1] = 0
-            updated_mask[starty:piy + width + 1, idx, startx:pix + width + 1] = 1
-        else:  # dim=2
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, idx] = 0
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, idx] = 1
-
-    elif key == 'b':  # back to measured intensities
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        if dim == 0:
-            updated_data[idx, starty:piy + width + 1, startx:pix + width + 1] = \
-                original_data[idx, starty:piy + width + 1, startx:pix + width + 1]
-            updated_mask[idx, starty:piy + width + 1, startx:pix + width + 1] = \
-                original_mask[idx, starty:piy + width + 1, startx:pix + width + 1]
-
-        elif dim == 1:
-            updated_data[starty:piy + width + 1, idx, startx:pix + width + 1] = \
-                original_data[starty:piy + width + 1, idx, startx:pix + width + 1]
-            updated_mask[starty:piy + width + 1, idx, startx:pix + width + 1] = \
-                original_mask[starty:piy + width + 1, idx, startx:pix + width + 1]
-        else:  # dim=2
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, idx] = \
-                original_data[starty:piy + width + 1, startx:pix + width + 1, idx]
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, idx] = \
-                original_mask[starty:piy + width + 1, startx:pix + width + 1, idx]
-
-    elif key == 'p' or key == 'a':  # plot full image or restart masking
-        if dim == 0:
-            xmin, xmax = -0.5, nbx - 0.5
-            if invert_yaxis:
-                ymin, ymax = -0.5, nby - 0.5  # pointing up
-            else:
-                ymin, ymax = nby - 0.5, -0.5  # pointing down
-        elif dim == 1:
-            xmin, xmax = -0.5, nbx - 0.5
-            ymin, ymax = nbz - 0.5, -0.5  # pointing down
-        else:  # dim=2
-            xmin, xmax = -0.5, nby - 0.5
-            ymin, ymax = nbz - 0.5, -0.5  # pointing down
-        if key == 'a':  # restart masking
-            updated_data[:] = original_data[:]
-            updated_mask[:] = original_mask[:]
-
-    elif key == 'q':
-        stop_masking = True
-
-    else:
-        return updated_data, updated_mask, width, vmax, idx, stop_masking
-
-    axs.cla()
-    if dim == 0:
-        axs.imshow(updated_data[idx, :, ], vmin=vmin, vmax=vmax)
-        axs.set_title("XY - Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
-                      "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                      "up larger ; down smaller ; right darker ; left brighter")
-    elif dim == 1:
-        axs.imshow(updated_data[:, idx, :], vmin=vmin, vmax=vmax)
-        axs.set_title("XZ - Frame " + str(idx + 1) + "/" + str(nby) + "\n"
-                      "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                      "up larger ; down smaller ; right darker ; left brighter")
-    elif dim == 2:
-        axs.imshow(updated_data[:, :, idx], vmin=vmin, vmax=vmax)
-        axs.set_title("YZ - Frame " + str(idx + 1) + "/" + str(nbx) + "\n"
-                      "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                      "up larger ; down smaller ; right darker ; left brighter")
-    if invert_yaxis:
-        axs.invert_yaxis()
-    axs.set_xlim([xmin, xmax])
-    axs.set_ylim([ymin, ymax])
-    plt.draw()
-
-    return updated_data, updated_mask, width, vmax, idx, stop_masking
-
-
-def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, width, dim,
-                           frame_index, vmax, vmin=0, invert_yaxis=False):
-    """
-    Update the plot while removing the parasitic diffraction intensity in 3D dataset
-
-    :param key: the keyboard key which was pressed
-    :param pix: the x value of the mouse pointer
-    :param piy: the y value of the mouse pointer
-    :param original_data: the 3D data array before masking aliens
-    :param original_mask: the 3D mask array before masking aliens
-    :param updated_data: the current 3D data array
-    :param updated_mask: the current 3D mask array
-    :param axes: tuple of the 4 axes instances in a plt.subplots(nrows=2, ncols=2)
-    :param width: the half_width of the masking window
-    :param dim: the axis currently under review (axis 0, 1 or 2)
-    :param frame_index: list of 3 frame indices (one per axis)
-    :param vmax: the higher boundary for the colorbar
-    :param vmin: the lower boundary for the colorbar
-    :param invert_yaxis: True to invert the y axis of imshow plots
-    :return: updated data, mask and controls
-    """
-    if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3 or updated_mask.ndim != 3:
-        raise ValueError('original_data, updated_data and updated_mask should be 3D arrays')
-
-    nbz, nby, nbx = original_data.shape
-    stop_masking = False
-    if dim not in [0, 1, 2]:
-        raise ValueError('dim should be 0, 1 or 2')
-
-    xmin0, xmax0 = axes[0].get_xlim()
-    ymin0, ymax0 = axes[0].get_ylim()
-    xmin1, xmax1 = axes[1].get_xlim()
-    ymin1, ymax1 = axes[1].get_ylim()
-    xmin2, xmax2 = axes[2].get_xlim()
-    ymin2, ymax2 = axes[2].get_ylim()
-
-    if key == 'u':  # show next frame
-        if dim == 0:
-            frame_index[0] = frame_index[0] + 1
-            if frame_index[0] > nbz - 1:
-                frame_index[0] = 0
-        elif dim == 1:
-            frame_index[1] = frame_index[1] + 1
-            if frame_index[1] > nby - 1:
-                frame_index[1] = 0
-        else:  # dim=2
-            frame_index[2] = frame_index[2] + 1
-            if frame_index[2] > nbx - 1:
-                frame_index[2] = 0
-
-    elif key == 'd':  # show previous frame
-        if dim == 0:
-            frame_index[0] = frame_index[0] - 1
-            if frame_index[0] < 0:
-                frame_index[0] = nbz - 1
-        elif dim == 1:
-            frame_index[1] = frame_index[1] - 1
-            if frame_index[1] < 0:
-                frame_index[1] = nby - 1
-        else:  # dim=2
-            frame_index[2] = frame_index[2] - 1
-            if frame_index[2] < 0:
-                frame_index[2] = nbx - 1
-
-    elif key == 'up':
-        width = width + 1
-
-    elif key == 'down':
-        width = width - 1
-        if width < 0:
-            width = 0
-
-    elif key == 'right':  # increase colobar max
-        vmax = vmax * 2
-
-    elif key == 'left':  # reduce colobar max
-        vmax = vmax / 2
-        if vmax < 1:
-            vmax = 1
-
-    elif key == 'm':  # mask intensities
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        if dim == 0:
-            updated_data[frame_index[0], starty:piy + width + 1, startx:pix + width + 1] = 0
-            updated_mask[frame_index[0], starty:piy + width + 1, startx:pix + width + 1] = 1
-        elif dim == 1:
-            updated_data[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = 0
-            updated_mask[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = 1
-        else:  # dim=2
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = 0
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = 1
-
-    elif key == 'b':  # back to measured intensities
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        if dim == 0:
-            updated_data[frame_index[0], starty:piy + width + 1, startx:pix + width + 1] = \
-                original_data[frame_index[0], starty:piy + width + 1, startx:pix + width + 1]
-            updated_mask[frame_index[0], starty:piy + width + 1, startx:pix + width + 1] = \
-                original_mask[frame_index[0], starty:piy + width + 1, startx:pix + width + 1]
-        elif dim == 1:
-            updated_data[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = \
-                original_data[starty:piy + width + 1, frame_index[1], startx:pix + width + 1]
-            updated_mask[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = \
-                original_mask[starty:piy + width + 1, frame_index[1], startx:pix + width + 1]
-        else:  # dim=2
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = \
-                original_data[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]]
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = \
-                original_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]]
-
-    elif key == 'p' or key == 'a':  # plot full image or restart masking
-        xmin0, xmax0 = -0.5, nbx - 0.5
-        if invert_yaxis:
-            ymin0, ymax0 = -0.5, nby - 0.5  # pointing up
-        else:
-            ymin0, ymax0 = nby - 0.5, -0.5  # pointing down
-        xmin1, xmax1 = -0.5, nbx - 0.5
-        ymin1, ymax1 = nbz - 0.5, -0.5  # pointing down
-        xmin2, xmax2 = -0.5, nby - 0.5
-        ymin2, ymax2 = nbz - 0.5, -0.5  # pointing down
-        if key == 'a':  # restart masking
-            updated_data[:] = original_data[:]
-            updated_mask[:] = original_mask[:]
-
-    elif key == 'q':
-        stop_masking = True
-
-    else:
-        return updated_data, updated_mask, width, vmax, frame_index, stop_masking
-
-    axes[0].cla()
-    axes[1].cla()
-    axes[2].cla()
-    axes[0].imshow(updated_data[frame_index[0], :, :], vmin=vmin, vmax=vmax)
-    axes[1].imshow(updated_data[:, frame_index[1], :], vmin=vmin, vmax=vmax)
-    axes[2].imshow(updated_data[:, :, frame_index[2]], vmin=vmin, vmax=vmax)
-    axes[0].set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nbz))
-    axes[0].axis('scaled')
-    if invert_yaxis:
-        axes[0].invert_yaxis()
-    axes[0].set_xlim([xmin0, xmax0])
-    axes[0].set_ylim([ymin0, ymax0])
-    axes[1].set_title("XZ - Frame " + str(frame_index[1] + 1) + "/" + str(nby))
-    axes[1].axis('scaled')
-    axes[1].set_xlim([xmin1, xmax1])
-    axes[1].set_ylim([ymin1, ymax1])
-    axes[2].set_title("YZ - Frame " + str(frame_index[2] + 1) + "/" + str(nbx))
-    axes[2].axis('scaled')
-    axes[2].set_xlim([xmin2, xmax2])
-    axes[2].set_ylim([ymin2, ymax2])
-    plt.draw()
-
-    return updated_data, updated_mask, width, vmax, frame_index, stop_masking
-
-
-def update_aliens_2d(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, width,
-                     vmax, vmin=0, invert_yaxis=False):
-    """
-    Update the plot while removing the parasitic diffraction intensity in 2D dataset
-
-    :param key: the keyboard key which was pressed
-    :param pix: the x value of the mouse pointer
-    :param piy: the y value of the mouse pointer
-    :param original_data: the 2D data array before masking aliens
-    :param original_mask: the 3D mask array before masking aliens
-    :param updated_data: the current 2D data array
-    :param updated_mask: the current 2D mask array
-    :param figure: the figure instance
-    :param width: the half_width of the masking window
-    :param vmax: the higher boundary for the colorbar
-    :param vmin: the lower boundary for the colorbar
-    :param invert_yaxis: True to invert the y axis of imshow plots
-    :return: updated data, mask and controls
-    """
-    if original_data.ndim != 2 or updated_data.ndim != 2 or original_mask.ndim != 2or updated_mask.ndim != 2:
-        raise ValueError('original_data, updated_data and updated_mask should be 2D arrays')
-
-    nby, nbx = original_data.shape
-    stop_masking = False
-
-    axs = figure.gca()
-    xmin, xmax = axs.get_xlim()
-    ymin, ymax = axs.get_ylim()
-
-    if key == 'up':
-        width = width + 1
-
-    elif key == 'down':
-        width = width - 1
-        if width < 0:
-            width = 0
-
-    elif key == 'right':
-        vmax = vmax * 2
-
-    elif key == 'left':
-        vmax = vmax / 2
-        if vmax < 1:
-            vmax = 1
-
-    elif key == 'm':
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        updated_data[starty:piy + width + 1, startx:pix + width + 1] = 0
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 1
-
-    elif key == 'b':
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        updated_data[starty:piy + width + 1, startx:pix + width + 1] = \
-            original_data[starty:piy + width + 1, startx:pix + width + 1]
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = \
-            original_mask[starty:piy + width + 1, startx:pix + width + 1]
-
-    elif key == 'p' or key == 'a':  # plot full image or restart masking
-        xmin, xmax = -0.5, nbx - 0.5
-        if invert_yaxis:
-            ymin, ymax = -0.5, nby - 0.5  # pointing up
-        else:
-            ymin, ymax = nby - 0.5, -0.5  # pointing down
-        if key == 'a':  # restart masking
-            updated_data[:] = original_data[:]
-            updated_mask[:] = original_mask[:]
-
-    elif key == 'q':
-        stop_masking = True
-
-    else:
-        return updated_data, updated_mask, width, vmax, stop_masking
-
-    axs.cla()
-    axs.imshow(updated_data, vmin=vmin, vmax=vmax)
-    axs.set_title("m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-    if invert_yaxis:
-        axs.invert_yaxis()
-    axs.set_xlim([xmin, xmax])
-    axs.set_ylim([ymin, ymax])
-    plt.draw()
-
-    return updated_data, updated_mask, width, vmax, stop_masking
-
-
-def update_background(key, distances, data, figure, flag_pause, xy, scale='log', xlim=None, ylim=None):
-    """
-    Define the background for a 1D reciprocal space dataset.
-
-    :param key: the keyboard key which was pressed
-    :param distances: x axis for data
-    :param data: the 1D data before background subtraction
-    :param figure: the figure instance
-    :param flag_pause: set to 1 to stop registering vertices using mouse clicks
-    :param xy: the list of vertices which defines a polygon to be masked
-    :param scale: scale of data, 'linear' or 'log'
-    :param xlim: x axis plot limits
-    :param ylim: y axis plot limits
-    :return: updated background and controls
-    """
-    if data.ndim != 1:
-        raise ValueError('data is expected to be a 1D array')
-    axs = figure.gca()
-    if xlim is None:
-        xmin, xmax = axs.get_xlim()
-    else:
-        xmin, xmax = xlim
-    if ylim is None:
-        ymin, ymax = axs.get_ylim()
-    else:
-        ymin, ymax = ylim
-
-    stop_masking = False
-    xy = sorted(xy, key=itemgetter(0))
-
-    if key == 'b':  # remove the last selected background point
-        xy.pop()
-
-    elif key == 'a':  # restart background selection from the beginning
-        xy = []
-        print('restart background selection')
-
-    elif key == 'p':  # plot background
-        pass
-
-    elif key == 'x':
-        if not flag_pause:
-            flag_pause = True
-            print('pause for pan/zoom')
-        else:
-            flag_pause = False
-            print('resume masking')
-
-    elif key == 'q':
-        stop_masking = True
-
-    else:
-        return flag_pause, xy, stop_masking
-
-    background = np.asarray(xy)
-    axs.cla()
-    if len(xy) != 0:
-        if scale == 'linear':
-            axs.plot(distances, data, '.-r', background[:, 0], background[:, 1], 'b')
-        else:
-            axs.plot(distances, np.log10(data), '.-r',
-                     background[:, 0], background[:, 1], 'b')  # background is in log scale directly
-    else:  # restart background selection
-        if scale == 'linear':
-            axs.plot(distances, data, '.-r')
-        else:
-            axs.plot(distances, np.log10(data), '.-r')
-    axs.set_xlim([xmin, xmax])
-    axs.set_ylim([ymin, ymax])
-    axs.set_xlabel('q (1/nm)')
-    axs.set_ylabel('Angular average (A.U.)')
-    axs.set_title("Click to select background points\nx to pause/resume for pan/zoom\n"
-                  "a restart ; p plot background ; q quit")
-    plt.draw()
-
-    return flag_pause, xy, stop_masking
-
-
-def update_mask(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, flag_pause, points,
-                xy, width, dim, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
-    """
-    Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
-
-    :param key: the keyboard key which was pressed
-    :param pix: the x value of the mouse pointer
-    :param piy: the y value of the mouse pointer
-    :param original_data: the 3D data array before masking
-    :param original_mask: the 3D mask array before masking
-    :param updated_data: the current 3D data array
-    :param updated_mask: the temporary 2D mask array with updated points
-    :param figure: the figure instance
-    :param flag_pause: set to 1 to stop registering vertices using mouse clicks
-    :param points: list of all point coordinates: points=np.stack((x, y), axis=0).T with x=x.flatten() , y = y.flatten()
-     given x,y=np.meshgrid(np.arange(nx), np.arange(ny))
-    :param xy: the list of vertices which defines a polygon to be masked
-    :param width: the half_width of the masking window
-    :param dim: the axis currently under review (axis 0, 1 or 2)
-    :param vmax: the higher boundary for the colorbar
-    :param vmin: the lower boundary for the colorbar
-    :param masked_color: the value that detector gaps should have in plots
-    :param invert_yaxis: True to invert the y axis of imshow plots
-    :return: updated data, mask and controls
-    """
-    if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3:
-        raise ValueError('original_data, updated_data and original_mask should be 3D arrays')
-    if updated_mask.ndim != 2:
-        raise ValueError('updated_mask should be 2D arrays')
-
-    nbz, nby, nbx = original_data.shape
-    stop_masking = False
-    if dim not in [0, 1, 2]:
-        raise ValueError('dim should be 0, 1 or 2')
-
-    axs = figure.gca()
-    xmin, xmax = axs.get_xlim()
-    ymin, ymax = axs.get_ylim()
-
-    if key == 'up':
-        width = width + 1
-
-    elif key == 'down':
-        width = width - 1
-        if width < 0:
-            width = 0
-
-    elif key == 'right':
-        vmax = vmax + 1
-
-    elif key == 'left':
-        vmax = vmax - 1
-        if vmax < 1:
-            vmax = 1
-
-    elif key == 'm':
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 1
-
-    elif key == 'b':
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 0
-        if dim == 0:
-            updated_data[:, starty:piy + width + 1, startx:pix + width + 1] = \
-                original_data[:, starty:piy + width + 1, startx:pix + width + 1]
-        elif dim == 1:
-            updated_data[starty:piy + width + 1, :, startx:pix + width + 1] = \
-                original_data[starty:piy + width + 1, :, startx:pix + width + 1]
-        else:  # dim=2
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, :] = \
-                original_data[starty:piy + width + 1, startx:pix + width + 1, :]
-
-    elif key == 'a':  # restart mask from beginning
-        updated_data[:] = original_data[:]
-        xy = []
-        print('Restart masking...')
-        if dim == 0:
-            updated_data[
-                original_mask == 1] = masked_color / nbz  # masked pixels plotted with the value of masked_pixel
-            updated_mask = np.zeros((nby, nbx))
-            xmin, xmax = -0.5, nbx - 0.5
-            if invert_yaxis:
-                ymin, ymax = -0.5, nby - 0.5  # pointing up
-            else:
-                ymin, ymax = nby - 0.5, -0.5  # pointing down
-        elif dim == 1:
-            updated_data[
-                original_mask == 1] = masked_color / nby  # masked pixels plotted with the value of masked_pixel
-            updated_mask = np.zeros((nbz, nbx))
-            xmin, xmax = -0.5, nbx - 0.5
-            ymin, ymax = nbz - 0.5, -0.5  # pointing down
-        else:  # dim=2
-            updated_data[
-                original_mask == 1] = masked_color / nbx  # masked pixels plotted with the value of masked_pixel
-            updated_mask = np.zeros((nbz, nby))
-            xmin, xmax = -0.5, nby - 0.5
-            ymin, ymax = nbz - 0.5, -0.5  # pointing down
-
-    elif key == 'p':  # plot full image
-        if dim == 0:
-            xmin, xmax = -0.5, nbx - 0.5
-            if invert_yaxis:
-                ymin, ymax = -0.5, nby - 0.5  # pointing up
-            else:
-                ymin, ymax = nby - 0.5, -0.5  # pointing down
-        elif dim == 1:
-            xmin, xmax = -0.5, nbx - 0.5
-            ymin, ymax = nbz - 0.5, -0.5  # pointing down
-        else:  # dim=2
-            xmin, xmax = -0.5, nby - 0.5
-            ymin, ymax = nbz - 0.5, -0.5  # pointing down
-        if not flag_pause and len(xy) != 0:
-            xy.append(xy[0])
-            print(xy)
-            if dim == 0:
-                ind = Path(np.array(xy)).contains_points(points).reshape((nby, nbx))
-            elif dim == 1:
-                ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nbx))
-            else:  # dim=2
-                ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nby))
-            updated_mask[ind] = 1
-        xy = []  # allow to mask a different area
-
-    elif key == 'r':
-        xy = []
-
-    elif key == 'x':
-        if not flag_pause:
-            flag_pause = True
-            print('pause for pan/zoom')
-        else:
-            flag_pause = False
-            print('resume masking')
-
-    elif key == 'q':
-        stop_masking = True
-
-    else:
-        return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
-
-    array = updated_data.sum(axis=dim)  # updated_data is not modified
-    array[updated_mask == 1] = masked_color
-
-    axs.cla()
-    axs.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax)
-    if invert_yaxis:
-        axs.invert_yaxis()
-    axs.set_xlim([xmin, xmax])
-    axs.set_ylim([ymin, ymax])
-    axs.set_title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-    plt.draw()
-
-    return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
-
-
-def update_mask_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, flag_pause,
-                         points, xy, width, dim, click_dim, info_text, vmax, vmin=0, invert_yaxis=False):
-    """
-    Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
-
-    :param key: the keyboard key which was pressed
-    :param pix: the x value of the mouse pointer
-    :param piy: the y value of the mouse pointer
-    :param original_data: the 3D data array before masking
-    :param original_mask: the 3D mask array before masking
-    :param updated_data: the current 3D data array
-    :param updated_mask: the temporary 3D mask array with updated points
-    :param axes: tuple of the 4 axes instances in a plt.subplots(nrows=2, ncols=2)
-    :param flag_pause: set to 1 to stop registering vertices using mouse clicks
-    :param points: list of all point coordinates: points=np.stack((x, y), axis=0).T with x=x.flatten() , y = y.flatten()
-     given x,y=np.meshgrid(np.arange(nx), np.arange(ny))
-    :param xy: the list of vertices which defines a polygon to be masked
-    :param width: the half_width of the masking window
-    :param dim: the axis currently under review (axis 0, 1 or 2)
-    :param click_dim: the dimension (0, 1 or 2) here the selection of mask polygon vertices by clicking was performed
-    :param info_text: text instance in the figure
-    :param vmax: the higher boundary for the colorbar
-    :param vmin: the lower boundary for the colorbar
-    :param invert_yaxis: True to invert the y axis of imshow plots
-    :return: updated data, mask and controls
-    """
-    if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3 or updated_mask.ndim != 3:
-        raise ValueError('original_data, updated_data and original_mask should be 3D arrays')
-
-    nbz, nby, nbx = original_data.shape
-    stop_masking = False
-    if dim not in [0, 1, 2]:
-        raise ValueError('dim should be 0, 1 or 2')
-
-    xmin0, xmax0 = axes[0].get_xlim()
-    ymin0, ymax0 = axes[0].get_ylim()
-    xmin1, xmax1 = axes[1].get_xlim()
-    ymin1, ymax1 = axes[1].get_ylim()
-    xmin2, xmax2 = axes[2].get_xlim()
-    ymin2, ymax2 = axes[2].get_ylim()
-
-    if key == 'up':
-        width = width + 1
-
-    elif key == 'down':
-        width = width - 1
-        if width < 0:
-            width = 0
-
-    elif key == 'right':
-        vmax = vmax + 1
-
-    elif key == 'left':
-        vmax = vmax - 1
-        if vmax < 1:
-            vmax = 1
-
-    elif key == 'm':
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        if dim == 0:
-            updated_mask[:, starty:piy + width + 1, startx:pix + width + 1] = 1
-        elif dim == 1:
-            updated_mask[starty:piy + width + 1, :, startx:pix + width + 1] = 1
-        else:  # dim=2
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, :] = 1
-
-    elif key == 'b':
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        if dim == 0:
-            updated_mask[:, starty:piy + width + 1, startx:pix + width + 1] = 0
-            updated_data[:, starty:piy + width + 1, startx:pix + width + 1] =\
-                original_data[:, starty:piy + width + 1, startx:pix + width + 1]
-        elif dim == 1:
-            updated_mask[starty:piy + width + 1, :, startx:pix + width + 1] = 0
-            updated_data[starty:piy + width + 1, :, startx:pix + width + 1] = \
-                original_data[starty:piy + width + 1, :, startx:pix + width + 1]
-        else:  # dim=2
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, :] = 0
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, :] = \
-                original_data[starty:piy + width + 1, startx:pix + width + 1, :]
-
-    elif key == 'a':  # restart mask from beginning
-        updated_data = np.copy(original_data)
-        xy = []
-        click_dim = None
-        print('Restart masking...')
-        xmin0, xmax0 = -0.5, nbx - 0.5
-        if invert_yaxis:
-            ymin0, ymax0 = -0.5, nby - 0.5  # pointing up
-        else:
-            ymin0, ymax0 = nby - 0.5, -0.5  # pointing down
-        xmin1, xmax1 = -0.5, nbx - 0.5
-        ymin1, ymax1 = nbz - 0.5, -0.5  # pointing down
-        xmin2, xmax2 = -0.5, nby - 0.5
-        ymin2, ymax2 = nbz - 0.5, -0.5  # pointing down
-
-        updated_data[:] = original_data[:]
-        updated_mask = np.zeros((nbz, nby, nbx))
-
-    elif key == 'p':  # plot full image
-        xmin0, xmax0 = -0.5, nbx - 0.5
-        if invert_yaxis:
-            ymin0, ymax0 = -0.5, nby - 0.5  # pointing up
-        else:
-            ymin0, ymax0 = nby - 0.5, -0.5  # pointing down
-        xmin1, xmax1 = -0.5, nbx - 0.5
-        ymin1, ymax1 = nbz - 0.5, -0.5  # pointing down
-        xmin2, xmax2 = -0.5, nby - 0.5
-        ymin2, ymax2 = nbz - 0.5, -0.5  # pointing down
-        if not flag_pause and len(xy) != 0:
-            xy.append(xy[0])
-            print(xy)
-            if click_dim == 0:
-                ind = Path(np.array(xy)).contains_points(points).reshape((nby, nbx))
-                temp_mask = np.zeros((nby, nbx))
-                temp_mask[ind] = 1
-                updated_mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nbz, axis=0) == 1] = 1
-            elif click_dim == 1:
-                ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nbx))
-                temp_mask = np.zeros((nbz, nbx))
-                temp_mask[ind] = 1
-                updated_mask[np.repeat(temp_mask[:, np.newaxis, :], repeats=nby, axis=1) == 1] = 1
-            else:  # dim=2
-                ind = Path(np.array(xy)).contains_points(points).reshape((nbz, nby))
-                temp_mask = np.zeros((nbz, nby))
-                temp_mask[ind] = 1
-                updated_mask[np.repeat(temp_mask[:, :, np.newaxis], repeats=nbx, axis=2) == 1] = 1
-        xy = []  # allow to mask a different area
-        click_dim = None
-
-    elif key == 'r':
-        xy = []
-
-    elif key == 'x':
-        if not flag_pause:
-            flag_pause = True
-            print('pause for pan/zoom')
-        else:
-            flag_pause = False
-            print('resume masking')
-
-    elif key == 'q':
-        stop_masking = True
-
-    else:
-        return updated_data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking
-
-    updated_data[original_mask == 1] = 0
-    updated_data[updated_mask == 1] = 0
-
-    axes[0].cla()
-    axes[1].cla()
-    axes[2].cla()
-    axes[0].imshow(np.log10(updated_data.sum(axis=0)), vmin=vmin, vmax=vmax)
-    axes[1].imshow(np.log10(updated_data.sum(axis=1)), vmin=vmin, vmax=vmax)
-    axes[2].imshow(np.log10(updated_data.sum(axis=2)), vmin=vmin, vmax=vmax)
-    axes[0].set_title("XY")
-    axes[0].axis('scaled')
-    if invert_yaxis:
-        axes[0].invert_yaxis()
-    axes[0].set_xlim([xmin0, xmax0])
-    axes[0].set_ylim([ymin0, ymax0])
-    axes[1].set_title("XZ")
-    axes[1].axis('scaled')
-    axes[1].set_xlim([xmin1, xmax1])
-    axes[1].set_ylim([ymin1, ymax1])
-    axes[2].set_title("YZ")
-    axes[2].axis('scaled')
-    axes[2].set_xlim([xmin2, xmax2])
-    axes[2].set_ylim([ymin2, ymax2])
-    fig = plt.gcf()
-    info_text.remove()
-    if flag_pause:
-        info_text = fig.text(0.6, 0.05, 'masking paused', size=16)
-    else:
-        info_text = fig.text(0.6, 0.05, 'masking enabled', size=16)
-    plt.draw()
-
-    return updated_data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking, info_text
-
-
-def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, updated_mask, figure, flag_pause, points,
-                   xy, width, vmax, vmin=0, masked_color=0.1, invert_yaxis=False):
-    """
-    Update the mask to remove parasitic diffraction intensity and hotpixels for 2d dataset.
-
-    :param key: the keyboard key which was pressed
-    :param pix: the x value of the mouse pointer
-    :param piy: the y value of the mouse pointer
-    :param original_data: the 2D data array before masking
-    :param original_mask: the 2D mask array before masking
-    :param updated_data: the current 2D data array
-    :param updated_mask: the temporary 2D mask array with updated points
-    :param figure: the figure instance
-    :param flag_pause: set to 1 to stop registering vertices using mouse clicks
-    :param points: list of all point coordinates: points=np.stack((x, y), axis=0).T with x=x.flatten() , y = y.flatten()
-     given x,y=np.meshgrid(np.arange(nx), np.arange(ny))
-    :param xy: the list of vertices which defines a polygon to be masked
-    :param width: the half_width of the masking window
-    :param vmax: the higher boundary for the colorbar
-    :param vmin: the lower boundary for the colorbar
-    :param masked_color: the value that detector gaps should have in plots
-    :param invert_yaxis: True to invert the y axis of imshow plots
-    :return: updated data, mask and controls
-    """
-    if original_data.ndim != 2 or updated_data.ndim != 2 or original_mask.ndim != 2 or updated_mask.ndim != 2:
-        raise ValueError('original_data, updated_data, original_mask and updated_mask should be 2D arrays')
-
-    nby, nbx = original_data.shape
-    stop_masking = False
-
-    axs = figure.gca()
-    xmin, xmax = axs.get_xlim()
-    ymin, ymax = axs.get_ylim()
-
-    if key == 'up':
-        width = width + 1
-
-    elif key == 'down':
-        width = width - 1
-        if width < 0:
-            width = 0
-
-    elif key == 'right':
-        vmax = vmax + 1
-        updated_data[updated_mask == 1] = masked_color
-
-    elif key == 'left':
-        vmax = vmax - 1
-        if vmax < 1:
-            vmax = 1
-        updated_data[updated_mask == 1] = masked_color
-
-    elif key == 'm':
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 1
-        updated_data[updated_mask == 1] = masked_color
-
-    elif key == 'b':
-        if (piy - width) < 0:
-            starty = 0
-        else:
-            starty = piy - width
-        if (pix - width) < 0:
-            startx = 0
-        else:
-            startx = pix - width
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 0
-        updated_data[updated_mask == 1] = masked_color
-
-    elif key == 'a':  # restart mask from beginning
-        updated_data = np.copy(original_data)
-        xy = []
-        print('restart masking')
-        updated_data[
-            original_mask == 1] = masked_color  # masked pixels plotted with the value of masked_pixel
-        updated_mask = np.zeros((nby, nbx))
-        xmin, xmax = -0.5, nbx - 0.5
-        if invert_yaxis:
-            ymin, ymax = -0.5, nby - 0.5  # pointing up
-        else:
-            ymin, ymax = nby - 0.5, -0.5  # pointing down
-
-    elif key == 'p':  # plot full image
-        xmin, xmax = -0.5, nbx - 0.5
-        if invert_yaxis:
-            ymin, ymax = -0.5, nby - 0.5  # pointing up
-        else:
-            ymin, ymax = nby - 0.5, -0.5  # pointing down
-        if not flag_pause and len(xy) != 0:
-            xy.append(xy[0])
-            print(xy)
-            ind = Path(np.array(xy)).contains_points(points).reshape((nby, nbx))
-            updated_mask[ind] = 1
-
-        updated_data[updated_mask == 1] = masked_color
-        xy = []  # allow to mask a different area
-
-    elif key == 'r':
-        xy = []
-
-    elif key == 'x':
-        if not flag_pause:
-            flag_pause = True
-            print('pause for pan/zoom')
-        else:
-            flag_pause = False
-            print('resume masking')
-
-    elif key == 'q':
-        stop_masking = True
-
-    else:
-        return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
-
-    axs.cla()
-    axs.imshow(np.log10(abs(updated_data)), vmin=vmin, vmax=vmax)
-    if invert_yaxis:
-        axs.invert_yaxis()
-    axs.set_xlim([xmin, xmax])
-    axs.set_ylim([ymin, ymax])
-    axs.set_title('x to pause/resume masking for pan/zoom \n'
-                  'p plot mask ; a restart ; click to select vertices\n'
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-    plt.draw()
-
-    return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
 
 
 def wrap(obj, start_angle, range_angle):

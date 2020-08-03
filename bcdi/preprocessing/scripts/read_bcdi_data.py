@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import hdf5plugin  # for P10, should be imported before h5py or PyTables
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
@@ -24,15 +25,16 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 1460
-root_folder = "D:/data/P10_OER/data/"
-sample_name = "dewet2_2"  # "S"
+scan = 54
+root_folder = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/isosurface/raw/"
+sample_name = "p21"  # "S"
+savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
 save_mask = False  # set to True to save the mask
 fit_rockingcurve = True  # set to True if you want a fit of the rocking curve
 ###############################
 # beamline related parameters #
 ###############################
-beamline = 'P10'  # name of the beamlis[scan_nb]ne, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
 custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
@@ -101,6 +103,12 @@ else:
     homedir = root_folder + sample_name + str(scan) + '/'
     detector.datadir = homedir + "data/"
 
+if savedir == '':
+    savedir = os.path.abspath(os.path.join(detector.datadir, os.pardir)) + '/'
+
+detector.savedir = savedir
+print('savedir: ', savedir)
+
 flatfield = pru.load_flatfield(flatfield_file)
 hotpix_array = pru.load_hotpixels(hotpixels_file)
 
@@ -168,7 +176,7 @@ if data.ndim == 3 and fit_rockingcurve:
 data = data.sum(axis=0)  # concatenate along the axis of the rocking curve
 
 if save_mask:
-    np.savez_compressed(detector.datadir+'hotpixels.npz', mask=mask)
+    np.savez_compressed(detector.savedir + 'hotpixels.npz', mask=mask)
 
 gu.combined_plots(tuple_array=(monitor, mask), tuple_sum_frames=False, tuple_sum_axis=(0, 0),
                   tuple_width_v=None, tuple_width_h=None, tuple_colorbar=(True, False), tuple_vmin=np.nan,
@@ -182,5 +190,5 @@ fig = plt.figure()
 plt.imshow(np.log10(data), vmin=-2, vmax=4, cmap=my_cmap)
 plt.title('data.sum(axis=0)\nMax at (y, x): (' + str(y0) + ',' + str(x0) + ')   Max = ' + str(int(data[y0, x0])))
 plt.colorbar()
-plt.savefig(detector.datadir + 'sum_S' + str(scan) + '.png')
+plt.savefig(detector.savedir + 'sum_S' + str(scan) + '.png')
 plt.show()

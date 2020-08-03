@@ -555,7 +555,7 @@ def surface_indices(surface, plane_indices, margin=3):
 
 def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, projection_axis, min_distance=10,
                        background_south=-1000, background_north=-1000, save_txt=False, cmap=default_cmap,
-                       planes_south={}, planes_north={}, plot_planes=True, debugging=False):
+                       planes_south={}, planes_north={}, plot_planes=True, scale='linear', debugging=False):
     """
     Detect facets in an object using a stereographic projection of normals to mesh triangles
      and watershed segmentation.
@@ -574,6 +574,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     :param planes_south: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
     :param planes_north: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
     :param plot_planes: if True, will draw circles corresponding to crystallographic planes in the pole figure
+    :param scale: 'linear' or 'log', scale for the colorbar of the plot
     :param debugging: show plots for debugging
     :return: labels for each projection from South and North, one array for each projection from South and North,
      list of rows to remove
@@ -609,22 +610,20 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     # stereo_proj[:, 2] is the euclidian u_north, stereo_proj[:, 3] is the euclidian v_north
 
     # remove intensity where stereo_proj is infinite
-    list_inf = np.argwhere(np.isinf(stereo_proj))
-    remove_row = list(set(list_inf[:, 0]))  # remove duplicated row indices
-    print('remove_row indices (the stereographic projection is infinite): ', remove_row, '\n')
+    list_bad = np.argwhere(np.isinf(stereo_proj) | np.isnan(stereo_proj))  # elementwise or
+    remove_row = list(set(list_bad[:, 0]))  # remove duplicated row indices
+    print('remove_row indices (the stereographic projection is infinite or nan): ', remove_row, '\n')
     stereo_proj = np.delete(stereo_proj, remove_row, axis=0)
     intensity = np.delete(intensity, remove_row, axis=0)
 
-    # plot the stereographic projection
-
     fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=intensity,
-                                   radius_mean=radius_mean, planes=planes_south, max_angle=max_angle,
+                                   radius_mean=radius_mean, planes=planes_south, max_angle=max_angle, scale=scale,
                                    title="Projection from\nSouth pole", plot_planes=plot_planes, uv_labels=uv_labels)
-    fig.savefig(savedir + 'South pole.png')
+    fig.savefig(savedir + 'South pole_' + scale + '.png')
     fig, _ = gu.plot_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=intensity,
-                                   radius_mean=radius_mean, planes=planes_north, max_angle=max_angle,
+                                   radius_mean=radius_mean, planes=planes_north, max_angle=max_angle, scale=scale,
                                    title="Projection from\nNorth pole", plot_planes=plot_planes, uv_labels=uv_labels)
-    fig.savefig(savedir + 'North pole.png')
+    fig.savefig(savedir + 'North pole_' + scale + '.png')
 
     # regrid stereo_proj
     # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
@@ -671,7 +670,9 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     ax1.set_title('KDE \nNorth pole')
     fig.tight_layout()
     plt.pause(0.1)
-
+    fig.waitforbuttonpress()
+    plt.close(fig)
+    
     # identification of local minima
     density_south[density_south > background_south] = 0  # define the background in the density of normals
     mask_south = np.copy(density_south)

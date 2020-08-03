@@ -28,7 +28,7 @@ scan_list = [22, 32, 48, 55, 59, 71, 6, 15, 37]  # np.arange(404, 407+1, 3)  # l
 sample_name = ['ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3', 'ht_pillar3',
                'ht_pillar3_1', 'ht_pillar3_1', 'ht_pillar3_1']  # list of sample names. If only one name is indicated,
 # it will be repeated to match the length of scan_list
-comment = '_553_1083_1035_1_2_2.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
+suffix = '_553_1083_1035_1_2_2.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
 # the end of the filename template after 'pynx'
 homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
 savedir = '/home/carnisj/phasing/'  # path of the folder to save data
@@ -77,9 +77,9 @@ print(scan_list)
 samplename = sample_name[reference_scan] + '_' + str('{:05d}').format(scan_list[reference_scan])
 print('Reference scan:', samplename)
 refdata = np.load(homedir + samplename + parent_folder +
-                  'S' + str(scan_list[reference_scan]) + '_pynx' + comment)['data']
+                  'S' + str(scan_list[reference_scan]) + '_pynx' + suffix)['data']
 refmask = np.load(homedir + samplename + parent_folder +
-                  'S' + str(scan_list[reference_scan]) + '_maskpynx' + comment)['mask']
+                  'S' + str(scan_list[reference_scan]) + '_maskpynx' + suffix)['mask']
 assert refdata.ndim == 3 and refmask.ndim == 3, 'data and mask should be 3D arrays'
 nbz, nby, nbx = refdata.shape
 
@@ -113,9 +113,9 @@ for idx in range(len(scan_list)):
     samplename = sample_name[idx] + '_' + str('{:05d}').format(scan_list[idx])
     print('\n Opening ', samplename)
     data = np.load(homedir + samplename + parent_folder +
-                   'S' + str(scan_list[idx]) + '_pynx' + comment)['data']
+                   'S' + str(scan_list[idx]) + '_pynx' + suffix)['data']
     mask = np.load(homedir + samplename + parent_folder +
-                   'S' + str(scan_list[idx]) + '_maskpynx' + comment)['mask']
+                   'S' + str(scan_list[idx]) + '_maskpynx' + suffix)['mask']
 
     if debug:
         gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
@@ -166,8 +166,8 @@ template = ''.join("_S%s" % ''.join(str(val)) for val in combined_list) +\
            '_{:d}_{:d}_{:d=}'.format(output_shape[0], output_shape[1], output_shape[2])
 
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-np.savez_compressed(savedir+'pynx' + template + '.npz', obj=sumdata)
-np.savez_compressed(savedir+'maskpynx' + template + '.npz', obj=summask)
+np.savez_compressed(savedir+'combined_pynx' + template + '.npz', data=sumdata)
+np.savez_compressed(savedir+'combined_maskpynx' + template + '.npz', mask=summask)
 print('\nSum of ', len(combined_list), 'scans')
 
 gu.multislices_plot(sumdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],

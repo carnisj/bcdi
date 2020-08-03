@@ -41,9 +41,9 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [1460]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
-root_folder = "D:/data/P10_OER/data/"
-sample_name = ["dewet2_2"]  # "SN"  # list of sample names. If only one name is indicated,
+scans = [1301]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
+root_folder = "D:/data/SIXS_2019_Ni/"
+sample_name = ["S"]  # "SN"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -52,7 +52,7 @@ binning = [1, 1, 1]  # binning that will be used for phasing
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = False  # True to interact with plots, False to close it automatically
+flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
@@ -100,7 +100,7 @@ save_asint = False  # if True, the result will be saved as an array of integers 
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'SIXS_2019'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 is_series = False  # specific to series measurement at P10
 
@@ -122,12 +122,12 @@ specfile_name = ''
 ###############################
 # detector related parameters #
 ###############################
-detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M" or "Timepix"
+detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
 # x_bragg = 147  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 # y_bragg = 178  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = [553, 1063, 1041, 1701]
+roi_detector = []  # [553, 1063, 1041, 1701]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -139,7 +139,7 @@ photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon thre
 background_file = ''  # root_folder + 'background.npz'  #
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = '_master.h5'
+template_imagefile = 'Pt_ascan_mu_%05d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -149,7 +149,7 @@ template_imagefile = '_master.h5'
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
+use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 sdd = 1.8  # in m, sample to detector distance in m
 energy = 10000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
@@ -169,7 +169,7 @@ beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 offset_inplane = 0  # outer detector angle offset, not important if you use raw data
-sample_offsets = (0, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
+sample_offsets = (-90, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
 # the sample offsets will be added to the motor values
 cch1 = 1000  # cch1 parameter from xrayutilities 2D detector calibration, vertical
 cch2 = 1000  # cch2 parameter from xrayutilities 2D detector calibration, horizontal
@@ -198,7 +198,6 @@ def on_click(event):
     if the mouse is out of plot axes, it will not register the click
 
     :param event: mouse click event
-    :return: updated list of vertices which defines a polygon to be masked
     """
     global xy, flag_pause, previous_axis
     if not event.inaxes:
@@ -214,7 +213,6 @@ def on_click(event):
             print('Please select mask polygon vertices within the same subplot: restart masking...')
             xy = []
             previous_axis = None
-    return
 
 
 def press_key(event):
@@ -222,7 +220,6 @@ def press_key(event):
     Interact with a plot for masking parasitic diffraction intensity or detector gaps
 
     :param event: button press event
-    :return: updated data, mask and controls
     """
     global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
     global xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, info_text
@@ -244,11 +241,11 @@ def press_key(event):
         if inaxes:
             if flag_aliens:
                 data, mask, width, max_colorbar, frame_index, stop_masking = \
-                    pru.update_aliens_combined(key=event.key, pix=int(np.rint(event.xdata)),
-                                               piy=int(np.rint(event.ydata)), original_data=original_data,
-                                               original_mask=original_mask, updated_data=data, updated_mask=mask,
-                                               axes=(ax0, ax1, ax2, ax3), width=width, dim=dim, frame_index=frame_index,
-                                               vmin=0, vmax=max_colorbar, invert_yaxis=not use_rawdata)
+                    gu.update_aliens_combined(key=event.key, pix=int(np.rint(event.xdata)),
+                                              piy=int(np.rint(event.ydata)), original_data=original_data,
+                                              original_mask=original_mask, updated_data=data, updated_mask=mask,
+                                              axes=(ax0, ax1, ax2, ax3), width=width, dim=dim, frame_index=frame_index,
+                                              vmin=0, vmax=max_colorbar, invert_yaxis=not use_rawdata)
             elif flag_mask:
                 if previous_axis == ax0:
                     click_dim = 0
@@ -267,12 +264,12 @@ def press_key(event):
                     points = None
 
                 data, updated_mask, flag_pause, xy, width, max_colorbar, click_dim, stop_masking, info_text = \
-                    pru.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
-                                             piy=int(np.rint(event.ydata)), original_data=original_data,
-                                             original_mask=mask, updated_data=data, updated_mask=updated_mask,
-                                             axes=(ax0, ax1, ax2, ax3), flag_pause=flag_pause, points=points,
-                                             xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
-                                             vmin=0, vmax=max_colorbar, invert_yaxis=not use_rawdata)
+                    gu.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
+                                            piy=int(np.rint(event.ydata)), original_data=original_data,
+                                            original_mask=mask, updated_data=data, updated_mask=updated_mask,
+                                            axes=(ax0, ax1, ax2, ax3), flag_pause=flag_pause, points=points,
+                                            xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
+                                            vmin=0, vmax=max_colorbar, invert_yaxis=not use_rawdata)
                 if click_dim is None:
                     previous_axis = None
             else:
@@ -543,10 +540,7 @@ for scan_nb in range(len(scans)):
             q_values = []
             # binning along axis 0 is done after masking
             data[np.nonzero(mask)] = 0
-        else:  # the data will be gridded, binning[0] is set to 1
-            binning_comment = '_' + str(previous_binning[2] * binning[2]) + '_' + str(previous_binning[1] * binning[1]) \
-                              + '_' + str(previous_binning[2] * binning[2])
-
+        else:
             tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
             tmp_data[mask == 1] = 0
             fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
@@ -826,7 +820,6 @@ for scan_nb in range(len(scans)):
     plt.ion()
     nz, ny, nx = np.shape(data)
     print('\nData size after masking:', nz, ny, nx)
-    comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx)  # need these numbers to calculate the voxel size
 
     # check for Nan
     mask[np.isnan(data)] = 1
