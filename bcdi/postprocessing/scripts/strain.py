@@ -43,16 +43,16 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 653  # spec scan number
+scan = 1138  # spec scan number
 
-datadir = "D:/data/P10_OER/analysis/candidate_11/dewet2_2_S653_to_S680/"
+datadir = "D:/data/P10_OER/analysis/candidate_11/dewet2_2_S1138_to_S1195/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [180, 300, 300]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [128, 300, 300]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 2, 2)  # binning factor applied during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
@@ -73,7 +73,7 @@ offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
+comment = '_' + isosurface_method + "_iso_" + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
@@ -86,9 +86,9 @@ pixel_size = 75e-6  # detector pixel size in m
 energy = 10300  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
 outofplane_angle = 30.5279  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 4.1529  # detector nu ID01, gamma SIXS, tth 34ID
+inplane_angle = 4.1341  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.0089  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 dispersion = 3.2880E-05  # delta
@@ -114,7 +114,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (-1, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (0, -1, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
@@ -785,7 +785,7 @@ fig.text(0.60, 0.10, "Planar distance=" + str('{:.5f}'.format(planar_dist)) + "n
 if get_temperature:
     fig.text(0.60, 0.05, "Estimated T=" + str(temperature) + "C", size=20)
 if save:
-    plt.savefig(datadir + 'amp_S' + str(scan) + comment + '.png')
+    plt.savefig(datadir + 'S' + str(scan) + '_amp' + comment + '.png')
 
 # amplitude histogram
 fig, ax = plt.subplots(1, 1)
@@ -796,7 +796,7 @@ ax.spines['right'].set_linewidth(1.5)
 ax.spines['left'].set_linewidth(1.5)
 ax.spines['top'].set_linewidth(1.5)
 ax.spines['bottom'].set_linewidth(1.5)
-fig.savefig(datadir + 'histogram_amp' + comment + '.png', bbox_inches="tight")
+fig.savefig(datadir + 'S' + str(scan) + '_histo_amp' + comment + '.png')
 
 # phase
 fig, _, _ = gu.multislices_plot(phase, sum_frames=False, title='Orthogonal displacement',
@@ -812,7 +812,7 @@ if hwidth > 0:
 else:
     fig.text(0.60, 0.10, "No phase averaging", size=20)
 if save:
-    plt.savefig(datadir + 'displacement_S' + str(scan) + comment + '.png')
+    plt.savefig(datadir + 'S' + str(scan) + '_displacement' + comment + '.png')
 
 # strain
 fig, _, _ = gu.multislices_plot(strain, sum_frames=False, title='Orthogonal strain',
@@ -828,7 +828,7 @@ if hwidth > 0:
 else:
     fig.text(0.60, 0.10, "No phase averaging", size=20)
 if save:
-    plt.savefig(datadir + 'strain_S' + str(scan) + comment + '.png')
+    plt.savefig(datadir + 'S' + str(scan) + '_strain' + comment + '.png')
 
 
 print('End of script')
