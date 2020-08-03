@@ -43,16 +43,16 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 585  # spec scan number
+scan = 653  # spec scan number
 
-datadir = "D:/data/P10_OER/analysis/candidate_11/dewet2_2_S585_to_S612/"
+datadir = "D:/data/P10_OER/analysis/candidate_11/dewet2_2_S653_to_S680/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [160, 300, 300]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [180, 300, 300]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 2, 2)  # binning factor applied during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
@@ -85,10 +85,10 @@ sdd = 1.83  # sample to detector distance in m
 pixel_size = 75e-6  # detector pixel size in m
 energy = 10300  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 30.5303  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 4.1341  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 30.5279  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 4.1529  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.0088  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.0089  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 dispersion = 3.2880E-05  # delta
@@ -100,18 +100,6 @@ absorption = 2.3486E-06  # beta
 threshold_refraction = 0.05  # threshold used to calculate the optical path
 # the threshold for refraction/absorption corrections should be low, to correct for an object larger than the real one,
 # otherwise it messes up the phase
-##########################################
-# parameteres for temperature estimation #
-##########################################
-get_temperature = False  # only available for platinum at the moment
-reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
-reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
-reference_temperature = None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
-##########################################################
-# parameters for averaging several reconstructed objects #
-##########################################################
-avg_method = 'reciprocal_space'  # 'real_space' or 'reciprocal_space'
-avg_threshold = 0.90  # minimum correlation within reconstructed object for averaging
 ###########
 # options #
 ###########
@@ -126,16 +114,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, -1, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
-############################################
-# setup for phase averaging or apodization #
-############################################
-hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no phase averaging
-apodize_flag = False  # True to multiply the diffraction pattern by a filtering window
-apodize_window = 'blackman'  # filtering window, multivariate 'normal' or 'tukey' or 'blackman'
-mu = np.array([0.0, 0.0, 0.0])  # mu of the gaussian window
-sigma = np.array([0.30, 0.30, 0.30])  # sigma of the gaussian window
-alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
+roll_modes = (-1, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
@@ -151,6 +130,27 @@ tick_spacing = 50  # for plots, in nm
 tick_direction = 'inout'  # 'out', 'in', 'inout'
 tick_length = 3  # 10  # in plots
 tick_width = 1  # 2  # in plots
+##########################################
+# parameteres for temperature estimation #
+##########################################
+get_temperature = False  # only available for platinum at the moment
+reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
+reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
+reference_temperature = None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
+##########################################################
+# parameters for averaging several reconstructed objects #
+##########################################################
+avg_method = 'reciprocal_space'  # 'real_space' or 'reciprocal_space'
+avg_threshold = 0.90  # minimum correlation within reconstructed object for averaging
+############################################
+# setup for phase averaging or apodization #
+############################################
+hwidth = 0  # (width-1)/2 of the averaging window for the phase, 0 means no phase averaging
+apodize_flag = False  # True to multiply the diffraction pattern by a filtering window
+apodize_window = 'blackman'  # filtering window, multivariate 'normal' or 'tukey' or 'blackman'
+mu = np.array([0.0, 0.0, 0.0])  # mu of the gaussian window
+sigma = np.array([0.30, 0.30, 0.30])  # sigma of the gaussian window
+alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
 ##################################
 # end of user-defined parameters #
 ##################################
