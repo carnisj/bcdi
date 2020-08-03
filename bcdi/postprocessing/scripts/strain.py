@@ -43,21 +43,21 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 1544  # spec scan number
+scan = 585  # spec scan number
 
-datadir = "D:/data/P10_OER/analysis/dewet2_2_S1544_to_S1586/"
+datadir = "D:/data/P10_OER/analysis/candidate_11/dewet2_2_S585_to_S612/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [100, 300, 300]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [160, 300, 300]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 2, 2)  # binning factor applied during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
-fix_voxel = 6.0  # voxel size in nm for the interpolation during the geometrical transformation
+fix_voxel = 9.0  # voxel size in nm for the interpolation during the geometrical transformation
 # put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 plot_margin = (60, 30, 30)  # (z, y, x) margin in pixel to leave outside the support in each direction when cropping,
 # it can be negative. It is useful in order to avoid cutting the object during the orthogonalization.
@@ -85,10 +85,10 @@ sdd = 1.83  # sample to detector distance in m
 pixel_size = 75e-6  # detector pixel size in m
 energy = 10300  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 30.4944  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 4.3491  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 30.5303  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 4.1341  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.0086  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.0088  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 dispersion = 3.2880E-05  # delta
@@ -117,7 +117,7 @@ avg_threshold = 0.90  # minimum correlation within reconstructed object for aver
 ###########
 simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
-flip_reconstruction = True  # True if you want to get the conjugate object
+flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient = 0.1  # upper threshold of the gradient of the phase, use for ramp removal
 xrayutils_ortho = False  # True if the data is already orthogonalized
@@ -126,7 +126,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (0, -1, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # setup for phase averaging or apodization #
 ############################################
@@ -786,6 +786,17 @@ if get_temperature:
     fig.text(0.60, 0.05, "Estimated T=" + str(temperature) + "C", size=20)
 if save:
     plt.savefig(datadir + 'amp_S' + str(scan) + comment + '.png')
+
+# amplitude histogram
+fig, ax = plt.subplots(1, 1)
+ax.hist(amp[amp > 0.05*amp.max()].flatten(), bins=250)
+ax.set_ylim(bottom=1)
+ax.tick_params(labelbottom=True, labelleft=True, direction='out', length=tick_length, width=tick_width)
+ax.spines['right'].set_linewidth(1.5)
+ax.spines['left'].set_linewidth(1.5)
+ax.spines['top'].set_linewidth(1.5)
+ax.spines['bottom'].set_linewidth(1.5)
+fig.savefig(datadir + 'histogram_amp' + comment + '.png', bbox_inches="tight")
 
 # phase
 fig, _, _ = gu.multislices_plot(phase, sum_frames=False, title='Orthogonal displacement',
