@@ -77,13 +77,14 @@ class Colormap(object):
         self.cmap.set_bad(color=bad_color)
 
 
-def colorbar(mappable, scale='linear', numticks=10):
+def colorbar(mappable, scale='linear', numticks=10, label=None):
     """
     Generate a colorbar whose height (or width) in sync with the master axes.
 
     :param mappable: the image where to put the colorbar
     :param scale: 'linear' or 'log', used for tick location
     :param numticks: number of ticks for the colorbar
+    :param label: label for the colorbar
     :return: the colorbar instance
     """
     last_axes = plt.gca()
@@ -101,6 +102,8 @@ def colorbar(mappable, scale='linear', numticks=10):
         cbar.locator = ticker.LogLocator(numticks=numticks)
     else:
         raise ValueError('Incorrect value for the scale parameter')
+    if label is not None:
+        cbar.ax.set_ylabel(label)
     cbar.update_ticks()
     plt.sca(last_axes)
     return cbar
