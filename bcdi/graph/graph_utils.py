@@ -201,8 +201,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         position
     except NameError:
         nb_columns = nb_subplots // 2
-        nb_raws = nb_subplots // nb_columns + nb_subplots % nb_columns
-        position = [nb_raws*100 + nb_columns*10 + index for index in range(1, nb_subplots+1)]
+        nb_rows = nb_subplots // nb_columns + nb_subplots % nb_columns
+        position = [nb_rows*100 + nb_columns*10 + index for index in range(1, nb_subplots+1)]
 
     plt.ion()
     fig = plt.figure(figsize=(12, 9))
