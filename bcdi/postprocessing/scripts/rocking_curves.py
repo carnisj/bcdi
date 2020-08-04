@@ -30,7 +30,7 @@ scans = np.arange(1686, 1716+1, step=3)  # list or array of scan numbers
 root_folder = "D:/data/P10_OER/data/"
 sample_name = "dewet2_2"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
-savedir = "D:/data/P10_OER/analysis/candidate_11/"
+savedir = "D:/data/P10_OER/analysis/candidate_12/"
 # images will be saved here, leave it to '' otherwise (default to root_folder)
 x_axis = [0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2]
 # x_axis = [0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0, 0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6,
@@ -41,7 +41,7 @@ x_axis = [0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2]
 # values against which the Bragg peak center of mass evolution will be plotted, leave [] otherwise
 x_label = 'voltage (V)'  # label for the X axis in plots, leave '' otherwise
 comment = '_small_RC'  # comment for the saving filename, should start with _
-peak_method = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
+peak_method = 'com'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
 debug = False  # set to True to see more plots
 ###############################
 # beamline related parameters #
@@ -71,10 +71,11 @@ specfile_name = ''
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-roi_detector = []  # [Vstart, Vstop, Hstart, Hstop]
+x_bragg = 1367  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 811  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = [y_bragg-200, y_bragg+200, x_bragg-200, x_bragg+200]  # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='skip' if you want this exact size.
-debug_pix = 20  # half-width in pixels of the ROI centered on the Bragg peak
-peak_method = 'max'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
+debug_pix = 30  # half-width in pixels of the ROI centered on the Bragg peak
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
 template_imagefile = '_master.h5'
@@ -274,23 +275,23 @@ fig, ((ax0, ax1, ax2), (ax3, ax4, ax5)) = plt.subplots(nrows=2, ncols=3, figsize
 ax0.plot(scans, x_axis, '-o')
 ax0.set_xlabel('Scan number')
 ax0.set_ylabel(x_label)
-ax1.scatter(x_axis, int_sum, s=6, c=scans, cmap=my_cmap)
+ax1.scatter(x_axis, int_sum, s=24, c=scans, cmap=my_cmap)
 ax1.set_xlabel(x_label)
 ax1.set_ylabel('Integrated intensity')
 ax1.set_facecolor(bckg_color)
-ax2.scatter(x_axis, int_max, s=6, c=scans, cmap=my_cmap)
+ax2.scatter(x_axis, int_max, s=24, c=scans, cmap=my_cmap)
 ax2.set_xlabel(x_label)
 ax2.set_ylabel('Maximum intensity')
 ax2.set_facecolor(bckg_color)
-ax3.scatter(x_axis, xcom, s=6, c=scans, cmap=my_cmap)
+ax3.scatter(x_axis, xcom, s=24, c=scans, cmap=my_cmap)
 ax3.set_xlabel(x_label)
 ax3.set_ylabel('xcom (pixels)')
 ax3.set_facecolor(bckg_color)
-ax4.scatter(x_axis, ycom, s=6, c=scans, cmap=my_cmap)
+ax4.scatter(x_axis, ycom, s=24, c=scans, cmap=my_cmap)
 ax4.set_xlabel(x_label)
 ax4.set_ylabel('ycom (pixels)')
 ax4.set_facecolor(bckg_color)
-plt5 = ax5.scatter(x_axis, zcom, s=6, c=scans, cmap=my_cmap)
+plt5 = ax5.scatter(x_axis, zcom, s=24, c=scans, cmap=my_cmap)
 gu.colorbar(plt5, scale='linear', numticks=len(scans), label='scan #')
 ax5.set_xlabel(x_label)
 ax5.set_ylabel('zcom (pixels)')
@@ -303,7 +304,7 @@ fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)
 ax0.plot(scans, tilt_com, '-o')
 ax0.set_xlabel('Scan number')
 ax0.set_ylabel('Bragg angle (deg)')
-plt1 = ax1.scatter(x_axis, tilt_com, s=6, c=scans, cmap=my_cmap)
+plt1 = ax1.scatter(x_axis, tilt_com, s=24, c=scans, cmap=my_cmap)
 gu.colorbar(plt1, scale='linear', numticks=len(scans), label='scan #')
 ax1.set_xlabel(x_label)
 ax1.set_ylabel('Bragg angle (deg)')
@@ -317,7 +318,7 @@ if convert_to_q:
     ax0.plot(scans, q_com, '-o')
     ax0.set_xlabel('Scan number')
     ax0.set_ylabel('q (1/A)')
-    plt1 = ax1.scatter(x_axis, q_com, s=6, c=scans, cmap=my_cmap)
+    plt1 = ax1.scatter(x_axis, q_com, s=24, c=scans, cmap=my_cmap)
     gu.colorbar(plt1, scale='linear', numticks=len(scans), label='scan #')
     ax1.set_xlabel(x_label)
     ax1.set_ylabel('q (1/A)')
