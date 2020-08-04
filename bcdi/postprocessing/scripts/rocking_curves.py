@@ -41,6 +41,7 @@ x_axis = [0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2]
 # values against which the Bragg peak center of mass evolution will be plotted, leave [] otherwise
 x_label = 'voltage (V)'  # label for the X axis in plots, leave '' otherwise
 comment = '_small_RC'  # comment for the saving filename, should start with _
+peak_method = 'max'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
 debug = False  # set to True to see more plots
 ###############################
 # beamline related parameters #
@@ -72,6 +73,7 @@ specfile_name = ''
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 roi_detector = []  # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='skip' if you want this exact size.
+debug_pix = 20  # half-width in pixels of the ROI centered on the Bragg peak
 peak_method = 'max'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
@@ -122,14 +124,17 @@ elif type(sample_name) is str:
 else:
     print('sample_name should be either a string or a list of strings')
     sys.exit()
+assert peak_method in ['max', 'com'], 'invalid value for "peak_method" parameter'
 
-int_sum = []
-int_max = []
-xcom = []
-ycom = []
-zcom = []
-tilt_com = []
-q_com = []
+int_sum = []  # integrated intensity in the detector ROI
+int_max = []  # maximum intensity in the detector ROI
+zcom = []  # center of mass for the first data axis
+ycom = []  # center of mass for the second data axis
+xcom = []  # center of mass for the third data axis
+tilt_com = []  # center of mass for the incident rocking angle
+q_com = []  # q value of the center of mass
+check_roi = []  # a small ROI around the Bragg peak will be stored for each scan, to see if the peak is indeed
+# captured by the rocking curve
 
 #################################
 # Initialize detector and setup #
@@ -161,46 +166,50 @@ print('savedir: ', detector.savedir)
 ###############################################
 # load recursively the scans and update lists #
 ###############################################
-for scan_nb in range(len(scans)):
+for scan_id in range(len(scans)):
 
     if setup_pre.beamline != 'P10':
-        homedir = root_folder + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
+        homedir = root_folder + sample_name[scan_id] + str(scans[scan_id]) + '/'
         detector.datadir = homedir + "data/"
         specfile = specfile_name
     else:
-        specfile = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb])
+        specfile = sample_name[scan_id] + '_{:05d}'.format(scans[scan_id])
         homedir = root_folder + specfile + '/'
         detector.datadir = homedir + 'e4m/'
         imagefile = specfile + template_imagefile
         detector.template_imagefile = imagefile
 
-    logfile = pru.create_logfile(setup=setup_pre, detector=detector, scan_number=scans[scan_nb],
+    logfile = pru.create_logfile(setup=setup_pre, detector=detector, scan_number=scans[scan_id],
                                  root_folder=root_folder, filename=specfile)
 
-    print('\nScan', scans[scan_nb])
+    print('\nScan', scans[scan_id])
     print('Specfile: ', specfile)
 
-    data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scans[scan_nb],
+    data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scans[scan_id],
                                                              detector=detector, setup=setup_pre,
                                                              flatfield=flatfield, hotpixels=hotpix_array,
                                                              normalize=True, debugging=debug)
 
     tilt, grazing, inplane, outofplane = pru.motor_values(frames_logical=frames_logical, logfile=logfile,
-                                                          scan_number=scan_nb, setup=setup_pre)
+                                                          scan_number=scan_id, setup=setup_pre)
 
-    piz, piy, pix = center_of_mass(data)
+    if peak_method == 'max':
+        piz, piy, pix = np.unravel_index(data.argmax(), shape=data.shape)
+    else:  # 'com'
+        piz, piy, pix = center_of_mass(data)
+
     zcom.append(piz)
     ycom.append(piy)
     xcom.append(pix)
     int_sum.append(data.sum())
     int_max.append(data.max())
-
+    check_roi.append(data[:, :, int(pix) - debug_pix:int(pix) + debug_pix].sum(axis=1))
     interp_tilt = interp1d(np.arange(data.shape[0]), tilt, kind='linear')
     tilt_com.append(interp_tilt(piz))
     # tilt_com.append(tilt[int(piz)])
-    if scan_nb == 0 or scan_nb == len(scans) - 1:
+    if scan_id == 0 or scan_id == len(scans) - 1:
         gu.multislices_plot(data, sum_frames=True, scale='log', reciprocal_space=True, is_orthogonal=False,
-                            title='scan {:d}'.format(scans[scan_nb]))
+                            title='scan {:d}'.format(scans[scan_id]))
 
     ##############################
     # convert pixels to q values #
@@ -245,11 +254,22 @@ for scan_nb in range(len(scans)):
 ##########################################################
 # plot the ROI centered on the Bragg peak for each scan  #
 ##########################################################
-# TODO
+plt.ion()
+nb_rows = np.floor(np.sqrt(len(scans)))
+nb_columns = np.ceil(len(scans) / nb_rows)
+
+fig = plt.figure(figsize=(12, 9))
+for idx in range(len(scans)):
+    axis = plt.subplot(nb_rows, nb_columns, idx+1)
+    axis.imshow(np.log10(check_roi[idx]))
+    axis.set_title('S{:d}'.format(scans[idx]))
+plt.tight_layout()
+plt.pause(0.1)
+fig.savefig(savedir + 'check-roi' + comment + '.png')
+
 ##########################################################
 # plot the evolution of the center of mass and intensity #
 ##########################################################
-plt.ion()
 fig, ((ax0, ax1, ax2), (ax3, ax4, ax5)) = plt.subplots(nrows=2, ncols=3, figsize=(12, 9))
 ax0.plot(scans, x_axis, '-o')
 ax0.set_xlabel('Scan number')
