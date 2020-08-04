@@ -22,25 +22,26 @@ Open a series of rocking curve data and track the position of the Bragg peak ove
 
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
-
-scans = np.arange(1009, 1075+1, step=3)  # list or array of scan numbers
-scans = np.concatenate((scans, np.arange(1081, 1135+1, 3)))
-scans = np.concatenate((scans, np.arange(1198, 1231+1, 3)))
-scans = np.concatenate((scans, np.arange(1236, 1395+1, 3)))
+scans = np.arange(1686, 1716+1, step=3)  # list or array of scan numbers
+# scans = np.arange(1009, 1075+1, step=3)  # list or array of scan numbers
+# scans = np.concatenate((scans, np.arange(1081, 1135+1, 3)))
+# scans = np.concatenate((scans, np.arange(1198, 1231+1, 3)))
+# scans = np.concatenate((scans, np.arange(1236, 1395+1, 3)))
 root_folder = "D:/data/P10_OER/data/"
 sample_name = "dewet2_2"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 savedir = "D:/data/P10_OER/analysis/candidate_11/"
 # images will be saved here, leave it to '' otherwise (default to root_folder)
-x_axis = [0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0, 0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6,
-          0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4,
-          0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0,
-          0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1,
-          0.2, 0.2, 0.3, 0.3, 0.4, 0.4, 0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1]
+x_axis = [0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2]
+# x_axis = [0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0, 0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6,
+#           0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4,
+#           0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0,
+#           0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1,
+#           0.2, 0.2, 0.3, 0.3, 0.4, 0.4, 0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1]
 # values against which the Bragg peak center of mass evolution will be plotted, leave [] otherwise
 x_label = 'voltage (V)'  # label for the X axis in plots, leave '' otherwise
 comment = '_small_RC'  # comment for the saving filename, should start with _
-debug = False  # set to True to see plots
+debug = False  # set to True to see more plots
 ###############################
 # beamline related parameters #
 ###############################
@@ -94,6 +95,14 @@ energy = 10300  # in eV, offset of 6eV at ID01
 ##################################
 # end of user-defined parameters #
 ##################################
+
+###################
+# define colormap #
+###################
+bad_color = '1.0'  # white
+bckg_color = '0.7'  # grey
+colormap = gu.Colormap(bad_color=bad_color)
+my_cmap = colormap.cmap
 
 ########################################
 # check and initialize some parameters #
@@ -234,6 +243,10 @@ for scan_nb in range(len(scans)):
         print("Wavevector transfer of Bragg peak: ", q, str('{:.4f}'.format(np.linalg.norm(q))))
 
 ##########################################################
+# plot the ROI centered on the Bragg peak for each scan  #
+##########################################################
+# TODO
+##########################################################
 # plot the evolution of the center of mass and intensity #
 ##########################################################
 plt.ion()
@@ -241,21 +254,27 @@ fig, ((ax0, ax1, ax2), (ax3, ax4, ax5)) = plt.subplots(nrows=2, ncols=3, figsize
 ax0.plot(scans, x_axis, '-o')
 ax0.set_xlabel('Scan number')
 ax0.set_ylabel(x_label)
-ax1.plot(x_axis, int_sum, '-o')
+ax1.scatter(x_axis, int_sum, s=6, c=scans, cmap=my_cmap)
 ax1.set_xlabel(x_label)
 ax1.set_ylabel('Integrated intensity')
-ax2.plot(x_axis, int_max, '-o')
+ax1.set_facecolor(bckg_color)
+ax2.scatter(x_axis, int_max, s=6, c=scans, cmap=my_cmap)
 ax2.set_xlabel(x_label)
 ax2.set_ylabel('Maximum intensity')
-ax3.plot(x_axis, xcom, '-o')
+ax2.set_facecolor(bckg_color)
+ax3.scatter(x_axis, xcom, s=6, c=scans, cmap=my_cmap)
 ax3.set_xlabel(x_label)
 ax3.set_ylabel('xcom (pixels)')
-ax4.plot(x_axis, ycom, '-o')
+ax3.set_facecolor(bckg_color)
+ax4.scatter(x_axis, ycom, s=6, c=scans, cmap=my_cmap)
 ax4.set_xlabel(x_label)
 ax4.set_ylabel('ycom (pixels)')
-ax5.plot(x_axis, zcom, '-o')
+ax4.set_facecolor(bckg_color)
+plt5 = ax5.scatter(x_axis, zcom, s=6, c=scans, cmap=my_cmap)
+gu.colorbar(plt5, scale='linear', numticks=len(scans), label='scan #')
 ax5.set_xlabel(x_label)
 ax5.set_ylabel('zcom (pixels)')
+ax5.set_facecolor(bckg_color)
 plt.tight_layout()
 plt.pause(0.1)
 fig.savefig(savedir + 'summary' + comment + '.png')
@@ -264,9 +283,11 @@ fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)
 ax0.plot(scans, tilt_com, '-o')
 ax0.set_xlabel('Scan number')
 ax0.set_ylabel('Bragg angle (deg)')
-ax1.plot(x_axis, tilt_com, '-o')
+plt1 = ax1.scatter(x_axis, tilt_com, s=6, c=scans, cmap=my_cmap)
+gu.colorbar(plt1, scale='linear', numticks=len(scans), label='scan #')
 ax1.set_xlabel(x_label)
 ax1.set_ylabel('Bragg angle (deg)')
+ax1.set_facecolor(bckg_color)
 plt.tight_layout()
 plt.pause(0.1)
 fig.savefig(savedir + 'Bragg angle' + comment + '.png')
@@ -276,9 +297,11 @@ if convert_to_q:
     ax0.plot(scans, q_com, '-o')
     ax0.set_xlabel('Scan number')
     ax0.set_ylabel('q (1/A)')
-    ax1.plot(x_axis, q_com, '-o')
+    plt1 = ax1.scatter(x_axis, q_com, s=6, c=scans, cmap=my_cmap)
+    gu.colorbar(plt1, scale='linear', numticks=len(scans), label='scan #')
     ax1.set_xlabel(x_label)
     ax1.set_ylabel('q (1/A)')
+    ax1.set_facecolor(bckg_color)
     plt.tight_layout()
     plt.pause(0.1)
     fig.savefig(savedir + 'diffusion vector' + comment + '.png')
