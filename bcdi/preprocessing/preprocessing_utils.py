@@ -908,6 +908,12 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
         from silx.io.specfile import SpecFile
         logfile = SpecFile(root_folder + filename + '.spec')
 
+    elif setup.beamline == 'NANOMAX':
+        import hdf5plugin  # should be imported before h5py
+        import h5py
+        ccdfiletmp = os.path.join(detector.datadir + detector.template_imagefile % scan_number)
+        logfile = h5py.File(ccdfiletmp, 'r')
+
     else:
         raise ValueError('Incorrect value for beamline parameter')
 
@@ -1024,6 +1030,8 @@ def get_motor_pos(logfile, scan_number, setup, motor_name):
         motor_pos = scan_motor_id01(logfile=logfile, scan_number=scan_number, motor_name=motor_name)
     elif setup.beamline == 'CRISTAL':
         motor_pos = scan_motor_cristal(logfile=logfile, motor_name=motor_name)
+    elif setup.beamline == 'NANOMAX':
+        motor_pos = scan_motor_nanomax(logfile=logfile, motor_name=motor_name)
     elif setup.beamline in ['SIXS_2018', 'SIXS_2019']:
         motor_pos = scan_motor_sixs(logfile=logfile, motor_name=motor_name)
     else:
@@ -1557,6 +1565,12 @@ def init_qconversion(setup):
         # 4S+2D goniometer (34ID goniometer, sample: mu, phi, chi, theta (inplane)   detector: delta (inplane), gamma
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
+    elif beamline == 'NANOMAX':
+        offsets = (0, 0, offset_inplane, 0)  # theta phi gamma delta
+        qconv = xu.experiment.QConversion(['y-', 'z-'], ['z-', 'y-'], r_i=beam_direction)  # for NANOMAX
+        # 2S+2D goniometer (Nanomax goniometer, sample: theta, phi      detector: gamma,delta
+        # the vector beam_direction is giving the direction of the primary beam
+        # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     else:
         raise ValueError("Incorrect value for parameter 'beamline'")
 
@@ -1678,8 +1692,8 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
-    :param normalize: 'skip' to skip, 'monitor'  to normalize by the default monitor, 'sum_roi' to normalize
-     by the integrated intensity in a defined region of interest
+    :param normalize: 'skip' to skip, 'monitor'  to normalize by the default monitor, 'sum_roi' to normalize by the
+     integrated intensity in the region of interest defined by detector.sum_roi
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
@@ -1749,7 +1763,7 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     return rawdata, rawmask, frames_logical, monitor
 
 
-def load_cristal_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor',
+def load_cristal_data(logfile, detector, flatfield, hotpixels, background, normalize='skip',
                       bin_during_loading=False, debugging=False):
     """
     Load CRISTAL data, apply filters and concatenate it for phasing. The address of dataset and monitor in the h5 file
@@ -1761,8 +1775,7 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
-     integrated intensity in the region of interest defined by detector.sum_roi
-     by the integrated intensity in a defined region of interest
+     integrated intensity in the region of interest defined by detector.sum_roi, 'skip' to do nothing
     :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
      It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
@@ -1782,21 +1795,23 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
     if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0 \
             or detector.roi[3] > detector.nb_pixel_x:
         print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
-    loadind_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
+    loading_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
                    max(0, detector.roi[2]), min(detector.nb_pixel_x, detector.roi[3])]
 
     if bin_during_loading:
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = np.empty((nb_img, (loadind_roi[1] - loadind_roi[0]) // detector.binning[1],
-                         (loadind_roi[3] - loadind_roi[2]) // detector.binning[2]), dtype=float)
+        data = np.empty((nb_img, (loading_roi[1] - loading_roi[0]) // detector.binning[1],
+                         (loading_roi[3] - loading_roi[2]) // detector.binning[2]), dtype=float)
     else:
-        data = np.empty((nb_img, loadind_roi[1] - loadind_roi[0], loadind_roi[3] - loadind_roi[2]), dtype=float)
+        data = np.empty((nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]), dtype=float)
 
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
-    else:
+    elif normalize == 'monitor':
         monitor = logfile['/' + group_key + '/scan_data/data_04'][:]
+    else:  # 'skip'
+        monitor = np.ones(nb_img)
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
@@ -1811,14 +1826,14 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
             ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
+        ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
         if bin_during_loading:
             ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
-    mask_2d = mask_2d[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
+    mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
         mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
@@ -1879,16 +1894,16 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
     if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0 \
             or detector.roi[3] > detector.nb_pixel_x:
         print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
-    loadind_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
+    loading_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
                    max(0, detector.roi[2]), min(detector.nb_pixel_x, detector.roi[3])]
 
     if bin_during_loading:
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = np.empty((nb_img, (loadind_roi[1] - loadind_roi[0]) // detector.binning[1],
-                         (loadind_roi[3] - loadind_roi[2]) // detector.binning[2]), dtype=float)
+        data = np.empty((nb_img, (loading_roi[1] - loading_roi[0]) // detector.binning[1],
+                         (loading_roi[3] - loading_roi[2]) // detector.binning[2]), dtype=float)
     else:
-        data = np.empty((nb_img, loadind_roi[1] - loadind_roi[0], loadind_roi[3] - loadind_roi[2]), dtype=float)
+        data = np.empty((nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]), dtype=float)
 
     for idx in range(nb_img):
         if stack:
@@ -1911,14 +1926,14 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
             pass
         if flatfield is not None:
             ccdraw = flatfield * ccdraw
-        ccdraw = ccdraw[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
+        ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
         if bin_during_loading:
             ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
-    mask_2d = mask_2d[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
+    mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
         mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
@@ -1933,7 +1948,7 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
 
 
 def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
-              normalize='monitor', bin_during_loading=False, debugging=False):
+              normalize='skip', bin_during_loading=False, debugging=False):
     """
     Load data, apply filters and concatenate it for phasing.
 
@@ -1945,8 +1960,7 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
-     integrated intensity in the region of interest defined by detector.sum_roi
-     by the integrated intensity in a defined region of interest
+     integrated intensity in the region of interest defined by detector.sum_roi, 'skip' to do nothing
     :param bin_during_loading: only for P10. If True, the data will be binned in the detector frame while loading.
      It saves a lot of memory for large detectors.
     :param debugging: set to True to see plots
@@ -1995,6 +2009,11 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
                                                               hotpixels=hotpixels, background=background,
                                                               normalize=normalize, debugging=debugging,
                                                               bin_during_loading=bin_during_loading)
+    elif setup.beamline == 'NANOMAX':
+        data, mask3d, monitor, frames_logical = load_nanomax_data(logfile=logfile, detector=detector,
+                                                                  flatfield=flatfield, hotpixels=hotpixels,
+                                                                  background=background, normalize=normalize,
+                                                                  debugging=debugging)
     else:
         raise ValueError('Wrong value for "beamline" parameter')
 
@@ -2085,7 +2104,7 @@ def load_hotpixels(hotpixels_file):
     return hotpixels
 
 
-def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, background, normalize='monitor',
+def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, background, normalize='skip',
                    bin_during_loading=False, debugging=False):
     """
     Load ID01 data, apply filters and concatenate it for phasing.
@@ -2097,8 +2116,7 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
-     integrated intensity in the region of interest defined by detector.sum_roi
-     by the integrated intensity in a defined region of interest
+     integrated intensity in the region of interest defined by detector.sum_roi, 'skip' to do nothing
     :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
      It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
@@ -2131,20 +2149,20 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
     if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0 \
             or detector.roi[3] > detector.nb_pixel_x:
         print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
-    loadind_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
+    loading_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
                    max(0, detector.roi[2]), min(detector.nb_pixel_x, detector.roi[3])]
 
     if bin_during_loading:
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = np.empty((nb_img, (loadind_roi[1] - loadind_roi[0]) // detector.binning[1],
-                         (loadind_roi[3] - loadind_roi[2]) // detector.binning[2]), dtype=float)
+        data = np.empty((nb_img, (loading_roi[1] - loading_roi[0]) // detector.binning[1],
+                         (loading_roi[3] - loading_roi[2]) // detector.binning[2]), dtype=float)
     else:
-        data = np.empty((nb_img, loadind_roi[1] - loadind_roi[0], loadind_roi[3] - loadind_roi[2]), dtype=float)
+        data = np.empty((nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]), dtype=float)
 
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
-    else:
+    elif normalize == 'monitor':
         try:
             monitor = labels_data[labels.index('exp1'), :]  # mon2 monitor at ID01
         except ValueError:
@@ -2153,6 +2171,8 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
             except ValueError:  # no monitor data
                 print('No available monitor data')
                 monitor = np.ones(nb_img)
+    else:  # 'skip'
+        monitor = np.ones(nb_img)
 
     for idx in range(nb_img):
         i = int(ccdn[idx])
@@ -2171,14 +2191,14 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
             ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
+        ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
         if bin_during_loading:
             ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
-    mask_2d = mask_2d[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
+    mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
         mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
@@ -2232,12 +2252,106 @@ def load_monitor(scan_number, logfile, setup):
         monitor = load_cristal_monitor(logfile=logfile)
     elif setup.beamline == 'P10':
         monitor = load_p10_monitor(logfile=logfile)
+    elif setup.beamline == 'NANOMAX':
+        monitor = load_nanomax_monitor(logfile=logfile)
     else:
         raise ValueError('Wrong value for "beamline" parameter')
     return monitor
 
 
-def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize='monitor', bin_during_loading=False,
+def load_nanomax_data(logfile, detector, flatfield, hotpixels, background, normalize='skip',
+                      debugging=False):
+    """
+    Load Nanomax data, apply filters and concatenate it for phasing.
+    :param logfile: path of the . fio file containing the information about the scan
+    :param detector: the detector object: Class experiment_utils.Detector()
+    :param flatfield: the 2D flatfield array
+    :param hotpixels: the 2D hotpixels array
+    :param background: the 2D background array to subtract to the data
+    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
+     integrated intensity in the region of interest defined by detector.sum_roi, 'skip' to do nothing
+    :param debugging: set to True to see plots
+    :return:
+     - the 3D data array in the detector frame and the 3D mask array
+     - the monitor values for normalization
+     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    """
+    import hdf5plugin  # should be imported before h5py
+    import h5py
+
+    if debugging:
+        print(str(logfile['entry']['description'][()])[3:-2])  # Reading only useful symbols
+
+    mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+
+    group_key = list(logfile.keys())[0]  # currently 'entry'
+    try:
+        tmp_data = logfile['/' + group_key + '/measurement/merlin/frames'][:]
+    except KeyError:
+        tmp_data = logfile['/' + group_key + 'measurement/Merlin/data'][()]
+
+    nb_img = tmp_data.shape[0]
+    print('Number of frames:', nb_img)
+
+    # define the loading ROI, the detector ROI may be larger than the physical detector size
+    if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0 \
+            or detector.roi[3] > detector.nb_pixel_x:
+        print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
+    loading_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
+                   max(0, detector.roi[2]), min(detector.nb_pixel_x, detector.roi[3])]
+
+    data = np.empty((nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]), dtype=float)
+
+    if normalize == 'sum_roi':
+        monitor = np.zeros(nb_img)
+    elif normalize == 'monitor':
+        monitor = logfile['/' + group_key + '/measurement/alba2'][:]
+    else:  # 'skip'
+        monitor = np.ones(nb_img)
+
+    for idx in range(nb_img):
+        ccdraw = np.flipud(tmp_data[idx, :, :])  # TODO: check that this is correct
+        if background is not None:
+            ccdraw = ccdraw - background
+        ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
+        if detector.name == "Merlin":
+            ccdraw, mask_2d = mask_merlin(ccdraw, mask_2d)
+        else:
+            raise ValueError('Detector ', detector.name, 'not supported for NANOMAX')
+        if flatfield is not None:
+            ccdraw = flatfield * ccdraw
+        if normalize == 'sum_roi':
+            monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
+        ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
+        data[idx, :, :] = ccdraw
+        sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
+        sys.stdout.flush()
+
+    mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
+    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
+    mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
+    mask3d[np.isnan(data)] = 1
+    data[np.isnan(data)] = 0
+
+    frames_logical = np.ones(nb_img)
+
+    return data, mask3d, monitor, frames_logical
+
+
+def load_nanomax_monitor(logfile):
+    """
+    Load the default monitor for a dataset measured at NANOMAX.
+
+    :param logfile: h5py File object of NANOMAX .h5 scan file
+    :return: the default monitor values
+    """
+    group_key = list(logfile.keys())[0]  # currently 'entry'
+    monitor = logfile['/' + group_key + '/measurement/alba2'][:]
+    return monitor
+
+
+def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize='skip', bin_during_loading=False,
                   debugging=False):
     """
     Load P10 data, apply filters and concatenate it for phasing.
@@ -2248,8 +2362,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
-     integrated intensity in the region of interest defined by detector.sum_roi
-     by the integrated intensity in a defined region of interest
+     integrated intensity in the region of interest defined by detector.sum_roi, 'skip to do nothing'
     :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
      It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
@@ -2273,20 +2386,20 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
     if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0\
             or detector.roi[3] > detector.nb_pixel_x:
         print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
-    loadind_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
+    loading_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
                    max(0, detector.roi[2]), min(detector.nb_pixel_x, detector.roi[3])]
 
     if bin_during_loading:
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = np.empty((nb_img, (loadind_roi[1] - loadind_roi[0]) // detector.binning[1],
-                         (loadind_roi[3] - loadind_roi[2]) // detector.binning[2]), dtype=float)
+        data = np.empty((nb_img, (loading_roi[1] - loading_roi[0]) // detector.binning[1],
+                         (loading_roi[3] - loading_roi[2]) // detector.binning[2]), dtype=float)
     else:
-        data = np.empty((nb_img, loadind_roi[1] - loadind_roi[0], loadind_roi[3] - loadind_roi[2]), dtype=float)
+        data = np.empty((nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]), dtype=float)
 
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
-    else:
+    elif normalize == 'monitor':
         fio = open(logfile, 'r')
         monitor = []
         fio_lines = fio.readlines()
@@ -2303,6 +2416,8 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
                 continue
         fio.close()
         monitor = np.asarray(monitor, dtype=float)
+    else:  # 'skip'
+        monitor = np.ones(nb_img)
 
     is_series = detector.is_series
     for file_idx in range(nb_img):
@@ -2331,7 +2446,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
                 if normalize == 'sum_roi':
                     temp_mon = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
                     series_monitor.append(temp_mon)
-                ccdraw = ccdraw[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
+                ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
                 if bin_during_loading:
                     ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
                 series_data.append(ccdraw)
@@ -2353,7 +2468,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
                 monitor = np.asarray(series_monitor)
             break
     print('')
-    mask_2d = mask_2d[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
+    mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
         mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
@@ -2392,7 +2507,7 @@ def load_p10_monitor(logfile):
     return monitor
 
 
-def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background, normalize='monitor',
+def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background, normalize='skip',
                    bin_during_loading=False, debugging=False):
     """
     Load SIXS data, apply filters and concatenate it for phasing.
@@ -2404,8 +2519,7 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
-     integrated intensity in the region of interest defined by detector.sum_roi
-     by the integrated intensity in a defined region of interest
+     integrated intensity in the region of interest defined by detector.sum_roi, 'skip' to do nothing
     :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
      It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
@@ -2435,20 +2549,20 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
     if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0 \
             or detector.roi[3] > detector.nb_pixel_x:
         print('Data shape is limited by detector size, loaded data will be smaller than as defined by the ROI.')
-    loadind_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
+    loading_roi = [max(0, detector.roi[0]), min(detector.nb_pixel_y, detector.roi[1]),
                    max(0, detector.roi[2]), min(detector.nb_pixel_x, detector.roi[3])]
 
     if bin_during_loading:
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = np.empty((nb_img, (loadind_roi[1] - loadind_roi[0]) // detector.binning[1],
-                         (loadind_roi[3] - loadind_roi[2]) // detector.binning[2]), dtype=float)
+        data = np.empty((nb_img, (loading_roi[1] - loading_roi[0]) // detector.binning[1],
+                         (loading_roi[3] - loading_roi[2]) // detector.binning[2]), dtype=float)
     else:
-        data = np.empty((nb_img, loadind_roi[1] - loadind_roi[0], loadind_roi[3] - loadind_roi[2]), dtype=float)
+        data = np.empty((nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]), dtype=float)
 
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
-    else:
+    elif normalize == 'monitor':
         if beamline == 'SIXS_2018':
             monitor = logfile.imon1[:]
         else:
@@ -2456,6 +2570,8 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
                 monitor = logfile.imon0[:]
             except AttributeError:  # the alias dictionnary was probably not provided
                 monitor = logfile.intensity[:]
+    else:  # 'skip'
+        monitor = np.ones(nb_img)
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
@@ -2470,14 +2586,14 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
             ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
+        ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
         if bin_during_loading:
             ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
-    mask_2d = mask_2d[loadind_roi[0]:loadind_roi[1], loadind_roi[2]:loadind_roi[3]]
+    mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
         mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
@@ -2616,6 +2732,32 @@ def mask_maxipix(data, mask):
 
     mask[:, 255:261] = 1
     mask[255:261, :] = 1
+
+    # mask hot pixels
+    mask[data > 1e6] = 1
+    data[data > 1e6] = 0
+    return data, mask
+
+
+def mask_merlin(data, mask):
+    """
+    Mask data measured with a Merlin detector
+
+    :param data: the 2D data to mask
+    :param mask: the 2D mask to be updated
+    :return: the masked data and the updated mask
+    """
+    if data.ndim != 2 or mask.ndim != 2:
+        raise ValueError('Data and mask should be 2D arrays')
+
+    if data.shape != mask.shape:
+        raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
+
+    data[:, 255:260] = 0
+    data[255:260, :] = 0
+
+    mask[:, 255:260] = 1
+    mask[255:260, :] = 1
 
     # mask hot pixels
     mask[data > 1e6] = 1
@@ -2813,6 +2955,41 @@ def motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bra
     return eta, chi, phi, nu, delta, energy, frames_logical
 
 
+def motor_positions_nanomax(logfile, setup):
+    """
+    Load the scan data and extract motor positions.
+
+    :param logfile: Silx SpecFile object containing the information about the scan and image numbers
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :return: (theta, phi, gamma, delta, energy, radius) motor positions
+    """
+    if not setup.custom_scan:
+        # Detector positions
+        group_key = list(logfile.keys())[0]  # currently 'entry'
+
+        # positionners
+        delta = logfile['/' + group_key + '/snapshot/delta'][:]
+        gamma = logfile['/' + group_key + '/snapshot/gamma'][:]
+        radius = logfile['/' + group_key + '/snapshot/radius'][:]
+        energy = logfile['/' + group_key + '/snapshot/energy'][:]
+
+        if setup.rocking_angle == 'inplane':
+            phi = logfile['/' + group_key + '/snapshot/gonphi'][:]
+            theta = logfile['/' + group_key + '/snapshot/gontheta'][:]
+        else:
+            theta = logfile['/' + group_key + '/snapshot/gontheta'][:]
+            phi = logfile['/' + group_key + '/snapshot/gonphi'][:]
+    else:
+        theta = setup.custom_motors["theta"]
+        phi = setup.custom_motors["phi"]
+        delta = setup.custom_motors["delta"]
+        gamma = setup.custom_motors["gamma"]
+        radius = setup.custom_motors["radius"]
+        energy = setup.custom_motors["energy"]
+
+    return theta, phi, gamma, delta, energy, radius
+
+
 def motor_positions_p10(logfile, setup):
     """
     Load the .fio file from the scan and extract motor positions for P10 6-circle difractometer setup.
@@ -2959,7 +3136,7 @@ def motor_positions_sixs(logfile, frames_logical, setup):
 
 def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False):
     """
-    Load the scan data and extract motor positions.
+    Load the Bragg CDI scan data and extract goniometer motor positions.
 
     :param follow_bragg: True when for energy scans the detector was also scanned to follow the Bragg peak
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
@@ -2970,7 +3147,7 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
     :return: (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
      corrected values
     """
-    if setup.beamline == 'ID01':
+    if setup.beamline == 'ID01':  # eta, chi, phi, nu, delta, energy, frames_logical
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
             tilt, _, _, inplane, outofplane, _, _ = \
                 motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
@@ -3004,6 +3181,16 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
             grazing, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile, setup)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+
+    elif setup.beamline == 'NANOMAX':  # theta, phi, gamma, delta, energy, radius
+        if setup.rocking_angle == 'outofplane':  # theta rocking curve
+            tilt, _, inplane, outofplane, _, _ = motor_positions_nanomax(logfile, setup)
+            grazing = 0
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            grazing, tilt, inplane, outofplane, _, _ = motor_positions_nanomax(logfile, setup)
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
 
@@ -3276,6 +3463,45 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
                                                         params=[mu, om, chi, phi, gamma, delta])
         qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
+    elif setup.beamline == 'NANOMAX':
+        theta, phi, gamma, delta, energy, radius = motor_positions_nanomax(logfile, setup)
+        phi = phi + setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
+        theta = theta + setup.sample_offsets[2]  # sample_offsets[1] is the rotation around the outboard axis
+        if setup.rocking_angle == 'outofplane':  # theta rocking curve
+            nb_steps = len(theta)
+            tilt_angle = theta[1] - theta[0]
+
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                theta = np.concatenate((theta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                        theta,
+                                        theta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                theta = theta[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            nb_steps = len(phi)
+            tilt_angle = phi[1] - phi[0]
+
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                phi = np.concatenate((phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                      phi,
+                                      phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                phi = phi[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == 'energy':
+            pass
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        delta, gamma, phi, theta, energy = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                          params=[delta, gamma, phi, theta, energy])
+        qx, qy, qz = hxrd.Ang2Q.area(theta, phi, gamma, delta, en=energy, delta=detector.offsets)
+
     elif setup.beamline == '34ID':
         mu, phi, chi, theta, delta, gamma = motor_positions_34id(setup)
         chi = chi + setup.sample_offsets[0]
@@ -3510,7 +3736,8 @@ def remove_hotpixels(data, mask, hotpixels=None):
             hotpixels[np.nonzero(hotpixels)] = 1  # hotpixels should be a binary array
 
         if data.shape != mask.shape:
-            raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
+            raise ValueError('Data and mask must have the same shape\n data is ', data.shape,
+                             ' while mask is ', mask.shape)
 
         if data.ndim == 3:  # 3D array
             if data[0, :, :].shape != hotpixels.shape:
@@ -3557,6 +3784,19 @@ def scan_motor_id01(logfile, scan_number, motor_name):
     labels = logfile[str(scan_number) + '.1'].labels  # motor scanned
     labels_data = logfile[str(scan_number) + '.1'].data  # motor scanned
     motor_pos = list(labels_data[labels.index(motor_name), :])
+    return np.asarray(motor_pos)
+
+
+def scan_motor_nanomax(logfile, motor_name):
+    """
+    Extract the scanned motor positions during the scan at NANOMAX beamline.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param motor_name: name of the motor
+    :return: the positions of the motor as a numpy array
+    """
+    group_key = list(logfile.keys())[0]  # currently 'entry'
+    motor_pos = logfile['/' + group_key + '/measurement/' + motor_name][:]
     return np.asarray(motor_pos)
 
 
