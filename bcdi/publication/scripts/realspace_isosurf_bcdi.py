@@ -28,7 +28,7 @@ sample_name = "dewet2_2"  #
 homedir = root_folder  # + sample_name + str(scan) + '/pynxraw/'
 # homedir = root_folder + sample_name
 comment = sample_name + "_{:5d}".format(scan)
-flag_support = False  # True to plot and save the support
+flag_support = True  # True to plot and save the support
 flag_amp = True  # True to plot and save the amplitude
 flag_phase = True  # True to plot and save the phase
 flag_strain = True  # True to plot and save the strain
@@ -40,7 +40,8 @@ field_of_view = [500, 500, 500]  # [z,y,x] in nm, can be larger than the total w
 strain_isosurface = 0.45
 strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
-plot_method = 'points3d'  # 'contour3d' or 'points3d'
+plot_method = 'points3d'  # 'contour3d' or 'points3d'. The support is always plotted with 'contour3d' because there is
+# no contrast with 'points3d'
 fig_size = (1200, 1050)  # mayavi figure size in pixels (hor, ver), leave None for the default
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 ##########################
@@ -125,16 +126,10 @@ extent = [0, 2*z_pixel_FOV*voxel_size, 0, 2*y_pixel_FOV*voxel_size, 0, 2*x_pixel
 #####################################
 if flag_support:
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
-    if plot_method == 'points3d':
-        mlab.points3d(grid_z, grid_y, grid_x, support[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
-                                                      numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
-                                                      numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
-                      mode='cube', opacity=1, color=(0.7, 0.7, 0.7))
-    else:  # 'contour3d'
-        mlab.contour3d(grid_z, grid_y, grid_x, support[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
-                                                       numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
-                                                       numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
-                       contours=[strain_isosurface], color=(0.7, 0.7, 0.7))
+    mlab.contour3d(grid_z, grid_y, grid_x, support[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
+                                                   numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
+                                                   numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
+                   contours=[strain_isosurface], color=(0.7, 0.7, 0.7))
 
     # top view
     mlab.view(azimuth=90, elevation=90, distance=3*field_of_view[0])
