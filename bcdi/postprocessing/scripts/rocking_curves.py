@@ -207,7 +207,7 @@ for scan_id in range(len(scans)):
     check_roi.append(data[:, :, int(pix) - debug_pix:int(pix) + debug_pix].sum(axis=1))
     interp_tilt = interp1d(np.arange(data.shape[0]), tilt, kind='linear')
     tilt_com.append(interp_tilt(piz))
-    # tilt_com.append(tilt[int(piz)])
+
     if scan_id == 0 or scan_id == len(scans) - 1:
         gu.multislices_plot(data, sum_frames=True, scale='log', reciprocal_space=True, is_orthogonal=False,
                             title='scan {:d}'.format(scans[scan_id]))
@@ -221,14 +221,18 @@ for scan_id in range(len(scans)):
                                              rocking_angle=setup_pre.rocking_angle, grazing_angle=grazing,
                                              distance=setup_pre.distance, pixel_x=detector.pixelsize_x,
                                              pixel_y=detector.pixelsize_y)
-        bragg_x = detector.roi[2] + pix  # convert it in full detector pixel
-        bragg_y = detector.roi[0] + piy  # convert it in full detector pixel
 
+        # calculate the position of the Bragg peak in full detector pixels
+        bragg_x = detector.roi[2] + pix
+        bragg_y = detector.roi[0] + piy
+
+        # calculate the position of the direct beam at 0 detector angles
         x_direct_0 = directbeam_x + setup_post.rotation_direction() * \
             (direct_inplane * np.pi / 180 * sdd / detector.pixelsize_x)  # rotation_direction is +1 or -1
         y_direct_0 = directbeam_y - direct_outofplane * np.pi / 180 * sdd / detector.pixelsize_y
         # outofplane is always clockwise
 
+        # claculate corrected detector angles for the Bragg peak
         bragg_inplane = inplane + setup_post.rotation_direction() * \
             (detector.pixelsize_x * (bragg_x - x_direct_0) / sdd * 180 / np.pi)  # rotation_direction is +1 or -1
         bragg_outofplane = outofplane - detector.pixelsize_y * (bragg_y - y_direct_0) / sdd * 180 / np.pi
