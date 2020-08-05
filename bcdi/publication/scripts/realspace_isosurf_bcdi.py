@@ -22,19 +22,19 @@ Template for 3d isosurface figures of a real space BCDI reconstruction.
 Open an npz file (reconstruction ampdispstrain.npz) and save individual figures including a length scale.
 """
 
-scan = 2    # spec scan number
-root_folder = 'D:/data/Pt_growth_P10/data/dewet5_sum_S194_to_S203/'
-sample_name = "SN"  #
+scan = 1138    # scan number
+root_folder = 'D:/data/P10_OER/analysis/candidate_11/dewet2_2_S1138_to_S1195/'
+sample_name = "dewet2_2"  #
 homedir = root_folder  # + sample_name + str(scan) + '/pynxraw/'
 # homedir = root_folder + sample_name
-comment = ""
+comment = sample_name + "_{:5d}".format(scan)
 
-voxel_size = 6.0  # in nm, supposed isotropic
+voxel_size = 9.0  # in nm, supposed isotropic
 tick_spacing = 50  # for plots, in nm
-field_of_view = [400, 400, 400]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
+field_of_view = [500, 500, 500]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
 # the number of labels of mlab.axes() is an integer and is be calculated as: field_of_view[0]/tick_spacing
 # therefore it is better to use an isotropic field_of_view
-threshold_isosurface = 0.15
+threshold_isosurface = 0.65
 
 #############
 # load data #
@@ -88,10 +88,10 @@ mlab.view(azimuth=90, elevation=90, distance=3*field_of_view[0])  # azimut is th
 mlab.roll(90)
 # mlab.outline(extent=extent, line_width=2.0)
 ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=int(1+field_of_view[0]/tick_spacing))
-mlab.savefig(homedir + 'S' + str(scan) + '-topview_labels.png', figure=tiltfig)
+mlab.savefig(homedir + comment + '_topview_labels.png', figure=tiltfig)
 ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
-mlab.savefig(homedir + 'S' + str(scan) + '-topview.png', figure=tiltfig)
+mlab.savefig(homedir + comment + '_topview.png', figure=tiltfig)
 mlab.close(tiltfig)
 
 ##################################
@@ -113,10 +113,10 @@ mlab.view(azimuth=180, elevation=90, distance=3*field_of_view[0])  # azimut is t
 mlab.roll(0)
 # mlab.outline(extent=extent, line_width=2.0)
 ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=int(1+field_of_view[0]/tick_spacing))
-mlab.savefig(homedir + 'S' + str(scan) + '-sideview_labels.png', figure=sidefig)
+mlab.savefig(homedir + comment + '_sideview_labels.png', figure=sidefig)
 ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
-mlab.savefig(homedir + 'S' + str(scan) + '-sideview.png', figure=sidefig)
+mlab.savefig(homedir + comment + '_sideview.png', figure=sidefig)
 mlab.close(sidefig)
 
 ##################################
@@ -138,10 +138,10 @@ mlab.view(azimuth=0, elevation=180, distance=3*field_of_view[0])  # azimut is th
 mlab.roll(0)
 # mlab.outline(extent=extent, line_width=2.0)
 ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=int(1+field_of_view[0]/tick_spacing))
-mlab.savefig(homedir + 'S' + str(scan) + '-frontview_labels.png', figure=frontfig)
+mlab.savefig(homedir + comment + '_frontview_labels.png', figure=frontfig)
 ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
-mlab.savefig(homedir + 'S' + str(scan) + '-frontview.png', figure=frontfig)
+mlab.savefig(homedir + comment + '_frontview.png', figure=frontfig)
 mlab.close(frontfig)
 
 ####################################
@@ -163,8 +163,8 @@ mlab.view(azimuth=150, elevation=70, distance=3*field_of_view[0])  # azimut is t
 mlab.roll(0)
 # mlab.outline(extent=extent, line_width=2.0)
 ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=int(1+field_of_view[0]/tick_spacing))
-mlab.savefig(homedir + 'S' + str(scan) + '-tiltview_labels.png', figure=tiltfig)
+mlab.savefig(homedir + comment + '_tiltview_labels.png', figure=tiltfig)
 ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
-mlab.savefig(homedir + 'S' + str(scan) + '-tiltview.png', figure=tiltfig)
+mlab.savefig(homedir + comment + '_tiltview.png', figure=tiltfig)
 mlab.close(tiltfig)
