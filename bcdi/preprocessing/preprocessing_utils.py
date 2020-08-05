@@ -1648,7 +1648,7 @@ def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpix
     else:
         print('Intensity normalization using ' + normalize_method)
         rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                             norm_to_min=True, savedir=detector.savedir, debugging=True)
+                                             norm_to_min=True, savedir=detector.savedir, debugging=debugging)
 
     nbz, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
