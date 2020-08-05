@@ -128,14 +128,6 @@ Graph
    :end-before: """
    :language: rst
 
-'xrutils_Qplot_3Dmayavi.py':
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/graph/scripts/xrutils_Qplot_3Dmayavi.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
 .. _preprocess:
 
 Preprocessing
