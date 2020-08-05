@@ -31,12 +31,12 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 
 
 # scan = 1301  # spec scan number
-datadir = 'D:/data/P10_OER/analysis/candidate_11/dewet2_2_S958_to_S1006/'  # 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
+datadir = 'D:/data/P10_OER/analysis/candidate_11/dewet2_2_S1138_to_S1195/'  # 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
 savedir = datadir  # 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
 comment = ''   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 
-voxel_size = 6.0  # in nm
+voxel_size = 9.0  # in nm
 tick_spacing = 100  # for plots, in nm
 field_of_view = 500  # in nm, can be larger than the total width (the array will be padded)
 
@@ -55,7 +55,7 @@ save_XY = True  # True to save the view in XY plane
 flag_strain = True  # True to plot and save the strain
 flag_phase = True  # True to plot and save the phase
 flag_amp = True  # True to plot and save the amplitude
-isosurface = 0.1  # amplitude below this value will be set to 0
+strain_isosurface = 0.65  # amplitude below this value will be set to 0
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
 flag_linecut = False  # True to plot and save a linecut of the phase
@@ -89,13 +89,9 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select data fi
 npzfile = np.load(file_path)
 strain = npzfile['strain']
 amp = npzfile['amp']
-bulk = npzfile['bulk']
-# bulk is a support build from the amplitude minus the surface voxel layer were the strain is not defined
 
 amp = amp / amp.max()  # normalize amplitude
-amp[amp < isosurface] = 0
-support = np.zeros(amp.shape)
-support[np.nonzero(amp)] = 1
+amp[amp < strain_isosurface] = 0
 
 if simulated_data:
     phase = npzfile['phase']
@@ -116,30 +112,29 @@ print("Initial data size: (", numz, ',', numy, ',', numx, ')')
 pixel_spacing = tick_spacing / voxel_size
 pixel_FOV = int(np.rint((field_of_view / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 new_shape = [max(numz, 2*pixel_FOV), max(numy, 2*pixel_FOV), max(numx, 2*pixel_FOV)]
-support = pu.crop_pad(array=support, output_shape=new_shape, debugging=False)
 strain = pu.crop_pad(array=strain, output_shape=new_shape, debugging=False)
 phase = pu.crop_pad(array=phase, output_shape=new_shape, debugging=False)
 amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
-bulk = pu.crop_pad(array=bulk, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
 print("Cropped/padded data size: (", numz, ',', numy, ',', numx, ')')
 
 ######################################
 # center arrays based on the support #
 ######################################
+support = np.zeros((numz, numy, numx))
+support[np.nonzero(amp)] = 1
+
 zcom, ycom, xcom = center_of_mass(support)
 zcom, ycom, xcom = [int(np.rint(zcom)), int(np.rint(ycom)), int(np.rint(xcom))]
-support = np.roll(support, (numz//2-zcom, numy//2-ycom, numx//2-xcom), axis=(0, 1, 2))
 strain = np.roll(strain, (numz//2-zcom, numy//2-ycom, numx//2-xcom), axis=(0, 1, 2))
 phase = np.roll(phase, (numz//2-zcom, numy//2-ycom, numx//2-xcom), axis=(0, 1, 2))
 amp = np.roll(amp, (numz//2-zcom, numy//2-ycom, numx//2-xcom), axis=(0, 1, 2))
-bulk = np.roll(bulk, (numz//2-zcom, numy//2-ycom, numx//2-xcom), axis=(0, 1, 2))
 
 ################################################
 # assign default values outside of the crystal #
 ################################################
-strain[bulk == 0] = background_strain
-phase[bulk == 0] = background_phase
+strain[support == 0] = background_strain
+phase[support == 0] = background_phase
 
 ###########
 # Support #
@@ -224,8 +219,8 @@ if flag_amp:
     fig.savefig(savedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax = plt.subplots(1, 1)
-    ax.hist(amp[amp > isosurface].flatten(), bins=250)
-    ax.set_xlim(left=isosurface)
+    ax.hist(amp[amp > 0.05*amp.max()].flatten(), bins=250)  # avoid the peak for very low noise amplitudes
+    ax.set_xlim(left=0.05)
     ax.set_ylim(bottom=1)  # , top=100000
     if amp_histogram_Yaxis == 'log':
         ax.set_yscale('log')
