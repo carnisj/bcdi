@@ -37,7 +37,7 @@ tick_spacing = 50  # for plots, in nm
 field_of_view = [500, 500, 500]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
 # the number of labels of mlab.axes() is an integer and is be calculated as: field_of_view[0]/tick_spacing
 # therefore it is better to use an isotropic field_of_view
-threshold_isosurface = 0.45
+strain_isosurface = 0.45
 strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
 plot_method = 'points3d'  # 'contour3d' or 'points3d'
@@ -80,10 +80,9 @@ if amp.ndim != 3:
     sys.exit()
 
 amp = amp / amp.max()
-amp[amp < threshold_isosurface] = 0
+amp[amp < strain_isosurface] = 0
 
 amp = np.flip(amp, 2)  # mayavi expect xyz, but we provide downstream/upward/outboard which is not in the correct order
-bulk = np.flip(bulk, 2)
 phase = np.flip(phase, 2)
 strain = np.flip(strain, 2)
 
@@ -98,7 +97,6 @@ y_pixel_FOV = int(np.rint((field_of_view[1] / voxel_size) / 2))  # half-number o
 x_pixel_FOV = int(np.rint((field_of_view[2] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 new_shape = [max(numz, 2*z_pixel_FOV), max(numy, 2*y_pixel_FOV), max(numx, 2*x_pixel_FOV)]
 amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
-bulk = pu.crop_pad(array=bulk, output_shape=new_shape, debugging=False)
 phase = pu.crop_pad(array=phase, output_shape=new_shape, debugging=False)
 strain = pu.crop_pad(array=strain, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
@@ -107,8 +105,11 @@ print("Cropped/padded data size: (", numz, ',', numy, ',', numx, ')')
 ##########################################################
 # set the strain and phase to NAN outside of the support #
 ##########################################################
-strain[bulk == 0] = np.nan
-phase[bulk == 0] = np.nan
+support = np.zeros((numz, numy, numx))
+support[np.nonzero(amp)] = 1
+
+strain[support == 0] = np.nan
+phase[support == 0] = np.nan
 
 ############################################
 # create the grid and calculate the extent #
@@ -123,9 +124,6 @@ extent = [0, 2*z_pixel_FOV*voxel_size, 0, 2*y_pixel_FOV*voxel_size, 0, 2*x_pixel
 # plot 3D isosurface of the support #
 #####################################
 if flag_support:
-    support = np.zeros((numz, numy, numx))
-    support[np.nonzero(amp)] = 1
-
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if plot_method == 'points3d':
         mlab.points3d(grid_z, grid_y, grid_x, support[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
@@ -136,7 +134,7 @@ if flag_support:
         mlab.contour3d(grid_z, grid_y, grid_x, support[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
                                                        numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
                                                        numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
-                       contours=[threshold_isosurface], color=(0.7, 0.7, 0.7))
+                       contours=[strain_isosurface], color=(0.7, 0.7, 0.7))
 
     # top view
     mlab.view(azimuth=90, elevation=90, distance=3*field_of_view[0])
@@ -196,7 +194,7 @@ if flag_amp:
                                                   numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
                       mode='cube', opacity=1, vmin=0, vmax=1,  colormap='jet')
     else:  # 'contour3d'
-        contours = list(np.linspace(threshold_isosurface, 1, num=10, endpoint=True))
+        contours = list(np.linspace(strain_isosurface, 1, num=10, endpoint=True))
         mlab.contour3d(grid_z, grid_y, grid_x, amp[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
                                                    numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
                                                    numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
