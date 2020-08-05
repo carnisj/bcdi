@@ -23,24 +23,25 @@ Open an npz file (reconstruction ampdispstrain.npz) and save individual figures 
 """
 
 scan = 1138    # scan number
-root_folder = 'D:/data/P10_OER/analysis/candidate_11/dewet2_2_S1138_to_S1195/'
+root_folder = 'D:/data/P10_OER/analysis/candidate_12/dewet2_2_S1484_to_S1511/'
 sample_name = "dewet2_2"  #
 homedir = root_folder  # + sample_name + str(scan) + '/pynxraw/'
 # homedir = root_folder + sample_name
 comment = sample_name + "_{:5d}".format(scan)
 flag_support = False  # True to plot and save the support
-flag_amp = False  # True to plot and save the amplitude
+flag_amp = True  # True to plot and save the amplitude
 flag_phase = True  # True to plot and save the phase
 flag_strain = True  # True to plot and save the strain
-voxel_size = 9.0  # in nm, supposed isotropic
+voxel_size = 6.0  # in nm, supposed isotropic
 tick_spacing = 50  # for plots, in nm
 field_of_view = [500, 500, 500]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
 # the number of labels of mlab.axes() is an integer and is be calculated as: field_of_view[0]/tick_spacing
 # therefore it is better to use an isotropic field_of_view
-threshold_isosurface = 0.65
+threshold_isosurface = 0.45
 strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
 plot_method = 'points3d'  # 'contour3d' or 'points3d'
+fig_size = (1200, 1050)  # mayavi figure size in pixels (hor, ver), leave None for the default
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 ##########################
 # end of user parameters #
@@ -50,6 +51,9 @@ simulated_data = False  # if yes, it will look for a field 'phase' in the recons
 # check few parameters and create the folder for saving results #
 #################################################################
 assert plot_method in ['contour3d', 'points3d'], 'invalid value for the parameter plot_method'
+if fig_size is None:
+    fig_size = (400, 350)
+
 savedir = homedir + "isosurfaces/"
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
@@ -122,7 +126,7 @@ if flag_support:
     support = np.zeros((numz, numy, numx))
     support[np.nonzero(amp)] = 1
 
-    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if plot_method == 'points3d':
         mlab.points3d(grid_z, grid_y, grid_x, support[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
                                                       numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
@@ -179,11 +183,13 @@ if flag_support:
     ax.title_text_property.opacity = 0.0
     mlab.savefig(savedir + comment + '_sup_tilt.png', figure=fig)
 
+    mlab.close(fig)
+
 #######################################
 # plot 3D isosurface of the amplitude #
 #######################################
 if flag_amp:
-    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if plot_method == 'points3d':
         mlab.points3d(grid_z, grid_y, grid_x, amp[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
                                                   numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
@@ -249,11 +255,13 @@ if flag_amp:
     ax.title_text_property.opacity = 0.0
     mlab.savefig(savedir + comment + '_amp_tilt.png', figure=fig)
 
+    mlab.close(fig)
+
 ###################################
 # plot 3D isosurface of the phase #
 ###################################
 if flag_phase:
-    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if plot_method == 'points3d':
         mlab.points3d(grid_z, grid_y, grid_x, phase[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
                                                     numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
@@ -319,11 +327,13 @@ if flag_phase:
     ax.title_text_property.opacity = 0.0
     mlab.savefig(savedir + comment + '_phase_tilt.png', figure=fig)
 
+    mlab.close(fig)
+
 ####################################
 # plot 3D isosurface of the strain #
 ####################################
 if flag_strain:
-    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if plot_method == 'points3d':
         mlab.points3d(grid_z, grid_y, grid_x, strain[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
                                                      numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
@@ -389,4 +399,4 @@ if flag_strain:
     ax.title_text_property.opacity = 0.0
     mlab.savefig(savedir + comment + '_strain_tilt.png', figure=fig)
 
-mlab.show()
+    mlab.close(fig)
