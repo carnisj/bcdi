@@ -22,22 +22,20 @@ Open a series of rocking curve data and track the position of the Bragg peak ove
 
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL, MAX IV NANOMAX.
 """
-scans = np.arange(1686, 1716+1, step=3)  # list or array of scan numbers
-# scans = np.arange(1009, 1075+1, step=3)  # list or array of scan numbers
-# scans = np.concatenate((scans, np.arange(1081, 1135+1, 3)))
-# scans = np.concatenate((scans, np.arange(1198, 1231+1, 3)))
-# scans = np.concatenate((scans, np.arange(1236, 1395+1, 3)))
+scans = np.arange(1009, 1075+1, step=3)  # list or array of scan numbers
+scans = np.concatenate((scans, np.arange(1081, 1135+1, 3)))
+scans = np.concatenate((scans, np.arange(1198, 1231+1, 3)))
+scans = np.concatenate((scans, np.arange(1236, 1395+1, 3)))
 root_folder = "D:/data/P10_OER/data/"
 sample_name = "dewet2_2"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
-savedir = "D:/data/P10_OER/analysis/candidate_12/"
+savedir = "D:/data/P10_OER/analysis/candidate_11/"
 # images will be saved here, leave it to '' otherwise (default to root_folder)
-x_axis = [0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2]
-# x_axis = [0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0, 0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6,
-#           0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4,
-#           0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0,
-#           0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1,
-#           0.2, 0.2, 0.3, 0.3, 0.4, 0.4, 0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1]
+x_axis = [0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0, 0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6,
+          0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4,
+          0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0,
+          0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1,
+          0.2, 0.2, 0.3, 0.3, 0.4, 0.4, 0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1]
 # values against which the Bragg peak center of mass evolution will be plotted, leave [] otherwise
 x_label = 'voltage (V)'  # label for the X axis in plots, leave '' otherwise
 comment = '_small_RC'  # comment for the saving filename, should start with _
@@ -72,8 +70,8 @@ specfile_name = ''
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1367  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 811  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+x_bragg = 714  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 816  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 roi_detector = [y_bragg-200, y_bragg+200, x_bragg-200, x_bragg+200]  # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='skip' if you want this exact size.
 debug_pix = 30  # half-width in pixels of the ROI centered on the Bragg peak
@@ -209,10 +207,6 @@ for scan_id in range(len(scans)):
     interp_tilt = interp1d(np.arange(data.shape[0]), tilt, kind='linear')
     tilt_com.append(interp_tilt(piz))
 
-    if scan_id == 0 or scan_id == len(scans) - 1:
-        gu.multislices_plot(data, sum_frames=True, scale='log', reciprocal_space=True, is_orthogonal=False,
-                            title='scan {:d}'.format(scans[scan_id]))
-
     ##############################
     # convert pixels to q values #
     ##############################
@@ -297,7 +291,7 @@ ax4.set_xlabel(x_label)
 ax4.set_ylabel('ycom (pixels)')
 ax4.set_facecolor(bckg_color)
 plt5 = ax5.scatter(x_axis, zcom, s=24, c=scans, cmap=my_cmap)
-gu.colorbar(plt5, scale='linear', numticks=len(scans), label='scan #')
+gu.colorbar(plt5, scale='linear', numticks=min(len(scans), 20), label='scan #')
 ax5.set_xlabel(x_label)
 ax5.set_ylabel('zcom (pixels)')
 ax5.set_facecolor(bckg_color)
@@ -310,7 +304,7 @@ ax0.plot(scans, tilt_com, '-o')
 ax0.set_xlabel('Scan number')
 ax0.set_ylabel('Bragg angle (deg)')
 plt1 = ax1.scatter(x_axis, tilt_com, s=24, c=scans, cmap=my_cmap)
-gu.colorbar(plt1, scale='linear', numticks=len(scans), label='scan #')
+gu.colorbar(plt1, scale='linear', numticks=min(len(scans), 20), label='scan #')
 ax1.set_xlabel(x_label)
 ax1.set_ylabel('Bragg angle (deg)')
 ax1.set_facecolor(bckg_color)
@@ -324,7 +318,7 @@ if convert_to_q:
     ax0.set_xlabel('Scan number')
     ax0.set_ylabel('q (1/A)')
     plt1 = ax1.scatter(x_axis, q_com, s=24, c=scans, cmap=my_cmap)
-    gu.colorbar(plt1, scale='linear', numticks=len(scans), label='scan #')
+    gu.colorbar(plt1, scale='linear', numticks=min(len(scans), 20), label='scan #')
     ax1.set_xlabel(x_label)
     ax1.set_ylabel('q (1/A)')
     ax1.set_ylim(bottom=min(q_com)-strain_range, top=max(q_com)+strain_range)
