@@ -41,6 +41,7 @@ x_axis = [0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2]
 # values against which the Bragg peak center of mass evolution will be plotted, leave [] otherwise
 x_label = 'voltage (V)'  # label for the X axis in plots, leave '' otherwise
 comment = '_small_RC'  # comment for the saving filename, should start with _
+strain_range = 0.00005  # range for the plot of the q value
 peak_method = 'com'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
 debug = False  # set to True to see more plots
 ###############################
@@ -326,6 +327,7 @@ if convert_to_q:
     gu.colorbar(plt1, scale='linear', numticks=len(scans), label='scan #')
     ax1.set_xlabel(x_label)
     ax1.set_ylabel('q (1/A)')
+    ax1.set_ylim(bottom=min(q_com)-strain_range, top=max(q_com)+strain_range)
     ax1.set_facecolor(bckg_color)
     plt.tight_layout()
     plt.pause(0.1)
