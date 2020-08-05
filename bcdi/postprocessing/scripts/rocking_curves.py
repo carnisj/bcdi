@@ -40,7 +40,7 @@ x_axis = [0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0, 
 x_label = 'voltage (V)'  # label for the X axis in plots, leave '' otherwise
 comment = '_small_RC'  # comment for the saving filename, should start with _
 strain_range = 0.00005  # range for the plot of the q value
-peak_method = 'com'  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
+peak_method = 'max_com'  # Bragg peak determination: 'max', 'com', 'max_com' (max then com)
 debug = False  # set to True to see more plots
 ###############################
 # beamline related parameters #
@@ -72,7 +72,7 @@ specfile_name = ''
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 714  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 y_bragg = 816  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg-200, y_bragg+200, x_bragg-200, x_bragg+200]  # [Vstart, Vstop, Hstart, Hstop]
+roi_detector = [y_bragg-200, y_bragg+200, x_bragg-400, x_bragg+400]  # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='skip' if you want this exact size.
 debug_pix = 30  # half-width in pixels of the ROI centered on the Bragg peak
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
@@ -124,7 +124,7 @@ elif type(sample_name) is str:
 else:
     print('sample_name should be either a string or a list of strings')
     sys.exit()
-assert peak_method in ['max', 'com'], 'invalid value for "peak_method" parameter'
+assert peak_method in ['max', 'com', 'max_com'], 'invalid value for "peak_method" parameter'
 
 int_sum = []  # integrated intensity in the detector ROI
 int_max = []  # maximum intensity in the detector ROI
@@ -193,11 +193,36 @@ for scan_id in range(len(scans)):
     tilt, grazing, inplane, outofplane = pru.motor_values(frames_logical=frames_logical, logfile=logfile,
                                                           scan_number=scan_id, setup=setup_pre)
 
+    nbz, nby, nbx = data.shape
     if peak_method == 'max':
-        piz, piy, pix = np.unravel_index(data.argmax(), shape=data.shape)
-    else:  # 'com'
+        piz, piy, pix = np.unravel_index(data.argmax(), shape=(nbz, nby, nbx))
+    elif peak_method == 'com':
         piz, piy, pix = center_of_mass(data)
+    else:  # 'max_com'
+        max_z, max_y, max_x = np.unravel_index(data.argmax(), shape=data.shape)
+        com_z, com_y, com_x = center_of_mass(data[:, int(max_y) - debug_pix:int(max_y) + debug_pix,
+                                                  int(max_x) - debug_pix:int(max_x) + debug_pix])
+        # correct the pixel offset due to the ROI defined by debug_pix around the max
+        piz = com_z  # the data was not cropped along the first axis
+        piy = com_y + max_y - debug_pix
+        pix = com_x + max_x - debug_pix
 
+    if debug:
+        fig, _, _ = gu.multislices_plot(data, sum_frames=True, plot_colorbar=True, cmap=my_cmap,
+                                        title='scan'+str(scans[scan_id]), scale='log', is_orthogonal=False,
+                                        reciprocal_space=True)
+        fig.text(0.60, 0.30, "(piz, piy, pix) = ({:.1f}, {:.1f}, {:.1f})".format(piz, piy, pix), size=12)
+        plt.draw()
+
+        if peak_method == 'max_com':
+            fig, _, _ = gu.multislices_plot(data[:, int(max_y) - debug_pix:int(max_y) + debug_pix,
+                                                 int(max_x) - debug_pix:int(max_x) + debug_pix], sum_frames=True,
+                                            plot_colorbar=True, cmap=my_cmap, title='scan'+str(scans[scan_id]),
+                                            scale='log', is_orthogonal=False, reciprocal_space=True)
+            fig.text(0.60, 0.30, "(com_z, com_y, com_x) = ({:.1f}, {:.1f}, {:.1f})".format(com_z, com_y, com_x),
+                     size=12)
+            plt.draw()
+        print('')
     zcom.append(piz)
     ycom.append(piy)
     xcom.append(pix)
@@ -284,16 +309,25 @@ ax2.set_ylabel('Maximum intensity')
 ax2.set_facecolor(bckg_color)
 ax3.scatter(x_axis, xcom, s=24, c=scans, cmap=my_cmap)
 ax3.set_xlabel(x_label)
-ax3.set_ylabel('xcom (pixels)')
+if peak_method in ['com', 'max_com']:
+    ax3.set_ylabel('xcom (pixels)')
+else:  # 'max'
+    ax3.set_ylabel('xmax (pixels)')
 ax3.set_facecolor(bckg_color)
 ax4.scatter(x_axis, ycom, s=24, c=scans, cmap=my_cmap)
 ax4.set_xlabel(x_label)
-ax4.set_ylabel('ycom (pixels)')
+if peak_method in ['com', 'max_com']:
+    ax4.set_ylabel('ycom (pixels)')
+else:  # 'max'
+    ax4.set_ylabel('ymax (pixels)')
 ax4.set_facecolor(bckg_color)
 plt5 = ax5.scatter(x_axis, zcom, s=24, c=scans, cmap=my_cmap)
 gu.colorbar(plt5, scale='linear', numticks=min(len(scans), 20), label='scan #')
 ax5.set_xlabel(x_label)
-ax5.set_ylabel('zcom (pixels)')
+if peak_method in ['com', 'max_com']:
+    ax5.set_ylabel('zcom (pixels)')
+else:  # 'max'
+    ax5.set_ylabel('zmax (pixels)')
 ax5.set_facecolor(bckg_color)
 plt.tight_layout()
 plt.pause(0.1)
