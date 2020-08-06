@@ -45,9 +45,9 @@ fig_size = (1200, 1050)  # mayavi figure size in pixels (hor, ver), leave None f
 azimut = [90, 180, 0, 150]  # azimuthal angle or list of azimuthal angles for the Mayavi scene views
 elevation = [90, 90, 180, 70]  # zenith angle or list of zenith angles for the Mayavi scene views
 roll = [90, 0, 0, 0]  # roll angle or list of roll angles for the Mayavi scene views
-title = [sample_name + "_{:5d}".format(scan) + '_phase_top', sample_name + "_{:5d}".format(scan) + '_phase_side',
-         sample_name + "_{:5d}".format(scan) + '_phase_front', sample_name + "_{:5d}".format(scan) + '_phase_tilt']
-# title used in the filename of saved figures
+comment = [sample_name + "_{:5d}".format(scan) + '_top', sample_name + "_{:5d}".format(scan) + '_side',
+           sample_name + "_{:5d}".format(scan) + '_front', sample_name + "_{:5d}".format(scan) + '_tilt']
+# comment used in the filename of saved figures
 colormap = 'jet'  # name of the colormap for the Mayavi scene
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 ##########################
@@ -58,6 +58,11 @@ simulated_data = False  # if yes, it will look for a field 'phase' in the recons
 # check few parameters and create the folder for saving results #
 #################################################################
 assert plot_method in ['contour3d', 'points3d'], 'invalid value for the parameter plot_method'
+if type(azimut) in[list, tuple]:
+    assert len(elevation) == len(azimut), 'elevation should have the same number of element as azimut'
+    assert len(roll) == len(azimut), 'roll should have the same number of element as azimut'
+    assert len(comment) == len(azimut), 'comment should have the same number of element as azimut'
+
 if fig_size is None:
     fig_size = (400, 350)
 
@@ -131,6 +136,7 @@ extent = [0, 2*z_pixel_FOV*voxel_size, 0, 2*y_pixel_FOV*voxel_size, 0, 2*x_pixel
 # plot 3D isosurface of the support #
 #####################################
 if flag_support:
+    title = [comment[idx] + '_sup' for idx in range(len(comment))]
     fig, _, _ = gu.mlab_contour3d(x=grid_z, y=grid_y, z=grid_x, contours=[strain_isosurface],
                                   scalars=support[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
                                                   numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
@@ -146,6 +152,7 @@ if flag_support:
 # plot 3D isosurface of the amplitude #
 #######################################
 if flag_amp:
+    title = [comment[idx] + '_amp' for idx in range(len(comment))]
     if plot_method == 'points3d':
         fig, _, _ = gu.mlab_points3d(x=grid_z, y=grid_y, z=grid_x, mode='cube',
                                      scalars=amp[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
@@ -172,6 +179,7 @@ if flag_amp:
 # plot 3D isosurface of the phase #
 ###################################
 if flag_phase:
+    title = [comment[idx] + '_phase' for idx in range(len(comment))]
     if plot_method == 'points3d':
         fig, _, _ = gu.mlab_points3d(x=grid_z, y=grid_y, z=grid_x, mode='cube',
                                      scalars=phase[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
@@ -198,6 +206,7 @@ if flag_phase:
 # plot 3D isosurface of the strain #
 ####################################
 if flag_strain:
+    title = [comment[idx] + '_strain' for idx in range(len(comment))]
     if plot_method == 'points3d':
         fig, _, _ = gu.mlab_points3d(x=grid_z, y=grid_y, z=grid_x, mode='cube',
                                      scalars=strain[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
