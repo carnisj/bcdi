@@ -1012,33 +1012,34 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     :param x: x position of voxels (numpy.mgrid)
     :param y: y position of voxels (numpy.mgrid)
     :param z: z position of voxels (numpy.mgrid)
-    :param scalars: scalar field at each voxel
+    :param scalars: scalar field at each voxel.
     :param contours: integer/list specifying number/list of contours. Specifying a list of values will only give the
-     requested contours asked for
+     requested contours asked for.
     :param extent:[xmin, xmax, ymin, ymax, zmin, zmax] Default is the x, y, z arrays extent.
-     Use this to change the extent of the object created
-    :param nb_labels: the number of labels along each direction
-    :param fig_size: the size of the scene created, in pixels
+     Use this to change the extent of the object created.
+    :param nb_labels: the number of labels along each direction.
+    :param fig_size: the size of the scene created, in pixels.
     :param azimut: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended by the position vector on a sphere
-     projected on to the x-y plane with the x-axis
-
+     projected on to the x-y plane with the x-axis. It can be a list of angles for several plots.
     :param elevation: the zenith angle (in degrees, 0-180), i.e. the angle subtended by the position vector
-     and the z-axis
+     and the z-axis. It can be a list of angles for several plots.
     :param distance: a positive floating point number representing the distance from the focal point to place the
-     camera. If ‘auto’ is passed, the distance is computed to have a best fit of objects in the frame
-    :param roll: absolute roll angle of the camera
-    :param vmin: vmin is used to scale the colormap. If None, the min of the data will be used
-    :param vmax: vmax is used to scale the colormap. If None, the max of the data will be used
-    :param opacity:	the overall opacity of the vtk object. Must be a float. Default: 1.0
+     camera. It can be a list of the same length as aimut. If ‘auto’ is passed, the distance is computed to have a best
+      fit of objects in the frame.
+    :param roll: absolute roll angle of the camera. It can be a list of angles for several plots.
+    :param vmin: vmin is used to scale the colormap. If None, the min of the data will be used.
+    :param vmax: vmax is used to scale the colormap. If None, the max of the data will be used.
+    :param opacity:	the overall opacity of the vtk object. Must be a float. Default: 1.0.
     :param color: the color of the vtk object. Overides the colormap, if any, when specified. This is specified as a
-     triplet of float ranging from 0 to 1, eg (1, 1, 1) for white
-    :param colormap: type of colormap to use
-    :param title: title to be included in the filename of the saved image
-    :param savedir: path of the saving directory
-    :return: figure, axes and colorbar instances
+     triplet of float ranging from 0 to 1, eg (1, 1, 1) for white.
+    :param colormap: type of colormap to use.
+    :param title: title to be included in the filename of the saved image. It can be a list of length len(azimut).
+    :param savedir: path of the saving directory.
+    :return: figure, axes and colorbar instances.
     """
     from mayavi import mlab
 
+    # check input parameters
     if vmin is None:
         vmin = scalars.min()
     if vmax is None:
@@ -1046,26 +1047,57 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
 
     assert len(fig_size) == 2, 'fig_size should be a tuple of 2 pixel numbers'
 
+    if type(azimut) in [tuple, list]:  # several views to be plotted
+        nb_plots = len(azimut)
+        if type(elevation) in [int, float]:
+            elevation = [elevation for _ in range(nb_plots)]
+        else:
+            assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimut'
+        if type(roll) in [int, float]:
+            roll = [roll for _ in range(nb_plots)]
+        else:
+            assert len(roll) == nb_plots, 'roll should have the same number of elements as azimut'
+        if type(distance) in [int, float]:
+            distance = [distance for _ in range(nb_plots)]
+        else:
+            assert len(distance) == nb_plots, 'distance should have the same number of elements as azimut'
+        if type(title) is str:
+            title = [title + '_' + str(idx) for idx in range(nb_plots)]
+        else:
+            assert len(title) == nb_plots, 'title should have the same number of elements as azimut'
+    else:  # azimut is a number
+        nb_plots = 1
+        azimut = [azimut]
+        assert type(elevation) in [int, float], 'elevation should be a number'
+        elevation = [elevation]
+        assert type(roll) in [int, float], 'roll should be a number'
+        roll = [roll]
+        assert type(title) is str, 'title should be a string'
+        title = [title]
+
+    # plot the contour3d figure
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if color is None:
         mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
     else:
         mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax, color=color)
 
-    mlab.view(azimuth=azimut, elevation=elevation, distance=distance)
-    # azimut is the rotation around z axis of mayavi
-    mlab.roll(roll)
-    ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
-    cbar = mlab.colorbar(orientation='vertical')
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    if savedir is not None:
-        mlab.savefig(savedir + title + '_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    if savedir is not None:
-        mlab.savefig(savedir + title + '.png', figure=fig)
+    # loop over the different views
+    for idx in range(nb_plots):
+        mlab.view(azimuth=azimut[idx], elevation=elevation[idx], distance=distance[idx])
+        # azimut is the rotation around z axis of mayavi
+        mlab.roll(roll[idx])
+        ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
+        cbar = mlab.colorbar(orientation='vertical')
+        ax.label_text_property.opacity = 1.0
+        ax.title_text_property.opacity = 1.0
+        if savedir is not None:
+            mlab.savefig(savedir + title[idx] + '_labels.png', figure=fig)
+        cbar.visible = False
+        ax.label_text_property.opacity = 0.0
+        ax.title_text_property.opacity = 0.0
+        if savedir is not None:
+            mlab.savefig(savedir + title[idx] + '.png', figure=fig)
     return fig, ax, cbar
 
 
@@ -1077,32 +1109,33 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
     :param x: x position of voxels (numpy.mgrid)
     :param y: y position of voxels (numpy.mgrid)
     :param z: z position of voxels (numpy.mgrid)
-    :param scalars: scalar field at each voxel
+    :param scalars: scalar field at each voxel.
     :param extent:[xmin, xmax, ymin, ymax, zmin, zmax] Default is the x, y, z arrays extent.
-     Use this to change the extent of the object created
-    :param nb_labels: the number of labels along each direction
-    :param fig_size: the size of the scene created, in pixels
+     Use this to change the extent of the object created.
+    :param nb_labels: the number of labels along each direction.
+    :param fig_size: the size of the scene created, in pixels.
     :param azimut: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended by the position vector on a sphere
-     projected on to the x-y plane with the x-axis
-
+     projected on to the x-y plane with the x-axis. It can be a list of angles for several plots.
     :param elevation: the zenith angle (in degrees, 0-180), i.e. the angle subtended by the position vector
-     and the z-axis
+     and the z-axis. It can be a list of angles for several plots.
     :param distance: a positive floating point number representing the distance from the focal point to place the
-     camera. If ‘auto’ is passed, the distance is computed to have a best fit of objects in the frame
-    :param roll: absolute roll angle of the camera
+     camera. It can be a list of the same length as aimut. If ‘auto’ is passed, the distance is computed to have a best
+      fit of objects in the frame.
+    :param roll: absolute roll angle of the camera. It can be a list of angles for several plots.
     :param mode: the mode of the glyphs. Available modes are: ‘2darrow’, ‘2dcircle’, ‘2dcross’, ‘2ddash’, ‘2ddiamond’,
      ‘2dhooked_arrow’, ‘2dsquare’, ‘2dthick_arrow’, ‘2dthick_cross’, ‘2dtriangle’, ‘2dvertex’, ‘arrow’, ‘axes’, ‘cone’,
       ‘cube’, ‘cylinder’, ‘point’, ‘sphere’
-    :param vmin: vmin is used to scale the colormap. If None, the min of the data will be used
-    :param vmax: vmax is used to scale the colormap. If None, the max of the data will be used
+    :param vmin: vmin is used to scale the colormap. If None, the min of the data will be used.
+    :param vmax: vmax is used to scale the colormap. If None, the max of the data will be used.
     :param opacity:	the overall opacity of the vtk object. Must be a float. Default: 1.0
-    :param colormap: type of colormap to use
-    :param title: title to be included in the filename of the saved image
-    :param savedir: path of the saving directory
+    :param colormap: type of colormap to use.
+    :param title: title to be included in the filename of the saved image. It can be a list of length len(azimut).
+    :param savedir: path of the saving directory.
     :return: figure, axes and colorbar instances
     """
     from mayavi import mlab
 
+    # check input parameters
     if vmin is None:
         vmin = scalars.min()
     if vmax is None:
@@ -1110,23 +1143,54 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
 
     assert len(fig_size) == 2, 'fig_size should be a tuple of 2 pixel numbers'
 
+    if type(azimut) in [tuple, list]:  # several views to be plotted
+        nb_plots = len(azimut)
+        if type(elevation) in [int, float]:
+            elevation = [elevation for _ in range(nb_plots)]
+        else:
+            assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimut'
+        if type(roll) in [int, float]:
+            roll = [roll for _ in range(nb_plots)]
+        else:
+            assert len(roll) == nb_plots, 'roll should have the same number of elements as azimut'
+        if type(distance) in [int, float]:
+            distance = [distance for _ in range(nb_plots)]
+        else:
+            assert len(distance) == nb_plots, 'distance should have the same number of elements as azimut'
+        if type(title) is str:
+            title = [title + '_' + str(idx) for idx in range(nb_plots)]
+        else:
+            assert len(title) == nb_plots, 'title should have the same number of elements as azimut'
+    else:  # azimut is a number
+        nb_plots = 1
+        azimut = [azimut]
+        assert type(elevation) in [int, float], 'elevation should be a number'
+        elevation = [elevation]
+        assert type(roll) in [int, float], 'roll should be a number'
+        roll = [roll]
+        assert type(title) is str, 'title should be a string'
+        title = [title]
+
+    # plot the points3d figure
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     mlab.points3d(x, y, z, scalars, mode=mode, opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
 
-    mlab.view(azimuth=azimut, elevation=elevation, distance=distance)
-    # azimut is the rotation around z axis of mayavi
-    mlab.roll(roll)
-    ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
-    cbar = mlab.colorbar(orientation='vertical')
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    if savedir is not None:
-        mlab.savefig(savedir + title + '_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    if savedir is not None:
-        mlab.savefig(savedir + title + '.png', figure=fig)
+    # loop over the different views
+    for idx in range(nb_plots):
+        mlab.view(azimuth=azimut[idx], elevation=elevation[idx], distance=distance[idx])
+        # azimut is the rotation around z axis of mayavi
+        mlab.roll(roll[idx])
+        ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
+        cbar = mlab.colorbar(orientation='vertical')
+        ax.label_text_property.opacity = 1.0
+        ax.title_text_property.opacity = 1.0
+        if savedir is not None:
+            mlab.savefig(savedir + title[idx] + '_labels.png', figure=fig)
+        cbar.visible = False
+        ax.label_text_property.opacity = 0.0
+        ax.title_text_property.opacity = 0.0
+        if savedir is not None:
+            mlab.savefig(savedir + title[idx] + '.png', figure=fig)
     return fig, ax, cbar
 
 
