@@ -31,11 +31,11 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 
 
 # scan = 1301  # spec scan number
-datadir = 'D:/data/P10_OER/analysis/candidate_12/dewet2_2_S1591_to_S1633/'  # 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
+datadir = 'D:/data/P10_OER/analysis/candidate_12/dewet2_2_S1484_to_S1511/'  # 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
 savedir = datadir  # 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
 comment = ''   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
-strain_isosurface = 0.5  # amplitude below this value will be set to 0
+strain_isosurface = 0.45  # amplitude below this value will be set to 0
 
 voxel_size = 6.0  # in nm
 tick_spacing = 100  # for plots, in nm
@@ -55,7 +55,7 @@ save_XY = True  # True to save the view in XY plane
 
 flag_strain = True  # True to plot and save the strain
 flag_phase = True  # True to plot and save the phase
-flag_amp = False  # True to plot and save the amplitude
+flag_amp = True  # True to plot and save the amplitude
 
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
@@ -92,6 +92,7 @@ strain = npzfile['strain']
 amp = npzfile['amp']
 
 amp = amp / amp.max()  # normalize amplitude
+ref_amp = np.copy(amp)
 amp[amp < strain_isosurface] = 0
 
 if simulated_data:
@@ -220,7 +221,7 @@ if flag_amp:
     fig.savefig(savedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax = plt.subplots(1, 1)
-    ax.hist(amp[amp > 0.05*amp.max()].flatten(), bins=250)  # avoid the peak for very low noise amplitudes
+    ax.hist(ref_amp[ref_amp > 0.05*ref_amp.max()].flatten(), bins=250)  # avoid the peak for very low noise amplitudes
     ax.set_xlim(left=0.05)
     ax.set_ylim(bottom=1)  # , top=100000
     if amp_histogram_Yaxis == 'log':
