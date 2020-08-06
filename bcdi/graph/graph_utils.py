@@ -1003,6 +1003,65 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
     return vmax, idx, exit_flag
 
 
+def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azimut=150, elevation=70, distance='auto',
+                  roll=0, title='', vmin=None, vmax=None, opacity=1, colormap='jet', savedir=None):
+    """
+    3D scatter plot using mayavi.
+
+    :param x: x position of voxels (numpy.mgrid)
+    :param y: y position of voxels (numpy.mgrid)
+    :param z: z position of voxels (numpy.mgrid)
+    :param scalars: scalar field at each voxel
+    :param extent:[xmin, xmax, ymin, ymax, zmin, zmax] Default is the x, y, z arrays extent.
+     Use this to change the extent of the object created
+    :param nb_labels: the number of labels along each direction
+    :param fig_size: the size of the scene created, in pixels
+    :param azimut: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended by the position vector on a sphere
+     projected on to the x-y plane with the x-axis
+
+    :param elevation: the zenith angle (in degrees, 0-180), i.e. the angle subtended by the position vector
+     and the z-axis
+    :param distance: a positive floating point number representing the distance from the focal point to place the
+     camera. If ‘auto’ is passed, the distance is computed to have a best fit of objects in the frame
+    :param roll: absolute roll angle of the camera
+    :param title: title to be included in the filename of the saved image
+    :param vmin: vmin is used to scale the colormap. If None, the min of the data will be used
+    :param vmax: vmax is used to scale the colormap. If None, the max of the data will be used
+    :param opacity:	the overall opacity of the vtk object. Must be a float. Default: 1.0
+    :param colormap: type of colormap to use
+    :param savedir: path of the saving directory
+    :return: figure, axes and colorbar instances
+    """
+    from mayavi import mlab
+
+    if vmin is None:
+        vmin = scalars.min()
+    if vmax is None:
+        vmax = scalars.max()
+
+    assert len(fig_size) == 2, 'fig_size should be a tuple of 2 pixel numbers'
+
+    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
+    mlab.points3d(x, y, z, scalars, mode='cube', opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
+
+    # top view
+    mlab.view(azimuth=azimut, elevation=elevation, distance=distance)
+    # azimut is the rotation around z axis of mayavi (x)
+    mlab.roll(roll)
+    ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
+    cbar = mlab.colorbar(orientation='vertical')
+    ax.label_text_property.opacity = 1.0
+    ax.title_text_property.opacity = 1.0
+    if savedir is not None:
+        mlab.savefig(savedir + title + '_labels.png', figure=fig)
+    cbar.visible = False
+    ax.label_text_property.opacity = 0.0
+    ax.title_text_property.opacity = 0.0
+    if savedir is not None:
+        mlab.savefig(savedir + title + '.png', figure=fig)
+    return fig, ax, cbar
+
+
 def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None, width_y=None, width_x=None,
                      plot_colorbar=False, cmap=my_cmap, title='', scale='linear', vmin=np.nan, vmax=np.nan,
                      tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=None,
