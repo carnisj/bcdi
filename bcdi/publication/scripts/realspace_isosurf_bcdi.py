@@ -95,7 +95,8 @@ if amp.ndim != 3:
 amp = amp / amp.max()
 amp[amp < strain_isosurface] = 0
 
-amp = np.flip(amp, 2)  # mayavi expect xyz, but we provide downstream/upward/outboard which is not in the correct order
+# flip the last axis: mayavi expect xyz, but we provide downstream/upward/outboard which is not in the correct order
+amp = np.flip(amp, 2)
 phase = np.flip(phase, 2)
 strain = np.flip(strain, 2)
 
