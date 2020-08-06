@@ -27,10 +27,10 @@ scan = 1138    # scan number
 root_folder = 'D:/data/P10_OER/analysis/candidate_12/dewet2_2_S1484_to_S1511/'
 sample_name = "dewet2_2"  #
 homedir = root_folder  # + sample_name + str(scan) + '/pynxraw/'
-flag_support = False  # True to plot and save the support
+flag_support = True  # True to plot and save the support
 flag_amp = True  # True to plot and save the amplitude
-flag_phase = False  # True to plot and save the phase
-flag_strain = False  # True to plot and save the strain
+flag_phase = True  # True to plot and save the phase
+flag_strain = True  # True to plot and save the strain
 voxel_size = 6.0  # in nm, supposed isotropic
 tick_spacing = 50  # for plots, in nm
 field_of_view = [500, 500, 500]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
@@ -42,11 +42,12 @@ phase_range = np.pi  # for plots
 plot_method = 'points3d'  # 'contour3d' or 'points3d'. The support is always plotted with 'contour3d' because there is
 # no contrast with 'points3d'
 fig_size = (1200, 1050)  # mayavi figure size in pixels (hor, ver), leave None for the default
-azimuth = [90, -90, 180, 0, 150]  # azimuthal angle or list of azimuthal angles for the Mayavi scene views
-elevation = [90, 90, 90, 180, 70]  # zenith angle or list of zenith angles for the Mayavi scene views
-roll = [90, -90, 0, 0, 0]  # roll angle or list of roll angles for the Mayavi scene views
+azimuth = [90, -90, 180, -90, 0, 0, 150]  # azimuthal angle or list of azimuthal angles for the Mayavi scene views
+elevation = [90, 90, 90, 0, 180, 90, 70]  # zenith angle or list of zenith angles for the Mayavi scene views
+roll = [90, -90, 0, 0, 0, 0, 0]  # roll angle or list of roll angles for the Mayavi scene views
 comment = [sample_name + "_{:5d}".format(scan) + '_top', sample_name + "_{:5d}".format(scan) + '_bottom',
-           sample_name + "_{:5d}".format(scan) + '_side', sample_name + "_{:5d}".format(scan) + '_front',
+           sample_name + "_{:5d}".format(scan) + '_side', sample_name + "_{:5d}".format(scan) + '_revside',
+           sample_name + "_{:5d}".format(scan) + '_front', sample_name + "_{:5d}".format(scan) + '_back',
            sample_name + "_{:5d}".format(scan) + '_tilt']
 # comment used in the filename of saved figures
 colormap = 'jet'  # colormap for the Mayavi scene of phase and strain. 'binary' is the default for the amplitude
