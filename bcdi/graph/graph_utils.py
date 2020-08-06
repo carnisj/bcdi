@@ -1088,7 +1088,10 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
         # azimuth is the rotation around z axis of mayavi
         mlab.roll(roll[idx])
         if idx == 0:
-            ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
+            ax = mlab.axes(extent=extent, line_width=4.0, nb_labels=nb_labels)
+            ax.axes.x_axis_actor2d.tick_length = 15
+            ax.axes.y_axis_actor2d.tick_length = 15
+            ax.axes.z_axis_actor2d.tick_length = 15
             cbar = mlab.colorbar(orientation='vertical')
         ax.label_text_property.opacity = 1.0
         ax.title_text_property.opacity = 1.0
@@ -1182,7 +1185,10 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
         # azimuth is the rotation around z axis of mayavi
         mlab.roll(roll[idx])
         if idx == 0:
-            ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
+            ax = mlab.axes(extent=extent, line_width=4.0, nb_labels=nb_labels)
+            ax.axes.x_axis_actor2d.tick_length = 15
+            ax.axes.y_axis_actor2d.tick_length = 15
+            ax.axes.z_axis_actor2d.tick_length = 15
             cbar = mlab.colorbar(orientation='vertical')
         ax.label_text_property.opacity = 1.0
         ax.title_text_property.opacity = 1.0
