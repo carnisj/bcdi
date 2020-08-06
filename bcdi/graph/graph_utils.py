@@ -1087,8 +1087,9 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
         mlab.view(azimuth=azimut[idx], elevation=elevation[idx], distance=distance[idx])
         # azimut is the rotation around z axis of mayavi
         mlab.roll(roll[idx])
-        ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
-        cbar = mlab.colorbar(orientation='vertical')
+        if idx == 0:
+            ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
+            cbar = mlab.colorbar(orientation='vertical')
         ax.label_text_property.opacity = 1.0
         ax.title_text_property.opacity = 1.0
         if savedir is not None:
@@ -1180,8 +1181,9 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
         mlab.view(azimuth=azimut[idx], elevation=elevation[idx], distance=distance[idx])
         # azimut is the rotation around z axis of mayavi
         mlab.roll(roll[idx])
-        ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
-        cbar = mlab.colorbar(orientation='vertical')
+        if idx == 0:
+            ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
+            cbar = mlab.colorbar(orientation='vertical')
         ax.label_text_property.opacity = 1.0
         ax.title_text_property.opacity = 1.0
         if savedir is not None:
