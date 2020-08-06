@@ -335,30 +335,60 @@ plt.tight_layout()
 plt.pause(0.1)
 fig.savefig(savedir + 'summary' + comment + '.png')
 
-fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)
+############################################
+# plot the evolution of the incident angle #
+############################################
+tilt_com = np.asarray(tilt_com)
+x_axis = np.asarray(x_axis)
+uniq_xaxis = np.unique(x_axis)
+mean_tilt = np.empty(len(uniq_xaxis))
+std_tilt = np.empty(len(uniq_xaxis))
+for idx in range(len(uniq_xaxis)):
+    mean_tilt[idx] = np.mean(tilt_com[x_axis == uniq_xaxis[idx]])
+    std_tilt[idx] = np.std(tilt_com[x_axis == uniq_xaxis[idx]])
+
+fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(12, 9))
 ax0.plot(scans, tilt_com, '-o')
 ax0.set_xlabel('Scan number')
 ax0.set_ylabel('Bragg angle (deg)')
-plt1 = ax1.scatter(x_axis, tilt_com, s=24, c=scans, cmap=my_cmap)
-gu.colorbar(plt1, scale='linear', numticks=min(len(scans), 20), label='scan #')
+ax1.errorbar(uniq_xaxis, mean_tilt, yerr=std_tilt, elinewidth=2, capsize=6, capthick=2, linestyle='',
+             marker='o', markersize=6, markerfacecolor='w')
 ax1.set_xlabel(x_label)
 ax1.set_ylabel('Bragg angle (deg)')
-ax1.set_facecolor(bckg_color)
+plt2 = ax2.scatter(x_axis, tilt_com, s=24, c=scans, cmap=my_cmap)
+gu.colorbar(plt2, scale='linear', numticks=min(len(scans), 20), label='scan #')
+ax2.set_xlabel(x_label)
+ax2.set_ylabel('Bragg angle (deg)')
+ax2.set_facecolor(bckg_color)
 plt.tight_layout()
 plt.pause(0.1)
 fig.savefig(savedir + 'Bragg angle' + comment + '.png')
 
+##############################################
+# plot the evolution of the diffusion vector #
+##############################################
 if convert_to_q:
-    fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)
+    q_com = np.asarray(q_com)
+    mean_q = np.empty(len(uniq_xaxis))
+    std_q = np.empty(len(uniq_xaxis))
+    for idx in range(len(uniq_xaxis)):
+        mean_q[idx] = np.mean(q_com[x_axis == uniq_xaxis[idx]])
+        std_q[idx] = np.std(q_com[x_axis == uniq_xaxis[idx]])
+
+    fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(12, 9))
     ax0.plot(scans, q_com, '-o')
     ax0.set_xlabel('Scan number')
     ax0.set_ylabel('q (1/A)')
-    plt1 = ax1.scatter(x_axis, q_com, s=24, c=scans, cmap=my_cmap)
-    gu.colorbar(plt1, scale='linear', numticks=min(len(scans), 20), label='scan #')
+    ax1.errorbar(uniq_xaxis, mean_q, yerr=std_q, elinewidth=2, capsize=6, capthick=2, linestyle='',
+                 marker='o', markersize=6, markerfacecolor='w')
     ax1.set_xlabel(x_label)
     ax1.set_ylabel('q (1/A)')
-    ax1.set_ylim(bottom=min(q_com)-strain_range, top=max(q_com)+strain_range)
-    ax1.set_facecolor(bckg_color)
+    plt2 = ax2.scatter(x_axis, q_com, s=24, c=scans, cmap=my_cmap)
+    gu.colorbar(plt2, scale='linear', numticks=min(len(scans), 20), label='scan #')
+    ax2.set_xlabel(x_label)
+    ax2.set_ylabel('q (1/A)')
+    ax2.set_ylim(bottom=min(q_com)-strain_range, top=max(q_com)+strain_range)
+    ax2.set_facecolor(bckg_color)
     plt.tight_layout()
     plt.pause(0.1)
     fig.savefig(savedir + 'diffusion vector' + comment + '.png')
