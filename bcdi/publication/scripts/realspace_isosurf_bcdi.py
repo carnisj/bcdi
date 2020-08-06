@@ -15,6 +15,7 @@ from tkinter import filedialog
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.graph.graph_utils as gu
 
 helptext = """
 Template for 3d isosurface figures of a real space BCDI reconstruction.
@@ -26,8 +27,6 @@ scan = 1138    # scan number
 root_folder = 'D:/data/P10_OER/analysis/candidate_12/dewet2_2_S1484_to_S1511/'
 sample_name = "dewet2_2"  #
 homedir = root_folder  # + sample_name + str(scan) + '/pynxraw/'
-# homedir = root_folder + sample_name
-comment = sample_name + "_{:5d}".format(scan)
 flag_support = True  # True to plot and save the support
 flag_amp = True  # True to plot and save the amplitude
 flag_phase = True  # True to plot and save the phase
@@ -40,9 +39,16 @@ field_of_view = [500, 500, 500]  # [z,y,x] in nm, can be larger than the total w
 strain_isosurface = 0.45
 strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
-plot_method = 'points3d'  # 'contour3d' or 'points3d'. The support is always plotted with 'contour3d' because there is
+plot_method = 'contour3d'  # 'contour3d' or 'points3d'. The support is always plotted with 'contour3d' because there is
 # no contrast with 'points3d'
 fig_size = (1200, 1050)  # mayavi figure size in pixels (hor, ver), leave None for the default
+azimut = [90, 180, 0, 150]  # azimuthal angle or list of azimuthal angles for the Mayavi scene views
+elevation = [90, 90, 180, 70]  # zenith angle or list of zenith angles for the Mayavi scene views
+roll = [90, 0, 0, 0]  # roll angle or list of roll angles for the Mayavi scene views
+title = [sample_name + "_{:5d}".format(scan) + '_phase_top', sample_name + "_{:5d}".format(scan) + '_phase_side',
+         sample_name + "_{:5d}".format(scan) + '_phase_front', sample_name + "_{:5d}".format(scan) + '_phase_tilt']
+# title used in the filename of saved figures
+colormap = 'jet'  # name of the colormap for the Mayavi scene
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 ##########################
 # end of user parameters #
@@ -125,56 +131,14 @@ extent = [0, 2*z_pixel_FOV*voxel_size, 0, 2*y_pixel_FOV*voxel_size, 0, 2*x_pixel
 # plot 3D isosurface of the support #
 #####################################
 if flag_support:
-    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
-    mlab.contour3d(grid_z, grid_y, grid_x, support[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
-                                                   numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
-                                                   numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
-                   contours=[strain_isosurface], color=(0.7, 0.7, 0.7))
-
-    # top view
-    mlab.view(azimuth=90, elevation=90, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(90)
-    ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=int(1+field_of_view[0]/tick_spacing))
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_sup_top_labels.png', figure=fig)
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_sup_top.png', figure=fig)
-
-    # side view
-    mlab.view(azimuth=180, elevation=90, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_sup_side_labels.png', figure=fig)
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_sup_side.png', figure=fig)
-
-    # front view
-    mlab.view(azimuth=0, elevation=180, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_sup_front_labels.png', figure=fig)
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_sup_front.png', figure=fig)
-
-    # perspective view
-    mlab.view(azimuth=150, elevation=70, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_sup_tilt_labels.png', figure=fig)
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_sup_tilt.png', figure=fig)
+    fig, _, _ = gu.mlab_contour3d(x=grid_z, y=grid_y, z=grid_x, contours=[strain_isosurface],
+                                  scalars=support[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
+                                                  numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
+                                                  numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
+                                  extent=extent, nb_labels=int(1+field_of_view[0]/tick_spacing),
+                                  fig_size=fig_size, azimut=azimut, elevation=elevation, distance=3*field_of_view[0],
+                                  roll=roll, title=title, vmin=0, vmax=1, opacity=1, color=(0.7, 0.7, 0.7),
+                                  savedir=savedir)
 
     mlab.close(fig)
 
@@ -182,71 +146,25 @@ if flag_support:
 # plot 3D isosurface of the amplitude #
 #######################################
 if flag_amp:
-    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if plot_method == 'points3d':
-        mlab.points3d(grid_z, grid_y, grid_x, amp[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
-                                                  numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
-                                                  numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
-                      mode='cube', opacity=1, vmin=0, vmax=1,  colormap='jet')
+        fig, _, _ = gu.mlab_points3d(x=grid_z, y=grid_y, z=grid_x, mode='cube',
+                                     scalars=amp[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
+                                                 numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
+                                                 numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
+                                     extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
+                                     fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                     distance=3 * field_of_view[0], roll=roll, title=title, vmin=0, vmax=1,
+                                     opacity=1, colormap=colormap, savedir=savedir)
     else:  # 'contour3d'
         contours = list(np.linspace(strain_isosurface, 1, num=10, endpoint=True))
-        mlab.contour3d(grid_z, grid_y, grid_x, amp[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
-                                                   numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
-                                                   numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
-                       contours=contours, opacity=1, vmin=0, vmax=1, colormap='jet')
-
-    # top view
-    mlab.view(azimuth=90, elevation=90, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(90)
-    ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=int(1+field_of_view[0]/tick_spacing))
-    cbar = mlab.colorbar(orientation='vertical')
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_amp_top_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_amp_top.png', figure=fig)
-
-    # side view
-    mlab.view(azimuth=180, elevation=90, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    cbar.visible = True
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_amp_side_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_amp_side.png', figure=fig)
-
-    # front view
-    mlab.view(azimuth=0, elevation=180, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    cbar.visible = True
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_amp_front_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_amp_front.png', figure=fig)
-
-    # perspective view
-    mlab.view(azimuth=150, elevation=70, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    cbar.visible = True
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_amp_tilt_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_amp_tilt.png', figure=fig)
+        fig, _, _ = gu.mlab_contour3d(x=grid_z, y=grid_y, z=grid_x, contours=contours,
+                                      scalars=amp[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
+                                                  numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
+                                                  numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
+                                      extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
+                                      fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                      distance=3 * field_of_view[0], roll=roll, title=title, vmin=0, vmax=1,
+                                      opacity=1, colormap=colormap, savedir=savedir)
 
     mlab.close(fig)
 
@@ -254,71 +172,25 @@ if flag_amp:
 # plot 3D isosurface of the phase #
 ###################################
 if flag_phase:
-    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if plot_method == 'points3d':
-        mlab.points3d(grid_z, grid_y, grid_x, phase[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
-                                                    numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
-                                                    numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
-                      mode='cube', opacity=1, vmin=-phase_range, vmax=phase_range, colormap='jet')
+        fig, _, _ = gu.mlab_points3d(x=grid_z, y=grid_y, z=grid_x, mode='cube',
+                                     scalars=phase[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
+                                                   numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
+                                                   numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
+                                     extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
+                                     fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                     distance=3 * field_of_view[0], roll=roll, title=title, vmin=-phase_range,
+                                     vmax=phase_range, opacity=1, colormap=colormap, savedir=savedir)
     else:  # 'contour3d'
         contours = list(np.linspace(-phase_range, phase_range, num=50, endpoint=True))
-        mlab.contour3d(grid_z, grid_y, grid_x, phase[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
-                                                     numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
-                                                     numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
-                       contours=contours, opacity=1, vmin=-phase_range, vmax=phase_range, colormap='jet')
-
-    # top view
-    mlab.view(azimuth=90, elevation=90, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(90)
-    ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=int(1+field_of_view[0]/tick_spacing))
-    cbar = mlab.colorbar(orientation='vertical')
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_phase_top_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_phase_top.png', figure=fig)
-
-    # side view
-    mlab.view(azimuth=180, elevation=90, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    cbar.visible = True
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_phase_side_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_phase_side.png', figure=fig)
-
-    # front view
-    mlab.view(azimuth=0, elevation=180, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    cbar.visible = True
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_phase_front_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_phase_front.png', figure=fig)
-
-    # perspective view
-    mlab.view(azimuth=150, elevation=70, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    cbar.visible = True
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_phase_tilt_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_phase_tilt.png', figure=fig)
+        fig, _, _ = gu.mlab_contour3d(x=grid_z, y=grid_y, z=grid_x, contours=contours,
+                                      scalars=phase[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
+                                                    numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
+                                                    numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
+                                      extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
+                                      fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                      distance=3 * field_of_view[0], roll=roll, title=title, vmin=-phase_range,
+                                      vmax=phase_range, opacity=1, colormap=colormap, savedir=savedir)
 
     mlab.close(fig)
 
@@ -326,70 +198,24 @@ if flag_phase:
 # plot 3D isosurface of the strain #
 ####################################
 if flag_strain:
-    fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if plot_method == 'points3d':
-        mlab.points3d(grid_z, grid_y, grid_x, strain[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
-                                                     numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
-                                                     numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
-                      mode='cube', opacity=1, vmin=-strain_range, vmax=strain_range, colormap='jet')
+        fig, _, _ = gu.mlab_points3d(x=grid_z, y=grid_y, z=grid_x, mode='cube',
+                                     scalars=strain[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
+                                                    numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
+                                                    numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
+                                     extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
+                                     fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                     distance=3 * field_of_view[0], roll=roll, title=title, vmin=-strain_range,
+                                     vmax=strain_range, opacity=1, colormap=colormap, savedir=savedir)
     else:  # 'contour3d'
         contours = list(np.linspace(-strain_range, strain_range, num=50, endpoint=True))
-        mlab.contour3d(grid_z, grid_y, grid_x, strain[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
-                                                      numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
-                                                      numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
-                       contours=contours, opacity=1, vmin=-strain_range, vmax=strain_range, colormap='jet')
-
-    # top view
-    mlab.view(azimuth=90, elevation=90, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(90)
-    ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=int(1+field_of_view[0]/tick_spacing))
-    cbar = mlab.colorbar(orientation='vertical')
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_strain_top_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_strain_top.png', figure=fig)
-
-    # side view
-    mlab.view(azimuth=180, elevation=90, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    cbar.visible = True
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_strain_side_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_strain_side.png', figure=fig)
-
-    # front view
-    mlab.view(azimuth=0, elevation=180, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    cbar.visible = True
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_strain_front_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_strain_front.png', figure=fig)
-
-    # perspective view
-    mlab.view(azimuth=150, elevation=70, distance=3*field_of_view[0])
-    # azimut is the rotation around z axis of mayavi (x)
-    mlab.roll(0)
-    cbar.visible = True
-    ax.label_text_property.opacity = 1.0
-    ax.title_text_property.opacity = 1.0
-    mlab.savefig(savedir + comment + '_strain_tilt_labels.png', figure=fig)
-    cbar.visible = False
-    ax.label_text_property.opacity = 0.0
-    ax.title_text_property.opacity = 0.0
-    mlab.savefig(savedir + comment + '_strain_tilt.png', figure=fig)
+        fig, _, _ = gu.mlab_contour3d(x=grid_z, y=grid_y, z=grid_x, contours=contours,
+                                      scalars=strain[numz // 2 - z_pixel_FOV:numz // 2 + z_pixel_FOV,
+                                                     numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
+                                                     numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
+                                      extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
+                                      fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                      distance=3 * field_of_view[0], roll=roll, title=title, vmin=-strain_range,
+                                      vmax=strain_range, opacity=1, colormap=colormap, savedir=savedir)
 
     mlab.close(fig)
