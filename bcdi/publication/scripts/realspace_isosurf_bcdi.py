@@ -27,10 +27,10 @@ scan = 1138    # scan number
 root_folder = 'D:/data/P10_OER/analysis/candidate_12/dewet2_2_S1484_to_S1511/'
 sample_name = "dewet2_2"  #
 homedir = root_folder  # + sample_name + str(scan) + '/pynxraw/'
-flag_support = True  # True to plot and save the support
+flag_support = False  # True to plot and save the support
 flag_amp = True  # True to plot and save the amplitude
-flag_phase = True  # True to plot and save the phase
-flag_strain = True  # True to plot and save the strain
+flag_phase = False  # True to plot and save the phase
+flag_strain = False  # True to plot and save the strain
 voxel_size = 6.0  # in nm, supposed isotropic
 tick_spacing = 50  # for plots, in nm
 field_of_view = [500, 500, 500]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
@@ -39,7 +39,7 @@ field_of_view = [500, 500, 500]  # [z,y,x] in nm, can be larger than the total w
 strain_isosurface = 0.45
 strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
-plot_method = 'contour3d'  # 'contour3d' or 'points3d'. The support is always plotted with 'contour3d' because there is
+plot_method = 'points3d'  # 'contour3d' or 'points3d'. The support is always plotted with 'contour3d' because there is
 # no contrast with 'points3d'
 fig_size = (1200, 1050)  # mayavi figure size in pixels (hor, ver), leave None for the default
 azimuth = [90, -90, 180, 0, 150]  # azimuthal angle or list of azimuthal angles for the Mayavi scene views
@@ -49,7 +49,7 @@ comment = [sample_name + "_{:5d}".format(scan) + '_top', sample_name + "_{:5d}".
            sample_name + "_{:5d}".format(scan) + '_side', sample_name + "_{:5d}".format(scan) + '_front',
            sample_name + "_{:5d}".format(scan) + '_tilt']
 # comment used in the filename of saved figures
-colormap = 'jet'  # name of the colormap for the Mayavi scene
+colormap = 'jet'  # colormap for the Mayavi scene of phase and strain. 'binary' is the default for the amplitude
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 ##########################
 # end of user parameters #
@@ -163,7 +163,7 @@ if flag_amp:
                                      extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
                                      fig_size=fig_size, azimuth=azimuth, elevation=elevation,
                                      distance=3 * field_of_view[0], roll=roll, title=title, vmin=0, vmax=1,
-                                     opacity=1, colormap=colormap, savedir=savedir)
+                                     opacity=1, colormap='binary', savedir=savedir)
     else:  # 'contour3d'
         contours = list(np.linspace(strain_isosurface, 1, num=10, endpoint=True))
         fig, _, _ = gu.mlab_contour3d(x=grid_z, y=grid_y, z=grid_x, contours=contours,
@@ -173,7 +173,7 @@ if flag_amp:
                                       extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
                                       fig_size=fig_size, azimuth=azimuth, elevation=elevation,
                                       distance=3 * field_of_view[0], roll=roll, title=title, vmin=0, vmax=1,
-                                      opacity=1, colormap=colormap, savedir=savedir)
+                                      opacity=1, colormap='binary', savedir=savedir)
 
     mlab.close(fig)
 
