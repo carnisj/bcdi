@@ -42,11 +42,12 @@ phase_range = np.pi  # for plots
 plot_method = 'contour3d'  # 'contour3d' or 'points3d'. The support is always plotted with 'contour3d' because there is
 # no contrast with 'points3d'
 fig_size = (1200, 1050)  # mayavi figure size in pixels (hor, ver), leave None for the default
-azimut = [90, 180, 0, 150]  # azimuthal angle or list of azimuthal angles for the Mayavi scene views
-elevation = [90, 90, 180, 70]  # zenith angle or list of zenith angles for the Mayavi scene views
-roll = [90, 0, 0, 0]  # roll angle or list of roll angles for the Mayavi scene views
-comment = [sample_name + "_{:5d}".format(scan) + '_top', sample_name + "_{:5d}".format(scan) + '_side',
-           sample_name + "_{:5d}".format(scan) + '_front', sample_name + "_{:5d}".format(scan) + '_tilt']
+azimuth = [90, -90, 180, 0, 150]  # azimuthal angle or list of azimuthal angles for the Mayavi scene views
+elevation = [90, 90, 90, 180, 70]  # zenith angle or list of zenith angles for the Mayavi scene views
+roll = [90, -90, 0, 0, 0]  # roll angle or list of roll angles for the Mayavi scene views
+comment = [sample_name + "_{:5d}".format(scan) + '_top', sample_name + "_{:5d}".format(scan) + '_bottom',
+           sample_name + "_{:5d}".format(scan) + '_side', sample_name + "_{:5d}".format(scan) + '_front',
+           sample_name + "_{:5d}".format(scan) + '_tilt']
 # comment used in the filename of saved figures
 colormap = 'jet'  # name of the colormap for the Mayavi scene
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
@@ -58,10 +59,10 @@ simulated_data = False  # if yes, it will look for a field 'phase' in the recons
 # check few parameters and create the folder for saving results #
 #################################################################
 assert plot_method in ['contour3d', 'points3d'], 'invalid value for the parameter plot_method'
-if type(azimut) in[list, tuple]:
-    assert len(elevation) == len(azimut), 'elevation should have the same number of element as azimut'
-    assert len(roll) == len(azimut), 'roll should have the same number of element as azimut'
-    assert len(comment) == len(azimut), 'comment should have the same number of element as azimut'
+if type(azimuth) in[list, tuple]:
+    assert len(elevation) == len(azimuth), 'elevation should have the same number of element as azimuth'
+    assert len(roll) == len(azimuth), 'roll should have the same number of element as azimuth'
+    assert len(comment) == len(azimuth), 'comment should have the same number of element as azimuth'
 
 if fig_size is None:
     fig_size = (400, 350)
@@ -142,7 +143,7 @@ if flag_support:
                                                   numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
                                                   numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
                                   extent=extent, nb_labels=int(1+field_of_view[0]/tick_spacing),
-                                  fig_size=fig_size, azimut=azimut, elevation=elevation, distance=3*field_of_view[0],
+                                  fig_size=fig_size, azimuth=azimuth, elevation=elevation, distance=3*field_of_view[0],
                                   roll=roll, title=title, vmin=0, vmax=1, opacity=1, color=(0.7, 0.7, 0.7),
                                   savedir=savedir)
 
@@ -159,7 +160,7 @@ if flag_amp:
                                                  numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
                                                  numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
                                      extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
-                                     fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                     fig_size=fig_size, azimuth=azimuth, elevation=elevation,
                                      distance=3 * field_of_view[0], roll=roll, title=title, vmin=0, vmax=1,
                                      opacity=1, colormap=colormap, savedir=savedir)
     else:  # 'contour3d'
@@ -169,7 +170,7 @@ if flag_amp:
                                                   numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
                                                   numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
                                       extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
-                                      fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                      fig_size=fig_size, azimuth=azimuth, elevation=elevation,
                                       distance=3 * field_of_view[0], roll=roll, title=title, vmin=0, vmax=1,
                                       opacity=1, colormap=colormap, savedir=savedir)
 
@@ -186,7 +187,7 @@ if flag_phase:
                                                    numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
                                                    numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
                                      extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
-                                     fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                     fig_size=fig_size, azimuth=azimuth, elevation=elevation,
                                      distance=3 * field_of_view[0], roll=roll, title=title, vmin=-phase_range,
                                      vmax=phase_range, opacity=1, colormap=colormap, savedir=savedir)
     else:  # 'contour3d'
@@ -196,7 +197,7 @@ if flag_phase:
                                                     numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
                                                     numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
                                       extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
-                                      fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                      fig_size=fig_size, azimuth=azimuth, elevation=elevation,
                                       distance=3 * field_of_view[0], roll=roll, title=title, vmin=-phase_range,
                                       vmax=phase_range, opacity=1, colormap=colormap, savedir=savedir)
 
@@ -213,7 +214,7 @@ if flag_strain:
                                                     numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
                                                     numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
                                      extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
-                                     fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                     fig_size=fig_size, azimuth=azimuth, elevation=elevation,
                                      distance=3 * field_of_view[0], roll=roll, title=title, vmin=-strain_range,
                                      vmax=strain_range, opacity=1, colormap=colormap, savedir=savedir)
     else:  # 'contour3d'
@@ -223,7 +224,7 @@ if flag_strain:
                                                      numy // 2 - y_pixel_FOV:numy // 2 + y_pixel_FOV,
                                                      numx // 2 - x_pixel_FOV:numx // 2 + x_pixel_FOV],
                                       extent=extent, nb_labels=int(1 + field_of_view[0] / tick_spacing),
-                                      fig_size=fig_size, azimut=azimut, elevation=elevation,
+                                      fig_size=fig_size, azimuth=azimuth, elevation=elevation,
                                       distance=3 * field_of_view[0], roll=roll, title=title, vmin=-strain_range,
                                       vmax=strain_range, opacity=1, colormap=colormap, savedir=savedir)
 

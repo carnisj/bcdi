@@ -1003,7 +1003,7 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
     return vmax, idx, exit_flag
 
 
-def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400, 350), azimut=150, elevation=70,
+def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400, 350), azimuth=150, elevation=70,
                    distance='auto', roll=0, vmin=None, vmax=None, opacity=1, color=None, colormap='jet', title='',
                    savedir=None):
     """
@@ -1019,7 +1019,7 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
      Use this to change the extent of the object created.
     :param nb_labels: the number of labels along each direction.
     :param fig_size: the size of the scene created, in pixels.
-    :param azimut: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended by the position vector on a sphere
+    :param azimuth: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended by the position vector on a sphere
      projected on to the x-y plane with the x-axis. It can be a list of angles for several plots.
     :param elevation: the zenith angle (in degrees, 0-180), i.e. the angle subtended by the position vector
      and the z-axis. It can be a list of angles for several plots.
@@ -1033,7 +1033,7 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     :param color: the color of the vtk object. Overides the colormap, if any, when specified. This is specified as a
      triplet of float ranging from 0 to 1, eg (1, 1, 1) for white.
     :param colormap: type of colormap to use.
-    :param title: title to be included in the filename of the saved image. It can be a list of length len(azimut).
+    :param title: title to be included in the filename of the saved image. It can be a list of length len(azimuth).
     :param savedir: path of the saving directory.
     :return: figure, axes and colorbar instances.
     """
@@ -1047,27 +1047,27 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
 
     assert len(fig_size) == 2, 'fig_size should be a tuple of 2 pixel numbers'
 
-    if type(azimut) in [tuple, list]:  # several views to be plotted
-        nb_plots = len(azimut)
+    if type(azimuth) in [tuple, list]:  # several views to be plotted
+        nb_plots = len(azimuth)
         if type(elevation) in [int, float]:
             elevation = [elevation for _ in range(nb_plots)]
         else:
-            assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimut'
+            assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimuth'
         if type(roll) in [int, float]:
             roll = [roll for _ in range(nb_plots)]
         else:
-            assert len(roll) == nb_plots, 'roll should have the same number of elements as azimut'
+            assert len(roll) == nb_plots, 'roll should have the same number of elements as azimuth'
         if type(distance) in [int, float]:
             distance = [distance for _ in range(nb_plots)]
         else:
-            assert len(distance) == nb_plots, 'distance should have the same number of elements as azimut'
+            assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
         if type(title) is str:
             title = [title + '_' + str(idx) for idx in range(nb_plots)]
         else:
-            assert len(title) == nb_plots, 'title should have the same number of elements as azimut'
-    else:  # azimut is a number
+            assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
+    else:  # azimuth is a number
         nb_plots = 1
-        azimut = [azimut]
+        azimuth = [azimuth]
         assert type(elevation) in [int, float], 'elevation should be a number'
         elevation = [elevation]
         assert type(roll) in [int, float], 'roll should be a number'
@@ -1084,8 +1084,8 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
 
     # loop over the different views
     for idx in range(nb_plots):
-        mlab.view(azimuth=azimut[idx], elevation=elevation[idx], distance=distance[idx])
-        # azimut is the rotation around z axis of mayavi
+        mlab.view(azimuth=azimuth[idx], elevation=elevation[idx], distance=distance[idx])
+        # azimuth is the rotation around z axis of mayavi
         mlab.roll(roll[idx])
         if idx == 0:
             ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
@@ -1102,7 +1102,7 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     return fig, ax, cbar
 
 
-def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azimut=150, elevation=70, distance='auto',
+def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azimuth=150, elevation=70, distance='auto',
                   roll=0, mode='cube', vmin=None, vmax=None, opacity=1, colormap='jet', title='', savedir=None):
     """
     3D scatter plot using mayavi. The frame convention is (x,y,z) right-handed.
@@ -1115,7 +1115,7 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
      Use this to change the extent of the object created.
     :param nb_labels: the number of labels along each direction.
     :param fig_size: the size of the scene created, in pixels.
-    :param azimut: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended by the position vector on a sphere
+    :param azimuth: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended by the position vector on a sphere
      projected on to the x-y plane with the x-axis. It can be a list of angles for several plots.
     :param elevation: the zenith angle (in degrees, 0-180), i.e. the angle subtended by the position vector
      and the z-axis. It can be a list of angles for several plots.
@@ -1130,7 +1130,7 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
     :param vmax: vmax is used to scale the colormap. If None, the max of the data will be used.
     :param opacity:	the overall opacity of the vtk object. Must be a float. Default: 1.0
     :param colormap: type of colormap to use.
-    :param title: title to be included in the filename of the saved image. It can be a list of length len(azimut).
+    :param title: title to be included in the filename of the saved image. It can be a list of length len(azimuth).
     :param savedir: path of the saving directory.
     :return: figure, axes and colorbar instances
     """
@@ -1144,27 +1144,27 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
 
     assert len(fig_size) == 2, 'fig_size should be a tuple of 2 pixel numbers'
 
-    if type(azimut) in [tuple, list]:  # several views to be plotted
-        nb_plots = len(azimut)
+    if type(azimuth) in [tuple, list]:  # several views to be plotted
+        nb_plots = len(azimuth)
         if type(elevation) in [int, float]:
             elevation = [elevation for _ in range(nb_plots)]
         else:
-            assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimut'
+            assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimuth'
         if type(roll) in [int, float]:
             roll = [roll for _ in range(nb_plots)]
         else:
-            assert len(roll) == nb_plots, 'roll should have the same number of elements as azimut'
+            assert len(roll) == nb_plots, 'roll should have the same number of elements as azimuth'
         if type(distance) in [int, float]:
             distance = [distance for _ in range(nb_plots)]
         else:
-            assert len(distance) == nb_plots, 'distance should have the same number of elements as azimut'
+            assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
         if type(title) is str:
             title = [title + '_' + str(idx) for idx in range(nb_plots)]
         else:
-            assert len(title) == nb_plots, 'title should have the same number of elements as azimut'
-    else:  # azimut is a number
+            assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
+    else:  # azimuth is a number
         nb_plots = 1
-        azimut = [azimut]
+        azimuth = [azimuth]
         assert type(elevation) in [int, float], 'elevation should be a number'
         elevation = [elevation]
         assert type(roll) in [int, float], 'roll should be a number'
@@ -1178,8 +1178,8 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
 
     # loop over the different views
     for idx in range(nb_plots):
-        mlab.view(azimuth=azimut[idx], elevation=elevation[idx], distance=distance[idx])
-        # azimut is the rotation around z axis of mayavi
+        mlab.view(azimuth=azimuth[idx], elevation=elevation[idx], distance=distance[idx])
+        # azimuth is the rotation around z axis of mayavi
         mlab.roll(roll[idx])
         if idx == 0:
             ax = mlab.axes(extent=extent, line_width=2.0, nb_labels=nb_labels)
