@@ -8,12 +8,14 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+from lmfit import minimize, Parameters, report_fit
 import tkinter as tk
 from tkinter import filedialog
 import os
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
@@ -23,11 +25,11 @@ the surface and in the remaining bulk.
 Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_strain.npz)
 """
 
-scan = 1484  # spec scan number
+scan = 1591  # spec scan number
 root_folder = "D:/data/P10_OER/analysis/candidate_12/"
 sample_name = "dewet2_2"  # "S"
-datadir = root_folder + 'dewet2_2_S1484_to_S1511/'  # sample_name + str(scan) + "/pynxraw/"
-support_threshold = 0.45  # threshold applied to the modulus for reading the surface strain
+datadir = root_folder + 'dewet2_2_S1591_to_S1633/'  # sample_name + str(scan) + "/pynxraw/"
+support_threshold = 0.50  # threshold applied to the modulus for reading the surface strain
 normalize = True  # if True, will normalize the histograms to the respective number of points
 bin_number = 2000  # number of bins between strain_min and strain_max
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
@@ -120,9 +122,9 @@ if save_txt:
     file_bulk.close()
     file_total.close()
 
-###################################################
-# plot the strain histogram for the surface layer #
-###################################################
+############################################################
+# fit a skewed Gaussian to the surface strain distribution #
+############################################################
 nb_surface = len(np.nonzero(surface)[0])
 print("Number of surface points = ", str(nb_surface))
 print('Min surface strain = {:.5f}'.format(strain[np.nonzero(surface)].min()))
@@ -133,12 +135,28 @@ if normalize:
     hist = hist / nb_surface  # normalize the histogram to the number of points
 
 x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
+
+fit_params = Parameters()
+fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
+fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
+fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
+fit_params.add('alpha_1', value=0, min=-10, max=10)
+# run the global fit to all the data sets
+result = minimize(util.objective_lmfit, fit_params, args=(x_axis, hist, 'skewed_gaussian'))
+report_fit(result.params)
+strain_fit = util.function_lmfit(params=result.params, x_axis=x_axis, distribution='skewed_gaussian')
+
+###################################################
+# plot the strain histogram for the surface layer #
+###################################################
 fig, ax = plt.subplots(nrows=1, ncols=1)
 if plot_scale == 'log':
     hist[hist == 0] = np.nan
-    ax.plot(x_axis, np.log10(hist), linestyle='-', color='r', marker='.', markerfacecolor='r')
+    ax.plot(x_axis, np.log10(hist), linestyle='', marker='o', markeredgecolor='r', fillstyle='none')
+    fit, = ax.plot(x_axis, np.log10(strain_fit), linestyle='-', color='r')
 else:
-    ax.plot(x_axis, hist, linestyle='-', color='r', marker='.', markerfacecolor='r')
+    ax.plot(x_axis, hist, linestyle='', marker='o', markeredgecolor='r', fillstyle='none')
+    fit, = ax.plot(x_axis, strain_fit, linestyle='-', color='r')
 if xlim is None:
     ax.set_xlim(-max(abs(x_axis)), max(abs(x_axis)))
 else:
@@ -148,19 +166,25 @@ if ylim is not None:
     assert len(ylim) == 2, 'ylim=[min, max] expected'
     ax.set_.ylim(ylim[0], ylim[1])
 ax.set_xlabel('strain')
-line1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
-line2 = ax.axvline(x=np.mean(strain[np.nonzero(surface)]), ymin=0, ymax=1, color='r', linestyle='dashed')
-ax.legend(handles=(line1, line2), labels=('strain=0', '<surface>'), loc='upper right', frameon=False)
+vline1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
+vline2 = ax.axvline(x=np.mean(strain[np.nonzero(surface)]), ymin=0, ymax=1, color='r', linestyle='dashed')
+legend_fit = ax.legend(handles=[fit], labels=['skewed gaussian'], loc='upper left', frameon=False)
+ax.legend(handles=(vline1, vline2), labels=('strain=0', '<surface>'), loc='upper right', frameon=False)
+ax.add_artist(legend_fit)
 ax.set_title('Histogram of the strain for {:d} surface points'.format(nb_surface)
              + "\nModulus threshold="+str(support_threshold))
-fig.text(0.65, 0.7, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(surface)])))
-fig.text(0.65, 0.65, 'std={:.2e}'.format(np.std(strain[np.nonzero(surface)])))
+fig.text(0.65, 0.70, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(surface)])))
+fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(surface)])))
+fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
+                                                              result.params['cen_1'].stderr))
+fig.text(0.15, 0.60, 'PDF std={:.2e}\n   +/-{:.2e}'.format(result.params['sig_1'].value,
+                                                           result.params['sig_1'].stderr))
 plt.pause(0.1)
 fig.savefig(datadir + 'surface_strain_iso' + str(support_threshold)+'.png')
 
-##########################################
-# plot the strain histogram for the bulk #
-##########################################
+############################################################
+# fit a skewed Gaussian to the surface strain distribution #
+############################################################
 nb_bulk = len(np.nonzero(bulk)[0])
 print("Number of bulk points = ", str(nb_bulk))
 print('Min bulk strain = {:.5f}'.format(strain[np.nonzero(bulk)].min()))
@@ -171,12 +195,28 @@ if normalize:
     hist = hist / nb_bulk  # normalize the histogram to the number of points
 
 x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
+
+fit_params = Parameters()
+fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
+fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
+fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
+fit_params.add('alpha_1', value=0, min=-10, max=10)
+# run the global fit to all the data sets
+result = minimize(util.objective_lmfit, fit_params, args=(x_axis, hist, 'skewed_gaussian'))
+report_fit(result.params)
+strain_fit = util.function_lmfit(params=result.params, x_axis=x_axis, distribution='skewed_gaussian')
+
+##########################################
+# plot the strain histogram for the bulk #
+##########################################
 fig, ax = plt.subplots(nrows=1, ncols=1)
 if plot_scale == 'log':
     hist[hist == 0] = np.nan
-    ax.plot(x_axis, np.log10(hist), linestyle='-', color='b', marker='.', markerfacecolor='b')
+    ax.plot(x_axis, np.log10(hist), linestyle='', marker='o', markeredgecolor='b', fillstyle='none')
+    fit, = ax.plot(x_axis, np.log10(strain_fit), linestyle='-', color='b')
 else:
-    ax.plot(x_axis, hist, linestyle='-', color='b', marker='.', markerfacecolor='b')
+    ax.plot(x_axis, hist, linestyle='', marker='o', markeredgecolor='b', fillstyle='none')
+    fit, = ax.plot(x_axis, strain_fit, linestyle='-', color='b')
 if xlim is None:
     ax.set_xlim(-max(abs(x_axis)), max(abs(x_axis)))
 else:
@@ -186,13 +226,19 @@ if ylim is not None:
     assert len(ylim) == 2, 'ylim=[min, max] expected'
     ax.set_ylim(ylim[0], ylim[1])
 ax.set_xlabel('strain')
-line1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
-line2 = ax.axvline(x=np.mean(strain[np.nonzero(bulk)]), ymin=0, ymax=1, color='b', linestyle='dashed')
-ax.legend(handles=(line1, line2), labels=('strain=0', '<bulk>'), loc='upper right', frameon=False)
+vline1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
+vline2 = ax.axvline(x=np.mean(strain[np.nonzero(bulk)]), ymin=0, ymax=1, color='b', linestyle='dashed')
+legend_fit = ax.legend(handles=[fit], labels=['skewed gaussian'], loc='upper left', frameon=False)
+ax.legend(handles=(vline1, vline2), labels=('strain=0', '<bulk>'), loc='upper right', frameon=False)
+ax.add_artist(legend_fit)
 ax.set_title('Histogram of the strain for {:d} bulk points'.format(nb_bulk)
              + "\nModulus threshold="+str(support_threshold))
-fig.text(0.65, 0.7, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(bulk)])))
-fig.text(0.65, 0.65, 'std={:.2e}'.format(np.std(strain[np.nonzero(bulk)])))
+fig.text(0.65, 0.70, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(bulk)])))
+fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(bulk)])))
+fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
+                                                              result.params['cen_1'].stderr))
+fig.text(0.15, 0.60, 'PDF std={:.2e}\n   +/-{:.2e}'.format(result.params['sig_1'].value,
+                                                           result.params['sig_1'].stderr))
 plt.pause(0.1)
 fig.savefig(datadir + 'bulk_strain_iso' + str(support_threshold)+'.png')
 
