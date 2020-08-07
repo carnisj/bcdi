@@ -51,16 +51,16 @@ ccd_calib_sixs.py
 Facet recognition
 -----------------
 
-`facet_strain.py`:
-^^^^^^^^^^^^^^^^^^
+facet_strain.py:
+^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/facet_recognition/scripts/facet_strain.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`polarplot.py`:
-^^^^^^^^^^^^^^^
+polarplot.py:
+^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/facet_recognition/scripts/polarplot.py
    :start-after: helptext
@@ -72,16 +72,16 @@ Facet recognition
 Graph
 -----
 
-'3Dobject_movie.py':
-^^^^^^^^^^^^^^^^^^^^
+3Dobject_movie.py:
+^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/graph/scripts/3Dobject_movie.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-'merge3D_qspace.py':
-^^^^^^^^^^^^^^^^^^^^
+merge3D_qspace.py:
+^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/graph/scripts/merge3D_qspace.py
    :start-after: helptext
@@ -96,24 +96,24 @@ scan_analysis.py
    :end-before: """
    :language: rst
 
-'scan_movie.py':
-^^^^^^^^^^^^^^^^
+scan_movie.py:
+^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/graph/scripts/scan_movie.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-'view_ccf.py':
-^^^^^^^^^^^^^^
+view_ccf.py:
+^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/graph/scripts/view_ccf.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-'view_ccf_map.py':
-^^^^^^^^^^^^^^^^^^
+view_ccf_map.py:
+^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/graph/scripts/view_ccf_map.py
    :start-after: helptext
@@ -129,16 +129,16 @@ view_mesh.py
    :end-before: """
    :language: rst
 
-'view_psf.py':
-^^^^^^^^^^^^^^
+view_psf.py:
+^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/graph/scripts/view_psf.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-'visu_2Dslice.py':
-^^^^^^^^^^^^^^^^^^
+visu_2Dslice.py:
+^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/graph/scripts/visu_2Dslice.py
    :start-after: helptext
@@ -150,40 +150,40 @@ view_mesh.py
 Preprocessing
 -------------
 
-`apodize.py`:
-^^^^^^^^^^^^^^^^^^^^^^^
+apodize.py:
+^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/preprocessing/scripts/apodize.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`concatenate_scans.py`:
-^^^^^^^^^^^^^^^^^^^^^^^
+concatenate_scans.py:
+^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/preprocessing/scripts/concatenate_scans.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`preprocess_bcdi.py`:
-^^^^^^^^^^^^^^^^^^^^^
+preprocess_bcdi.py:
+^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/preprocessing/scripts/preprocess_bcdi.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`preprocess_cdi.py`:
-^^^^^^^^^^^^^^^^^^^^
+preprocess_cdi.py:
+^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/preprocessing/scripts/preprocess_cdi.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`read_bcdi_data.py`:
-^^^^^^^^^^^^^^^^^^^^
+read_bcdi_data.py:
+^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/preprocessing/scripts/read_bcdi_data.py
    :start-after: helptext
@@ -206,8 +206,8 @@ read_data_P10.py
    :end-before: """
    :language: rst
 
-`rescale_support.py`:
-^^^^^^^^^^^^^^^^^^^^^
+rescale_support.py:
+^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/preprocessing/scripts/rescale_support.py
    :start-after: helptext
@@ -219,40 +219,40 @@ read_data_P10.py
 Postprocessing
 --------------
 
-`strain.py`:
-^^^^^^^^^^^^
+strain.py:
+^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/postprocessing/scripts/strain.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`correct_angles_detector.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+correct_angles_detector.py:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/postprocessing/scripts/correct_angles_detector.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`prtf_bcdi.py`:
-^^^^^^^^^^^^^^^
+prtf_bcdi.py:
+^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/postprocessing/scripts/prtf_bcdi.py
    :start-after: helptext
    :end-before: """
    :language: rst
    
-`prtf_bcdi_2D.py`:
-^^^^^^^^^^^^^^^^^^
+prtf_bcdi_2D.py:
+^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/postprocessing/scripts/prtf_bcdi_2D.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`prtf_cdi.py`:
-^^^^^^^^^^^^^^^
+prtf_cdi.py:
+^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/postprocessing/scripts/prtf_cdi.py
    :start-after: helptext
@@ -320,16 +320,16 @@ volume_phasing.py
 Publication
 -----------
 
-`coefficient_variation.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+coefficient_variation.py:
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/publication/scripts/coefficient_variation.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`paper_figure_strain.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^^
+paper_figure_strain.py:
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/publication/scripts/paper_figure_strain.py
    :start-after: helptext
@@ -381,32 +381,32 @@ realspace_isosurf_cdi.py
 Simulation
 ----------
 
-`diffraction_angles.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^
+diffraction_angles.py:
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/simulation/scripts/diffraction_angles.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`domain_orientation.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^
+domain_orientation.py:
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/simulation/scripts/domain_orientation.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`kinematic_sum_forloop.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+kinematic_sum_forloop.py:
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/simulation/scripts/kinematic_sum_forloop.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`kinematic_sum_pynx.py`:
-^^^^^^^^^^^^^^^^^^^^^^^^
+kinematic_sum_pynx.py:
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/simulation/scripts/kinematic_sum_pynx.py
    :start-after: helptext
@@ -482,16 +482,16 @@ cross_corr_fast_live_macro.py
    :end-before: """
    :language: rst
 
-`fit_1Dcurve.py`:
-^^^^^^^^^^^^^^^^^
+fit_1Dcurve.py:
+^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/utils/scripts/fit_1Dcurve.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-`fit_1D_background.py`:
-^^^^^^^^^^^^^^^^^^^^^^^
+fit_1D_background.py:
+^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/utils/scripts/fit_1D_background.py
    :start-after: helptext
