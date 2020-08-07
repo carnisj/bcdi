@@ -23,16 +23,17 @@ the surface and in the remaining bulk.
 Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_strain.npz)
 """
 
-scan = 1301  # spec scan number
-root_folder = "D:/data/SIXS_2019_Ni/"
-sample_name = "S"  # "S"
-datadir = root_folder + sample_name + str(scan) + "/pynxraw/"
-support_threshold = 0.30  # threshold applied to the modulus for determining the support
-normalize = False  # if True, will normalize the histograms to the respective number of points
-plot_scale = 'log'  # 'log' or 'linear', Y scale for the histograms
-xlim = None  # limits used for the horizontal axis of histograms, leave None otherwise
+scan = 1484  # spec scan number
+root_folder = "D:/data/P10_OER/analysis/candidate_12/"
+sample_name = "dewet2_2"  # "S"
+datadir = root_folder + 'dewet2_2_S1484_to_S1511/'  # sample_name + str(scan) + "/pynxraw/"
+support_threshold = 0.45  # threshold applied to the modulus for reading the surface strain
+normalize = True  # if True, will normalize the histograms to the respective number of points
+bin_number = 2000  # number of bins between strain_min and strain_max
+plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
+xlim = [-0.002, 0.002]  # limits used for the horizontal axis of histograms, leave None otherwise
 ylim = None  # limits used for the vertical axis of histograms, leave None otherwise
-save_txt = True  # True to save the strain values for the surface, the bulk and the full support in txt files
+save_txt = False  # True to save the strain values for the surface, the bulk and the full support in txt files
 debug = True  # True to see more plots
 ##########################
 # end of user parameters #
@@ -126,28 +127,30 @@ nb_surface = len(np.nonzero(surface)[0])
 print("Number of surface points = ", str(nb_surface))
 print('Min surface strain = {:.5f}'.format(strain[np.nonzero(surface)].min()))
 print('Max surface strain = {:.5f}'.format(strain[np.nonzero(surface)].max()))
-hist, bin_edges = np.histogram(strain[np.nonzero(surface)], bins=100)
+hist, bin_edges = np.histogram(strain[np.nonzero(surface)], bins=bin_number)
 hist = hist.astype(float)
 if normalize:
     hist = hist / nb_surface  # normalize the histogram to the number of points
-hist[hist == 0] = np.nan
+
 x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
-plt.figure()
+fig, ax = plt.subplots(nrows=1, ncols=1)
 if plot_scale == 'log':
-    plt.plot(x_axis, np.log10(hist))
+    hist[hist == 0] = np.nan
+    ax.plot(x_axis, np.log10(hist), linestyle='-', color='r', marker='.', markerfacecolor='r')
 else:
-    plt.plot(x_axis, hist)
+    ax.plot(x_axis, hist, linestyle='-', color='r', marker='.', markerfacecolor='r')
 if xlim is None:
-    plt.xlim(-max(abs(x_axis)), max(abs(x_axis)))
+    ax.set_xlim(-max(abs(x_axis)), max(abs(x_axis)))
 else:
     assert len(xlim) == 2, 'xlim=[min, max] expected'
-    plt.xlim(xlim[0], xlim[1])
+    ax.set_xlim(xlim[0], xlim[1])
 if ylim is not None:
     assert len(ylim) == 2, 'ylim=[min, max] expected'
-    plt.ylim(ylim[0], ylim[1])
-
-plt.title('Histogram of the strain for {:d} surface points'.format(nb_surface)
-          + "\nModulus threshold="+str(support_threshold))
+    ax.set_.ylim(ylim[0], ylim[1])
+ax.set_xlabel('strain')
+ax.axvline(x=0, ymin=0, ymax=1, color='r', linestyle='dashed')
+ax.set_title('Histogram of the strain for {:d} surface points'.format(nb_surface)
+             + "\nModulus threshold="+str(support_threshold))
 plt.pause(0.1)
 
 ##########################################
@@ -157,27 +160,30 @@ nb_bulk = len(np.nonzero(bulk)[0])
 print("Number of bulk points = ", str(nb_bulk))
 print('Min bulk strain = {:.5f}'.format(strain[np.nonzero(bulk)].min()))
 print('Max bulk strain = {:.5f}'.format(strain[np.nonzero(bulk)].max()))
-hist, bin_edges = np.histogram(strain[np.nonzero(bulk)], bins=100)
+hist, bin_edges = np.histogram(strain[np.nonzero(bulk)], bins=bin_number)
 hist = hist.astype(float)
 if normalize:
     hist = hist / nb_bulk  # normalize the histogram to the number of points
-hist[hist == 0] = np.nan
+
 x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
-plt.figure()
+fig, ax = plt.subplots(nrows=1, ncols=1)
 if plot_scale == 'log':
-    plt.plot(x_axis, np.log10(hist))
+    hist[hist == 0] = np.nan
+    ax.plot(x_axis, np.log10(hist), linestyle='-', color='b', marker='.', markerfacecolor='b')
 else:
-    plt.plot(x_axis, hist)
+    ax.plot(x_axis, hist, linestyle='-', color='b', marker='.', markerfacecolor='b')
 if xlim is None:
-    plt.xlim(-max(abs(x_axis)), max(abs(x_axis)))
+    ax.set_xlim(-max(abs(x_axis)), max(abs(x_axis)))
 else:
     assert len(xlim) == 2, 'xlim=[min, max] expected'
-    plt.xlim(xlim[0], xlim[1])
+    ax.set_xlim(xlim[0], xlim[1])
 if ylim is not None:
     assert len(ylim) == 2, 'ylim=[min, max] expected'
-    plt.ylim(ylim[0], ylim[1])
-plt.title('Histogram of the strain for {:d} bulk points'.format(nb_bulk)
-          + "\nModulus threshold="+str(support_threshold))
+    ax.set_ylim(ylim[0], ylim[1])
+ax.set_xlabel('strain')
+ax.axvline(x=0, ymin=0, ymax=1, color='b', linestyle='dashed')
+ax.set_title('Histogram of the strain for {:d} bulk points'.format(nb_bulk)
+             + "\nModulus threshold="+str(support_threshold))
 plt.pause(0.1)
 
 nb_total = len(np.nonzero(support)[0])
