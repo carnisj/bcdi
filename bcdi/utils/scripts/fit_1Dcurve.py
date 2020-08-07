@@ -82,7 +82,6 @@ for idx in range(nb_ranges):
     # find indices of distances belonging to ranges of interest
     myrange = fit_range[idx]
     ind_min, ind_max = util.find_nearest(distances, [myrange.min(), myrange.max()])
-    # TODO: add an option in find_nearest() to find the nearest within 2 values
     nb_points[idx] = ind_max - ind_min + 1
 
 # check if the number of points in ranges in the same, interpolate otherwise
