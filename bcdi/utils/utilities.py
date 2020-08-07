@@ -151,10 +151,10 @@ def function_lmfit(params, x_axis, distribution, iterator=0):
         return gaussian(x_axis=x_axis, amp=amp, cen=cen, sig=sig)
     elif distribution == 'skewed_gaussian':
         amp = params['amp_%i' % (iterator+1)].value
-        cen = params['cen_%i' % (iterator+1)].value
+        loc = params['loc_%i' % (iterator+1)].value
         sig = params['sig_%i' % (iterator+1)].value
         alpha = params['alpha_%i' % (iterator+1)].value
-        return skewed_gaussian(x_axis=x_axis, amp=amp, cen=cen, sig=sig, alpha=alpha)
+        return skewed_gaussian(x_axis=x_axis, amp=amp, loc=loc, sig=sig, alpha=alpha)
     elif distribution == 'lorentzian':
         amp = params['amp_%i' % (iterator+1)].value
         cen = params['cen_%i' % (iterator+1)].value
@@ -329,18 +329,18 @@ def remove_background(array, q_values, avg_background, avg_qvalues, method='norm
     return array
 
 
-def skewed_gaussian(x_axis, amp, cen, sig, alpha):
+def skewed_gaussian(x_axis, amp, loc, sig, alpha):
     """
     Skewed Gaussian line shape.
 
     :param x_axis: where to calculate the function
     :param amp: the amplitude of the Gaussian
-    :param cen: the position of the center
+    :param loc: the location parameter
     :param sig: HWHM of the Gaussian
     :param alpha: the shape parameter
     :return: the skewed Gaussian line shape at x_axis
     """
-    return amp*np.exp(-(x_axis-cen)**2/(2.*sig**2))*(1+erf(alpha/np.sqrt(2)*(x_axis-cen)/sig))
+    return amp*np.exp(-(x_axis-loc)**2/(2.*sig**2))*(1+erf(alpha/np.sqrt(2)*(x_axis-loc)/sig))
 
 
 def sum_roi(array, roi, debugging=False):
