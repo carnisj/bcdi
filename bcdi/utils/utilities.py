@@ -9,6 +9,7 @@
 import os
 import h5py
 import numpy as np
+from scipy.special import erf
 from scipy.interpolate import interp1d
 import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
@@ -133,14 +134,14 @@ def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, l, m):
         h*x_axis[0]**3 + i*x_axis[1]**3 + j*x_axis[2]**3 + k*x_axis[0]**4 + l*x_axis[1]**4 + m*x_axis[2]**4
 
 
-def function_lmfit(params, iterator, x_axis, distribution):
+def function_lmfit(params, x_axis, distribution, iterator=0):
     """
     Calculate distribution using by lmfit Parameters.
 
     :param params: a lmfit Parameters object
-    :param iterator: the index of the relevant parameters
     :param x_axis: where to calculate the function
     :param distribution: the distribution to use
+    :param iterator: the index of the relevant parameters
     :return: the gaussian function calculated at x_axis positions
     """
     if distribution == 'gaussian':
@@ -148,6 +149,12 @@ def function_lmfit(params, iterator, x_axis, distribution):
         cen = params['cen_%i' % (iterator+1)].value
         sig = params['sig_%i' % (iterator+1)].value
         return gaussian(x_axis=x_axis, amp=amp, cen=cen, sig=sig)
+    elif distribution == 'skewed_gaussian':
+        amp = params['amp_%i' % (iterator+1)].value
+        cen = params['cen_%i' % (iterator+1)].value
+        sig = params['sig_%i' % (iterator+1)].value
+        alpha = params['alpha_%i' % (iterator+1)].value
+        return skewed_gaussian(x_axis=x_axis, amp=amp, cen=cen, sig=sig, alpha=alpha)
     elif distribution == 'lorentzian':
         amp = params['amp_%i' % (iterator+1)].value
         cen = params['cen_%i' % (iterator+1)].value
@@ -248,6 +255,9 @@ def objective_lmfit(params, x_axis, data, distribution):
     :param distribution: distribution to use for fitting
     :return: the residuals of the fit of data using the parameters
     """
+    if len(data.shape) == 1:  # single dataset
+        data = data[np.newaxis, :]
+        x_axis = x_axis[np.newaxis, :]
     ndata, nx = data.shape
     resid = 0.0*data[:]
     # make residual per data set
@@ -317,6 +327,20 @@ def remove_background(array, q_values, avg_background, avg_qvalues, method='norm
     array[array < 0] = 0
 
     return array
+
+
+def skewed_gaussian(x_axis, amp, cen, sig, alpha):
+    """
+    Skewed Gaussian line shape.
+
+    :param x_axis: where to calculate the function
+    :param amp: the amplitude of the Gaussian
+    :param cen: the position of the center
+    :param sig: HWHM of the Gaussian
+    :param alpha: skewness parameter
+    :return: the skewed Gaussian line shape at x_axis
+    """
+    return amp*np.exp(-(x_axis-cen)**2/(2.*sig**2))*(1+erf(alpha/np.sqrt(2)*(x_axis-cen)/sig))
 
 
 def sum_roi(array, roi, debugging=False):
