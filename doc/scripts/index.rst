@@ -112,6 +112,15 @@ Graph
    :end-before: """
    :language: rst
 
+
+view_mesh.py
+^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/graph/scripts/view_mesh.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 'view_psf.py':
 ^^^^^^^^^^^^^^
 
@@ -509,14 +518,6 @@ scan_analysis.py
 ^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/utils/scripts/scan_analysis.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-view_mesh.py
-^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/view_mesh.py
    :start-after: helptext
    :end-before: """
    :language: rst
