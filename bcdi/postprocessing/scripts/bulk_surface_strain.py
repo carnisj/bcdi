@@ -148,10 +148,15 @@ if ylim is not None:
     assert len(ylim) == 2, 'ylim=[min, max] expected'
     ax.set_.ylim(ylim[0], ylim[1])
 ax.set_xlabel('strain')
-ax.axvline(x=0, ymin=0, ymax=1, color='r', linestyle='dashed')
+line1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
+line2 = ax.axvline(x=np.mean(strain[np.nonzero(surface)]), ymin=0, ymax=1, color='r', linestyle='dashed')
+ax.legend(handles=(line1, line2), labels=('strain=0', '<surface>'), loc='upper right', frameon=False)
 ax.set_title('Histogram of the strain for {:d} surface points'.format(nb_surface)
              + "\nModulus threshold="+str(support_threshold))
+fig.text(0.65, 0.7, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(surface)])))
+fig.text(0.65, 0.65, 'std={:.2e}'.format(np.std(strain[np.nonzero(surface)])))
 plt.pause(0.1)
+fig.savefig(datadir + 'surface_strain_iso' + str(support_threshold)+'.png')
 
 ##########################################
 # plot the strain histogram for the bulk #
@@ -181,10 +186,15 @@ if ylim is not None:
     assert len(ylim) == 2, 'ylim=[min, max] expected'
     ax.set_ylim(ylim[0], ylim[1])
 ax.set_xlabel('strain')
-ax.axvline(x=0, ymin=0, ymax=1, color='b', linestyle='dashed')
+line1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
+line2 = ax.axvline(x=np.mean(strain[np.nonzero(bulk)]), ymin=0, ymax=1, color='b', linestyle='dashed')
+ax.legend(handles=(line1, line2), labels=('strain=0', '<bulk>'), loc='upper right', frameon=False)
 ax.set_title('Histogram of the strain for {:d} bulk points'.format(nb_bulk)
              + "\nModulus threshold="+str(support_threshold))
+fig.text(0.65, 0.7, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(bulk)])))
+fig.text(0.65, 0.65, 'std={:.2e}'.format(np.std(strain[np.nonzero(bulk)])))
 plt.pause(0.1)
+fig.savefig(datadir + 'bulk_strain_iso' + str(support_threshold)+'.png')
 
 nb_total = len(np.nonzero(support)[0])
 print("Sanity check: Total points = {:d}".format(nb_total), ", surface+bulk = {:d}".format(nb_surface+nb_bulk))
