@@ -25,21 +25,28 @@ the surface and in the remaining bulk.
 Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_strain.npz)
 """
 
-scan = 1484  # spec scan number
+scan = 1638  # spec scan number
 root_folder = "D:/data/P10_OER/analysis/candidate_12/"
 sample_name = "dewet2_2"  # "S"
-datadir = root_folder + 'dewet2_2_S1484_to_S1511/'  # sample_name + str(scan) + "/pynxraw/"
-support_threshold = 0.45  # threshold applied to the modulus for reading the surface strain
+datadir = root_folder + 'dewet2_2_S1638_to_S1680/'  # sample_name + str(scan) + "/pynxraw/"
+support_threshold = 0.5  # threshold applied to the modulus for reading the surface strain
 normalize = True  # if True, will normalize the histograms to the respective number of points
 bin_number = 2000  # number of bins between strain_min and strain_max
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
 xlim = [-0.002, 0.002]  # limits used for the horizontal axis of histograms, leave None otherwise
 ylim = None  # limits used for the vertical axis of histograms, leave None otherwise
+fit_pdf = 'pseudovoigt'  # 'pseudovoight' or 'skewed_gaussian'
 save_txt = False  # True to save the strain values for the surface, the bulk and the full support in txt files
 debug = True  # True to see more plots
 ##########################
 # end of user parameters #
 ##########################
+
+#########################
+# check some parameters #
+#########################
+assert fit_pdf in ['pseudovoigt', 'skewed_gaussian'], 'invalid value for fit_pdf parameter'
+
 
 ###################
 # define colormap #
@@ -122,9 +129,9 @@ if save_txt:
     file_bulk.close()
     file_total.close()
 
-############################################################
-# fit a skewed Gaussian to the surface strain distribution #
-############################################################
+####################################
+# fit the bulk strain distribution #
+####################################
 nb_surface = len(np.nonzero(surface)[0])
 print("Number of surface points = ", str(nb_surface))
 print('Min surface strain = {:.5f}'.format(strain[np.nonzero(surface)].min()))
@@ -137,14 +144,21 @@ if normalize:
 x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 
 fit_params = Parameters()
-fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
-fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
-fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
-fit_params.add('alpha_1', value=0, min=-10, max=10)
+if fit_pdf == 'skewed_gaussian':
+    fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
+    fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
+    fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
+    fit_params.add('alpha_1', value=0, min=-10, max=10)
+else:  # 'pseudovoigt'
+    fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
+    fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
+    fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
+    fit_params.add('ratio_1', value=0.5, min=0, max=1)
+
 # run the global fit to all the data sets
-result = minimize(util.objective_lmfit, fit_params, args=(x_axis, hist, 'skewed_gaussian'))
+result = minimize(util.objective_lmfit, fit_params, args=(x_axis, hist, fit_pdf))
 report_fit(result.params)
-strain_fit = util.function_lmfit(params=result.params, x_axis=x_axis, distribution='skewed_gaussian')
+strain_fit = util.function_lmfit(params=result.params, x_axis=x_axis, distribution=fit_pdf)
 
 ###################################################
 # plot the strain histogram for the surface layer #
@@ -168,7 +182,7 @@ if ylim is not None:
 ax.set_xlabel('strain')
 vline1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
 vline2 = ax.axvline(x=np.mean(strain[np.nonzero(surface)]), ymin=0, ymax=1, color='r', linestyle='dashed')
-legend_fit = ax.legend(handles=[fit], labels=['skewed gaussian'], loc='upper left', frameon=False)
+legend_fit = ax.legend(handles=[fit], labels=[fit_pdf], loc='upper left', frameon=False)
 ax.legend(handles=(vline1, vline2), labels=('strain=0', '<surface>'), loc='upper right', frameon=False)
 ax.add_artist(legend_fit)
 ax.set_title('S{:d} histogram of the strain for {:d} surface points'.format(scan, nb_surface)
@@ -179,12 +193,15 @@ fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen
                                                               result.params['cen_1'].stderr))
 fig.text(0.15, 0.60, 'PDF std={:.2e}\n   +/-{:.2e}'.format(result.params['sig_1'].value,
                                                            result.params['sig_1'].stderr))
+if fit_pdf == 'pseudovoigt':
+    fig.text(0.15, 0.50, 'PDF ratio={:.2e}\n   +/-{:.2e}'.format(result.params['ratio_1'].value,
+                                                                 result.params['ratio_1'].stderr))
 plt.pause(0.1)
 fig.savefig(datadir + 'surface_strain_iso' + str(support_threshold)+'.png')
 
-############################################################
-# fit a skewed Gaussian to the surface strain distribution #
-############################################################
+####################################
+# fit the bulk strain distribution #
+####################################
 nb_bulk = len(np.nonzero(bulk)[0])
 print("Number of bulk points = ", str(nb_bulk))
 print('Min bulk strain = {:.5f}'.format(strain[np.nonzero(bulk)].min()))
@@ -197,14 +214,21 @@ if normalize:
 x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 
 fit_params = Parameters()
-fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
-fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
-fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
-fit_params.add('alpha_1', value=0, min=-10, max=10)
+if fit_pdf == 'skewed_gaussian':
+    fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
+    fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
+    fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
+    fit_params.add('alpha_1', value=0, min=-10, max=10)
+else:  # 'pseudovoigt'
+    fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
+    fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
+    fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
+    fit_params.add('ratio_1', value=0.5, min=0, max=1)
+
 # run the global fit to all the data sets
-result = minimize(util.objective_lmfit, fit_params, args=(x_axis, hist, 'skewed_gaussian'))
+result = minimize(util.objective_lmfit, fit_params, args=(x_axis, hist, fit_pdf))
 report_fit(result.params)
-strain_fit = util.function_lmfit(params=result.params, x_axis=x_axis, distribution='skewed_gaussian')
+strain_fit = util.function_lmfit(params=result.params, x_axis=x_axis, distribution=fit_pdf)
 
 ##########################################
 # plot the strain histogram for the bulk #
@@ -228,7 +252,7 @@ if ylim is not None:
 ax.set_xlabel('strain')
 vline1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
 vline2 = ax.axvline(x=np.mean(strain[np.nonzero(bulk)]), ymin=0, ymax=1, color='b', linestyle='dashed')
-legend_fit = ax.legend(handles=[fit], labels=['skewed gaussian'], loc='upper left', frameon=False)
+legend_fit = ax.legend(handles=[fit], labels=[fit_pdf], loc='upper left', frameon=False)
 ax.legend(handles=(vline1, vline2), labels=('strain=0', '<bulk>'), loc='upper right', frameon=False)
 ax.add_artist(legend_fit)
 ax.set_title('S{:d} histogram for {:d} bulk points'.format(scan, nb_bulk)
@@ -239,6 +263,9 @@ fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen
                                                               result.params['cen_1'].stderr))
 fig.text(0.15, 0.60, 'PDF std={:.2e}\n   +/-{:.2e}'.format(result.params['sig_1'].value,
                                                            result.params['sig_1'].stderr))
+if fit_pdf == 'pseudovoigt':
+    fig.text(0.15, 0.50, 'PDF ratio={:.2e}\n   +/-{:.2e}'.format(result.params['ratio_1'].value,
+                                                                 result.params['ratio_1'].stderr))
 plt.pause(0.1)
 fig.savefig(datadir + 'bulk_strain_iso' + str(support_threshold)+'.png')
 
