@@ -22,25 +22,25 @@ Open a series of rocking curve data and track the position of the Bragg peak ove
 
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL, MAX IV NANOMAX.
 """
-scans = np.arange(1686, 1716+1, step=3)  # list or array of scan numbers
-# scans = np.arange(1009, 1075+1, step=3)  # list or array of scan numbers
-# scans = np.concatenate((scans, np.arange(1081, 1135+1, 3)))
-# scans = np.concatenate((scans, np.arange(1198, 1231+1, 3)))
-# scans = np.concatenate((scans, np.arange(1236, 1395+1, 3)))
+scans = np.arange(1460, 1475+1, step=3)  # list or array of scan numbers
+scans = np.concatenate((scans, np.arange(1484, 1586+1, 3)))
+scans = np.concatenate((scans, np.arange(1591, 1633+1, 3)))
+scans = np.concatenate((scans, np.arange(1638, 1680+1, 3)))
+
 root_folder = "D:/data/P10_OER/data/"
 sample_name = "dewet2_2"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 savedir = "D:/data/P10_OER/analysis/candidate_12/"
 # images will be saved here, leave it to '' otherwise (default to root_folder)
-x_axis = [0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2]
-# x_axis =[0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0, 0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6,
-#          0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4,
-#          0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.1, 1.1, 1.0, 1.0,
-#          0.9, 0.9, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.0, 0.0, 0.1, 0.1,
-#          0.2, 0.2, 0.3, 0.3, 0.4, 0.4, 0.5, 0.5, 0.6, 0.6, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.1, 1.1]
+x_axis = []
+[x_axis.append(0.740) for _ in range(16)]
+[x_axis.append(0.80) for _ in range(10)]
+[x_axis.append(-0.05) for _ in range(15)]
+[x_axis.append(0.3) for _ in range(15)]
+[x_axis.append(0.8) for _ in range(15)]
 # values against which the Bragg peak center of mass evolution will be plotted, leave [] otherwise
 x_label = 'voltage (V)'  # label for the X axis in plots, leave '' otherwise
-comment = '_small_RC'  # comment for the saving filename, should start with _
+comment = '_BCDI_RC'  # comment for the saving filename, should start with _
 strain_range = 0.00005  # range for the plot of the q value
 peak_method = 'max_com'  # Bragg peak determination: 'max', 'com', 'max_com' (max then com)
 debug = False  # set to True to see more plots
@@ -72,8 +72,8 @@ specfile_name = ''
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1367  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 811  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+x_bragg = 1387  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 809  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 roi_detector = [y_bragg-200, y_bragg+200, x_bragg-400, x_bragg+400]  # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector. Use with center_fft='skip' if you want this exact size.
 debug_pix = 40  # half-width in pixels of the ROI centered on the Bragg peak
@@ -282,17 +282,27 @@ for scan_id in range(len(scans)):
 # plot the ROI centered on the Bragg peak for each scan  #
 ##########################################################
 plt.ion()
-nb_rows = np.floor(np.sqrt(len(scans)))
-nb_columns = np.ceil(len(scans) / nb_rows)
 
-fig = plt.figure(figsize=(12, 9))
-for idx in range(len(scans)):
-    axis = plt.subplot(nb_rows, nb_columns, idx+1)
-    axis.imshow(np.log10(check_roi[idx]))
-    axis.set_title('S{:d}'.format(scans[idx]))
-plt.tight_layout()
-plt.pause(0.1)
-fig.savefig(savedir + 'check-roi' + comment + '.png')
+# plot maximum 7x7 ROIs per figure
+nb_fig = 1 + len(scans) // 49
+if nb_fig == 1:
+    nb_rows = np.floor(np.sqrt(len(scans)))
+    nb_columns = np.ceil(len(scans) / nb_rows)
+else:
+    nb_rows = 7
+    nb_columns = 7
+
+scan_counter = 0
+for fig_idx in range(nb_fig):
+    fig = plt.figure(figsize=(12, 9))
+    for idx in range(min(49, len(scans)-scan_counter)):
+        axis = plt.subplot(nb_rows, nb_columns, idx+1)
+        axis.imshow(np.log10(check_roi[scan_counter]))
+        axis.set_title('S{:d}'.format(scans[scan_counter]))
+        scan_counter = scan_counter + 1
+    plt.tight_layout()
+    plt.pause(0.1)
+    fig.savefig(savedir + 'check-roi' + str(fig_idx+1) + comment + '.png')
 
 ##########################################################
 # plot the evolution of the center of mass and intensity #
