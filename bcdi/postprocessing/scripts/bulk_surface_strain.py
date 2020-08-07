@@ -25,11 +25,11 @@ the surface and in the remaining bulk.
 Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_strain.npz)
 """
 
-scan = 1591  # spec scan number
+scan = 1484  # spec scan number
 root_folder = "D:/data/P10_OER/analysis/candidate_12/"
 sample_name = "dewet2_2"  # "S"
-datadir = root_folder + 'dewet2_2_S1591_to_S1633/'  # sample_name + str(scan) + "/pynxraw/"
-support_threshold = 0.50  # threshold applied to the modulus for reading the surface strain
+datadir = root_folder + 'dewet2_2_S1484_to_S1511/'  # sample_name + str(scan) + "/pynxraw/"
+support_threshold = 0.45  # threshold applied to the modulus for reading the surface strain
 normalize = True  # if True, will normalize the histograms to the respective number of points
 bin_number = 2000  # number of bins between strain_min and strain_max
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
@@ -171,7 +171,7 @@ vline2 = ax.axvline(x=np.mean(strain[np.nonzero(surface)]), ymin=0, ymax=1, colo
 legend_fit = ax.legend(handles=[fit], labels=['skewed gaussian'], loc='upper left', frameon=False)
 ax.legend(handles=(vline1, vline2), labels=('strain=0', '<surface>'), loc='upper right', frameon=False)
 ax.add_artist(legend_fit)
-ax.set_title('Histogram of the strain for {:d} surface points'.format(nb_surface)
+ax.set_title('S{:d} histogram of the strain for {:d} surface points'.format(scan, nb_surface)
              + "\nModulus threshold="+str(support_threshold))
 fig.text(0.65, 0.70, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(surface)])))
 fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(surface)])))
@@ -231,7 +231,7 @@ vline2 = ax.axvline(x=np.mean(strain[np.nonzero(bulk)]), ymin=0, ymax=1, color='
 legend_fit = ax.legend(handles=[fit], labels=['skewed gaussian'], loc='upper left', frameon=False)
 ax.legend(handles=(vline1, vline2), labels=('strain=0', '<bulk>'), loc='upper right', frameon=False)
 ax.add_artist(legend_fit)
-ax.set_title('Histogram of the strain for {:d} bulk points'.format(nb_bulk)
+ax.set_title('S{:d} histogram for {:d} bulk points'.format(scan, nb_bulk)
              + "\nModulus threshold="+str(support_threshold))
 fig.text(0.65, 0.70, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(bulk)])))
 fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(bulk)])))
