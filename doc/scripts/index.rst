@@ -88,6 +88,14 @@ Graph
    :end-before: """
    :language: rst
 
+scan_analysis.py
+^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/graph/scripts/scan_analysis.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 'scan_movie.py':
 ^^^^^^^^^^^^^^^^
 
@@ -510,14 +518,6 @@ save_to_mat.py
 ^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/utils/scripts/save_to_mat.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-scan_analysis.py
-^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/scan_analysis.py
    :start-after: helptext
    :end-before: """
    :language: rst
