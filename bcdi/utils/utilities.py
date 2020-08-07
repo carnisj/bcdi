@@ -337,7 +337,7 @@ def skewed_gaussian(x_axis, amp, cen, sig, alpha):
     :param amp: the amplitude of the Gaussian
     :param cen: the position of the center
     :param sig: HWHM of the Gaussian
-    :param alpha: skewness parameter
+    :param alpha: the shape parameter
     :return: the skewed Gaussian line shape at x_axis
     """
     return amp*np.exp(-(x_axis-cen)**2/(2.*sig**2))*(1+erf(alpha/np.sqrt(2)*(x_axis-cen)/sig))
@@ -386,8 +386,11 @@ def sum_roi(array, roi, debugging=False):
     return sum_array
 
 
-# if __name__ == "__main__":
-#     import numpy as np
-#     ref_array = np.array([-0.048,1,2,3,4,5,6])
-#     ind = find_nearest(reference_array=ref_array, test_values=np.array([0.2, 0.5]), width=0.5)
-#     print(ind)
+if __name__ == "__main__":
+    import numpy as np
+    import matplotlib.pyplot as plt
+    x = np.linspace(-3,3,num=200)
+    y = np.asarray([skewed_gaussian(point, 1, 0, 1, 3) for point in x])
+    plt.figure()
+    plt.plot(x,y)
+    plt.show()
