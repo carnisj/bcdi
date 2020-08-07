@@ -219,10 +219,19 @@ rescale_support.py
 Postprocessing
 --------------
 
-strain.py
-^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/postprocessing/scripts/strain.py
+amp_histogram.py
+^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/amp_histogram.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bulk_surface_strain.py
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/bulk_surface_strain.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -231,6 +240,22 @@ correct_angles_detector.py
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/postprocessing/scripts/correct_angles_detector.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+modes_decomposition.py
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/modes_decomposition.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+post_process_CDI_2D.py
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/post_process_CDI_2D.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -258,38 +283,6 @@ prtf_cdi.py
    :start-after: helptext
    :end-before: """
    :language: rst
-   
-extract_bulk_surface.py
-^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/extract_bulk_surface.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
-amp_histogram.py
-^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/amp_histogram.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
-modes_decomposition.py
-^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/modes_decomposition.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
-post_process_CDI_2D.py
-^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/post_process_CDI_2D.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
 
 rocking_curves.py
 ^^^^^^^^^^^^^^^^^
@@ -298,6 +291,15 @@ rocking_curves.py
    :start-after: helptext
    :end-before: """
    :language: rst
+
+strain.py
+^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/strain.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 
 strain_mean_var_rms.py
 ^^^^^^^^^^^^^^^^^^^^^^
