@@ -162,8 +162,8 @@ strain_fit = util.function_lmfit(params=result.params, x_axis=x_axis, distributi
 
 if fit_pdf == 'skewed_gaussian':  # find the position of the mode (maximum of the pdf)
     x_mode = np.unravel_index(strain_fit.argmax(), x_axis.shape)
+    step = x_axis[x_mode] - x_axis[x_mode[0]-1]
     fine_x = np.copy(x_axis)
-    step = 0.0002
     for idx in range(2):
         fine_x = np.linspace(fine_x[x_mode] - step, fine_x[x_mode] + step, endpoint=True, num=1000)
         fine_y = util.function_lmfit(params=result.params, x_axis=fine_x, distribution=fit_pdf)
@@ -203,7 +203,7 @@ fig.text(0.65, 0.70, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(surface)
 fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(surface)])))
 
 if fit_pdf == 'skewed_gaussian':
-    fig.text(0.15, 0.70, 'max at strain ={:.2e}'.format(strain_mode))
+    fig.text(0.15, 0.70, 'max at strain={:.2e}'.format(strain_mode))
 else:
     fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
                                                                   result.params['cen_1'].stderr))
@@ -247,8 +247,8 @@ strain_fit = util.function_lmfit(params=result.params, x_axis=x_axis, distributi
 
 if fit_pdf == 'skewed_gaussian':  # find the position of the mode (maximum of the pdf)
     x_mode = np.unravel_index(strain_fit.argmax(), x_axis.shape)
+    step = x_axis[x_mode] - x_axis[x_mode[0]-1]
     fine_x = np.copy(x_axis)
-    step = 0.0002
     for idx in range(2):
         fine_x = np.linspace(fine_x[x_mode] - step, fine_x[x_mode] + step, endpoint=True, num=1000)
         fine_y = util.function_lmfit(params=result.params, x_axis=fine_x, distribution=fit_pdf)
@@ -288,7 +288,7 @@ fig.text(0.65, 0.70, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(bulk)]))
 fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(bulk)])))
 
 if fit_pdf == 'skewed_gaussian':
-    fig.text(0.15, 0.70, 'max at strain ={:.2e}'.format(strain_mode))
+    fig.text(0.15, 0.70, 'max at strain={:.2e}'.format(strain_mode))
 else:
     fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
                                                                   result.params['cen_1'].stderr))
