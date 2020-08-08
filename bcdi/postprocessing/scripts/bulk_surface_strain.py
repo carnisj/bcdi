@@ -35,7 +35,7 @@ bin_number = 2000  # number of bins between strain_min and strain_max
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
 xlim = [-0.002, 0.002]  # limits used for the horizontal axis of histograms, leave None otherwise
 ylim = None  # limits used for the vertical axis of histograms, leave None otherwise
-fit_pdf = 'pseudovoigt'  # 'pseudovoight' or 'skewed_gaussian'
+fit_pdf = 'skewed_gaussian'  # 'pseudovoight' or 'skewed_gaussian'
 save_txt = False  # True to save the strain values for the surface, the bulk and the full support in txt files
 debug = True  # True to see more plots
 ##########################
@@ -146,7 +146,7 @@ x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 fit_params = Parameters()
 if fit_pdf == 'skewed_gaussian':
     fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
-    fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
+    fit_params.add('loc_1', value=0, min=-0.1, max=0.1)
     fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
     fit_params.add('alpha_1', value=0, min=-10, max=10)
 else:  # 'pseudovoigt'
@@ -159,6 +159,18 @@ else:  # 'pseudovoigt'
 result = minimize(util.objective_lmfit, fit_params, args=(x_axis, hist, fit_pdf))
 report_fit(result.params)
 strain_fit = util.function_lmfit(params=result.params, x_axis=x_axis, distribution=fit_pdf)
+
+if fit_pdf == 'skewed_gaussian':  # find the position of the mode (maximum of the pdf)
+    x_mode = np.unravel_index(strain_fit.argmax(), x_axis.shape)
+    fine_x = np.copy(x_axis)
+    step = 0.0002
+    for idx in range(2):
+        fine_x = np.linspace(fine_x[x_mode] - step, fine_x[x_mode] + step, endpoint=True, num=1000)
+        fine_y = util.function_lmfit(params=result.params, x_axis=fine_x, distribution=fit_pdf)
+        diff_fit = np.gradient(fine_y, fine_x[1] - fine_x[0])
+        x_mode, = np.unravel_index(abs(diff_fit).argmin(), fine_x.shape)
+        step = fine_x[x_mode] - fine_x[x_mode - 1]
+    strain_mode = fine_x[x_mode]
 
 ###################################################
 # plot the strain histogram for the surface layer #
@@ -189,11 +201,14 @@ ax.set_title('S{:d} histogram of the strain for {:d} surface points'.format(scan
              + "\nModulus threshold="+str(support_threshold))
 fig.text(0.65, 0.70, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(surface)])))
 fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(surface)])))
-fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
-                                                              result.params['cen_1'].stderr))
-fig.text(0.15, 0.60, 'PDF std={:.2e}\n   +/-{:.2e}'.format(result.params['sig_1'].value,
-                                                           result.params['sig_1'].stderr))
-if fit_pdf == 'pseudovoigt':
+
+if fit_pdf == 'skewed_gaussian':
+    fig.text(0.15, 0.70, 'max at strain ={:.2e}'.format(strain_mode))
+else:
+    fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
+                                                                  result.params['cen_1'].stderr))
+    fig.text(0.15, 0.60, 'PDF std={:.2e}\n   +/-{:.2e}'.format(result.params['sig_1'].value,
+                                                               result.params['sig_1'].stderr))
     fig.text(0.15, 0.50, 'PDF ratio={:.2e}\n   +/-{:.2e}'.format(result.params['ratio_1'].value,
                                                                  result.params['ratio_1'].stderr))
 plt.pause(0.1)
@@ -216,7 +231,7 @@ x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 fit_params = Parameters()
 if fit_pdf == 'skewed_gaussian':
     fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
-    fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
+    fit_params.add('loc_1', value=0, min=-0.1, max=0.1)
     fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
     fit_params.add('alpha_1', value=0, min=-10, max=10)
 else:  # 'pseudovoigt'
@@ -229,6 +244,18 @@ else:  # 'pseudovoigt'
 result = minimize(util.objective_lmfit, fit_params, args=(x_axis, hist, fit_pdf))
 report_fit(result.params)
 strain_fit = util.function_lmfit(params=result.params, x_axis=x_axis, distribution=fit_pdf)
+
+if fit_pdf == 'skewed_gaussian':  # find the position of the mode (maximum of the pdf)
+    x_mode = np.unravel_index(strain_fit.argmax(), x_axis.shape)
+    fine_x = np.copy(x_axis)
+    step = 0.0002
+    for idx in range(2):
+        fine_x = np.linspace(fine_x[x_mode] - step, fine_x[x_mode] + step, endpoint=True, num=1000)
+        fine_y = util.function_lmfit(params=result.params, x_axis=fine_x, distribution=fit_pdf)
+        diff_fit = np.gradient(fine_y, fine_x[1] - fine_x[0])
+        x_mode, = np.unravel_index(abs(diff_fit).argmin(), fine_x.shape)
+        step = fine_x[x_mode] - fine_x[x_mode - 1]
+    strain_mode = fine_x[x_mode]
 
 ##########################################
 # plot the strain histogram for the bulk #
@@ -259,11 +286,14 @@ ax.set_title('S{:d} histogram for {:d} bulk points'.format(scan, nb_bulk)
              + "\nModulus threshold="+str(support_threshold))
 fig.text(0.65, 0.70, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(bulk)])))
 fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(bulk)])))
-fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
-                                                              result.params['cen_1'].stderr))
-fig.text(0.15, 0.60, 'PDF std={:.2e}\n   +/-{:.2e}'.format(result.params['sig_1'].value,
-                                                           result.params['sig_1'].stderr))
-if fit_pdf == 'pseudovoigt':
+
+if fit_pdf == 'skewed_gaussian':
+    fig.text(0.15, 0.70, 'max at strain ={:.2e}'.format(strain_mode))
+else:
+    fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
+                                                                  result.params['cen_1'].stderr))
+    fig.text(0.15, 0.60, 'PDF std={:.2e}\n   +/-{:.2e}'.format(result.params['sig_1'].value,
+                                                               result.params['sig_1'].stderr))
     fig.text(0.15, 0.50, 'PDF ratio={:.2e}\n   +/-{:.2e}'.format(result.params['ratio_1'].value,
                                                                  result.params['ratio_1'].stderr))
 plt.pause(0.1)
