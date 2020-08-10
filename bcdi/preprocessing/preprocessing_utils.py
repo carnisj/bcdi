@@ -1866,7 +1866,7 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
 
     :param custom_images: the list of image numbers
     :param custom_monitor: list of monitor values for normalization
-    :param beamline: supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
+    :param beamline: supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX' '34ID'
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
