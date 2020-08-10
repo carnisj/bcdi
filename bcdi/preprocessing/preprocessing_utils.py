@@ -1596,7 +1596,7 @@ def load_background(background_file):
 
 
 def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
-                   normalize=False, debugging=False, **kwargs):
+                   normalize='skip', debugging=False, **kwargs):
     """
     Load Bragg CDI data, apply optional threshold, normalization and binning.
 
@@ -1607,7 +1607,8 @@ def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpix
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
-    :param normalize: set to True to normalize by the default monitor of the beamline
+    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
+     integrated intensity in the region of interest defined by detector.sum_roi, 'skip' to do nothing
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
@@ -1627,11 +1628,6 @@ def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpix
         photon_threshold
     except NameError:  # photon_threshold not declared
         photon_threshold = 0
-
-    if normalize:
-        normalize_method = 'monitor'
-    else:
-        normalize_method = 'skip'
 
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
