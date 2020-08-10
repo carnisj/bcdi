@@ -215,8 +215,11 @@ def load_file(file_path, fieldname=None):
     elif extension == '.h5':  # modes.h5
         h5file = h5py.File(file_path, 'r')
         group_key = list(h5file.keys())[0]
-        subgroup_key = list(h5file[group_key])
-        dataset = h5file['/' + group_key + '/' + subgroup_key[0] + '/data'][0]  # select only first mode
+        if group_key == 'mask':  # mask object for Nanomax data
+            dataset = h5file['/' + group_key][:]
+        else:  # modes.h5 file output of PyNX phase retrieval
+            subgroup_key = list(h5file[group_key])
+            dataset = h5file['/' + group_key + '/' + subgroup_key[0] + '/data'][0]  # select only first mode
     else:
         raise ValueError("File format not supported: can load only '.npy', '.npz', '.cxi' or '.h5' files")
 

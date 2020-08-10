@@ -2103,9 +2103,7 @@ def load_hotpixels(hotpixels_file):
     :return: a 2D array of hotpixels (1 for hotpixel, 0 for normal pixel)
     """
     if hotpixels_file != "":
-        hotpixels = np.load(hotpixels_file)
-        npz_key = hotpixels.files
-        hotpixels = hotpixels[npz_key[0]]
+        hotpixels, _ = util.load_file(hotpixels_file)
         if hotpixels.ndim == 3:
             hotpixels = hotpixels.sum(axis=0)
         if hotpixels.ndim != 2:
