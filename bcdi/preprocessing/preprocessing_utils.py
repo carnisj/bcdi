@@ -2327,7 +2327,7 @@ def load_nanomax_data(logfile, detector, flatfield, hotpixels, background, norma
         monitor = np.ones(nb_img)
 
     for idx in range(nb_img):
-        ccdraw = np.flipud(tmp_data[idx, :, :])  # TODO: check that this is correct
+        ccdraw = tmp_data[idx, :, :]
         if background is not None:
             ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
