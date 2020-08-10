@@ -62,7 +62,7 @@ specfile_name = ''
 detector = "Merlin"    # "Eiger2M" or "Maxipix" or "Eiger4M" or 'Merlin'
 bragg_position = []  # Bragg peak position [vertical, horizontal], leave it as [] if there is a single peak
 peak_method = 'max'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
-photon_threshold = 100000  # everything above will be considered as hotpixel
+high_threshold = 100000  # everything above will be considered as hotpixel
 hotpixels_file = root_folder + 'merlin_mask_190222_14keV.h5'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
 template_imagefile = '%06d.h5'
@@ -131,10 +131,10 @@ print('Data shape: ', numz, numy, numx)
 ##########################
 # apply photon threshold #
 ##########################
-if photon_threshold != 0:
-    nb_thresholded = (data > photon_threshold).sum()
-    mask[data > photon_threshold] = 1
-    data[data > photon_threshold] = 0
+if high_threshold != 0:
+    nb_thresholded = (data > high_threshold).sum()
+    mask[data > high_threshold] = 1
+    data[data > high_threshold] = 0
     print("Applying photon threshold, {:d} high intensity pixels masked".format(nb_thresholded))
 
 ######################################################
