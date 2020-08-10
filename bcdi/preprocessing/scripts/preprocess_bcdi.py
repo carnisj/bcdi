@@ -41,9 +41,13 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [1301]  # np.arange(404, 407+1, 3)  # list or array of scan numbers
-root_folder = "D:/data/SIXS_2019_Ni/"
-sample_name = ["S"]  # "SN"  # list of sample names. If only one name is indicated,
+scans = 329  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
+# scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
+# bad_indices = np.argwhere(scans == 738)
+# scans = np.delete(scans, bad_indices)
+
+root_folder = "D:/data/Nanomax/"
+sample_name = [""]  # "SN"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -71,7 +75,7 @@ pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the a
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
-normalize_flux = True  # will normalize the intensity by the default monitor.
+normalize_flux = 'skip'  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
 #################################
 # parameters for data filtering #
 #################################
@@ -100,8 +104,8 @@ save_asint = False  # if True, the result will be saved as an array of integers 
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'SIXS_2019'  # name of the beamline, used for data loading and normalization by monitor
-# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
+beamline = 'NANOMAX'  # name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX', '34ID'
 is_series = False  # specific to series measurement at P10
 
 custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
@@ -117,17 +121,18 @@ specfile_name = ''
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
 # template for SIXS_2019: ''
 # template for P10: ''
+# template for NANOMAX: ''
 # template for CRISTAL: ''
 # template for 34ID: ''
 ###############################
 # detector related parameters #
 ###############################
-detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M" or "Timepix"
+detector = "Merlin"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-# x_bragg = 147  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-# y_bragg = 178  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+x_bragg = 160  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 325  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = []  # [553, 1063, 1041, 1701]
+roi_detector = [y_bragg-160, y_bragg+160, x_bragg-160, x_bragg+160]  # [553, 1063, 1041, 1701]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -139,12 +144,13 @@ photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon thre
 background_file = ''  # root_folder + 'background.npz'  #
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'Pt_ascan_mu_%05d.nxs'
+template_imagefile = '%06d.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_master.h5'
+# template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
@@ -158,8 +164,9 @@ custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
 # ID01: eta, phi, nu, delta
 # CRISTAL: mgomega, gamma, delta
-# P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
+# P10: om, phi, chi, mu, gamma, delta
+# NANOMAX: theta, phi, gamma, delta, energy, radius
 # 34ID: mu, phi (incident angle), chi, theta (inplane), delta (inplane), gamma (outofplane)
 #########################################################################
 # parameters for xrayutilities to orthogonalize the data before phasing #
@@ -285,6 +292,20 @@ def press_key(event):
 #########################
 # check some parameters #
 #########################
+try:
+    len(scans)
+except TypeError:  # a single number was provided, not a list
+    scans = [scans]
+
+if len(scans) > 1:
+    if center_fft not in ['crop_asymmetric_ZYX', 'pad_Z', 'pad_asymmetric_ZYX']:
+        center_fft = 'skip'
+        # avoid croping the detector plane XY while centering the Bragg peak
+        # otherwise outputs may have a different size, which will be problematic for combining or comparing them
+if len(fix_size) != 0:
+    print('"fix_size" parameter provided, roi_detector will be set to []')
+    roi_detector = []
+
 if correct_curvature:
     print('correction of the curvature of Ewalt sphere not yet implemented, defaulting to False')
     correct_curvature = False  # TODO: implement this
@@ -368,34 +389,25 @@ plt.rcParams["keymap.quit"] = ["ctrl+w", "cmd+w"]  # this one to avoid that q cl
 ############################
 root = tk.Tk()
 root.withdraw()
-try:
-    len(scans)
-except TypeError:  # a single number was provided, not a list
-    scans = [scans]
-
-if len(scans) > 1:
-    if center_fft not in ['crop_asymmetric_ZYX', 'pad_Z', 'pad_asymmetric_ZYX']:
-        center_fft = 'skip'
-        # avoid croping the detector plane XY while centering the Bragg peak
-        # otherwise outputs may have a different size, which will be problematic for combining or comparing them
-if len(fix_size) != 0:
-    print('"fix_size" parameter provided, roi_detector will be set to []')
-    roi_detector = []
 
 for scan_nb in range(len(scans)):
     plt.ion()
 
     comment = user_comment  # initialize comment
-    if setup.beamline != 'P10':
-        homedir = root_folder + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
-        detector.datadir = homedir + "data/"
-        specfile = specfile_name
-    else:
+    if setup.beamline == 'P10':
         specfile = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb])
         homedir = root_folder + specfile + '/'
         detector.datadir = homedir + 'e4m/'
         imagefile = specfile + template_imagefile
         detector.template_imagefile = imagefile
+    elif setup.beamline == 'NANOMAX':
+        homedir = root_folder + sample_name[scan_nb] + '{:06d}'.format(scans[scan_nb]) + '/'
+        detector.datadir = homedir + 'data/'
+        specfile = specfile_name
+    else:
+        homedir = root_folder + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
+        detector.datadir = homedir + "data/"
+        specfile = specfile_name
 
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
                                  root_folder=root_folder, filename=specfile)
