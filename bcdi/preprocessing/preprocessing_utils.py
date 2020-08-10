@@ -2323,7 +2323,7 @@ def load_nanomax_data(logfile, detector, flatfield, hotpixels, background, norma
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
-
+    print('')
     mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
