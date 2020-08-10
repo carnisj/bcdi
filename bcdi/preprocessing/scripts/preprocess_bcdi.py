@@ -47,8 +47,8 @@ scans = 329  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
 # scans = np.delete(scans, bad_indices)
 
 root_folder = "D:/data/Nanomax/"
-sample_name = [""]  # "SN"  # list of sample names. If only one name is indicated,
-# it will be repeated to match the number of scans
+sample_name = [""]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
+# If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = [1, 1, 1]  # binning that will be used for phasing
