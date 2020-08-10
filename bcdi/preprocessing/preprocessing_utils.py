@@ -2986,10 +2986,16 @@ def motor_positions_nanomax(logfile, setup):
         energy = logfile['/' + group_key + '/snapshot/energy'][:]
 
         if setup.rocking_angle == 'inplane':
-            phi = logfile['/' + group_key + '/snapshot/gonphi'][:]
+            try:
+                phi = logfile['/' + group_key + '/measurement/gonphi'][:]
+            except KeyError:
+                raise KeyError('phi not in measurement data, check the parameter "rocking_angle"')
             theta = logfile['/' + group_key + '/snapshot/gontheta'][:]
         else:
-            theta = logfile['/' + group_key + '/snapshot/gontheta'][:]
+            try:
+                theta = logfile['/' + group_key + '/measurement/gontheta'][:]
+            except KeyError:
+                raise KeyError('theta not in measurement data, check the parameter "rocking_angle"')
             phi = logfile['/' + group_key + '/snapshot/gonphi'][:]
     else:
         theta = setup.custom_motors["theta"]
