@@ -25,17 +25,17 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 54
-root_folder = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/isosurface/raw/"
-sample_name = "p21"  # "S"
+scan = 329
+root_folder = "D:/data/Nanomax/"
+sample_name = ""  # string in front of the scan number in the folder name
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
-save_mask = False  # set to True to save the mask
+save_mask = True  # set to True to save the mask
 fit_rockingcurve = True  # set to True if you want a fit of the rocking curve
 ###############################
 # beamline related parameters #
 ###############################
-beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
-# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+beamline = 'NANOMAX'  # name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX'
 
 custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
@@ -46,7 +46,7 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 
-rocking_angle = "outofplane"  # "outofplane" or "inplane"
+rocking_angle = "inplane"  # "outofplane" or "inplane"
 is_series = False  # specific to series measurement at P10
 specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
@@ -54,21 +54,24 @@ specfile_name = ''
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
 # template for SIXS_2019: ''
 # template for P10: ''
+# template for NANOMAX: ''
 # template for CRISTAL: ''
 ###############################
 # detector related parameters #
 ###############################
-detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+detector = "Merlin"    # "Eiger2M" or "Maxipix" or "Eiger4M" or 'Merlin'
 bragg_position = []  # Bragg peak position [vertical, horizontal], leave it as [] if there is a single peak
 peak_method = 'max'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
-hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
+photon_threshold = 100000  # everything above will be considered as hotpixel
+hotpixels_file = root_folder + 'merlin_mask_190222_14keV.h5'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = '_master.h5'
+template_imagefile = '%06d.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_master.h5'
+# template for NANOMAX: '%06d.h5'
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -99,6 +102,9 @@ if setup.beamline == 'P10':
 elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
     homedir = root_folder 
     detector.datadir = homedir + "align/"
+elif setup.beamline == 'NANOMAX':
+    homedir = root_folder + sample_name + '{:06d}'.format(scan) + '/'
+    detector.datadir = homedir + 'data/'
 else:
     homedir = root_folder + sample_name + str(scan) + '/'
     detector.datadir = homedir + "data/"
@@ -121,6 +127,15 @@ data, mask, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number
 
 numz, numy, numx = data.shape
 print('Data shape: ', numz, numy, numx)
+
+##########################
+# apply photon threshold #
+##########################
+if photon_threshold != 0:
+    nb_thresholded = (data > photon_threshold).sum()
+    mask[data > photon_threshold] = 1
+    data[data > photon_threshold] = 0
+    print("Applying photon threshold, {:d} high intensity pixels masked".format(nb_thresholded))
 
 ######################################################
 # calculate rocking curve and fit it to get the FWHM #
