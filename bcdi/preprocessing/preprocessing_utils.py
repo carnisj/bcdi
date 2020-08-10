@@ -2108,6 +2108,12 @@ def load_hotpixels(hotpixels_file):
             hotpixels = hotpixels.sum(axis=0)
         if hotpixels.ndim != 2:
             raise ValueError('hotpixels should be a 2D array')
+        if (hotpixels == 0).sum() < hotpixels.size/4:  # masked pixels are more than 3/4 of the pixel number
+            print('hotpixels values are probably 0 instead of 1, switching values')
+            hotpixels[np.nonzero(hotpixels)] = -1
+            hotpixels[hotpixels == 0] = 1
+            hotpixels[hotpixels == -1] = 0
+
         hotpixels[np.nonzero(hotpixels)] = 1
     else:
         hotpixels = None
