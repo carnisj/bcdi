@@ -1631,7 +1631,7 @@ def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpix
 
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
-                                                          background=background, normalize=normalize_method,
+                                                          background=background, normalize=normalize,
                                                           debugging=debugging)
 
     print((rawdata < 0).sum(), ' negative data points masked')  # can happen when subtracting a background
