@@ -1642,7 +1642,7 @@ def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpix
     if normalize == 'skip':
         print('Skip intensity normalization')
     else:
-        print('Intensity normalization using ' + normalize_method)
+        print('Intensity normalization using ' + normalize)
         rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
                                              norm_to_min=True, savedir=detector.savedir, debugging=debugging)
 
