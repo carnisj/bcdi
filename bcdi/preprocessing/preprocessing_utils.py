@@ -839,12 +839,12 @@ def check_pixels(data, mask, debugging=False):
     # we do not want to mask pixels where there was trully no intensity during the scan
 
     if debugging:
-        gu.combined_plots(tuple_array=(meandata, vardata), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
-                          tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
-                          tuple_vmin=(0, 0), tuple_vmax=(1, np.nan), tuple_scale=('linear', 'linear'),
-                          tuple_title=('check_pixels()\nmean(data) before masking',
+        gu.combined_plots(tuple_array=(mask, meandata, vardata), tuple_sum_frames=False, tuple_sum_axis=0,
+                          tuple_width_v=None, tuple_width_h=None, tuple_colorbar=True,
+                          tuple_vmin=0, tuple_vmax=(1, 1, np.nan), tuple_scale=('linear', 'linear', 'linear'),
+                          tuple_title=('Input mask', 'check_pixels()\nmean(data) before masking',
                                        'check_pixels()\n1/var(data) before masking'),
-                          reciprocal_space=True, position=(121, 122))
+                          reciprocal_space=True, position=(131, 132, 133))
 
     # calculate the mean and the variance for a single photon event along the rocking curve
     min_count = 0.99  # pixels with only 1 photon count along the rocking curve, use the value 0.99 to be inclusive
@@ -874,12 +874,12 @@ def check_pixels(data, mask, debugging=False):
         meandata = data.mean(axis=0)
         vardata = 1 / data.var(axis=0)
         vardata[meandata == 0] = var_mean  # 0 intensity pixels, not masked
-        gu.combined_plots(tuple_array=(meandata, vardata), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
-                          tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
-                          tuple_vmin=(0, 0), tuple_vmax=(1, np.nan), tuple_scale=('linear', 'linear'),
-                          tuple_title=('check_pixels()\nmean(data) after masking',
+        gu.combined_plots(tuple_array=(mask, meandata, vardata), tuple_sum_frames=False, tuple_sum_axis=0,
+                          tuple_width_v=None, tuple_width_h=None, tuple_colorbar=True,
+                          tuple_vmin=0, tuple_vmax=(1, 1, np.nan), tuple_scale='linear',
+                          tuple_title=('Output mask', 'check_pixels()\nmean(data) after masking',
                                        'check_pixels()\n1/var(data) after masking'),
-                          reciprocal_space=True, position=(121, 122))
+                          reciprocal_space=True, position=(131, 132, 133))
     return data, mask
 
 
