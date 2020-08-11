@@ -65,87 +65,6 @@ class SetupPostprocessing(object):
             # origin is at the top
             self.detector_ver = 'z-'
 
-    def inplane_direction(self):
-        """
-        Define a coefficient +/- 1 depending on the detector rotation direction and the detector inplane orientation.
-        See postprocessing/scripts/correct_angles_detector.py for an example.
-
-        :return: +1 or -1
-        """
-        if self.detector_hor == 'y+':
-            hor_coeff = 1
-        else:
-            hor_coeff = -1
-
-        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
-            # gamma is anti-clockwise, we see the detector from downstream
-            coeff_inplane = 1 * hor_coeff
-        elif self.beamline == 'ID01':
-            # nu is clockwise, we see the detector from downstream
-            coeff_inplane = -1 * hor_coeff
-        elif self.beamline == '34ID':
-            # delta is anti-clockwise, we see the detector from the front
-            coeff_inplane = 1 * hor_coeff
-        elif self.beamline == 'P10':
-            # gamma is anti-clockwise, we see the detector from the front
-            coeff_inplane = 1 * hor_coeff
-        elif self.beamline == 'CRISTAL':
-            # gamma is anti-clockwise, we see the detector from downstream
-            coeff_inplane = 1 * hor_coeff
-        elif self.beamline == 'NANOMAX':
-            # gamma is clockwise, we see the detector from downstream
-            coeff_inplane = -1 * hor_coeff
-        else:
-            raise ValueError('setup parameter: ', self.beamline, 'not defined')
-        return coeff_inplane
-
-    def exit_wavevector(self):
-        """
-        Calculate the exit wavevector kout depending on the setup parameters, in laboratory frame (z downstream,
-         y vertical, x outboard).
-
-        :return: kout vector
-        """
-        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
-            # gamma is anti-clockwise
-            kout = 2 * np.pi / self.wavelength * np.array(
-                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                 np.sin(np.pi * self.outofplane_angle / 180),  # y
-                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
-        elif self.beamline == 'ID01':
-            # nu is clockwise
-            kout = 2 * np.pi / self.wavelength * np.array(
-                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                 np.sin(np.pi * self.outofplane_angle / 180),  # y
-                 -np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
-        elif self.beamline == '34ID':
-            # gamma is anti-clockwise
-            kout = 2 * np.pi / self.wavelength * np.array(
-                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                 np.sin(np.pi * self.outofplane_angle / 180),  # y
-                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
-        elif self.beamline == 'NANOMAX':
-            # gamma is clockwise
-            kout = 2 * np.pi / self.wavelength * np.array(
-                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                 np.sin(np.pi * self.outofplane_angle / 180),  # y
-                 -np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
-        elif self.beamline == 'P10':
-            # gamma is anti-clockwise
-            kout = 2 * np.pi / self.wavelength * np.array(
-                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                 np.sin(np.pi * self.outofplane_angle / 180),  # y
-                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
-        elif self.beamline == 'CRISTAL':
-            # gamma is anti-clockwise
-            kout = 2 * np.pi / self.wavelength * np.array(
-                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                 np.sin(np.pi * self.outofplane_angle / 180),  # y
-                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
-        else:
-            raise ValueError('setup parameter: ', self.beamline, 'not defined')
-        return kout
-
     def detector_frame(self, obj, voxelsize, width_z=None, width_y=None, width_x=None,
                        debugging=False, **kwargs):
         """
@@ -205,6 +124,87 @@ class SetupPostprocessing(object):
                                 title=title + ' interpolated in detector frame\n')
 
         return detector_obj
+
+    def exit_wavevector(self):
+        """
+        Calculate the exit wavevector kout depending on the setup parameters, in laboratory frame (z downstream,
+         y vertical, x outboard).
+
+        :return: kout vector
+        """
+        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+            # gamma is anti-clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == 'ID01':
+            # nu is clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 -np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == '34ID':
+            # gamma is anti-clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == 'NANOMAX':
+            # gamma is clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 -np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == 'P10':
+            # gamma is anti-clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == 'CRISTAL':
+            # gamma is anti-clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        else:
+            raise ValueError('setup parameter: ', self.beamline, 'not defined')
+        return kout
+
+    def inplane_direction(self):
+        """
+        Define a coefficient +/- 1 depending on the detector inaplen rotation direction and the detector inplane
+         orientation. See postprocessing/scripts/correct_angles_detector.py for an example.
+
+        :return: +1 or -1
+        """
+        if self.detector_hor == 'y+':
+            hor_coeff = 1
+        else:
+            hor_coeff = -1
+
+        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+            # gamma is anti-clockwise, we see the detector from downstream
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'ID01':
+            # nu is clockwise, we see the detector from downstream
+            coeff_inplane = -1 * hor_coeff
+        elif self.beamline == '34ID':
+            # delta is anti-clockwise, we see the detector from the front
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'P10':
+            # gamma is anti-clockwise, we see the detector from the front
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'CRISTAL':
+            # gamma is anti-clockwise, we see the detector from downstream
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'NANOMAX':
+            # gamma is clockwise, we see the detector from downstream
+            coeff_inplane = -1 * hor_coeff
+        else:
+            raise ValueError('setup parameter: ', self.beamline, 'not defined')
+        return coeff_inplane
 
     def orthogonalize(self, obj, initial_shape=(), voxel_size=np.nan, width_z=None, width_y=None,
                       width_x=None, debugging=False, **kwargs):
@@ -546,9 +546,9 @@ class SetupPreprocessing(object):
     """
     Class to handle the experimental geometry for preprocessing.
     """
-    def __init__(self, beamline, rocking_angle=None, distance=1, energy=8000, direct_beam=(0, 0), beam_direction=(1, 0, 0),
-                 sample_inplane=(1, 0, 0), sample_outofplane=(0, 0, 1), sample_offsets=(0, 0, 0), offset_inplane=0,
-                 **kwargs):
+    def __init__(self, beamline, rocking_angle=None, distance=1, energy=8000, direct_beam=(0, 0),
+                 beam_direction=(1, 0, 0), sample_inplane=(1, 0, 0), sample_outofplane=(0, 0, 1),
+                 sample_offsets=(0, 0, 0), offset_inplane=0, **kwargs):
         """
         Initialize parameters of the experiment.
 
