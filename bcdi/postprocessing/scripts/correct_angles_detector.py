@@ -35,6 +35,7 @@ sample_name = "dewet2_2"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
 peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
+debug = True  # True to see more plots
 ######################################
 # define beamline related parameters #
 ######################################
@@ -67,7 +68,7 @@ y_bragg = 817  # vertical pixel number of the Bragg peak, can be used for the de
 roi_detector = [y_bragg-290, y_bragg+290, x_bragg-290, x_bragg+290]
 # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
-photon_threshold = 0  # data[data <= photon_threshold] = 0
+high_threshold = 1000000  # everything above will be considered as hotpixel
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
 template_imagefile = '_master.h5'
@@ -138,11 +139,13 @@ logfile = pru.create_logfile(setup=setup_pre, detector=detector, scan_number=sca
                              root_folder=root_folder, filename=specfile)
 
 if filtered_data == 0:
-    _, data, _, mask, _, frames_logical, monitor = \
+    _, data, _, _, _, frames_logical, monitor = \
         pru.gridmap(logfile=logfile, scan_number=scan, detector=detector, setup=setup_pre,
                     flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=False,
-                    debugging=False, orthogonalize=False)
-    # TODO: implement normalization by monitor
+                    debugging=debug, orthogonalize=False)
+
+    data, monitor = pru.normalize_dataset(array=data, raw_monitor=monitor, frames_logical=frames_logical,
+                                          savedir=homedir, norm_to_min=True, debugging=debug)
 else:
     root = tk.Tk()
     root.withdraw()
@@ -153,6 +156,14 @@ else:
     frames_logical = np.ones(data.shape[0])  # use all frames from the filtered data
 numz, numy, numx = data.shape
 print("Shape of dataset: ", numz, numy, numx)
+
+##############################################
+# apply photon threshold to remove hotpixels #
+##############################################
+if high_threshold != 0:
+    nb_thresholded = (data > high_threshold).sum()
+    data[data > high_threshold] = 0
+    print("Applying photon threshold, {:d} high intensity pixels masked".format(nb_thresholded))
 
 ###############################
 # load releavant motor values #
