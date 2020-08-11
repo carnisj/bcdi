@@ -171,7 +171,7 @@ if data.ndim == 3 and fit_rockingcurve:
                      (tilt.max() - tilt.min()) / (interp_points - 1)
     print('FWHM by interpolation', str('{:.3f}'.format(interp_fwhm)), 'deg')
 
-    fig, (ax0, ax1) = plt.subplots(2, 1, sharex='col', figsize=(10, 5))
+    _, (ax0, ax1) = plt.subplots(2, 1, sharex='col', figsize=(10, 5))
     ax0.plot(tilt, rocking_curve, '.')
     ax0.plot(interp_tilt, interp_curve)
     ax0.set_ylabel('Integrated intensity')
@@ -201,9 +201,11 @@ gu.combined_plots(tuple_array=(monitor, mask), tuple_sum_frames=False, tuple_sum
 y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
 print("Max at (y, x): ", y0, x0, ' Max = ', int(data[y0, x0]))
 
-fig = plt.figure()
-plt.imshow(np.log10(data), vmin=-2, vmax=4, cmap=my_cmap)
-plt.title('data.sum(axis=0)\nMax at (y, x): (' + str(y0) + ',' + str(x0) + ')   Max = ' + str(int(data[y0, x0])))
-plt.colorbar()
-plt.savefig(detector.savedir + 'sum_S' + str(scan) + '.png')
+fig, ax = plt.subplots(nrows=1, ncols=1)
+plot = ax.imshow(np.log10(data), vmin=-2, vmax=4, cmap=my_cmap)
+ax.set_title('data.sum(axis=0)\nMax at (y, x): (' + str(y0) + ',' + str(x0) + ')   Max = ' + str(int(data[y0, x0])))
+if beamline == 'NANOMAX':
+    ax.invert_yaxis()  # the detector is mounted upside-down on the robot arm at Nanomax
+gu.colorbar(plot)
+fig.savefig(detector.savedir + 'sum_S' + str(scan) + '.png')
 plt.show()
