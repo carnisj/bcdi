@@ -138,7 +138,7 @@ hotpix_array = pru.load_hotpixels(hotpixels_file)
 logfile = pru.create_logfile(setup=setup_pre, detector=detector, scan_number=scan,
                              root_folder=root_folder, filename=specfile)
 
-if filtered_data == 0:
+if not filtered_data:
     _, data, _, _, _, frames_logical, monitor = \
         pru.gridmap(logfile=logfile, scan_number=scan, detector=detector, setup=setup_pre,
                     flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=False,
