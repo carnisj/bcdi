@@ -420,7 +420,6 @@ class SetupPostprocessing(object):
                 raise ValueError('inplane rocking for phi not yet implemented for P10')
 
         if self.beamline == 'NANOMAX':
-            # TODO: check this
             print('using NANOMAX geometry')
             if self.rocking_angle == "outofplane":
                 print('rocking angle is theta')
@@ -428,9 +427,9 @@ class SetupPostprocessing(object):
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
                                                                        pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
-                                                                       -pixel_y * np.cos(outofplane),
-                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       pixel_y * np.cos(outofplane),
+                                                                       -pixel_y * np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array([0,
                                                                        tilt * distance * (1 - np.cos(inplane) * np.cos(
                                                                            outofplane)),
@@ -441,9 +440,9 @@ class SetupPostprocessing(object):
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
                                                                        pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
-                                                                       -pixel_y * np.cos(outofplane),
-                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       pixel_y * np.cos(outofplane),
+                                                                       -pixel_y * np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
                     [-tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
                      0,
@@ -454,9 +453,9 @@ class SetupPostprocessing(object):
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
                                                                        pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
-                                                                       -pixel_y * np.cos(outofplane),
-                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       pixel_y * np.cos(outofplane),
+                                                                       -pixel_y * np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
                     np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
                                np.cos(mygrazing_angle) * (np.cos(inplane) * np.cos(outofplane) - 1)),
