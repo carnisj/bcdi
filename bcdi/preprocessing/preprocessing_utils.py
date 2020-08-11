@@ -3285,9 +3285,9 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
 
     print('Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}'.format(monitor.min(), monitor.max(), monitor.mean()))
     if norm_to_min:
-        print('Data normalization by monitor.min()/monitor')
+        print('Data normalization by monitor.min()/monitor\n')
     else:
-        print('Data normalization by monitor.max()/monitor')
+        print('Data normalization by monitor.max()/monitor\n')
 
     if norm_to_min:
         monitor = monitor.min() / monitor  # will divide higher intensities
