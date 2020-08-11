@@ -1,3 +1,8 @@
+Version 0.0.9
+-------------
+
+* Feature: implement support for MAX IV NANOMAX beamline
+
 * Feature: implement rocking_curves.py to follow the evolution of the Bragg peak between several rocking curves
 
 * Feature: implement flatten_modulus.py to remove low frequency artefacts in the modulus reconstructed by phase retrieval
@@ -8,7 +13,7 @@
 
 * Remove preprocess_bcdi_sequential.py, which was not maintained anymore. Use preprocess_bcdi_combined.py instead
 
-* Feature: implement the 3D angular X-ray cross-correlation analysis in xcca/scripts/xcca_3D.py
+* Feature: implement the 3D angular X-ray cross-correlation analysis
 
 * Refactor: allow the reloading of binned data and its orthogonalization in preprocess_cdi_combined.py and preprocess_bcdi_combined.py
 
