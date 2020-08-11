@@ -44,31 +44,57 @@ class SetupPostprocessing(object):
         self.pixel_x = pixel_x  # in meters
         self.pixel_y = pixel_y  # in meters
 
-    def rotation_direction(self):
+        #############################################################
+        # detector orientation convention depending on the beamline #
+        #############################################################
+        # the frame convetion is the one of xrayutilities: x downstream, y outboard, z vertical up
+
+        # horizontal axis:
+        if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX']:
+            # we look at the detector from downstream
+            self.detector_hor = 'y+'
+        else:  # 'P10', '34ID'
+            # we look at the detector from upstream
+            self.detector_hor = 'y-'
+
+        # vertical axis:
+        if beamline in ['NANOMAX']:
+            # detector in flip upside-down on the robot arm at Nanomax, the origin is at the bottom
+            self.detector_ver = 'z+'
+        else:
+            # origin is at the top
+            self.detector_ver = 'z-'
+
+    def inplane_direction(self):
         """
         Define a coefficient +/- 1 depending on the detector rotation direction and the detector inplane orientation.
         See postprocessing/scripts/correct_angles_detector.py for an example.
 
         :return: +1 or -1
         """
+        if self.detector_hor == 'y+':
+            hor_coeff = 1
+        else:
+            hor_coeff = -1
+
         if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
-            # gamma is anti-clockwise
-            coeff_inplane = 1
+            # gamma is anti-clockwise, we see the detector from downstream
+            coeff_inplane = 1 * hor_coeff
         elif self.beamline == 'ID01':
-            # nu is clockwise, we see the detector from downstream (behind)
-            coeff_inplane = -1
+            # nu is clockwise, we see the detector from downstream
+            coeff_inplane = -1 * hor_coeff
         elif self.beamline == '34ID':
-            coeff_inplane = 1
-            # gamma is anti-clockwise
+            # delta is anti-clockwise, we see the detector from the front
+            coeff_inplane = 1 * hor_coeff
         elif self.beamline == 'P10':
-            coeff_inplane = -1
             # gamma is anti-clockwise, we see the detector from the front
+            coeff_inplane = 1 * hor_coeff
         elif self.beamline == 'CRISTAL':
-            coeff_inplane = 1
-            # gamma is anti-clockwise
+            # gamma is anti-clockwise, we see the detector from downstream
+            coeff_inplane = 1 * hor_coeff
         elif self.beamline == 'NANOMAX':
-            coeff_inplane = -1
-            # TODO: check the detector inplane orientation (do we see the detector from the front or behind?)
+            # gamma is clockwise, we see the detector from downstream
+            coeff_inplane = -1 * hor_coeff
         else:
             raise ValueError('setup parameter: ', self.beamline, 'not defined')
         return coeff_inplane
@@ -604,13 +630,26 @@ class SetupPreprocessing(object):
         self.sample_offsets = sample_offsets  # tuple
         self.offset_inplane = offset_inplane  # in degrees
 
-        # detector orientation convention depending on the beamline
+        #############################################################
+        # detector orientation convention depending on the beamline #
+        #############################################################
         # the frame convetion is the one of xrayutilities: x downstream, y outboard, z vertical up
-        if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL']:  # we look at the detector from downstream
+
+        # horizontal axis:
+        if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX']:
+            # we look at the detector from downstream
             self.detector_hor = 'y+'
-        else:  # 'P10', '34ID', we look at the detector from upstream
+        else:  # 'P10', '34ID'
+            # we look at the detector from upstream
             self.detector_hor = 'y-'
-        self.detector_ver = 'z-'
+
+        # vertical axis:
+        if beamline in ['NANOMAX']:
+            # detector in flip upside-down on the robot arm at Nanomax, the origin is at the bottom
+            self.detector_ver = 'z+'
+        else:
+            # origin is at the top
+            self.detector_ver = 'z-'
 
 
 class Detector(object):

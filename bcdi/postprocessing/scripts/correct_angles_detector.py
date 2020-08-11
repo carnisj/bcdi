@@ -29,7 +29,7 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 1638
+scan = 958
 root_folder = 'D:/data/P10_OER/data/'
 sample_name = "dewet2_2"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
@@ -62,9 +62,9 @@ specfile_name = ''
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1383  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 812  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg-290, y_bragg+290, x_bragg-356, x_bragg+356]
+x_bragg = 716  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 817  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = [y_bragg-290, y_bragg+290, x_bragg-290, x_bragg+290]
 # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 photon_threshold = 0  # data[data <= photon_threshold] = 0
@@ -223,8 +223,8 @@ plt.pause(0.1)
 bragg_x = detector.roi[2] + x0  # convert it in full detector pixel
 bragg_y = detector.roi[0] + y0  # convert it in full detector pixel
 
-x_direct_0 = directbeam_x + setup_post.rotation_direction() *\
-             (direct_inplane*np.pi/180*sdd/detector.pixelsize_x)  # rotation_direction is +1 or -1
+x_direct_0 = directbeam_x + setup_post.inplane_direction() *\
+             (direct_inplane*np.pi/180*sdd/detector.pixelsize_x)  # inplane_direction is +1 or -1
 y_direct_0 = directbeam_y - direct_outofplane*np.pi/180*sdd/detector.pixelsize_y   # outofplane is always clockwise
 
 print("\nDirect beam at (gam=", str(direct_inplane), "del=", str(direct_outofplane),
@@ -233,8 +233,8 @@ print("Direct beam at (gam= 0, del= 0) = (X, Y): ", str('{:.2f}'.format(x_direct
 print("Bragg peak at (gam=", str(inplane), "del=", str(outofplane), ") = (X, Y): ",
       str('{:.2f}'.format(bragg_x)), str('{:.2f}'.format(bragg_y)))
 
-bragg_inplane = inplane + setup_post.rotation_direction() *\
-                (detector.pixelsize_x*(bragg_x-x_direct_0)/sdd*180/np.pi)  # rotation_direction is +1 or -1
+bragg_inplane = inplane + setup_post.inplane_direction() *\
+                (detector.pixelsize_x*(bragg_x-x_direct_0)/sdd*180/np.pi)  # inplane_direction is +1 or -1
 bragg_outofplane = outofplane - detector.pixelsize_y*(bragg_y-y_direct_0)/sdd*180/np.pi  # outofplane always clockwise
 
 print("\nBragg angles before correction = (gam, del): ", str('{:.4f}'.format(inplane)),
