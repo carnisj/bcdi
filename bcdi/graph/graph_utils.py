@@ -139,6 +139,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
      - 'xlabel' , label of the horizontal axis for plots: string or tuple of strings
      - 'ylabel' , label of the vertical axis for plots: string or tuple of strings
      - 'position' , tuple of subplot positions in the format 231 (2 rows, 3 columns, first subplot)
+     - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  the figure instance
     """
     if type(tuple_array) is not tuple:
@@ -179,6 +180,10 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             position = kwargs['position']
             if type(position) is not tuple or len(position) != nb_subplots:
                 raise ValueError('"position" should be a tuple of subplot positions')
+        elif k in ['invert_y']:
+            invert_y = kwargs['invert_y']
+            if type(invert_y) is not tuple:
+                invert_y = (invert_y,) * nb_subplots
         else:
             print(k)
             raise Exception("unknown keyword argument given: allowed is"
@@ -259,7 +264,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                         slice_names = (' slice in Q$_x$', ' slice in Q$_z$', ' slice in Q$_y$')
                     ver_labels = ("Q$_z$", "Q$_x$", "Q$_x$")
                     hor_labels = ("Q$_y$", "Q$_y$", "Q$_z$")
-                    if sum_axis == 0:
+                    if sum_axis == 0:  # detector Y is axis 0, need to be flipped
                         invert_yaxis = True
                     else:
                         invert_yaxis = False
@@ -278,7 +283,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                         slice_names = (' slice in z', ' slice in y', ' slice in x')
                     ver_labels = ('y', 'z', 'z')
                     hor_labels = ('x', 'x', 'y')
-                    if sum_axis == 0:
+                    if sum_axis == 0:  # detector Y is axis 0, need to be flipped
                         invert_yaxis = True
                     else:
                         invert_yaxis = False
@@ -341,7 +346,15 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             default_xlabel = ''
             default_ylabel = ''
 
-        # now array is 2D
+        ############################
+        # now array is 2D, plot it #
+        ############################
+        try:
+            if invert_y[idx]:  # overwrite invert_yaxis parameter
+                invert_yaxis = invert_y[idx]
+        except NameError:
+            pass
+
         width_v = min(width_v, dim_v)
         width_h = min(width_h, dim_h)
         array = array[int(np.rint(dim_v/2 - width_v/2)):int(np.rint(dim_v/2 - width_v/2)) + width_v,
@@ -699,7 +712,7 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={
 def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None, plot_colorbar=False,
                 vmin=np.nan, vmax=np.nan, cmap=my_cmap, title='', labels=None, scale='linear',
                 tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
-                is_orthogonal=False, reciprocal_space=False):
+                is_orthogonal=False, reciprocal_space=False, **kwargs):
     """
     2D imshow plot of a 2D or 3D dataset using user-defined parameters.
 
@@ -721,12 +734,20 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm)
     :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
+    :param kwargs:
+     - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  fig, axis, plot instances
     """
+    for k in kwargs.keys():
+        if k in ['invert_y']:
+            invert_y = kwargs['invert_y']
+        else:
+            print(k)
+            raise Exception("unknown keyword argument given: allowed is 'invert_y'")
+
     nb_dim = array.ndim
     array = array.astype(float)
     plt.ion()
-    fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
 
     if labels is None:
         labels = ('', '')
@@ -820,7 +841,16 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         print('imshow_plot() needs a 2D or 3D array')
         return
 
-    # now array is 2D
+    ############################
+    # now array is 2D, plot it #
+    ############################
+    try:
+        if invert_y:  # overwrite invert_yaxis parameter
+            invert_yaxis = invert_y
+    except NameError:
+        pass
+
+    fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
     width_v = min(width_v, dim_v)
     width_h = min(width_h, dim_h)
     array = array[int(np.rint(dim_v/2 - width_v/2)):int(np.rint(dim_v/2 - width_v/2)) + width_v,
@@ -855,7 +885,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     else:
         raise ValueError('Wrong value for scale')
 
-    if invert_yaxis and sum_axis == 0:  # Y is axis 0, need to be flipped
+    if invert_yaxis and sum_axis == 0:  # detector Y is axis 0, need to be flipped
         axis = plt.gca()
         axis.invert_yaxis()
     axis.set_xlabel(hor_label)
@@ -1205,7 +1235,7 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
 def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None, width_y=None, width_x=None,
                      plot_colorbar=False, cmap=my_cmap, title='', scale='linear', vmin=np.nan, vmax=np.nan,
                      tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=None,
-                     is_orthogonal=False, reciprocal_space=False, ipynb_layout=False):
+                     is_orthogonal=False, reciprocal_space=False, ipynb_layout=False, **kwargs):
     """
     Create a figure with three 2D imshow plots from a 3D dataset.
 
@@ -1228,6 +1258,8 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     :param vmin: lower boundary for the colorbar. Float or tuple of 3 floats
     :param vmax: higher boundary for the colorbar. Float or tuple of 3 floats
     :param ipynb_layout: toggle for 3 plots in a row, cleaner in an Jupyter Notebook
+    :param kwargs:
+     - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return: fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) instances
     """
     nb_dim = array.ndim
@@ -1309,6 +1341,18 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     else:
         fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 9))
 
+    for k in kwargs.keys():
+        if k in ['invert_y']:
+            invert_y = kwargs['invert_y']
+            try:
+                if invert_y:  # overwrite invert_yaxis parameter
+                    invert_yaxis = invert_y
+            except NameError:
+                pass
+        else:
+            print(k)
+            raise Exception("unknown keyword argument given: allowed is 'invert_y'")
+
     # axis 0
     temp_array = np.copy(array)
     if not sum_frames:
@@ -1339,7 +1383,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     ax0.set_xlabel(hor_labels[0])
     ax0.set_ylabel(ver_labels[0])
     ax0.set_title(title + slice_names[0])
-    if invert_yaxis:  # Y is axis 0, need to be flipped
+    if invert_yaxis:  # detector Y is axis 0, need to be flipped
         ax0.invert_yaxis()
     plt.axis('scaled')
     if plot_colorbar:
