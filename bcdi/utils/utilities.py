@@ -84,6 +84,7 @@ def fit3d_poly2(x_axis, a, b, c, d, e, f, g):
     :param d: 1st order parameter for the 3rd coordinate
     :param e: 2nd order parameter for the 1st coordinate
     :param f: 2nd order parameter for the 2nd coordinate
+    :param g: 2nd order parameter for the 3rd coordinate
     :return: the 2nd order polynomial calculated on x_axis
     """
     return a + b*x_axis[0] + c*x_axis[1] + d*x_axis[2] + e*x_axis[0]**2 + f*x_axis[1]**2 + g*x_axis[2]**2
@@ -360,7 +361,7 @@ def sum_roi(array, roi, debugging=False):
     if ndim == 2:
         nby, nbx = array.shape
     elif ndim == 3:
-        nbz, nby, nbx = array.shape
+        _, nby, nbx = array.shape
     else:
         raise ValueError('array should be 2D or 3D')
 
@@ -372,8 +373,8 @@ def sum_roi(array, roi, debugging=False):
     if ndim == 2:
         sum_array = array[roi[0]:roi[1], roi[2]:roi[3]].sum()
     else:  # ndim = 3
-        sum_array = np.zeros(nbz)
-        for idx in range(nbz):
+        sum_array = np.zeros(array.shape[0])
+        for idx in range(array.shape[0]):
             sum_array[idx] = array[idx, roi[0]:roi[1], roi[2]:roi[3]].sum()
         array = array.sum(axis=0)
 
@@ -389,11 +390,11 @@ def sum_roi(array, roi, debugging=False):
     return sum_array
 
 
-if __name__ == "__main__":
-    import numpy as np
-    import matplotlib.pyplot as plt
-    x = np.linspace(-3,3,num=200)
-    y = np.asarray([skewed_gaussian(point, 1, 0, 1, 3) for point in x])
-    plt.figure()
-    plt.plot(x,y)
-    plt.show()
+# if __name__ == "__main__":
+#     import numpy as np
+#     import matplotlib.pyplot as plt
+#     x = np.linspace(-3, 3, num=200)
+#     y = np.asarray([skewed_gaussian(point, 1, 0, 1, 3) for point in x])
+#     plt.figure()
+#     plt.plot(x, y)
+#     plt.show()
