@@ -223,9 +223,10 @@ plt.pause(0.1)
 bragg_x = detector.roi[2] + x0  # convert it in full detector pixel
 bragg_y = detector.roi[0] + y0  # convert it in full detector pixel
 
-x_direct_0 = directbeam_x + setup_post.inplane_direction() *\
-             (direct_inplane*np.pi/180*sdd/detector.pixelsize_x)  # inplane_direction is +1 or -1
-y_direct_0 = directbeam_y - direct_outofplane*np.pi/180*sdd/detector.pixelsize_y   # outofplane is always clockwise
+x_direct_0 = directbeam_x + setup_post.inplane_coeff() *\
+             (direct_inplane*np.pi/180*sdd/detector.pixelsize_x)  # inplane_coeff is +1 or -1
+y_direct_0 = directbeam_y - setup_post.outofplane_coeff() *\
+             direct_outofplane*np.pi/180*sdd/detector.pixelsize_y   # outofplane_coeff is +1 or -1
 
 print("\nDirect beam at (gam=", str(direct_inplane), "del=", str(direct_outofplane),
       ") = (X, Y): ", directbeam_x, directbeam_y)
@@ -233,9 +234,10 @@ print("Direct beam at (gam= 0, del= 0) = (X, Y): ", str('{:.2f}'.format(x_direct
 print("Bragg peak at (gam=", str(inplane), "del=", str(outofplane), ") = (X, Y): ",
       str('{:.2f}'.format(bragg_x)), str('{:.2f}'.format(bragg_y)))
 
-bragg_inplane = inplane + setup_post.inplane_direction() *\
-                (detector.pixelsize_x*(bragg_x-x_direct_0)/sdd*180/np.pi)  # inplane_direction is +1 or -1
-bragg_outofplane = outofplane - detector.pixelsize_y*(bragg_y-y_direct_0)/sdd*180/np.pi  # outofplane always clockwise
+bragg_inplane = inplane + setup_post.inplane_coeff() *\
+                (detector.pixelsize_x*(bragg_x-x_direct_0)/sdd*180/np.pi)  # inplane_coeff is +1 or -1
+bragg_outofplane = outofplane - setup_post.outofplane_coeff() *\
+                   detector.pixelsize_y*(bragg_y-y_direct_0)/sdd*180/np.pi   # outofplane_coeff is +1 or -1
 
 print("\nBragg angles before correction = (gam, del): ", str('{:.4f}'.format(inplane)),
       str('{:.4f}'.format(outofplane)))

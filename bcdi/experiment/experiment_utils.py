@@ -47,7 +47,7 @@ class SetupPostprocessing(object):
         #############################################################
         # detector orientation convention depending on the beamline #
         #############################################################
-        # the frame convetion is the one of xrayutilities: x downstream, y outboard, z vertical up
+        # the frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up
 
         # horizontal axis:
         if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX']:
@@ -175,13 +175,14 @@ class SetupPostprocessing(object):
     def inplane_coeff(self):
         """
         Define a coefficient +/- 1 depending on the detector inplane rotation direction and the detector inplane
-         orientation. See postprocessing/scripts/correct_angles_detector.py for an example.
+         orientation. The frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up.
+         See postprocessing/scripts/correct_angles_detector.py for an example.
 
         :return: +1 or -1
         """
         if self.detector_hor == 'y+':
             hor_coeff = 1
-        else:
+        else:  # 'y-'
             hor_coeff = -1
 
         if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
@@ -303,6 +304,24 @@ class SetupPostprocessing(object):
             gu.multislices_plot(abs(ortho_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
                                 title=title+' in the orthogonal laboratory frame')
         return ortho_obj, voxel
+
+    def outofplane_coeff(self):
+        """
+        Define a coefficient +/- 1 depending on the detector out of plane rotation direction and the detector out of
+         plane orientation. The frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up.
+         See postprocessing/scripts/correct_angles_detector.py for an example.
+
+        :return: +1 or -1
+        """
+        if self.detector_ver == 'z+':  # origin of pixels at the bottom
+            ver_coeff = 1
+        else:  # 'z-'  origin of pixels at the top
+            ver_coeff = -1
+
+        # the out of plane detector rotation is clockwise for all beamlines
+        coeff_outofplane = -1 * ver_coeff
+
+        return coeff_outofplane
 
     def update_coords(self, array_shape, tilt_angle, pixel_x, pixel_y):
         """
@@ -633,7 +652,7 @@ class SetupPreprocessing(object):
         #############################################################
         # detector orientation convention depending on the beamline #
         #############################################################
-        # the frame convetion is the one of xrayutilities: x downstream, y outboard, z vertical up
+        # the frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up
 
         # horizontal axis:
         if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX']:
