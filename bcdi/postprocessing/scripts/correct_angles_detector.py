@@ -35,6 +35,7 @@ sample_name = "dewet2_2"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
 peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
+normalize_flux = 'monitor'  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
 debug = True  # True to see more plots
 ######################################
 # define beamline related parameters #
@@ -139,13 +140,15 @@ logfile = pru.create_logfile(setup=setup_pre, detector=detector, scan_number=sca
                              root_folder=root_folder, filename=specfile)
 
 if not filtered_data:
-    _, data, _, _, _, frames_logical, monitor = \
-        pru.gridmap(logfile=logfile, scan_number=scan, detector=detector, setup=setup_pre,
-                    flatfield=flatfield, hotpixels=hotpix_array, hxrd=None, follow_bragg=False,
-                    debugging=debug, orthogonalize=False)
-
-    data, monitor = pru.normalize_dataset(array=data, raw_monitor=monitor, frames_logical=frames_logical,
-                                          savedir=homedir, norm_to_min=True, debugging=debug)
+    data, _, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number=scan, detector=detector,
+                                                     setup=setup_pre, flatfield=flatfield, hotpixels=hotpix_array,
+                                                     normalize=normalize_flux, debugging=debug)
+    if normalize_flux == 'skip':
+        print('Skip intensity normalization')
+    else:
+        print('Intensity normalization using ' + normalize_flux)
+        data, monitor = pru.normalize_dataset(array=data, raw_monitor=monitor, frames_logical=frames_logical,
+                                              savedir=homedir, norm_to_min=True, debugging=debug)
 else:
     root = tk.Tk()
     root.withdraw()
