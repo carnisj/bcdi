@@ -31,6 +31,7 @@ sample_name = ""  # string in front of the scan number in the folder name
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
 save_mask = True  # set to True to save the mask
 fit_rockingcurve = True  # set to True if you want a fit of the rocking curve
+debug = True  # True to see more plots
 ###############################
 # beamline related parameters #
 ###############################
@@ -123,7 +124,7 @@ logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, r
 
 data, mask, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number=scan, detector=detector,
                                                     setup=setup, flatfield=flatfield, hotpixels=hotpix_array,
-                                                    debugging=False)
+                                                    debugging=debug)
 
 numz, numy, numx = data.shape
 print('Data shape: ', numz, numy, numx)
