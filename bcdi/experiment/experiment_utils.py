@@ -172,9 +172,9 @@ class SetupPostprocessing(object):
             raise ValueError('setup parameter: ', self.beamline, 'not defined')
         return kout
 
-    def inplane_direction(self):
+    def inplane_coeff(self):
         """
-        Define a coefficient +/- 1 depending on the detector inaplen rotation direction and the detector inplane
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction and the detector inplane
          orientation. See postprocessing/scripts/correct_angles_detector.py for an example.
 
         :return: +1 or -1
