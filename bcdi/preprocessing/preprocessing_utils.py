@@ -839,8 +839,9 @@ def check_pixels(data, mask, debugging=False):
         gu.combined_plots(tuple_array=(meandata, vardata), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
                           tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
                           tuple_vmin=(0, 0), tuple_vmax=(1, np.nan), tuple_scale=('linear', 'linear'),
-                          tuple_title=('mean(data) before masking', '1/var(data) before masking'),
-                          reciprocal_space=True)
+                          tuple_title=('check_pixels()\nmean(data) before masking',
+                                       'check_pixels()\n1/var(data) before masking'),
+                          reciprocal_space=True, position=(121, 122))
     # calculate the mean and 1/variance for a single photon event along the rocking curve
     min_count = 0.99  # pixels with only 1 photon count along the rocking curve.
 
@@ -866,7 +867,9 @@ def check_pixels(data, mask, debugging=False):
         gu.combined_plots(tuple_array=(meandata, vardata), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
                           tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
                           tuple_vmin=(0, 0), tuple_vmax=(1, np.nan), tuple_scale=('linear', 'linear'),
-                          tuple_title=('mean(data) after masking', '1/var(data) after masking'), reciprocal_space=True)
+                          tuple_title=('check_pixels()\nmean(data) after masking',
+                                       'check_pixels()\n1/var(data) after masking'),
+                          reciprocal_space=True, position=(121, 122))
     print("check_pixels():", str(indices_badpixels[0].shape[0]), "badpixels were masked on a total of", str(nbx * nby))
     return data, mask
 
