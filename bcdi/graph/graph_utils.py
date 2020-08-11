@@ -1045,8 +1045,8 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     :param scalars: scalar field at each voxel.
     :param contours: integer/list specifying number/list of contours. Specifying a list of values will only give the
      requested contours asked for.
-    :param extent:[xmin, xmax, ymin, ymax, zmin, zmax] Default is the x, y, z arrays extent.
-     Use this to change the extent of the object created.
+    :param extent: [xmin, xmax, ymin, ymax, zmin, zmax] Default is the x, y, z arrays extent. Use this to change
+     the extent of the object created.
     :param nb_labels: the number of labels along each direction.
     :param fig_size: the size of the scene created, in pixels.
     :param azimuth: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended by the position vector on a sphere
@@ -1055,7 +1055,7 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
      and the z-axis. It can be a list of angles for several plots.
     :param distance: a positive floating point number representing the distance from the focal point to place the
      camera. It can be a list of the same length as aimut. If ‘auto’ is passed, the distance is computed to have a best
-      fit of objects in the frame.
+     fit of objects in the frame.
     :param roll: absolute roll angle of the camera. It can be a list of angles for several plots.
     :param vmin: vmin is used to scale the colormap. If None, the min of the data will be used.
     :param vmax: vmax is used to scale the colormap. If None, the max of the data will be used.
@@ -1144,8 +1144,8 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
     :param y: y position of voxels (numpy.mgrid)
     :param z: z position of voxels (numpy.mgrid)
     :param scalars: scalar field at each voxel.
-    :param extent:[xmin, xmax, ymin, ymax, zmin, zmax] Default is the x, y, z arrays extent.
-     Use this to change the extent of the object created.
+    :param extent: [xmin, xmax, ymin, ymax, zmin, zmax] Default is the x, y, z arrays extent. Use this to change the
+     extent of the object created.
     :param nb_labels: the number of labels along each direction.
     :param fig_size: the size of the scene created, in pixels.
     :param azimuth: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended by the position vector on a sphere
@@ -1154,11 +1154,11 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
      and the z-axis. It can be a list of angles for several plots.
     :param distance: a positive floating point number representing the distance from the focal point to place the
      camera. It can be a list of the same length as aimut. If ‘auto’ is passed, the distance is computed to have a best
-      fit of objects in the frame.
+     fit of objects in the frame.
     :param roll: absolute roll angle of the camera. It can be a list of angles for several plots.
     :param mode: the mode of the glyphs. Available modes are: ‘2darrow’, ‘2dcircle’, ‘2dcross’, ‘2ddash’, ‘2ddiamond’,
      ‘2dhooked_arrow’, ‘2dsquare’, ‘2dthick_arrow’, ‘2dthick_cross’, ‘2dtriangle’, ‘2dvertex’, ‘arrow’, ‘axes’, ‘cone’,
-      ‘cube’, ‘cylinder’, ‘point’, ‘sphere’
+     ‘cube’, ‘cylinder’, ‘point’, ‘sphere’
     :param vmin: vmin is used to scale the colormap. If None, the min of the data will be used.
     :param vmax: vmax is used to scale the colormap. If None, the max of the data will be used.
     :param opacity:	the overall opacity of the vtk object. Must be a float. Default: 1.0

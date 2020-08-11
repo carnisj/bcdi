@@ -99,7 +99,7 @@ setup(name='bcdi', version='0.0.9',
                         BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:\n\n\
                         1. Pre-processing BCDI and forward CDI data (masking aliens, detector gaps...) before phase retrieval.\n\
                         2. Post-processing phased data (phase offset and phase ramp removal, averaging, apodization...).\n\
-                        3. Data analysis on diffraction data (stereographic projection, X-ray cross correlation analysis, domain orientation fitting ...).\n\
+                        3. Data analysis on diffraction data (stereographic projection, angular cross correlation analysis, domain orientation fitting ...).\n\
                         4. Data analysis on phased data (resolution calculation, statistics on the retrieved strain...).\n\
                         5. Simulation of diffraction intensity (including noise, detector gaps, displacement...).\n\
                         6. Making figures for publication using templates.\n\n",

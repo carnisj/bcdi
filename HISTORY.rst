@@ -1,7 +1,7 @@
 Version 0.0.9
 -------------
 
-* Feature: implement support for MAX IV NANOMAX beamline
+* Feature: implement support for MAXIV NANOMAX beamline
 
 * Feature: implement rocking_curves.py to follow the evolution of the Bragg peak between several rocking curves
 
@@ -11,11 +11,9 @@ Version 0.0.9
 
 * Feature: implement view_ccf.py and view_ccf_map.py to plot the cross-correlation function output
 
-* Remove preprocess_bcdi_sequential.py, which was not maintained anymore. Use preprocess_bcdi_combined.py instead
-
 * Feature: implement the 3D angular X-ray cross-correlation analysis
 
-* Refactor: allow the reloading of binned data and its orthogonalization in preprocess_cdi_combined.py and preprocess_bcdi_combined.py
+* Refactor: allow the reloading of binned data and its orthogonalization in preprocess_cdi.py and preprocess_bcdi.py
 
 * Feature: implement crop_npz.py to crop combined stacked data to the desired size
 
@@ -25,7 +23,7 @@ Version 0.0.9
 
 * Refactor: when gridding forward CDI data, reverse the rotation direction to compensate the rotation of Ewald sphere
 
-* Refactor: converted /postprocessing/scripts/extract_bulk_surface.py
+* Refactor: updated extract_bulk_surface.py to use module functions
 
 * Bug: treat correctly the case angle=pi/2 during the interpolation of CDI data onto the laboratory frame
 
@@ -39,9 +37,7 @@ Version 0.0.9
 
 * Feature: add the option of restarting masking the aliens during preprocessing, not back compatible with previous versions
 
-* Refactor: rename prepare_(b)cdi_mask.py preprocess_(b)cdi_sequential.py
-
-* Feature: implement simultaneous masking over the 3 axes in two new preprocessing scripts preprocess_(b)cdi_combinedl.py
+* Feature: implement simultaneous masking over the 3 axes in two new preprocessing scripts preprocess_bcdi.py and preprocess_cdi.py
 
 * Feature: implement domain_orientation.py to find the orientation of domains in a 3D forward CDI dataset of mesocrystal
 

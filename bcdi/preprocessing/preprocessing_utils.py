@@ -760,8 +760,7 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
 def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     """
     In forward CDI experiment, check if there is no overlap in the measurement angles, crop it otherwise. Flip the
-    rotation direction to convert sample angles into detector angles.
-     Update data, mask and frames_logical accordingly.
+    rotation direction to convert sample angles into detector angles. Update data, mask and frames_logical accordingly.
 
     :param data: 3D forward CDI dataset before gridding.
     :param mask: 3D mask
@@ -2291,6 +2290,7 @@ def load_nanomax_data(logfile, detector, flatfield, hotpixels, background, norma
                       debugging=False):
     """
     Load Nanomax data, apply filters and concatenate it for phasing.
+
     :param logfile: path of the . fio file containing the information about the scan
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
@@ -2303,7 +2303,7 @@ def load_nanomax_data(logfile, detector, flatfield, hotpixels, background, norma
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     """
     import hdf5plugin  # should be imported before h5py
     import h5py
