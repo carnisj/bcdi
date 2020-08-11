@@ -826,6 +826,8 @@ def check_pixels(data, mask, debugging=False):
         mask = mask.sum(axis=0)
         mask[np.nonzero(mask)] = 1
 
+    print("\ncheck_pixels(): initial number of masked pixels = {:d} on a total of {:d}".format(int(mask.sum()),
+                                                                                               nbx*nby))
     if data[0, :, :].shape != mask.shape:
         raise ValueError('Data and mask must have the same shape\n data slice is ',
                          data[0, :, :].shape, ' while mask is ', mask.shape)
@@ -835,6 +837,7 @@ def check_pixels(data, mask, debugging=False):
     var_mean = vardata[vardata != np.inf].mean()
     vardata[meandata == 0] = var_mean  # pixels were data=0 (hence 1/variance=inf) are set to the mean of 1/var
     # we do not want to mask pixels where there was trully no intensity during the scan
+
     if debugging:
         gu.combined_plots(tuple_array=(meandata, vardata), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
                           tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
@@ -842,20 +845,26 @@ def check_pixels(data, mask, debugging=False):
                           tuple_title=('check_pixels()\nmean(data) before masking',
                                        'check_pixels()\n1/var(data) before masking'),
                           reciprocal_space=True, position=(121, 122))
-    # calculate the mean and 1/variance for a single photon event along the rocking curve
-    min_count = 0.99  # pixels with only 1 photon count along the rocking curve.
 
-    mean_threshold = min_count / nbz
-    var_threshold = ((nbz - 1) * mean_threshold ** 2 + (min_count - mean_threshold) ** 2) * 1 / nbz
+    # calculate the mean and the variance for a single photon event along the rocking curve
+    min_count = 0.99  # pixels with only 1 photon count along the rocking curve, use the value 0.99 to be inclusive
+    mean_singlephoton = min_count / nbz
+    var_singlephoton = ((nbz - 1) * mean_singlephoton ** 2 + (min_count - mean_singlephoton) ** 2) * 1 / nbz
+    print("check_pixels(): var_mean={:.2f}, 1/var_threshold={:.2f}".format(var_mean, 1/var_singlephoton))
 
+    # mask hotpixels with zero variance
     temp_mask = np.zeros((nby, nbx))
-    temp_mask[vardata == np.inf] = 1  # this includes hotpixels since zero intensity pixels were set to var_mean
+    temp_mask[vardata == np.inf] = 1  # this includes only hotpixels since zero intensity pixels were set to var_mean
+    mask[np.nonzero(temp_mask)] = 1  # update the mask with zero variance hotpixels
+    vardata[vardata == np.inf] = 0  # update the array
+    print("check_pixels(): number of zero variance hotpixels = {:d}".format(int(temp_mask.sum())))
 
-    vardata[vardata == np.inf] = 0
-    indices_badpixels = np.nonzero(vardata > 1 / var_threshold)
+    # filter out pixels which have a variance smaller that the threshold (note that  vardata = 1/data.var())
+    indices_badpixels = np.nonzero(vardata > 1 / var_singlephoton)
     mask[indices_badpixels] = 1  # mask is 2D
-    mask[np.nonzero(temp_mask)] = 1  # update mask
+    print("check_pixels(): number of pixels with too low variance = {:d}\n".format(indices_badpixels[0].shape[0]))
 
+    # update the data array
     indices_badpixels = np.nonzero(mask)  # update indices
     for index in range(nbz):
         tempdata = data[index, :, :]
@@ -864,13 +873,13 @@ def check_pixels(data, mask, debugging=False):
     if debugging:
         meandata = data.mean(axis=0)
         vardata = 1 / data.var(axis=0)
+        vardata[meandata == 0] = var_mean  # 0 intensity pixels, not masked
         gu.combined_plots(tuple_array=(meandata, vardata), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
                           tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
                           tuple_vmin=(0, 0), tuple_vmax=(1, np.nan), tuple_scale=('linear', 'linear'),
                           tuple_title=('check_pixels()\nmean(data) after masking',
                                        'check_pixels()\n1/var(data) after masking'),
                           reciprocal_space=True, position=(121, 122))
-    print("check_pixels():", str(indices_badpixels[0].shape[0]), "badpixels were masked on a total of", str(nbx * nby))
     return data, mask
 
 
