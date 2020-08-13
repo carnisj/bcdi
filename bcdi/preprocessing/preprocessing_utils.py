@@ -1518,7 +1518,7 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
                 if i == limit:
                     return limit
             vn.append(i)
-        if type(number) is np.ndarray:
+        if isinstance(number, np.ndarray):
             return np.array(vn)
         return vn
     else:
@@ -3894,7 +3894,7 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
                 if i == 0:
                     return 0
             vn.append(i)
-        if type(number) is np.ndarray:
+        if isinstance(number, np.ndarray):
             return np.array(vn)
         return vn
     else:

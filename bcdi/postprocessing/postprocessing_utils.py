@@ -274,7 +274,7 @@ def bin_data(array, binning, debugging=False):
     :return: the binned array
     """
     ndim = array.ndim
-    if type(binning) is int:
+    if isinstance(binning, int):
         binning = [binning] * ndim
     else:
         assert ndim == len(binning), "Rebin: number of dimensions does not agree with number of rebin values:" + str(

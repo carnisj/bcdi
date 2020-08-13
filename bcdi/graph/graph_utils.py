@@ -142,47 +142,47 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  the figure instance
     """
-    if type(tuple_array) is not tuple:
+    if not isinstance(tuple_array, tuple):
         raise TypeError('Expected "tuple_array" to be a tuple')
 
     nb_subplots = len(tuple_array)
     invert_yaxis = False
 
-    if type(tuple_sum_frames) is not tuple:
+    if not isinstance(tuple_sum_frames, tuple):
         tuple_sum_frames = (tuple_sum_frames,) * nb_subplots
-    if type(tuple_sum_axis) is not tuple:
+    if not isinstance(tuple_sum_axis, tuple):
         tuple_sum_axis = (tuple_sum_axis,) * nb_subplots
-    if type(tuple_width_v) is not tuple:
+    if not isinstance(tuple_width_v, tuple):
         tuple_width_v = (tuple_width_v,) * nb_subplots
-    if type(tuple_width_h) is not tuple:
+    if not isinstance(tuple_width_h, tuple):
         tuple_width_h = (tuple_width_h,) * nb_subplots
-    if type(tuple_colorbar) is not tuple:
+    if not isinstance(tuple_colorbar, tuple):
         tuple_colorbar = (tuple_colorbar,) * nb_subplots
-    if type(tuple_vmin) is not tuple:
+    if not isinstance(tuple_vmin, tuple):
         tuple_vmin = (tuple_vmin,) * nb_subplots
-    if type(tuple_vmax) is not tuple:
+    if not isinstance(tuple_vmax, tuple):
         tuple_vmax = (tuple_vmax,) * nb_subplots
-    if type(tuple_title) is not tuple:
+    if not isinstance(tuple_title, tuple):
         tuple_title = (tuple_title,) * nb_subplots
-    if type(tuple_scale) is not tuple:
+    if not isinstance(tuple_scale, tuple):
         tuple_scale = (tuple_scale,) * nb_subplots
 
     for k in kwargs.keys():
         if k in ['xlabel']:
             xlabel = kwargs['xlabel']
-            if type(xlabel) is not tuple:
+            if not isinstance(xlabel, tuple):
                 xlabel = (xlabel,) * nb_subplots
         elif k in ['ylabel']:
             ylabel = kwargs['ylabel']
-            if type(ylabel) is not tuple:
+            if not isinstance(ylabel, tuple):
                 ylabel = (ylabel,) * nb_subplots
         elif k in ['position']:
             position = kwargs['position']
-            if type(position) is not tuple or len(position) != nb_subplots:
+            if not isinstance(position, tuple) or len(position) != nb_subplots:
                 raise ValueError('"position" should be a tuple of subplot positions')
         elif k in ['invert_y']:
             invert_y = kwargs['invert_y']
-            if type(invert_y) is not tuple:
+            if not isinstance(invert_y, tuple):
                 invert_y = (invert_y,) * nb_subplots
         else:
             print(k)
@@ -1077,21 +1077,21 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
 
     assert len(fig_size) == 2, 'fig_size should be a tuple of 2 pixel numbers'
 
-    if type(azimuth) in [tuple, list]:  # several views to be plotted
+    if isinstance(azimuth, (tuple, list)):  # several views to be plotted
         nb_plots = len(azimuth)
-        if type(elevation) in [int, float]:
+        if isinstance(elevation, (int, float)):
             elevation = [elevation for _ in range(nb_plots)]
         else:
             assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimuth'
-        if type(roll) in [int, float]:
+        if isinstance(roll, (int, float)):
             roll = [roll for _ in range(nb_plots)]
         else:
             assert len(roll) == nb_plots, 'roll should have the same number of elements as azimuth'
-        if type(distance) in [int, float]:
+        if isinstance(distance, (int, float)):
             distance = [distance for _ in range(nb_plots)]
         else:
             assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
-        if type(title) is str:
+        if isinstance(title, str):
             title = [title + '_' + str(idx) for idx in range(nb_plots)]
         else:
             assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
@@ -1177,21 +1177,21 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
 
     assert len(fig_size) == 2, 'fig_size should be a tuple of 2 pixel numbers'
 
-    if type(azimuth) in [tuple, list]:  # several views to be plotted
+    if isinstance(azimuth, (tuple, list)):  # several views to be plotted
         nb_plots = len(azimuth)
-        if type(elevation) in [int, float]:
+        if isinstance(elevation, (int, float)):
             elevation = [elevation for _ in range(nb_plots)]
         else:
             assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimuth'
-        if type(roll) in [int, float]:
+        if isinstance(roll, (int, float)):
             roll = [roll for _ in range(nb_plots)]
         else:
             assert len(roll) == nb_plots, 'roll should have the same number of elements as azimuth'
-        if type(distance) in [int, float]:
+        if isinstance(distance, (int, float)):
             distance = [distance for _ in range(nb_plots)]
         else:
             assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
-        if type(title) is str:
+        if isinstance(title, str):
             title = [title + '_' + str(idx) for idx in range(nb_plots)]
         else:
             assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
@@ -1536,20 +1536,20 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     import vtk
     from vtk.util import numpy_support
 
-    if type(tuple_fieldnames) is tuple:
+    if isinstance(tuple_fieldnames, tuple):
         nb_fieldnames = len(tuple_fieldnames)
-    elif type(tuple_fieldnames) is str:
+    elif isinstance(tuple_fieldnames, str):
         nb_fieldnames = 1
     else:
         raise TypeError('Invalid input for tuple_fieldnames')
 
-    if type(tuple_array) is tuple:
+    if isinstance(tuple_array, tuple):
         nb_arrays = len(tuple_array)
         nb_dim = tuple_array[0].ndim
         if nb_dim != 3:  # wrong array dimension
             raise ValueError('save_to_vti() needs a 3D array')
         nbz, nby, nbx = tuple_array[0].shape
-    elif type(tuple_array) is np.ndarray:
+    elif isinstance(tuple_array, np.ndarray):
         nb_arrays = 1
         nb_dim = tuple_array.ndim
         if nb_dim != 3:  # wrong array dimension
