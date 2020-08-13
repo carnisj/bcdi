@@ -113,7 +113,7 @@ else:  # 'log'
 axis.set_title("Frame " + str(idx + 1) + "/" + str(nz) + "\n"
                "q quit ; u next frame ; d previous frame ; p unzoom\n"
                "right darker ; left brighter ; r save 2D frame")
-gu.colorbar(plot, nbins=5)
+gu.colorbar(plot, numticks=5)
 plt.connect('key_press_event', press_key)
 fig_loop.set_facecolor(background_plot)
 plt.show()
@@ -131,7 +131,7 @@ else:  # 'log'
 axis.set_title("Frame " + str(idx + 1) + "/" + str(ny) + "\n"
                "q quit ; u next frame ; d previous frame ; p unzoom\n"
                "right darker ; left brighter ; r save 2D frame")
-gu.colorbar(plot, nbins=5)
+gu.colorbar(plot, numticks=5)
 plt.connect('key_press_event', press_key)
 fig_loop.set_facecolor(background_plot)
 plt.show()
@@ -149,7 +149,7 @@ else:  # 'log'
 axis.set_title("Frame " + str(idx + 1) + "/" + str(nx) + "\n"
                "q quit ; u next frame ; d previous frame ; p unzoom\n"
                "right darker ; left brighter ; r save 2D frame")
-gu.colorbar(plot, nbins=5)
+gu.colorbar(plot, numticks=5)
 plt.connect('key_press_event', press_key)
 fig_loop.set_facecolor(background_plot)
 plt.show()
