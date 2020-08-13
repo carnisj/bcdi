@@ -164,7 +164,8 @@ def beamstop_correction(data, detector, setup, debugging=False):
     print('Applying beamstop correction for the X-ray energy of {:d}eV'.format(int(energy)))
 
     if energy not in [8200, 8700, 10000]:
-        print('no beam stop information for the X-ray energy of {:d}eV, defaulting to 8700 eV'.format(int(energy)))
+        print('no beam stop information for the X-ray energy of {:d}eV,'
+              ' defaulting to the correction for 8700 eV'.format(int(energy)))
         energy = 8700
 
     ndim = data.ndim
