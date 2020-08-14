@@ -1323,14 +1323,16 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
 
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data',
                                   levels=np.linspace(0, np.ceil(np.log10(interp_data.max())), 150, endpoint=True),
-                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+                                  slice_position=(pivot_z, pivot_y, pivot_x), plot_colorbar=True, scale='log',
+                                  is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
              '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
     fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                    title='Regridded data', is_orthogonal=True, reciprocal_space=True)
+                                    slice_position=(pivot_z, pivot_y, pivot_x), title='Regridded data',
+                                    is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
              '     ({:d}, {:d}, {:d})'.format(pivot_z, pivot_y, pivot_x), size=14)
     fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
