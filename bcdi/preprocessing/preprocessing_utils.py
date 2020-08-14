@@ -163,7 +163,7 @@ def beamstop_correction(data, detector, setup, debugging=False):
     energy = setup.energy
     print('Applying beamstop correction for the X-ray energy of {:d}eV'.format(int(energy)))
 
-    if energy not in [8200, 8700, 10000]:
+    if energy not in [8200, 8700, 10000, 10235]:
         print('no beam stop information for the X-ray energy of {:d}eV,'
               ' defaulting to the correction for 8700 eV'.format(int(energy)))
         energy = 8700
@@ -183,6 +183,7 @@ def beamstop_correction(data, detector, setup, debugging=False):
     # at 8200eV, the transmission of 100um Si is 0.26273
     # at 8700eV, the transmission of 100um Si is 0.32478
     # at 10000eV, the transmission of 100um Si is 0.47337
+    # at 10235eV, the transmission of 100um Si is 0.51431
     if energy == 8200:
         factor_large = 1 / 0.26273  # 5mm*5mm (100um thick) Si wafer
         factor_small = 1 / 0.26273  # 3mm*3mm (100um thick) Si wafer
@@ -193,9 +194,14 @@ def beamstop_correction(data, detector, setup, debugging=False):
         factor_small = 1 / 0.32478  # 3mm*3mm (100um thick) Si wafer
         pixels_large = [-33, 35, -31, 36]  # boundaries of the large wafer relative to the direct beam (V x H)
         pixels_small = [-14, 14, -11, 16]  # boundaries of the small wafer relative to the direct beam (V x H)
-    else:  # 10000 eV
+    elif energy == 10000:
         factor_large = 2.1/0.47337  # 5mm*5mm (200um thick) Si wafer
         factor_small = 4.5/0.47337   # 3mm*3mm (300um thick) Si wafer
+        pixels_large = [-36, 34, -34, 35]  # boundaries of the large wafer relative to the direct beam (V x H)
+        pixels_small = [-21, 21, -21, 21]  # boundaries of the small wafer relative to the direct beam (V x H)
+    else:  # energy = 10235
+        factor_large = 2.1/0.51431  # 5mm*5mm (200um thick) Si wafer
+        factor_small = 4.5/0.51431   # 3mm*3mm (300um thick) Si wafer
         pixels_large = [-36, 34, -34, 35]  # boundaries of the large wafer relative to the direct beam (V x H)
         pixels_small = [-21, 21, -21, 21]  # boundaries of the small wafer relative to the direct beam (V x H)
 
