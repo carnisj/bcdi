@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import os
+import ctypes
 import h5py
 import numpy as np
 from scipy.special import erf
@@ -289,6 +290,16 @@ def pseudovoigt(x_axis, amp, cen, sig, ratio):
     scaling_lorentzian = 1  # the Lorentzian is normalized
     return amp * (ratio * gaussian(x_axis, scaling_gaussian, cen, scaling_gaussian)
                   + (1-ratio) * lorentzian(x_axis, scaling_lorentzian, cen, sigma_lorentzian))
+
+
+def ref_count(address):
+    """
+    Get the reference count using ctypes module
+
+    :param address: integer, the memory adress id
+    :return: the number of references to the memory address
+    """
+    return ctypes.c_long.from_address(address).value
 
 
 def remove_background(array, q_values, avg_background, avg_qvalues, method='normalize'):
