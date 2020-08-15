@@ -30,7 +30,7 @@ Open images or series data at P10 beamline.
 scan_nb = 22  # scan number as it appears in the folder name
 sample_name = "gold_2_2_2"  # without _ at the end
 root_directory = "D:/data/P10_August2019_CDI/data/"
-file_list = 1  # np.arange(1, 381+1)
+file_list = np.arange(1, 381+1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
 detector_name = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 counter_roi = []  # plot the integrated intensity in this region of interest. Leave it to [] to use the full detector
@@ -68,23 +68,6 @@ def load_p10_file(filname, fil_idx, roi, threshold):
     return dataset, mask_2d, [roi_sum, fil_idx]
 
 
-def collect_result(result):
-    """
-    Callback processing the result after asynchronous multiprocessing. Update the global arrays.
-
-    :param result: the output of load_p10_file, containing the 2d data, 2d mask, counter for each frame, and the
-     file index
-    """
-    global sumdata, mask, counter
-    # result is a tuple: data, mask, counter, file_index
-    sumdata = sumdata + result[0]
-    mask[np.nonzero(result[1])] = 1
-    counter.append(result[2])
-
-    sys.stdout.write('\rFile {:d}'.format(result[2][1]))
-    sys.stdout.flush()
-
-
 def main(parameters):
     """
     Protection for multiprocessing.
@@ -92,6 +75,22 @@ def main(parameters):
     :param parameters: dictionnary containing input parameters
     """
     global sumdata, mask, counter
+
+    def collect_result(result):
+        """
+        Callback processing the result after asynchronous multiprocessing. Update the global arrays.
+
+        :param result: the output of load_p10_file, containing the 2d data, 2d mask, counter for each frame, and the
+         file index
+        """
+        global sumdata, mask, counter
+        # result is a tuple: data, mask, counter, file_index
+        sumdata = sumdata + result[0]
+        mask[np.nonzero(result[1])] = 1
+        counter.append(result[2])
+
+        sys.stdout.write('\rFile {:d}'.format(result[2][1]))
+        sys.stdout.flush()
 
     ######################################
     # load the dictionnary of parameters #
