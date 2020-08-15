@@ -152,7 +152,7 @@ def main(parameters):
     start = time.time()
 
     if multiproc:
-        print("\nNumber of processors: ", mp.cpu_count())
+        print("\nNumber of processors used: ", min(mp.cpu_count(), len(filenames)))
         mp.freeze_support()
         pool = mp.Pool(processes=min(mp.cpu_count(), len(filenames)))  # use this number of processes
 
