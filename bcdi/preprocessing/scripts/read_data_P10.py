@@ -30,7 +30,7 @@ Open images or series data at P10 beamline.
 scan_nb = 22  # scan number as it appears in the folder name
 sample_name = "gold_2_2_2"  # without _ at the end
 root_directory = "D:/data/P10_August2019_CDI/data/"
-file_list = np.arange(1, 381+1)
+file_list = 1  # np.arange(1, 381+1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
 detector_name = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 counter_roi = []  # plot the integrated intensity in this region of interest. Leave it to [] to use the full detector
@@ -39,7 +39,7 @@ high_threshold = 9  # data points where log10(data) > high_threshold will be mas
 # if data is a series, the condition becomes log10(data.sum(axis=0)) > high_threshold
 save_directory = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
 is_scan = True  # set to True is the measurement is a scan or a time series, False for a single image
-compare_ends = False  # set to True to plot the difference between the last frame and the first frame
+compare_ends = True  # set to True to plot the difference between the last frame and the first frame
 save_mask = False  # True to save the mask as 'hotpixels.npz'
 multiprocessing = True  # True to use multiprocessing
 ##########################
@@ -51,7 +51,8 @@ multiprocessing = True  # True to use multiprocessing
 ##############################################
 params = {'scan': scan_nb, 'sample_name': sample_name, 'rootdir': root_directory, 'file_list': file_list,
           'detector': detector_name, 'counter_roi': counter_roi, 'high_threshold': high_threshold,
-          'savedir': save_directory, 'is_scan': is_scan, 'compare_ends': compare_ends, 'save_mask': save_mask}
+          'savedir': save_directory, 'is_scan': is_scan, 'compare_ends': compare_ends, 'save_mask': save_mask,
+          'multiprocessing': multiprocessing}
 
 
 def load_p10_file(filname, fil_idx, roi, threshold):
@@ -105,6 +106,7 @@ def main(parameters):
     load_scan = parameters['is_scan']
     compare_end = parameters['compare_ends']
     savemask = parameters['save_mask']
+    multiproc = parameters['multiprocessing']
 
     #######################
     # Initialize detector #
@@ -128,6 +130,8 @@ def main(parameters):
             and counterroi[2] >= 0
             and counterroi[3] <= nb_pixel_x), 'counter_roi setting does not match the detector size'
     nb_files = len(image_nb)
+    if nb_files == 1:
+        multiproc = False
 
     if load_scan:  # scan or time series
         datadir = rootdir + samplename + '_' + str('{:05d}'.format(scan)) + '/e4m/'
@@ -147,7 +151,7 @@ def main(parameters):
     filenames = [template_file + '{:06d}.h5'.format(image_nb[idx]) for idx in range(nb_files)]
     start = time.time()
 
-    if multiprocessing:
+    if multiproc:
         print("\nNumber of processors: ", mp.cpu_count())
         mp.freeze_support()
         pool = mp.Pool(processes=min(mp.cpu_count(), len(filenames)))  # use this number of processes
@@ -170,23 +174,23 @@ def main(parameters):
             data = h5file['entry']['data']['data'][:]
             nbz, nby, nbx = data.shape
             [counter.append(data[index, counterroi[0]:counterroi[1], counterroi[2]:counterroi[3]].sum())
-             for index in range(nbz)]
-        # if compare_end and nb_files == 1:
-        #     data_start, _ = pru.mask_eiger4m(data=data[0, :, :], mask=mask)
-        #     data_start[np.log10(data_start) > threshold] = 0
-        #     data_start = data_start.astype(float)
-        #     data_stop, _ = pru.mask_eiger4m(data=data[-1, :, :], mask=mask)
-        #     data_stop[np.log10(data_stop) > threshold] = 0
-        #     data_stop = data_stop.astype(float)
-        #
-        #     fig, _, _ = gu.imshow_plot(data_stop - data_start, plot_colorbar=True, scale='log',
-        #                                title='difference between the last frame and the first frame of the series')
+                for index in range(nbz)]
+            if compare_end and nb_files == 1:
+                data_start, _ = pru.mask_eiger4m(data=data[0, :, :], mask=mask)
+                data_start[np.log10(data_start) > threshold] = 0
+                data_start = data_start.astype(float)
+                data_stop, _ = pru.mask_eiger4m(data=data[-1, :, :], mask=mask)
+                data_stop[np.log10(data_stop) > threshold] = 0
+                data_stop = data_stop.astype(float)
 
-        data = data.sum(axis=0)  # data becomes 2D
-        mask[np.log10(data) > threshold] = 1
-        data[mask == 1] = 0
-        sumdata = sumdata + data
-        roi_counter = counter
+                fig, _, _ = gu.imshow_plot(data_stop - data_start, plot_colorbar=True, scale='log',
+                                           title='difference between the last frame and the first frame of the series')
+
+            data = data.sum(axis=0)  # data becomes 2D
+            mask[np.log10(data) > threshold] = 1
+            data[mask == 1] = 0
+            sumdata = sumdata + data
+            roi_counter = [[counter, idx]]
 
     end = time.time()
     print('\nTime ellapsed for loading data:', str(datetime.timedelta(seconds=int(end - start))))
@@ -214,7 +218,7 @@ def main(parameters):
     y0, x0 = np.unravel_index(abs(sumdata).argmax(), sumdata.shape)
     print("Max at (y, x): ", y0, x0, ' Max = ', int(sumdata[y0, x0]))
 
-    if len(roi_counter) > 1:
+    if len(roi_counter[0][0]) > 1:  # roi_counter[0][0] is the list of counter intensities in a series
         int_roi = []
         [int_roi.append(val[0][idx]) for val in roi_counter for idx in range(frame_per_series)]
         plt.figure()
