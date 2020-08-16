@@ -1407,6 +1407,7 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
             pool.apply_async(interp_2dslice,
                              args=(array[:, idx, :], idx, rotation_angle, direct_beam, interp_angle, interp_radius),
                              callback=collect_result, error_callback=util.catch_error)
+            # interp_2dslice must be a pickable object, i.e. defined at the top level of the module
 
         pool.close()
         pool.join()  # postpones the execution of next line of code until all processes in the queue are done.
