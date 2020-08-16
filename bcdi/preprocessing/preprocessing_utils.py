@@ -1658,21 +1658,17 @@ def interp_2dslice(array, slice_index):
     # cdi_interp_angle: 2D array, polar angles for the interpolation in a plane perpendicular to the rotation axis
     # cdi_interp_radius: 2D array, polar radii for the interpolation in a plane perpendicular to the rotation axis
 
-    rotation_angle = cdi_rotation_angle
-    direct_beam = cdi_direct_beam
-    interp_angle = cdi_interp_angle
-    interp_radius = cdi_interp_radius
-
     # position of the experimental data points
     number_x = array.shape[1]
-    rgi = RegularGridInterpolator((rotation_angle * np.pi / 180, np.arange(-direct_beam, -direct_beam + number_x, 1)),
+    rgi = RegularGridInterpolator((cdi_rotation_angle * np.pi / 180,
+                                   np.arange(-cdi_direct_beam, -cdi_direct_beam + number_x, 1)),
                                   array, method='linear', bounds_error=False,
                                   fill_value=np.nan)
 
     # interpolate the data onto the new points
-    tmp_array = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
-                                    interp_radius.reshape((1, interp_angle.size)))).transpose())
-    tmp_array = tmp_array.reshape(interp_angle.shape).astype(array.dtype)
+    tmp_array = rgi(np.concatenate((cdi_interp_angle.reshape((1, cdi_interp_angle.size)),
+                                    cdi_interp_radius.reshape((1, cdi_interp_angle.size)))).transpose())
+    tmp_array = tmp_array.reshape(cdi_interp_angle.shape).astype(array.dtype)
 
     return tmp_array, slice_index
 
