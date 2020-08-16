@@ -22,6 +22,12 @@ import bcdi.postprocessing.postprocessing_utils as pu
 from bcdi.utils import image_registration as reg
 import bcdi.utils.utilities as util
 
+#################################
+# do not modify variables below #
+#################################
+cdi_rotation_angle, cdi_direct_beam, cdi_interp_angle, cdi_interp_radius = (None, None, None, None)
+# globals for interp_2dslice()
+
 
 def align_diffpattern(reference_data, data, mask=None, method='registration', combining_method='rgi',
                       return_shift=False):
@@ -1369,7 +1375,8 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
     """
 
     assert array.ndim == 3, 'a 3D array is expected'
-    global interp_array, number_y, slices_done
+    global interp_array, number_y, slices_done  # globals for the callback collect_result()
+    global cdi_rotation_angle, cdi_direct_beam, cdi_interp_angle, cdi_interp_radius  # globals for interp_2dslice()
 
     def collect_result(result):
         """
@@ -1397,6 +1404,12 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
     interp_array = np.zeros((numx, number_y, numx), dtype=array.dtype)
     slices_done = 0
 
+    # assign variables to global variables in order to not duplicate them in multiprocessing
+    cdi_rotation_angle = rotation_angle
+    cdi_direct_beam = direct_beam
+    cdi_interp_angle = interp_angle
+    cdi_interp_radius = interp_radius
+
     start = time.time()
     if multiprocessing:
         print("\nGridding", comment, ", number of processors used: ", min(mp.cpu_count(), number_y))
@@ -1404,9 +1417,8 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
         pool = mp.Pool(processes=min(mp.cpu_count(), number_y))  # use this number of processesu
 
         for idx in range(number_y):
-            pool.apply_async(interp_2dslice,
-                             args=(array[:, idx, :], idx, rotation_angle, direct_beam, interp_angle, interp_radius),
-                             callback=collect_result, error_callback=util.catch_error)
+            pool.apply_async(interp_2dslice, args=(array[:, idx, :], idx), callback=collect_result,
+                             error_callback=util.catch_error)
             # interp_2dslice must be a pickable object, i.e. defined at the top level of the module
 
         pool.close()
@@ -1415,8 +1427,7 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
     else:  # no multiprocessing
         print("\nGridding", comment, ", no multiprocessing")
         for idx in range(number_y):  # loop over 2D frames perpendicular to the rotation axis
-            temp_array, _ = interp_2dslice(array[:, idx, :], idx, rotation_angle, direct_beam, interp_angle,
-                                           interp_radius)
+            temp_array, _ = interp_2dslice(array[:, idx, :], idx)
 
             # stack the 2D interpolated frame along the rotation axis, taking into account the flip of the
             # detector Y axis (pointing down) compare to the laboratory frame vertical axis (pointing up)
@@ -1633,18 +1644,25 @@ def init_qconversion(setup):
     return qconv, offsets
 
 
-def interp_2dslice(array, slice_index, rotation_angle, direct_beam, interp_angle, interp_radius):
+def interp_2dslice(array, slice_index):
     """
     Interpolate a 2D slice of a 3D array in cylindrical coordinated (tomographic dataset) onto cartesian coordinates.
 
     :param array: 3D array of intensities measured in the detector frame
     :param slice_index: the index along the rotation axis of the 2D slice in array to interpolate
-    :param rotation_angle: array, rotation angle values for the rocking scan
-    :param direct_beam: position in pixels of the rotation pivot in the direction perpendicular to the rotation axis
-    :param interp_angle: 2D array, polar angles for the interpolation in a plane perpendicular to the rotation axis
-    :param interp_radius: 2D array, polar radii for the interpolation in a plane perpendicular to the rotation axis
     :return: the interpolated slice, the slice index
     """
+    global cdi_rotation_angle, cdi_direct_beam, cdi_interp_angle, cdi_interp_radius
+    # cdi_rotation_angle: array, rotation angle values for the rocking scan
+    # cdi_direct_beam: position in pixels of the rotation pivot in the direction perpendicular to the rotation axis
+    # cdi_interp_angle: 2D array, polar angles for the interpolation in a plane perpendicular to the rotation axis
+    # cdi_interp_radius: 2D array, polar radii for the interpolation in a plane perpendicular to the rotation axis
+
+    rotation_angle = cdi_rotation_angle
+    direct_beam = cdi_direct_beam
+    interp_angle = cdi_interp_angle
+    interp_radius = cdi_interp_radius
+
     # position of the experimental data points
     number_x = array.shape[1]
     rgi = RegularGridInterpolator((rotation_angle * np.pi / 180, np.arange(-direct_beam, -direct_beam + number_x, 1)),
