@@ -587,7 +587,7 @@ def main(parameters):
 
                 tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
                 tmp_data[mask == 1] = 0
-                fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                                 title='Data before gridding\n', is_orthogonal=False,
                                                 reciprocal_space=True)
                 plt.savefig(savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' +
