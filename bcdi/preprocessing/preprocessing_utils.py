@@ -2017,8 +2017,8 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
             elif beamline == 'P10':  # consider a time series
                 # datadir is root_folder + sample_name
                 datadir = os.path.normpath(detector.datadir)
-                sample_name = datadir.split(os.sep)
-                ccdfiletmp = detector.datadir + '_{:05d}'.format(i) +\
+                sample_name = datadir.split(os.sep)[-1]
+                ccdfiletmp = detector.datadir + '_{:05d}'.format(i) + '/e4m/' +\
                     sample_name + '_{:05d}'.format(i) + detector.template_imagefile
                 h5file = h5py.File(ccdfiletmp, 'r')  # load the _master.h5 file
                 ccdraw = h5file['entry']['data']['data_000001'][:].sum(axis=0)
