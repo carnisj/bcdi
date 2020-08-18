@@ -390,12 +390,12 @@ def main(parameters):
             detector.datadir = homedir + "data/"
             specfile = specfile_name
         else:
+            specfile = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb])
+            homedir = root_folder + specfile + '/'
             if custom_scan:
                 detector.datadir = root_folder + sample_name[scan_nb]
                 detector.template_imagefile = template_imagefile
             else:
-                specfile = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb])
-                homedir = root_folder + specfile + '/'
                 detector.datadir = homedir + 'e4m/'
                 imagefile = specfile + template_imagefile
                 detector.template_imagefile = imagefile
