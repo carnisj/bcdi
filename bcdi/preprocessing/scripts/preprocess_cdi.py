@@ -77,15 +77,6 @@ reload_previous = False  # True to resume a previous masking (load data and mask
 reload_orthogonal = True  # True if the reloaded data is already intepolated in an orthonormal frame
 previous_binning = [1, 1, 1]  # binning factors in each dimension of the binned data to be reloaded
 save_previous = False  # if True, will save the previous data and mask
-######################################################################
-# parameters used for interpolating the data in an orthonormal frame #
-######################################################################
-use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
-correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
-fit_datarange = False  # if True, crop the final array within data range, avoiding areas at the corners of the window
-# viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
-sdd = 5.0  # sample to detector distance in m, used only if use_rawdata is False
-energy = 8700  # x-ray energy in eV, used only if use_rawdata is False
 ##################
 # saving options #
 ##################
@@ -101,6 +92,12 @@ beamline = 'P10'  # name of the beamline, used for data loading and normalizatio
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 rocking_angle = "inplane"  # "outofplane" or "inplane"
 is_series = True  # specific to series measurement at P10
+
+custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
+# there is no spec/log file available
+custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
+custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan
+
 specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
@@ -112,9 +109,9 @@ specfile_name = ''
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-direct_beam = (1349,1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
+direct_beam = (1352, 1362)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = [direct_beam[0] - 200, direct_beam[0] + 200, direct_beam[1] - 200, direct_beam[1] + 200]
+roi_detector = []  # [direct_beam[0] - 200, direct_beam[0] + 200, direct_beam[1] - 200, direct_beam[1] + 200]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector.
 photon_threshold = 0  # data[data < photon_threshold] = 0
@@ -128,7 +125,20 @@ template_imagefile = '_master.h5'  # ''_data_%06d.h5'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
-# template for P10: '_master.h5'
+# template for P10: '_master.h5' for normal scan,
+######################################################################
+# parameters used for interpolating the data in an orthonormal frame #
+######################################################################
+use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
+correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
+fit_datarange = False  # if True, crop the final array within data range, avoiding areas at the corners of the window
+# viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
+sdd = 5.0  # sample to detector distance in m, used only if use_rawdata is False
+energy = 10235  # x-ray energy in eV, used only if use_rawdata is False
+custom_motors = {"hprz": np.linspace(0, 184, num=369, endpoint=True)}
+# use this to declare motor positions if there is not log file
+# example: {"hprz": np.linspace(16.989, 18.989, num=100, endpoint=False)}
+# P10: hprz for the inplane rotation
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -353,7 +363,8 @@ def main(parameters):
     # Initialize setup #
     ####################
     setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
-                                   direct_beam=direct_beam)
+                                   direct_beam=direct_beam, custom_scan=custom_scan, custom_images=custom_images,
+                                   custom_monitor=custom_monitor, custom_motors=custom_motors)
 
     ############################################
     # Initialize values for callback functions #
@@ -379,11 +390,15 @@ def main(parameters):
             detector.datadir = homedir + "data/"
             specfile = specfile_name
         else:
-            specfile = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb])
-            homedir = root_folder + specfile + '/'
-            detector.datadir = homedir + 'e4m/'
-            imagefile = specfile + template_imagefile
-            detector.template_imagefile = imagefile
+            if custom_scan:
+                detector.datadir = root_folder + sample_name[scan_nb]
+                detector.template_imagefile = template_imagefile
+            else:
+                specfile = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb])
+                homedir = root_folder + specfile + '/'
+                detector.datadir = homedir + 'e4m/'
+                imagefile = specfile + template_imagefile
+                detector.template_imagefile = imagefile
 
         logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
                                      root_folder=root_folder, filename=specfile)

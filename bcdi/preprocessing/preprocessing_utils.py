@@ -1204,7 +1204,10 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
         raise ValueError('mask is expected to be a 3D array')
     if setup.beamline == 'P10':
         if setup.rocking_angle == 'inplane':
-            cdi_angle = motor_positions_p10_saxs(logfile, setup)
+            if setup.custom_scan:
+                cdi_angle = setup.custom_motors['hprz']
+            else:
+                cdi_angle = motor_positions_p10_saxs(logfile, setup)
         else:
             raise ValueError('out-of-plane rotation not yet implemented for forward CDI data')
     else:
@@ -1954,7 +1957,7 @@ def load_cristal_monitor(logfile):
 
 
 def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfield, hotpixels, background,
-                     bin_during_loading=False, debugging=False):
+                     bin_during_loading=False, debugging=False, **kwargs):
     """
     Load a dataset measured without a scan, such as a set of images measured in a macro.
 
@@ -1968,8 +1971,12 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
     :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
      It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
+    :param kwargs:
+     - 'is_series': boolean, specific to series measurement at P10
     :return:
     """
+    import hdf5plugin  # should be imported before h5py
+    import h5py
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
     if len(custom_images) == 0:
@@ -2007,8 +2014,16 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
             if beamline == 'ID01':
                 e = fabio.open(ccdfiletmp % i)
                 ccdraw = e.data
+            elif beamline == 'P10':  # consider a time series
+                # datadir is root_folder + sample_name
+                datadir = os.path.normpath(detector.datadir)
+                sample_name = datadir.split(os.sep)
+                ccdfiletmp = detector.datadir + '_{:05d}'.format(i) +\
+                    sample_name + '_{:05d}'.format(i) + detector.template_imagefile
+                h5file = h5py.File(ccdfiletmp, 'r')  # load the _master.h5 file
+                ccdraw = h5file['entry']['data']['data_000001'][:].sum(axis=0)
             else:
-                raise ValueError("Custom scan implementation missing for this beamline")
+                raise NotImplementedError("Custom scan implementation missing for this beamline")
         if background is not None:
             ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
@@ -2016,6 +2031,8 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
             ccdraw, mask_2d = mask_eiger(data=ccdraw, mask=mask_2d)
         elif detector.name == "Maxipix":
             ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
+        elif detector.name == "Eiger4M":
+            ccdraw, mask_2d = mask_eiger4m(data=ccdraw, mask=mask_2d)
         else:
             pass
         if flatfield is not None:
