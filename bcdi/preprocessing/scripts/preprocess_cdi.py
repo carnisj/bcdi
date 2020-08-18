@@ -166,7 +166,9 @@ def main(parameters):
 
     :param parameters: dictionnary containing input parameters
     """
-
+    global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
+    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text
+    
     def close_event(event):
         """
         This function handles closing events on plots.
