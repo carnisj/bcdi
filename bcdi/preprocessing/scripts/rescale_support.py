@@ -24,23 +24,23 @@ In reciprocal space, the following convention is used: qx downtream, qz vertical
 
 """
 
-root_folder = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/564_800_564/"
-support_threshold = 0.1  # in % of the normalized absolute value
-original_shape = [280, 400, 280]  # shape of the array used for phasing and finding the support (after binning_original)
-binning_original = (2, 2, 2)  # binning that was used in PyNX during phasing
-output_shape = [560, 800, 560]  # shape of the array for later phasing (before binning_output)
+root_folder = "D:/data/P10_August2020_CDI/data/gold_trunc_custom/"
+support_threshold = 0.05  # in % of the normalized absolute value
+original_shape = [300, 300, 300]  # shape of the array used for phasing and finding the support (after binning_original)
+binning_original = (1, 1, 1)  # binning that was used in PyNX during phasing
+output_shape = [250, 250, 250]  # shape of the array for later phasing (before binning_output)
 # if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
 binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
 skip_masking = False  # if True, will skip thresholding and masking
-filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
+filter_name = 'do_nothing'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
 gaussian_sigma = 3.0  # sigma of the gaussian filter
 binary_support = True  # True to save the support as an array of 0 and 1
 reload_support = False  # if True, will load the support which shape is assumed to be the shape after binning_output
 # it is usefull to redo some masking without interpolating again.
 is_ortho = True  # True if the data is already orthogonalized
 center = True  # will center the support based on the center of mass
-flip_reconstruction = True  # True if you want to get the conjugate object
-roll_modes = (-1, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
+flip_reconstruction = False  # True if you want to get the conjugate object
+roll_modes = (0, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 roll_centering = (0, 0, 0)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 save_fig = True  # if True, will save the figure of the final support
@@ -56,7 +56,7 @@ pixel_y = 75e-06  # in m
 ######################################################################
 # parameters for image deconvolution using Richardson-Lucy algorithm #
 ######################################################################
-psf_iterations = 20  # number of iterations of Richardson-Lucy deconvolution, leave it to 0 if unwanted
+psf_iterations = 0  # number of iterations of Richardson-Lucy deconvolution, leave it to 0 if unwanted
 psf_shape = (10, 10, 10)
 psf = pu.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False)
 ##################################
@@ -81,13 +81,15 @@ def press_key(event):
     :param event: button press event
     :return: updated data, mask and controls
     """
-    global original_data, data, mask, fig_mask, dim, idx, width, max_colorbar
+    global original_data, data, fig_mask, ax0, dim, idx, width, max_colorbar, stop_masking
 
     try:
-        data, mask, width, max_colorbar, idx, stop_masking = \
-            pru.update_aliens(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
-                              original_data=original_data, updated_data=data, updated_mask=mask,
-                              figure=fig_mask, width=width, dim=dim, idx=idx, vmin=0, vmax=max_colorbar)
+        if event.inaxes == ax0:
+            data, _, width, max_colorbar, idx, stop_masking = \
+                gu.update_aliens(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
+                                 original_data=original_data, original_mask=np.zeros(data.shape), updated_data=data,
+                                 updated_mask=np.zeros(data.shape), figure=fig_mask, width=width, dim=dim, idx=idx,
+                                 vmin=0, vmax=max_colorbar)
         if stop_masking:
             plt.close(fig_mask)
 
@@ -103,7 +105,6 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the reconstruction",
                                        filetypes=[("HDF5", "*.h5"), ("NPZ", "*.npz"), ("CXI", "*.cxi")])
 data, _ = util.load_file(file_path)
-mask = np.zeros(data.shape)
 nz, ny, nx = data.shape
 data = np.roll(data, roll_modes, axis=(0, 1, 2))
 
@@ -134,13 +135,16 @@ if not skip_masking:
 
     # in XY
     dim = 0
+    stop_masking = False
     fig_mask = plt.figure()
+    ax0 = fig_mask.add_subplot(111)
+    fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
     idx = 0
     original_data = np.copy(data)
-    plt.imshow(data[idx, :, :], vmin=0, vmax=max_colorbar)
-    plt.title("Frame " + str(idx+1) + "/" + str(nz) + "\n"
-              "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-              "up larger ; down smaller ; right darker ; left brighter")
+    ax0.imshow(data[idx, :, :], vmin=0, vmax=max_colorbar)
+    ax0.set_title("Frame " + str(idx+1) + "/" + str(nz) + "\n"
+                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                  "up larger ; down smaller ; right darker ; left brighter")
     plt.connect('key_press_event', press_key)
     fig_mask.set_facecolor(background_plot)
     plt.show()
@@ -148,12 +152,15 @@ if not skip_masking:
 
     # in XZ
     dim = 1
+    stop_masking = False
     fig_mask = plt.figure()
+    ax0 = fig_mask.add_subplot(111)
+    fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
     idx = 0
-    plt.imshow(data[:, idx, :], vmin=0, vmax=max_colorbar)
-    plt.title("Frame " + str(idx+1) + "/" + str(ny) + "\n"
-              "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-              "up larger ; down smaller ; right darker ; left brighter")
+    ax0.imshow(data[:, idx, :], vmin=0, vmax=max_colorbar)
+    ax0.set_title("Frame " + str(idx+1) + "/" + str(ny) + "\n"
+                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                  "up larger ; down smaller ; right darker ; left brighter")
     plt.connect('key_press_event', press_key)
     fig_mask.set_facecolor(background_plot)
     plt.show()
@@ -161,12 +168,15 @@ if not skip_masking:
 
     # in YZ
     dim = 2
+    stop_masking = False
     fig_mask = plt.figure()
+    ax0 = fig_mask.add_subplot(111)
+    fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
     idx = 0
-    plt.imshow(data[:, :, idx], vmin=0, vmax=max_colorbar)
-    plt.title("Frame " + str(idx+1) + "/" + str(nx) + "\n"
-              "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-              "up larger ; down smaller ; right darker ; left brighter")
+    ax0.imshow(data[:, :, idx], vmin=0, vmax=max_colorbar)
+    ax0.set_title("Frame " + str(idx+1) + "/" + str(nx) + "\n"
+                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
+                  "up larger ; down smaller ; right darker ; left brighter")
     plt.connect('key_press_event', press_key)
     fig_mask.set_facecolor(background_plot)
     plt.show()
