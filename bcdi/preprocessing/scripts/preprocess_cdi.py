@@ -406,6 +406,7 @@ def main(parameters):
                                      root_folder=root_folder, filename=specfile)
 
         print('\nScan', scans[scan_nb])
+        print('Sample name: ', sample_name[scan_nb])
         print('Setup: ', setup.beamline)
         print('Direct beam (VxH)', direct_beam)
         print('Detector: ', detector.name)
