@@ -24,7 +24,7 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_August2020_CDI/data/mag_3_macro2/'
+root_folder = 'D:/data/P10_August2020_CDI/data/mag_5_00097/'
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
 origin = [290, 228, 290]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
@@ -37,7 +37,7 @@ debug = False  # True to show more plots
 xlim = None  # [0, 0.8]  # [start, stop] limits used for the horizontal axis of the angular plot, leave None otherwise
 ylim = None  # [start, stop] limits used for the vertical axis of plots, leave None otherwise
 save_txt = False  # True to save q values and the average in .txt format
-subtract_median = True  # if True, will subtract the median to the mean at each q, to see peaks more clearly
+subtract_median = False  # if True, will subtract the median to the mean at each q, to see peaks more clearly
 ##########################
 # end of user parameters #
 ##########################

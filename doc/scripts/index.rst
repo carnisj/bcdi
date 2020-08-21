@@ -459,7 +459,15 @@ apodize.py
    :start-after: helptext
    :end-before: """
    :language: rst
-   
+
+angular_avg_3Dto1D.py
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/angular_avg_3Dto1D.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 correlation_realspace.py
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -528,14 +536,6 @@ save_to_mat.py
 
 XCCA
 ----
-
-angular_avg_3Dto1D.py
-^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/xcca/scripts/angular_avg_3Dto1D.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
 
 xcca_3D_map_polar.py
 ^^^^^^^^^^^^^^^^^^^^
