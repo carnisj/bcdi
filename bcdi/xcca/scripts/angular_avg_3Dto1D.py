@@ -24,19 +24,20 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/'
+root_folder = 'D:/data/P10_August2020_CDI/data/gold_trunc_custom/'
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
-origin = [330, 204, 330]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
-bin_factor = 2  # the data will be binned by bin_factor is the three directions
-vertical_lines = [0.104, 0.144, 0.172, 0.208]  # plot vertical dashed lines at these q values, leave [] otherwise
+origin = [340, 203, 340]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
+bin_factor = 1  # the data will be binned by bin_factor is the three directions
+vertical_lines = []  # [0.104, 0.144, 0.172, 0.208]  # plot vertical dashed lines at these q values, leave [] otherwise
 # position in pixels of the origin of the angular average in the array.
 # if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
 threshold = 0  # data < threshold will be set to 0
 debug = False  # True to show more plots
-xlim = None  # limits used for the horizontal axis of the angular plot, leave None otherwise
-ylim = None  # limits used for the vertical axis of plots, leave None otherwise
+xlim = [0, 0.8]  # [start, stop] limits used for the horizontal axis of the angular plot, leave None otherwise
+ylim = None  # [start, stop] limits used for the vertical axis of plots, leave None otherwise
 save_txt = False  # True to save q values and the average in .txt format
+subtract_median = True  # if True, will subtract the median to the mean at each q, to see peaks more clearly
 ##########################
 # end of user parameters #
 ##########################
@@ -124,6 +125,9 @@ if save_txt:
 #############
 # plot data #
 #############
+if subtract_median:
+    y_mean_masked = y_mean_masked - y_median_masked
+
 q_vline = util.find_nearest(q_axis, vertical_lines)
 
 fig, ax0 = plt.subplots(1, 1)
