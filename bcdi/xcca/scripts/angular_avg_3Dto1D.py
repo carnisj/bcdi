@@ -24,17 +24,17 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_August2020_CDI/data/gold_trunc_custom/'
+root_folder = 'D:/data/P10_August2020_CDI/data/mag_3_macro2/'
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
-origin = [340, 203, 340]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
+origin = [290, 228, 290]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
 bin_factor = 1  # the data will be binned by bin_factor is the three directions
 vertical_lines = []  # [0.104, 0.144, 0.172, 0.208]  # plot vertical dashed lines at these q values, leave [] otherwise
 # position in pixels of the origin of the angular average in the array.
 # if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
 threshold = 0  # data < threshold will be set to 0
 debug = False  # True to show more plots
-xlim = [0, 0.8]  # [start, stop] limits used for the horizontal axis of the angular plot, leave None otherwise
+xlim = None  # [0, 0.8]  # [start, stop] limits used for the horizontal axis of the angular plot, leave None otherwise
 ylim = None  # [start, stop] limits used for the vertical axis of plots, leave None otherwise
 save_txt = False  # True to save q values and the average in .txt format
 subtract_median = True  # if True, will subtract the median to the mean at each q, to see peaks more clearly
@@ -125,13 +125,23 @@ if save_txt:
 #############
 # plot data #
 #############
-if subtract_median:
-    y_mean_masked = y_mean_masked - y_median_masked
+fig, ax = plt.subplots(1, 1)
+ax.plot(q_axis, np.log10(y_mean_masked), 'r', label='mean')
+ax.plot(q_axis, np.log10(y_median_masked), 'b', label='median')
+ax.set_xlabel('q (1/nm)')
+ax.set_ylabel('Angular average (A.U.)')
+ax.legend()
 
 q_vline = util.find_nearest(q_axis, vertical_lines)
 
+if subtract_median:
+    y_mean_masked = y_mean_masked - y_median_masked
+    comment = 'mean-median'
+else:
+    comment = 'mean'
+
 fig, ax0 = plt.subplots(1, 1)
-plt0 = ax0.plot(q_axis, np.log10(y_mean_masked), 'r')
+plt0 = ax0.plot(q_axis, np.log10(y_mean_masked), 'r', label=comment)
 plt.xlabel('q (1/nm)')
 plt.ylabel('Angular average (A.U.)')
 if xlim is not None:
@@ -144,18 +154,11 @@ else:
 for counter, value in enumerate(vertical_lines):
     ax0.vlines(x=value, ymin=ymin, ymax=np.log10(y_mean_masked[q_vline[counter]]),
                colors='b', linestyle='dashed')
-plt.savefig(root_folder + 'angular_avg_labels.png')
+plt.savefig(root_folder + 'angular_' + comment + '_labels.png')
 ax0.tick_params(labelbottom=False, labelleft=False)
 plt.xlabel('')
 plt.ylabel('')
-plt.savefig(root_folder + 'angular_avg.png')
-
-fig, ax = plt.subplots(1, 1)
-ax.plot(q_axis, np.log10(y_mean_masked), 'r', label='mean')
-ax.plot(q_axis, np.log10(y_median_masked), 'b', label='median')
-ax.set_xlabel('q (1/nm)')
-ax.set_ylabel('Angular average (A.U.)')
-ax.legend()
+plt.savefig(root_folder + 'angular_' + comment + '.png')
 
 plt.ioff()
 plt.show()
