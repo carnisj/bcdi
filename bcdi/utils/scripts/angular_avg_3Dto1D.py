@@ -154,10 +154,13 @@ else:
 for counter, value in enumerate(vertical_lines):
     ax0.vlines(x=value, ymin=ymin, ymax=np.log10(y_mean_masked[q_vline[counter]]),
                colors='b', linestyle='dashed')
+legend = ax0.legend()
 plt.savefig(root_folder + 'angular_' + comment + '_labels.png')
 ax0.tick_params(labelbottom=False, labelleft=False)
 plt.xlabel('')
 plt.ylabel('')
+legend.remove()
+plt.draw()
 plt.savefig(root_folder + 'angular_' + comment + '.png')
 
 plt.ioff()
