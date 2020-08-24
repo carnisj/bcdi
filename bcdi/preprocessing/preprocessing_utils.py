@@ -1956,13 +1956,15 @@ def load_cristal_monitor(logfile):
     return monitor
 
 
-def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfield, hotpixels, background,
-                     bin_during_loading=False, debugging=False, **kwargs):
+def load_custom_data(custom_images, custom_monitor, normalize, beamline, detector, flatfield, hotpixels, background,
+                     bin_during_loading=False, debugging=False):
     """
     Load a dataset measured without a scan, such as a set of images measured in a macro.
 
     :param custom_images: the list of image numbers
     :param custom_monitor: list of monitor values for normalization
+    :param normalize: 'monitor' to return the monitor values defined by custom_monitor, 'sum_roi' to return a monitor
+     based on the integrated intensity in the region of interest defined by detector.sum_roi, 'skip' to do nothing
     :param beamline: supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX' '34ID'
     :param detector: the detector object: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
@@ -1971,8 +1973,6 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
     :param bin_during_loading: if True, the data will be binned in the detector frame while loading.
      It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
-    :param kwargs:
-     - 'is_series': boolean, specific to series measurement at P10
     :return:
     """
     import hdf5plugin  # should be imported before h5py
@@ -2008,6 +2008,13 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
     else:
         data = np.empty((nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]), dtype=float)
 
+    if normalize == 'sum_roi':
+        monitor = np.zeros(nb_img)
+    elif normalize == 'monitor':
+        monitor = custom_monitor
+    else:  # skip
+        monitor = np.ones(nb_img)
+
     for idx in range(nb_img):
         if stack:
             ccdraw = tmp_data[idx, :, :]
@@ -2040,6 +2047,8 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
             pass
         if flatfield is not None:
             ccdraw = flatfield * ccdraw
+        if normalize == 'sum_roi':
+            monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
         if bin_during_loading:
             ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
@@ -2058,7 +2067,7 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
 
     frames_logical = np.ones(nb_img)
 
-    return data, mask3d, custom_monitor, frames_logical
+    return data, mask3d, monitor, frames_logical
 
 
 def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
@@ -2096,7 +2105,7 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     if setup.custom_scan and not setup.filtered_data:
         data, mask3d, monitor, frames_logical = load_custom_data(custom_images=setup.custom_images,
                                                                  custom_monitor=setup.custom_monitor,
-                                                                 beamline=setup.beamline,
+                                                                 beamline=setup.beamline, normalize=normalize,
                                                                  detector=detector, flatfield=flatfield,
                                                                  hotpixels=hotpixels, background=background,
                                                                  debugging=debugging)
