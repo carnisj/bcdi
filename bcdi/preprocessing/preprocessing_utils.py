@@ -1979,6 +1979,8 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
     import h5py
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
+    nb_frames = None
+
     if len(custom_images) == 0:
         raise ValueError("No image number provided in 'custom_images'")
 
@@ -2021,6 +2023,7 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
                 ccdfiletmp = detector.datadir + '_{:05d}'.format(i) + '/e4m/' +\
                     sample_name + '_{:05d}'.format(i) + detector.template_imagefile
                 h5file = h5py.File(ccdfiletmp, 'r')  # load the _master.h5 file
+                nb_frames = h5file['entry']['data']['data_000001'][:].shape[0]
                 ccdraw = h5file['entry']['data']['data_000001'][:].sum(axis=0)
             else:
                 raise NotImplementedError("Custom scan implementation missing for this beamline")
@@ -2032,7 +2035,7 @@ def load_custom_data(custom_images, custom_monitor, beamline, detector, flatfiel
         elif detector.name == "Maxipix":
             ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
         elif detector.name == "Eiger4M":
-            ccdraw, mask_2d = mask_eiger4m(data=ccdraw, mask=mask_2d)
+            ccdraw, mask_2d = mask_eiger4m(data=ccdraw, mask=mask_2d, nb_img=nb_frames)
         else:
             pass
         if flatfield is not None:
@@ -2786,18 +2789,19 @@ def mask_eiger(data, mask, nb_img=1):
     mask[1214:1298, 481] = 1
     mask[1649:1910, 620:628] = 1
 
-    # mask hot pixels, 4000000000 for the Eiger4M
-    mask[data > 4000000000 * nb_img] = 1
-    data[data > 4000000000 * nb_img] = 0
+    # mask hot pixels
+    mask[data > 1e6 * nb_img] = 1
+    data[data > 1e6 * nb_img] = 0
     return data, mask
 
 
-def mask_eiger4m(data, mask):
+def mask_eiger4m(data, mask, nb_img=1):
     """
     Mask data measured with an Eiger4M detector
 
     :param data: the 2D data to mask
     :param mask: the 2D mask to be updated
+    :param nb_img: number of images summed to yield the 2D data (e.g. in a series measurement)
     :return: the masked data and the updated mask
     """
     if data.ndim != 2 or mask.ndim != 2:
@@ -2824,9 +2828,9 @@ def mask_eiger4m(data, mask):
     mask[1065:1102, :] = 1
     mask[1616:1653, :] = 1
 
-    # mask hot pixels
-    mask[data > 10e6] = 1
-    data[data > 10e6] = 0
+    # mask hot pixels, 4000000000 for the Eiger4M
+    mask[data > 4000000000 * nb_img] = 1
+    data[data > 4000000000 * nb_img] = 0
     return data, mask
 
 
