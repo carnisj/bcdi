@@ -2741,12 +2741,13 @@ def load_sixs_monitor(logfile, beamline):
     return monitor
 
 
-def mask_eiger(data, mask):
+def mask_eiger(data, mask, nb_img=1):
     """
     Mask data measured with an Eiger2M detector
 
     :param data: the 2D data to mask
     :param mask: the 2D mask to be updated
+    :param nb_img: number of images summed to yield the 2D data (e.g. in a series measurement)
     :return: the masked data and the updated mask
     """
     if data.ndim != 2 or mask.ndim != 2:
@@ -2785,9 +2786,9 @@ def mask_eiger(data, mask):
     mask[1214:1298, 481] = 1
     mask[1649:1910, 620:628] = 1
 
-    # mask hot pixels
-    mask[data > 1e6] = 1
-    data[data > 1e6] = 0
+    # mask hot pixels, 4000000000 for the Eiger4M
+    mask[data > 4000000000 * nb_img] = 1
+    data[data > 4000000000 * nb_img] = 0
     return data, mask
 
 
