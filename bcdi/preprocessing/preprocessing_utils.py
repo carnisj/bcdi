@@ -2087,7 +2087,7 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
     if setup.beamline != 'P10':
         bin_during_loading = False
 
-    print('Detector ROI loaded (VxH):',
+    print('User-defined ROI size (VxH):',
           detector.roi[1] - detector.roi[0], detector.roi[3] - detector.roi[2])
     print('Detector physical size without binning (VxH):', detector.nb_pixel_y, detector.nb_pixel_x)
     print('Detector size with binning (VxH):',
