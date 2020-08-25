@@ -311,9 +311,12 @@ def main(parameters):
     hotpixels_file = parameters['hotpixels_file']
     flatfield_file = parameters['flatfield_file']
     template_imagefile = parameters['template_imagefile']
+
     #########################
     # check some parameters #
     #########################
+    min_range = None
+
     if not reload_previous:
         previous_binning = [1, 1, 1]
         reload_orthogonal = False
@@ -532,7 +535,8 @@ def main(parameters):
         if not reload_orthogonal:
             dirbeam = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
             # updated horizontal direct beam
-            min_range = min(dirbeam, nx - dirbeam)  # maximum symmetrical range with defined data
+            min_range = min(dirbeam, min(nx - dirbeam, (detector.nb_pixel_x-direct_beam[1])/detector.binning[2]))
+            # crop at the maximum symmetrical range with defined data (remove padded area)
             print('\nMaximum symmetrical range with defined data along detector horizontal direction:', min_range*2,
                   'pixels')
 
