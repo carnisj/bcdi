@@ -2030,7 +2030,7 @@ def load_custom_data(custom_images, custom_monitor, normalize, beamline, detecto
                 ccdfiletmp = detector.datadir + '_{:05d}'.format(i) + '/e4m/' +\
                     sample_name + '_{:05d}'.format(i) + detector.template_imagefile
                 h5file = h5py.File(ccdfiletmp, 'r')  # load the _master.h5 file
-                nb_frames = h5file['entry']['data']['data_000001'][:].shape[0]
+                nb_frames = h5file['entry']['data']['data_000001'].shape[0]
                 ccdraw = h5file['entry']['data']['data_000001'][:].sum(axis=0)
             else:
                 raise NotImplementedError("Custom scan implementation missing for this beamline")
