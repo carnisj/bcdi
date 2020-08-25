@@ -106,7 +106,7 @@ elif type(crop_center) is tuple:
 assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
 assert np.all(np.asarray(crop_center)-np.asarray(output_shape)//2 >= 0), 'crop_center incompatible with output_shape'
 if crop_center[0]+output_shape[0]//2 > nbz or crop_center[1]+output_shape[1]//2 > nby\
-        or crop_center[1]+output_shape[1]//2 > nbx:
+        or crop_center[2]+output_shape[2]//2 > nbx:
     print('crop_center incompatible with output_shape')
     sys.exit()
 
