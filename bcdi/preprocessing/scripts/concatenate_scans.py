@@ -99,19 +99,13 @@ refmask = np.load(homedir + samplename + parent_folder +
 assert refdata.ndim == 3 and refmask.ndim == 3, 'data and mask should be 3D arrays'
 nbz, nby, nbx = refdata.shape
 
-if crop_center is None:
-    crop_center = [nbz // 2, nby // 2, nbx // 2]
-elif type(crop_center) is tuple:
-    crop_center = list(crop_center)
+crop_center = list(crop_center or [nbz // 2, nby // 2, nbx // 2])  # if None, default to the middle of the array
 assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
 assert np.all(np.asarray(crop_center)-np.asarray(output_shape)//2 >= 0), 'crop_center incompatible with output_shape'
-if crop_center[0]+output_shape[0]//2 > nbz or crop_center[1]+output_shape[1]//2 > nby\
-        or crop_center[2]+output_shape[2]//2 > nbx:
-    print('crop_center incompatible with output_shape')
-    sys.exit()
+assert crop_center[0]+output_shape[0]//2 <= nbz and crop_center[1]+output_shape[1]//2 <= nby\
+        and crop_center[2]+output_shape[2]//2 <= nbx, 'crop_center incompatible with output_shape'
 
-if corr_roi is None:
-    corr_roi = [0, nbz, 0, nby, 0, nbx]
+corr_roi = corr_roi or [0, nbz, 0, nby, 0, nbx]  # if None, use the full array for corr_roi
 
 assert len(corr_roi) == 6, 'corr_roi should be a tuple or list of lenght 6'
 if not 0 <= corr_roi[0] < corr_roi[1] <= nbz\
@@ -305,6 +299,22 @@ if plot_threshold != 0:
 
 plt.pause(0.1)
 plt.savefig(savedir + 'data' + template + '.png')
+
+fig, _, _ = gu.multislices_plot(sumdata, sum_frames=False, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
+                                slice_position=crop_center, title='Combined masked intensity', vmin=0,
+                                reciprocal_space=True)
+fig.text(0.55, 0.40, "Scans tested:", size=12)
+fig.text(0.55, 0.35, str(scans), size=8)
+fig.text(0.55, 0.30, "Correlation coefficients:", size=12)
+fig.text(0.55, 0.25, str(corr_coeff), size=8)
+fig.text(0.55, 0.20, "Threshold for correlation: " + str(correlation_threshold), size=12)
+fig.text(0.55, 0.15, 'Scans concatenated:', size=12)
+fig.text(0.55, 0.10, str(combined_list), size=8)
+if plot_threshold != 0:
+    fig.text(0.60, 0.05, "Threshold for plots only: {:d}".format(plot_threshold), size=12)
+
+plt.pause(0.1)
+plt.savefig(savedir + 'data_slice' + template + '.png')
 
 gu.multislices_plot(summask, sum_frames=True, scale='linear', plot_colorbar=True,
                     title='Combined mask', vmin=0, reciprocal_space=True, is_orthogonal=is_orthogonal)
