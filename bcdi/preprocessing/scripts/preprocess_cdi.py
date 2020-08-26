@@ -535,8 +535,7 @@ def main(parameters):
         if not reload_orthogonal:
             dirbeam = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
             # updated horizontal direct beam
-            min_range = min(dirbeam, min(nx - dirbeam, (detector.nb_pixel_x-direct_beam[1])/detector.binning[2]))
-            # crop at the maximum symmetrical range with defined data (remove padded area)
+            min_range = min(dirbeam, nx - dirbeam)  # crop at the maximum symmetrical range
             print('\nMaximum symmetrical range with defined data along detector horizontal direction:', min_range*2,
                   'pixels')
 
