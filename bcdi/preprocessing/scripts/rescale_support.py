@@ -26,8 +26,8 @@ In reciprocal space, the following convention is used: qx downtream, qz vertical
 
 root_folder = "D:/data/P10_August2020_CDI/data/gold_trunc_custom/"
 support_threshold = 0.05  # in % of the normalized absolute value
-original_shape = [300, 300, 300]  # shape of the array used for phasing and finding the support (after binning_original)
-binning_original = (1, 1, 1)  # binning that was used in PyNX during phasing
+original_shape = [300, 300, 300]  # shape of the array used for phasing and finding the support (after binning_pynx)
+binning_pynx = (1, 1, 1)  # binning that was used in PyNX during phasing
 output_shape = [250, 250, 250]  # shape of the array for later phasing (before binning_output)
 # if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
 binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
@@ -46,7 +46,7 @@ background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual c
 save_fig = True  # if True, will save the figure of the final support
 comment = ''  # should start with _
 ###############################################################################################
-# parameters used when (original_shape*binning_original != output_shape) and (is_ortho=False) #
+# parameters used when (original_shape*binning_pynx != output_shape) and (is_ortho=False) #
 ###############################################################################################
 energy = 9000  # in eV
 tilt_angle = 0.5  # in degrees
@@ -224,7 +224,7 @@ if binary_support:
 if reload_support:
     binned_shape = [int(output_shape[idx] / binning_output[idx]) for idx in range(0, len(binning_output))]
 else:
-    binned_shape = [int(original_shape[idx] * binning_original[idx]) for idx in range(0, len(binning_original))]
+    binned_shape = [int(original_shape[idx] * binning_pynx[idx]) for idx in range(0, len(binning_pynx))]
 nz, ny, nx = binned_shape
 
 data = pu.crop_pad(data, binned_shape)
