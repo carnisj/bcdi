@@ -125,7 +125,9 @@ template_imagefile = '_master.h5'  # ''_data_%06d.h5'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
-# template for P10: '_master.h5' for normal scan,
+# template for P10: '_master.h5' for normal scan
+nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 ######################################################################
 # parameters used for interpolating the data in an orthonormal frame #
 ######################################################################
@@ -316,6 +318,10 @@ def main(parameters):
     # check some parameters #
     #########################
     min_range = None
+    q_values = None
+    qx = None
+    qy = None
+    qz = None
 
     if not reload_previous:
         previous_binning = [1, 1, 1]
@@ -352,14 +358,10 @@ def main(parameters):
     kwargs = dict()  # create dictionnary
     kwargs['is_series'] = is_series
     kwargs['previous_binning'] = previous_binning
-    try:
+    if nb_pixel_x:
         kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
-    except NameError:  # nb_pixel_x not declared
-        pass
-    try:
+    if nb_pixel_y:
         kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
-    except NameError:  # nb_pixel_y not declared
-        pass
 
     detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
                             sum_roi=normalize_roi, binning=binning, **kwargs)
@@ -479,6 +481,7 @@ def main(parameters):
                 monitor = []  # we assume that normalization was already performed
                 min_range = (nx / 2) * np.sqrt(2)  # used when fit_datarange is True, keep the full array because
                 # we do not know the position of the origin of reciprocal space
+                frames_logical = np.ones(nz)
 
                 # bin data and mask if needed
                 if (detector.binning[0] != 1) or (detector.binning[1] != 1) or (detector.binning[2] != 1):
@@ -952,7 +955,8 @@ def main(parameters):
                 savemat(savedir + 'S' + str(scans[scan_nb]) + '_qy.mat', {'qy': qy})
                 savemat(savedir + 'S' + str(scans[scan_nb]) + '_qz.mat', {'qz': qz})
             fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=True, title='Final data',
-                                          levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
+                                          levels=np.linspace(0, int(np.log10(data.max(initial=None))), 150,
+                                                             endpoint=False),
                                           plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
             fig.savefig(detector.savedir + 'final_reciprocal_space_S' + str(scans[scan_nb]) + comment + '.png')
             plt.close(fig)
