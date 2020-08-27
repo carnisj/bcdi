@@ -80,15 +80,14 @@ class SetupPostprocessing(object):
          - 'title': title for the debugging plots
         :return: object interpolated on an orthogonal grid
         """
+        # default values for kwargs
+        title = 'Object'
+
         for k in kwargs.keys():
             if k in ['title']:
                 title = kwargs['title']
             else:
                 raise Exception("unknown keyword argument given: allowed is 'title'")
-        try:
-            title
-        except NameError:  # title not declared
-            title = 'Object'
 
         nbz, nby, nbx = obj.shape
 
@@ -223,15 +222,14 @@ class SetupPostprocessing(object):
          - 'title': title for the debugging plots
         :return: object interpolated on an orthogonal grid
         """
+        # default values for kwargs
+        title = 'Object'
+
         for k in kwargs.keys():
             if k in ['title']:
                 title = kwargs['title']
             else:
                 raise Exception("unknown keyword argument given: allowed is 'title'")
-        try:
-            title
-        except NameError:  # title not declared
-            title = 'Object'
 
         if len(initial_shape) == 0:
             initial_shape = obj.shape
@@ -589,6 +587,14 @@ class SetupPreprocessing(object):
          - 'custom_monitor' = list of monitor values for normalization for the custom_scan
          - 'custom_motors' = dictionnary of motors values during the scan
         """
+        # default values for kwargs
+        filtered_data = False
+        is_orthogonal = False
+        custom_scan = False
+        custom_images = []
+        custom_monitor = []
+        custom_motors = {}
+
         for k in kwargs.keys():
             if k in ['filtered_data']:
                 filtered_data = kwargs['filtered_data']
@@ -605,30 +611,6 @@ class SetupPreprocessing(object):
             else:
                 raise Exception("unknown keyword argument given: allowed is"
                                 "'custom_images', 'custom_monitor', 'custom_motors'")
-        try:
-            filtered_data
-        except NameError:  # filtered_data not declared
-            filtered_data = False
-        try:
-            is_orthogonal
-        except NameError:  # is_orthogonal not declared
-            is_orthogonal = False
-        try:
-            custom_scan
-        except NameError:  # custom_scan not declared
-            custom_scan = False
-        try:
-            custom_images
-        except NameError:  # custom_images not declared
-            custom_images = []
-        try:
-            custom_monitor
-        except NameError:  # custom_monitor not declared
-            custom_monitor = []
-        try:
-            custom_motors
-        except NameError:  # custom_motors not declared
-            custom_motors = {}
 
         self.beamline = beamline  # string
         self.filtered_data = filtered_data  # boolean
@@ -695,9 +677,15 @@ class Detector(object):
          - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
          - 'previous_binning': tuple or list of the three binning factors for reloaded binned data
         """
+        # default values for kwargs
+        nb_pixel_x = None
+        nb_pixel_y = None
+        previous_binning = None
+        is_series = False
+
         for k in kwargs.keys():
             if k in ['is_series']:
-                self.is_series = kwargs['is_series']
+                is_series = kwargs['is_series']
             elif k in ['nb_pixel_x']:
                 nb_pixel_x = kwargs['nb_pixel_x']
             elif k in ['nb_pixel_y']:
@@ -707,71 +695,48 @@ class Detector(object):
             else:
                 raise Exception("unknown keyword argument given:", k)
 
-        try:
-            previous_binning
-        except NameError:  # previous_binning not declared
-            previous_binning = (1, 1, 1)
-        self.previous_binning = previous_binning
-        
+        self.previous_binning = previous_binning or (1, 1, 1)
+        self.is_series = is_series
         self.name = name  # string
         self.offsets = ()
+
         if name == 'Maxipix':
-            try:
-                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 516 // previous_binning[2]
-            try:
-                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
-            except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 516 // previous_binning[1]
+            nb_pixel_x = nb_pixel_x or 516
+            nb_pixel_y = nb_pixel_y or 516
+            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'mpx4inr'
         elif name == 'Eiger2M':
-            try:
-                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 1030 // previous_binning[2]
-            try:
-                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
-            except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 2164 // previous_binning[1]
+            nb_pixel_x = nb_pixel_x or 1030
+            nb_pixel_y = nb_pixel_y or 2164
+            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = 'ei2minr'
         elif name == 'Eiger4M':
-            try:
-                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 2070 // previous_binning[2]
-            try:
-                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
-            except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 2167 // previous_binning[1]
+            nb_pixel_x = nb_pixel_x or 2070
+            nb_pixel_y = nb_pixel_y or 2167
+            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = ''  # unused
         elif name == 'Timepix':
-            try:
-                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 256 // previous_binning[2]
-            try:
-                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
-            except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 256 // previous_binning[1]
+            nb_pixel_x = nb_pixel_x or 256
+            nb_pixel_y = nb_pixel_y or 256
+            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = ''  # unused
         elif name == 'Merlin':
-            try:
-                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 515 // previous_binning[2]
-            try:
-                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
-            except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 515 // previous_binning[1]
+            nb_pixel_x = nb_pixel_x or 515
+            nb_pixel_y = nb_pixel_y or 515
+            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'alba2'
