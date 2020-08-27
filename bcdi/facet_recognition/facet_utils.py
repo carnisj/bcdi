@@ -536,7 +536,7 @@ def surface_indices(surface, plane_indices, margin=3):
 
 def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, projection_axis, min_distance=10,
                        background_south=-1000, background_north=-1000, save_txt=False, cmap=default_cmap,
-                       planes_south={}, planes_north={}, plot_planes=True, scale='linear', debugging=False):
+                       planes_south=None, planes_north=None, plot_planes=True, scale='linear', debugging=False):
     """
     Detect facets in an object using a stereographic projection of normals to mesh triangles
      and watershed segmentation.
@@ -727,9 +727,9 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     # define the marker for each peak
     markers_south = ndimage.label(local_maxi_south)[0]  # range from 0 to nb_peaks
     # define non overlaping markers for the North projection: the first marker value is (markers_south.max()+1)
-    markers_north = ndimage.label(local_maxi_north)[0] + markers_south.max()
+    markers_north = ndimage.label(local_maxi_north)[0] + markers_south.max(initial=None)
     # markers_north.min() is 0 since it is the background
-    markers_north[markers_north == markers_south.max()] = 0
+    markers_north[markers_north == markers_south.max(initial=None)] = 0
     if debugging:
         fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)
         ax0.imshow(markers_south, interpolation='nearest', cmap='binary', vmin=0, vmax=1)

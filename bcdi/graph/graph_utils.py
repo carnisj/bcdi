@@ -142,6 +142,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  the figure instance
     """
+
     if not isinstance(tuple_array, tuple):
         raise TypeError('Expected "tuple_array" to be a tuple')
 
@@ -167,6 +168,11 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     if not isinstance(tuple_scale, tuple):
         tuple_scale = (tuple_scale,) * nb_subplots
 
+    # default values for kwargs
+    xlabel = None
+    ylabel = None
+    position = None
+
     for k in kwargs.keys():
         if k in ['xlabel']:
             xlabel = kwargs['xlabel']
@@ -188,23 +194,16 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             print(k)
             raise Exception("unknown keyword argument given: allowed is"
                             "'xlabel' and 'ylabel'")
-    try:
-        xlabel
-    except NameError:
-        xlabel = ['']
-        for idx in range(nb_subplots-1):
-            xlabel.append('')
 
-    try:
-        ylabel
-    except NameError:
-        ylabel = ['']
-        for idx in range(nb_subplots-1):
-            ylabel.append('')
+    xlabel = xlabel or ['']
+    for idx in range(nb_subplots-1):
+        xlabel.append('')
 
-    try:
-        position
-    except NameError:
+    ylabel = ylabel or ['']
+    for idx in range(nb_subplots-1):
+        ylabel.append('')
+
+    if position is None:
         nb_columns = nb_subplots // 2
         nb_rows = nb_subplots // nb_columns + nb_subplots % nb_columns
         position = [nb_rows*100 + nb_columns*10 + index for index in range(1, nb_subplots+1)]
@@ -365,12 +364,12 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                 tmp_array = np.copy(array)
                 tmp_array[np.isnan(array)] = np.inf
                 tmp_array[np.isinf(tmp_array)] = np.inf  # set -inf to +inf to find the min
-                vmin = tmp_array.min()
+                vmin = tmp_array.min(initial=None)
             if np.isnan(vmax):
                 tmp_array = np.copy(array)
                 tmp_array[np.isnan(array)] = -1 * np.inf
                 tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
-                vmax = tmp_array.max()
+                vmax = tmp_array.max(initial=None)
 
             plot = axis.imshow(array, vmin=vmin, vmax=vmax, cmap=cmap)
         elif scale == 'log':
@@ -585,7 +584,7 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
 
 
-def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={}, title="", plot_planes=True,
+def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes=None, title="", plot_planes=True,
                           contour_range=None, max_angle=95, cmap=my_cmap, uv_labels=('', ''), hide_axis=False,
                           scale='linear', debugging=False):
     """
@@ -681,7 +680,7 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes={
                  linestyle='dotted', linewidth=1)
 
     # draw circles corresponding to particular reflection
-    if plot_planes == 1 and len(planes) != 0:
+    if planes and plot_planes == 1:
         indx = 0
         for key, value in planes.items():
             circle = patches.Circle((0, 0), radius_mean * np.sin(value * np.pi / 180) /
@@ -861,12 +860,12 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
             tmp_array = np.copy(array)
             tmp_array[np.isnan(array)] = np.inf
             tmp_array[np.isinf(tmp_array)] = np.inf  # set -inf to +inf to find the min
-            vmin = tmp_array.min()
+            vmin = tmp_array.min(initial=None)
         if np.isnan(vmax):
             tmp_array = np.copy(array)
             tmp_array[np.isnan(array)] = -1 * np.inf
             tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
-            vmax = tmp_array.max()
+            vmax = tmp_array.max(initial=None)
         plot = axis.imshow(array, vmin=vmin, vmax=vmax, cmap=cmap)
     elif scale == 'log':
         if np.isnan(vmin):
@@ -1573,7 +1572,7 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
             amp_array = tuple_array[amp_index]
         else:
             amp_array = tuple_array
-        amp_array = amp_array / amp_array.max()
+        amp_array = amp_array / amp_array.max(initial=None)
         amp_array[amp_array < amplitude_threshold] = 0  # save disk space
         amp_array = np.transpose(np.flip(amp_array, 2)).reshape(amp_array.size)
         amp_array = numpy_support.numpy_to_vtk(amp_array)
