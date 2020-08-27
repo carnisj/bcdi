@@ -1860,7 +1860,7 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     return rawdata, rawmask, frames_logical, monitor
 
 
-def load_cristal_data(logfile, detector, flatfield, hotpixels, background, normalize='skip',
+def load_cristal_data(logfile, detector, flatfield=None, hotpixels=None, background=None, normalize='skip',
                       bin_during_loading=False, debugging=False):
     """
     Load CRISTAL data, apply filters and concatenate it for phasing. The address of dataset and monitor in the h5 file
@@ -1912,12 +1912,10 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
-        if background is not None:
-            ccdraw = ccdraw - background
-        ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
-        ccdraw, mask_2d = detector.mask_detector(ccdraw, mask_2d)
-        if flatfield is not None:
-            ccdraw = flatfield * ccdraw
+
+        ccdraw, mask_2d = detector.mask_detector(ccdraw, mask_2d, nb_img=1, flatfield=flatfield,
+                                                 background=background, hotpixels=hotpixels)
+
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
@@ -1953,8 +1951,8 @@ def load_cristal_monitor(logfile):
     return monitor
 
 
-def load_custom_data(custom_images, custom_monitor, normalize, beamline, detector, flatfield, hotpixels, background,
-                     bin_during_loading=False, debugging=False):
+def load_custom_data(custom_images, custom_monitor, normalize, beamline, detector, flatfield=None, hotpixels=None,
+                     background=None, bin_during_loading=False, debugging=False):
     """
     Load a dataset measured without a scan, such as a set of images measured in a macro.
 
@@ -2031,13 +2029,10 @@ def load_custom_data(custom_images, custom_monitor, normalize, beamline, detecto
                 ccdraw = h5file['entry']['data']['data_000001'][:].sum(axis=0)
             else:
                 raise NotImplementedError("Custom scan implementation missing for this beamline")
-        if background is not None:
-            ccdraw = ccdraw - background
-        ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
-        ccdraw, mask_2d = detector.mask_detector(data=ccdraw, mask=mask_2d, nb_img=nb_frames)
 
-        if flatfield is not None:
-            ccdraw = flatfield * ccdraw
+        ccdraw, mask_2d = detector.mask_detector(data=ccdraw, mask=mask_2d, nb_img=nb_frames, flatfield=flatfield,
+                                                 background=background, hotpixels=hotpixels)
+
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
@@ -2222,7 +2217,7 @@ def load_hotpixels(hotpixels_file):
     return hotpixels
 
 
-def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, background, normalize='skip',
+def load_id01_data(logfile, scan_number, detector, flatfield=None, hotpixels=None, background=None, normalize='skip',
                    bin_during_loading=False, debugging=False):
     """
     Load ID01 data, apply filters and concatenate it for phasing.
@@ -2296,13 +2291,10 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
         i = int(ccdn[idx])
         e = fabio.open(ccdfiletmp % i)
         ccdraw = e.data
-        if background is not None:
-            ccdraw = ccdraw - background
-        ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
-        ccdraw, mask_2d = detector.mask_detector(data=ccdraw, mask=mask_2d)
 
-        if flatfield is not None:
-            ccdraw = flatfield * ccdraw
+        ccdraw, mask_2d = detector.mask_detector(data=ccdraw, mask=mask_2d, nb_img=1, flatfield=flatfield,
+                                                 background=background, hotpixels=hotpixels)
+
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
@@ -2373,7 +2365,7 @@ def load_monitor(scan_number, logfile, setup):
     return monitor
 
 
-def load_nanomax_data(logfile, detector, flatfield, hotpixels, background, normalize='skip',
+def load_nanomax_data(logfile, detector, flatfield=None, hotpixels=None, background=None, normalize='skip',
                       debugging=False):
     """
     Load Nanomax data, apply filters and concatenate it for phasing.
@@ -2427,12 +2419,10 @@ def load_nanomax_data(logfile, detector, flatfield, hotpixels, background, norma
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
-        if background is not None:
-            ccdraw = ccdraw - background
-        ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
-        ccdraw, mask_2d = detector.mask_detector(ccdraw, mask_2d)
-        if flatfield is not None:
-            ccdraw = flatfield * ccdraw
+
+        ccdraw, mask_2d = detector.mask_detector(ccdraw, mask_2d, nb_img=1, flatfield=flatfield,
+                                                 background=background, hotpixels=hotpixels)
+
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
@@ -2463,8 +2453,8 @@ def load_nanomax_monitor(logfile):
     return monitor
 
 
-def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize='skip', bin_during_loading=False,
-                  debugging=False):
+def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=None, normalize='skip',
+                  bin_during_loading=False, debugging=False):
     """
     Load P10 data, apply filters and concatenate it for phasing.
 
@@ -2546,12 +2536,11 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
                     tmp_data = h5file['entry']['data'][data_path][idx]
                 except OSError:
                     raise OSError('hdf5plugin is not installed')
-                if background is not None:
-                    tmp_data = tmp_data - background
-                ccdraw, mask2d = remove_hotpixels(data=tmp_data, mask=mask_2d, hotpixels=hotpixels)
-                ccdraw, mask_2d = detector.mask_detector(data=ccdraw, mask=mask_2d, nb_img=1)  # single frame loaded
-                if flatfield is not None:
-                    ccdraw = flatfield * ccdraw
+
+                # a single frame from the (eventual) series is loaded
+                ccdraw, mask_2d = detector.mask_detector(data=tmp_data, mask=mask_2d, nb_img=1, flatfield=flatfield,
+                                                         background=background, hotpixels=hotpixels)
+
                 if normalize == 'sum_roi':
                     temp_mon = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
                     series_monitor.append(temp_mon)
@@ -2616,7 +2605,7 @@ def load_p10_monitor(logfile):
     return monitor
 
 
-def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background, normalize='skip',
+def load_sixs_data(logfile, beamline, detector, flatfield=None, hotpixels=None, background=None, normalize='skip',
                    bin_during_loading=False, debugging=False):
     """
     Load SIXS data, apply filters and concatenate it for phasing.
@@ -2684,12 +2673,9 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
 
     for idx in range(nb_img):
         ccdraw = tmp_data[idx, :, :]
-        if background is not None:
-            ccdraw = ccdraw - background
-        ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
-        ccdraw, mask_2d = detector.mask_detector(data=ccdraw, mask=mask_2d)
-        if flatfield is not None:
-            ccdraw = flatfield * ccdraw
+
+        ccdraw, mask_2d = detector.mask_detector(data=ccdraw, mask=mask_2d, nb_img=1, flatfield=flatfield,
+                                                 background=background, hotpixels=hotpixels)
         if normalize == 'sum_roi':
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
