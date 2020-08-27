@@ -21,7 +21,6 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.experiment.experiment_utils as exp
-import bcdi.preprocessing.preprocessing_utils as pru
 
 helptext = """
 Open images or series data at P10 beamline.
