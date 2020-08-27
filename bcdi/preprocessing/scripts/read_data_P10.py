@@ -154,6 +154,7 @@ def main(parameters):
     #############
     plt.ion()
     filenames = [template_file + '{:06d}.h5'.format(image_nb[idx]) for idx in range(nb_files)]
+    roi_counter = None
     start = time.time()
 
     if multiproc:
