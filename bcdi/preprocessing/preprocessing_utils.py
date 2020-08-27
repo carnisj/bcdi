@@ -1966,7 +1966,7 @@ def load_custom_data(custom_images, custom_monitor, normalize, beamline, detecto
     :param normalize: 'monitor' to return the monitor values defined by custom_monitor, 'sum_roi' to return a monitor
      based on the integrated intensity in the region of interest defined by detector.sum_roi, 'skip' to do nothing
     :param beamline: supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX' '34ID'
-    :param detector: the detector object: Class experiment_utils.Detector()
+    :param detector: the detector instance: Class experiment_utils.Detector()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
@@ -1986,12 +1986,11 @@ def load_custom_data(custom_images, custom_monitor, normalize, beamline, detecto
 
     if len(custom_images) > 1:
         nb_img = len(custom_images)
-        stack = False
+        data_stack = None
     else:  # the data is stacked into a single file
         npzfile = np.load(ccdfiletmp % custom_images[0])
-        tmp_data = npzfile[list(npzfile.files)[0]]
-        nb_img = tmp_data.shape[0]
-        stack = True
+        data_stack = npzfile[list(npzfile.files)[0]]
+        nb_img = data_stack.shape[0]
 
     # define the loading ROI, the detector ROI may be larger than the physical detector size
     if detector.roi[0] < 0 or detector.roi[1] > detector.nb_pixel_y or detector.roi[2] < 0 \
@@ -2016,13 +2015,14 @@ def load_custom_data(custom_images, custom_monitor, normalize, beamline, detecto
         monitor = np.ones(nb_img)
 
     for idx in range(nb_img):
-        if stack:
-            ccdraw = tmp_data[idx, :, :]
+        if data_stack is not None:
+            ccdraw = data_stack[idx, :, :]
         else:
             i = int(custom_images[idx])
             if beamline == 'ID01':
                 e = fabio.open(ccdfiletmp % i)
                 ccdraw = e.data
+                nb_frames = 1  # no series measurement at ID01
             elif beamline == 'P10':  # consider a time series
                 # datadir is root_folder + sample_name
                 datadir = os.path.normpath(detector.datadir)
@@ -2037,14 +2037,8 @@ def load_custom_data(custom_images, custom_monitor, normalize, beamline, detecto
         if background is not None:
             ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
-        if detector.name == "Eiger2M":
-            ccdraw, mask_2d = mask_eiger(data=ccdraw, mask=mask_2d)
-        elif detector.name == "Maxipix":
-            ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
-        elif detector.name == "Eiger4M":
-            ccdraw, mask_2d = mask_eiger4m(data=ccdraw, mask=mask_2d, nb_img=nb_frames)
-        else:
-            pass
+        ccdraw, mask_2d = detector.mask_detector(data=ccdraw, mask=mask_2d, nb_img=nb_frames)
+
         if flatfield is not None:
             ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
