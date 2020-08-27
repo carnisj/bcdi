@@ -58,7 +58,7 @@ def load_p10_file(my_detector, my_file, file_index, roi):
     """
     Load a P10 data file, mask the fetector gaps and eventually concatenate the series.
 
-    :param my_detector: instance of the Detector() class
+    :param my_detector: instance of the class experiment_utils.Detector()
     :param my_file: file name of the data to load
     :param file_index: index of the data file in the total file list, used to sort frames afterwards
     :param roi: region of interest used to calculate the counter (integrated intensity in the ROI)
