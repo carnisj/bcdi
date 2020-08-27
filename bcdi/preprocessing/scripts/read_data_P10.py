@@ -30,16 +30,15 @@ Open images or series data at P10 beamline.
 scan_nb = 22  # scan number as it appears in the folder name
 sample_name = "gold_2_2_2"  # without _ at the end
 root_directory = "D:/data/P10_August2019_CDI/data/"
-file_list = 1  # np.arange(1, 381+1)
+file_list = np.arange(1, 21+1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
 detector_name = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 counter_roi = []  # plot the integrated intensity in this region of interest. Leave it to [] to use the full detector
 # [Vstart, Vstop, Hstart, Hstop]
-high_threshold = 4000000000  # data points where log10(data) > high_threshold will be masked
 # if data is a series, the condition becomes log10(data.sum(axis=0)) > high_threshold * nb_frames
 save_directory = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
 is_scan = True  # set to True is the measurement is a scan or a time series, False for a single image
-compare_ends = False  # set to True to plot the difference between the last frame and the first frame
+compare_ends = True  # set to True to plot the difference between the last frame and the first frame
 save_mask = False  # True to save the mask as 'hotpixels.npz'
 multiprocessing = True  # True to use multiprocessing
 ##########################
@@ -50,23 +49,30 @@ multiprocessing = True  # True to use multiprocessing
 # create the dictionnary of input parameters #
 ##############################################
 params = {'scan': scan_nb, 'sample_name': sample_name, 'rootdir': root_directory, 'file_list': file_list,
-          'detector': detector_name, 'counter_roi': counter_roi, 'high_threshold': high_threshold,
-          'savedir': save_directory, 'is_scan': is_scan, 'compare_ends': compare_ends, 'save_mask': save_mask,
+          'detector': detector_name, 'counter_roi': counter_roi, 'savedir': save_directory, 'is_scan': is_scan,
+          'compare_ends': compare_ends, 'save_mask': save_mask,
           'multiprocessing': multiprocessing}
 
 
-def load_p10_file(filname, fil_idx, roi, threshold):
+def load_p10_file(my_detector, my_file, file_index, roi):
+    """
+    Load a P10 data file, mask the fetector gaps and eventually concatenate the series.
+
+    :param my_detector: instance of the Detector() class
+    :param my_file: file name of the data to load
+    :param file_index: index of the data file in the total file list, used to sort frames afterwards
+    :param roi: region of interest used to calculate the counter (integrated intensity in the ROI)
+    :return: the 2D data, 2D mask, counter and file index
+    """
     roi_sum = []
-    file = h5py.File(filname, 'r')
+    file = h5py.File(my_file, 'r')
     dataset = file['entry']['data']['data'][:]
     mask_2d = np.zeros((dataset.shape[1], dataset.shape[2]))
     [roi_sum.append(dataset[frame, roi[0]:roi[1], roi[2]:roi[3]].sum())
      for frame in range(dataset.shape[0])]
-    nb_img = dataset.shape[0]
-    dataset = dataset.sum(axis=0)  # data becomes 2D
-    mask_2d[np.log10(dataset) > nb_img*threshold] = 1  # here we threshold the sum of nb_img images
-    dataset[mask_2d == 1] = 0
-    return dataset, mask_2d, [roi_sum, fil_idx]
+    nb_img = dataset.shape[0]  # collect the number of frames in the eventual series
+    dataset, mask_2d = my_detector.mask_detector(data=dataset.sum(axis=0), mask=mask_2d, nb_img=nb_img)
+    return dataset, mask_2d, [roi_sum, file_index]
 
 
 def main(parameters):
@@ -101,7 +107,6 @@ def main(parameters):
     rootdir = parameters['rootdir']
     image_nb = parameters['file_list']
     counterroi = parameters['counter_roi']
-    threshold = parameters['high_threshold']
     savedir = parameters['savedir']
     load_scan = parameters['is_scan']
     compare_end = parameters['compare_ends']
@@ -157,7 +162,7 @@ def main(parameters):
         pool = mp.Pool(processes=min(mp.cpu_count(), len(filenames)))  # use this number of processes
 
         for file in range(nb_files):
-            pool.apply_async(load_p10_file, args=(filenames[file], file, counterroi, threshold),
+            pool.apply_async(load_p10_file, args=(detector, filenames[file], file, counterroi),
                              callback=collect_result, error_callback=util.catch_error)
 
         pool.close()
@@ -176,19 +181,15 @@ def main(parameters):
             [counter.append(data[index, counterroi[0]:counterroi[1], counterroi[2]:counterroi[3]].sum())
                 for index in range(nbz)]
             if compare_end and nb_files == 1:
-                data_start, _ = pru.mask_eiger4m(data=data[0, :, :], mask=mask)
-                data_start[np.log10(data_start) > threshold] = 0  # here we threshold a single image
+                data_start, _ = detector.mask_detector(data=data[0, :, :], mask=mask)
                 data_start = data_start.astype(float)
-                data_stop, _ = pru.mask_eiger4m(data=data[-1, :, :], mask=mask)
-                data_stop[np.log10(data_stop) > threshold] = 0  # here we threshold a single image
+                data_stop, _ = detector.mask_detector(data=data[-1, :, :], mask=mask)
                 data_stop = data_stop.astype(float)
 
                 fig, _, _ = gu.imshow_plot(data_stop - data_start, plot_colorbar=True, scale='log',
                                            title='difference between the last frame and the first frame of the series')
-            nb_frames = data.shape[0]
-            data = data.sum(axis=0)  # data becomes 2D
-            mask[np.log10(data) > nb_frames*threshold] = 1  # here we threshold the sum of nb_frames images
-            data[mask == 1] = 0
+            nb_frames = data.shape[0]  # collect the number of frames in the eventual series
+            data, mask = detector.mask_detector(data=data.sum(axis=0), mask=mask, nb_img=nb_frames)
             sumdata = sumdata + data
             roi_counter = [[counter, idx]]
 
@@ -209,7 +210,6 @@ def main(parameters):
         plot_title = 'masked data'
         filename = 'S' + str(scan) + '_image_' + str(image_nb[0]) + '.png'
 
-    sumdata, mask = pru.mask_eiger4m(data=sumdata, mask=mask)
     if savemask:
         fig, _, _ = gu.imshow_plot(mask, plot_colorbar=False, title='mask')
         np.savez_compressed(savedir+'hotpixels.npz', mask=mask)
