@@ -10,16 +10,16 @@ import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 import scipy
 import matplotlib.pyplot as plt
-import sys
-sys.path.append('D:/myscripts/bcdi/')
-import bcdi.graph.graph_utils as gu
-import bcdi.utils.utilities as util
-from bcdi.utils import image_registration as reg
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
 from scipy.stats import multivariate_normal
 from scipy.stats import pearsonr
 import gc
+import sys
+sys.path.append('D:/myscripts/bcdi/')
+import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
+from bcdi.utils import image_registration as reg
 
 
 def align_obj(reference_obj, obj, precision=1000, debugging=False):
@@ -68,11 +68,10 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
      - if 'tukey': alpha (shape parameter) of the 3d Tukey window, tuple of 3 floats
     :return: filtered amplitude, phase of the same shape as myamp
     """
-    if amp.ndim != 3 or phase.ndim != 3:
-        raise ValueError('amp and phase should be 3D arrays')
-    if amp.shape != phase.shape:
-        raise ValueError('amp and phase must have the same shape\n'
-                         'amp is ', amp.shape, ' while phase is ', phase.shape)
+    # default values for kwargs
+    sigma = None
+    mu = None
+    alpha = None
 
     for k in kwargs.keys():
         if k in ['sigma']:
@@ -84,6 +83,12 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
         else:
             raise Exception("unknown keyword argument given: allowed is"
                             "'fix_bragg', 'fix_size', 'pad_size' and 'q_values'")
+
+    if amp.ndim != 3 or phase.ndim != 3:
+        raise ValueError('amp and phase should be 3D arrays')
+    if amp.shape != phase.shape:
+        raise ValueError('amp and phase must have the same shape\n'
+                         'amp is ', amp.shape, ' while phase is ', phase.shape)
 
     nb_z, nb_y, nb_x = amp.shape
     nbz, nby, nbx = initial_shape
@@ -107,16 +112,8 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
 
     if window_type == 'normal':
         print('Apodization using a 3d multivariate normal window')
-        try:
-            sigma
-        except NameError:  # sigma not declared
-            sigma = np.array([0.3, 0.3, 0.3])
-            print('defaulting sigma parameter')
-        try:
-            mu
-        except NameError:  # mu not declared
-            mu = np.array([0.0, 0.0, 0.0])
-            print('defaulting mu parameter')
+        sigma = sigma or np.array([0.3, 0.3, 0.3])
+        mu = mu or np.array([0.0, 0.0, 0.0])
 
         grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby), np.linspace(-1, 1, nbx),
                                              indexing='ij')
@@ -129,12 +126,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
 
     elif window_type == 'tukey':
         print('Apodization using a 3d Tukey window')
-        try:
-            alpha
-        except NameError:  # alpha not declared
-            alpha = np.array([0.5, 0.5, 0.5])
-            print('defaulting alpha parameter')
-
+        alpha = alpha or np.array([0.5, 0.5, 0.5])
         window = tukey_window(initial_shape, alpha=alpha)
 
     elif window_type == 'blackman':
@@ -662,12 +654,8 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
     """
     from scipy.signal import convolve
 
-    if array.ndim == 3:
-        ndim = 3
-    elif array.ndim == 2:
-        ndim = 2
-    else:
-        raise ValueError('data should be a 2D or a 3D array')
+    # default values for kwargs
+    sigma = None
 
     for k in kwargs.keys():
         if k in ['sigma']:
@@ -675,22 +663,15 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
         else:
             raise Exception("unknown keyword argument given: allowed is 'sigma'")
 
-    if filter_name == 'gaussian_highpass':
-        try:
-            sigma
-        except NameError:  # sigma not declared
-            print('defaulting sigma to 3')
-            sigma = 3
+    ndim = array.ndim
+    assert ndim in {2, 3}, 'data should be a 2D or a 3D array'
 
+    if filter_name == 'gaussian_highpass':
+        sigma = sigma or 3
         kernel = gaussian_kernel(ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging)
         return array - convolve(array, kernel, mode='same')
     elif filter_name == 'gaussian':
-        try:
-            sigma
-        except NameError:  # sigma not declared
-            print('defaulting sigma to 0.5')
-            sigma = 0.5
-
+        sigma = sigma or 0.5
         kernel = gaussian_kernel(ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging)
         return convolve(array, kernel, mode='same')
     else:
