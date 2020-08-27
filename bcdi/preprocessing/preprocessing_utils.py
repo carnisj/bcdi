@@ -394,11 +394,11 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
      - pad_width = [z0, z1, y0, y1, x0, x1] number of pixels added at each end of the original data
      - updated frames_logical
     """
-    if data.ndim != 3 or mask.ndim != 3:
-        raise ValueError('data and mask should be 3D arrays')
-
-    if data.shape != mask.shape:
-        raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
+    # default values for kwargs
+    fix_bragg = []
+    fix_size = []
+    pad_size = []
+    q_values = []
 
     for k in kwargs.keys():
         if k in ['fix_bragg']:
@@ -413,33 +413,21 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
             print(k)
             raise Exception("unknown keyword argument given: allowed is"
                             "'fix_bragg', 'fix_size', 'pad_size' and 'q_values'")
-    try:
-        fix_bragg
-    except NameError:  # fix_bragg not declared
-        fix_bragg = []
-    try:
-        fix_size
-    except NameError:  # fix_size not declared
-        fix_size = []
-    try:
-        pad_size
-    except NameError:  # pad_size not declared
-        pad_size = []
-    try:
-        q_values
+
+    if q_values:  # len(q_values) != 0
         qx = q_values[0]  # axis=0, z downstream, qx in reciprocal space
         qz = q_values[1]  # axis=1, y vertical, qz in reciprocal space
         qy = q_values[2]  # axis=2, x outboard, qy in reciprocal space
-    except NameError:  # q_values not declared
-        q_values = []
+    else:
         qx = []
         qy = []
         qz = []
-    except IndexError:  # q_values empty
-        q_values = []
-        qx = []
-        qy = []
-        qz = []
+
+    if data.ndim != 3 or mask.ndim != 3:
+        raise ValueError('data and mask should be 3D arrays')
+
+    if data.shape != mask.shape:
+        raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
 
     if centering == 'max':
         z0, y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
@@ -1083,19 +1071,15 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
     :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard)
     """
+    # default values for kwargs
+    follow_bragg = False
+
     for k in kwargs.keys():
         if k in ['follow_bragg']:
             follow_bragg = kwargs['follow_bragg']
         else:
             print(k)
             raise Exception("unknown keyword argument given: allowed is 'follow_bragg'")
-
-    if setup.rocking_angle == 'energy':
-        try:
-            follow_bragg
-        except NameError:
-            print("Parameter 'follow_bragg' not provided, defaulting to False")
-            follow_bragg = False
 
     if data.ndim != 3:
         raise ValueError('data is expected to be a 3D array')
@@ -1269,36 +1253,34 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
         interp_mask[np.nonzero(interp_mask)] = 1
 
     else:
-        import sys
-        print('#TODO check Ewald sphere curvature correction')
-        sys.exit()
+        raise NotImplementedError('TODO: check Ewald sphere curvature correction, too slow')
         # TODO check Ewald sphere curvature correction
-        from scipy.interpolate import griddata
-        # calculate exact q values for each voxel of the 3D dataset
-        old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
-
-        # create the grid for interpolation
-        qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
-        qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
-        qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
-
-        new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
-
-        # interpolate the data onto the new points using griddata (the original grid is not regular)
-        interp_data = griddata(
-            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
-            np.ndarray.flatten(data),
-            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
-            method='linear', fill_value=np.nan)
-        interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
-
-        # interpolate the mask onto the new points
-        interp_mask = griddata(
-            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
-            np.ndarray.flatten(mask),
-            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
-            method='linear', fill_value=np.nan)
-        interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
+        # from scipy.interpolate import griddata
+        # # calculate exact q values for each voxel of the 3D dataset
+        # old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
+        #
+        # # create the grid for interpolation
+        # qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
+        # qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
+        # qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
+        #
+        # new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
+        #
+        # # interpolate the data onto the new points using griddata (the original grid is not regular)
+        # interp_data = griddata(
+        #     np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
+        #     np.ndarray.flatten(data),
+        #     np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
+        #     method='linear', fill_value=np.nan)
+        # interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
+        #
+        # # interpolate the mask onto the new points
+        # interp_mask = griddata(
+        #     np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
+        #     np.ndarray.flatten(mask),
+        #     np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
+        #     method='linear', fill_value=np.nan)
+        # interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
@@ -1334,7 +1316,8 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
     plt.close(fig)
 
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data',
-                                  levels=np.linspace(0, np.ceil(np.log10(interp_data.max())), 150, endpoint=True),
+                                  levels=np.linspace(0, np.ceil(np.log10(interp_data.max(initial=None))), 150,
+                                                     endpoint=True),
                                   slice_position=(pivot_z, pivot_y, pivot_x), plot_colorbar=True, scale='log',
                                   is_orthogonal=True, reciprocal_space=True)
     fig.text(0.55, 0.30, 'Origin of the reciprocal space (Qx,Qz,Qy):\n\n' +
@@ -1455,18 +1438,15 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values for normalization
     """
+    # default values for kwargs
+    follow_bragg = False
+
     for k in kwargs.keys():
         if k in ['follow_bragg']:
             follow_bragg = kwargs['follow_bragg']
         else:
             print(k)
             raise Exception("unknown keyword argument given: allowed is 'follow_bragg'")
-    if setup.rocking_angle == 'energy':
-        try:
-            follow_bragg
-        except NameError:
-            print("Parameter 'follow_bragg' not provided, defaulting to False")
-            follow_bragg = False
 
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
@@ -1703,16 +1683,15 @@ def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpix
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values used for the intensity normalization
     """
+    # default values for kwargs
+    photon_threshold = 0
+
     for k in kwargs.keys():
         if k in ['photon_threshold']:
             photon_threshold = kwargs['photon_threshold']
         else:
             print(k)
             raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
-    try:
-        photon_threshold
-    except NameError:  # photon_threshold not declared
-        photon_threshold = 0
 
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
@@ -1792,16 +1771,15 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values used for the intensity normalization
     """
+    # default values for kwargs
+    photon_threshold = 0
+
     for k in kwargs.keys():
         if k in ['photon_threshold']:
             photon_threshold = kwargs['photon_threshold']
         else:
             print(k)
             raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
-    try:
-        photon_threshold
-    except NameError:  # photon_threshold not declared
-        photon_threshold = 0
 
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
@@ -2384,9 +2362,6 @@ def load_nanomax_data(logfile, detector, flatfield=None, hotpixels=None, backgro
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
         A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     """
-    import hdf5plugin  # should be imported before h5py
-    import h5py
-
     if debugging:
         print(str(logfile['entry']['description'][()])[3:-2])  # Reading only useful symbols
 
@@ -2502,8 +2477,9 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
     if normalize == 'sum_roi':
         monitor = np.zeros(nb_img)
     elif normalize == 'monitor':
-        fio = open(logfile, 'r')
         monitor = []
+        index_monitor = None
+        fio = open(logfile, 'r')
         fio_lines = fio.readlines()
         for line in fio_lines:
             this_line = line.strip()
@@ -2511,11 +2487,8 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
             if 'Col' in words and ('ipetra' in words or 'curpetra' in words):
                 # template = ' Col 6 ipetra DOUBLE\n' (2018) or ' Col 6 curpetra DOUBLE\n' (2019)
                 index_monitor = int(words[1]) - 1  # python index starts at 0
-            try:
-                float(words[0])  # if this does not fail, we are reading data
+            if index_monitor and words[0].isnumeric():  # we are reading data and index_monitor is defined
                 monitor.append(float(words[index_monitor]))
-            except ValueError:  # first word is not a number, skip this line
-                continue
         fio.close()
         monitor = np.asarray(monitor, dtype=float)
     else:  # 'skip'
@@ -2586,20 +2559,19 @@ def load_p10_monitor(logfile):
     :param logfile: path of the . fio file containing the information about the scan
     :return: the default monitor values
     """
-    fio = open(logfile, 'r')
     monitor = []
+    index_monitor = None
+    fio = open(logfile, 'r')
     fio_lines = fio.readlines()
+
     for line in fio_lines:
         this_line = line.strip()
         words = this_line.split()
         if 'Col' in words and ('ipetra' in words or 'curpetra' in words):
             # template = ' Col 6 ipetra DOUBLE\n' (2018) or ' Col 6 curpetra DOUBLE\n' (2019)
             index_monitor = int(words[1]) - 1  # python index starts at 0
-        try:
-            float(words[0])  # if this does not fail, we are reading data
+        if index_monitor and words[0].isnumeric():  # we are reading data and index_monitor is defined
             monitor.append(float(words[index_monitor]))
-        except ValueError:  # first word is not a number, skip this line
-            continue
     fio.close()
     monitor = np.asarray(monitor, dtype=float)
     return monitor
@@ -2958,12 +2930,14 @@ def motor_positions_p10(logfile, setup):
     """
     if not setup.custom_scan:
         fio = open(logfile, 'r')
-        if setup.rocking_angle == "outofplane":
-            om = []
-        elif setup.rocking_angle == "inplane":
-            phi = []
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
+        index_om = None
+        index_phi = None
+        om = []
+        phi = []
+        chi = None
+        mu = None
+        gamma = None,
+        delta = None
 
         fio_lines = fio.readlines()
         for line in fio_lines:
@@ -2989,14 +2963,10 @@ def motor_positions_p10(logfile, setup):
             if 'mu' in words and '=' in words:  # template for positioners: 'mu = 0.0\n'
                 mu = float(words[2])
 
-            try:
-                float(words[0])  # if this does not fail, we are reading data
-                if setup.rocking_angle == "outofplane":
-                    om.append(float(words[index_om]))
-                else:  # phi
-                    phi.append(float(words[index_phi]))
-            except ValueError:  # first word is not a number, skip this line
-                continue
+            if index_om and words[0].isnumeric():  # we are reading data and index_om is defined (outofplane case)
+                om.append(float(words[index_om]))
+            if index_om and words[0].isnumeric():  # we are reading data and index_phi is defined (inplane case)
+                phi.append(float(words[index_phi]))
 
         if setup.rocking_angle == "outofplane":
             om = np.asarray(om, dtype=float)
@@ -3023,15 +2993,14 @@ def motor_positions_p10_saxs(logfile, setup):
     :param setup: the experimental setup: Class SetupPreprocessing()
     :return: sprz or hprz motor positions
     """
-    if not setup.custom_scan:
-        fio = open(logfile, 'r')
-        if setup.rocking_angle == "outofplane":
-            raise ValueError('Out of plane rotation not implemented for P110 SAXS setup')
-        elif setup.rocking_angle == "inplane":
-            phi = []
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
+    if setup.rocking_angle != "inplane":
+        raise ValueError('Wrong value for "rocking_angle" parameter')
 
+    if not setup.custom_scan:
+        index_phi = None
+        phi = []
+
+        fio = open(logfile, 'r')
         fio_lines = fio.readlines()
         for line in fio_lines:
             this_line = line.strip()
@@ -3042,11 +3011,9 @@ def motor_positions_p10_saxs(logfile, setup):
                     # template = ' Col 0 sprz DOUBLE\n'
                     index_phi = int(words[1]) - 1  # python index starts at 0
                     print(words, '  Index Phi=', index_phi)
-            try:
-                float(words[0])  # if this does not fail, we are reading data
+            if index_phi and words[0].isnumeric():  # we are reading data and index_phi is defined
                 phi.append(float(words[index_phi]))
-            except ValueError:  # first word is not a number, skip this line
-                continue
+
         phi = np.asarray(phi, dtype=float)
         fio.close()
     else:
@@ -3175,12 +3142,15 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
     """
     ndim = array.ndim
     nbz, nby, nbx = array.shape
+    original_max = None
+    original_data = None
+
     if ndim != 3:
         raise ValueError('Array should be 3D')
 
     if debugging:
         original_data = np.copy(array)
-        original_max = original_data.max()
+        original_max = original_data.max(initial=None)
         original_data[original_data < 5] = 0  # remove the background
         original_data = original_data.sum(axis=1)  # the first axis is the normalization axis
         # print('frames_logical: length=', frames_logical.shape, 'value=\n', frames_logical)
@@ -3207,16 +3177,17 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
         else:  # norm to max
             print('Monitor value set to raw_monitor.max() for ', nb_padded, ' frames padded')
 
-    print('Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}'.format(monitor.min(), monitor.max(), monitor.mean()))
+    print('Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}'.format(monitor.min(initial=None), monitor.max(initial=None),
+                                                                  monitor.mean()))
     if norm_to_min:
         print('Data normalization by monitor.min()/monitor\n')
     else:
         print('Data normalization by monitor.max()/monitor\n')
 
     if norm_to_min:
-        monitor = monitor.min() / monitor  # will divide higher intensities
+        monitor = monitor.min(initial=None) / monitor  # will divide higher intensities
     else:  # norm to max
-        monitor = monitor.max() / monitor  # will multiply lower intensities
+        monitor = monitor.max(initial=None) / monitor  # will multiply lower intensities
 
     nbz = array.shape[0]
     if len(monitor) != nbz:
@@ -3229,7 +3200,7 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
     if debugging:
         norm_data = np.copy(array)
         # rescale norm_data to original_data for easier comparison
-        norm_data = norm_data * original_max / norm_data.max()
+        norm_data = norm_data * original_max / norm_data.max(initial=None)
         norm_data[norm_data < 5] = 0  # remove the background
         norm_data = norm_data.sum(axis=1)  # the first axis is the normalization axis
         fig = gu.combined_plots(tuple_array=(monitor, original_data, norm_data), tuple_sum_frames=False,
@@ -3525,16 +3496,15 @@ def reload_bcdi_data(data, mask, logfile, scan_number, detector, setup, normaliz
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
     """
+    # default values for kwargs
+    photon_threshold = 0
+
     for k in kwargs.keys():
         if k in ['photon_threshold']:
             photon_threshold = kwargs['photon_threshold']
         else:
             print(k)
             raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
-    try:
-        photon_threshold
-    except NameError:  # photon_threshold not declared
-        photon_threshold = 0
 
     if normalize:
         normalize_method = 'monitor'
@@ -3611,16 +3581,15 @@ def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
     """
+    # default values for kwargs
+    photon_threshold = 0
+
     for k in kwargs.keys():
         if k in ['photon_threshold']:
             photon_threshold = kwargs['photon_threshold']
         else:
             print(k)
             raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
-    try:
-        photon_threshold
-    except NameError:  # photon_threshold not declared
-        photon_threshold = 0
 
     if data.ndim != 3 or mask.ndim != 3:
         raise ValueError('data and mask should be 3D arrays')
@@ -3767,6 +3736,7 @@ def scan_motor_p10(logfile, motor_name):
     :return: the positions of the motor as a numpy array
     """
     motor_pos = []
+    index_motor = None
     fio = open(logfile, 'r')
     fio_lines = fio.readlines()
     for line in fio_lines:
@@ -3776,11 +3746,8 @@ def scan_motor_p10(logfile, motor_name):
         if 'Col' in words and motor_name in words:  # motor_name scanned, template = ' Col 0 motor_name DOUBLE\n'
             index_motor = int(words[1]) - 1  # python index starts at 0
 
-        try:
-            float(words[0])  # if this does not fail, we are reading data
+        if index_motor and words[0].isnumeric():  # we are reading data and index_motor is defined
             motor_pos.append(float(words[index_motor]))
-        except ValueError:  # first word is not a number, skip this line
-            continue
 
     fio.close()
     return np.asarray(motor_pos)
