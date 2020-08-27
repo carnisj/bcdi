@@ -805,7 +805,7 @@ class Detector(object):
 
     def mask_detector(self, data, mask, nb_img=1):
         """
-        Mask data measured with an Eiger2M detector
+        Mask data measured with 2D detector
 
         :param data: the 2D data to mask
         :param mask: the 2D mask to be updated
