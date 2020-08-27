@@ -1915,10 +1915,7 @@ def load_cristal_data(logfile, detector, flatfield, hotpixels, background, norma
         if background is not None:
             ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
-        if detector.name == "Maxipix":
-            ccdraw, mask_2d = mask_maxipix(ccdraw, mask_2d)
-        else:
-            raise ValueError('Detector ', detector.name, 'not supported for CRISTAL')
+        ccdraw, mask_2d = detector.mask_detector(ccdraw, mask_2d)
         if flatfield is not None:
             ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
@@ -2302,12 +2299,8 @@ def load_id01_data(logfile, scan_number, detector, flatfield, hotpixels, backgro
         if background is not None:
             ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
-        if detector.name == "Eiger2M":
-            ccdraw, mask_2d = mask_eiger(data=ccdraw, mask=mask_2d)
-        elif detector.name == "Maxipix":
-            ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
-        else:
-            raise ValueError('Detector ', detector.name, 'not supported for ID01')
+        ccdraw, mask_2d = detector.mask_detector(data=ccdraw, mask=mask_2d)
+
         if flatfield is not None:
             ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
@@ -2437,10 +2430,7 @@ def load_nanomax_data(logfile, detector, flatfield, hotpixels, background, norma
         if background is not None:
             ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
-        if detector.name == "Merlin":
-            ccdraw, mask_2d = mask_merlin(ccdraw, mask_2d)
-        else:
-            raise ValueError('Detector ', detector.name, 'not supported for NANOMAX')
+        ccdraw, mask_2d = detector.mask_detector(ccdraw, mask_2d)
         if flatfield is not None:
             ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
@@ -2559,10 +2549,7 @@ def load_p10_data(logfile, detector, flatfield, hotpixels, background, normalize
                 if background is not None:
                     tmp_data = tmp_data - background
                 ccdraw, mask2d = remove_hotpixels(data=tmp_data, mask=mask_2d, hotpixels=hotpixels)
-                if detector.name == "Eiger4M":
-                    ccdraw, mask_2d = mask_eiger4m(data=ccdraw, mask=mask_2d)
-                else:
-                    raise ValueError('Detector ', detector.name, 'not supported for P10')
+                ccdraw, mask_2d = detector.mask_detector(data=ccdraw, mask=mask_2d, nb_img=1)  # single frame loaded
                 if flatfield is not None:
                     ccdraw = flatfield * ccdraw
                 if normalize == 'sum_roi':
@@ -2700,10 +2687,7 @@ def load_sixs_data(logfile, beamline, detector, flatfield, hotpixels, background
         if background is not None:
             ccdraw = ccdraw - background
         ccdraw, mask_2d = remove_hotpixels(data=ccdraw, mask=mask_2d, hotpixels=hotpixels)
-        if detector.name == "Maxipix":
-            ccdraw, mask_2d = mask_maxipix(data=ccdraw, mask=mask_2d)
-        else:
-            raise ValueError('Detector ', detector.name, 'not supported for SIXS')
+        ccdraw, mask_2d = detector.mask_detector(data=ccdraw, mask=mask_2d)
         if flatfield is not None:
             ccdraw = flatfield * ccdraw
         if normalize == 'sum_roi':
@@ -2745,148 +2729,6 @@ def load_sixs_monitor(logfile, beamline):
             except AttributeError:  # no monitor data
                 raise ValueError('No available monitor data')
     return monitor
-
-
-def mask_eiger(data, mask, nb_img=1):
-    """
-    Mask data measured with an Eiger2M detector
-
-    :param data: the 2D data to mask
-    :param mask: the 2D mask to be updated
-    :param nb_img: number of images summed to yield the 2D data (e.g. in a series measurement)
-    :return: the masked data and the updated mask
-    """
-    if data.ndim != 2 or mask.ndim != 2:
-        raise ValueError('Data and mask should be 2D arrays')
-
-    if data.shape != mask.shape:
-        raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
-
-    data[:, 255: 259] = 0
-    data[:, 513: 517] = 0
-    data[:, 771: 775] = 0
-    data[0: 257, 72: 80] = 0
-    data[255: 259, :] = 0
-    data[511: 552, :0] = 0
-    data[804: 809, :] = 0
-    data[1061: 1102, :] = 0
-    data[1355: 1359, :] = 0
-    data[1611: 1652, :] = 0
-    data[1905: 1909, :] = 0
-    data[1248:1290, 478] = 0
-    data[1214:1298, 481] = 0
-    data[1649:1910, 620:628] = 0
-
-    mask[:, 255: 259] = 1
-    mask[:, 513: 517] = 1
-    mask[:, 771: 775] = 1
-    mask[0: 257, 72: 80] = 1
-    mask[255: 259, :] = 1
-    mask[511: 552, :] = 1
-    mask[804: 809, :] = 1
-    mask[1061: 1102, :] = 1
-    mask[1355: 1359, :] = 1
-    mask[1611: 1652, :] = 1
-    mask[1905: 1909, :] = 1
-    mask[1248:1290, 478] = 1
-    mask[1214:1298, 481] = 1
-    mask[1649:1910, 620:628] = 1
-
-    # mask hot pixels
-    mask[data > 1e6 * nb_img] = 1
-    data[data > 1e6 * nb_img] = 0
-    return data, mask
-
-
-def mask_eiger4m(data, mask, nb_img=1):
-    """
-    Mask data measured with an Eiger4M detector
-
-    :param data: the 2D data to mask
-    :param mask: the 2D mask to be updated
-    :param nb_img: number of images summed to yield the 2D data (e.g. in a series measurement)
-    :return: the masked data and the updated mask
-    """
-    if data.ndim != 2 or mask.ndim != 2:
-        raise ValueError('Data and mask should be 2D arrays')
-
-    if data.shape != mask.shape:
-        raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
-
-    data[:, 0:1] = 0
-    data[:, -1:] = 0
-    data[0:1, :] = 0
-    data[-1:, :] = 0
-    data[:, 1030:1040] = 0
-    data[514:551, :] = 0
-    data[1065:1102, :] = 0
-    data[1616:1653, :] = 0
-
-    mask[:, 0:1] = 1
-    mask[:, -1:] = 1
-    mask[0:1, :] = 1
-    mask[-1:, :] = 1
-    mask[:, 1030:1040] = 1
-    mask[514:551, :] = 1
-    mask[1065:1102, :] = 1
-    mask[1616:1653, :] = 1
-
-    # mask hot pixels, 4000000000 for the Eiger4M
-    mask[data > 4000000000 * nb_img] = 1
-    data[data > 4000000000 * nb_img] = 0
-    return data, mask
-
-
-def mask_maxipix(data, mask):
-    """
-    Mask data measured with a Maxipix detector
-
-    :param data: the 2D data to mask
-    :param mask: the 2D mask to be updated
-    :return: the masked data and the updated mask
-    """
-    if data.ndim != 2 or mask.ndim != 2:
-        raise ValueError('Data and mask should be 2D arrays')
-
-    if data.shape != mask.shape:
-        raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
-
-    data[:, 255:261] = 0
-    data[255:261, :] = 0
-
-    mask[:, 255:261] = 1
-    mask[255:261, :] = 1
-
-    # mask hot pixels
-    mask[data > 1e6] = 1
-    data[data > 1e6] = 0
-    return data, mask
-
-
-def mask_merlin(data, mask):
-    """
-    Mask data measured with a Merlin detector
-
-    :param data: the 2D data to mask
-    :param mask: the 2D mask to be updated
-    :return: the masked data and the updated mask
-    """
-    if data.ndim != 2 or mask.ndim != 2:
-        raise ValueError('Data and mask should be 2D arrays')
-
-    if data.shape != mask.shape:
-        raise ValueError('Data and mask must have the same shape\n data is ', data.shape, ' while mask is ', mask.shape)
-
-    data[:, 255:260] = 0
-    data[255:260, :] = 0
-
-    mask[:, 255:260] = 1
-    mask[255:260, :] = 1
-
-    # mask hot pixels
-    mask[data > 1e6] = 1
-    data[data > 1e6] = 0
-    return data, mask
 
 
 def mean_filter(data, nb_neighbours, mask, min_count=3, interpolate='mask_isolated', debugging=False):
