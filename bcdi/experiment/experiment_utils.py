@@ -774,7 +774,7 @@ class Detector(object):
                 self.nb_pixel_y = 515 // previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
-            self.counter = 'Merlin'
+            self.counter = 'alba2'
         else:
             raise ValueError('Unknown detector name')
 
@@ -802,3 +802,109 @@ class Detector(object):
         self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
         self.pixelsize_y = self.pixelsize_y * self.previous_binning[1] * self.binning[1]
         self.pixelsize_x = self.pixelsize_x * self.previous_binning[2] * self.binning[2]
+
+    def mask_detector(self, data, mask, nb_img=1):
+        """
+        Mask data measured with an Eiger2M detector
+
+        :param data: the 2D data to mask
+        :param mask: the 2D mask to be updated
+        :param nb_img: number of images summed to yield the 2D data (e.g. in a series measurement)
+        :return: the masked data and the updated mask
+        """
+
+        assert isinstance(data, np.ndarray) and isinstance(mask, np.ndarray), 'data and mask should be numpy arrays'
+        if data.ndim != 2 or mask.ndim != 2:
+            raise ValueError('Data and mask should be 2D arrays')
+
+        if data.shape != mask.shape:
+            raise ValueError('Data and mask must have the same shape\n data is ', data.shape,
+                             ' while mask is ', mask.shape)
+
+        if self.name == 'Eiger2M':
+            data[:, 255: 259] = 0
+            data[:, 513: 517] = 0
+            data[:, 771: 775] = 0
+            data[0: 257, 72: 80] = 0
+            data[255: 259, :] = 0
+            data[511: 552, :0] = 0
+            data[804: 809, :] = 0
+            data[1061: 1102, :] = 0
+            data[1355: 1359, :] = 0
+            data[1611: 1652, :] = 0
+            data[1905: 1909, :] = 0
+            data[1248:1290, 478] = 0
+            data[1214:1298, 481] = 0
+            data[1649:1910, 620:628] = 0
+
+            mask[:, 255: 259] = 1
+            mask[:, 513: 517] = 1
+            mask[:, 771: 775] = 1
+            mask[0: 257, 72: 80] = 1
+            mask[255: 259, :] = 1
+            mask[511: 552, :] = 1
+            mask[804: 809, :] = 1
+            mask[1061: 1102, :] = 1
+            mask[1355: 1359, :] = 1
+            mask[1611: 1652, :] = 1
+            mask[1905: 1909, :] = 1
+            mask[1248:1290, 478] = 1
+            mask[1214:1298, 481] = 1
+            mask[1649:1910, 620:628] = 1
+
+            # mask hot pixels
+            mask[data > 1e6 * nb_img] = 1
+            data[data > 1e6 * nb_img] = 0
+
+        elif self.name == 'Eiger4M':
+            data[:, 0:1] = 0
+            data[:, -1:] = 0
+            data[0:1, :] = 0
+            data[-1:, :] = 0
+            data[:, 1030:1040] = 0
+            data[514:551, :] = 0
+            data[1065:1102, :] = 0
+            data[1616:1653, :] = 0
+
+            mask[:, 0:1] = 1
+            mask[:, -1:] = 1
+            mask[0:1, :] = 1
+            mask[-1:, :] = 1
+            mask[:, 1030:1040] = 1
+            mask[514:551, :] = 1
+            mask[1065:1102, :] = 1
+            mask[1616:1653, :] = 1
+
+            # mask hot pixels, 4000000000 for the Eiger4M
+            mask[data > 4000000000 * nb_img] = 1
+            data[data > 4000000000 * nb_img] = 0
+
+        elif self.name == 'Maxipix':
+            data[:, 255:261] = 0
+            data[255:261, :] = 0
+
+            mask[:, 255:261] = 1
+            mask[255:261, :] = 1
+
+            # mask hot pixels
+            mask[data > 1e6 * nb_img] = 1
+            data[data > 1e6 * nb_img] = 0
+
+        elif self.name == 'Merlin':
+            data[:, 255:260] = 0
+            data[255:260, :] = 0
+
+            mask[:, 255:260] = 1
+            mask[255:260, :] = 1
+
+            # mask hot pixels
+            mask[data > 1e6 * nb_img] = 1
+            data[data > 1e6 * nb_img] = 0
+
+        elif self.name == 'Timepix':
+            pass  # no gaps
+
+        else:
+            raise NotImplementedError('Detector not implemented')
+
+        return data, mask
