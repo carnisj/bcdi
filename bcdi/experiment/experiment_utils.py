@@ -803,23 +803,48 @@ class Detector(object):
         self.pixelsize_y = self.pixelsize_y * self.previous_binning[1] * self.binning[1]
         self.pixelsize_x = self.pixelsize_x * self.previous_binning[2] * self.binning[2]
 
-    def mask_detector(self, data, mask, nb_img=1):
+    def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
         """
-        Mask data measured with 2D detector
+        Mask data measured with a 2D detector (flatfield, background, hotpixels, gaps).
 
         :param data: the 2D data to mask
         :param mask: the 2D mask to be updated
         :param nb_img: number of images summed to yield the 2D data (e.g. in a series measurement)
+        :param flatfield: the 2D flatfield array to be multiplied with the data
+        :param background: a 2D array to be subtracted to the data
+        :param hotpixels: a 2D array with hotpixels to be masked (1=hotpixel, 0=normal pixel)
         :return: the masked data and the updated mask
         """
 
         assert isinstance(data, np.ndarray) and isinstance(mask, np.ndarray), 'data and mask should be numpy arrays'
         if data.ndim != 2 or mask.ndim != 2:
-            raise ValueError('Data and mask should be 2D arrays')
+            raise ValueError('data and mask should be 2D arrays')
 
         if data.shape != mask.shape:
-            raise ValueError('Data and mask must have the same shape\n data is ', data.shape,
+            raise ValueError('data and mask must have the same shape\n data is ', data.shape,
                              ' while mask is ', mask.shape)
+
+        # flatfield correction
+        if flatfield is not None:
+            if flatfield.shape != data.shape:
+                raise ValueError('flatfield and data must have the same shape\n data is ', flatfield.shape,
+                                 ' while data is ', data.shape)
+            data = np.multiply(flatfield, data)
+
+        # remove the background
+        if background is not None:
+            if background.shape != data.shape:
+                raise ValueError('background and data must have the same shape\n data is ', background.shape,
+                                 ' while data is ', data.shape)
+            data = data - background
+
+        # mask hotpixels
+        if hotpixels is not None:
+            if hotpixels.shape != data.shape:
+                raise ValueError('hotpixels and data must have the same shape\n data is ', hotpixels.shape,
+                                 ' while data is ', data.shape)
+            data[hotpixels == 1] = 0
+            mask[hotpixels == 1] = 1
 
         if self.name == 'Eiger2M':
             data[:, 255: 259] = 0
