@@ -2108,7 +2108,7 @@ def update_aliens_2d(key, pix, piy, original_data, original_mask, updated_data, 
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
-    if original_data.ndim != 2 or updated_data.ndim != 2 or original_mask.ndim != 2or updated_mask.ndim != 2:
+    if original_data.ndim != 2 or updated_data.ndim != 2 or original_mask.ndim != 2 or updated_mask.ndim != 2:
         raise ValueError('original_data, updated_data and updated_mask should be 2D arrays')
 
     nby, nbx = original_data.shape
