@@ -1920,7 +1920,7 @@ def update_aliens(key, pix, piy, original_data, original_mask, updated_data, upd
 
 
 def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, width, dim,
-                           frame_index, vmax, vmin=0, invert_yaxis=False):
+                           frame_index, vmax, vmin=0, cmap=my_cmap, invert_yaxis=False):
     """
     Update the plot while removing the parasitic diffraction intensity in 3D dataset
 
@@ -1937,6 +1937,7 @@ def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_
     :param frame_index: list of 3 frame indices (one per axis)
     :param vmax: the higher boundary for the colorbar
     :param vmin: the lower boundary for the colorbar
+    :param cmap: colormap to be used
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
@@ -2066,9 +2067,9 @@ def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_
     axes[0].cla()
     axes[1].cla()
     axes[2].cla()
-    axes[0].imshow(updated_data[frame_index[0], :, :], vmin=vmin, vmax=vmax)
-    axes[1].imshow(updated_data[:, frame_index[1], :], vmin=vmin, vmax=vmax)
-    axes[2].imshow(updated_data[:, :, frame_index[2]], vmin=vmin, vmax=vmax)
+    axes[0].imshow(updated_data[frame_index[0], :, :], vmin=vmin, vmax=vmax, cmap=cmap)
+    axes[1].imshow(updated_data[:, frame_index[1], :], vmin=vmin, vmax=vmax, cmap=cmap)
+    axes[2].imshow(updated_data[:, :, frame_index[2]], vmin=vmin, vmax=vmax, cmap=cmap)
     axes[0].set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nbz))
     axes[0].axis('scaled')
     if invert_yaxis:
@@ -2439,7 +2440,7 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
 
 
 def update_mask_combined(key, pix, piy, original_data, original_mask, updated_data, updated_mask, axes, flag_pause,
-                         points, xy, width, dim, click_dim, info_text, vmax, vmin=0, invert_yaxis=False):
+                         points, xy, width, dim, click_dim, info_text, vmax, vmin=0, cmap=my_cmap, invert_yaxis=False):
     """
     Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
 
@@ -2461,6 +2462,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     :param info_text: text instance in the figure
     :param vmax: the higher boundary for the colorbar
     :param vmin: the lower boundary for the colorbar
+    :param cmap: colormap to be used
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
@@ -2605,9 +2607,9 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     axes[0].cla()
     axes[1].cla()
     axes[2].cla()
-    axes[0].imshow(np.log10(updated_data.sum(axis=0)), vmin=vmin, vmax=vmax)
-    axes[1].imshow(np.log10(updated_data.sum(axis=1)), vmin=vmin, vmax=vmax)
-    axes[2].imshow(np.log10(updated_data.sum(axis=2)), vmin=vmin, vmax=vmax)
+    axes[0].imshow(np.log10(updated_data.sum(axis=0)), vmin=vmin, vmax=vmax, cmap=cmap)
+    axes[1].imshow(np.log10(updated_data.sum(axis=1)), vmin=vmin, vmax=vmax, cmap=cmap)
+    axes[2].imshow(np.log10(updated_data.sum(axis=2)), vmin=vmin, vmax=vmax, cmap=cmap)
     axes[0].set_title("XY")
     axes[0].axis('scaled')
     if invert_yaxis:
