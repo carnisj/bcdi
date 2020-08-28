@@ -2599,7 +2599,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
         stop_masking = True
 
     else:
-        return updated_data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking
+        return updated_data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking, info_text
 
     updated_data[original_mask == 1] = 0
     updated_data[updated_mask == 1] = 0
