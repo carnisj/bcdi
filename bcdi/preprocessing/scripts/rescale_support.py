@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
 from scipy.interpolate import RegularGridInterpolator
+import gc
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
-import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.graph.graph_utils as gu
 import bcdi.algorithms.algorithms_utils as au
 import bcdi.utils.utilities as util
@@ -26,13 +26,13 @@ In reciprocal space, the following convention is used: qx downtream, qz vertical
 
 root_folder = "D:/data/P10_August2020_CDI/data/gold_trunc_custom/"
 support_threshold = 0.05  # in % of the normalized absolute value
-original_shape = [300, 300, 300]  # shape of the array used for phasing and finding the support (after binning_pynx)
+original_shape = [500, 500, 500]  # shape of the array used for phasing and finding the support (after binning_original)
 binning_pynx = (1, 1, 1)  # binning that was used in PyNX during phasing
-output_shape = [250, 250, 250]  # shape of the array for later phasing (before binning_output)
+output_shape = [500, 500, 500]  # shape of the array for later phasing (before binning_output)
 # if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
-binning_output = (2, 2, 2)  # binning that will be used in PyNX for later phasing
-skip_masking = False  # if True, will skip thresholding and masking
-filter_name = 'do_nothing'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
+binning_output = (1, 1, 1)  # binning that will be used in PyNX for later phasing
+flag_interact = True  # if False, will skip thresholding and masking
+filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
 gaussian_sigma = 3.0  # sigma of the gaussian filter
 binary_support = True  # True to save the support as an array of 0 and 1
 reload_support = False  # if True, will load the support which shape is assumed to be the shape after binning_output
@@ -46,11 +46,11 @@ background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual c
 save_fig = True  # if True, will save the figure of the final support
 comment = ''  # should start with _
 ###############################################################################################
-# parameters used when (original_shape*binning_pynx != output_shape) and (is_ortho=False) #
+# parameters used when (original_shape*binning_original != output_shape) and (is_ortho=False) #
 ###############################################################################################
-energy = 9000  # in eV
+energy = 10235  # in eV
 tilt_angle = 0.5  # in degrees
-distance = 4.95  # in m
+distance = 5  # in m
 pixel_x = 75e-06  # in m
 pixel_y = 75e-06  # in m
 ######################################################################
@@ -62,6 +62,11 @@ psf = pu.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=Fa
 ##################################
 # end of user-defined parameters #
 ##################################
+###################
+# define colormap #
+###################
+colormap = gu.Colormap()
+my_cmap = colormap.cmap
 
 
 def close_event(event):
@@ -74,24 +79,93 @@ def close_event(event):
     sys.exit()
 
 
+def on_click(event):
+    """
+    Function to interact with a plot, return the position of clicked pixel. If flag_pause==1 or
+    if the mouse is out of plot axes, it will not register the click
+
+    :param event: mouse click event
+    """
+    global xy, flag_pause, previous_axis
+    if not event.inaxes:
+        return
+    if not flag_pause:
+
+        if (previous_axis == event.inaxes) or (previous_axis is None):  # collect points
+            _x, _y = int(np.rint(event.xdata)), int(np.rint(event.ydata))
+            xy.append([_x, _y])
+            if previous_axis is None:
+                previous_axis = event.inaxes
+        else:  # the click is not in the same subplot, restart collecting points
+            print('Please select mask polygon vertices within the same subplot: restart masking...')
+            xy = []
+            previous_axis = None
+
+
 def press_key(event):
     """
     Interact with a plot for masking parasitic diffraction intensity or detector gaps
 
     :param event: button press event
-    :return: updated data, mask and controls
     """
-    global original_data, data, fig_mask, ax0, dim, idx, width, max_colorbar, stop_masking
+    global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
+    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, info_text, is_ortho, my_cmap
 
     try:
         if event.inaxes == ax0:
-            data, _, width, max_colorbar, idx, stop_masking = \
-                gu.update_aliens(key=event.key, pix=int(np.rint(event.xdata)), piy=int(np.rint(event.ydata)),
-                                 original_data=original_data, original_mask=np.zeros(data.shape), updated_data=data,
-                                 updated_mask=np.zeros(data.shape), figure=fig_mask, width=width, dim=dim, idx=idx,
-                                 vmin=0, vmax=max_colorbar)
-        if stop_masking:
-            plt.close(fig_mask)
+            dim = 0
+            inaxes = True
+        elif event.inaxes == ax1:
+            dim = 1
+            inaxes = True
+        elif event.inaxes == ax2:
+            dim = 2
+            inaxes = True
+        else:
+            dim = -1
+            inaxes = False
+
+        if inaxes:
+            invert_yaxis = is_ortho
+            if flag_aliens:
+                data, mask, width, max_colorbar, frame_index, stop_masking = \
+                    gu.update_aliens_combined(key=event.key, pix=int(np.rint(event.xdata)),
+                                              piy=int(np.rint(event.ydata)), original_data=original_data,
+                                              original_mask=original_mask, updated_data=data, updated_mask=mask,
+                                              axes=(ax0, ax1, ax2), width=width, dim=dim, frame_index=frame_index,
+                                              vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=invert_yaxis)
+            elif flag_mask:
+                if previous_axis == ax0:
+                    click_dim = 0
+                    x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
+                elif previous_axis == ax1:
+                    click_dim = 1
+                    x, y = np.meshgrid(np.arange(nx), np.arange(nz))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
+                elif previous_axis == ax2:
+                    click_dim = 2
+                    x, y = np.meshgrid(np.arange(ny), np.arange(nz))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
+                else:
+                    click_dim = None
+                    points = None
+
+                data, updated_mask, flag_pause, xy, width, max_colorbar, click_dim, stop_masking, info_text = \
+                    gu.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
+                                            piy=int(np.rint(event.ydata)), original_data=original_data,
+                                            original_mask=mask, updated_data=data, updated_mask=updated_mask,
+                                            axes=(ax0, ax1, ax2), flag_pause=flag_pause, points=points,
+                                            xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
+                                            vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=invert_yaxis)
+
+                if click_dim is None:
+                    previous_axis = None
+            else:
+                stop_masking = False
+
+            if stop_masking:
+                plt.close(fig_mask)
 
     except AttributeError:  # mouse pointer out of axes
         pass
@@ -113,8 +187,8 @@ if flip_reconstruction:
 
 data = abs(data)  # take the real part
 
-if not skip_masking:
-    data = data / data.max()  # normalize
+if flag_interact:
+    data = data / data.max(initial=None)  # normalize
     data[data < support_threshold] = 0
 
     fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, vmax=1,
@@ -129,59 +203,93 @@ if not skip_masking:
     # clean interactively the support #
     ###################################
     plt.ioff()
+
+    #############################################
+    # mask the projected data in each dimension #
+    #############################################
+    width = 0
+    max_colorbar = 5
+    flag_aliens = False
+    flag_mask = True
+    flag_pause = False  # press x to pause for pan/zoom
+    previous_axis = None
+    mask = np.zeros(data.shape)
+    xy = []  # list of points for mask
+
+    fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
+    fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
+    original_data = np.copy(data)
+    updated_mask = np.zeros((nz, ny, nx))
+    data[mask == 1] = 0  # will appear as grey in the log plot (nan)
+    ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+    ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+    ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+    ax3.set_visible(False)
+    ax0.axis('scaled')
+    ax1.axis('scaled')
+    ax2.axis('scaled')
+    if is_ortho:
+        ax0.invert_yaxis()  # detector Y is vertical down
+    ax0.set_title("XY")
+    ax1.set_title("XZ")
+    ax2.set_title("YZ")
+    fig_mask.text(0.60, 0.45, "click to select the vertices of a polygon mask", size=12)
+    fig_mask.text(0.60, 0.40, "then p to apply and see the result", size=12)
+    fig_mask.text(0.60, 0.30, "x to pause/resume masking for pan/zoom", size=12)
+    fig_mask.text(0.60, 0.25, "up larger masking box ; down smaller masking box", size=12)
+    fig_mask.text(0.60, 0.20, "m mask ; b unmask ; right darker ; left brighter", size=12)
+    fig_mask.text(0.60, 0.15, "p plot full masked data ; a restart ; q quit", size=12)
+    info_text = fig_mask.text(0.60, 0.05, "masking enabled", size=16)
+    plt.tight_layout()
+    plt.connect('key_press_event', press_key)
+    plt.connect('button_press_event', on_click)
+    fig_mask.set_facecolor(background_plot)
+    plt.show()
+
+    mask[np.nonzero(updated_mask)] = 1
+    data = original_data
+    data[mask == 1] = 0
+    del fig_mask, flag_pause, flag_mask, original_data, updated_mask
+    gc.collect()
+
+    ############################################
+    # mask individual frames in each dimension #
+    ############################################
+    nz, ny, nx = np.shape(data)
     width = 5
-    max_colorbar = 1
+    max_colorbar = 5
+    flag_mask = False
     flag_aliens = True
 
-    # in XY
-    dim = 0
-    stop_masking = False
-    fig_mask = plt.figure()
-    ax0 = fig_mask.add_subplot(111)
+    fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
     fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
-    idx = 0
     original_data = np.copy(data)
-    ax0.imshow(data[idx, :, :], vmin=0, vmax=max_colorbar)
-    ax0.set_title("Frame " + str(idx+1) + "/" + str(nz) + "\n"
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-    plt.connect('key_press_event', press_key)
-    fig_mask.set_facecolor(background_plot)
-    plt.show()
-    del dim, fig_mask
-
-    # in XZ
-    dim = 1
-    stop_masking = False
-    fig_mask = plt.figure()
-    ax0 = fig_mask.add_subplot(111)
-    fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
-    idx = 0
-    ax0.imshow(data[:, idx, :], vmin=0, vmax=max_colorbar)
-    ax0.set_title("Frame " + str(idx+1) + "/" + str(ny) + "\n"
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
-    plt.connect('key_press_event', press_key)
-    fig_mask.set_facecolor(background_plot)
-    plt.show()
-    del dim, fig_mask
-
-    # in YZ
-    dim = 2
-    stop_masking = False
-    fig_mask = plt.figure()
-    ax0 = fig_mask.add_subplot(111)
-    fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
-    idx = 0
-    ax0.imshow(data[:, :, idx], vmin=0, vmax=max_colorbar)
-    ax0.set_title("Frame " + str(idx+1) + "/" + str(nx) + "\n"
-                  "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
-                  "up larger ; down smaller ; right darker ; left brighter")
+    original_mask = np.copy(mask)
+    frame_index = [0, 0, 0]
+    ax0.imshow(data[frame_index[0], :, :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+    ax1.imshow(data[:, frame_index[1], :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+    ax2.imshow(data[:, :, frame_index[2]], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+    ax3.set_visible(False)
+    ax0.axis('scaled')
+    ax1.axis('scaled')
+    ax2.axis('scaled')
+    if is_ortho:
+        ax0.invert_yaxis()  # detector Y is vertical down
+    ax0.set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nz))
+    ax1.set_title("XZ - Frame " + str(frame_index[1] + 1) + "/" + str(ny))
+    ax2.set_title("YZ - Frame " + str(frame_index[2] + 1) + "/" + str(nx))
+    fig_mask.text(0.60, 0.30, "m mask ; b unmask ; u next frame ; d previous frame", size=12)
+    fig_mask.text(0.60, 0.25, "up larger ; down smaller ; right darker ; left brighter", size=12)
+    fig_mask.text(0.60, 0.20, "p plot full image ; q quit", size=12)
+    plt.tight_layout()
     plt.connect('key_press_event', press_key)
     fig_mask.set_facecolor(background_plot)
     plt.show()
 
-    del dim, width, fig_mask, original_data
+    mask[np.nonzero(mask)] = 1
+    data[mask == 1] = 0
+    del fig_mask, original_data, original_mask, mask
+    gc.collect()
 
 ############################################
 # plot the support with the original shape #
@@ -214,10 +322,11 @@ if filter_name != 'do_nothing':
     plt.disconnect(cid)
     plt.close(fig)
 
-data = data / data.max()  # normalize
+data = data / data.max(initial=None)  # normalize
 data[data < support_threshold] = 0
 if binary_support:
     data[np.nonzero(data)] = 1  # change data into a support
+
 ############################################
 # go back to original shape before binning #
 ############################################
