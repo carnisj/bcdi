@@ -109,7 +109,7 @@ def colorbar(mappable, scale='linear', numticks=10, label=None):
     return cbar
 
 
-def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, tuple_scale, tuple_sum_axis=0,
+def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, tuple_scale, tuple_sum_axis=None,
                    cmap=my_cmap, tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
                    tuple_width_v=None, tuple_width_h=None, tuple_vmin=np.nan, tuple_vmax=np.nan, is_orthogonal=False,
                    reciprocal_space=False, **kwargs):
@@ -142,53 +142,80 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  the figure instance
     """
-
-    if not isinstance(tuple_array, tuple):
-        raise TypeError('Expected "tuple_array" to be a tuple')
-
-    nb_subplots = len(tuple_array)
+    tuple_sum_axis = tuple_sum_axis or 0
     invert_yaxis = False
 
-    if not isinstance(tuple_sum_frames, tuple):
+    try:
+        nb_subplots = len(tuple_array)
+    except TypeError:
+        raise TypeError('Expected "tuple_array" to be a tuple')
+    try:
+        assert len(tuple_sum_frames) == nb_subplots, 'len(tuple_sum_frames) incompatible with the numer of arrays'
+    except TypeError:  # it is a number
         tuple_sum_frames = (tuple_sum_frames,) * nb_subplots
-    if not isinstance(tuple_sum_axis, tuple):
+    try:
+        assert len(tuple_sum_axis) == nb_subplots, 'len(tuple_sum_axis) incompatible with the numer of arrays'
+    except TypeError:  # it is a number
         tuple_sum_axis = (tuple_sum_axis,) * nb_subplots
-    if not isinstance(tuple_width_v, tuple):
+    try:
+        assert len(tuple_width_v) == nb_subplots, 'len(tuple_width_v) incompatible with the numer of arrays'
+    except TypeError:  # it is a number
         tuple_width_v = (tuple_width_v,) * nb_subplots
-    if not isinstance(tuple_width_h, tuple):
+    try:
+        assert len(tuple_width_h) == nb_subplots, 'len(tuple_width_h) incompatible with the numer of arrays'
+    except TypeError:  # it is a number
         tuple_width_h = (tuple_width_h,) * nb_subplots
-    if not isinstance(tuple_colorbar, tuple):
+    try:
+        assert len(tuple_colorbar) == nb_subplots, 'len(tuple_colorbar) incompatible with the numer of arrays'
+    except TypeError:  # it is a number
         tuple_colorbar = (tuple_colorbar,) * nb_subplots
-    if not isinstance(tuple_vmin, tuple):
+    try:
+        assert len(tuple_vmin) == nb_subplots, 'len(tuple_vmin) incompatible with the numer of arrays'
+    except TypeError:  # it is a number
         tuple_vmin = (tuple_vmin,) * nb_subplots
-    if not isinstance(tuple_vmax, tuple):
+    try:
+        assert len(tuple_vmax) == nb_subplots, 'len(tuple_vmax) incompatible with the numer of arrays'
+    except TypeError:  # it is a number
         tuple_vmax = (tuple_vmax,) * nb_subplots
-    if not isinstance(tuple_title, tuple):
+    try:
+        assert len(tuple_title) == nb_subplots, 'len(tuple_title) incompatible with the numer of arrays'
+    except TypeError:  # it is a number
         tuple_title = (tuple_title,) * nb_subplots
-    if not isinstance(tuple_scale, tuple):
+    try:
+        assert len(tuple_scale) == nb_subplots, 'len(tuple_scale) incompatible with the numer of arrays'
+    except TypeError:  # it is a number
         tuple_scale = (tuple_scale,) * nb_subplots
 
     # default values for kwargs
     xlabel = None
     ylabel = None
     position = None
+    invert_y = [None for _ in range(nb_subplots)]
 
     for k in kwargs.keys():
         if k in ['xlabel']:
             xlabel = kwargs['xlabel']
-            if not isinstance(xlabel, tuple):
+            try:
+                assert len(xlabel) == nb_subplots, 'len(xlabel) incompatible with the numer of arrays'
+            except TypeError:  # it is a number
                 xlabel = (xlabel,) * nb_subplots
         elif k in ['ylabel']:
             ylabel = kwargs['ylabel']
-            if not isinstance(ylabel, tuple):
+            try:
+                assert len(ylabel) == nb_subplots, 'len(ylabel) incompatible with the numer of arrays'
+            except TypeError:  # it is a number
                 ylabel = (ylabel,) * nb_subplots
         elif k in ['position']:
             position = kwargs['position']
-            if not isinstance(position, tuple) or len(position) != nb_subplots:
+            try:
+                assert len(position) == nb_subplots, 'len(position) incompatible with the numer of arrays'
+            except TypeError:  # it is a number
                 raise ValueError('"position" should be a tuple of subplot positions')
         elif k in ['invert_y']:
             invert_y = kwargs['invert_y']
-            if not isinstance(invert_y, tuple):
+            try:
+                assert len(invert_y) == nb_subplots, 'len(invert_y) incompatible with the numer of arrays'
+            except TypeError:  # it is a number
                 invert_y = (invert_y,) * nb_subplots
         else:
             print(k)
@@ -237,12 +264,12 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                 tmp_array = np.copy(array).astype(float)
                 tmp_array[np.isnan(array)] = np.inf
                 tmp_array[np.isinf(tmp_array)] = np.inf  # set -inf to +inf to find the min
-                vmin = tmp_array.min()
+                vmin = tmp_array.min(initial=None)
             if np.isnan(vmax):
                 tmp_array = np.copy(array).astype(float)
                 tmp_array[np.isnan(array)] = -1 * np.inf
                 tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
-                vmax = tmp_array.max()
+                vmax = tmp_array.max(initial=None)
 
             axis.plot(array)
             axis.set_title(title)
@@ -295,10 +322,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                     hor_labels = ('X', 'X', 'Y')
 
             nbz, nby, nbx = array.shape
-            if width_v is None:
-                width_v = max(nbz, nby, nbx)
-            if width_h is None:
-                width_h = max(nbz, nby, nbx)
+            width_v = width_v or max(nbz, nby, nbx)
+            width_h = width_h or max(nbz, nby, nbx)
 
             if sum_axis == 0:
                 dim_v = nby
@@ -334,10 +359,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
 
         else:  # 2D
             nby, nbx = array.shape
-            if width_v is None:
-                width_v = max(nby, nbx)
-            if width_h is None:
-                width_h = max(nby, nbx)
+            width_v = width_v or max(nby, nbx)
+            width_h = width_h or max(nby, nbx)
 
             dim_v = nby
             dim_h = nbx
@@ -348,11 +371,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         ############################
         # now array is 2D, plot it #
         ############################
-        try:
-            if invert_y[idx]:  # overwrite invert_yaxis parameter
-                invert_yaxis = invert_y[idx]
-        except NameError:
-            pass
+        if invert_y[idx] is not None:  # overwrite invert_yaxis parameter
+            invert_yaxis = invert_y[idx]
 
         width_v = min(width_v, dim_v)
         width_h = min(width_h, dim_h)
@@ -481,20 +501,17 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
         if len(qx) != nbz or len(qz) != nby or len(qy) != nbx:
             print('Coordinates shape is not compatible with data shape')
 
-        if width_z is None:
-            width_z = nbz
-        if width_y is None:
-            width_y = nby
-        if width_x is None:
-            width_x = nbx
+        width_z = width_z or nbz
+        width_y = width_y or nby
+        width_x = width_x or nbx
 
         if not sum_frames:
-            if slice_position is None:
-                slice_position = [nbz // 2, nby // 2, nbx // 2]
-            elif len(slice_position) != 3:
-                raise ValueError('wrong shape for the parameter slice_position')
-            else:
-                slice_position = [int(position) for position in slice_position]
+            slice_position = slice_position or [nbz // 2, nby // 2, nbx // 2]
+            try:
+                assert len(slice_position) == 3, 'len(slice_position) should be 3'
+            except TypeError:  # it is a number
+                raise ValueError('len(slice_position) should be 3')
+            slice_position = [int(position) for position in slice_position]
 
         fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 9))
 
@@ -737,6 +754,9 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  fig, axis, plot instances
     """
+    # default values for kwargs
+    invert_y = None
+
     for k in kwargs.keys():
         if k in ['invert_y']:
             invert_y = kwargs['invert_y']
@@ -748,10 +768,9 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     array = array.astype(float)
     plt.ion()
 
-    if labels is None:
-        labels = ('', '')
-    else:
-        assert len(labels) == 2, 'labels should be a tuple of two strings (vertical label, horizontal label)'
+    labels = labels or ('', '')
+    assert len(labels) == 2, 'labels should be a tuple of two strings (vertical label, horizontal label)'
+
     if nb_dim == 3:
         if reciprocal_space:
             if is_orthogonal:
@@ -791,10 +810,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                 hor_labels = (labels[1] + ' X', labels[1] + ' X', labels[1] + ' Y')
 
         nbz, nby, nbx = array.shape
-        if width_v is None:
-            width_v = max(nbz, nby, nbx)
-        if width_h is None:
-            width_h = max(nbz, nby, nbx)
+        width_v = width_v or max(nbz, nby, nbx)
+        width_h = width_h or max(nbz, nby, nbx)
 
         if sum_axis == 0:
             dim_v = nby
@@ -827,10 +844,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     elif nb_dim == 2:
         invert_yaxis = False
         nby, nbx = array.shape
-        if width_v is None:
-            width_v = max(nby, nbx)
-        if width_h is None:
-            width_h = max(nby, nbx)
+        width_v = width_v or max(nby, nbx)
+        width_h = width_h or max(nby, nbx)
 
         dim_v = nby
         dim_h = nbx
@@ -843,11 +858,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     ############################
     # now array is 2D, plot it #
     ############################
-    try:
-        if invert_y:  # overwrite invert_yaxis parameter
-            invert_yaxis = invert_y
-    except NameError:
-        pass
+    if invert_y is not None:  # overwrite invert_yaxis parameter
+        invert_yaxis = invert_y
 
     fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
     width_v = min(width_v, dim_v)
@@ -927,10 +939,8 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
     if dim > 2:
         raise ValueError('dim should be 0, 1 or 2')
 
-    if vmin is None:
-        vmin = data.min()
-    if vmax is None:
-        vmax = data.max()
+    vmin = vmin or data.min()
+    vmax = vmax or data.max()
 
     axis = figure.gca()
     xmin, xmax = axis.get_xlim()
@@ -1069,42 +1079,35 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     from mayavi import mlab
 
     # check input parameters
-    if vmin is None:
-        vmin = scalars.min()
-    if vmax is None:
-        vmax = scalars.max()
+    vmin = vmin or scalars.min()
+    vmax = vmax or scalars.max()
 
     assert len(fig_size) == 2, 'fig_size should be a tuple of 2 pixel numbers'
 
-    if isinstance(azimuth, (tuple, list)):  # several views to be plotted
-        nb_plots = len(azimuth)
-        if isinstance(elevation, (int, float)):
-            elevation = [elevation for _ in range(nb_plots)]
-        else:
-            assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimuth'
-        if isinstance(roll, (int, float)):
-            roll = [roll for _ in range(nb_plots)]
-        else:
-            assert len(roll) == nb_plots, 'roll should have the same number of elements as azimuth'
-        if isinstance(distance, (int, float)):
-            distance = [distance for _ in range(nb_plots)]
-        else:
-            assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
-        if isinstance(title, str):
-            title = [title + '_' + str(idx) for idx in range(nb_plots)]
-        else:
-            assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
-    else:  # azimuth is a number
-        nb_plots = 1
-        azimuth = [azimuth]
-        assert type(elevation) in [int, float], 'elevation should be a number'
-        elevation = [elevation]
-        assert type(roll) in [int, float], 'roll should be a number'
-        roll = [roll]
-        assert type(title) is str, 'title should be a string'
-        title = [title]
+    azimuth = azimuth or [150]
+    nb_plots = len(azimuth)
+    elevation = elevation or [70 for _ in range(nb_plots)]
+    try:
+        assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimuth'
+    except TypeError:  # it is a number
+        elevation = [elevation for _ in range(nb_plots)]
+    roll = roll or [0 for _ in range(nb_plots)]
+    try:
+        assert len(roll) == nb_plots, 'roll should have the same number of elements as azimuth'
+    except TypeError:  # it is a number
+        roll = [roll for _ in range(nb_plots)]
+    try:
+        assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
+    except TypeError:  # it is a number or a string
+        distance = [distance for _ in range(nb_plots)]
+    try:
+        assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
+    except TypeError:  # it is a string
+        title = [title + '_' + str(idx) for idx in range(nb_plots)]
 
     # plot the contour3d figure
+    ax = None
+    cbar = None
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if color is None:
         mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
@@ -1134,8 +1137,9 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     return fig, ax, cbar
 
 
-def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azimuth=150, elevation=70, distance='auto',
-                  roll=0, mode='cube', vmin=None, vmax=None, opacity=1, colormap='jet', title='', savedir=None):
+def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azimuth=None, elevation=None, roll=None,
+                  distance='auto', mode='cube', vmin=None, vmax=None, opacity=1, colormap='jet', title='',
+                  savedir=None):
     """
     3D scatter plot using mayavi. The frame convention is (x,y,z) right-handed.
 
@@ -1151,10 +1155,10 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
      projected on to the x-y plane with the x-axis. It can be a list of angles for several plots.
     :param elevation: the zenith angle (in degrees, 0-180), i.e. the angle subtended by the position vector
      and the z-axis. It can be a list of angles for several plots.
+    :param roll: absolute roll angle of the camera. It can be a list of angles for several plots.
     :param distance: a positive floating point number representing the distance from the focal point to place the
      camera. It can be a list of the same length as aimut. If ‘auto’ is passed, the distance is computed to have a best
      fit of objects in the frame.
-    :param roll: absolute roll angle of the camera. It can be a list of angles for several plots.
     :param mode: the mode of the glyphs. Available modes are: ‘2darrow’, ‘2dcircle’, ‘2dcross’, ‘2ddash’, ‘2ddiamond’,
      ‘2dhooked_arrow’, ‘2dsquare’, ‘2dthick_arrow’, ‘2dthick_cross’, ‘2dtriangle’, ‘2dvertex’, ‘arrow’, ‘axes’, ‘cone’,
      ‘cube’, ‘cylinder’, ‘point’, ‘sphere’
@@ -1169,42 +1173,35 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
     from mayavi import mlab
 
     # check input parameters
-    if vmin is None:
-        vmin = scalars.min()
-    if vmax is None:
-        vmax = scalars.max()
+    vmin = vmin or scalars.min()
+    vmax = vmax or scalars.max()
 
     assert len(fig_size) == 2, 'fig_size should be a tuple of 2 pixel numbers'
 
-    if isinstance(azimuth, (tuple, list)):  # several views to be plotted
-        nb_plots = len(azimuth)
-        if isinstance(elevation, (int, float)):
-            elevation = [elevation for _ in range(nb_plots)]
-        else:
-            assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimuth'
-        if isinstance(roll, (int, float)):
-            roll = [roll for _ in range(nb_plots)]
-        else:
-            assert len(roll) == nb_plots, 'roll should have the same number of elements as azimuth'
-        if isinstance(distance, (int, float)):
-            distance = [distance for _ in range(nb_plots)]
-        else:
-            assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
-        if isinstance(title, str):
-            title = [title + '_' + str(idx) for idx in range(nb_plots)]
-        else:
-            assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
-    else:  # azimuth is a number
-        nb_plots = 1
-        azimuth = [azimuth]
-        assert type(elevation) in [int, float], 'elevation should be a number'
-        elevation = [elevation]
-        assert type(roll) in [int, float], 'roll should be a number'
-        roll = [roll]
-        assert type(title) is str, 'title should be a string'
-        title = [title]
+    azimuth = azimuth or [150]
+    nb_plots = len(azimuth)
+    elevation = elevation or [70 for _ in range(nb_plots)]
+    try:
+        assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimuth'
+    except TypeError:  # it is a number
+        elevation = [elevation for _ in range(nb_plots)]
+    roll = roll or [0 for _ in range(nb_plots)]
+    try:
+        assert len(roll) == nb_plots, 'roll should have the same number of elements as azimuth'
+    except TypeError:  # it is a number
+        roll = [roll for _ in range(nb_plots)]
+    try:
+        assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
+    except TypeError:  # it is a number
+        distance = [distance for _ in range(nb_plots)]
+    try:
+        assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
+    except TypeError:  # it is a number
+        title = [title + '_' + str(idx) for idx in range(nb_plots)]
 
     # plot the points3d figure
+    ax = None
+    cbar = None
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     mlab.points3d(x, y, z, scalars, mode=mode, opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
 
@@ -1268,28 +1265,24 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     nbz, nby, nbx = array.shape
 
     try:
-        if len(vmin) == 3:
-            min_value = vmin
-        else:
-            raise ValueError('wrong shape for the parameter vmin')
-    except TypeError:  # case len(vmin)=1
-        min_value = [vmin, vmin, vmin]
+        assert len(vmin) == 3, 'len(vmin) should be 3'
+    except TypeError:  # it is a number
+        vmin = [vmin, vmin, vmin]
+    min_value = vmin
 
     try:
-        if len(vmax) == 3:
-            max_value = vmax
-        else:
-            raise ValueError('wrong shape for the parameter vmax')
-    except TypeError:  # case len(vmax)=1
-        max_value = [vmax, vmax, vmax]
+        assert len(vmax) == 3, 'len(vmax) should be 3'
+    except TypeError:  # it is a number
+        vmax = [vmax, vmax, vmax]
+    max_value = vmax
 
     if not sum_frames:
-        if slice_position is None:
-            slice_position = [nbz//2, nby//2, nbx//2]
-        elif len(slice_position) != 3:
-            raise ValueError('wrong shape for the parameter slice_position')
-        else:
-            slice_position = [int(position) for position in slice_position]
+        slice_position = slice_position or [nbz // 2, nby // 2, nbx // 2]
+        try:
+            assert len(slice_position) == 3, 'len(slice_position) should be 3'
+        except TypeError:  # it is a number
+            raise ValueError('len(slice_position) should be 3')
+        slice_position = [int(position) for position in slice_position]
 
     plt.ion()
 
@@ -1328,15 +1321,13 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             ver_labels = ('Y', 'rocking angle', 'rocking angle')
             hor_labels = ('X', 'X', 'Y')
 
-    if width_z is None:
-        width_z = nbz
-    if width_y is None:
-        width_y = nby
-    if width_x is None:
-        width_x = nbx
+    width_z = width_z or nbz
+    width_y = width_y or nby
+    width_x = width_x or nbx
 
     if ipynb_layout:
         fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(15, 4.5))
+        ax3 = None
     else:
         fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 9))
 
@@ -1472,7 +1463,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
     if not ipynb_layout:
-        # axis 3
+        # hide axis 3
         ax3.set_visible(False)
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
@@ -1535,12 +1526,10 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     import vtk
     from vtk.util import numpy_support
 
-    if isinstance(tuple_fieldnames, tuple):
+    try:
         nb_fieldnames = len(tuple_fieldnames)
-    elif isinstance(tuple_fieldnames, str):
+    except TypeError:  # it is a number
         nb_fieldnames = 1
-    else:
-        raise TypeError('Invalid input for tuple_fieldnames')
 
     if isinstance(tuple_array, tuple):
         nb_arrays = len(tuple_array)
@@ -1557,9 +1546,7 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     else:
         raise TypeError('Invalid input for tuple_array')
 
-    if nb_arrays != nb_fieldnames:
-        print('Different number of arrays and field names')
-        return
+    assert nb_arrays == nb_fieldnames, 'Different number of arrays and field names'
 
     image_data = vtk.vtkImageData()
     image_data.SetOrigin(origin[0], origin[1], origin[2])
@@ -1636,11 +1623,11 @@ def scatter_plot(array, labels, markersize=4, markercolor='b', title=''):
     if array.ndim != 2:
         raise ValueError('array should be 2D')
     ndim = array.shape[1]
-    if not isinstance(labels, tuple):
+    try:
+        assert len(labels) == ndim, 'len(labels) is different from the number of columns in the array'
+    except TypeError:  # it is a number
         labels = (labels,) * ndim
 
-    if len(labels) != ndim:
-        raise ValueError('the number of labels is different from the number of columns in the array')
     plt.ion()
     fig = plt.figure()
 
@@ -1689,19 +1676,19 @@ def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=''):
     ndim = arrays[0].shape[1]
     nb_arrays = len(arrays)
 
-    if not isinstance(labels, tuple):
+    try:
+        assert len(labels) == ndim, 'len(labels) is different from the number of columns in the array'
+    except TypeError:  # it is a number
         labels = (labels,) * ndim
-    if not isinstance(markersizes, tuple):
-        markersizes = (markersizes,) * ndim
-    if not isinstance(markercolors, tuple):
-        markercolors = (markercolors,) * ndim
+    try:
+        assert len(markersizes) == ndim, 'len(markersizes) is different from the number of arrays'
+    except TypeError:  # it is a number
+        markersizes = (markersizes,) * nb_arrays
+    try:
+        assert len(markercolors) == ndim, 'len(markercolors) is different from the number of arrays'
+    except TypeError:  # it is a number
+        markercolors = (markercolors,) * nb_arrays
 
-    if len(labels) != ndim:
-        raise ValueError('the number of labels is different from the number of columns in arrays')
-    if len(markersizes) != nb_arrays:
-        raise ValueError('the number of markersizes is different from the number of arrays')
-    if len(markercolors) != nb_arrays:
-        raise ValueError('the number of markercolors is different from the number of arrays')
     plt.ion()
     fig = plt.figure()
     if ndim == 2:
