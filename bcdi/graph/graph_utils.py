@@ -1782,6 +1782,15 @@ def update_aliens(key, pix, piy, original_data, original_mask, updated_data, upd
     stop_masking = False
     if dim not in [0, 1, 2]:
         raise ValueError('dim should be 0, 1 or 2')
+    elif dim == 0:
+        current_nby = nby
+        current_nbx = nbx
+    elif dim == 1:
+        current_nby = nbz
+        current_nbx = nbx
+    else:  # dim = 2
+        current_nby = nbz
+        current_nbx = nby
 
     axs = figure.gca()
     xmin, xmax = axs.get_xlim()
@@ -1827,49 +1836,95 @@ def update_aliens(key, pix, piy, original_data, original_mask, updated_data, upd
             vmax = 1
 
     elif key == 'm':  # mask intensities
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= current_nby:
+            stopy = max(current_nby, piy - width)
+            if stopy > current_nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        if dim == 0:
-            updated_data[idx, starty:piy + width + 1, startx:pix + width + 1] = 0
-            updated_mask[idx, starty:piy + width + 1, startx:pix + width + 1] = 1
-        elif dim == 1:
-            updated_data[starty:piy + width + 1, idx, startx:pix + width + 1] = 0
-            updated_mask[starty:piy + width + 1, idx, startx:pix + width + 1] = 1
-        else:  # dim=2
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, idx] = 0
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, idx] = 1
+        if (pix + width) >= current_nbx:
+            stopx = max(current_nbx, pix - width)
+            if stopx > current_nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            if dim == 0:
+                updated_data[idx, starty:stopy, startx:stopx] = 0
+                updated_mask[idx, starty:stopy, startx:stopx] = 1
+            elif dim == 1:
+                updated_data[starty:stopy, idx, startx:stopx] = 0
+                updated_mask[starty:stopy, idx, startx:stopx] = 1
+            else:  # dim=2
+                updated_data[starty:stopy, startx:stopx, idx] = 0
+                updated_mask[starty:stopy, startx:stopx, idx] = 1
 
     elif key == 'b':  # back to measured intensities
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= current_nby:
+            stopy = max(current_nby, piy - width)
+            if stopy > current_nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        if dim == 0:
-            updated_data[idx, starty:piy + width + 1, startx:pix + width + 1] = \
-                original_data[idx, starty:piy + width + 1, startx:pix + width + 1]
-            updated_mask[idx, starty:piy + width + 1, startx:pix + width + 1] = \
-                original_mask[idx, starty:piy + width + 1, startx:pix + width + 1]
+        if (pix + width) >= current_nbx:
+            stopx = max(current_nbx, pix - width)
+            if stopx > current_nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
 
-        elif dim == 1:
-            updated_data[starty:piy + width + 1, idx, startx:pix + width + 1] = \
-                original_data[starty:piy + width + 1, idx, startx:pix + width + 1]
-            updated_mask[starty:piy + width + 1, idx, startx:pix + width + 1] = \
-                original_mask[starty:piy + width + 1, idx, startx:pix + width + 1]
-        else:  # dim=2
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, idx] = \
-                original_data[starty:piy + width + 1, startx:pix + width + 1, idx]
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, idx] = \
-                original_mask[starty:piy + width + 1, startx:pix + width + 1, idx]
+        if not skip:
+            if dim == 0:
+                updated_data[idx, starty:stopy, startx:stopx] = \
+                    original_data[idx, starty:stopy, startx:stopx]
+                updated_mask[idx, starty:stopy, startx:stopx] = \
+                    original_mask[idx, starty:stopy, startx:stopx]
+
+            elif dim == 1:
+                updated_data[starty:stopy, idx, startx:stopx] = \
+                    original_data[starty:stopy, idx, startx:stopx]
+                updated_mask[starty:stopy, idx, startx:stopx] = \
+                    original_mask[starty:stopy, idx, startx:stopx]
+            else:  # dim=2
+                updated_data[starty:stopy, startx:stopx, idx] = \
+                    original_data[starty:stopy, startx:stopx, idx]
+                updated_mask[starty:stopy, startx:stopx, idx] = \
+                    original_mask[starty:stopy, startx:stopx, idx]
 
     elif key == 'p' or key == 'a':  # plot full image or restart masking
         if dim == 0:
@@ -1948,6 +2003,15 @@ def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_
     stop_masking = False
     if dim not in [0, 1, 2]:
         raise ValueError('dim should be 0, 1 or 2')
+    elif dim == 0:
+        current_nby = nby
+        current_nbx = nbx
+    elif dim == 1:
+        current_nby = nbz
+        current_nbx = nbx
+    else:  # dim = 2
+        current_nby = nbz
+        current_nbx = nby
 
     xmin0, xmax0 = axes[0].get_xlim()
     ymin0, ymax0 = axes[0].get_ylim()
@@ -2001,48 +2065,94 @@ def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_
             vmax = 1
 
     elif key == 'm':  # mask intensities
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= current_nby:
+            stopy = max(current_nby, piy - width)
+            if stopy > current_nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        if dim == 0:
-            updated_data[frame_index[0], starty:piy + width + 1, startx:pix + width + 1] = 0
-            updated_mask[frame_index[0], starty:piy + width + 1, startx:pix + width + 1] = 1
-        elif dim == 1:
-            updated_data[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = 0
-            updated_mask[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = 1
-        else:  # dim=2
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = 0
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = 1
+        if (pix + width) >= current_nbx:
+            stopx = max(current_nbx, pix - width)
+            if stopx > current_nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            if dim == 0:
+                updated_data[frame_index[0], starty:stopy, startx:stopx] = 0
+                updated_mask[frame_index[0], starty:stopy, startx:stopx] = 1
+            elif dim == 1:
+                updated_data[starty:stopy, frame_index[1], startx:stopx] = 0
+                updated_mask[starty:stopy, frame_index[1], startx:stopx] = 1
+            else:  # dim=2
+                updated_data[starty:stopy, startx:stopx, frame_index[2]] = 0
+                updated_mask[starty:stopy, startx:stopx, frame_index[2]] = 1
 
     elif key == 'b':  # back to measured intensities
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= current_nby:
+            stopy = max(current_nby, piy - width)
+            if stopy > current_nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        if dim == 0:
-            updated_data[frame_index[0], starty:piy + width + 1, startx:pix + width + 1] = \
-                original_data[frame_index[0], starty:piy + width + 1, startx:pix + width + 1]
-            updated_mask[frame_index[0], starty:piy + width + 1, startx:pix + width + 1] = \
-                original_mask[frame_index[0], starty:piy + width + 1, startx:pix + width + 1]
-        elif dim == 1:
-            updated_data[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = \
-                original_data[starty:piy + width + 1, frame_index[1], startx:pix + width + 1]
-            updated_mask[starty:piy + width + 1, frame_index[1], startx:pix + width + 1] = \
-                original_mask[starty:piy + width + 1, frame_index[1], startx:pix + width + 1]
-        else:  # dim=2
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = \
-                original_data[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]]
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]] = \
-                original_mask[starty:piy + width + 1, startx:pix + width + 1, frame_index[2]]
+        if (pix + width) >= current_nbx:
+            stopx = max(current_nbx, pix - width)
+            if stopx > current_nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            if dim == 0:
+                updated_data[frame_index[0], starty:stopy, startx:stopx] = \
+                    original_data[frame_index[0], starty:stopy, startx:stopx]
+                updated_mask[frame_index[0], starty:stopy, startx:stopx] = \
+                    original_mask[frame_index[0], starty:stopy, startx:stopx]
+            elif dim == 1:
+                updated_data[starty:stopy, frame_index[1], startx:stopx] = \
+                    original_data[starty:stopy, frame_index[1], startx:stopx]
+                updated_mask[starty:stopy, frame_index[1], startx:stopx] = \
+                    original_mask[starty:stopy, frame_index[1], startx:stopx]
+            else:  # dim=2
+                updated_data[starty:stopy, startx:stopx, frame_index[2]] = \
+                    original_data[starty:stopy, startx:stopx, frame_index[2]]
+                updated_mask[starty:stopy, startx:stopx, frame_index[2]] = \
+                    original_mask[starty:stopy, startx:stopx, frame_index[2]]
 
     elif key == 'p' or key == 'a':  # plot full image or restart masking
         xmin0, xmax0 = -0.5, nbx - 0.5
@@ -2135,30 +2245,76 @@ def update_aliens_2d(key, pix, piy, original_data, original_mask, updated_data, 
             vmax = 1
 
     elif key == 'm':
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= nby:
+            stopy = max(nby, piy - width)
+            if stopy > nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        updated_data[starty:piy + width + 1, startx:pix + width + 1] = 0
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 1
+        if (pix + width) >= nbx:
+            stopx = max(nbx, pix - width)
+            if stopx > nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            updated_data[starty:stopy, startx:stopx] = 0
+            updated_mask[starty:stopy, startx:stopx] = 1
 
     elif key == 'b':
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= nby:
+            stopy = max(nby, piy - width)
+            if stopy > nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        updated_data[starty:piy + width + 1, startx:pix + width + 1] = \
-            original_data[starty:piy + width + 1, startx:pix + width + 1]
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = \
-            original_mask[starty:piy + width + 1, startx:pix + width + 1]
+        if (pix + width) >= nbx:
+            stopx = max(nbx, pix - width)
+            if stopx > nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            updated_data[starty:stopy, startx:stopx] = \
+                original_data[starty:stopy, startx:stopx]
+            updated_mask[starty:stopy, startx:stopx] = \
+                original_mask[starty:stopy, startx:stopx]
 
     elif key == 'p' or key == 'a':  # plot full image or restart masking
         xmin, xmax = -0.5, nbx - 0.5
@@ -2301,6 +2457,15 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
     stop_masking = False
     if dim not in [0, 1, 2]:
         raise ValueError('dim should be 0, 1 or 2')
+    elif dim == 0:
+        current_nby = nby
+        current_nbx = nbx
+    elif dim == 1:
+        current_nby = nbz
+        current_nbx = nbx
+    else:  # dim = 2
+        current_nby = nbz
+        current_nbx = nby
 
     axs = figure.gca()
     xmin, xmax = axs.get_xlim()
@@ -2323,35 +2488,81 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
             vmax = 1
 
     elif key == 'm':
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= current_nby:
+            stopy = max(current_nby, piy - width)
+            if stopy > current_nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 1
+        if (pix + width) >= current_nbx:
+            stopx = max(current_nbx, pix - width)
+            if stopx > current_nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            updated_mask[starty:stopy, startx:stopx] = 1
 
     elif key == 'b':
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= current_nby:
+            stopy = max(current_nby, piy - width)
+            if stopy > current_nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 0
-        if dim == 0:
-            updated_data[:, starty:piy + width + 1, startx:pix + width + 1] = \
-                original_data[:, starty:piy + width + 1, startx:pix + width + 1]
-        elif dim == 1:
-            updated_data[starty:piy + width + 1, :, startx:pix + width + 1] = \
-                original_data[starty:piy + width + 1, :, startx:pix + width + 1]
-        else:  # dim=2
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, :] = \
-                original_data[starty:piy + width + 1, startx:pix + width + 1, :]
+        if (pix + width) >= current_nbx:
+            stopx = max(current_nbx, pix - width)
+            if stopx > current_nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            updated_mask[starty:stopy, startx:stopx] = 0
+            if dim == 0:
+                updated_data[:, starty:stopy, startx:stopx] = \
+                    original_data[:, starty:stopy, startx:stopx]
+            elif dim == 1:
+                updated_data[starty:stopy, :, startx:stopx] = \
+                    original_data[starty:stopy, :, startx:stopx]
+            else:  # dim=2
+                updated_data[starty:stopy, startx:stopx, :] = \
+                    original_data[starty:stopy, startx:stopx, :]
 
     elif key == 'a':  # restart mask from beginning
         updated_data[:] = original_data[:]
@@ -2473,6 +2684,15 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     stop_masking = False
     if dim not in [0, 1, 2]:
         raise ValueError('dim should be 0, 1 or 2')
+    elif dim == 0:
+        current_nby = nby
+        current_nbx = nbx
+    elif dim == 1:
+        current_nby = nbz
+        current_nbx = nbx
+    else:  # dim = 2
+        current_nby = nbz
+        current_nbx = nby
 
     xmin0, xmax0 = axes[0].get_xlim()
     ymin0, ymax0 = axes[0].get_ylim()
@@ -2498,42 +2718,88 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
             vmax = 1
 
     elif key == 'm':
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= current_nby:
+            stopy = max(current_nby, piy - width)
+            if stopy > current_nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        if dim == 0:
-            updated_mask[:, starty:piy + width + 1, startx:pix + width + 1] = 1
-        elif dim == 1:
-            updated_mask[starty:piy + width + 1, :, startx:pix + width + 1] = 1
-        else:  # dim=2
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, :] = 1
+        if (pix + width) >= current_nbx:
+            stopx = max(current_nbx, pix - width)
+            if stopx > current_nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            if dim == 0:
+                updated_mask[:, starty:stopy, startx:stopx] = 1
+            elif dim == 1:
+                updated_mask[starty:stopy, :, startx:stopx] = 1
+            else:  # dim=2
+                updated_mask[starty:stopy, startx:stopx, :] = 1
 
     elif key == 'b':
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= current_nby:
+            stopy = max(current_nby, piy - width)
+            if stopy > current_nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        if dim == 0:
-            updated_mask[:, starty:piy + width + 1, startx:pix + width + 1] = 0
-            updated_data[:, starty:piy + width + 1, startx:pix + width + 1] =\
-                original_data[:, starty:piy + width + 1, startx:pix + width + 1]
-        elif dim == 1:
-            updated_mask[starty:piy + width + 1, :, startx:pix + width + 1] = 0
-            updated_data[starty:piy + width + 1, :, startx:pix + width + 1] = \
-                original_data[starty:piy + width + 1, :, startx:pix + width + 1]
-        else:  # dim=2
-            updated_mask[starty:piy + width + 1, startx:pix + width + 1, :] = 0
-            updated_data[starty:piy + width + 1, startx:pix + width + 1, :] = \
-                original_data[starty:piy + width + 1, startx:pix + width + 1, :]
+        if (pix + width) >= current_nbx:
+            stopx = max(current_nbx, pix - width)
+            if stopx > current_nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            if dim == 0:
+                updated_mask[:, starty:stopy, startx:stopx] = 0
+                updated_data[:, starty:stopy, startx:stopx] =\
+                    original_data[:, starty:stopy, startx:stopx]
+            elif dim == 1:
+                updated_mask[starty:stopy, :, startx:stopx] = 0
+                updated_data[starty:stopy, :, startx:stopx] = \
+                    original_data[starty:stopy, :, startx:stopx]
+            else:  # dim=2
+                updated_mask[starty:stopy, startx:stopx, :] = 0
+                updated_data[starty:stopy, startx:stopx, :] = \
+                    original_data[starty:stopy, startx:stopx, :]
 
     elif key == 'a':  # restart mask from beginning
         updated_data = np.copy(original_data)
@@ -2688,28 +2954,74 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
         updated_data[updated_mask == 1] = masked_color
 
     elif key == 'm':
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= nby:
+            stopy = max(nby, piy - width)
+            if stopy > nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 1
-        updated_data[updated_mask == 1] = masked_color
+        if (pix + width) >= nbx:
+            stopx = max(nbx, pix - width)
+            if stopx > nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            updated_mask[starty:stopy, startx:stopx] = 1
+            updated_data[updated_mask == 1] = masked_color
 
     elif key == 'b':
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
-            starty = 0
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
         else:
             starty = piy - width
+        if (piy + width) >= nby:
+            stopy = max(nby, piy - width)
+            if stopy > nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
         if (pix - width) < 0:
-            startx = 0
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
         else:
             startx = pix - width
-        updated_mask[starty:piy + width + 1, startx:pix + width + 1] = 0
-        updated_data[updated_mask == 1] = masked_color
+        if (pix + width) >= nbx:
+            stopx = max(nbx, pix - width)
+            if stopx > nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            updated_mask[starty:stopy, startx:stopx] = 0
+            updated_data[updated_mask == 1] = masked_color
 
     elif key == 'a':  # restart mask from beginning
         updated_data = np.copy(original_data)
