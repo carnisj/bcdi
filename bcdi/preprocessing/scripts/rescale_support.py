@@ -26,7 +26,7 @@ In reciprocal space, the following convention is used: qx downtream, qz vertical
 
 root_folder = "D:/data/P10_August2020_CDI/data/gold_trunc_custom/"
 support_threshold = 0.05  # in % of the normalized absolute value
-original_shape = [500, 500, 500]  # shape of the array used for phasing and finding the support (after binning_original)
+pynx_shape = [500, 500, 500]  # shape of the array used for phasing and finding the support (after binning_pynx)
 binning_pynx = (1, 1, 1)  # binning that was used in PyNX during phasing
 output_shape = [500, 500, 500]  # shape of the array for later phasing (before binning_output)
 # if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
@@ -35,8 +35,8 @@ flag_interact = True  # if False, will skip thresholding and masking
 filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
 gaussian_sigma = 3.0  # sigma of the gaussian filter
 binary_support = True  # True to save the support as an array of 0 and 1
-reload_support = False  # if True, will load the support which shape is assumed to be the shape after binning_output
-# it is usefull to redo some masking without interpolating again.
+save_intermediate = True  # if True, will save the masked data just after the interactive masking, before applying
+# other filtering and interpolation
 is_ortho = True  # True if the data is already orthogonalized
 center = True  # will center the support based on the center of mass
 flip_reconstruction = False  # True if you want to get the conjugate object
@@ -45,9 +45,9 @@ roll_centering = (0, 0, 0)  # roll applied after masking when centering by cente
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 save_fig = True  # if True, will save the figure of the final support
 comment = ''  # should start with _
-###############################################################################################
-# parameters used when (original_shape*binning_original != output_shape) and (is_ortho=False) #
-###############################################################################################
+###########################################################################################
+# parameters used when (pynx_shape*binning_original != output_shape) and (is_ortho=False) #
+###########################################################################################
 energy = 10235  # in eV
 tilt_angle = 0.5  # in degrees
 distance = 5  # in m
@@ -62,11 +62,6 @@ psf = pu.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=Fa
 ##################################
 # end of user-defined parameters #
 ##################################
-###################
-# define colormap #
-###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
 
 
 def close_event(event):
@@ -171,8 +166,16 @@ def press_key(event):
         pass
 
 
-###############################################
+###################
+# define colormap #
+###################
+colormap = gu.Colormap()
+my_cmap = colormap.cmap
 plt.rcParams["keymap.fullscreen"] = [""]
+
+#################
+# load the data #
+#################
 
 root = tk.Tk()
 root.withdraw()
@@ -187,6 +190,9 @@ if flip_reconstruction:
 
 data = abs(data)  # take the real part
 
+###################################
+# clean interactively the support #
+###################################
 if flag_interact:
     data = data / data.max(initial=None)  # normalize
     data[data < support_threshold] = 0
@@ -199,14 +205,10 @@ if flag_interact:
     plt.disconnect(cid)
     plt.close(fig)
 
-    ###################################
-    # clean interactively the support #
-    ###################################
-    plt.ioff()
-
     #############################################
     # mask the projected data in each dimension #
     #############################################
+    plt.ioff()
     width = 0
     max_colorbar = 5
     flag_aliens = False
@@ -291,6 +293,13 @@ if flag_interact:
     del fig_mask, original_data, original_mask, mask
     gc.collect()
 
+#######################################################
+# optional: save the masked data for future reloading #
+#######################################################
+if save_intermediate:
+    filename = 'intermediate_pynx shape_' + str(pynx_shape) + '_binning pynx_' + str(binning_pynx) + comment
+    np.savez_compressed(root_folder + filename + '.npz', obj=data)
+
 ############################################
 # plot the support with the original shape #
 ############################################
@@ -301,15 +310,15 @@ fig.waitforbuttonpress()
 plt.disconnect(cid)
 plt.close(fig)
 
-#################################
-# Richardson-Lucy deconvolution #
-#################################
+###########################################
+# optional: Richardson-Lucy deconvolution #
+###########################################
 if psf_iterations > 0:
     data = au.deconvolution_rl(data, psf=psf, iterations=psf_iterations, debugging=True)
 
-##################
-# apply a filter #
-##################
+############################
+# optional: apply a filter #
+############################
 if filter_name != 'do_nothing':
 
     comment = comment + '_' + filter_name
@@ -322,6 +331,9 @@ if filter_name != 'do_nothing':
     plt.disconnect(cid)
     plt.close(fig)
 
+#################################################################
+# normalize, threshold and convert the data to a binary support #
+#################################################################
 data = data / data.max(initial=None)  # normalize
 data[data < support_threshold] = 0
 if binary_support:
@@ -330,14 +342,9 @@ if binary_support:
 ############################################
 # go back to original shape before binning #
 ############################################
-if reload_support:
-    binned_shape = [int(output_shape[idx] / binning_output[idx]) for idx in range(0, len(binning_output))]
-else:
-    binned_shape = [int(original_shape[idx] * binning_pynx[idx]) for idx in range(0, len(binning_pynx))]
-nz, ny, nx = binned_shape
-
-data = pu.crop_pad(data, binned_shape)
-print('Data shape after considering original binning and shape:', data.shape)
+unbinned_shape = [int(pynx_shape[idx] * binning_pynx[idx]) for idx in range(0, len(binning_pynx))]
+data = pu.crop_pad(data, unbinned_shape)
+print('Original data shape after considering PyNX binning and PyNX shape:', data.shape)
 
 ######################
 # center the support #
@@ -350,8 +357,7 @@ data = np.roll(data, roll_centering, axis=(0, 1, 2))
 #################################
 # rescale the support if needed #
 #################################
-nbz, nby, nbx = output_shape
-if ((nbz != nz) or (nby != ny) or (nbx != nx)) and not reload_support:
+if output_shape != unbinned_shape:
     print('Interpolating the support to match the output shape of', output_shape)
     if is_ortho:
         # load the original q values to calculate actual real space voxel sizes
@@ -362,9 +368,9 @@ if ((nbz != nz) or (nby != ny) or (nbx != nx)) and not reload_support:
         qy = q_values['qy']  # 1D array
         qz = q_values['qz']  # 1D array
         # crop q to accomodate a shape change of the original array (e.g. cropping to fit FFT shape requirement)
-        qx = pu.crop_pad_1d(qx, binned_shape[0])  # qx along z
-        qy = pu.crop_pad_1d(qy, binned_shape[2])  # qy along x
-        qz = pu.crop_pad_1d(qz, binned_shape[1])  # qz along y
+        qx = pu.crop_pad_1d(qx, unbinned_shape[0])  # qx along z
+        qy = pu.crop_pad_1d(qy, unbinned_shape[2])  # qy along x
+        qz = pu.crop_pad_1d(qz, unbinned_shape[1])  # qz along y
         print('Length(q_original)=', len(qx), len(qz), len(qy), '(qx, qz, qy)')
         voxelsize_z = 2 * np.pi / (qx.max() - qx.min())  # qx along z
         voxelsize_x = 2 * np.pi / (qy.max() - qy.min())  # qy along x
@@ -389,31 +395,32 @@ if ((nbz != nz) or (nby != ny) or (nbx != nx)) and not reload_support:
 
     else:  # data in detector frame
         wavelength = 12.398 * 1e-7 / energy  # in m
-        voxelsize_z = wavelength / (nz * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
-        voxelsize_y = wavelength * distance / (ny * pixel_y) * 1e9  # in nm
-        voxelsize_x = wavelength * distance / (nx * pixel_x) * 1e9  # in nm
+        voxelsize_z = wavelength / (unbinned_shape[0] * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
+        voxelsize_y = wavelength * distance / (unbinned_shape[1] * pixel_y) * 1e9  # in nm
+        voxelsize_x = wavelength * distance / (unbinned_shape[2] * pixel_x) * 1e9  # in nm
 
-        newvoxelsize_z = wavelength / (nbz * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
-        newvoxelsize_y = wavelength * distance / (nby * pixel_y) * 1e9  # in nm
-        newvoxelsize_x = wavelength * distance / (nbx * pixel_x) * 1e9  # in nm
+        newvoxelsize_z = wavelength / (output_shape[0] * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
+        newvoxelsize_y = wavelength * distance / (output_shape[1] * pixel_y) * 1e9  # in nm
+        newvoxelsize_x = wavelength * distance / (output_shape[2] * pixel_x) * 1e9  # in nm
 
     print('Original voxel sizes zyx (nm):', str('{:.2f}'.format(voxelsize_z)), str('{:.2f}'.format(voxelsize_y)),
           str('{:.2f}'.format(voxelsize_x)))
     print('Output voxel sizes zyx (nm):', str('{:.2f}'.format(newvoxelsize_z)), str('{:.2f}'.format(newvoxelsize_y)),
           str('{:.2f}'.format(newvoxelsize_x)))
 
-    rgi = RegularGridInterpolator((np.arange(-nz // 2, nz // 2, 1) * voxelsize_z,
-                                   np.arange(-ny // 2, ny // 2, 1) * voxelsize_y,
-                                   np.arange(-nx // 2, nx // 2, 1) * voxelsize_x),
+    rgi = RegularGridInterpolator((np.arange(-unbinned_shape[0] // unbinned_shape[0], nz // 2, 1) * voxelsize_z,
+                                   np.arange(-unbinned_shape[1] // 2, unbinned_shape[1] // 2, 1) * voxelsize_y,
+                                   np.arange(-unbinned_shape[2] // 2, unbinned_shape[2] // 2, 1) * voxelsize_x),
                                   data, method='linear', bounds_error=False, fill_value=0)
 
-    new_z, new_y, new_x = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * newvoxelsize_z,
-                                      np.arange(-nby // 2, nby // 2, 1) * newvoxelsize_y,
-                                      np.arange(-nbx // 2, nbx // 2, 1) * newvoxelsize_x, indexing='ij')
+    new_z, new_y, new_x = np.meshgrid(np.arange(-output_shape[0] // 2, output_shape[0] // 2, 1) * newvoxelsize_z,
+                                      np.arange(-output_shape[1] // 2, output_shape[1] // 2, 1) * newvoxelsize_y,
+                                      np.arange(-output_shape[2] // 2, output_shape[2] // 2, 1) * newvoxelsize_x,
+                                      indexing='ij')
 
     new_support = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                       new_x.reshape((1, new_z.size)))).transpose())
-    new_support = new_support.reshape((nbz, nby, nbx)).astype(data.dtype)
+    new_support = new_support.reshape(output_shape).astype(data.dtype)
 
     print('Shape after interpolating the support:', new_support.shape)
 
@@ -422,29 +429,23 @@ else:  # no need for interpolation
 
 if binary_support:
     new_support[np.nonzero(new_support)] = 1
-##########################################
-# plot the support with the output shape #
-##########################################
-fig, _, _ = gu.multislices_plot(new_support, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
-                                title='Support after interpolation\n', is_orthogonal=True,
-                                reciprocal_space=False)
-filename = 'support_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) +\
-           '_bin_' + str(binning_output[0]) + '_' + str(binning_output[1]) + '_' + str(binning_output[2]) + comment
-
-if save_fig:
-    fig.savefig(root_folder + filename + '.png')
 
 ##########################################################################
 # crop the new support to accomodate the binning factor in later phasing #
 ##########################################################################
 binned_shape = [int(output_shape[idx] / binning_output[idx]) for idx in range(0, len(binning_output))]
 new_support = pu.crop_pad(new_support, binned_shape)
-print('Final shape after accomodating for later binning:', binned_shape)
+print('Final shape after accomodating for later binning during phase retrieval:', binned_shape)
+filename = 'support_' + str(binned_shape) + '_bin_' + str(binning_output) + comment
 
-###################################
-# save support with the new shape #
-###################################
+###################################################
+# save and plot the support with the output shape #
+###################################################
 np.savez_compressed(root_folder + filename + '.npz', obj=new_support)
-
+fig, _, _ = gu.multislices_plot(new_support, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
+                                title='Support after interpolation\n', is_orthogonal=True,
+                                reciprocal_space=False)
+if save_fig:
+    fig.savefig(root_folder + filename + '.png')
 plt.ioff()
 plt.show()
