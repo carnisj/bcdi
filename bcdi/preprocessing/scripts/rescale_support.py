@@ -26,9 +26,9 @@ In reciprocal space, the following convention is used: qx downtream, qz vertical
 
 root_folder = "D:/data/P10_August2020_CDI/data/gold_trunc_custom/"
 support_threshold = 0.05  # in % of the normalized absolute value
-pynx_shape = [500, 500, 500]  # shape of the array used for phasing and finding the support (after binning_pynx)
+pynx_shape = (500, 500, 500)  # shape of the array used for phasing and finding the support (after binning_pynx)
 binning_pynx = (1, 1, 1)  # binning that was used in PyNX during phasing
-output_shape = [500, 500, 500]  # shape of the array for later phasing (before binning_output)
+output_shape = (500, 500, 500)  # shape of the array for later phasing (before binning_output)
 # if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
 binning_output = (1, 1, 1)  # binning that will be used in PyNX for later phasing
 flag_interact = True  # if False, will skip thresholding and masking
