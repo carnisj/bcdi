@@ -109,8 +109,8 @@ specfile_name = ''
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-direct_beam = (1352, 1362)  # tuple of int (vertical, horizontal): position of the direct beam in pixels
-# this parameter is important for gridding the data onto the laboratory frame
+direct_beam = (1352, 1362)  # tuple of int (vertical, horizontal): position of the direct beam in pixels, in the
+# unbinned detector. This parameter is important for gridding the data onto the laboratory frame.
 roi_detector = []  # [direct_beam[0] - 200, direct_beam[0] + 200, direct_beam[1] - 200, direct_beam[1] + 200]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector.
@@ -326,6 +326,9 @@ def main(parameters):
     if not reload_previous:
         previous_binning = [1, 1, 1]
         reload_orthogonal = False
+    else:
+        print('\nReloading... update the direct beam position taking into account previous_binning')
+        direct_beam = (direct_beam[0] // previous_binning[1], direct_beam[1] // previous_binning[2])
 
     if reload_orthogonal:
         use_rawdata = False
@@ -334,7 +337,7 @@ def main(parameters):
         if reload_orthogonal:  # data already gridded, one can bin the first axis
             pass
         else:  # data in the detector frame, one cannot bin the first axis because it is done during interpolation
-            print('use_rawdata=False: defaulting the binning factor along the stacking dimension to 1')
+            print('\nuse_rawdata=False: defaulting the binning factor along the stacking dimension to 1')
             # the vertical axis y being the rotation axis, binning along z downstream and x outboard will be the same
             binning[0] = 1
             if previous_binning[0] != 1:
@@ -541,6 +544,7 @@ def main(parameters):
             min_range = min(dirbeam, nx - dirbeam)  # crop at the maximum symmetrical range
             print('\nMaximum symmetrical range with defined data along detector horizontal direction:', min_range*2,
                   'pixels')
+            assert min_range > 0, 'error in calculating min_range, check the direct beam position'
 
             if save_rawdata:
                 np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack', data=data)
