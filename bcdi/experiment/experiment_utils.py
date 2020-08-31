@@ -703,40 +703,40 @@ class Detector(object):
         if name == 'Maxipix':
             nb_pixel_x = nb_pixel_x or 516
             nb_pixel_y = nb_pixel_y or 516
-            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
+            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'mpx4inr'
         elif name == 'Eiger2M':
             nb_pixel_x = nb_pixel_x or 1030
             nb_pixel_y = nb_pixel_y or 2164
-            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
+            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = 'ei2minr'
         elif name == 'Eiger4M':
             nb_pixel_x = nb_pixel_x or 2070
             nb_pixel_y = nb_pixel_y or 2167
-            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
+            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = ''  # unused
         elif name == 'Timepix':
             nb_pixel_x = nb_pixel_x or 256
             nb_pixel_y = nb_pixel_y or 256
-            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
+            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = ''  # unused
         elif name == 'Merlin':
             nb_pixel_x = nb_pixel_x or 515
             nb_pixel_y = nb_pixel_y or 515
-            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
+            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'alba2'
