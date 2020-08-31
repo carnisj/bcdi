@@ -80,7 +80,6 @@ def main(parameters):
 
     :param parameters: dictionnary containing input parameters
     """
-    global sumdata, mask, counter
 
     def collect_result(result):
         """
@@ -89,7 +88,7 @@ def main(parameters):
         :param result: the output of load_p10_file, containing the 2d data, 2d mask, counter for each frame, and the
          file index
         """
-        global sumdata, mask, counter
+        nonlocal sumdata, mask, counter
         # result is a tuple: data, mask, counter, file_index
         sumdata = sumdata + result[0]
         mask[np.nonzero(result[1])] = 1
