@@ -75,7 +75,7 @@ if load_qvalues:
 fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                 title='Cropped data', is_orthogonal=is_orthogonal,
                                 reciprocal_space=reciprocal_space)
-
+fig.savefig(datadir + 'cropped_data_' + comment + '.png')
 print('End of script')
 plt.ioff()
 plt.show()
