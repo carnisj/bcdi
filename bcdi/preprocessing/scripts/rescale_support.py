@@ -407,7 +407,7 @@ if output_shape != unbinned_shape:
     print('Output voxel sizes zyx (nm):', str('{:.2f}'.format(newvoxelsize_z)), str('{:.2f}'.format(newvoxelsize_y)),
           str('{:.2f}'.format(newvoxelsize_x)))
 
-    rgi = RegularGridInterpolator((np.arange(-unbinned_shape[0] // unbinned_shape[0], nz // 2, 1) * voxelsize_z,
+    rgi = RegularGridInterpolator((np.arange(-unbinned_shape[0] // 2, unbinned_shape[0] // 2, 1) * voxelsize_z,
                                    np.arange(-unbinned_shape[1] // 2, unbinned_shape[1] // 2, 1) * voxelsize_y,
                                    np.arange(-unbinned_shape[2] // 2, unbinned_shape[2] // 2, 1) * voxelsize_x),
                                   data, method='linear', bounds_error=False, fill_value=0)
