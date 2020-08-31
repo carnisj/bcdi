@@ -51,14 +51,14 @@ data, _ = util.load_file(file_path)
 
 data = pu.crop_pad(data, output_shape=output_shape, crop_center=roi_center, debugging=debug)
 comment = str(output_shape[0]) + '_' + str(output_shape[1]) + '_' + str(output_shape[2]) + comment + '.npz'
-np.savez_compressed(datadir + 'combined_pynx_' + comment, data=data)
+np.savez_compressed(datadir + 'cropped_data' + comment, data=data)
 
 if load_mask:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the mask file",
                                            filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
     mask, _ = util.load_file(file_path)
     mask = pu.crop_pad(mask, output_shape=output_shape, crop_center=roi_center, debugging=False)
-    np.savez_compressed(datadir + 'combined_maskpynx_' + comment, mask=mask)
+    np.savez_compressed(datadir + 'cropped_mask' + comment, mask=mask)
 
 if load_qvalues:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the file containing q values",
@@ -70,7 +70,8 @@ if load_qvalues:
     qx = pu.crop_pad_1d(qx, output_shape[0], crop_center=roi_center[0])  # qx along z
     qy = pu.crop_pad_1d(qy, output_shape[2], crop_center=roi_center[1])  # qy along x
     qz = pu.crop_pad_1d(qz, output_shape[1], crop_center=roi_center[2])  # qz along y
-
+    np.savez_compressed(datadir + 'cropped_qvalues' + comment, qx=qx, qz=qz, qy=qy)
+    
 fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                 title='Cropped data', is_orthogonal=is_orthogonal,
                                 reciprocal_space=reciprocal_space)
