@@ -185,6 +185,20 @@ def gaussian(x_axis, amp, cen, sig):
     return amp*np.exp(-(x_axis-cen)**2/(2.*sig**2))
 
 
+def is_numeric(string):
+    """
+    Return True is the string represents a number.
+
+    :param string: the string to be checked
+    :return: True of False
+    """
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
+
+
 def load_file(file_path, fieldname=None):
     """
     Load a file. In case of .cxi or .h5 file, it will use a default path to the data.
