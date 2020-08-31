@@ -2963,9 +2963,9 @@ def motor_positions_p10(logfile, setup):
             if 'mu' in words and '=' in words:  # template for positioners: 'mu = 0.0\n'
                 mu = float(words[2])
 
-            if index_om and words[0].isnumeric():  # we are reading data and index_om is defined (outofplane case)
+            if index_om is not None and words[0].isnumeric():  # reading data and index_om is defined (outofplane case)
                 om.append(float(words[index_om]))
-            if index_om and words[0].isnumeric():  # we are reading data and index_phi is defined (inplane case)
+            if index_phi is not None and words[0].isnumeric():  # reading data and index_phi is defined (inplane case)
                 phi.append(float(words[index_phi]))
 
         if setup.rocking_angle == "outofplane":
@@ -3011,7 +3011,7 @@ def motor_positions_p10_saxs(logfile, setup):
                     # template = ' Col 0 sprz DOUBLE\n'
                     index_phi = int(words[1]) - 1  # python index starts at 0
                     print(words, '  Index Phi=', index_phi)
-            if index_phi and words[0].isnumeric():  # we are reading data and index_phi is defined
+            if index_phi is not None and words[0].isnumeric():  # we are reading data and index_phi is defined
                 phi.append(float(words[index_phi]))
 
         phi = np.asarray(phi, dtype=float)
@@ -3746,7 +3746,7 @@ def scan_motor_p10(logfile, motor_name):
         if 'Col' in words and motor_name in words:  # motor_name scanned, template = ' Col 0 motor_name DOUBLE\n'
             index_motor = int(words[1]) - 1  # python index starts at 0
 
-        if index_motor and words[0].isnumeric():  # we are reading data and index_motor is defined
+        if index_motor is not None and words[0].isnumeric():  # we are reading data and index_motor is defined
             motor_pos.append(float(words[index_motor]))
 
     fio.close()
