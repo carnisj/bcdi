@@ -40,25 +40,25 @@ data in:                                                       /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [22]  # list or array of scan numbers
-root_folder = "D:/data/P10_August2019_CDI/data/"
-sample_name = ['gold_2_2_2']  # "S"  # # list of sample names. If only one name is indicated,
+scans = [32]  # list or array of scan numbers
+root_folder = "D:/data/P10_March2020_CDI/data/"
+sample_name = ['ht_pillar3']  # "S"  # # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
-user_comment = '_testgrid'  # string, should start with "_"
+user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = [1, 1, 1]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = False  # True to interact with plots, False to close it automatically
+flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
 normalize_method = 'skip'  # 'skip' for no normalization, 'monitor' to use the default monitor, 'sum_roi' to normalize
 # by the intensity summed in normalize_roi
-normalize_roi = []  # roi for the integration of intensity used as a monitor for data normalization
+normalize_roi = [0, 250, 500, 1500]  # roi for the integration of intensity used as a monitor for data normalization
 # [Vstart, Vstop, Hstart, Hstop]
 #################################
 # parameters for data filtering #
@@ -73,15 +73,15 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 #################################################
 # parameters used when reloading processed data #
 #################################################
-reload_previous = False  # True to resume a previous masking (load data and mask)
-reload_orthogonal = True  # True if the reloaded data is already intepolated in an orthonormal frame
-previous_binning = [1, 1, 1]  # binning factors in each dimension of the binned data to be reloaded
+reload_previous = True  # True to resume a previous masking (load data and mask)
+reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
+previous_binning = [1, 2, 2]  # binning factors in each dimension of the binned data to be reloaded
 save_previous = False  # if True, will save the previous data and mask
 ##################
 # saving options #
 ##################
 save_rawdata = False  # save also the raw data when use_rawdata is False
-save_to_npz = False  # True to save the processed data in npz format
+save_to_npz = True  # True to save the processed data in npz format
 save_to_mat = False  # True to save the processed data in mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
 save_asint = False  # if True, the result will be saved as an array of integers (save space)
@@ -95,8 +95,9 @@ is_series = True  # specific to series measurement at P10
 
 custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available
-custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
-custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan
+custom_images = None  # [10*i+929+j for i in range(92) for j in range(8)]
+# custom_images.append(1849)  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
+custom_monitor = None  # np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 
 specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
@@ -109,9 +110,9 @@ specfile_name = ''
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-direct_beam = (1352, 1362)  # tuple of int (vertical, horizontal): position of the direct beam in pixels, in the
+direct_beam = (1255, 1161)  # tuple of int (vertical, horizontal): position of the direct beam in pixels, in the
 # unbinned detector. This parameter is important for gridding the data onto the laboratory frame.
-roi_detector = []  # [direct_beam[0] - 200, direct_beam[0] + 200, direct_beam[1] - 200, direct_beam[1] + 200]
+roi_detector = []  # [direct_beam[0] - 150, direct_beam[0] + 150, direct_beam[1] - 213, direct_beam[1] + 213]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as [] to use the full detector.
 photon_threshold = 0  # data[data < photon_threshold] = 0
@@ -125,7 +126,7 @@ template_imagefile = '_master.h5'  # ''_data_%06d.h5'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
-# template for P10: '_master.h5' for normal scan
+# template for P10: '_master.h5' for normal scan,
 nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 ######################################################################
@@ -136,8 +137,8 @@ correct_curvature = False  # True to correcture q values for the curvature of Ew
 fit_datarange = False  # if True, crop the final array within data range, avoiding areas at the corners of the window
 # viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
 sdd = 5.0  # sample to detector distance in m, used only if use_rawdata is False
-energy = 10235  # x-ray energy in eV, used only if use_rawdata is False
-custom_motors = {"hprz": np.linspace(0, 184, num=369, endpoint=True)}
+energy = 10000  # x-ray energy in eV, used only if use_rawdata is False
+custom_motors = None  # {"hprz": np.linspace(0, 184, num=737, endpoint=True)}
 # use this to declare motor positions if there is not log file
 # example: {"hprz": np.linspace(16.989, 18.989, num=100, endpoint=False)}
 # P10: hprz for the inplane rotation
@@ -168,8 +169,8 @@ def main(parameters):
 
     :param parameters: dictionnary containing input parameters
     """
-    global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text
+    # global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
+    # global xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text
 
     def close_event(event):
         """
@@ -187,7 +188,7 @@ def main(parameters):
 
         :param event: mouse click event
         """
-        global xy, flag_pause, previous_axis
+        nonlocal xy, flag_pause, previous_axis
         if not event.inaxes:
             return
         if not flag_pause:
@@ -208,8 +209,8 @@ def main(parameters):
 
         :param event: button press event
         """
-        global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-        global xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text
+        nonlocal original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
+        nonlocal xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text, my_cmap
 
         try:
             if event.inaxes == ax0:
@@ -233,7 +234,7 @@ def main(parameters):
                                                   piy=int(np.rint(event.ydata)), original_data=original_data,
                                                   original_mask=original_mask, updated_data=data, updated_mask=mask,
                                                   axes=(ax0, ax1, ax2), width=width, dim=dim, frame_index=frame_index,
-                                                  vmin=0, vmax=max_colorbar, invert_yaxis=invert_yaxis)
+                                                  vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=invert_yaxis)
                 elif flag_mask:
                     if previous_axis == ax0:
                         click_dim = 0
@@ -257,7 +258,7 @@ def main(parameters):
                                                 original_mask=mask, updated_data=data, updated_mask=updated_mask,
                                                 axes=(ax0, ax1, ax2), flag_pause=flag_pause, points=points,
                                                 xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
-                                                vmin=0, vmax=max_colorbar, invert_yaxis=invert_yaxis)
+                                                vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=invert_yaxis)
 
                     if click_dim is None:
                         previous_axis = None
@@ -354,6 +355,13 @@ def main(parameters):
     else:
         print('sample_name should be either a string or a list of strings')
         sys.exit()
+
+    ###################
+    # define colormap #
+    ###################
+    colormap = gu.Colormap()
+    my_cmap = colormap.cmap
+    plt.rcParams["keymap.fullscreen"] = [""]
 
     #######################
     # Initialize detector #
@@ -542,8 +550,8 @@ def main(parameters):
             dirbeam = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
             # updated horizontal direct beam
             min_range = min(dirbeam, nx - dirbeam)  # crop at the maximum symmetrical range
-            print('\nMaximum symmetrical range with defined data along detector horizontal direction:', min_range*2,
-                  'pixels')
+            print('\nMaximum symmetrical range with defined data along'
+                  ' detector horizontal direction: 2*{0} pixels'.format(min_range))
             assert min_range > 0, 'error in calculating min_range, check the direct beam position'
 
             if save_rawdata:
@@ -573,9 +581,9 @@ def main(parameters):
                 original_data = np.copy(data)
                 updated_mask = np.zeros((nz, ny, nx))
                 data[mask == 1] = 0  # will appear as grey in the log plot (nan)
-                ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar)
-                ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar)
-                ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar)
+                ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+                ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+                ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
                 ax0.axis('scaled')
                 ax1.axis('scaled')
                 ax2.axis('scaled')
@@ -741,9 +749,9 @@ def main(parameters):
             original_data = np.copy(data)
             original_mask = np.copy(mask)
             frame_index = [0, 0, 0]
-            ax0.imshow(data[frame_index[0], :, :], vmin=0, vmax=max_colorbar)
-            ax1.imshow(data[:, frame_index[1], :], vmin=0, vmax=max_colorbar)
-            ax2.imshow(data[:, :, frame_index[2]], vmin=0, vmax=max_colorbar)
+            ax0.imshow(data[frame_index[0], :, :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+            ax1.imshow(data[:, frame_index[1], :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+            ax2.imshow(data[:, :, frame_index[2]], vmin=0, vmax=max_colorbar, cmap=my_cmap)
             ax3.set_visible(False)
             ax0.axis('scaled')
             ax1.axis('scaled')
@@ -801,9 +809,9 @@ def main(parameters):
             original_data = np.copy(data)
             updated_mask = np.zeros((nz, ny, nx))
             data[mask == 1] = 0  # will appear as grey in the log plot (nan)
-            ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar)
-            ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar)
-            ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar)
+            ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+            ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+            ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
             ax3.set_visible(False)
             ax0.axis('scaled')
             ax1.axis('scaled')
