@@ -176,7 +176,6 @@ plt.rcParams["keymap.fullscreen"] = [""]
 #################
 # load the data #
 #################
-
 root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the reconstruction",
