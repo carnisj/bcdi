@@ -32,7 +32,7 @@ output_shape = (500, 500, 500)  # shape of the array for later phasing (before b
 # if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
 binning_output = (1, 1, 1)  # binning that will be used in PyNX for later phasing
 flag_interact = True  # if False, will skip thresholding and masking
-filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'do_nothing' or 'gaussian_highpass'
+filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'skip' or 'gaussian_highpass'
 gaussian_sigma = 3.0  # sigma of the gaussian filter
 binary_support = True  # True to save the support as an array of 0 and 1
 save_intermediate = True  # if True, will save the masked data just after the interactive masking, before applying
@@ -322,7 +322,7 @@ if psf_iterations > 0:
 ############################
 # optional: apply a filter #
 ############################
-if filter_name != 'do_nothing':
+if filter_name != 'skip':
 
     comment = comment + '_' + filter_name
     data = pu.filter_3d(data, filter_name=filter_name, sigma=gaussian_sigma, debugging=True)
