@@ -209,7 +209,7 @@ if flag_interact:
     #############################################
     plt.ioff()
     width = 0
-    max_colorbar = 5
+    max_colorbar = np.rint(np.log10(max(data.shape) * data.max()))
     flag_aliens = False
     flag_mask = True
     flag_pause = False  # press x to pause for pan/zoom
@@ -235,9 +235,9 @@ if flag_interact:
     ax1.set_title("XZ")
     ax2.set_title("YZ")
     fig_mask.text(0.60, 0.45, "click to select the vertices of a polygon mask", size=12)
-    fig_mask.text(0.60, 0.40, "then p to apply and see the result", size=12)
+    fig_mask.text(0.60, 0.40, "then p to apply and see the result; r to reset points", size=12)
     fig_mask.text(0.60, 0.30, "x to pause/resume masking for pan/zoom", size=12)
-    fig_mask.text(0.60, 0.25, "up larger masking box ; down smaller masking box", size=12)
+    fig_mask.text(0.60, 0.25, "up/down larger/smaller masking box ; f fill", size=12)
     fig_mask.text(0.60, 0.20, "m mask ; b unmask ; right darker ; left brighter", size=12)
     fig_mask.text(0.60, 0.15, "p plot full masked data ; a restart ; q quit", size=12)
     info_text = fig_mask.text(0.60, 0.05, "masking enabled", size=16)
@@ -247,9 +247,13 @@ if flag_interact:
     fig_mask.set_facecolor(background_plot)
     plt.show()
 
-    mask[np.nonzero(updated_mask)] = 1
     data = original_data
+    mask[updated_mask == -1] = -1  # these voxels will be filled
+    updated_mask[updated_mask == -1] = 0
+    mask[np.nonzero(updated_mask)] = 1  # these voxels will be masked
+    data[mask == -1] = data.max(initial=None)
     data[mask == 1] = 0
+    mask[mask == -1] = 0  # clear the filled points from the mask since we do not want to mask them later
     del fig_mask, flag_pause, flag_mask, original_data, updated_mask
     gc.collect()
 
@@ -258,7 +262,7 @@ if flag_interact:
     ############################################
     nz, ny, nx = np.shape(data)
     width = 5
-    max_colorbar = 5
+    max_colorbar = 1
     flag_mask = False
     flag_aliens = True
 
