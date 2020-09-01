@@ -151,7 +151,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         raise TypeError('Expected "tuple_array" to be a tuple')
     try:
         assert len(tuple_sum_frames) == nb_subplots, 'len(tuple_sum_frames) incompatible with the numer of arrays'
-    except TypeError:  # it is a number
+    except TypeError:  # it is a boolean or a number
         tuple_sum_frames = (tuple_sum_frames,) * nb_subplots
     try:
         assert len(tuple_sum_axis) == nb_subplots, 'len(tuple_sum_axis) incompatible with the numer of arrays'
@@ -167,7 +167,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         tuple_width_h = (tuple_width_h,) * nb_subplots
     try:
         assert len(tuple_colorbar) == nb_subplots, 'len(tuple_colorbar) incompatible with the numer of arrays'
-    except TypeError:  # it is a number
+    except TypeError:  # it is a boolean or a number
         tuple_colorbar = (tuple_colorbar,) * nb_subplots
     try:
         assert len(tuple_vmin) == nb_subplots, 'len(tuple_vmin) incompatible with the numer of arrays'
@@ -177,13 +177,13 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         assert len(tuple_vmax) == nb_subplots, 'len(tuple_vmax) incompatible with the numer of arrays'
     except TypeError:  # it is a number
         tuple_vmax = (tuple_vmax,) * nb_subplots
-    try:
+    if isinstance(tuple_title, tuple):
         assert len(tuple_title) == nb_subplots, 'len(tuple_title) incompatible with the numer of arrays'
-    except TypeError:  # it is a number
+    else:  # it is a string or a number
         tuple_title = (tuple_title,) * nb_subplots
-    try:
+    if isinstance(tuple_scale, tuple):
         assert len(tuple_scale) == nb_subplots, 'len(tuple_scale) incompatible with the numer of arrays'
-    except TypeError:  # it is a number
+    else:  # it is a string or a number
         tuple_scale = (tuple_scale,) * nb_subplots
 
     # default values for kwargs
@@ -195,15 +195,15 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     for k in kwargs.keys():
         if k in ['xlabel']:
             xlabel = kwargs['xlabel']
-            try:
+            if isinstance(xlabel, tuple):
                 assert len(xlabel) == nb_subplots, 'len(xlabel) incompatible with the numer of arrays'
-            except TypeError:  # it is a number
+            else:  # it is a string or a number
                 xlabel = (xlabel,) * nb_subplots
         elif k in ['ylabel']:
             ylabel = kwargs['ylabel']
-            try:
+            if isinstance(ylabel, tuple):
                 assert len(ylabel) == nb_subplots, 'len(ylabel) incompatible with the numer of arrays'
-            except TypeError:  # it is a number
+            else:  # it is a string or a number
                 ylabel = (ylabel,) * nb_subplots
         elif k in ['position']:
             position = kwargs['position']
@@ -215,7 +215,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             invert_y = kwargs['invert_y']
             try:
                 assert len(invert_y) == nb_subplots, 'len(invert_y) incompatible with the numer of arrays'
-            except TypeError:  # it is a number
+            except TypeError:  # it is a boolean or number
                 invert_y = (invert_y,) * nb_subplots
         else:
             print(k)
@@ -1100,9 +1100,9 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
         assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
     except TypeError:  # it is a number or a string
         distance = [distance for _ in range(nb_plots)]
-    try:
+    if isinstance(title, tuple):
         assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
-    except TypeError:  # it is a string
+    else:  # it is a string or a number
         title = [title + '_' + str(idx) for idx in range(nb_plots)]
 
     # plot the contour3d figure
@@ -1194,9 +1194,9 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
         assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
     except TypeError:  # it is a number
         distance = [distance for _ in range(nb_plots)]
-    try:
+    if isinstance(title, tuple):
         assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
-    except TypeError:  # it is a number
+    else:  # it is a string or a number
         title = [title + '_' + str(idx) for idx in range(nb_plots)]
 
     # plot the points3d figure
@@ -1623,9 +1623,9 @@ def scatter_plot(array, labels, markersize=4, markercolor='b', title=''):
     if array.ndim != 2:
         raise ValueError('array should be 2D')
     ndim = array.shape[1]
-    try:
+    if isinstance(labels, tuple):
         assert len(labels) == ndim, 'len(labels) is different from the number of columns in the array'
-    except TypeError:  # it is a number
+    else:  # it is a string or a number
         labels = (labels,) * ndim
 
     plt.ion()
@@ -1676,17 +1676,17 @@ def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=''):
     ndim = arrays[0].shape[1]
     nb_arrays = len(arrays)
 
-    try:
+    if isinstance(labels, tuple):
         assert len(labels) == ndim, 'len(labels) is different from the number of columns in the array'
-    except TypeError:  # it is a number
+    else:  # it is a string or a number
         labels = (labels,) * ndim
     try:
         assert len(markersizes) == ndim, 'len(markersizes) is different from the number of arrays'
     except TypeError:  # it is a number
         markersizes = (markersizes,) * nb_arrays
-    try:
+    if isinstance(markercolors, tuple):
         assert len(markercolors) == ndim, 'len(markercolors) is different from the number of arrays'
-    except TypeError:  # it is a number
+    else:  # it is a string or a number
         markercolors = (markercolors,) * nb_arrays
 
     plt.ion()
