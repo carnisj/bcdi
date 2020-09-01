@@ -2669,7 +2669,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     :param xy: the list of vertices which defines a polygon to be masked
     :param width: the half_width of the masking window
     :param dim: the axis currently under review (axis 0, 1 or 2)
-    :param click_dim: the dimension (0, 1 or 2) here the selection of mask polygon vertices by clicking was performed
+    :param click_dim: the dimension (0, 1 or 2) where the selection of mask polygon vertices by clicking was performed
     :param info_text: text instance in the figure
     :param vmax: the higher boundary for the colorbar
     :param vmin: the lower boundary for the colorbar
@@ -2800,6 +2800,48 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
                 updated_mask[starty:stopy, startx:stopx, :] = 0
                 updated_data[starty:stopy, startx:stopx, :] = \
                     original_data[starty:stopy, startx:stopx, :]
+
+    elif key == 'f':  # fill with ones
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        if (piy - width) < 0:
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
+        else:
+            starty = piy - width
+        if (piy + width) >= current_nby:
+            stopy = max(current_nby, piy - width)
+            if stopy > current_nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        if (pix - width) < 0:
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
+        else:
+            startx = pix - width
+        if (pix + width) >= current_nbx:
+            stopx = max(current_nbx, pix - width)
+            if stopx > current_nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            if dim == 0:
+                updated_mask[:, starty:stopy, startx:stopx] = -1
+                updated_data[:, starty:stopy, startx:stopx] = original_data.max()
+            elif dim == 1:
+                updated_mask[starty:stopy, :, startx:stopx] = -1
+                updated_data[starty:stopy, :, startx:stopx] = original_data.max()
+            else:  # dim=2
+                updated_mask[starty:stopy, startx:stopx, :] = -1
+                updated_data[starty:stopy, startx:stopx, :] = original_data.max()
 
     elif key == 'a':  # restart mask from beginning
         updated_data = np.copy(original_data)
