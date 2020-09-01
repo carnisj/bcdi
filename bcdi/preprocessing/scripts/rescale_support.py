@@ -13,7 +13,7 @@ import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
-import bcdi.algorithms.algorithms_utils as au
+import bcdi.algorithms.algorithms_utils as algu
 import bcdi.utils.utilities as util
 
 helptext = """
@@ -32,7 +32,7 @@ output_shape = (500, 500, 500)  # shape of the array for later phasing (before b
 # if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
 binning_output = (1, 1, 1)  # binning that will be used in PyNX for later phasing
 flag_interact = True  # if False, will skip thresholding and masking
-filter_name = 'gaussian_highpass'  # apply a filtering kernel to the support, 'skip' or 'gaussian_highpass'
+filter_name = 'skip'  # apply a filtering kernel to the support, 'skip' or 'gaussian_highpass'
 gaussian_sigma = 3.0  # sigma of the gaussian filter
 binary_support = True  # True to save the support as an array of 0 and 1
 save_intermediate = True  # if True, will save the masked data just after the interactive masking, before applying
@@ -44,7 +44,7 @@ roll_modes = (0, 0, 0)  # correct a roll of few pixels after the decomposition i
 roll_centering = (0, 0, 0)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 save_fig = True  # if True, will save the figure of the final support
-comment = ''  # should start with _
+comment = 'test'  # should start with _
 ###########################################################################################
 # parameters used when (pynx_shape*binning_original != output_shape) and (is_ortho=False) #
 ###########################################################################################
@@ -317,7 +317,7 @@ plt.close(fig)
 # optional: Richardson-Lucy deconvolution #
 ###########################################
 if psf_iterations > 0:
-    data = au.deconvolution_rl(data, psf=psf, iterations=psf_iterations, debugging=True)
+    data = algu.deconvolution_rl(data, psf=psf, iterations=psf_iterations, debugging=True)
 
 ############################
 # optional: apply a filter #
@@ -360,7 +360,7 @@ data = np.roll(data, roll_centering, axis=(0, 1, 2))
 #################################
 # rescale the support if needed #
 #################################
-if output_shape != unbinned_shape:
+if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodate for different object types
     print('Interpolating the support to match the output shape of', output_shape)
     if is_ortho:
         # load the original q values to calculate actual real space voxel sizes
@@ -450,5 +450,7 @@ fig, _, _ = gu.multislices_plot(new_support, sum_frames=False, scale='linear', p
                                 reciprocal_space=False)
 if save_fig:
     fig.savefig(root_folder + filename + '.png')
+
+print('End of script')
 plt.ioff()
 plt.show()
