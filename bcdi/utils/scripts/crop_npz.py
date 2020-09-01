@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
+import gc
 import matplotlib.pyplot as plt
 import sys
 import tkinter as tk
@@ -53,6 +54,13 @@ data = pu.crop_pad(data, output_shape=output_shape, crop_center=roi_center, debu
 comment = str(output_shape[0]) + '_' + str(output_shape[1]) + '_' + str(output_shape[2]) + comment + '.npz'
 np.savez_compressed(datadir + 'cropped_data_' + comment, data=data)
 
+fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                title='Cropped data', is_orthogonal=is_orthogonal,
+                                reciprocal_space=reciprocal_space)
+fig.savefig(datadir + 'cropped_data_' + comment + '.png')
+del data
+gc.collect()
+
 if load_mask:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the mask file",
                                            filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
@@ -72,10 +80,6 @@ if load_qvalues:
     qz = pu.crop_pad_1d(qz, output_shape[1], crop_center=roi_center[2])  # qz along y
     np.savez_compressed(datadir + 'cropped_qvalues_' + comment, qx=qx, qz=qz, qy=qy)
 
-fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                title='Cropped data', is_orthogonal=is_orthogonal,
-                                reciprocal_space=reciprocal_space)
-fig.savefig(datadir + 'cropped_data_' + comment + '.png')
 print('End of script')
 plt.ioff()
 plt.show()
