@@ -209,7 +209,7 @@ if flag_interact:
     #############################################
     plt.ioff()
     width = 0
-    max_colorbar = np.rint(np.log10(max(data.shape) * data.max()))
+    max_colorbar = np.rint(np.log10(max(data.shape) * data.max(initial=None)))
     flag_aliens = False
     flag_mask = True
     flag_pause = False  # press x to pause for pan/zoom
