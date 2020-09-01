@@ -291,8 +291,9 @@ if flag_interact:
     fig_mask.set_facecolor(background_plot)
     plt.show()
 
+    mask[mask == -1] = 0  # clear the filled points from the mask since we do not want to mask them later
     mask[np.nonzero(mask)] = 1
-    data[mask == 1] = 0
+    data[np.nonzero(mask)] = 0
     del fig_mask, original_data, original_mask, mask
     gc.collect()
 
