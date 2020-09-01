@@ -21,7 +21,7 @@ Crop a stacked 3D dataset saved in NPZ format, to the desired region of interest
 """
 
 homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
-datadir = homedir  + 'ht_pillar3_combined/pynxraw/'
+datadir = homedir + 'ht_pillar3_combined/pynxraw/'
 roi_center = [675, 470, 296]  # center of the region of interest
 output_shape = [100, 100, 100]  # shape of the output file
 load_mask = True  # True to load the mask and crop it
@@ -46,7 +46,7 @@ my_cmap = colormap.cmap
 root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the data file",
-                                       filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5") ])
+                                       filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
 data, _ = util.load_file(file_path)
 
 data = pu.crop_pad(data, output_shape=output_shape, crop_center=roi_center, debugging=debug)
