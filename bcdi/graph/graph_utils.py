@@ -2154,6 +2154,48 @@ def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_
                 updated_mask[starty:stopy, startx:stopx, frame_index[2]] = \
                     original_mask[starty:stopy, startx:stopx, frame_index[2]]
 
+    elif key == 'f':  # fill empty voxels
+        skip = False
+
+        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        if (piy - width) < 0:
+            starty = min(0, piy + width)
+            if starty < 0:
+                skip = True
+        else:
+            starty = piy - width
+        if (piy + width) >= current_nby:
+            stopy = max(current_nby, piy - width)
+            if stopy > current_nby:
+                skip = True
+        else:
+            stopy = piy + width + 1
+
+        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        if (pix - width) < 0:
+            startx = min(0, pix + width)
+            if startx < 0:
+                skip = True
+        else:
+            startx = pix - width
+        if (pix + width) >= current_nbx:
+            stopx = max(current_nbx, pix - width)
+            if stopx > current_nbx:
+                skip = True
+        else:
+            stopx = pix + width + 1
+
+        if not skip:
+            if dim == 0:
+                updated_data[frame_index[0], starty:stopy, startx:stopx] = original_data.max()
+                updated_mask[frame_index[0], starty:stopy, startx:stopx] = -1
+            elif dim == 1:
+                updated_data[starty:stopy, frame_index[1], startx:stopx] = original_data.max()
+                updated_mask[starty:stopy, frame_index[1], startx:stopx] = -1
+            else:  # dim=2
+                updated_data[starty:stopy, startx:stopx, frame_index[2]] = original_data.max()
+                updated_mask[starty:stopy, startx:stopx, frame_index[2]] = -1
+
     elif key == 'p' or key == 'a':  # plot full image or restart masking
         xmin0, xmax0 = -0.5, nbx - 0.5
         if invert_yaxis:
