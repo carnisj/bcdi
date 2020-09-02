@@ -41,13 +41,13 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 329  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
+scans = 2227  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/Nanomax/"
-sample_name = [""]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
+root_folder = "D:/data/CH4760/"
+sample_name = ["S"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -67,7 +67,7 @@ fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg] consid
 # It is useful if hotpixels or intense aliens. Leave it [] otherwise.
 fix_size = []  # crop the array to predefined size considering the full detector,
 # leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop]. ROI will be defaulted to []
-center_fft = 'skip'
+center_fft = 'crop_sym_ZYX'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'skip'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
@@ -80,7 +80,7 @@ normalize_flux = 'skip'  # 'monitor' to normalize the intensity by the default m
 # parameters for data filtering #
 #################################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
-flag_medianfilter = 'skip'
+flag_medianfilter = 'interp_isolated'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -104,7 +104,7 @@ save_asint = False  # if True, the result will be saved as an array of integers 
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'NANOMAX'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX', '34ID'
 is_series = False  # specific to series measurement at P10
 
@@ -115,7 +115,7 @@ custom_monitor = np.ones(51)  # monitor values for normalization for the custom_
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = ''
+specfile_name = 'alignment'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -127,12 +127,12 @@ specfile_name = ''
 ###############################
 # detector related parameters #
 ###############################
-detector = "Merlin"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 160  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 325  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+x_bragg = 216  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 221  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = [y_bragg-160, y_bragg+160, x_bragg-160, x_bragg+160]  # [553, 1063, 1041, 1701]
+roi_detector = []  # [y_bragg-160, y_bragg+160, x_bragg-160, x_bragg+160]  # [553, 1063, 1041, 1701]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -144,7 +144,7 @@ photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon thre
 background_file = ''  # root_folder + 'background.npz'  #
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = '%06d.h5'
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -152,6 +152,8 @@ template_imagefile = '%06d.h5'
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
@@ -229,7 +231,7 @@ def press_key(event):
     :param event: button press event
     """
     global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, info_text
+    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, info_text, my_cmap
 
     try:
         if event.inaxes == ax0:
@@ -252,7 +254,7 @@ def press_key(event):
                                               piy=int(np.rint(event.ydata)), original_data=original_data,
                                               original_mask=original_mask, updated_data=data, updated_mask=mask,
                                               axes=(ax0, ax1, ax2, ax3), width=width, dim=dim, frame_index=frame_index,
-                                              vmin=0, vmax=max_colorbar, invert_yaxis=not use_rawdata)
+                                              vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=not use_rawdata)
             elif flag_mask:
                 if previous_axis == ax0:
                     click_dim = 0
@@ -276,7 +278,7 @@ def press_key(event):
                                             original_mask=mask, updated_data=data, updated_mask=updated_mask,
                                             axes=(ax0, ax1, ax2, ax3), flag_pause=flag_pause, points=points,
                                             xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
-                                            vmin=0, vmax=max_colorbar, invert_yaxis=not use_rawdata)
+                                            vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=not use_rawdata)
                 if click_dim is None:
                     previous_axis = None
             else:
@@ -331,20 +333,23 @@ else:
     print('sample_name should be either a string or a list of strings')
     sys.exit()
 
+###################
+# define colormap #
+###################
+colormap = gu.Colormap()
+my_cmap = colormap.cmap
+plt.rcParams["keymap.fullscreen"] = [""]
+
 #######################
 # Initialize detector #
 #######################
 kwargs = dict()  # create dictionnary
 kwargs['is_series'] = is_series
 kwargs['previous_binning'] = previous_binning
-try:
+if nb_pixel_x:
     kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
-except NameError:  # nb_pixel_x not declared
-    pass
-try:
+if nb_pixel_y:
     kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
-except NameError:  # nb_pixel_y not declared
-    pass
 
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
                         binning=binning, **kwargs)
@@ -705,9 +710,9 @@ for scan_nb in range(len(scans)):
         original_data = np.copy(data)
         original_mask = np.copy(mask)
         frame_index = starting_frame
-        ax0.imshow(data[frame_index[0], :, :], vmin=0, vmax=max_colorbar)
-        ax1.imshow(data[:, frame_index[1], :], vmin=0, vmax=max_colorbar)
-        ax2.imshow(data[:, :, frame_index[2]], vmin=0, vmax=max_colorbar)
+        ax0.imshow(data[frame_index[0], :, :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax1.imshow(data[:, frame_index[1], :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax2.imshow(data[:, :, frame_index[2]], vmin=0, vmax=max_colorbar, cmap=my_cmap)
         ax3.set_visible(False)
         ax0.axis('scaled')
         ax1.axis('scaled')
@@ -767,9 +772,9 @@ for scan_nb in range(len(scans)):
         original_data = np.copy(data)
         updated_mask = np.zeros((nz, ny, nx))
         data[mask == 1] = 0  # will appear as grey in the log plot (nan)
-        ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar)
-        ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar)
-        ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar)
+        ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
         ax3.set_visible(False)
         ax0.axis('scaled')
         ax1.axis('scaled')
