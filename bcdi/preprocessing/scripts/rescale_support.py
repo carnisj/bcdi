@@ -25,7 +25,7 @@ In reciprocal space, the following convention is used: qx downtream, qz vertical
 """
 
 root_folder = "D:/data/P10_August2020_CDI/data/gold_trunc_custom/"
-support_threshold = 0.05  # in % of the normalized absolute value
+support_threshold = 0.10  # in % of the normalized absolute value
 pynx_shape = (500, 500, 500)  # shape of the array used for phasing and finding the support (after binning_pynx)
 binning_pynx = (1, 1, 1)  # binning that was used in PyNX during phasing
 output_shape = (500, 500, 500)  # shape of the array for later phasing (before binning_output)
@@ -347,6 +347,10 @@ if binary_support:
 unbinned_shape = [int(pynx_shape[idx] * binning_pynx[idx]) for idx in range(0, len(binning_pynx))]
 data = pu.crop_pad(data, unbinned_shape)
 print('Original data shape after considering PyNX binning and PyNX shape:', data.shape)
+print('Voxel sizes in detector coordinates based on '
+      'experimental parameters (ver, hor): '
+      '{:.2f} nm, {:.2f} nm'.format(12.398 * 1e-7 / energy * distance / (unbinned_shape[1] * pixel_y) * 1e9,
+                                    12.398 * 1e-7 / energy * distance / (unbinned_shape[2] * pixel_x) * 1e9))
 
 ######################
 # center the support #
