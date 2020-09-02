@@ -588,6 +588,7 @@ for scan_nb in range(len(scans)):
                 fig.savefig(savedir + 'monitor_gridded_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
                             str(nx) + binning_comment + '.png')
                 if flag_interact:
+                    fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
                     cid = plt.connect('close_event', close_event)
                     fig.waitforbuttonpress()
                     plt.disconnect(cid)
@@ -629,6 +630,7 @@ for scan_nb in range(len(scans)):
         plt.savefig(savedir + 'data_before_masking_sum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
                     str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
     if flag_interact:
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
         cid = plt.connect('close_event', close_event)
         fig.waitforbuttonpress()
         plt.disconnect(cid)
@@ -644,6 +646,7 @@ for scan_nb in range(len(scans)):
         plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
                     str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
     if flag_interact:
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
         cid = plt.connect('close_event', close_event)
         fig.waitforbuttonpress()
         plt.disconnect(cid)
@@ -657,6 +660,7 @@ for scan_nb in range(len(scans)):
                     str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
 
     if flag_interact:
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
         cid = plt.connect('close_event', close_event)
         fig.waitforbuttonpress()
         plt.disconnect(cid)
@@ -730,6 +734,7 @@ for scan_nb in range(len(scans)):
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
 
         if flag_interact:
+            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
             cid = plt.connect('close_event', close_event)
             fig.waitforbuttonpress()
             plt.disconnect(cid)
@@ -740,6 +745,7 @@ for scan_nb in range(len(scans)):
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
 
         if flag_interact:
+            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
             cid = plt.connect('close_event', close_event)
             fig.waitforbuttonpress()
             plt.disconnect(cid)

@@ -656,6 +656,7 @@ def main(parameters):
                     fig.savefig(savedir + 'monitor_gridded_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) +
                                 '_' + str(nx) + binning_comment + '.png')
                     if flag_interact:
+                        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
                         cid = plt.connect('close_event', close_event)
                         fig.waitforbuttonpress()
                         plt.disconnect(cid)
@@ -692,6 +693,7 @@ def main(parameters):
                         str(nx) + binning_comment + '.png')
 
         if flag_interact:
+            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
             cid = plt.connect('close_event', close_event)
             fig.waitforbuttonpress()
             plt.disconnect(cid)
@@ -705,6 +707,7 @@ def main(parameters):
                         str(nx) + binning_comment + '.png')
 
         if flag_interact:
+            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
             cid = plt.connect('close_event', close_event)
             fig.waitforbuttonpress()
             plt.disconnect(cid)
@@ -778,6 +781,7 @@ def main(parameters):
                                             is_orthogonal=not use_rawdata, reciprocal_space=True)
 
             if flag_interact:
+                fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
                 cid = plt.connect('close_event', close_event)
                 fig.waitforbuttonpress()
                 plt.disconnect(cid)
@@ -788,6 +792,7 @@ def main(parameters):
                                             is_orthogonal=not use_rawdata, reciprocal_space=True)
 
             if flag_interact:
+                fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
                 cid = plt.connect('close_event', close_event)
                 fig.waitforbuttonpress()
                 plt.disconnect(cid)

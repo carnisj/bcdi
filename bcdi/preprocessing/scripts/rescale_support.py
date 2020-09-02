@@ -103,7 +103,7 @@ def press_key(event):
 
     :param event: button press event
     """
-    global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
+    global original_data, original_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
     global xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, info_text, is_ortho, my_cmap
 
     try:
@@ -146,10 +146,10 @@ def press_key(event):
                     click_dim = None
                     points = None
 
-                data, updated_mask, flag_pause, xy, width, max_colorbar, click_dim, stop_masking, info_text = \
+                data, mask, flag_pause, xy, width, max_colorbar, click_dim, stop_masking, info_text = \
                     gu.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
                                             piy=int(np.rint(event.ydata)), original_data=original_data,
-                                            original_mask=mask, updated_data=data, updated_mask=updated_mask,
+                                            original_mask=original_mask, updated_data=data, updated_mask=mask,
                                             axes=(ax0, ax1, ax2), flag_pause=flag_pause, points=points,
                                             xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
                                             vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=invert_yaxis)
@@ -199,6 +199,7 @@ if flag_interact:
     fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0, vmax=1,
                                     title='Support before masking', is_orthogonal=True,
                                     reciprocal_space=False)
+    fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
     cid = plt.connect('close_event', close_event)
     fig.waitforbuttonpress()
     plt.disconnect(cid)
@@ -220,7 +221,7 @@ if flag_interact:
     fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
     fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
     original_data = np.copy(data)
-    updated_mask = np.zeros((nz, ny, nx))
+    original_mask = np.copy(mask)
     data[mask == 1] = 0  # will appear as grey in the log plot (nan)
     ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
     ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
@@ -247,14 +248,10 @@ if flag_interact:
     fig_mask.set_facecolor(background_plot)
     plt.show()
 
-    data = original_data
-    mask[updated_mask == -1] = -1  # these voxels will be filled
-    updated_mask[updated_mask == -1] = 0
-    mask[np.nonzero(updated_mask)] = 1  # these voxels will be masked
-    data[mask == -1] = data.max(initial=None)
-    data[mask == 1] = 0
     mask[mask == -1] = 0  # clear the filled points from the mask since we do not want to mask them later
-    del fig_mask, flag_pause, flag_mask, original_data, updated_mask
+    mask[np.nonzero(mask)] = 1  # ensure that masked voxels appear as 1 in the mask
+    data[np.nonzero(mask)] = 0
+    del fig_mask, flag_pause, flag_mask, original_data, original_mask
     gc.collect()
 
     ############################################
@@ -292,7 +289,7 @@ if flag_interact:
     plt.show()
 
     mask[mask == -1] = 0  # clear the filled points from the mask since we do not want to mask them later
-    mask[np.nonzero(mask)] = 1
+    mask[np.nonzero(mask)] = 1  # ensure that masked voxels appear as 1 in the mask
     data[np.nonzero(mask)] = 0
     del fig_mask, original_data, original_mask, mask
     gc.collect()
@@ -309,6 +306,7 @@ if save_intermediate:
 ############################################
 fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                                 title='Support after masking\n', is_orthogonal=True, reciprocal_space=False)
+fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
 cid = plt.connect('close_event', close_event)
 fig.waitforbuttonpress()
 plt.disconnect(cid)
