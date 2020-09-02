@@ -1994,7 +1994,7 @@ def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_
     :param vmin: the lower boundary for the colorbar
     :param cmap: colormap to be used
     :param invert_yaxis: True to invert the y axis of imshow plots
-    :return: updated data, mask and controls
+    :return: updated data, mask (-1 filled, 0 non masked, 1 masked voxel) and controls
     """
     if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3 or updated_mask.ndim != 3:
         raise ValueError('original_data, updated_data and updated_mask should be 3D arrays')
@@ -2717,7 +2717,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     :param vmin: the lower boundary for the colorbar
     :param cmap: colormap to be used
     :param invert_yaxis: True to invert the y axis of imshow plots
-    :return: updated data, mask and controls
+    :return: updated data, mask (-1 filled, 0 non masked, 1 masked voxel) and controls
     """
     if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3 or updated_mask.ndim != 3:
         raise ValueError('original_data, updated_data and original_mask should be 3D arrays')
