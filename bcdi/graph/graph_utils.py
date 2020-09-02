@@ -222,13 +222,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             raise Exception("unknown keyword argument given: allowed is"
                             "'xlabel' and 'ylabel'")
 
-    xlabel = xlabel or ['']
-    for idx in range(nb_subplots-1):
-        xlabel.append('')
-
-    ylabel = ylabel or ['']
-    for idx in range(nb_subplots-1):
-        ylabel.append('')
+    xlabel = xlabel or ['' for _ in range(nb_subplots)]
+    ylabel = ylabel or ['' for _ in range(nb_subplots)]
 
     if position is None:
         nb_columns = nb_subplots // 2
