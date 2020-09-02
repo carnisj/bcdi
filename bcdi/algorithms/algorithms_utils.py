@@ -28,6 +28,10 @@ def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, deb
     :return:
     """
     image = image.astype(np.float)
+    max_img = image.max(initial=None)
+    min_img = image[np.nonzero(image)].min(initial=None)
+    image = image / min_img  # the new min is 1, to avoid dividing by values close to 0
+
     ndim = image.ndim
     if psf is None:
         print('Initializing the psf using a', ndim, 'D multivariate normal window\n')
@@ -39,10 +43,11 @@ def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, deb
                             reciprocal_space=False, is_orthogonal=True)
 
     im_deconv = np.abs(richardson_lucy(image=image, psf=psf, iterations=iterations, clip=False))
+    im_deconv / im_deconv.max(initial=None) * max_img  # normalize back to max_img
 
     if debugging:
-        image = abs(image) / abs(image) .max()
-        im_deconv = abs(im_deconv) / abs(im_deconv) .max()
+        image = abs(image) / abs(image).max()
+        im_deconv = abs(im_deconv) / abs(im_deconv).max()
         gu.combined_plots(tuple_array=(image, im_deconv), tuple_sum_frames=False, tuple_colorbar=True,
                           tuple_title=('Before RL', 'After '+str(iterations)+' iterations of RL (normalized)'),
                           tuple_scale='linear', tuple_vmin=0, tuple_vmax=1)
