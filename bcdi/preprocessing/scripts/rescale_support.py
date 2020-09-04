@@ -25,7 +25,7 @@ In reciprocal space, the following convention is used: qx downtream, qz vertical
 """
 
 root_folder = "D:/data/P10_August2020_CDI/data/gold_trunc_custom/"
-support_threshold = 0.10  # in % of the normalized absolute value
+support_threshold = 0.20  # in % of the normalized absolute value
 pynx_shape = (500, 500, 500)  # shape of the array used for phasing and finding the support (after binning_pynx)
 binning_pynx = (1, 1, 1)  # binning that was used in PyNX during phasing
 output_shape = (500, 500, 500)  # shape of the array for later phasing (before binning_output)
@@ -40,7 +40,7 @@ save_intermediate = True  # if True, will save the masked data just after the in
 is_ortho = True  # True if the data is already orthogonalized
 center = True  # will center the support based on the center of mass
 flip_reconstruction = False  # True if you want to get the conjugate object
-roll_modes = (0, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
+roll_modes = (0, -2, 2)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 roll_centering = (0, 0, 0)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 save_fig = True  # if True, will save the figure of the final support
@@ -328,6 +328,7 @@ if filter_name != 'skip':
     fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                                     title='Support after filtering\n', is_orthogonal=True,
                                     reciprocal_space=False)
+    fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
     cid = plt.connect('close_event', close_event)
     fig.waitforbuttonpress()
     plt.disconnect(cid)
