@@ -1326,8 +1326,8 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupportz = mysupportz * mysupport
         myrampz = mygradz[mysupportz == 1].mean()
         if debugging:
-            gu.multislices_plot(mygradz, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-0.2, vmax=0.2, title='Phase gradient along Z')
+            gu.multislices_plot(mygradz, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along Z')
             gu.multislices_plot(mysupportz, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Thresholded support along Z')
         del mysupportz, mygradz
@@ -1340,8 +1340,8 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupporty = mysupporty * mysupport
         myrampy = mygrady[mysupporty == 1].mean()
         if debugging:
-            gu.multislices_plot(mygrady, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-0.2, vmax=0.2, title='Phase gradient along Y')
+            gu.multislices_plot(mygrady, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along Y')
             gu.multislices_plot(mysupporty, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Thresholded support along Y')
         del mysupporty, mygrady
@@ -1354,8 +1354,8 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupportx = mysupportx * mysupport
         myrampx = mygradx[mysupportx == 1].mean()
         if debugging:
-            gu.multislices_plot(mygradx, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-0.2, vmax=0.2, title='Phase gradient along X')
+            gu.multislices_plot(mygradx, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along X')
             gu.multislices_plot(mysupportx, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Thresholded support along X')
         del mysupportx, mygradx, mysupport
