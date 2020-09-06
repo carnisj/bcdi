@@ -66,6 +66,9 @@ class SetupPostprocessing(object):
             self.detector_ver = 'z-'
 
     def __repr__(self):
+        """
+        :return: a nicely formatted representation string
+        """
         return f"{self.__class__.__name__}: beamline={self.beamline}, energy={self.energy}eV," \
                f" sample to detector distance={self.distance}m, pixel size (VxH)=({self.pixel_y},{self.pixel_x})"
 
@@ -656,6 +659,9 @@ class SetupPreprocessing(object):
             self.detector_ver = 'z-'
 
     def __repr__(self):
+        """
+        :return: a nicely formatted representation string
+        """
         return f"{self.__class__.__name__}: beamline={self.beamline}, energy={self.energy}eV," \
                f" sample to detector distance={self.distance}m"
 
@@ -777,6 +783,9 @@ class Detector(object):
         self.pixelsize_x = self.pixelsize_x * self.previous_binning[2] * self.binning[2]
 
     def __repr__(self):
+        """
+        :return: a nicely formatted representation string
+        """
         return f"{self.__class__.__name__}: {self.name}"
 
     def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
