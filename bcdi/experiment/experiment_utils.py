@@ -65,6 +65,10 @@ class SetupPostprocessing(object):
             # origin is at the top
             self.detector_ver = 'z-'
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}: beamline={self.beamline}, energy={self.energy}eV," \
+               f" sample to detector distance={self.distance}m, pixel size (VxH)=({self.pixel_y},{self.pixel_x})"
+
     def detector_frame(self, obj, voxelsize, width_z=None, width_y=None, width_x=None,
                        debugging=False, **kwargs):
         """
@@ -651,6 +655,10 @@ class SetupPreprocessing(object):
             # origin is at the top
             self.detector_ver = 'z-'
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}: beamline={self.beamline}, energy={self.energy}eV," \
+               f" sample to detector distance={self.distance}m"
+
 
 class Detector(object):
     """
@@ -767,6 +775,9 @@ class Detector(object):
         self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
         self.pixelsize_y = self.pixelsize_y * self.previous_binning[1] * self.binning[1]
         self.pixelsize_x = self.pixelsize_x * self.previous_binning[2] * self.binning[2]
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}: {self.name}"
 
     def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
         """
@@ -898,3 +909,9 @@ class Detector(object):
             raise NotImplementedError('Detector not implemented')
 
         return data, mask
+
+#
+# if __name__ == "__main__":
+#     my = SetupPostprocessing(beamline='ID01', energy=8755, outofplane_angle=39.5, inplane_angle=0.2, tilt_angle=0.01,
+#                              rocking_angle='outofplane', distance=2, grazing_angle=0, pixel_x=75e-6, pixel_y=55e-6)
+#     print(my)
