@@ -192,8 +192,12 @@ else:
 if ylim is not None:
     assert len(ylim) == 2, 'ylim=[min, max] expected'
     ax.set_.ylim(ylim[0], ylim[1])
-ax.set_xlabel('strain')
+
 vline1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
+ax.tick_params(labelbottom=False, labelleft=False)
+fig.savefig(datadir + 'surface_strain_iso' + str(support_threshold)+'.png')
+
+ax.set_xlabel('strain')
 vline2 = ax.axvline(x=np.mean(strain[np.nonzero(surface)]), ymin=0, ymax=1, color='r', linestyle='dashed')
 legend_fit = ax.legend(handles=[fit], labels=[fit_pdf], loc='upper left', frameon=False)
 ax.legend(handles=(vline1, vline2), labels=('strain=0', '<surface>'), loc='upper right', frameon=False)
@@ -215,7 +219,7 @@ else:
     fig.text(0.15, 0.50, 'PDF ratio={:.2e}\n   +/-{:.2e}'.format(result.params['ratio_1'].value,
                                                                  result.params['ratio_1'].stderr))
 plt.pause(0.1)
-fig.savefig(datadir + 'surface_strain_iso' + str(support_threshold)+'.png')
+fig.savefig(datadir + 'surface_strain_iso' + str(support_threshold)+'_labels.png')
 
 ####################################
 # fit the bulk strain distribution #
@@ -280,8 +284,12 @@ else:
 if ylim is not None:
     assert len(ylim) == 2, 'ylim=[min, max] expected'
     ax.set_ylim(ylim[0], ylim[1])
-ax.set_xlabel('strain')
+
 vline1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
+ax.tick_params(labelbottom=False, labelleft=False)
+fig.savefig(datadir + 'bulk_strain_iso' + str(support_threshold)+'.png')
+
+ax.set_xlabel('strain')
 vline2 = ax.axvline(x=np.mean(strain[np.nonzero(bulk)]), ymin=0, ymax=1, color='b', linestyle='dashed')
 legend_fit = ax.legend(handles=[fit], labels=[fit_pdf], loc='upper left', frameon=False)
 ax.legend(handles=(vline1, vline2), labels=('strain=0', '<bulk>'), loc='upper right', frameon=False)
@@ -303,7 +311,7 @@ else:
     fig.text(0.15, 0.50, 'PDF ratio={:.2e}\n   +/-{:.2e}'.format(result.params['ratio_1'].value,
                                                                  result.params['ratio_1'].stderr))
 plt.pause(0.1)
-fig.savefig(datadir + 'bulk_strain_iso' + str(support_threshold)+'.png')
+fig.savefig(datadir + 'bulk_strain_iso' + str(support_threshold)+'_labels.png')
 
 nb_total = len(np.nonzero(support)[0])
 print("Sanity check: Total points = {:d}".format(nb_total), ", surface+bulk = {:d}".format(nb_surface+nb_bulk))
