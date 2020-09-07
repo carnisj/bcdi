@@ -31,7 +31,7 @@ sample_name = "S"  # "S"
 datadir = root_folder + sample_name + str(scan) + "/pynxraw/"
 support_threshold = 0.36  # threshold applied to the modulus for reading the surface strain
 normalize = True  # if True, will normalize the histograms to the respective number of points
-bin_number = 2000  # number of bins between strain_min and strain_max
+bin_number = 1000  # number of bins between strain_min and strain_max
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
 xlim = [-0.002, 0.002]  # limits used for the horizontal axis of histograms, leave None otherwise
 ylim = None  # limits used for the vertical axis of histograms, leave None otherwise
@@ -203,7 +203,7 @@ fig.text(0.65, 0.70, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(surface)
 fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(surface)])))
 
 if fit_pdf == 'skewed_gaussian':
-    fig.text(0.15, 0.70, 'max at strain={:.2e}'.format(strain_mode))
+    fig.text(0.13, 0.76, 'SK_max @ strain={:.2e}'.format(strain_mode))
 else:
     fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
                                                                   result.params['cen_1'].stderr))
