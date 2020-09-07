@@ -25,11 +25,11 @@ the surface and in the remaining bulk.
 Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_strain.npz)
 """
 
-scan = 11  # spec scan number
-root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
+scan = 78  # spec scan number
+root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
 sample_name = "S"  # "S"
 datadir = root_folder + sample_name + str(scan) + "/pynxraw/"
-support_threshold = 0.36  # threshold applied to the modulus for reading the surface strain
+support_threshold = 0.25  # threshold applied to the modulus for reading the surface strain
 normalize = True  # if True, will normalize the histograms to the respective number of points
 bin_number = 1000  # number of bins between strain_min and strain_max
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
@@ -204,6 +204,8 @@ fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(surfac
 
 if fit_pdf == 'skewed_gaussian':
     fig.text(0.13, 0.76, 'SK_max @ strain={:.2e}'.format(strain_mode))
+    fig.text(0.13, 0.66, 'SK std={:.2e}\n   +/-{:.2e}'.format(result.params['sig_1'].value,
+                                                              result.params['sig_1'].stderr))
 else:
     fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
                                                                   result.params['cen_1'].stderr))
@@ -289,6 +291,8 @@ fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(bulk)]
 
 if fit_pdf == 'skewed_gaussian':
     fig.text(0.13, 0.76, 'SK_max @ strain={:.2e}'.format(strain_mode))
+    fig.text(0.13, 0.66, 'SK std={:.2e}\n   +/-{:.2e}'.format(result.params['sig_1'].value,
+                                                              result.params['sig_1'].stderr))
 else:
     fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
                                                                   result.params['cen_1'].stderr))
