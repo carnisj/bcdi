@@ -1323,9 +1323,9 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
 
         mysupportz = np.zeros((nbz, nby, nbx))
         mysupportz[abs(mygradz) < gradient_threshold] = 1
+        mysupportz = mysupportz * mysupport
         if mysupportz.sum(initial=None) == 0:
             raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
-        mysupportz = mysupportz * mysupport
         myrampz = mygradz[mysupportz == 1].mean()
         if debugging:
             gu.multislices_plot(mygradz, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
@@ -1339,9 +1339,9 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         _, mygrady, _ = np.gradient(phase, 1)
         mysupporty = np.zeros((nbz, nby, nbx))
         mysupporty[abs(mygrady) < gradient_threshold] = 1
+        mysupporty = mysupporty * mysupport
         if mysupporty.sum(initial=None) == 0:
             raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
-        mysupporty = mysupporty * mysupport
         myrampy = mygrady[mysupporty == 1].mean()
         if debugging:
             gu.multislices_plot(mygrady, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
@@ -1355,9 +1355,9 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         _, _, mygradx = np.gradient(phase, 1)
         mysupportx = np.zeros((nbz, nby, nbx))
         mysupportx[abs(mygradx) < gradient_threshold] = 1
+        mysupportx = mysupportx * mysupport
         if mysupportx.sum(initial=None) == 0:
             raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
-        mysupportx = mysupportx * mysupport
         myrampx = mygradx[mysupportx == 1].mean()
         if debugging:
             gu.multislices_plot(mygradx, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
