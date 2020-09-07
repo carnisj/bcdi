@@ -31,7 +31,7 @@ sample_name = "S"  # "S"
 datadir = root_folder + sample_name + str(scan) + "/pynxraw/"
 support_threshold = 0.25  # threshold applied to the modulus for reading the surface strain
 normalize = True  # if True, will normalize the histograms to the respective number of points
-bin_number = 1000  # number of bins between strain_min and strain_max
+bin_step = 2e-5  # step size for the bins (in units of strain)
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
 xlim = [-0.002, 0.002]  # limits used for the horizontal axis of histograms, leave None otherwise
 ylim = None  # limits used for the vertical axis of histograms, leave None otherwise
@@ -136,7 +136,8 @@ nb_surface = len(np.nonzero(surface)[0])
 print("Number of surface points = ", str(nb_surface))
 print('Min surface strain = {:.5f}'.format(strain[np.nonzero(surface)].min()))
 print('Max surface strain = {:.5f}'.format(strain[np.nonzero(surface)].max()))
-hist, bin_edges = np.histogram(strain[np.nonzero(surface)], bins=bin_number)
+hist, bin_edges = np.histogram(strain[np.nonzero(surface)],
+                               bins=int((strain[np.nonzero(surface)].max()-strain[np.nonzero(surface)].min())/bin_step))
 hist = hist.astype(float)
 if normalize:
     hist = hist / nb_surface  # normalize the histogram to the number of points
@@ -223,7 +224,8 @@ nb_bulk = len(np.nonzero(bulk)[0])
 print("Number of bulk points = ", str(nb_bulk))
 print('Min bulk strain = {:.5f}'.format(strain[np.nonzero(bulk)].min()))
 print('Max bulk strain = {:.5f}'.format(strain[np.nonzero(bulk)].max()))
-hist, bin_edges = np.histogram(strain[np.nonzero(bulk)], bins=bin_number)
+hist, bin_edges = np.histogram(strain[np.nonzero(bulk)],
+                               bins=int((strain[np.nonzero(bulk)].max()-strain[np.nonzero(bulk)].min())/bin_step))
 hist = hist.astype(float)
 if normalize:
     hist = hist / nb_bulk  # normalize the histogram to the number of points
