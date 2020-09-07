@@ -35,7 +35,7 @@ bin_number = 2000  # number of bins between strain_min and strain_max
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
 xlim = [-0.002, 0.002]  # limits used for the horizontal axis of histograms, leave None otherwise
 ylim = None  # limits used for the vertical axis of histograms, leave None otherwise
-fit_pdf = 'pseudovoigt'  # 'pseudovoigt' or 'skewed_gaussian'
+fit_pdf = 'skewed_gaussian'  # 'pseudovoigt' or 'skewed_gaussian'
 save_txt = False  # True to save the strain values for the surface, the bulk and the full support in txt files
 debug = True  # True to see more plots
 ##########################
@@ -145,12 +145,12 @@ x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 
 fit_params = Parameters()
 if fit_pdf == 'skewed_gaussian':
-    fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
+    fit_params.add('amp_1', value=0.005, min=0.000001, max=100000)
     fit_params.add('loc_1', value=0, min=-0.1, max=0.1)
     fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
     fit_params.add('alpha_1', value=0, min=-10, max=10)
 else:  # 'pseudovoigt'
-    fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
+    fit_params.add('amp_1', value=0.005, min=0.000001, max=100000)
     fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
     fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
     fit_params.add('ratio_1', value=0.5, min=0, max=1)
@@ -230,12 +230,12 @@ x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 
 fit_params = Parameters()
 if fit_pdf == 'skewed_gaussian':
-    fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
+    fit_params.add('amp_1', value=0.001, min=0.00000001, max=100000)
     fit_params.add('loc_1', value=0, min=-0.1, max=0.1)
     fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
     fit_params.add('alpha_1', value=0, min=-10, max=10)
 else:  # 'pseudovoigt'
-    fit_params.add('amp_1', value=0.01, min=0.000001, max=100000)
+    fit_params.add('amp_1', value=0.001, min=0.00000001, max=100000)
     fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
     fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
     fit_params.add('ratio_1', value=0.5, min=0, max=1)
