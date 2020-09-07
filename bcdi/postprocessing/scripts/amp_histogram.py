@@ -21,8 +21,8 @@ helptext = """
 Plot the modulus histogram of a complex object reconstructed by phase retrieval.
 """
 
-scan = 11    # spec scan number
-root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
+scan = 78    # spec scan number
+root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
 sample_name = "S"
 homedir = root_folder + sample_name + str(scan) + "/pynxraw/"
 # + '_' + str('{:05d}'.format(scan)) + '/pynx/1000_1000_1000_1_1_1/v1/'
@@ -98,7 +98,10 @@ if fit_hist:
     result = minimize(util.objective_lmfit, fit_params, args=(fit_axis, fit_hist, lineshape))
     report_fit(result.params)
     y_fit = util.function_lmfit(params=result.params, iterator=0, x_axis=newbin_axis, distribution=lineshape)
-
+else:
+    y_fit = None
+    result = None
+    
 ##################################
 # plot the histogram and the fit #
 ##################################
