@@ -288,7 +288,7 @@ fig.text(0.65, 0.70, '<strain>={:.2e}'.format(np.mean(strain[np.nonzero(bulk)]))
 fig.text(0.65, 0.65, 'std(strain)={:.2e}'.format(np.std(strain[np.nonzero(bulk)])))
 
 if fit_pdf == 'skewed_gaussian':
-    fig.text(0.15, 0.70, 'max at strain={:.2e}'.format(strain_mode))
+    fig.text(0.13, 0.76, 'SK_max @ strain={:.2e}'.format(strain_mode))
 else:
     fig.text(0.15, 0.70, 'PDF center={:.2e}\n   +/-{:.2e}'.format(result.params['cen_1'].value,
                                                                   result.params['cen_1'].stderr))
