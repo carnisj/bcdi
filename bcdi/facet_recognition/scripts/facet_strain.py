@@ -34,10 +34,10 @@ Input: a reconstruction .npz file with fields: 'amp' and 'strain'
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
 
-scan = 15  # spec scan number
-datadir = 'D:/data/P10_isosurface/data/p15_2_{:05d}/pynxraw/'.format(scan)
-support_threshold = 0.5  # threshold for support determination
-voxel_size = [6, 6, 6]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+scan = 11  # spec scan number
+datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + '/pynxraw/'
+support_threshold = 0.36  # threshold for support determination
+voxel_size = [3, 3, 3]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
 upsampling_factor = 1  # integer, factor for upsampling the reconstruction in order to have a smoother surface
 savedir = datadir
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
@@ -54,16 +54,16 @@ top_part = False  # if True, will also update logfiles with a support cropped at
 z_cutoff = 75  # in pixels. If top_pat=True, will set all support pixels below this value to 0
 edges_coord = 370  # coordination threshold for isolating edges, 350 seems to work reasonably well
 corners_coord = 280  # coordination threshold for isolating corners, 260 seems to work reasonably well
-#########################################################
+########################################################
 # parameters only used in the stereographic projection #
-#########################################################
-threshold_south = -250  # background threshold in the stereographic projection from South of the density of normals
-threshold_north = -250  # background threshold in the stereographic projection from North of the density of normals
+########################################################
+threshold_south = -2500  # background threshold in the stereographic projection from South of the density of normals
+threshold_north = -2500  # background threshold in the stereographic projection from North of the density of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 stereo_scale = 'linear'  # 'linear' or 'log', scale of the colorbar in the stereographic plot
-#########################################################
+##########################################################
 # parameters only used in the equirectangular projection #
-#########################################################
+##########################################################
 bw_method = 0.03  # bandwidth in the gaussian kernel density estimation
 kde_threshold = -0.2  # threshold for defining the background in the density estimation of normals
 ###############################################################################################
@@ -72,20 +72,24 @@ kde_threshold = -0.2  # threshold for defining the background in the density est
 planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
 # planes_south['0 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([0, 2, 0]))
 planes_south['1 1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 1]))
-planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
-planes_south['1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 0]))
-planes_south['-1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, 1, 0]))
-planes_south['1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, -1, 1]))
-planes_south['-1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
+# planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
+# planes_south['1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 0]))
+# planes_south['-1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, 1, 0]))
+# planes_south['1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, -1, 1]))
+# planes_south['-1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
+planes_south['2 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, 1, 0]))
+planes_south['2 -1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, -1, 0]))
 
 planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
 # planes_south['0 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([0, -2, 0]))
 planes_north['-1 -1 -1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, -1]))
-planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
-planes_north['-1 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 0]))
-planes_north['-1 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
-planes_north['-1 -1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 1]))
-planes_north['-1 1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
+# planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
+# planes_north['-1 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 0]))
+# planes_north['-1 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
+# planes_north['-1 -1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 1]))
+# planes_north['-1 1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
+planes_south['-2 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-2, 1, 0]))
+planes_south['-2 -1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-2, -1, 0]))
 ##########################
 # end of user parameters #
 ##########################
