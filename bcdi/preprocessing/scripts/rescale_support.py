@@ -24,32 +24,32 @@ In reciprocal space, the following convention is used: qx downtream, qz vertical
 
 """
 
-root_folder = "D:/data/P10_August2020_CDI/data/gold_trunc_custom/"
-support_threshold = 0.20  # in % of the normalized absolute value
-pynx_shape = (500, 500, 500)  # shape of the array used for phasing and finding the support (after binning_pynx)
+root_folder = "D:/data/P10_August2020_CDI/data/mag_3_macro1/BCDI/"
+support_threshold = 0.01  # in % of the normalized absolute value
+pynx_shape = (90, 90, 90)  # shape of the array used for phasing and finding the support (after binning_pynx)
 binning_pynx = (1, 1, 1)  # binning that was used in PyNX during phasing
-output_shape = (500, 500, 500)  # shape of the array for later phasing (before binning_output)
+output_shape = (540, 540, 540)  # shape of the array for later phasing (before binning_output)
 # if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
 binning_output = (1, 1, 1)  # binning that will be used in PyNX for later phasing
 flag_interact = True  # if False, will skip thresholding and masking
 filter_name = 'skip'  # apply a filtering kernel to the support, 'skip' or 'gaussian_highpass'
-gaussian_sigma = 3.0  # sigma of the gaussian filter
+gaussian_sigma = 4.0  # sigma of the gaussian filter
 binary_support = True  # True to save the support as an array of 0 and 1
-save_intermediate = True  # if True, will save the masked data just after the interactive masking, before applying
+save_intermediate = False  # if True, will save the masked data just after the interactive masking, before applying
 # other filtering and interpolation
 is_ortho = True  # True if the data is already orthogonalized
 center = True  # will center the support based on the center of mass
 flip_reconstruction = False  # True if you want to get the conjugate object
-roll_modes = (0, -2, 2)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
+roll_modes = (0, 0, 0)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
 roll_centering = (0, 0, 0)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 save_fig = True  # if True, will save the figure of the final support
-comment = 'test'  # should start with _
+comment = ''  # should start with _
 ###########################################################################################
 # parameters used when (pynx_shape*binning_original != output_shape) and (is_ortho=False) #
 ###########################################################################################
 energy = 10235  # in eV
-tilt_angle = 0.5  # in degrees
+tilt_angle = 0.25  # in degrees
 distance = 5  # in m
 pixel_x = 75e-06  # in m
 pixel_y = 75e-06  # in m
@@ -374,7 +374,14 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
         qx = q_values['qx']  # 1D array
         qy = q_values['qy']  # 1D array
         qz = q_values['qz']  # 1D array
+
         # crop q to accomodate a shape change of the original array (e.g. cropping to fit FFT shape requirement)
+        # if the data was binned during phase retrieval, q values are considered still unbinned and their length should
+        # be larger or equal to unbinned shape.
+        assert len(qx) >= unbinned_shape[0], 'qx assumed unbinned, its length should be larger than unbinned_shape[0]'
+        assert len(qy) >= unbinned_shape[2], 'qy assumed unbinned, its length should be larger than unbinned_shape[2]'
+        assert len(qz) >= unbinned_shape[1], 'qz assumed unbinned, its length should be larger than unbinned_shape[1]'
+
         qx = pu.crop_pad_1d(qx, unbinned_shape[0])  # qx along z
         qy = pu.crop_pad_1d(qy, unbinned_shape[2])  # qy along x
         qz = pu.crop_pad_1d(qz, unbinned_shape[1])  # qz along y
@@ -392,6 +399,10 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
         newqz = q_values['qz']  # 1D array
         # crop q to accomodate a shape change of the original array (e.g. cropping to fit FFT shape requirement)
         # binning has no effect on the voxel size
+        assert len(newqx) >= output_shape[0], 'the length of newqx should be larger than unbinned_shape[0]'
+        assert len(newqy) >= output_shape[2], 'the length of newqy should be larger than unbinned_shape[2]'
+        assert len(newqz) >= output_shape[1], 'the length of newqz should be larger than unbinned_shape[1]'
+
         newqx = pu.crop_pad_1d(newqx, output_shape[0])  # qx along z
         newqy = pu.crop_pad_1d(newqy, output_shape[2])  # qy along x
         newqz = pu.crop_pad_1d(newqz, output_shape[1])  # qz along y
