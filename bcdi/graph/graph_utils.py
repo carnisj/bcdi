@@ -1676,11 +1676,11 @@ def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=''):
     else:  # it is a string or a number
         labels = (labels,) * ndim
     try:
-        assert len(markersizes) == ndim, 'len(markersizes) is different from the number of arrays'
+        assert len(markersizes) == nb_arrays, 'len(markersizes) is different from the number of arrays'
     except TypeError:  # it is a number
         markersizes = (markersizes,) * nb_arrays
     if isinstance(markercolors, tuple):
-        assert len(markercolors) == ndim, 'len(markercolors) is different from the number of arrays'
+        assert len(markercolors) == nb_arrays, 'len(markercolors) is different from the number of arrays'
     else:  # it is a string or a number
         markercolors = (markercolors,) * nb_arrays
 
