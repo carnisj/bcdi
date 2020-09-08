@@ -45,14 +45,14 @@ roll_centering = (0, 0, 0)  # roll applied after masking when centering by cente
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 save_fig = True  # if True, will save the figure of the final support
 comment = ''  # should start with _
-###########################################################################################
-# parameters used when (pynx_shape*binning_original != output_shape) and (is_ortho=False) #
-###########################################################################################
+###########################
+# experimental parameters #
+###########################
 energy = 10235  # in eV
 tilt_angle = 0.25  # in degrees
 distance = 5  # in m
-pixel_x = 75e-06  # in m
-pixel_y = 75e-06  # in m
+pixel_x = 75e-06  # in m, horizontal pixel size of the detector, including an eventual preprocessing binning
+pixel_y = 75e-06  # in m, vertical pixel size of the detector, including an eventual preprocessing binning
 ######################################################################
 # parameters for image deconvolution using Richardson-Lucy algorithm #
 ######################################################################
