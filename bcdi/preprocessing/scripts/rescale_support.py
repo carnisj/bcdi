@@ -45,6 +45,12 @@ roll_centering = (0, 0, 0)  # roll applied after masking when centering by cente
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 save_fig = True  # if True, will save the figure of the final support
 comment = ''  # should start with _
+######################################################################
+# parameters for image deconvolution using Richardson-Lucy algorithm #
+######################################################################
+psf_iterations = 0  # number of iterations of Richardson-Lucy deconvolution, leave it to 0 if unwanted
+psf_shape = (10, 10, 10)
+psf = pu.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False)
 ###########################
 # experimental parameters #
 ###########################
@@ -53,12 +59,12 @@ tilt_angle = 0.25  # in degrees
 distance = 5  # in m
 pixel_x = 75e-06  # in m, horizontal pixel size of the detector, including an eventual preprocessing binning
 pixel_y = 75e-06  # in m, vertical pixel size of the detector, including an eventual preprocessing binning
-######################################################################
-# parameters for image deconvolution using Richardson-Lucy algorithm #
-######################################################################
-psf_iterations = 0  # number of iterations of Richardson-Lucy deconvolution, leave it to 0 if unwanted
-psf_shape = (10, 10, 10)
-psf = pu.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False)
+###########################################################################
+# parameters used only when the data is in the detector frame (Bragg CDI) #
+###########################################################################
+rocking_angle = "outofplane"  # "outofplane" or "inplane"
+outofplane_angle = 35.2694  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = -2.5110  # detector nu ID01, gamma SIXS, tth 34ID
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -413,11 +419,20 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
 
     else:  # data in detector frame
         wavelength = 12.398 * 1e-7 / energy  # in m
-        voxelsize_z = wavelength / (unbinned_shape[0] * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
+        if rocking_angle == "outofplane":
+            detector_factor = np.sqrt(
+                (1 - np.cos(np.radians(inplane_angle)) * np.cos(np.radians(outofplane_angle))) ** 2 +
+                np.sin(np.radians(outofplane_angle)) ** 2)
+        else:  # 'inplane'
+            detector_factor = np.sqrt(
+                (np.cos(np.radians(inplane_angle)) * np.cos(np.radians(outofplane_angle)) - 1) ** 2 +
+                np.sin(np.radians(inplane_angle) * np.cos(np.radians(outofplane_angle))) ** 2)
+
+        voxelsize_z = wavelength / (unbinned_shape[0] * np.radians(abs(tilt_angle)) * detector_factor) * 1e9  # in nm
         voxelsize_y = wavelength * distance / (unbinned_shape[1] * pixel_y) * 1e9  # in nm
         voxelsize_x = wavelength * distance / (unbinned_shape[2] * pixel_x) * 1e9  # in nm
 
-        newvoxelsize_z = wavelength / (output_shape[0] * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
+        newvoxelsize_z = wavelength / (output_shape[0] * np.radians(abs(tilt_angle)) * detector_factor) * 1e9  # in nm
         newvoxelsize_y = wavelength * distance / (output_shape[1] * pixel_y) * 1e9  # in nm
         newvoxelsize_x = wavelength * distance / (output_shape[2] * pixel_x) * 1e9  # in nm
 
