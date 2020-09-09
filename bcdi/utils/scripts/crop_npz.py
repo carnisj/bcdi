@@ -21,16 +21,16 @@ helptext = """
 Crop a stacked 3D dataset saved in NPZ format, to the desired region of interest.
 """
 
-homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
-datadir = homedir + 'ht_pillar3_combined/pynxraw/'
-roi_center = [675, 470, 296]  # center of the region of interest
-output_shape = [100, 100, 100]  # shape of the output file
+homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11009357/raw/mag_3_concat/"  # parent folder of scans folders
+datadir = homedir  # + 'ht_pillar3_combined/'
+roi_center = [321, 360, 321]  # center of the region of interest
+output_shape = [640, 640, 640]  # shape of the output file
 load_mask = True  # True to load the mask and crop it
 load_qvalues = True  # True to load the q values and crop it
 is_orthogonal = True  # True if the data is in an orthogonal frame, only used for plots
 reciprocal_space = True  # True if the data is in reciprocal space, only used for plots
 debug = False  # True to see more plots
-comment = '_2_2_2'  # should start with _
+comment = '_cdi_2_2_2'  # should start with _
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -76,8 +76,8 @@ if load_qvalues:
     qy = q_values['qy']  # 1D array
     qz = q_values['qz']  # 1D array
     qx = pu.crop_pad_1d(qx, output_shape[0], crop_center=roi_center[0])  # qx along z
-    qy = pu.crop_pad_1d(qy, output_shape[2], crop_center=roi_center[1])  # qy along x
-    qz = pu.crop_pad_1d(qz, output_shape[1], crop_center=roi_center[2])  # qz along y
+    qy = pu.crop_pad_1d(qy, output_shape[2], crop_center=roi_center[2])  # qy along x
+    qz = pu.crop_pad_1d(qz, output_shape[1], crop_center=roi_center[1])  # qz along y
     np.savez_compressed(datadir + 'cropped_qvalues_' + comment, qx=qx, qz=qz, qy=qy)
 
 print('End of script')
