@@ -15,6 +15,7 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
 import bcdi.algorithms.algorithms_utils as algu
 import bcdi.utils.utilities as util
+import bcdi.experiment.experiment_utils as exp
 
 helptext = """
 Create a support from a reconstruction, using the indicated threshold.
@@ -62,9 +63,12 @@ pixel_y = 75e-06  # in m, vertical pixel size of the detector, including an even
 ###########################################################################
 # parameters used only when the data is in the detector frame (Bragg CDI) #
 ###########################################################################
+beamline = "ID01"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 outofplane_angle = 35.2694  # detector delta ID01, delta SIXS, gamma 34ID
 inplane_angle = -2.5110  # detector nu ID01, gamma SIXS, tth 34ID
+grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -418,23 +422,15 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
         newvoxelsize_y = 2 * np.pi / (newqz.max() - newqz.min())  # qz along y
 
     else:  # data in detector frame
-        wavelength = 12.398 * 1e-7 / energy  # in m
-        if rocking_angle == "outofplane":
-            detector_factor = np.sqrt(
-                (1 - np.cos(np.radians(inplane_angle)) * np.cos(np.radians(outofplane_angle))) ** 2 +
-                np.sin(np.radians(outofplane_angle)) ** 2)
-        else:  # 'inplane'
-            detector_factor = np.sqrt(
-                (np.cos(np.radians(inplane_angle)) * np.cos(np.radians(outofplane_angle)) - 1) ** 2 +
-                np.sin(np.radians(inplane_angle) * np.cos(np.radians(outofplane_angle))) ** 2)
+        setup = exp.SetupPostprocessing(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle,
+                                        inplane_angle=inplane_angle, tilt_angle=tilt_angle, rocking_angle=rocking_angle,
+                                        distance=distance, pixel_x=pixel_x, pixel_y=pixel_y,
+                                        grazing_angle=grazing_angle)
 
-        voxelsize_z = wavelength / (unbinned_shape[0] * np.radians(abs(tilt_angle)) * detector_factor) * 1e9  # in nm
-        voxelsize_y = wavelength * distance / (unbinned_shape[1] * pixel_y) * 1e9  # in nm
-        voxelsize_x = wavelength * distance / (unbinned_shape[2] * pixel_x) * 1e9  # in nm
-
-        newvoxelsize_z = wavelength / (output_shape[0] * np.radians(abs(tilt_angle)) * detector_factor) * 1e9  # in nm
-        newvoxelsize_y = wavelength * distance / (output_shape[1] * pixel_y) * 1e9  # in nm
-        newvoxelsize_x = wavelength * distance / (output_shape[2] * pixel_x) * 1e9  # in nm
+        voxelsize_z, voxelsize_y, voxelsize_x = setup.voxel_sizes(unbinned_shape, tilt_angle=tilt_angle,
+                                                                  pixel_x=pixel_x, pixel_y=pixel_y)
+        newvoxelsize_z, newvoxelsize_y, newvoxelsize_x = setup.voxel_sizes(unbinned_shape, tilt_angle=tilt_angle,
+                                                                           pixel_x=pixel_x, pixel_y=pixel_y)
 
     print('Original voxel sizes zyx (nm):', str('{:.2f}'.format(voxelsize_z)), str('{:.2f}'.format(voxelsize_y)),
           str('{:.2f}'.format(voxelsize_x)))

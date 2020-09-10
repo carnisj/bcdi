@@ -262,11 +262,11 @@ print("\nBragg angles after correction = (gam, del): ", str('{:.4f}'.format(brag
 setup_post.inplane_angle = bragg_inplane
 setup_post.outofplane_angle = bragg_outofplane
 
-d_rocking_angle = tilt[1] - tilt[0]
+rocking_step = tilt[1] - tilt[0]
 
 print("\nGrazing angle=", str('{:.4f}'.format(grazing)), 'deg')
 
-print("\nRocking step=", str('{:.5f}'.format(d_rocking_angle)), 'deg')
+print("\nRocking step=", str('{:.5f}'.format(rocking_step)), 'deg')
 
 ####################################
 # wavevector transfer calculations #
@@ -284,16 +284,13 @@ temperature = pu.bragg_temperature(spacing=dist_plane, reflection=reflection, sp
 #########################
 # calculate voxel sizes #
 #########################
-if rocking_angle == "outofplane":
-    detector_factor = np.sqrt((1-np.cos(np.radians(bragg_inplane))*np.cos(np.radians(bragg_outofplane)))**2 +
-                              np.sin(np.radians(bragg_outofplane))**2)
-else:  # 'inplane'
-    detector_factor = np.sqrt((np.cos(np.radians(bragg_inplane)) * np.cos(np.radians(bragg_outofplane)) - 1) ** 2 +
-                              np.sin(np.radians(bragg_inplane) * np.cos(np.radians(bragg_outofplane))) ** 2)
+#  update the detector angles in setup_post
+setup_post.inplane_angle = bragg_inplane
+setup_post.outofplane_angle = bragg_outofplane
+dz_realspace, dy_realspace, dx_realspace = setup_post.voxel_sizes((nb_frames, numy, numx), tilt_angle=rocking_step,
+                                                                  pixel_x=detector.pixelsize_x,
+                                                                  pixel_y=detector.pixelsize_y)
 
-dz_realspace = setup_post.wavelength * 1e9 / (nb_frames * np.radians(d_rocking_angle) * detector_factor)  # nm
-dy_realspace = setup_post.wavelength * 1e9 * sdd / (numy * detector.pixelsize_y)  # in nm
-dx_realspace = setup_post.wavelength * 1e9 * sdd / (numx * detector.pixelsize_x)  # in nm
 print('Real space voxel size (z, y, x): ', str('{:.2f}'.format(dz_realspace)), 'nm',
       str('{:.2f}'.format(dy_realspace)), 'nm', str('{:.2f}'.format(dx_realspace)), 'nm')
 

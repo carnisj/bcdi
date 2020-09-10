@@ -257,9 +257,9 @@ class SetupPostprocessing(object):
                 np.sin(np.radians(self.inplane_angle) * np.cos(np.radians(self.outofplane_angle))) ** 2)
 
         # estimate the direct space voxel sizes in nm based on the FFT window shape used in phase retrieval
-        _dz_realspace = _wavelength / (initial_shape[0] * np.radians(abs(self.tilt_angle)) * _detector_factor) * 1e9
-        _dy_realspace = _wavelength * self.distance / (initial_shape[1] * self.pixel_y) * 1e9
-        _dx_realspace = _wavelength * self.distance / (initial_shape[2] * self.pixel_x) * 1e9
+        _dz_realspace, _dy_realspace, _dx_realspace = self.voxel_sizes(initial_shape, tilt_angle=abs(self.tilt_angle),
+                                                                       pixel_x=self.pixel_x, pixel_y=self.pixel_y)
+
         print('Direct space voxel sizes (z, y, x) based on initial FFT shape: (',
               str('{:.2f}'.format(_dz_realspace)), 'nm,',
               str('{:.2f}'.format(_dy_realspace)), 'nm,',
@@ -268,18 +268,19 @@ class SetupPostprocessing(object):
         nbz, nby, nbx = obj.shape  # could be smaller if the object was cropped around the support
         if nbz != initial_shape[0] or nby != initial_shape[1] or nbx != initial_shape[2]:
             # recalculate the tilt and pixel sizes to accomodate a shape change
-            _tilt = _tilt_sign * _wavelength / (nbz * _dz_realspace * np.pi / 180 * _detector_factor) * 1e9  # in deg
-            _pixel_y = _wavelength * self.distance / (nby * _dy_realspace) * 1e9  # in m
-            _pixel_x = _wavelength * self.distance / (nbx * _dx_realspace) * 1e9  # in m
+            _tilt = self.tilt_angle * initial_shape[0] / nbz
+            _pixel_y = self.pixel_y * initial_shape[1] / nby
+            _pixel_x = self.pixel_x * initial_shape[2] / nbx
             print('Tilt, pixel_y, pixel_x based on cropped array shape: (',
                   str('{:.4f}'.format(_tilt)), 'deg,',
                   str('{:.2f}'.format(_pixel_y * 1e6)), 'um,',
                   str('{:.2f}'.format(_pixel_x * 1e6)), 'um)')
 
             # sanity check, the direct space voxel sizes calculated below should be equal to the original ones
-            _dz_realspace = _wavelength / (nbz * np.radians(abs(_tilt)) * _detector_factor) * 1e9  # in nm
-            _dy_realspace = _wavelength * self.distance / (nby * _pixel_y) * 1e9  # in nm
-            _dx_realspace = _wavelength * self.distance / (nbx * _pixel_x) * 1e9  # in nm
+            _dz_realspace, _dy_realspace, _dx_realspace = self.voxel_sizes((nbz, nby, nbx),
+                                                                           tilt_angle=abs(_tilt),
+                                                                           pixel_x=_pixel_x, pixel_y=_pixel_y)
+
             print('Sanity check, recalculated direct space voxel sizes: (',
                   str('{:.2f}'.format(_dz_realspace)), ' nm,',
                   str('{:.2f}'.format(_dy_realspace)), 'nm,',
@@ -575,6 +576,31 @@ class SetupPostprocessing(object):
 
         transfer_matrix = 2 * np.pi * np.linalg.inv(mymatrix).transpose()
         return transfer_matrix
+
+    def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, debug=False):
+        """
+        Calculate the direct space voxel sizes in the laboratory frame (z downstream, y vertical up, x outboard).
+
+        :param array_shape: shape of the 3D array to orthogonalize
+        :param tilt_angle: angular step during the rocking curve, in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        :param debug: True to have printed comments
+        :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
+        """
+        transfer_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
+                                             pixel_x=pixel_x, pixel_y=pixel_y)
+        rec_matrix = 2 * np.pi * np.linalg.inv(transfer_matrix).transpose()
+        qx_range = np.linalg.norm(rec_matrix[0, :])
+        qy_range = np.linalg.norm(rec_matrix[1, :])
+        qz_range = np.linalg.norm(rec_matrix[2, :])
+        if debug:
+            print('q_range_z, q_range_y, q_range_x=({0:.5f}, {1:.5f}, {2:.5f}) (1/nm)'.format(qz_range, qy_range,
+                                                                                              qx_range))
+            print('voxelsize_z, voxelsize_y, voxelsize_x='
+                  '({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)'.format(2 * np.pi / qz_range, 2 * np.pi / qy_range,
+                                                              2 * np.pi / qx_range))
+        return 2 * np.pi / qz_range, 2 * np.pi / qy_range, 2 * np.pi / qx_range
 
 
 class SetupPreprocessing(object):
@@ -931,8 +957,8 @@ class Detector(object):
 
         return data, mask
 
-#
-# if __name__ == "__main__":
-#     my = SetupPostprocessing(beamline='ID01', energy=8755, outofplane_angle=39.5, inplane_angle=0.2, tilt_angle=0.01,
-#                              rocking_angle='outofplane', distance=2, grazing_angle=0, pixel_x=75e-6, pixel_y=55e-6)
-#     print(my)
+
+if __name__ == "__main__":
+    my = SetupPostprocessing(beamline='ID01', energy=8800, outofplane_angle=0, inplane_angle=7.248, tilt_angle=0.01,
+                             rocking_angle='inplane', distance=7.25, grazing_angle=0, pixel_x=110e-6, pixel_y=110e-6)
+    print(my.voxel_sizes((48, 128, 128), tilt_angle=0.01, pixel_x=110e-6, pixel_y=110e-6))
