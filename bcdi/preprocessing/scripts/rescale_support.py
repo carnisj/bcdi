@@ -353,16 +353,18 @@ data[data < support_threshold] = 0
 if binary_support:
     data[np.nonzero(data)] = 1  # change data into a support
 
-############################################
-# go back to original shape before binning #
-############################################
+###################################################
+# calculate shapes considering binning parameters #
+###################################################
 unbinned_shape = [int(pynx_shape[idx] * binning_pynx[idx]) for idx in range(0, len(binning_pynx))]
-data = pu.crop_pad(data, unbinned_shape)
-print('Original data shape after considering PyNX binning and PyNX shape:', data.shape)
-print('Voxel sizes in detector coordinates based on '
+print('Original data shape after considering PyNX binning and PyNX shape:', unbinned_shape)
+print('Original voxel sizes in detector coordinates based on '
       'experimental parameters (ver, hor): '
       '{:.2f} nm, {:.2f} nm'.format(12.398 * 1e-7 / energy * distance / (unbinned_shape[1] * pixel_y) * 1e9,
                                     12.398 * 1e-7 / energy * distance / (unbinned_shape[2] * pixel_x) * 1e9))
+
+rebinned_shape = [int(output_shape[idx] / binning_output[idx]) for idx in range(0, len(binning_output))]
+print('Final data shape after considering output_shape and binning_output :', rebinned_shape)
 
 ######################
 # center the support #
@@ -376,7 +378,7 @@ data = np.roll(data, roll_centering, axis=(0, 1, 2))
 # rescale the support if needed #
 #################################
 if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodate for different object types
-    print('Interpolating the support to match the output shape of', output_shape)
+    print('\nCalculating voxel sizes...')
     if is_ortho:
         # load the original q values to calculate actual real space voxel sizes
         file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select original q values",
@@ -415,12 +417,9 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
         newqz = q_values['qz']  # 1D array
         # crop q to accomodate a shape change of the original array (e.g. cropping to fit FFT shape requirement)
         if qvalues_binned:
-            assert len(newqx) >= output_shape[0]//binning_output[0],\
-                'newqx declared binned, its length should be >= output_shape[0]//binning_output[0]'
-            assert len(newqy) >= output_shape[2]//binning_output[2],\
-                'newqy declared binned, its length should be >= output_shape[2]//binning_output[2]'
-            assert len(newqz) >= output_shape[1]//binning_output[1],\
-                'newqz declared binned, its length should be >= output_shape[1]//binning_output[1]'
+            assert len(newqx) >= rebinned_shape[0], 'newqx declared binned, its length should be >= rebinned_shape[0]'
+            assert len(newqy) >= rebinned_shape[2], 'newqy declared binned, its length should be >= rebinned_shape[2]'
+            assert len(newqz) >= rebinned_shape[1], 'newqz declared binned, its length should be >= rebinned_shape[1]'
         else:
             assert len(newqx) >= output_shape[0], 'newqx declared binned, its length should be >= output_shape[0]'
             assert len(newqy) >= output_shape[2], 'newqy declared binned, its length should be >= output_shape[2]'
@@ -428,7 +427,7 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
             newqx = pu.crop_pad_1d(newqx, output_shape[0])  # qx along z
             newqy = pu.crop_pad_1d(newqy, output_shape[2])  # qy along x
             newqz = pu.crop_pad_1d(newqz, output_shape[1])  # qz along y
-            
+
         print('Length(q_output)=', len(newqx), len(newqz), len(newqy), '(qx, qz, qy)')
         newvoxelsize_z = 2 * np.pi / (newqx.max() - newqx.min())  # qx along z
         newvoxelsize_x = 2 * np.pi / (newqy.max() - newqy.min())  # qy along x
@@ -450,19 +449,25 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
     print('Output voxel sizes zyx (nm):', str('{:.2f}'.format(newvoxelsize_z)), str('{:.2f}'.format(newvoxelsize_y)),
           str('{:.2f}'.format(newvoxelsize_x)))
 
-    rgi = RegularGridInterpolator((np.arange(-unbinned_shape[0] // 2, unbinned_shape[0] // 2, 1) * voxelsize_z,
-                                   np.arange(-unbinned_shape[1] // 2, unbinned_shape[1] // 2, 1) * voxelsize_y,
-                                   np.arange(-unbinned_shape[2] // 2, unbinned_shape[2] // 2, 1) * voxelsize_x),
+    # Interpolate the support
+    print('\nInterpolating the support...')
+    data = pu.crop_pad(data, pynx_shape)  # the data could be cropped near the support
+    fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                    title='Support before interpolation\n', is_orthogonal=True, reciprocal_space=False)
+    
+    rgi = RegularGridInterpolator((np.arange(-pynx_shape[0] // 2, pynx_shape[0] // 2, 1) * voxelsize_z,
+                                   np.arange(-pynx_shape[1] // 2, pynx_shape[1] // 2, 1) * voxelsize_y,
+                                   np.arange(-pynx_shape[2] // 2, pynx_shape[2] // 2, 1) * voxelsize_x),
                                   data, method='linear', bounds_error=False, fill_value=0)
 
-    new_z, new_y, new_x = np.meshgrid(np.arange(-output_shape[0] // 2, output_shape[0] // 2, 1) * newvoxelsize_z,
-                                      np.arange(-output_shape[1] // 2, output_shape[1] // 2, 1) * newvoxelsize_y,
-                                      np.arange(-output_shape[2] // 2, output_shape[2] // 2, 1) * newvoxelsize_x,
+    new_z, new_y, new_x = np.meshgrid(np.arange(-rebinned_shape[0] // 2, rebinned_shape[0] // 2, 1) * newvoxelsize_z,
+                                      np.arange(-rebinned_shape[1] // 2, rebinned_shape[1] // 2, 1) * newvoxelsize_y,
+                                      np.arange(-rebinned_shape[2] // 2, rebinned_shape[2] // 2, 1) * newvoxelsize_x,
                                       indexing='ij')
 
     new_support = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                       new_x.reshape((1, new_z.size)))).transpose())
-    new_support = new_support.reshape(output_shape).astype(data.dtype)
+    new_support = new_support.reshape(rebinned_shape).astype(data.dtype)
 
     print('Shape after interpolating the support:', new_support.shape)
 
@@ -472,17 +477,10 @@ else:  # no need for interpolation
 if binary_support:
     new_support[np.nonzero(new_support)] = 1
 
-##########################################################################
-# crop the new support to accomodate the binning factor in later phasing #
-##########################################################################
-binned_shape = [int(output_shape[idx] / binning_output[idx]) for idx in range(0, len(binning_output))]
-new_support = pu.crop_pad(new_support, binned_shape)
-print('Final shape after accomodating for later binning during phase retrieval:', binned_shape)
-filename = 'support_' + str(binned_shape) + '_bin_' + str(binning_output) + comment
-
 ###################################################
 # save and plot the support with the output shape #
 ###################################################
+filename = 'support_' + str(rebinned_shape) + '_bin_' + str(binning_output) + comment
 np.savez_compressed(root_folder + filename + '.npz', obj=new_support)
 fig, _, _ = gu.multislices_plot(new_support, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                                 title='Support after interpolation\n', is_orthogonal=True,
