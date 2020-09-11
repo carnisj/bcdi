@@ -32,6 +32,7 @@ binning_pynx = (1, 1, 1)  # binning that was used in PyNX during phasing
 output_shape = (540, 540, 540)  # shape of the array for later phasing (before binning_output)
 # if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
 binning_output = (1, 1, 1)  # binning that will be used in PyNX for later phasing
+qvalues_binned = True  # if True, the q values provided are expected to be binned (binning_pynx & binning_output)
 flag_interact = True  # if False, will skip thresholding and masking
 filter_name = 'skip'  # apply a filtering kernel to the support, 'skip' or 'gaussian_highpass'
 gaussian_sigma = 4.0  # sigma of the gaussian filter
@@ -384,17 +385,22 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
         qx = q_values['qx']  # 1D array
         qy = q_values['qy']  # 1D array
         qz = q_values['qz']  # 1D array
-
         # crop q to accomodate a shape change of the original array (e.g. cropping to fit FFT shape requirement)
-        # if the data was binned during phase retrieval, q values are considered still unbinned and their length should
-        # be larger or equal to unbinned shape.
-        assert len(qx) >= unbinned_shape[0], 'qx assumed unbinned, its length should be larger than unbinned_shape[0]'
-        assert len(qy) >= unbinned_shape[2], 'qy assumed unbinned, its length should be larger than unbinned_shape[2]'
-        assert len(qz) >= unbinned_shape[1], 'qz assumed unbinned, its length should be larger than unbinned_shape[1]'
+        if qvalues_binned:
+            assert len(qx) >= pynx_shape[0], 'qx declared binned, its length should be >= pynx_shape[0]'
+            assert len(qy) >= pynx_shape[2], 'qy declared binned, its length should be >= pynx_shape[2]'
+            assert len(qz) >= pynx_shape[1], 'qz declared binned, its length should be >= pynx_shape[1]'
+            qx = pu.crop_pad_1d(qx, pynx_shape[0])  # qx along z
+            qy = pu.crop_pad_1d(qy, pynx_shape[2])  # qy along x
+            qz = pu.crop_pad_1d(qz, pynx_shape[1])  # qz along y
+        else:
+            assert len(qx) >= unbinned_shape[0], 'qx declared unbinned, its length should be >= unbinned_shape[0]'
+            assert len(qy) >= unbinned_shape[2], 'qy declared unbinned, its length should be >= unbinned_shape[2]'
+            assert len(qz) >= unbinned_shape[1], 'qz declared unbinned, its length should be >= unbinned_shape[1]'
+            qx = pu.crop_pad_1d(qx, unbinned_shape[0])  # qx along z
+            qy = pu.crop_pad_1d(qy, unbinned_shape[2])  # qy along x
+            qz = pu.crop_pad_1d(qz, unbinned_shape[1])  # qz along y
 
-        qx = pu.crop_pad_1d(qx, unbinned_shape[0])  # qx along z
-        qy = pu.crop_pad_1d(qy, unbinned_shape[2])  # qy along x
-        qz = pu.crop_pad_1d(qz, unbinned_shape[1])  # qz along y
         print('Length(q_original)=', len(qx), len(qz), len(qy), '(qx, qz, qy)')
         voxelsize_z = 2 * np.pi / (qx.max() - qx.min())  # qx along z
         voxelsize_x = 2 * np.pi / (qy.max() - qy.min())  # qy along x
@@ -408,14 +414,21 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
         newqy = q_values['qy']  # 1D array
         newqz = q_values['qz']  # 1D array
         # crop q to accomodate a shape change of the original array (e.g. cropping to fit FFT shape requirement)
-        # binning has no effect on the voxel size
-        assert len(newqx) >= output_shape[0], 'the length of newqx should be larger than unbinned_shape[0]'
-        assert len(newqy) >= output_shape[2], 'the length of newqy should be larger than unbinned_shape[2]'
-        assert len(newqz) >= output_shape[1], 'the length of newqz should be larger than unbinned_shape[1]'
-
-        newqx = pu.crop_pad_1d(newqx, output_shape[0])  # qx along z
-        newqy = pu.crop_pad_1d(newqy, output_shape[2])  # qy along x
-        newqz = pu.crop_pad_1d(newqz, output_shape[1])  # qz along y
+        if qvalues_binned:
+            assert len(newqx) >= output_shape[0]//binning_output[0],\
+                'newqx declared binned, its length should be >= output_shape[0]//binning_output[0]'
+            assert len(newqy) >= output_shape[2]//binning_output[2],\
+                'newqy declared binned, its length should be >= output_shape[2]//binning_output[2]'
+            assert len(newqz) >= output_shape[1]//binning_output[1],\
+                'newqz declared binned, its length should be >= output_shape[1]//binning_output[1]'
+        else:
+            assert len(newqx) >= output_shape[0], 'newqx declared binned, its length should be >= output_shape[0]'
+            assert len(newqy) >= output_shape[2], 'newqy declared binned, its length should be >= output_shape[2]'
+            assert len(newqz) >= output_shape[1], 'newqz declared binned, its length should be >= output_shape[1]'
+            newqx = pu.crop_pad_1d(newqx, output_shape[0])  # qx along z
+            newqy = pu.crop_pad_1d(newqy, output_shape[2])  # qy along x
+            newqz = pu.crop_pad_1d(newqz, output_shape[1])  # qz along y
+            
         print('Length(q_output)=', len(newqx), len(newqz), len(newqy), '(qx, qz, qy)')
         newvoxelsize_z = 2 * np.pi / (newqx.max() - newqx.min())  # qx along z
         newvoxelsize_x = 2 * np.pi / (newqy.max() - newqy.min())  # qy along x
