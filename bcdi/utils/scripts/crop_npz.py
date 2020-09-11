@@ -67,7 +67,11 @@ if load_mask:
     mask, _ = util.load_file(file_path)
     mask = pu.crop_pad(mask, output_shape=output_shape, crop_center=roi_center, debugging=False)
     np.savez_compressed(datadir + 'cropped_mask_' + comment, mask=mask)
-
+    fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                    title='Cropped mask', is_orthogonal=is_orthogonal,
+                                    reciprocal_space=reciprocal_space)
+    fig.savefig(datadir + 'cropped_mask_' + comment + '.png')
+    
 if load_qvalues:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the file containing q values",
                                            filetypes=[("NPZ", "*.npz")])
