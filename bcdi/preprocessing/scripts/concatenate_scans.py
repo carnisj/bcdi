@@ -52,6 +52,7 @@ reference_scan = 0  # index in scans of the scan to be used as the reference for
 combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
 is_orthogonal = False  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
 plot_threshold = 0  # data below this will be set to 0, only in plots
+comment = ''  # should start with _ , it will be added to the filename when saving the combined dataset
 debug = False  # True or False
 ##################################
 # end of user-defined parameters #
@@ -268,7 +269,7 @@ sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape, crop_center=crop
 # save the combined data and mask #
 ###################################
 template = '_S' + str(combined_list[0]) + 'toS' + str(combined_list[-1]) +\
-           '_{:d}_{:d}_{:d=}'.format(output_shape[0], output_shape[1], output_shape[2])
+           '_{:d}_{:d}_{:d=}'.format(output_shape[0], output_shape[1], output_shape[2]) + comment
 
 
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
