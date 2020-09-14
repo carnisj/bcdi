@@ -58,7 +58,7 @@ photon_threshold = 0  # threshold applied to the measured diffraction pattern
 contour_range = None  # range(250, 2600, 250)
 # range for the plot contours range(min, max, step), leave it to None for default
 max_angle = 100  # maximum angle in degrees of the stereographic projection (should be larger than 90)
-flag_medianfilter = True  # set to True to apply med2filter [3,3] to the reciprocal space data
+medianfilter_kernel = 3  # size in each dimension of the 3D kernel for median filtering, leave None otherwise
 plot_planes = True  # if True, plot dotted circles corresponding to planes_south and planes_north indices
 hide_axis = False  # if True, the default axis frame, ticks and ticks labels will be hidden
 planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
@@ -381,9 +381,8 @@ else:  # load a reconstructed real space object
     qz = np.arange(-ny//2, ny//2) * dqz
 
 nz, ny, nx = data.shape
-if flag_medianfilter:  # apply some noise filtering
-    for idx in range(nz):
-        data[idx, :, :] = scipy.signal.medfilt2d(data[idx, :, :], [3, 3])
+if medianfilter_kernel:  # apply some noise filtering
+    data = scipy.signal.medfilt(data, medianfilter_kernel)
 
 ###################################
 # define the center of the sphere #
