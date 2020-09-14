@@ -245,65 +245,54 @@ class SetupPostprocessing(object):
             gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
                                 title=title+' in detector frame')
 
-        _tilt_sign = np.sign(self.tilt_angle)
-        _wavelength = 12.398 * 1e-7 / self.energy  # in m
-        if self.rocking_angle == "outofplane":
-            _detector_factor = np.sqrt(
-                (1 - np.cos(np.radians(self.inplane_angle)) * np.cos(np.radians(self.outofplane_angle))) ** 2 +
-                np.sin(np.radians(self.outofplane_angle)) ** 2)
-        else:  # 'inplane'
-            _detector_factor = np.sqrt(
-                (np.cos(np.radians(self.inplane_angle)) * np.cos(np.radians(self.outofplane_angle)) - 1) ** 2 +
-                np.sin(np.radians(self.inplane_angle) * np.cos(np.radians(self.outofplane_angle))) ** 2)
-
         # estimate the direct space voxel sizes in nm based on the FFT window shape used in phase retrieval
-        _dz_realspace, _dy_realspace, _dx_realspace = self.voxel_sizes(initial_shape, tilt_angle=abs(self.tilt_angle),
-                                                                       pixel_x=self.pixel_x, pixel_y=self.pixel_y)
+        dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(initial_shape, tilt_angle=abs(self.tilt_angle),
+                                                                    pixel_x=self.pixel_x, pixel_y=self.pixel_y)
 
         print('Direct space voxel sizes (z, y, x) based on initial FFT shape: (',
-              str('{:.2f}'.format(_dz_realspace)), 'nm,',
-              str('{:.2f}'.format(_dy_realspace)), 'nm,',
-              str('{:.2f}'.format(_dx_realspace)), 'nm )')
+              str('{:.2f}'.format(dz_realspace)), 'nm,',
+              str('{:.2f}'.format(dy_realspace)), 'nm,',
+              str('{:.2f}'.format(dx_realspace)), 'nm )')
 
         nbz, nby, nbx = obj.shape  # could be smaller if the object was cropped around the support
         if nbz != initial_shape[0] or nby != initial_shape[1] or nbx != initial_shape[2]:
             # recalculate the tilt and pixel sizes to accomodate a shape change
-            _tilt = self.tilt_angle * initial_shape[0] / nbz
-            _pixel_y = self.pixel_y * initial_shape[1] / nby
-            _pixel_x = self.pixel_x * initial_shape[2] / nbx
+            tilt = self.tilt_angle * initial_shape[0] / nbz
+            pixel_y = self.pixel_y * initial_shape[1] / nby
+            pixel_x = self.pixel_x * initial_shape[2] / nbx
             print('Tilt, pixel_y, pixel_x based on cropped array shape: (',
-                  str('{:.4f}'.format(_tilt)), 'deg,',
-                  str('{:.2f}'.format(_pixel_y * 1e6)), 'um,',
-                  str('{:.2f}'.format(_pixel_x * 1e6)), 'um)')
+                  str('{:.4f}'.format(tilt)), 'deg,',
+                  str('{:.2f}'.format(pixel_y * 1e6)), 'um,',
+                  str('{:.2f}'.format(pixel_x * 1e6)), 'um)')
 
             # sanity check, the direct space voxel sizes calculated below should be equal to the original ones
-            _dz_realspace, _dy_realspace, _dx_realspace = self.voxel_sizes((nbz, nby, nbx),
-                                                                           tilt_angle=abs(_tilt),
-                                                                           pixel_x=_pixel_x, pixel_y=_pixel_y)
+            dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes((nbz, nby, nbx),
+                                                                        tilt_angle=abs(tilt),
+                                                                        pixel_x=pixel_x, pixel_y=pixel_y)
 
             print('Sanity check, recalculated direct space voxel sizes: (',
-                  str('{:.2f}'.format(_dz_realspace)), ' nm,',
-                  str('{:.2f}'.format(_dy_realspace)), 'nm,',
-                  str('{:.2f}'.format(_dx_realspace)), 'nm )')
+                  str('{:.2f}'.format(dz_realspace)), ' nm,',
+                  str('{:.2f}'.format(dy_realspace)), 'nm,',
+                  str('{:.2f}'.format(dx_realspace)), 'nm )')
         else:
-            _tilt = self.tilt_angle
-            _pixel_y = self.pixel_y
-            _pixel_x = self.pixel_x
+            tilt = self.tilt_angle
+            pixel_y = self.pixel_y
+            pixel_x = self.pixel_x
 
         if np.isnan(voxel_size):
-            _voxel = np.mean([_dz_realspace, _dy_realspace, _dx_realspace])  # in nm
+            voxel = np.mean([dz_realspace, dy_realspace, dx_realspace])  # in nm
         else:
-            _voxel = voxel_size
+            voxel = voxel_size
 
-        ortho_matrix = self.update_coords(array_shape=(nbz, nby, nbx), tilt_angle=_tilt,
-                                          pixel_x=_pixel_x, pixel_y=_pixel_y)
+        ortho_matrix = self.update_coords(array_shape=(nbz, nby, nbx), tilt_angle=tilt,
+                                          pixel_x=pixel_x, pixel_y=pixel_y)
 
         ###############################################################
         # Vincent Favre-Nicolin's method using inverse transformation #
         ###############################################################
-        myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * _voxel,
-                                    np.arange(-nby // 2, nby // 2, 1) * _voxel,
-                                    np.arange(-nbx // 2, nbx // 2, 1) * _voxel, indexing='ij')
+        myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * voxel,
+                                    np.arange(-nby // 2, nby // 2, 1) * voxel,
+                                    np.arange(-nbx // 2, nbx // 2, 1) * voxel, indexing='ij')
         ortho_imatrix = np.linalg.inv(ortho_matrix)
         new_x = ortho_imatrix[0, 0] * myx + ortho_imatrix[0, 1] * myy + ortho_imatrix[0, 2] * myz
         new_y = ortho_imatrix[1, 0] * myx + ortho_imatrix[1, 1] * myy + ortho_imatrix[1, 2] * myz
@@ -321,7 +310,7 @@ class SetupPostprocessing(object):
         if debugging:
             gu.multislices_plot(abs(ortho_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
                                 title=title+' in the orthogonal laboratory frame')
-        return ortho_obj, _voxel
+        return ortho_obj, voxel
 
     def outofplane_coeff(self):
         """
@@ -961,4 +950,4 @@ class Detector(object):
 if __name__ == "__main__":
     my = SetupPostprocessing(beamline='ID01', energy=8800, outofplane_angle=0, inplane_angle=7.248, tilt_angle=0.01,
                              rocking_angle='inplane', distance=7.25, grazing_angle=0, pixel_x=110e-6, pixel_y=110e-6)
-    print(my.voxel_sizes((48, 128, 128), tilt_angle=0.01, pixel_x=110e-6, pixel_y=110e-6))
+    print(my.voxel_sizes((41, 256, 256), tilt_angle=0.01, pixel_x=110e-6, pixel_y=110e-6, debug=True))
