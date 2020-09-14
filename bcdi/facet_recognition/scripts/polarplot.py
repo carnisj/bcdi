@@ -382,6 +382,7 @@ else:  # load a reconstructed real space object
 
 nz, ny, nx = data.shape
 if medianfilter_kernel:  # apply some noise filtering
+    print(f'Applying median filtering {medianfilter_kernel}x{medianfilter_kernel}x{medianfilter_kernel}')
     data = scipy.signal.medfilt(data, medianfilter_kernel)
 
 ###################################
