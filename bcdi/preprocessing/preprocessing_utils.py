@@ -6,6 +6,7 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
 import numpy as np
+import warnings
 import time
 import datetime
 import matplotlib.pyplot as plt
@@ -1438,6 +1439,8 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values for normalization
     """
+    warnings.warn("deprecated, use load_bcdi_data() and grid_bcdi() instead", DeprecationWarning)
+
     # default values for kwargs
     follow_bragg = False
 
