@@ -9,7 +9,7 @@
 import hdf5plugin  # for P10, should be imported before h5py or PyTables
 import numpy as np
 import xrayutilities as xu
-import scipy.signal  # for medfilt2d
+import scipy.signal  # for medfilt
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from scipy.interpolate import RegularGridInterpolator
@@ -38,14 +38,14 @@ Q values follow the more classical convention: qx downstream, qz vertical up, qy
 ######################
 # generic parameters #
 ######################
-scan = 11    # spec scan number
-root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
+scan = 78    # spec scan number
+root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
 sample_name = "S"  # "S"  #
 comment = ""
-reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
+reflection = np.array([0, 2, 0])  # np.array([0, 0, 2])  #   # reflection measured
 projection_axis = 1  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
-radius_mean = 0.035  # q from Bragg peak
-dq = 0.0005  # width in q of the shell to be projected
+radius_mean = 0.030  # q from Bragg peak
+dq = 0.001  # width in q of the shell to be projected
 offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
 # will shift peaks rightwards in the pole figure
 offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
@@ -57,28 +57,34 @@ q_offset = [0, 0, 0]  # offset of the projection plane in [qx, qy, qz] (0 = equa
 photon_threshold = 0  # threshold applied to the measured diffraction pattern
 contour_range = None  # range(250, 2600, 250)
 # range for the plot contours range(min, max, step), leave it to None for default
-max_angle = 120  # maximum angle in degrees of the stereographic projection (should be larger than 90)
-flag_medianfilter = False  # set to True to apply med2filter [3,3] to the reciprocal space data
+max_angle = 100  # maximum angle in degrees of the stereographic projection (should be larger than 90)
+flag_medianfilter = True  # set to True to apply med2filter [3,3] to the reciprocal space data
 plot_planes = True  # if True, plot dotted circles corresponding to planes_south and planes_north indices
 hide_axis = False  # if True, the default axis frame, ticks and ticks labels will be hidden
 planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
+planes_south['0 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([0, 2, 0]))
 planes_south['1 1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 1]))
-planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
+# planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
+# planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
 # planes_south['1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 0]))
 # planes_south['-1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, 1, 0]))
 # planes_south['1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, -1, 1]))
 # planes_south['-1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
+planes_south['1 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 2, 0]))
 planes_south['2 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, 1, 0]))
-planes_south['2 -1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, -1, 0]))
+planes_south['2 0 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, 0, 1]))
+
 planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
+planes_north['0 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([0, -2, 0]))
 planes_north['-1 -1 -1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, -1]))
-planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
+# planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
 # planes_north['-1 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 0]))
 # planes_north['-1 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
 # planes_north['-1 -1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 1]))
 # planes_north['-1 1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
-planes_north['-2 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-2, 1, 0]))
-planes_north['-2 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-2, -1, 0]))
+planes_north['1 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([1, -2, 0]))
+planes_north['2 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([2, -1, 0]))
+planes_north['2 0 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([2, 0, 1]))
 debug = False  # True to show more plots, False otherwise
 ########################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object only #
@@ -110,16 +116,16 @@ custom_motors = None
 # SIXS: beta, mu, gamma, delta
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'l5'
+specfile_name = 'psic_nano_20141204'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
 # template for SIXS_2019: ''
 # template for P10: sample_name + '_%05d'
 # template for CRISTAL: ''
-filtered_data = False  # set to True if the data is already a 3D array, False otherwise
+filtered_data = True  # set to True if the data is already a 3D array, False otherwise
 is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
-normalize_flux = True  # will normalize the diffraction intensity by the default monitor
+normalize_flux = 'skip'  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
 ########################################################################################################
 # define detector related parameters and region of interest, not used for the phased real space object #
 ########################################################################################################
@@ -132,7 +138,7 @@ roi_detector = []  # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
 flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+template_imagefile = 'Pt4_%04d.edf'  # .gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -143,15 +149,15 @@ binning = [1, 1, 1]  # binning to apply to the measured diffraction pattern in e
 # define parameters for xrayutilities, used for orthogonalization, not used for the phased real space object #
 ##############################################################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
-sdd = 0.50678  # 0.865  # sample to detector distance in m, not important if you use raw data
+sdd = 1.26  # 0.865  # sample to detector distance in m, not important if you use raw data
 energy = 9000  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 offset_inplane = 0  # outer detector angle offset, not important if you use raw data
-cch1 = 208  # vertical
+cch1 = 369.5  # vertical
 # cch1 parameter from xrayutilities 2D detector calibration, the detector roi is taken into account below
-cch2 = 154  # horizontal
+cch2 = 138.5  # horizontal
 # cch2 parameter from xrayutilities 2D detector calibration, the detector roi is taken into account below
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
@@ -220,10 +226,13 @@ if not reconstructed_data:  # load reciprocal space data
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan,
                                  root_folder=root_folder, filename=specfile_name)
 
-    q_values, _, data, _, _, _, _ = \
-        pru.gridmap(logfile=logfile, scan_number=scan, detector=detector, setup=setup,
-                    flatfield=flatfield, hotpixels=hotpix_array, hxrd=hxrd, follow_bragg=follow_bragg,
-                    normalize=normalize_flux, debugging=debug, orthogonalize=True)
+    data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scan, detector=detector,
+                                                             setup=setup, flatfield=flatfield, hotpixels=hotpix_array,
+                                                             normalize=normalize_flux, debugging=debug)
+    data, _, q_values, _ = \
+        pru.grid_bcdi(data=data, mask=mask, scan_number=scan, logfile=logfile, detector=detector, setup=setup,
+                      frames_logical=frames_logical, hxrd=hxrd, debugging=debug, follow_bragg=follow_bragg)
+
     nz, ny, nx = data.shape  # CXI convention: z downstream, y vertical up, x outboard
     print('Diffraction data shape', data.shape)
     qx = q_values[0]  # axis=0, z downstream, qx in reciprocal space
