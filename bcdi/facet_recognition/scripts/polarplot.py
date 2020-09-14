@@ -39,7 +39,7 @@ Q values follow the more classical convention: qx downstream, qz vertical up, qy
 # generic parameters #
 ######################
 scan = 11    # spec scan number
-root_folder = "D:/data/PtRh/"
+root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([1, 1, 1])  # np.array([0, 0, 2])  #   # reflection measured
@@ -79,7 +79,7 @@ debug = False  # True to show more plots, False otherwise
 ########################################################################################################
 # parameters for plotting the stereographic projection starting from the phased real space object only #
 ########################################################################################################
-reconstructed_data = True  # set it to True if the data is a BCDI reconstruction (real space)
+reconstructed_data = False  # set it to True if the data is a BCDI reconstruction (real space)
 # the reconstruction should be in the crystal orthogonal frame
 threshold_amp = 0.3  # threshold for support determination from amplitude, if reconstructed_data=1
 use_phase = False  # set to False to use only a support, True to use the complex amplitude
@@ -106,7 +106,7 @@ custom_motors = None
 # SIXS: beta, mu, gamma, delta
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'align'
+specfile_name = 'l5'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -120,8 +120,8 @@ normalize_flux = True  # will normalize the diffraction intensity by the default
 # define detector related parameters and region of interest, not used for the phased real space object #
 ########################################################################################################
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 451  # horizontal pixel number of the Bragg peak
-y_bragg = 1450  # vertical pixel number of the Bragg peak
+# x_bragg = 451  # horizontal pixel number of the Bragg peak
+# y_bragg = 1450  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 roi_detector = []  # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
@@ -139,15 +139,15 @@ binning = [1, 1, 1]  # binning to apply to the measured diffraction pattern in e
 # define parameters for xrayutilities, used for orthogonalization, not used for the phased real space object #
 ##############################################################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
-sdd = 1.0137  # 0.865  # sample to detector distance in m, not important if you use raw data
-energy = 10000  # x-ray energy in eV, not important if you use raw data
+sdd = 0.50678  # 0.865  # sample to detector distance in m, not important if you use raw data
+energy = 9000  # x-ray energy in eV, not important if you use raw data
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = -1.3645  # outer detector angle offset, not important if you use raw data
-cch1 = 82.85  # 1273.5
+offset_inplane = 0  # outer detector angle offset, not important if you use raw data
+cch1 = 208  # vertical
 # cch1 parameter from xrayutilities 2D detector calibration, the detector roi is taken into account below
-cch2 = -174.21  # 390.8
+cch2 = 154  # horizontal
 # cch2 parameter from xrayutilities 2D detector calibration, the detector roi is taken into account below
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
