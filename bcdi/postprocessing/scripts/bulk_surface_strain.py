@@ -25,15 +25,15 @@ the surface and in the remaining bulk.
 Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_strain.npz)
 """
 
-scan = 78  # spec scan number
+scan = 9  # spec scan number
 root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
 sample_name = "S"  # "S"
 datadir = root_folder + sample_name + str(scan) + "/pynxraw/"
-support_threshold = 0.25  # threshold applied to the modulus for reading the surface strain
+support_threshold = 0.36  # threshold applied to the modulus for reading the surface strain
 normalize = True  # if True, will normalize the histograms to the respective number of points
 bin_step = 2e-5  # step size for the bins (in units of strain)
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
-xlim = [-0.002, 0.002]  # limits used for the horizontal axis of histograms, leave None otherwise
+xlim = (-0.002, 0.002)  # limits used for the horizontal axis of histograms, leave None otherwise
 ylim = None  # limits used for the vertical axis of histograms, leave None otherwise
 fit_pdf = 'skewed_gaussian'  # 'pseudovoigt' or 'skewed_gaussian'
 save_txt = False  # True to save the strain values for the surface, the bulk and the full support in txt files
@@ -45,7 +45,7 @@ debug = True  # True to see more plots
 #########################
 # check some parameters #
 #########################
-assert fit_pdf in ['pseudovoigt', 'skewed_gaussian'], 'invalid value for fit_pdf parameter'
+assert fit_pdf in {'pseudovoigt', 'skewed_gaussian'}, 'invalid value for fit_pdf parameter'
 
 
 ###################
