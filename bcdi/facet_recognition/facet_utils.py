@@ -93,31 +93,31 @@ def detect_edges(faces):
     return unique_edges
 
 
-def distance_threshold(fit, indices, shape, max_distance=0.90):
+def distance_threshold(fit, indices, plane_shape, max_distance=0.90):
     """
     Filter out pixels depending on their distance to a fit plane
 
-    :param fit: coefficients of the plane (tuple of 3 numbers)
-    :param indices: plane indices
-    :param shape: shape of the intial plane array
+    :param fit: coefficients of the plane (a, b, c, d) such that a*x + b*y + c*z + d = 0
+    :param indices: tuple or array of plane indices, x being the 1st tuple element or array row,
+     y the 2nd tuple element or array row and z the third tuple element or array row
+    :param plane_shape: shape of the initial plane array
     :param max_distance: max distance allowed from the fit plane in pixels
     :return: the updated plane, a stop flag
     """
-    plane = np.zeros(shape, dtype=int)
+    indices = np.asarray(indices)
+    plane = np.zeros(plane_shape, dtype=int)
     no_points = 0
-    indx = indices[0]
-    indy = indices[1]
-    indz = indices[2]
     if len(indices[0]) == 0:
         no_points = 1
         return plane, no_points
-    # remove outsiders based on distance to plane
-    plane_normal = np.array([fit[0], fit[1], -1])  # normal is [a, b, c] if ax+by+cz+d=0
+
+    # remove outsiders based on their distance to the plane
+    plane_normal = np.array([fit[0], fit[1], fit[2]])  # normal is [a, b, c] if ax+by+cz+d=0
     for point in range(len(indices[0])):
-        dist = abs(fit[0]*indx[point] + fit[1]*indy[point] -
-                   indz[point] + fit[2])/np.linalg.norm(plane_normal)
+        dist = abs(fit[0]*indices[0, point] + fit[1]*indices[1, point] + fit[2]*indices[2, point] + fit[3])\
+               / np.linalg.norm(plane_normal)
         if dist < max_distance:
-            plane[indx[point], indy[point], indz[point]] = 1
+            plane[indices[0, point], indices[1, point], indices[2, point]] = 1
     if plane[plane == 1].sum() == 0:
         print('Distance_threshold: no points for plane')
         no_points = 1
