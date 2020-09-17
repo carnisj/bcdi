@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from scipy.ndimage.measurements import center_of_mass
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
@@ -13,6 +14,7 @@ import gc
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 
 colormap = gu.Colormap()
 default_cmap = colormap.cmap
@@ -285,97 +287,73 @@ def find_neighbours(vertices, faces):
     return neighbors
 
 
-def fit_plane(plane, label, debugging=1):
+def fit_plane(plane, label, debugging=False):
     """
-    Fit a plane to labelled indices, ax+by+c=z
+    Fit a plane to labelled indices using the equation a*x+ b*y + c*z + d = 0.
 
-    :param plane: 3D binary array of the shape of the data
-    :param label: int, only used for title in plot
+    :param plane: 3D binary array, where the voxels belonging to the plane are set to 1 and others are set to 0.
+    :param label: int, label of the plane used for the title in plots
     :param debugging: show plots for debugging
-    :return: matrix of fit parameters [a, b, c], plane indices, errors associated, a stop flag
+    :return: fit parameters (a, b, c, d), plane indices after filtering, errors associated, a stop flag
     """
-    from scipy.ndimage.measurements import center_of_mass
-
-    indices = np.nonzero(plane)
+    indices = np.asarray(np.nonzero(plane))
     no_points = 0
     if len(indices[0]) == 0:
         no_points = 1
         return 0, indices, 0, no_points
-    tmp_x = indices[0]
-    tmp_y = indices[1]
-    tmp_z = indices[2]
     x_com, y_com, z_com = center_of_mass(plane)
 
     # remove isolated points, which probably do not belong to the plane
-    for point in range(tmp_x.shape[0]):
-        neighbors = plane[tmp_x[point]-2:tmp_x[point]+3, tmp_y[point]-2:tmp_y[point]+3,
-                          tmp_z[point]-2:tmp_z[point]+3].sum()
+    if debugging:
+        gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                        title='Points before coordination threshold plane ' + str(label))
+
+    for point in range(indices.shape[1]):
+        neighbors = plane[indices[0, point]-2:indices[0, point]+3, indices[1, point]-2:indices[1, point]+3,
+                          indices[2, point]-2:indices[2, point]+3].sum()
         if neighbors < 5:
-            plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
-    print('Fit plane', label, ', ', str(tmp_x.shape[0]-plane[plane == 1].sum()), 'points isolated, ',
+            plane[indices[0, point], indices[1, point], indices[2, point]] = 0
+
+    print('Fit plane', label, ', ', str(indices.shape[1]-plane[plane == 1].sum()), 'points isolated, ',
           str(plane[plane == 1].sum()), 'remaining')
+    if debugging:
+        gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                        title='Points after coordination threshold plane ' + str(label))
 
     # update plane indices
-    indices = np.nonzero(plane)
+    indices = np.asarray(np.nonzero(plane))
     if len(indices[0]) == 0:
         no_points = 1
         return 0, indices, 0, no_points
-    tmp_x = indices[0]
-    tmp_y = indices[1]
-    tmp_z = indices[2]
 
     # remove also points farther than 2 times the mean distance to the COM
-    dist = np.zeros(tmp_x.shape[0])
-    for point in range(tmp_x.shape[0]):
-        dist[point] = np.sqrt((tmp_x[point]-x_com)**2+(tmp_y[point]-y_com)**2+(tmp_z[point]-z_com)**2)
+    dist = np.zeros(indices.shape[1])
+    for point in range(indices.shape[1]):
+        dist[point] = np.sqrt((indices[0, point]-x_com)**2+(indices[1, point]-y_com)**2+(indices[2, point]-z_com)**2)
     average_dist = np.mean(dist)
-    for point in range(tmp_x.shape[0]):
+    debugging = True
+    if debugging:
+        gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                        title='Points before distance threshold plane ' + str(label))
+
+    for point in range(indices.shape[1]):
         if dist[point] > 2 * average_dist:
-            plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
-    print('Fit plane', label, ', ', str(tmp_x.shape[0] - plane[plane == 1].sum()), 'points too far from COM, ',
+            plane[indices[0, point], indices[1, point], indices[2, point]] = 0
+    print('Fit plane', label, ', ', str(indices.shape[1] - plane[plane == 1].sum()), 'points too far from COM, ',
           str(plane[plane == 1].sum()), 'remaining')
+    if debugging:
+        gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                        title='Points after distance threshold plane ' + str(label))
 
     # update plane indices and check if enough points remain
-    indices = np.nonzero(plane)
+    indices = np.asarray(np.nonzero(plane))
     if len(indices[0]) < 5:
         no_points = 1
         return 0, indices, 0, no_points
-    tmp_x = indices[0]
-    tmp_y = indices[1]
-    tmp_z = indices[2]
 
-    tmp_x = tmp_x[:, np.newaxis]
-    tmp_y = tmp_y[:, np.newaxis]
-    tmp_1 = np.ones((tmp_y.shape[0], 1))
-
-    # calculate plane parameters
-    # TODO: update this part (numpy.matrix will not be supported anymore in the future)
-    a = np.matrix(np.concatenate((tmp_x, tmp_y, tmp_1), axis=1))
-    b = np.matrix(tmp_z).T
-    fit = (a.T * a).I * a.T * b
-    errors = b - a * fit
-    fit = np.asarray(fit)
-    fit = fit[:, 0]
-
-    if debugging:
-        plt.figure()
-        ax = plt.subplot(111, projection='3d')
-        ax.scatter(tmp_x, tmp_y, tmp_z, color='b')
-        ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-        xlim = ax.get_xlim()  # first dimension is x for plots, but z for NEXUS convention
-        ylim = ax.get_ylim()
-        meshx, meshy = np.meshgrid(np.arange(xlim[0], xlim[1]+1, 1), np.arange(ylim[0], ylim[1]+1, 1))
-        meshz = np.zeros(meshx.shape)
-        for row in range(meshx.shape[0]):
-            for col in range(meshx.shape[1]):
-                meshz[row, col] = fit[0] * meshx[row, col] +\
-                                      fit[1] * meshy[row, col] + fit[2]
-        ax.plot_wireframe(meshx, meshy, meshz, color='k')
-        plt.title("Points and fitted plane" + str(label))
-        plt.pause(0.1)
-    return fit, indices, errors, no_points
+    # the fit parameters are (a, b, c, d) such that a*x + b*y + c*z + d = 0
+    params, std_param = util.plane_fit(indices=indices, label=label, debugging=debugging)
+    return params, indices, std_param, no_points
 
 
 def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
