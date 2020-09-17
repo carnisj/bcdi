@@ -332,7 +332,6 @@ def fit_plane(plane, label, debugging=False):
     for point in range(indices.shape[1]):
         dist[point] = np.sqrt((indices[0, point]-x_com)**2+(indices[1, point]-y_com)**2+(indices[2, point]-z_com)**2)
     average_dist = np.mean(dist)
-    debugging = True
     if debugging:
         gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
                         title='Points before distance threshold plane ' + str(label))
