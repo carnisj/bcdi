@@ -43,17 +43,17 @@ savedir = datadir
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 projection_axis = 1  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
-smoothing_iterations = 10  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
+smoothing_iterations = 5  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
 smooth_lamda = 0.33  # lambda parameter in Taubin smoothing
 smooth_mu = 0.34  # mu parameter in Taubin smoothing
 radius_normals = 0.1  # radius of integration for the calculation of the density of normals
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
-peak_min_distance = 25  # pixel separation between peaks in corner_peaks()
+peak_min_distance = 10  # pixel separation between peaks in corner_peaks()
 max_distance_plane = 0.75  # in pixels, maximum allowed distance to the facet plane of a voxel
 top_part = False  # if True, will also update logfiles with a support cropped at z_cutoff (remove bottom part)
 z_cutoff = 75  # in pixels. If top_pat=True, will set all support pixels below this value to 0
-edges_coord = 370  # coordination threshold for isolating edges, 350 seems to work reasonably well
-corners_coord = 280  # coordination threshold for isolating corners, 260 seems to work reasonably well
+edges_coord = 350  # 370  # coordination threshold for isolating edges, 350 seems to work reasonably well
+corners_coord = 300  # coordination threshold for isolating corners, 260 seems to work reasonably well
 ########################################################
 # parameters only used in the stereographic projection #
 ########################################################
@@ -88,8 +88,8 @@ planes_north['-1 -1 -1'] = simu.angle_vectors(ref_vector=-reflection, test_vecto
 # planes_north['-1 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
 # planes_north['-1 -1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 1]))
 # planes_north['-1 1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
-planes_south['-2 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-2, 1, 0]))
-planes_south['-2 -1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-2, -1, 0]))
+planes_north['-2 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-2, 1, 0]))
+planes_north['-2 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-2, -1, 0]))
 ##########################
 # end of user parameters #
 ##########################
@@ -367,8 +367,8 @@ if debug:
     gu.multislices_plot(edges, vmin=0, title='Coordination matrix')
 edges[edges > edges_coord] = 0  # remove facets and bulk
 edges[np.nonzero(edges)] = 1  # edge support
-gu.scatter_plot(array=np.asarray(np.nonzero(edges)).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'),
-                title='edges')
+gu.scatter_plot(array=np.asarray(np.nonzero(edges)).T, markersize=2, markercolor='b',
+                labels=('axis 0', 'axis 1', 'axis 2'), title='edges')
 
 ########################################################
 # define corners using the coordination number of voxels #
@@ -379,8 +379,8 @@ if debug:
     gu.multislices_plot(corners, vmin=0, title='Coordination matrix')
 corners[corners > corners_coord] = 0  # remove edges, facets and bulk
 corners[np.nonzero(corners)] = 1  # corner support
-gu.scatter_plot(array=np.asarray(np.nonzero(corners)).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'),
-                title='corners')
+gu.scatter_plot(array=np.asarray(np.nonzero(corners)).T, markersize=2, markercolor='b',
+                labels=('axis 0', 'axis 1', 'axis 2'), title='corners')
 
 ######################################
 # Initialize log files and .vti file #
@@ -429,6 +429,7 @@ gc.collect()
 # fit points by a plane, exclude points far away, loof for the surface layer, refine the fit #
 ##############################################################################################
 for label in unique_labels:
+    debug = True
     print('\nPlane', label)
     # raw fit including all points
     plane = np.copy(all_planes)
@@ -437,15 +438,16 @@ for label in unique_labels:
     if plane[plane == 1].sum() == 0:  # no points on the plane
         print('Raw fit: no points for plane', label)
         continue
-    # Why not using direclty the centroid to find plane equation?
+    # Why not using directly the centroid to find plane equation?
     # Because it does not distinguish pixels coming from different but parallel facets
-    coeffs,  plane_indices, errors, stop = fu.fit_plane(plane=plane, label=label, debugging=debug)
+    coeffs,  plane_indices, errors, stop = fu.fit_plane(plane=plane, label=label, debugging=True)
+    plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
     if stop == 1:
         print('No points remaining after raw fit for plane', label)
         continue
 
     # update plane by filtering out pixels too far from the fit plane
-    plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
+    plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, plane_shape=plane.shape,
                                         max_distance=max_distance_plane)
     grown_points = plane[plane == 1].sum().astype(int)
     if stop == 1:  # no points on the plane
@@ -453,45 +455,54 @@ for label in unique_labels:
         continue
     else:
         print('Plane', label, ', ', str(grown_points), 'points after checking distance to plane')
-    plane_indices = np.nonzero(plane == 1)
+    plane_indices = np.nonzero(plane == 1)  # plane_indices is a tuple of 3 arrays
 
-    if debug:
-
-        gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
-                        title='Plane' + str(label) + ' after raw fit')
-
-    ##########################################################################################################
-    # Look for the surface: correct for the offset between plane equation and the outer shell of the support #
-    # Effect of meshing/smoothing: the meshed support is smaller than the initial support #
-    #############################################################################################
+    ##############################################################################################################
+    # Look for the surface: correct for the offset between the plane equation and the outer shell of the support #
+    # Effect of meshing/smoothing: the meshed support is smaller than the initial support                        #
+    ##############################################################################################################
     # crop the support to a small ROI included in the plane box
     surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
+    plane_indices0, plane_indices1, plane_indices2 = plane_indices  # plane_indices is a tuple of 3 arrays
+    gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_indices0[:, np.newaxis],
+                                                     plane_indices1[:, np.newaxis],
+                                                     plane_indices2[:, np.newaxis]), axis=1),
+                                     np.concatenate((surf0[:, np.newaxis],
+                                                     surf1[:, np.newaxis],
+                                                     surf2[:, np.newaxis]), axis=1)),
+                             markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
+                             title='Plane' + str(label) + ' before shifting')
 
-    plane_normal = np.array([coeffs[0], coeffs[1], -1])  # normal is [a, b, c] if ax+by+cz+d=0
-
+    # find the direction in which the plane should be shifted to cross the surface
     dist = np.zeros(len(surf0))
     for point in range(len(surf0)):
-        dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] - surf2[point] + coeffs[2]) \
+        dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] + coeffs[2]*surf2[point] + coeffs[3])\
                / np.linalg.norm(plane_normal)
     mean_dist = dist.mean()
     print('Mean distance of plane ', label, ' to outer shell = ' + str('{:.2f}'.format(mean_dist)) + 'pixels')
 
+    # offset the plane by mean_dist/2 and see if the plane is closer to the surface or went in the wrong direction
     dist = np.zeros(len(surf0))
+    offset = mean_dist / 2 * np.dot(plane_normal / np.linalg.norm(plane_normal),
+                                    plane_normal / np.linalg.norm(plane_normal))
     for point in range(len(surf0)):
-        dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] - surf2[point]
-                       + (coeffs[2] - mean_dist / 2)) / np.linalg.norm(plane_normal)
+        dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] + coeffs[2]*surf2[point]
+                       + coeffs[3] - offset) / np.linalg.norm(plane_normal)
     new_dist = dist.mean()
-    step_shift = 0.25  # will scan by half pixel through the crystal in order to not miss voxels
+    print('<distance> of plane ', label, ' to outer shell after offsetting by mean_distance/2 = '
+          + str('{:.2f}'.format(new_dist)) + 'pixels')
     # these directions are for a mesh smaller than the support
-    if mean_dist*new_dist < 0:  # crossed the support surface
+    step_shift = 0.5  # will scan with subpixel step through the crystal in order to not miss voxels
+    if mean_dist*new_dist < 0:  # crossed the support surface, correct direction
         step_shift = np.sign(mean_dist) * step_shift
-    elif abs(new_dist) - abs(mean_dist) < 0:
+    elif abs(new_dist) - abs(mean_dist) < 0:  # moving towards the surface, correct direction
         step_shift = np.sign(mean_dist) * step_shift
-    else:  # going away from surface, wrong direction
+    else:  # moving away from the surface, wrong direction
         step_shift = -1 * np.sign(mean_dist) * step_shift
 
-    step_shift = -1*step_shift  # added JCR 24082018 because the direction of normals was flipped
+    step_shift = -1*step_shift  # added JCR 24082018 because the direction of normals to plane is flipped
 
+    # loop until the surface is crossed or the iteration limit is reached
     common_previous = 0
     found_plane = 0
     nbloop = 1
@@ -510,10 +521,10 @@ for label in unique_labels:
                     common_points = common_points + 1
 
         if debug:
-            tempcoeff2 = coeffs[2] - nbloop * step_shift
+            temp_coeff3 = coeffs[3] - nbloop * step_shift
             dist = np.zeros(len(surf0))
             for point in range(len(surf0)):
-                dist[point] = (coeffs[0] * surf0[point] + coeffs[1] * surf1[point] - surf2[point] + tempcoeff2) \
+                dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] + coeffs[2]*surf2[point] + temp_coeff3) \
                               / np.linalg.norm(plane_normal)
             temp_mean_dist = dist.mean()
             plane = np.zeros(surface.shape)
@@ -526,8 +537,8 @@ for label in unique_labels:
                                              np.concatenate((surf0[:, np.newaxis],
                                                              surf1[:, np.newaxis],
                                                              surf2[:, np.newaxis]), axis=1)),
-                                     markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
-                                     title='Plane' + str(label) + ' after shifting facet - iteration' + str(nbloop))
+                                     markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
+                                     title='Plane' + str(label) + ' after shifting - iteration' + str(nbloop))
 
             print('(while) iteration ', nbloop, '- Mean distance of the plane to outer shell = ' +
                   str('{:.2f}'.format(temp_mean_dist)) + '\n pixels - common_points = ', common_points)
@@ -536,33 +547,33 @@ for label in unique_labels:
             if common_points >= common_previous:
                 found_plane = 0
                 common_previous = common_points
-                print('(while) iteration ', nbloop, ' - ', common_previous, 'points belonging to the facet for plane ',
-                      label)
+                print('(while, common_points != 0), iteration ', nbloop, ' - ', common_previous,
+                      'points belonging to the facet for plane ', label)
                 nbloop = nbloop + 1
                 crossed_surface = 1
             elif common_points < grown_points / 5:  # try to keep enough points for statistics, half step back
                 found_plane = 1
-                print('Exiting while loop after threshold reached - ', common_previous,
+                print('(while, common_points != 0), exiting while loop after threshold reached - ', common_previous,
                       'points belonging to the facet for plane ', label, '- next step common points=', common_points)
             else:
                 found_plane = 0
                 common_previous = common_points
-                print('(while) iteration ', nbloop, ' - ', common_previous, 'points belonging to the facet for plane ',
-                      label)
+                print('(while, common_points != 0), iteration ', nbloop, ' - ', common_previous,
+                      'points belonging to the facet for plane ', label)
                 nbloop = nbloop + 1
                 crossed_surface = 1
         else:
             if crossed_surface == 1:  # found the outer shell, which is 1 step before
                 found_plane = 1
-                print('Exiting while loop - ', common_previous, 'points belonging to the facet for plane ', label,
-                      '- next step common points=', common_points)
+                print('(while, common_points = 0), exiting while loop - ', common_previous,
+                      'points belonging to the facet for plane ', label, '- next step common points=', common_points)
             elif nbloop < 5:
-                print('(while) iteration ', nbloop, ' - ', common_previous, 'points belonging to the facet for plane ',
-                      label)
+                print('(while, common_points = 0), iteration ', nbloop, ' - ', common_previous,
+                      'points belonging to the facet for plane ', label)
                 nbloop = nbloop + 1
             else:
                 if shift_direction == 1:  # already unsuccessful in the other direction
-                    print('No point from support is intersecting the plane ', label)
+                    print('(while, common_points = 0), no point from support is intersecting the plane ', label)
                     stop = 1
                     break
                 else:  # distance to support metric not reliable, start again in the other direction
@@ -576,7 +587,8 @@ for label in unique_labels:
         continue
 
     # go back one step
-    coeffs[2] = coeffs[2] - (nbloop-1)*step_shift
+    coeffs = list(coeffs)
+    coeffs[3] = coeffs[3] - (nbloop-1)*step_shift
     # shift indices
     plane_newindices0, plane_newindices1, plane_newindices2 = \
         fu.offset_plane(indices=plane_indices, offset=(nbloop-1)*step_shift, plane_normal=plane_normal)
@@ -594,7 +606,7 @@ for label in unique_labels:
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
-                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
                                  title='Plane' + str(label) + ' after finding the surface\n' +
                                        'Points number=' + str(len(plane_indices[0])))
 
@@ -628,7 +640,7 @@ for label in unique_labels:
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
-                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
                                  title='Plane' + str(label) + ' after 1st growth at the surface\n iteration' +
                                        str(iterate) + '- Points number=' + str(len(plane_indices[0])))
 
@@ -646,12 +658,12 @@ for label in unique_labels:
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
-                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
                                  title='Plane' + str(label) + ' after refined fit at surface\n iteration' +
                                        str(iterate) + '- Points number=' + str(len(plane_indices[0])))
 
     # update plane by filtering out pixels too far from the fit plane
-    plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
+    plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, plane_shape=plane.shape,
                                         max_distance=max_distance_plane)
     if stop == 1:  # no points on the plane
         print('Refined fit: no points for plane', label)
@@ -665,7 +677,7 @@ for label in unique_labels:
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
-                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
                                  title='Plane' + str(label) + ' after distance threshold at surface\n' +
                                        'Points number=' + str(len(plane_indices[0])))
 
@@ -693,7 +705,7 @@ for label in unique_labels:
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
-                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
                                  title='Plane' + str(label) + ' final growth at the surface\nPoints number='
                                        + str(len(plane_indices[0])))
 
@@ -707,7 +719,7 @@ for label in unique_labels:
                                      np.concatenate((surf0[:, np.newaxis],
                                                      surf1[:, np.newaxis],
                                                      surf2[:, np.newaxis]), axis=1)),
-                             markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                             markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
                              title='Plane' + str(label) + ' after edge removal\nPoints number='
                                    + str(len(plane_indices[0])))
     print('Plane ', label, ', ', str(len(plane_indices[0])), 'points after removing edges')
@@ -731,7 +743,7 @@ for label in unique_labels:
         mean_gradient = mean_gradient / np.linalg.norm(mean_gradient)
 
     # check the correct direction of the normal using the gradient of the support
-    plane_normal = np.array([coeffs[0], coeffs[1], -1])  # normal is [a, b, c] if ax+by+cz+d=0
+    plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
     plane_normal = plane_normal / np.linalg.norm(plane_normal)
     if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
         print('Flip normal direction plane', str(label))
