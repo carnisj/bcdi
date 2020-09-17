@@ -323,6 +323,7 @@ def plane_fit(indices, label='', debugging=False):
     :param debugging: True to see printed comments and debugging plots
     :return: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0, the matrix of covariant values
     """
+    indices = np.asarray(indices)
     params3d, pcov3d = curve_fit(plane, indices[0:2, :], indices[2, :])
     std_param3d = np.sqrt(np.diag(pcov3d))
     params = (-params3d[0], -params3d[1], 1, -params3d[2])
