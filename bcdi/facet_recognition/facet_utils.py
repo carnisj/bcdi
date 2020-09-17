@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 from scipy.ndimage.measurements import center_of_mass
+from scipy.signal import convolve
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
@@ -360,15 +361,14 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     """
     Find voxels of the object which belong to a facet using the facet plane equation and the distance to the plane.
 
-    :param fit: coefficients of the plane (tuple of 3 numbers)
-    :param plane: 3D binary array of the shape of the data
+    :param fit: coefficients of the plane (a, b, c, d) such that a*x + b*y + c*z + d = 0
+    :param plane: 3D binary support of the plane, with shape of the full dataset
     :param label: the label of the plane processed
-    :param support: binary support of the object
+    :param support: 3D binary support of the reconstructed object, with shape of the full dataset
     :param max_distance: in pixels, maximum allowed distance to the facet plane of a voxel
     :param debugging: set to True to see plots
     :return: the updated plane, a stop flag
     """
-    from scipy.signal import convolve
     nbz, nby, nbx = plane.shape
     indices = np.nonzero(plane)
     if len(indices[0]) == 0:
@@ -397,7 +397,7 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     # check distance of new voxels to the plane
     new_indices = np.nonzero(temp_plane)
 
-    plane, no_points = distance_threshold(fit=fit, indices=new_indices, shape=temp_plane.shape,
+    plane, no_points = distance_threshold(fit=fit, indices=new_indices, plane_shape=temp_plane.shape,
                                           max_distance=max_distance)
 
     if debugging and len(new_indices[0]) != 0:
