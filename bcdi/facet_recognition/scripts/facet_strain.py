@@ -425,11 +425,11 @@ fu.update_logfile(support=corners, strain_array=strain, summary_file=summary_fil
 del bulk, corners
 gc.collect()
 
-##############################################################################################
-# fit points by a plane, exclude points far away, loof for the surface layer, refine the fit #
-##############################################################################################
+#######################################################################################
+# Iterate over the planes to find the corresponding surface facet                     #
+# Effect of meshing/smoothing: the meshed support is smaller than the initial support #
+#######################################################################################
 for label in unique_labels:
-    debug = True
     print('\nPlane', label)
     # raw fit including all points
     plane = np.copy(all_planes)
@@ -438,14 +438,16 @@ for label in unique_labels:
     if plane[plane == 1].sum() == 0:  # no points on the plane
         print('Raw fit: no points for plane', label)
         continue
+    ################################################################
+    # fit a plane to the voxels isolated by watershed segmentation #
+    ################################################################
     # Why not using directly the centroid to find plane equation?
     # Because it does not distinguish pixels coming from different but parallel facets
-    coeffs,  plane_indices, errors, stop = fu.fit_plane(plane=plane, label=label, debugging=True)
-    plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
+    coeffs,  plane_indices, errors, stop = fu.fit_plane(plane=plane, label=label, debugging=debug)
     if stop == 1:
         print('No points remaining after raw fit for plane', label)
         continue
-
+    plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
     # update plane by filtering out pixels too far from the fit plane
     plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, plane_shape=plane.shape,
                                         max_distance=max_distance_plane)
@@ -459,14 +461,10 @@ for label in unique_labels:
 
     ##############################################################################################################
     # Look for the surface: correct for the offset between the plane equation and the outer shell of the support #
-    # Effect of meshing/smoothing: the meshed support is smaller than the initial support                        #
     ##############################################################################################################
     # crop the support to a small ROI included in the plane box
     surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
-    plane_indices0, plane_indices1, plane_indices2 = plane_indices  # plane_indices is a tuple of 3 arrays
-    gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_indices0[:, np.newaxis],
-                                                     plane_indices1[:, np.newaxis],
-                                                     plane_indices2[:, np.newaxis]), axis=1),
+    gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
                                      np.concatenate((surf0[:, np.newaxis],
                                                      surf1[:, np.newaxis],
                                                      surf2[:, np.newaxis]), axis=1)),
@@ -500,98 +498,21 @@ for label in unique_labels:
     else:  # moving away from the surface, wrong direction
         step_shift = -1 * np.sign(mean_dist) * step_shift
 
-    step_shift = -1*step_shift  # added JCR 24082018 because the direction of normals to plane is flipped
+    step_shift = -1*step_shift  # added JCR 24082018 because the direction of normals to plane is inwards the crystal
 
-    # loop until the surface is crossed or the iteration limit is reached
-    common_previous = 0
-    found_plane = 0
-    nbloop = 1
-    crossed_surface = 0
-    shift_direction = 0
-    while found_plane == 0:
-        common_points = 0
-        # shift indices
-        plane_newindices0, plane_newindices1, plane_newindices2 =\
-            fu.offset_plane(indices=plane_indices, offset=nbloop*step_shift, plane_normal=plane_normal)
+    #########################################################################################
+    # shift the fit plane along its normal until the normal is crossed and go back one step #
+    #########################################################################################
+    total_offset = fu.find_facet(refplane_indices=plane_indices, surf_indices=(surf0, surf1, surf2),
+                                 original_shape=surface.shape, step_shift=step_shift, plane_label=label,
+                                 plane_coeffs=coeffs, min_points=grown_points/5, debugging=debug)
 
-        for point in range(len(plane_newindices0)):
-            for point2 in range(len(surf0)):
-                if plane_newindices0[point] == surf0[point2] and plane_newindices1[point] == surf1[point2]\
-                        and plane_newindices2[point] == surf2[point2]:
-                    common_points = common_points + 1
-
-        if debug:
-            temp_coeff3 = coeffs[3] - nbloop * step_shift
-            dist = np.zeros(len(surf0))
-            for point in range(len(surf0)):
-                dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] + coeffs[2]*surf2[point] + temp_coeff3) \
-                              / np.linalg.norm(plane_normal)
-            temp_mean_dist = dist.mean()
-            plane = np.zeros(surface.shape)
-            plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
-
-            # plot plane points overlaid with the support
-            gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_newindices0[:, np.newaxis],
-                                                             plane_newindices1[:, np.newaxis],
-                                                             plane_newindices2[:, np.newaxis]), axis=1),
-                                             np.concatenate((surf0[:, np.newaxis],
-                                                             surf1[:, np.newaxis],
-                                                             surf2[:, np.newaxis]), axis=1)),
-                                     markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
-                                     title='Plane' + str(label) + ' after shifting - iteration' + str(nbloop))
-
-            print('(while) iteration ', nbloop, '- Mean distance of the plane to outer shell = ' +
-                  str('{:.2f}'.format(temp_mean_dist)) + '\n pixels - common_points = ', common_points)
-
-        if common_points != 0:
-            if common_points >= common_previous:
-                found_plane = 0
-                common_previous = common_points
-                print('(while, common_points != 0), iteration ', nbloop, ' - ', common_previous,
-                      'points belonging to the facet for plane ', label)
-                nbloop = nbloop + 1
-                crossed_surface = 1
-            elif common_points < grown_points / 5:  # try to keep enough points for statistics, half step back
-                found_plane = 1
-                print('(while, common_points != 0), exiting while loop after threshold reached - ', common_previous,
-                      'points belonging to the facet for plane ', label, '- next step common points=', common_points)
-            else:
-                found_plane = 0
-                common_previous = common_points
-                print('(while, common_points != 0), iteration ', nbloop, ' - ', common_previous,
-                      'points belonging to the facet for plane ', label)
-                nbloop = nbloop + 1
-                crossed_surface = 1
-        else:
-            if crossed_surface == 1:  # found the outer shell, which is 1 step before
-                found_plane = 1
-                print('(while, common_points = 0), exiting while loop - ', common_previous,
-                      'points belonging to the facet for plane ', label, '- next step common points=', common_points)
-            elif nbloop < 5:
-                print('(while, common_points = 0), iteration ', nbloop, ' - ', common_previous,
-                      'points belonging to the facet for plane ', label)
-                nbloop = nbloop + 1
-            else:
-                if shift_direction == 1:  # already unsuccessful in the other direction
-                    print('(while, common_points = 0), no point from support is intersecting the plane ', label)
-                    stop = 1
-                    break
-                else:  # distance to support metric not reliable, start again in the other direction
-                    shift_direction = 1
-                    print('Shift scanning direction')
-                    step_shift = -1 * step_shift
-                    nbloop = 1
-
-    if stop == 1:  # no points on the plane
-        print('Intersecting with support: no points for plane', label)
-        continue
-
-    # go back one step
+    # correct the offset of the fit plane to match the surface
     coeffs = list(coeffs)
-    coeffs[3] = coeffs[3] - (nbloop-1)*step_shift
-    # shift indices
+    coeffs[3] = coeffs[3] - total_offset
+    # shift plane indices
     plane_newindices0, plane_newindices1, plane_newindices2 = \
-        fu.offset_plane(indices=plane_indices, offset=(nbloop-1)*step_shift, plane_normal=plane_normal)
+        fu.offset_plane(indices=plane_indices, offset=total_offset, plane_normal=plane_normal)
 
     plane = np.zeros(surface.shape)
     plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
