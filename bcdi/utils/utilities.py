@@ -314,13 +314,12 @@ def plane(xy_array, a, b, c):
     return a * xy_array[0, :] + b * xy_array[1, :] + c
 
 
-def plane_fit(indices, label='', debugging=False):
+def plane_fit(indices, label=''):
     """
     Fit a plane to the voxels defined by indices.
 
     :param indices: a (3xN) numpy array, x values being the 1st row, y values the 2nd row and z values the 3rd row
     :param label: int, label of the plane used for the title in the debugging plot
-    :param debugging: True to see printed comments and debugging plots
     :return: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0, the matrix of covariant values
     """
     indices = np.asarray(indices)
@@ -328,19 +327,16 @@ def plane_fit(indices, label='', debugging=False):
     std_param3d = np.sqrt(np.diag(pcov3d))
     params = (-params3d[0], -params3d[1], 1, -params3d[2])
     std_param = (std_param3d[0], std_param3d[1], 0, std_param3d[2])
-    if debugging:
-        print('3D: one standard deviation errors on the parameters = ', std_param3d)
-        _, ax = gu.scatter_plot(np.transpose(indices), labels=('axis 0', 'axis 1', 'axis 2'),
-                                title='Points and fitted 3d plane' + str(label))
-        xlim = ax.get_xlim()
-        ylim = ax.get_ylim()
 
-        meshx, meshy = np.meshgrid(np.arange(xlim[0], xlim[1] + 1, 1), np.arange(ylim[0], ylim[1] + 1, 1))
-        meshz = plane(np.vstack((meshx.flatten(), meshy.flatten())),
-                      params3d[0], params3d[1], params3d[2]).reshape(meshx.shape)
-        ax.plot_wireframe(meshx, meshy, meshz, color='k')
-        ax.set_title("Points and fitted 3d plane" + str(label))
-        plt.pause(0.1)
+    print('3D: one standard deviation errors on the parameters = ', std_param3d)
+    _, ax = gu.scatter_plot(np.transpose(indices), labels=('axis 0', 'axis 1', 'axis 2'),
+                            title='Points and fitted plane ' + str(label))
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    zlim = ax.get_zlim()
+    meshx, meshy = np.meshgrid(np.arange(xlim[0], xlim[1] + 1, 1), np.arange(ylim[0], ylim[1] + 1, 1))
+    meshz = plane(np.vstack((meshx.flatten(), meshy.flatten())),
+                  params3d[0], params3d[1], params3d[2]).reshape(meshx.shape)
 
     if any(std_param3d > 1):  # probably z does not depend on x and y, try to fit  y = a*x + b
         print('1-sigma error on some parameter > 1, z may not depend on x and y')
@@ -348,35 +344,20 @@ def plane_fit(indices, label='', debugging=False):
         std_param2d = np.sqrt(np.diag(pcov2d))
         params = (-params2d[0], 1, 0, -params2d[1])
         std_param = (std_param2d[0], 0, 0, std_param2d[1])
-        if debugging:
-            print('2D: one standard deviation errors on the parameters = ', std_param2d)
-            _, ax = gu.scatter_plot(np.transpose(indices), labels=('axis 0', 'axis 1', 'axis 2'),
-                                    title='Points and fitted 3d plane' + str(label))
-            xlim = ax.get_xlim()
-            zlim = ax.get_zlim()
-            meshx, meshz = np.meshgrid(np.arange(xlim[0], xlim[1] + 1, 1), np.arange(zlim[0], zlim[1] + 1, 1))
-
-            meshy = line(x_array=meshx.flatten(), a=params2d[0], b=params2d[1]).reshape(meshx.shape)
-            ax.plot_wireframe(meshx, meshy, meshz, color='k')
-            ax.set_title("Points and fitted 2d plane" + str(label))
-            plt.pause(0.1)
+        meshx, meshz = np.meshgrid(np.arange(xlim[0], xlim[1] + 1, 1), np.arange(zlim[0], zlim[1] + 1, 1))
+        meshy = line(x_array=meshx.flatten(), a=params2d[0], b=params2d[1]).reshape(meshx.shape)
 
         if any(std_param2d > 1):  # probably y does not depend on x, that means x = constant
             print('1-sigma error on some parameter > 1, y may not depend on x')
             constant = indices[0, :].mean()
             params = (1, 0, 0, -constant)
             std_param = (0, 0, 0, indices[0, :].std())
-            if debugging:
-                print('1D: one standard deviation error on the parameter = ', indices[0, :].std())
-                _, ax = gu.scatter_plot(np.transpose(indices), labels=('axis 0', 'axis 1', 'axis 2'),
-                                        title='Points and fitted 3d plane' + str(label))
-                ylim = ax.get_xlim()
-                zlim = ax.get_zlim()
-                meshy, meshz = np.meshgrid(np.arange(ylim[0], ylim[1] + 1, 1), np.arange(zlim[0], zlim[1] + 1, 1))
-                meshx = np.ones(meshy.shape) * constant
-                ax.plot_wireframe(meshx, meshy, meshz, color='k')
-                ax.set_title("Points and fitted 2d plane" + str(label))
-                plt.pause(0.1)
+            print('1D: one standard deviation error on the parameter = ', indices[0, :].std())
+            meshy, meshz = np.meshgrid(np.arange(ylim[0], ylim[1] + 1, 1), np.arange(zlim[0], zlim[1] + 1, 1))
+            meshx = np.ones(meshy.shape) * constant
+
+    ax.plot_wireframe(meshx, meshy, meshz, color='k')
+    plt.pause(0.1)
     return params, std_param
 
 
