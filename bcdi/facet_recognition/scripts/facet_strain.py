@@ -208,10 +208,10 @@ if projection_method == 'stereographic':
             for idx in range(nb_normals):
                 # calculate the corresponding index coordinates
                 # by rescaling from [-max_angle max_angle] to [0 numy] or [0 numx]
-                u_top = int((stereo_proj[idx, 0] + max_angle) * numx / (2*max_angle))  # u axis horizontal
-                v_top = int((stereo_proj[idx, 1] + max_angle) * numy / (2*max_angle))  # v axis vertical
-                u_bottom = int((stereo_proj[idx, 2] + max_angle) * numx / (2*max_angle))  # u axis horizontal
-                v_bottom = int((stereo_proj[idx, 3] + max_angle) * numy / (2*max_angle))  # v axis vertical
+                u_top = int(np.rint((stereo_proj[idx, 0] + max_angle) * numx / (2*max_angle)))  # u axis horizontal
+                v_top = int(np.rint((stereo_proj[idx, 1] + max_angle) * numy / (2*max_angle)))  # v axis vertical
+                u_bottom = int(np.rint((stereo_proj[idx, 2] + max_angle) * numx / (2*max_angle)))  # u axis horizontal
+                v_bottom = int(np.rint((stereo_proj[idx, 3] + max_angle) * numy / (2*max_angle)))  # v axis vertical
 
                 try:
                     if labels_top[u_top, v_top] == label and \
@@ -233,7 +233,7 @@ if projection_method == 'stereographic':
     # reorganize stereo_proj to keep only the projected point which is in the range [-90 90]
     pole_proj = np.zeros((nb_normals, 3), dtype=stereo_proj.dtype)
     # 1st and 2nd columns are coordinates
-    # the 3rd column is an indicator for using South or North projected coordinates
+    # the 3rd column is a flag for using the South (0) or North (1) projected coordinates
     for idx in range(nb_normals):
         if np.sqrt(stereo_proj[idx, 0]**2 + stereo_proj[idx, 1]**2) > 90:
             pole_proj[idx, 0:2] = stereo_proj[idx, 2:]  # use values for the projection from North pole
@@ -249,7 +249,7 @@ if projection_method == 'stereographic':
     # rescale euclidian v axis from [-max_angle max_angle] to [0 numx]
     pole_proj[:, 1] = (pole_proj[:, 1] + max_angle) * numx / (2*max_angle)
     # change pole_proj to an array of integer indices
-    coordinates = pole_proj.astype(int)
+    coordinates = np.rint(pole_proj).astype(int)
 
     del pole_proj
     gc.collect()
@@ -283,7 +283,7 @@ elif projection_method == 'equirectangular':
     # rescale the vertical axis from [-pi/2 pi/2] to [0 numy]
     longitude_latitude[:, 1] = (longitude_latitude[:, 1] + np.pi / 2) * numy / np.pi  # latitude
     # change longitude_latitude to an array of integer indices
-    coordinates = np.fliplr(longitude_latitude).astype(int)  # put the vertical axis in first position
+    coordinates = np.rint(np.fliplr(longitude_latitude)).astype(int)  # put the vertical axis in first position
     duplicated_labels = []
     max_label = labels.max()
 
@@ -304,7 +304,10 @@ else:
     print('Invalid value for projection_method')
     sys.exit()
 
-unique_labels = [label for label in np.arange(1, max_label+1) if label not in duplicated_labels[1::2]]
+unique_labels = [label for label in np.arange(1, max_label+1)
+                 if label not in duplicated_labels[1::2]]  # label 0 is the background
+if len(duplicated_labels[1::2]) == 0:
+    print('\nNo duplicated label')
 print('\nBackground: ', str((normals_label == 0).sum()), 'normals')
 for label in unique_labels:
     print("Facet", str(label), ': ', str((normals_label == label).sum()), 'normals detected')
@@ -323,11 +326,14 @@ for idx in range(nb_vertices):
         planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] + 1
     # check duplicated voxels and discard them if they belong to different planes
     # it happens when some vertices are close and they give the same voxel after rounding their position to integers
-    if planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] > 1:
+    # one side effect is that the border of areas obtained by watershed segmentation will be set to the background
+    if planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] > 1:  # a rounded voxel was already added
         if all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] != vertices_label[idx]:
             # belongs to different labels, therefore it is set as background (label 0)
             all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = 0
             duplicated_counter = duplicated_counter + 1
+            # if np.all([all_planes[temp_indices[0], temp_indices[1], temp_indices[2]], vertices_label[idx]]):
+            #     print(all_planes[temp_indices[0], temp_indices[1], temp_indices[2]], vertices_label[idx])
     else:  # non duplicated pixel
         all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = \
                 vertices_label[idx]
