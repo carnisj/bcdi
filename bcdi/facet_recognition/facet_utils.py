@@ -65,6 +65,7 @@ def calc_stereoproj_facet(projection_axis, vectors, radius_mean, stereo_center):
             stereo_proj[idx, 2] = radius_mean * vectors[idx, 0] / (radius_mean + stereo_center - vectors[idx, 2])  # u_n
             stereo_proj[idx, 3] = radius_mean * vectors[idx, 1] / (radius_mean + stereo_center - vectors[idx, 2])  # v_n
         uv_labels = ('axis 0', 'axis 1')  # axes corresponding to u and v respectively, used in plots
+
     stereo_proj = stereo_proj / radius_mean * 90  # rescale from radius_mean to 90
 
     return stereo_proj, uv_labels
@@ -652,7 +653,7 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     :return:
      - labels_south and labels_north as 2D arrays for each projection from South and North
      - a (Nx4) array: projected coordinates of normals from South (u column 0, v column 1)
-      and North (u column2 , v column 3)
+      and North (u column2 , v column 3). The coordinates are in degrees, not indices.
      - the list of rows to remove
     """
     from scipy.interpolate import griddata

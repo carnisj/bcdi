@@ -176,6 +176,9 @@ if projection_method == 'stereographic':
                               save_txt=False, plot_planes=True, planes_south=planes_south, planes_north=planes_north,
                               max_angle=max_angle, voxel_size=voxel_size, projection_axis=projection_axis,
                               scale=stereo_scale, debugging=debug)
+    # labels_south and labels_north are 2D arrays for projections from South and North
+    # stereo_proj is a (Nx4) array containint the projected coordinates of normals from South (u column 0, v column 1)
+    # and North (u column2 , v column 3). The coordinates are in degrees, not indices.
 
     # remove rows containing nan values
     normals = np.delete(normals, remove_row, axis=0)
@@ -194,10 +197,11 @@ if projection_method == 'stereographic':
     # duplicated_labels stores bottom_labels which are duplicate from top_labels [0 duplicated_labels unique_label ...]
     for label in range(1, labels_top.max()+1, 1):
         label_points = np.argwhere(labels_top == label)
+        # rescale lab
         label_points[:, 0] = (label_points[:, 0] * 2*max_angle / numy) - max_angle  # rescale to [-max_angle max_angle]
         label_points[:, 1] = (label_points[:, 1] * 2*max_angle / numx) - max_angle  # rescale to [-max_angle max_angle]
 
-        label_distances = np.sqrt(label_points[:, 0]**2 + label_points[:, 1]**2)
+        label_distances = np.sqrt(label_points[:, 0]**2 + label_points[:, 1]**2)  # distance in angle from the origin
         if (label_distances <= 90).sum() == label_points.shape[0]:  # all points inside the 90deg border
             continue  # do nothing, the facet is valid
         elif (label_distances > 90).sum() == label_points.shape[0]:  # all points outside the 90deg border
