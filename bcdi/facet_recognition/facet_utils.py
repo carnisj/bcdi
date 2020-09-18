@@ -254,6 +254,118 @@ def equirectangular_proj(normals, intensity, cmap=default_cmap, bw_method=0.03, 
     return labels, long_lat
 
 
+def find_facet(refplane_indices, surf_indices, original_shape, step_shift, plane_label, plane_coeffs, min_points,
+               debugging=False):
+    """
+
+
+    :param refplane_indices:
+    :param surf_indices:
+    :param original_shape:
+    :param step_shift:
+    :param plane_label:
+    :param plane_coeffs:
+    :param min_points:
+    :param debugging:
+    :return:
+    """
+    if not isinstance(refplane_indices, tuple):
+        raise ValueError('refplane_indices should be a tuple of 3 1D ndarrays')
+    if not isinstance(surf_indices, tuple):
+        raise ValueError('surf_indices should be a tuple of 3 1D ndarrays')
+    surf0, surf1, surf2 = surf_indices
+    plane_normal = np.array([plane_coeffs[0], plane_coeffs[1], plane_coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
+    # loop until the surface is crossed or the iteration limit is reached
+    common_previous = 0
+    found_plane = 0
+    nbloop = 1
+    crossed_surface = 0
+    shift_direction = 0
+    while found_plane == 0:
+        common_points = 0
+        # shift indices
+        plane_newindices0, plane_newindices1, plane_newindices2 =\
+            offset_plane(indices=refplane_indices, offset=nbloop*step_shift, plane_normal=plane_normal)
+
+        for point in range(len(plane_newindices0)):
+            for point2 in range(len(surf0)):
+                if plane_newindices0[point] == surf0[point2] and plane_newindices1[point] == surf1[point2]\
+                        and plane_newindices2[point] == surf2[point2]:
+                    common_points = common_points + 1
+
+        if debugging:
+            temp_coeff3 = plane_coeffs[3] - nbloop * step_shift
+            dist = np.zeros(len(surf0))
+            for point in range(len(surf0)):
+                dist[point] = (plane_coeffs[0]*surf0[point] + plane_coeffs[1]*surf1[point] +
+                               plane_coeffs[2]*surf2[point] + temp_coeff3) \
+                              / np.linalg.norm(plane_normal)
+            temp_mean_dist = dist.mean()
+            plane = np.zeros(original_shape)
+            plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
+
+            # plot plane points overlaid with the support
+            gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_newindices0[:, np.newaxis],
+                                                             plane_newindices1[:, np.newaxis],
+                                                             plane_newindices2[:, np.newaxis]), axis=1),
+                                             np.concatenate((surf0[:, np.newaxis],
+                                                             surf1[:, np.newaxis],
+                                                             surf2[:, np.newaxis]), axis=1)),
+                                     markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
+                                     title='Plane' + str(plane_label) + ' after shifting - iteration' + str(nbloop))
+
+            print('(while) iteration ', nbloop, '- Mean distance of the plane to outer shell = ' +
+                  str('{:.2f}'.format(temp_mean_dist)) + '\n pixels - common_points = ', common_points)
+
+        if common_points != 0:  # some plane points are in commun with the surface layer
+            if common_points >= common_previous:
+                found_plane = 0
+                common_previous = common_points
+                print('(while, common_points != 0), iteration ', nbloop, ' - ', common_previous,
+                      'points belonging to the facet for plane ', plane_label)
+                nbloop = nbloop + 1
+                crossed_surface = 1
+            elif common_points < min_points:  # try to keep enough points for statistics, half step back
+                found_plane = 1
+                print('(while, common_points != 0), exiting while loop after threshold reached - ', common_previous,
+                      'points belonging to the facet for plane ', plane_label,
+                      '- next step common points=', common_points)
+            else:
+                found_plane = 0
+                common_previous = common_points
+                print('(while, common_points != 0), iteration ', nbloop, ' - ', common_previous,
+                      'points belonging to the facet for plane ', plane_label)
+                nbloop = nbloop + 1
+                crossed_surface = 1
+        else:  # no commun points, the plane is not intersecting the surface layer
+            if crossed_surface == 1:  # found the outer shell, which is 1 step before
+                found_plane = 1
+                print('(while, common_points = 0), exiting while loop - ', common_previous,
+                      'points belonging to the facet for plane ', plane_label,
+                      '- next step common points=', common_points)
+            elif not shift_direction:
+                if nbloop < 5:  # continue to scan
+                    print('(while, common_points = 0), iteration ', nbloop, ' - ', common_previous,
+                          'points belonging to the facet for plane ', plane_label)
+                    nbloop = nbloop + 1
+                else:  # scan in the other direction
+                    shift_direction = 1
+                    print('Shift scanning direction')
+                    step_shift = -1 * step_shift
+                    nbloop = 1
+            else:  # shift_direction = 1
+                if nbloop < 10:
+                    print('(while, common_points = 0), iteration ', nbloop, ' - ', common_previous,
+                          'points belonging to the facet for plane ', plane_label)
+                    nbloop = nbloop + 1
+                else:  # we were already unsuccessfull in the other direction, give up
+                    print('(while, common_points = 0), no point from support is intersecting the plane ', plane_label)
+                    stop = 1
+                    break
+
+    return (nbloop-1)*step_shift
+
+
 def find_neighbours(vertices, faces):
     """
     Get the list of neighbouring vertices for each vertex.
@@ -352,7 +464,7 @@ def fit_plane(plane, label, debugging=False):
         return 0, indices, 0, no_points
 
     # the fit parameters are (a, b, c, d) such that a*x + b*y + c*z + d = 0
-    params, std_param = util.plane_fit(indices=indices, label=label, debugging=debugging)
+    params, std_param = util.plane_fit(indices=indices, label=label)
     return params, indices, std_param, no_points
 
 
@@ -499,8 +611,9 @@ def surface_indices(surface, plane_indices, margin=3):
     """
     if surface.ndim != 3:
         raise ValueError('Surface should be a 3D array')
-    if len(plane_indices) != 3:
-        raise ValueError('plane_indices should be a tuple of 3 1D-arrays')
+    if not isinstance(plane_indices, tuple):
+        plane_indices = tuple(plane_indices)
+
     surf_indices = np.nonzero(surface[
                                  plane_indices[0].min() - margin:plane_indices[0].max() + margin,
                                  plane_indices[1].min() - margin:plane_indices[1].max() + margin,
