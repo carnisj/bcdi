@@ -270,6 +270,7 @@ def find_facet(refplane_indices, surf_indices, original_shape, step_shift, plane
     :param debugging:
     :return:
     """
+    # TODO: update docstring
     if not isinstance(refplane_indices, tuple):
         raise ValueError('refplane_indices should be a tuple of 3 1D ndarrays')
     if not isinstance(surf_indices, tuple):
@@ -697,11 +698,13 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
 
     fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=intensity,
                                       radius_mean=radius_mean, planes=planes_south, max_angle=max_angle, scale=scale,
-                                      title="Projection from\nSouth pole", plot_planes=plot_planes, uv_labels=uv_labels)
+                                      title="Projection from\nSouth pole", plot_planes=plot_planes, uv_labels=uv_labels,
+                                      debugging=debugging)
     fig.savefig(savedir + comment_fig + 'South pole_' + scale + '.png')
     fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=intensity,
                                       radius_mean=radius_mean, planes=planes_north, max_angle=max_angle, scale=scale,
-                                      title="Projection from\nNorth pole", plot_planes=plot_planes, uv_labels=uv_labels)
+                                      title="Projection from\nNorth pole", plot_planes=plot_planes, uv_labels=uv_labels,
+                                      debugging=debugging)
     fig.savefig(savedir + comment_fig + 'North pole_' + scale + '.png')
 
     # regrid stereo_proj
@@ -850,12 +853,12 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     labels_north = watershed(-distances_north, markers_north, mask=mask_north)
     fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2, figsize=(12, 9))
     ax0.imshow(labels_south, cmap=cmap, interpolation='nearest')
-    ax0.set_title('Separated objects South')
+    ax0.set_title('Labels South')
     ax0.invert_yaxis()
     circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
     ax0.add_artist(circle)
     ax1.imshow(labels_north, cmap=cmap, interpolation='nearest')
-    ax1.set_title('Separated objects North')
+    ax1.set_title('Labels North')
     ax1.invert_yaxis()
     circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
     ax1.add_artist(circle)
