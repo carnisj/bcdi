@@ -621,10 +621,12 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes=N
     from scipy.interpolate import griddata
 
     if debugging:
+        color2 = np.copy(color)
+        color2 = color2 / abs(color2[~np.isnan(color2)]).max() * 10000
         _, ax0 = plt.subplots(nrows=1, ncols=1)
-        plt0 = ax0.scatter(euclidian_u, euclidian_v, s=6, c=color, cmap=my_cmap,
-                           norm=colors.LogNorm(vmin=max(color[~np.isnan(color)].min(), 1),
-                                               vmax=color[~np.isnan(color)].max()))
+        plt0 = ax0.scatter(euclidian_u, euclidian_v, s=6, c=color2, cmap=my_cmap,
+                           norm=colors.LogNorm(vmin=max(color2[~np.isnan(color2)].min(), 1),
+                                               vmax=color2[~np.isnan(color2)].max()))
         circle = patches.Circle((0, 0), 90, color='k', fill=False, linewidth=1.5)
         ax0.add_artist(circle)
         ax0.axis('scaled')
