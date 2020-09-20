@@ -197,9 +197,9 @@ if projection_method == 'stereographic':
     # duplicated_labels stores bottom_labels which are duplicate from top_labels [0 duplicated_labels unique_label ...]
     for label in range(1, labels_top.max()+1, 1):
         label_points = np.argwhere(labels_top == label)
-        # rescale lab
-        label_points[:, 0] = (label_points[:, 0] * 2*max_angle / numy) - max_angle  # rescale to [-max_angle max_angle]
-        label_points[:, 1] = (label_points[:, 1] * 2*max_angle / numx) - max_angle  # rescale to [-max_angle max_angle]
+        # rescale label_points to angles instead of indices, the angular range is [-max_angle max_angle]
+        label_points[:, 0] = (label_points[:, 0] * 2*max_angle / numy) - max_angle
+        label_points[:, 1] = (label_points[:, 1] * 2*max_angle / numx) - max_angle
 
         label_distances = np.sqrt(label_points[:, 0]**2 + label_points[:, 1]**2)  # distance in angle from the origin
         if (label_distances <= 90).sum() == label_points.shape[0]:  # all points inside the 90deg border
@@ -218,14 +218,14 @@ if projection_method == 'stereographic':
                 v_bottom = int(np.rint((stereo_proj[idx, 3] + max_angle) * numy / (2*max_angle)))  # v axis vertical
 
                 try:
-                    if labels_top[u_top, v_top] == label and \
-                            labels_bottom[u_bottom, v_bottom] not in duplicated_labels:
+                    if labels_top[v_top, u_top] == label and \
+                            labels_bottom[v_bottom, u_bottom] not in duplicated_labels:
                         # only the first duplicated point will be checked, then the whole bottom_label is changed
                         # to label and there is no need to check anymore
-                        duplicated_labels.append(labels_bottom[u_bottom, v_bottom])
+                        duplicated_labels.append(labels_bottom[v_bottom, u_bottom])
                         duplicated_labels.append(label)
-                        print('  Corresponding label :', labels_bottom[u_bottom, v_bottom], 'changed to', label)
-                        labels_bottom[labels_bottom == labels_bottom[u_bottom, v_bottom]] = label
+                        print('  Corresponding label :', labels_bottom[v_bottom, u_bottom], 'changed to', label)
+                        labels_bottom[labels_bottom == labels_bottom[v_bottom, u_bottom]] = label
                 except IndexError:
                     # the IndexError exception arises because we are spanning all normals for labels_top, even those
                     # whose stereographic projection is farther than max_angle.
@@ -234,33 +234,35 @@ if projection_method == 'stereographic':
         del label_points, label_distances
         gc.collect()
 
-    # reorganize stereo_proj to keep only the projected point which is in the range [-90 90]
-    pole_proj = np.zeros((nb_normals, 3), dtype=stereo_proj.dtype)
+    # reorganize stereo_proj to keep only the projected point which is in the angular range [-90 90]
+    # stereo_proj coordinates are in polar degrees, we want coordinates to be in indices
+    coordinates = np.zeros((nb_normals, 3), dtype=stereo_proj.dtype)
     # 1st and 2nd columns are coordinates
     # the 3rd column is a flag for using the South (0) or North (1) projected coordinates
     for idx in range(nb_normals):
         if np.sqrt(stereo_proj[idx, 0]**2 + stereo_proj[idx, 1]**2) > 90:
-            pole_proj[idx, 0:2] = stereo_proj[idx, 2:]  # use values for the projection from North pole
-            pole_proj[idx, 2] = 1  # use values from labels_bottom (projection from North pole)
+            coordinates[idx, 0:2] = stereo_proj[idx, 3]  # use v values for the projection from North pole
+            coordinates[idx, 0:2] = stereo_proj[idx, 2]  # use u values for the projection from North pole
+            coordinates[idx, 2] = 1  # use values from labels_bottom (projection from North pole)
         else:
-            pole_proj[idx, 0:2] = stereo_proj[idx, 0:2]  # use values for the projection from South pole
-            pole_proj[idx, 2] = 0  # use values from labels_top (projection from South pole)
+            coordinates[idx, 0] = stereo_proj[idx, 1]  # use v values for the projection from South pole
+            coordinates[idx, 1] = stereo_proj[idx, 0]  # use u values for the projection from South pole
+            coordinates[idx, 2] = 0  # use values from labels_top (projection from South pole)
     del stereo_proj
     gc.collect()
 
-    # rescale euclidian u axis from [-max_angle max_angle] to [0 numy]
-    pole_proj[:, 0] = (pole_proj[:, 0] + max_angle) * numy / (2*max_angle)
-    # rescale euclidian v axis from [-max_angle max_angle] to [0 numx]
-    pole_proj[:, 1] = (pole_proj[:, 1] + max_angle) * numx / (2*max_angle)
-    # change pole_proj to an array of integer indices
-    coordinates = np.rint(pole_proj).astype(int)
-
-    del pole_proj
+    # rescale euclidian v axis from [-max_angle max_angle] to [0 numy]
+    coordinates[:, 0] = (coordinates[:, 0] + max_angle) * numy / (2*max_angle)
+    # rescale euclidian u axis from [-max_angle max_angle] to [0 numx]
+    coordinates[:, 1] = (coordinates[:, 1] + max_angle) * numx / (2*max_angle)
+    # change coordinates to an array of integer indices
+    coordinates = coordinates.astype(int)
+    del stereo_proj
     gc.collect()
 
-    ##############################################
-    # assign back labels to normals and vertices #
-    ##############################################
+    #############################################################################################################
+    # now that we have the labels and coordinates in indices, we can assign back labels to normals and vertices #
+    #############################################################################################################
     normals_label = np.zeros(nb_normals, dtype=int)
     vertices_label = np.zeros(nb_vertices, dtype=int)  # the number of vertices is: vertices_new.shape[0]
     for idx in range(nb_normals):
@@ -315,7 +317,7 @@ if len(duplicated_labels[1::2]) == 0:
 print('\nBackground: ', str((normals_label == 0).sum()), 'normals')
 for label in unique_labels:
     print("Facet", str(label), ': ', str((normals_label == label).sum()), 'normals detected')
-del normals_label, coordinates, faces
+# del normals_label, coordinates, faces
 gc.collect()
 
 ###############################################
@@ -487,7 +489,7 @@ for label in unique_labels:
         dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] + coeffs[2]*surf2[point] + coeffs[3])\
                / np.linalg.norm(plane_normal)
     mean_dist = dist.mean()
-    print('Mean distance of plane ', label, ' to outer shell = ' + str('{:.2f}'.format(mean_dist)) + 'pixels')
+    print('Mean distance of plane ', label, ' to outer shell = ' + str('{:.2f}'.format(mean_dist)) + ' pixels')
 
     # offset the plane by mean_dist/2 and see if the plane is closer to the surface or went in the wrong direction
     dist = np.zeros(len(surf0))
@@ -498,7 +500,7 @@ for label in unique_labels:
                        + coeffs[3] - offset) / np.linalg.norm(plane_normal)
     new_dist = dist.mean()
     print('<distance> of plane ', label, ' to outer shell after offsetting by mean_distance/2 = '
-          + str('{:.2f}'.format(new_dist)) + 'pixels')
+          + str('{:.2f}'.format(new_dist)) + ' pixels')
     # these directions are for a mesh smaller than the support
     step_shift = 0.5  # will scan with subpixel step through the crystal in order to not miss voxels
     if mean_dist*new_dist < 0:  # crossed the support surface, correct direction
