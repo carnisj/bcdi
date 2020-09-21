@@ -108,9 +108,9 @@ def distance_threshold(fit, indices, plane_shape, max_distance=0.90):
     """
     indices = np.asarray(indices)
     plane = np.zeros(plane_shape, dtype=int)
-    no_points = 0
+    no_points = False
     if len(indices[0]) == 0:
-        no_points = 1
+        no_points = True
         return plane, no_points
 
     # remove outsiders based on their distance to the plane
@@ -122,7 +122,7 @@ def distance_threshold(fit, indices, plane_shape, max_distance=0.90):
             plane[indices[0, point], indices[1, point], indices[2, point]] = 1
     if plane[plane == 1].sum() == 0:
         print('Distance_threshold: no points for plane')
-        no_points = 1
+        no_points = True
         return plane, no_points
     return plane, no_points
 
@@ -412,9 +412,10 @@ def fit_plane(plane, label, debugging=False):
     :return: fit parameters (a, b, c, d), plane indices after filtering, errors associated, a stop flag
     """
     indices = np.asarray(np.nonzero(plane))
-    no_points = 0
+    no_points = False
+
     if len(indices[0]) == 0:
-        no_points = 1
+        no_points = True
         return 0, indices, 0, no_points
     x_com, y_com, z_com = center_of_mass(plane)
 
@@ -438,10 +439,10 @@ def fit_plane(plane, label, debugging=False):
     # update plane indices
     indices = np.asarray(np.nonzero(plane))
     if len(indices[0]) == 0:
-        no_points = 1
+        no_points = True
         return 0, indices, 0, no_points
 
-    # remove also points farther than 2 times the mean distance to the COM
+    # remove also points farther away than the mean distance to the COM
     dist = np.zeros(indices.shape[1])
     for point in range(indices.shape[1]):
         dist[point] = np.sqrt((indices[0, point]-x_com)**2+(indices[1, point]-y_com)**2+(indices[2, point]-z_com)**2)
@@ -451,7 +452,7 @@ def fit_plane(plane, label, debugging=False):
                         title='Points before distance threshold plane ' + str(label))
 
     for point in range(indices.shape[1]):
-        if dist[point] > 2 * average_dist:
+        if dist[point] > average_dist:
             plane[indices[0, point], indices[1, point], indices[2, point]] = 0
     print('Fit plane', label, ', ', str(indices.shape[1] - plane[plane == 1].sum()), 'points too far from COM, ',
           str(plane[plane == 1].sum()), 'remaining')
@@ -462,11 +463,14 @@ def fit_plane(plane, label, debugging=False):
     # update plane indices and check if enough points remain
     indices = np.asarray(np.nonzero(plane))
     if len(indices[0]) < 5:
-        no_points = 1
+        no_points = True
         return 0, indices, 0, no_points
 
     # the fit parameters are (a, b, c, d) such that a*x + b*y + c*z + d = 0
-    params, std_param = util.plane_fit(indices=indices, label=label, debugging=debugging)
+    params, std_param, valid_plane = util.plane_fit(indices=indices, label=label, debugging=debugging)
+    if not valid_plane:
+        plane[indices] = 0
+        no_points = True
     return params, indices, std_param, no_points
 
 
@@ -485,7 +489,7 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     nbz, nby, nbx = plane.shape
     indices = np.nonzero(plane)
     if len(indices[0]) == 0:
-        no_points = 1
+        no_points = True
         return plane, no_points
     kernel = np.ones((3, 3, 3))
 
