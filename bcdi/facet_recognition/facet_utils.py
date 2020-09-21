@@ -466,7 +466,7 @@ def fit_plane(plane, label, debugging=False):
         return 0, indices, 0, no_points
 
     # the fit parameters are (a, b, c, d) such that a*x + b*y + c*z + d = 0
-    params, std_param = util.plane_fit(indices=indices, label=label)
+    params, std_param = util.plane_fit(indices=indices, label=label, debugging=debugging)
     return params, indices, std_param, no_points
 
 
