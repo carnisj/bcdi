@@ -241,8 +241,8 @@ if projection_method == 'stereographic':
     # the 3rd column is a flag for using the South (0) or North (1) projected coordinates
     for idx in range(nb_normals):
         if np.sqrt(stereo_proj[idx, 0]**2 + stereo_proj[idx, 1]**2) > 90:
-            coordinates[idx, 0:2] = stereo_proj[idx, 3]  # use v values for the projection from North pole
-            coordinates[idx, 0:2] = stereo_proj[idx, 2]  # use u values for the projection from North pole
+            coordinates[idx, 0] = stereo_proj[idx, 3]  # use v values for the projection from North pole
+            coordinates[idx, 1] = stereo_proj[idx, 2]  # use u values for the projection from North pole
             coordinates[idx, 2] = 1  # use values from labels_bottom (projection from North pole)
         else:
             coordinates[idx, 0] = stereo_proj[idx, 1]  # use v values for the projection from South pole
