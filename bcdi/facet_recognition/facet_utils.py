@@ -258,7 +258,7 @@ def equirectangular_proj(normals, intensity, cmap=default_cmap, bw_method=0.03, 
 def find_facet(refplane_indices, surf_indices, original_shape, step_shift, plane_label, plane_coeffs, min_points,
                debugging=False):
     """
-    Shift a fit plane along its normal until it reached a 3D object surface.
+    Shift a fit plane along its normal until it reaches the surface of a faceted object.
 
     :param refplane_indices: a tuple of 3 arrays (1D, length N) describing the coordinates of the plane voxels
      x values being the 1st tuple element, y values the 2nd tuple element and z values the 3rd tuple element
