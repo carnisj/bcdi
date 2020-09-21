@@ -258,19 +258,23 @@ def equirectangular_proj(normals, intensity, cmap=default_cmap, bw_method=0.03, 
 def find_facet(refplane_indices, surf_indices, original_shape, step_shift, plane_label, plane_coeffs, min_points,
                debugging=False):
     """
+    Shift a fit plane along its normal until it reached a 3D object surface.
 
-
-    :param refplane_indices:
-    :param surf_indices:
-    :param original_shape:
-    :param step_shift:
-    :param plane_label:
-    :param plane_coeffs:
-    :param min_points:
-    :param debugging:
-    :return:
+    :param refplane_indices: a tuple of 3 arrays (1D, length N) describing the coordinates of the plane voxels
+     x values being the 1st tuple element, y values the 2nd tuple element and z values the 3rd tuple element
+     (output of np.nonzero)
+    :param surf_indices: a tuple of 3 arrays (1D, length N) describing the coordinates of the surface voxels
+     x values being the 1st tuple element, y values the 2nd tuple element and z values the 3rd tuple element
+     (output of np.nonzero)
+    :param original_shape: the shape of the full dataset (amplitude object, eventually upsampled)
+    :param step_shift: the amplitude of the shift to be applied to the plane along its normal
+    :param plane_label: the label of the plane, used in comments
+    :param plane_coeffs: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0
+    :param min_points: threshold, minimum number of points that should coincide between the fit plane and the object
+     surface
+    :param debugging: True to see debugging plots
+    :return: the shift that needs to be applied to the fit plane in order to best match with the object surface
     """
-    # TODO: update docstring
     if not isinstance(refplane_indices, tuple):
         raise ValueError('refplane_indices should be a tuple of 3 1D ndarrays')
     if not isinstance(surf_indices, tuple):
