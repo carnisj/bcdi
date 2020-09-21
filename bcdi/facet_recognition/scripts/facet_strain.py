@@ -454,7 +454,7 @@ for label in unique_labels:
     # Why not using directly the centroid to find plane equation?
     # Because it does not distinguish pixels coming from different but parallel facets
     coeffs,  plane_indices, errors, stop = fu.fit_plane(plane=plane, label=label, debugging=debug)
-    if stop == 1:
+    if stop:
         print('No points remaining after raw fit for plane', label)
         continue
     plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
@@ -462,7 +462,7 @@ for label in unique_labels:
     plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, plane_shape=plane.shape,
                                         max_distance=max_distance_plane)
     grown_points = plane[plane == 1].sum().astype(int)
-    if stop == 1:  # no points on the plane
+    if stop:  # no points on the plane
         print('Refined fit: no points for plane', label)
         continue
     else:
@@ -474,12 +474,13 @@ for label in unique_labels:
     ##############################################################################################################
     # crop the support to a small ROI included in the plane box
     surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
-    gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
-                                     np.concatenate((surf0[:, np.newaxis],
-                                                     surf1[:, np.newaxis],
-                                                     surf2[:, np.newaxis]), axis=1)),
-                             markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
-                             title='Plane' + str(label) + ' before shifting')
+    if debug:
+        gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                         np.concatenate((surf0[:, np.newaxis],
+                                                         surf1[:, np.newaxis],
+                                                         surf2[:, np.newaxis]), axis=1)),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
+                                 title='Plane' + str(label) + ' before shifting')
 
     # find the direction in which the plane should be shifted to cross the surface
     dist = np.zeros(len(surf0))
@@ -579,7 +580,7 @@ for label in unique_labels:
     # refine plane fit, now we are sure that we are at the surface #
     ################################################################
     coeffs, plane_indices, errors, stop = fu.fit_plane(plane=plane, label=label, debugging=debug)
-    if stop == 1:
+    if stop:
         print('No points remaining after refined fit for plane', label)
         continue
 
@@ -596,7 +597,7 @@ for label in unique_labels:
     # update plane by filtering out pixels too far from the fit plane
     plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, plane_shape=plane.shape,
                                         max_distance=max_distance_plane)
-    if stop == 1:  # no points on the plane
+    if stop:  # no points on the plane
         print('Refined fit: no points for plane', label)
         continue
     print('Plane', label, ', ', str(plane[plane == 1].sum()), 'points after refined fit')
