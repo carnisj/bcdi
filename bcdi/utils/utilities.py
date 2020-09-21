@@ -339,6 +339,7 @@ def plane_fit(indices, label='', debugging=False):
     :param debugging: True to see plots
     :return: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0, the matrix of covariant values
     """
+    valid_plane = True
     indices = np.asarray(indices)
     params3d, pcov3d = curve_fit(plane, indices[0:2, :], indices[2, :])
     std_param3d = np.sqrt(np.diag(pcov3d))
@@ -385,7 +386,6 @@ def plane_fit(indices, label='', debugging=False):
             constant = indices[0, :].mean()
             params = (1, 0, 0, -constant)
             std_param = (0, 0, 0, indices[0, :].std())
-            print('1D: one standard deviation error on the parameter = ', indices[0, :].std())
             if debugging:
                 _, ax = gu.scatter_plot(np.transpose(indices), labels=('axis 0', 'axis 1', 'axis 2'),
                                         title='Points and fitted plane ' + str(label))
@@ -398,7 +398,11 @@ def plane_fit(indices, label='', debugging=False):
             # calculate the mean distance to the fitted plane
             distance = plane_dist(indices=indices, params=params)
             print(f'plane fit using x=constant: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}')
-    return params, std_param
+
+    if distance.mean() > 1:  # probably the distribution of points is not flat
+        print('distance.mean() > 1, probably the distribution of points is not flat')
+        valid_plane = False
+    return params, std_param, valid_plane
 
 
 def pseudovoigt(x_axis, amp, cen, sig, ratio):
