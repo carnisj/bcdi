@@ -257,8 +257,6 @@ if projection_method == 'stereographic':
     coordinates[:, 1] = (coordinates[:, 1] + max_angle) * numx / (2*max_angle)
     # change coordinates to an array of integer indices
     coordinates = coordinates.astype(int)
-    del stereo_proj
-    gc.collect()
 
     #############################################################################################################
     # now that we have the labels and coordinates in indices, we can assign back labels to normals and vertices #
