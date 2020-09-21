@@ -314,6 +314,22 @@ def plane(xy_array, a, b, c):
     return a * xy_array[0, :] + b * xy_array[1, :] + c
 
 
+def plane_dist(indices, params):
+    """
+    Calculate the distance of an ensemble of voxels to a plane given by its parameters.
+
+    :param indices: a (3xN) numpy array, x values being the 1st row, y values the 2nd row and z values the 3rd row
+    :param params: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0
+    :return: a array of shape (N,) containing the distance to the plane for each voxel
+    """
+    distance = np.zeros(len(indices[0]))
+    plane_normal = np.array([params[0], params[1], params[2]])  # normal is [a, b, c] if ax+by+cz+d=0
+    for point in range(len(indices[0])):
+        distance[point] = abs(params[0]*indices[0, point] + params[1]*indices[1, point] + params[2]*indices[2, point] +
+                              params[3]) / np.linalg.norm(plane_normal)
+    return distance
+
+
 def plane_fit(indices, label=''):
     """
     Fit a plane to the voxels defined by indices.
@@ -328,18 +344,22 @@ def plane_fit(indices, label=''):
     params = (-params3d[0], -params3d[1], 1, -params3d[2])
     std_param = (std_param3d[0], std_param3d[1], 0, std_param3d[2])
 
-    print('3D: one standard deviation errors on the parameters = ', std_param3d)
     _, ax = gu.scatter_plot(np.transpose(indices), labels=('axis 0', 'axis 1', 'axis 2'),
                             title='Points and fitted plane ' + str(label))
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
     zlim = ax.get_zlim()
     meshx, meshy = np.meshgrid(np.arange(xlim[0], xlim[1] + 1, 1), np.arange(ylim[0], ylim[1] + 1, 1))
+    # meshx varies horizontally, meshy vertically
     meshz = plane(np.vstack((meshx.flatten(), meshy.flatten())),
                   params3d[0], params3d[1], params3d[2]).reshape(meshx.shape)
 
-    if any(std_param3d > 1):  # probably z does not depend on x and y, try to fit  y = a*x + b
-        print('1-sigma error on some parameter > 1, z may not depend on x and y')
+    # calculate the mean distance to the fitted plane
+    distance = plane_dist(indices=indices, params=params)
+    print(f'plane fit using z=a*x+b*y+c: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}')
+
+    if distance.mean() > 1:  # probably z does not depend on x and y, try to fit  y = a*x + b
+        print('z=a*x+b*y+c: z may not depend on x and y')
         params2d, pcov2d = curve_fit(line, indices[0, :], indices[1, :])
         std_param2d = np.sqrt(np.diag(pcov2d))
         params = (-params2d[0], 1, 0, -params2d[1])
@@ -347,14 +367,22 @@ def plane_fit(indices, label=''):
         meshx, meshz = np.meshgrid(np.arange(xlim[0], xlim[1] + 1, 1), np.arange(zlim[0], zlim[1] + 1, 1))
         meshy = line(x_array=meshx.flatten(), a=params2d[0], b=params2d[1]).reshape(meshx.shape)
 
-        if any(std_param2d > 1):  # probably y does not depend on x, that means x = constant
-            print('1-sigma error on some parameter > 1, y may not depend on x')
+        # calculate the mean distance to the fitted plane
+        distance = plane_dist(indices=indices, params=params)
+        print(f'plane fit using y=a*x+b: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}')
+
+        if distance.mean() > 1:  # probably y does not depend on x, that means x = constant
+            print('y=a*x+b: y may not depend on x')
             constant = indices[0, :].mean()
             params = (1, 0, 0, -constant)
             std_param = (0, 0, 0, indices[0, :].std())
             print('1D: one standard deviation error on the parameter = ', indices[0, :].std())
             meshy, meshz = np.meshgrid(np.arange(ylim[0], ylim[1] + 1, 1), np.arange(zlim[0], zlim[1] + 1, 1))
             meshx = np.ones(meshy.shape) * constant
+
+            # calculate the mean distance to the fitted plane
+            distance = plane_dist(indices=indices, params=params)
+            print(f'plane fit using x=constant: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}')
 
     ax.plot_wireframe(meshx, meshy, meshz, color='k')
     plt.pause(0.1)
