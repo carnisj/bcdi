@@ -330,12 +330,14 @@ def plane_dist(indices, params):
     return distance
 
 
-def plane_fit(indices, label='', debugging=False):
+def plane_fit(indices, label='', threshold=1, debugging=False):
     """
     Fit a plane to the voxels defined by indices.
 
     :param indices: a (3xN) numpy array, x values being the 1st row, y values the 2nd row and z values the 3rd row
     :param label: int, label of the plane used for the title in the debugging plot
+    :param threshold: the fit will be considered as good if the mean distance of the voxels to the plane is smaller than
+     this value
     :param debugging: True to see plots
     :return: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0, the matrix of covariant values
     """
@@ -362,7 +364,8 @@ def plane_fit(indices, label='', debugging=False):
     distance = plane_dist(indices=indices, params=params)
     print(f'plane fit using z=a*x+b*y+c: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}')
 
-    if distance.mean() > 1:  # probably z does not depend on x and y, try to fit  y = a*x + b
+    if distance.mean() > threshold and distance.mean() / distance.std() > 1:
+        # probably z does not depend on x and y, try to fit  y = a*x + b
         print('z=a*x+b*y+c: z may not depend on x and y')
         params2d, pcov2d = curve_fit(line, indices[0, :], indices[1, :])
         std_param2d = np.sqrt(np.diag(pcov2d))
@@ -381,7 +384,8 @@ def plane_fit(indices, label='', debugging=False):
         distance = plane_dist(indices=indices, params=params)
         print(f'plane fit using y=a*x+b: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}')
 
-        if distance.mean() > 1:  # probably y does not depend on x, that means x = constant
+        if distance.mean() > threshold and distance.mean() / distance.std() > 1:
+            # probably y does not depend on x, that means x = constant
             print('y=a*x+b: y may not depend on x')
             constant = indices[0, :].mean()
             params = (1, 0, 0, -constant)
@@ -399,7 +403,8 @@ def plane_fit(indices, label='', debugging=False):
             distance = plane_dist(indices=indices, params=params)
             print(f'plane fit using x=constant: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}')
 
-    if distance.mean() > 1:  # probably the distribution of points is not flat
+    if distance.mean() > threshold and distance.mean() / distance.std() > 1:
+        # probably the distribution of points is not flat
         print('distance.mean() > 1, probably the distribution of points is not flat')
         valid_plane = False
     return params, std_param, valid_plane
