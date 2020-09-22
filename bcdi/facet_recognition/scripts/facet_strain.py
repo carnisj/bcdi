@@ -700,8 +700,7 @@ for label in unique_labels:
 
     # update the log files
     fu.update_logfile(support=plane, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                      label=label, angle_plane=angle_plane, plane_coeffs=coeffs, plane_normal=plane_normal,
-                      top_part=False)
+                      label=label, angle_plane=angle_plane, plane_coeffs=coeffs, plane_normal=plane_normal)
 
     # update vti file
     PLANE = np.transpose(np.flip(plane, 2)).reshape(plane.size)  # VTK axis 2 is flipped
