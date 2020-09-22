@@ -50,8 +50,8 @@ radius_normals = 0.1  # radius of integration for the calculation of the density
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
 peak_min_distance = 10  # pixel separation between peaks in corner_peaks()
 max_distance_plane = 0.75  # in pixels, maximum allowed distance to the facet plane of a voxel
-edges_coord = 370  # coordination threshold for isolating edges, 370 seems to work reasonably well
-corners_coord = 315  # coordination threshold for isolating corners, 315 seems to work reasonably well
+edges_coord = 360  # coordination threshold for isolating edges, 360 seems to work reasonably well
+corners_coord = 310  # coordination threshold for isolating corners, 310 seems to work reasonably well
 ########################################################
 # parameters only used in the stereographic projection #
 ########################################################
@@ -229,8 +229,8 @@ if projection_method == 'stereographic':
                     # whose stereographic projection is farther than max_angle.
                     continue
 
-        del label_points, label_distances
-        gc.collect()
+    del label_points, label_distances
+    gc.collect()
 
     # reorganize stereo_proj to keep only the projected point which is in the angular range [-90 90]
     # stereo_proj coordinates are in polar degrees, we want coordinates to be in indices
@@ -271,7 +271,7 @@ if projection_method == 'stereographic':
             label_idx = 0  # duplicated facet, set it to the background
         normals_label[idx] = label_idx  # attribute the label to the normal
         vertices_label[faces[idx, :]] = label_idx  # attribute the label to the corresponding vertices
-
+    del labels_top, labels_bottom
 elif projection_method == 'equirectangular':
     labels, longitude_latitude = fu.equirectangular_proj(normals=normals, intensity=intensity, bw_method=bw_method,
                                                          background_threshold=kde_threshold,
@@ -313,7 +313,7 @@ if len(duplicated_labels[1::2]) == 0:
 print('\nBackground: ', str((normals_label == 0).sum()), 'normals')
 for label in unique_labels:
     print("Facet", str(label), ': ', str((normals_label == label).sum()), 'normals detected')
-# del normals_label, coordinates, faces
+del normals, normals_label, coordinates, faces, duplicated_labels, intensity
 gc.collect()
 
 ###############################################
@@ -347,18 +347,20 @@ gc.collect()
 # define surface gradient using a conjugate support #
 #####################################################
 # this support is 1 outside, 0 inside so that the gradient points towards exterior
-support = np.ones((nz, ny, nx))
-support[abs(amp) > support_threshold * abs(amp).max()] = 0
-zCOM, yCOM, xCOM = center_of_mass(support)
-print("COM at (z, y, x): (", str('{:.2f}'.format(zCOM)), ',', str('{:.2f}'.format(yCOM)), ',',
-      str('{:.2f}'.format(xCOM)), ')')
-gradz, grady, gradx = np.gradient(support, 1)  # support
+# support = np.ones((nz, ny, nx))
+# support[abs(amp) > support_threshold * abs(amp).max()] = 0
+# zcom_support, ycom_support, xcom_support = center_of_mass(support)
+# print("COM at (z, y, x): (", str('{:.2f}'.format(zcom_support)), ',', str('{:.2f}'.format(ycom_support)), ',',
+#       str('{:.2f}'.format(xcom_support)), ')')
 
 ############################################
 # define the support, surface layer & bulk #
 ############################################
 support = np.zeros(amp.shape)
 support[abs(amp) > support_threshold * abs(amp).max()] = 1
+zcom_support, ycom_support, xcom_support = center_of_mass(support)
+print("COM at (z, y, x): (", str('{:.2f}'.format(zcom_support)), ',', str('{:.2f}'.format(ycom_support)), ',',
+      str('{:.2f}'.format(xcom_support)), ')')
 coordination_matrix = pu.calc_coordination(support, kernel=np.ones((3, 3, 3)), debugging=False)
 surface = np.copy(support)
 surface[coordination_matrix > 22] = 0  # remove the bulk 22
@@ -413,8 +415,17 @@ image_data.SetExtent(0, nz - 1, 0, ny - 1, 0, nx - 1)
 pd = image_data.GetPointData()
 pd.SetScalars(amp_array)
 pd.GetArray(0).SetName("amp")
-index_vti = 1
 
+# update vti file with edges
+edges_array = np.transpose((np.flip(edges, 2))).reshape(edges.size)
+edges_array = numpy_support.numpy_to_vtk(edges_array)
+pd.AddArray(edges_array)
+pd.GetArray(1).SetName("edges")
+pd.Update()
+
+index_vti = 2
+del amp, amp_array, edges_array
+gc.collect()
 ##################################################
 # save bulk, edges and corners strain to logfile #
 ##################################################
@@ -437,6 +448,7 @@ gc.collect()
 # Iterate over the planes to find the corresponding surface facet                     #
 # Effect of meshing/smoothing: the meshed support is smaller than the initial support #
 #######################################################################################
+summary_dict = {}
 for label in unique_labels:
     print('\nPlane', label)
     # raw fit including all points
@@ -644,28 +656,26 @@ for label in unique_labels:
     #####################################
     plane[np.nonzero(edges)] = 0
     plane_indices = np.nonzero(plane)
-    surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
-    gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
-                                     np.concatenate((surf0[:, np.newaxis],
-                                                     surf1[:, np.newaxis],
-                                                     surf2[:, np.newaxis]), axis=1)),
-                             markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
-                             title='Plane' + str(label) + ' after edge removal\nPoints number='
-                                   + str(len(plane_indices[0])))
+    if debug:
+        surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
+        gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                         np.concatenate((surf0[:, np.newaxis],
+                                                         surf1[:, np.newaxis],
+                                                         surf2[:, np.newaxis]), axis=1)),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
+                                 title='Plane' + str(label) + ' after edge removal\nPoints number='
+                                       + str(len(plane_indices[0])))
     print('Plane ', label, ', ', str(len(plane_indices[0])), 'points after removing edges')
 
-    #################################################################
-    # calculate quantities of interest and update log and VTK files #
-    #################################################################
-    # calculate mean gradient
+    ##############################################################################
+    # calculate the angle between the plane normal and the measurement direction #
+    ##############################################################################
+    # calculate the mean gradient
     mean_gradient = np.zeros(3)
-    ind_z = plane_indices[0]
-    ind_y = plane_indices[1]
-    ind_x = plane_indices[2]
     for point in range(len(plane_indices[0])):
-        mean_gradient[0] = mean_gradient[0] + (ind_z[point] - zCOM)
-        mean_gradient[1] = mean_gradient[1] + (ind_y[point] - yCOM)
-        mean_gradient[2] = mean_gradient[2] + (ind_x[point] - xCOM)
+        mean_gradient[0] = mean_gradient[0] + (plane_indices[0][point] - zcom_support)
+        mean_gradient[1] = mean_gradient[1] + (plane_indices[1][point] - ycom_support)
+        mean_gradient[2] = mean_gradient[2] + (plane_indices[2][point] - xcom_support)
 
     if np.linalg.norm(mean_gradient) == 0:
         print('gradient at surface is 0, cannot determine the correct direction of surface normal')
@@ -698,13 +708,54 @@ for label in unique_labels:
     # calculate the angle of the plane normal to the measurement direction, which is aligned along projection_axis
     angle_plane = 180 / np.pi * np.arccos(np.dot(ref_axis, plane_normal))
 
-    # update the log files
+    # update the dictionnary
+    summary_dict[label] = {'angle_plane': angle_plane, 'plane_coeffs': coeffs, 'plane_normal': plane_normal,
+                           'plane_indices': plane_indices}
+
+del support, all_planes
+gc.collect()
+
+##############################################################################
+# look for voxels attributed to multiple facets - set them to 0 (background) #
+##############################################################################
+duplicates = [], [], []
+# TODO: implement this part
+
+################################
+# update the log and VTK files #
+################################
+print('\nFiltering out voxels attributed to multiple facets')
+for label in summary_dict.keys():
+    plane = np.zeros((nz, ny, nx), dtype=int)
+    plane[summary_dict[label]['plane_indices']] = 1
+    # remove voxels attributed to multiple facets
+    plane[duplicates] = 0
+    plane_indices = np.nonzero(plane)
+
+    nb_points = len(plane_indices[0])
+    if nb_points == 0:  # no point belongs to the support
+        print('Plane ', label, ' , no point remaining after checking for duplicates')
+        continue
+    else:
+        print('Plane ', label, ' : {0} points after checking for duplicates'.format(nb_points))
+
+    surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
+    gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                     np.concatenate((surf0[:, np.newaxis],
+                                                     surf1[:, np.newaxis],
+                                                     surf2[:, np.newaxis]), axis=1)),
+                             markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
+                             title='Final plane' + str(label) + ' after checking for duplicates\nPoints number='
+                                   + str(nb_points))
+
     fu.update_logfile(support=plane, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                      label=label, angle_plane=angle_plane, plane_coeffs=coeffs, plane_normal=plane_normal)
+                      label=label, angle_plane=summary_dict[label]['angle_plane'],
+                      plane_coeffs=summary_dict[label]['plane_coeffs'],
+                      plane_normal=summary_dict[label]['plane_normal'])
 
     # update vti file
-    PLANE = np.transpose(np.flip(plane, 2)).reshape(plane.size)  # VTK axis 2 is flipped
-    plane_array = numpy_support.numpy_to_vtk(PLANE)
+    plane_array = np.transpose(np.flip(plane, 2)).reshape(plane.size)  # VTK axis 2 is flipped
+    plane_array = numpy_support.numpy_to_vtk(plane_array)
     pd.AddArray(plane_array)
     pd.GetArray(index_vti).SetName("plane_"+str(label))
     pd.Update()
@@ -717,13 +768,6 @@ summary_file.write('\n'+'Isosurface value'+'\t' '{0: <10}'.format(str(support_th
 allpoints_file.write('\n'+'Isosurface value'+'\t' '{0: <10}'.format(str(support_threshold)))
 summary_file.close()
 allpoints_file.close()
-
-# update vti file with edges
-EDGES = np.transpose((np.flip(edges, 2))).reshape(edges.size)
-edges_array = numpy_support.numpy_to_vtk(EDGES)
-pd.AddArray(edges_array)
-pd.GetArray(index_vti).SetName("edges")
-pd.Update()
 
 # export data to file
 writer = vtk.vtkXMLImageDataWriter()
