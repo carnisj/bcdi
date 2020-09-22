@@ -8,6 +8,12 @@
 
 from scipy.ndimage.measurements import center_of_mass
 from scipy.signal import convolve
+from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import griddata
+from scipy import stats
+from scipy import ndimage
+from skimage.feature import corner_peaks
+from skimage.morphology import watershed
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
@@ -142,11 +148,6 @@ def equirectangular_proj(normals, intensity, cmap=default_cmap, bw_method=0.03, 
     :param debugging: if True, show plots for debugging
     :return: ndarray of labelled regions
     """
-    from scipy import stats
-    from scipy import ndimage
-    from skimage.feature import corner_peaks
-    from skimage.morphology import watershed
-
     # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
     normals = np.delete(normals, list_nan[::3, 0], axis=0)
@@ -366,7 +367,6 @@ def find_facet(refplane_indices, surf_indices, original_shape, step_shift, plane
                     nbloop = nbloop + 1
                 else:  # we were already unsuccessfull in the other direction, give up
                     print('(while, common_points = 0), no point from support is intersecting the plane ', plane_label)
-                    stop = 1
                     break
 
     return (nbloop-1)*step_shift
@@ -665,11 +665,6 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
       and North (u column2 , v column 3). The coordinates are in degrees, not indices.
      - the list of rows to remove
     """
-    from scipy.interpolate import griddata
-    from scipy import ndimage
-    from skimage.feature import corner_peaks
-    from skimage.morphology import watershed
-
     if comment_fig and comment_fig[-1] != '_':
         comment_fig = comment_fig + '_'
     radius_mean = 1  # normals are normalized
@@ -991,7 +986,7 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
 
 
 def update_logfile(support, strain_array, summary_file, allpoints_file, label=0, angle_plane=0, plane_coeffs=(0, 0, 0),
-                   plane_normal=(0, 0, 0), top_part=False, z_cutoff=0):
+                   plane_normal=(0, 0, 0)):
     """
     Update log files use in the facet_strain.py script.
 
@@ -1003,8 +998,6 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
     :param angle_plane: the angle of the plane with the measurement direction
     :param plane_coeffs: the fit coefficients of the plane
     :param plane_normal: the normal to the plane
-    :param top_part: if True, it will save values only for the top part of the nanoparticle
-    :param z_cutoff: if top_pat=True, will set all support points below this value to 0
     :return: nothing
     """
     if (support.ndim != 3) or (strain_array.ndim != 3):
@@ -1046,46 +1039,6 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
                        '{0: <10}'.format(str('{:.5f}'.format(plane_normal[1]))) + '\t' +
                        '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
 
-    if top_part:
-        new_support = np.copy(support)  # support is mutable, need to make a copy
-        new_support[:, :, :z_cutoff] = 0
-        new_label = str(label) + '_top'
-        support_indices = np.nonzero(new_support == 1)
-        ind_z = support_indices[0]
-        ind_y = support_indices[1]
-        ind_x = support_indices[2]
-        nb_points = len(support_indices[0])
-        for idx in range(nb_points):
-            if strain_array[ind_z[idx], ind_y[idx], ind_x[idx]] != 0:
-                # remove the artefact from YY reconstrutions at the bottom facet
-                allpoints_file.write('{0: <10}'.format(new_label) + '\t' +
-                                     '{0: <10}'.format(str(ind_z[idx])) + '\t' +
-                                     '{0: <10}'.format(str(ind_y[idx])) + '\t' +
-                                     '{0: <10}'.format(str(ind_x[idx])) + '\t' +
-                                     '{0: <10}'.format(str('{:.7f}'.format(strain_array[ind_z[idx],
-                                                                                        ind_y[idx],
-                                                                                        ind_x[idx]])))
-                                     + '\n')
-
-        str_array = strain_array[new_support == 1]
-        str_array[str_array == 0] = np.nan  # remove the artefact from YY reconstrutions at the bottom facet
-        support_strain = np.mean(str_array[~np.isnan(str_array)])
-        support_deviation = np.std(str_array[~np.isnan(str_array)])
-
-        # support_strain = np.mean(strain_array[support == 1])
-        # support_deviation = np.std(strain_array[support == 1])
-        summary_file.write('{0: <10}'.format(new_label) + '\t' +
-                           '{0: <10}'.format(str('{:.3f}'.format(angle_plane))) + '\t' +
-                           '{0: <10}'.format(str(nb_points)) + '\t' +
-                           '{0: <10}'.format(str('{:.7f}'.format(support_strain))) + '\t' +
-                           '{0: <10}'.format(str('{:.7f}'.format(support_deviation))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[0]))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[1]))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[2]))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_normal[0]))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_normal[1]))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
-
 
 def upsample(array, upsampling_factor, voxelsizes, title='', debugging=False):
     """
@@ -1098,8 +1051,6 @@ def upsample(array, upsampling_factor, voxelsizes, title='', debugging=False):
     :param debugging: True to see plots
     :return: the upsampled array
     """
-    from scipy.interpolate import RegularGridInterpolator
-
     if array.ndim != 3:
         raise ValueError('Expecting a 3D array as input')
 

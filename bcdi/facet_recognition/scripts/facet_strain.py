@@ -50,10 +50,8 @@ radius_normals = 0.1  # radius of integration for the calculation of the density
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
 peak_min_distance = 10  # pixel separation between peaks in corner_peaks()
 max_distance_plane = 0.75  # in pixels, maximum allowed distance to the facet plane of a voxel
-top_part = False  # if True, will also update logfiles with a support cropped at z_cutoff (remove bottom part)
-z_cutoff = 75  # in pixels. If top_pat=True, will set all support pixels below this value to 0
-edges_coord = 350  # 370  # coordination threshold for isolating edges, 350 seems to work reasonably well
-corners_coord = 300  # coordination threshold for isolating corners, 260 seems to work reasonably well
+edges_coord = 370  # coordination threshold for isolating edges, 370 seems to work reasonably well
+corners_coord = 315  # coordination threshold for isolating corners, 315 seems to work reasonably well
 ########################################################
 # parameters only used in the stereographic projection #
 ########################################################
@@ -421,16 +419,16 @@ index_vti = 1
 # save bulk, edges and corners strain to logfile #
 ##################################################
 fu.update_logfile(support=bulk, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='bulk', top_part=top_part, z_cutoff=z_cutoff)
+                  label='bulk')
 
 fu.update_logfile(support=surface, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='surface', top_part=top_part, z_cutoff=z_cutoff)
+                  label='surface')
 
 fu.update_logfile(support=edges, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='edges', top_part=top_part, z_cutoff=z_cutoff)
+                  label='edges')
 
 fu.update_logfile(support=corners, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='corners', top_part=top_part, z_cutoff=z_cutoff)
+                  label='corners')
 
 del bulk, corners
 gc.collect()
@@ -546,9 +544,9 @@ for label in unique_labels:
         print('Plane ', label, ' , no point belongs to support')
         continue
 
-    #######################################
-    # grow again the facet on the surface #
-    #######################################
+    #################################
+    # grow the facet on the surface #
+    #################################
     print('Growing the facet at the surface')
     iterate = 0
     while stop == 0:
