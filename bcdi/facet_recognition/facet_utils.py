@@ -421,57 +421,58 @@ def fit_plane(plane, label, debugging=False):
     if len(indices[0]) == 0:
         no_points = True
         return 0, indices, 0, no_points
-    x_com, y_com, z_com = center_of_mass(plane)
 
-    # remove isolated points, which probably do not belong to the plane
-    if debugging:
-        gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
-                        title='Points before coordination threshold plane ' + str(label))
+    for idx in range(2):
+        # remove isolated points, which probably do not belong to the plane
+        if debugging:
+            gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                            title='Points before coordination threshold plane ' + str(label) + f'\niteration {idx}')
 
-    for point in range(indices.shape[1]):
-        neighbors = plane[indices[0, point]-2:indices[0, point]+3, indices[1, point]-2:indices[1, point]+3,
-                          indices[2, point]-2:indices[2, point]+3].sum()
-        if neighbors < 5:
-            plane[indices[0, point], indices[1, point], indices[2, point]] = 0
+        for point in range(indices.shape[1]):
+            neighbors = plane[indices[0, point]-2:indices[0, point]+3, indices[1, point]-2:indices[1, point]+3,
+                              indices[2, point]-2:indices[2, point]+3].sum()
+            if neighbors < 5:
+                plane[indices[0, point], indices[1, point], indices[2, point]] = 0
 
-    print('Fit plane', label, ', ', str(indices.shape[1]-plane[plane == 1].sum()), 'points isolated, ',
-          str(plane[plane == 1].sum()), 'remaining')
-    if debugging:
-        gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
-                        title='Points after coordination threshold plane ' + str(label))
+        print('Fit plane', label, ', ', str(indices.shape[1]-plane[plane == 1].sum()), 'points isolated, ',
+              str(plane[plane == 1].sum()), 'remaining')
+        if debugging:
+            gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                            title='Points after coordination threshold plane ' + str(label) + f'\niteration {idx}')
 
-    # update plane indices
-    indices = np.asarray(np.nonzero(plane))
-    if len(indices[0]) == 0:
-        no_points = True
-        return 0, indices, 0, no_points
+        # update plane indices
+        indices = np.asarray(np.nonzero(plane))
+        if len(indices[0]) == 0:
+            no_points = True
+            return 0, indices, 0, no_points
 
-    # remove also points farther away than the mean distance to the COM
-    dist = np.zeros(indices.shape[1])
-    for point in range(indices.shape[1]):
-        dist[point] = np.sqrt((indices[0, point]-x_com)**2+(indices[1, point]-y_com)**2+(indices[2, point]-z_com)**2)
-    average_dist = np.mean(dist)
-    if debugging:
-        gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
-                        title='Points before distance threshold plane ' + str(label))
+        # remove also points farther away than the mean distance to the COM
+        dist = np.zeros(indices.shape[1])
+        x_com, y_com, z_com = center_of_mass(plane)
+        for point in range(indices.shape[1]):
+            dist[point] = np.sqrt((indices[0, point]-x_com)**2+(indices[1, point]-y_com)**2+(indices[2, point]-z_com)**2)
+        average_dist = np.mean(dist)
+        if debugging:
+            gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                            title='Points before distance threshold plane ' + str(label) + f'\niteration {idx}')
 
-    for point in range(indices.shape[1]):
-        if dist[point] > average_dist:
-            plane[indices[0, point], indices[1, point], indices[2, point]] = 0
-    print('Fit plane', label, ', ', str(indices.shape[1] - plane[plane == 1].sum()), 'points too far from COM, ',
-          str(plane[plane == 1].sum()), 'remaining')
-    if debugging:
-        gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
-                        title='Points after distance threshold plane ' + str(label))
+        for point in range(indices.shape[1]):
+            if dist[point] > average_dist:
+                plane[indices[0, point], indices[1, point], indices[2, point]] = 0
+        print('Fit plane', label, ', ', str(indices.shape[1] - plane[plane == 1].sum()), 'points too far from COM, ',
+              str(plane[plane == 1].sum()), 'remaining')
+        if debugging:
+            gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                            title='Points after distance threshold plane ' + str(label) + f'\niteration {idx}')
 
-    # update plane indices and check if enough points remain
-    indices = np.asarray(np.nonzero(plane))
-    if len(indices[0]) < 5:
-        no_points = True
-        return 0, indices, 0, no_points
+        # update plane indices and check if enough points remain
+        indices = np.asarray(np.nonzero(plane))
+        if len(indices[0]) < 5:
+            no_points = True
+            return 0, indices, 0, no_points
 
     # the fit parameters are (a, b, c, d) such that a*x + b*y + c*z + d = 0
-    params, std_param, valid_plane = util.plane_fit(indices=indices, label=label, debugging=debugging)
+    params, std_param, valid_plane = util.plane_fit(indices=indices, label=label, threshold=1, debugging=debugging)
     if not valid_plane:
         plane[indices] = 0
         no_points = True
