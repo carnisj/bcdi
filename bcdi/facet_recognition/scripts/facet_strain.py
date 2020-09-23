@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import collections
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
@@ -715,11 +716,29 @@ for label in unique_labels:
 del support, all_planes
 gc.collect()
 
-##############################################################################
-# look for voxels attributed to multiple facets - set them to 0 (background) #
-##############################################################################
-duplicates = [], [], []
-# TODO: implement this part
+#################################################
+# look for voxels attributed to multiple facets #
+#################################################
+# full_indices is a list a tuples, each tuple being a point (z, y, x)
+full_indices = [list(zip(summary_dict[label]['plane_indices'][0],
+                         summary_dict[label]['plane_indices'][1],
+                         summary_dict[label]['plane_indices'][2]))[point]
+                for label in summary_dict.keys()
+                for point in range(len(list(zip(summary_dict[label]['plane_indices'][0],
+                                                summary_dict[label]['plane_indices'][1],
+                                                summary_dict[label]['plane_indices'][2]))))]
+# count the number of times each point appears in the list
+counter_dict = collections.Counter(full_indices)
+
+# creates the list of duplicated voxels, these will be set to the background later on
+duplicates = [key for key, value in counter_dict.items() if value > 1]
+print(f'{len(duplicates)} points attributed to multiple facets were removed')
+
+# modify the structure of the list so that it can be directly used for array indexing (like the output of np.nonzero)
+ind_0 = np.asarray([duplicates[point][0] for point in range(len(duplicates))])
+ind_1 = np.asarray([duplicates[point][1] for point in range(len(duplicates))])
+ind_2 = np.asarray([duplicates[point][2] for point in range(len(duplicates))])
+duplicates = tuple([ind_0, ind_1, ind_2])
 
 ################################
 # update the log and VTK files #
