@@ -514,7 +514,7 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
             temp_z = np.ones((output_shape[0], nby, nbx), dtype=array.dtype)
         temp_z[pad_start[0]:pad_start[0]+nbz, :, :] = array
     else:  # crop
-        temp_z = array[crop_center[0] - newz//2:crop_center[0] + newz//2, :, :]
+        temp_z = array[crop_center[0] - newz//2:crop_center[0] + newz//2 + newz % 2, :, :]
 
     # crop/pad along axis 1
     if newy >= nby:  # pad
@@ -524,7 +524,7 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
             temp_y = np.ones((newz, newy, nbx), dtype=array.dtype)
         temp_y[:, pad_start[1]:pad_start[1]+nby, :] = temp_z
     else:  # crop
-        temp_y = temp_z[:, crop_center[1] - newy//2:crop_center[1] + newy//2, :]
+        temp_y = temp_z[:, crop_center[1] - newy//2:crop_center[1] + newy//2 + newy % 2, :]
 
     # crop/pad along axis 2
     if newx >= nbx:  # pad
@@ -534,7 +534,7 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
             newobj = np.ones((newz, newy, newx), dtype=array.dtype)
         newobj[:, :, pad_start[2]:pad_start[2]+nbx] = temp_y
     else:  # crop
-        newobj = temp_y[:, :, crop_center[2] - newx//2:crop_center[2] + newx//2]
+        newobj = temp_y[:, :, crop_center[2] - newx//2:crop_center[2] + newx//2 + newx % 2]
 
     if debugging:
         gu.multislices_plot(abs(newobj), sum_frames=True, scale='log', title='After crop/pad')
@@ -580,7 +580,7 @@ def crop_pad_2d(array, output_shape, padwith_ones=False, pad_start=None, crop_ce
             temp_y = np.ones((output_shape[0], nbx), dtype=array.dtype)
         temp_y[pad_start[0]:pad_start[0]+nby, :] = array
     else:  # crop
-        temp_y = array[crop_center[0] - newy//2:crop_center[0] + newy//2, :]
+        temp_y = array[crop_center[0] - newy//2:crop_center[0] + newy//2 + newy % 2, :]
 
     # crop/pad along axis 1
     if newx >= nbx:  # pad
@@ -590,7 +590,7 @@ def crop_pad_2d(array, output_shape, padwith_ones=False, pad_start=None, crop_ce
             newobj = np.ones((newy, newx), dtype=array.dtype)
         newobj[:, pad_start[1]:pad_start[1]+nbx] = temp_y
     else:  # crop
-        newobj = temp_y[:, crop_center[1] - newx//2:crop_center[1] + newx//2]
+        newobj = temp_y[:, crop_center[1] - newx//2:crop_center[1] + newx//2 + newx % 2]
 
     if debugging:
         gu.imshow_plot(abs(array), sum_frames=True, scale='log', title='After crop/pad')
@@ -635,7 +635,7 @@ def crop_pad_1d(array, output_length, padwith_ones=False, pad_start=None, crop_c
             pad_start = array[0] - ((newx - nbx) // 2) * spacing
             newobj = pad_start + np.arange(newx) * spacing
     else:  # crop
-        newobj = array[crop_center - newx//2:crop_center + newx//2]
+        newobj = array[crop_center - newx//2:crop_center + newx//2 + newx % 2]
 
     return newobj
 
