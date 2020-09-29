@@ -32,6 +32,7 @@ alignment_method = 'modulus'  # 'modulus' or 'support'
 # if 'modulus', use the center of mass of the modulus. If 'support', use the center of mass of a support object defined
 # by support_threshold
 support_threshold = 0.05  # threshold on the normalized modulus to define the support if alignement_method is 'support'
+debug = True  # True to see debugging plots
 ################
 # Load objects #
 ################
@@ -82,7 +83,8 @@ for idx in range(1, nbfiles):
     print(os.path.basename(file_path[idx]))
     obj, _ = util.load_file(file_path[idx])
     obj = pu.crop_pad(array=obj, output_shape=obj0.shape)
-    obj = pu.align_obj(reference_obj=obj0, obj=obj, method=alignment_method, support_threshold=support_threshold)
+    obj = pu.align_obj(reference_obj=obj0, obj=obj, method=alignment_method, support_threshold=support_threshold,
+                       debugging=debug)
     amp = abs(obj)
     phase = np.angle(obj) - np.angle(obj)[piz0, piy0, pix0]  # set the phase to 0 at the same pixel
     obj = amp * np.exp(1j * phase)
