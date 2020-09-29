@@ -229,7 +229,7 @@ def load_file(file_path, fieldname=None):
         # group_key = list(h5file.keys())[1]
         # subgroup_key = list(h5file[group_key])
         # dataset = h5file['/'+group_key+'/'+subgroup_key[0]+'/data'].value
-        dataset = h5file['/entry_1/data_1/data'].value
+        dataset = h5file['/entry_1/data_1/data'][()]
     elif extension == '.h5':  # modes.h5
         h5file = h5py.File(file_path, 'r')
         group_key = list(h5file.keys())[0]
