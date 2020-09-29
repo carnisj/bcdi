@@ -63,7 +63,8 @@ def align_obj(reference_obj, obj, method='modulus', support_threshold=None, prec
     new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output
     print("    Shift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
           str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
-
+    print('Pearson correlation coeff. = {0:.3f}'.format(pearsonr(np.ndarray.flatten(abs(reference_obj)),
+                                                                 np.ndarray.flatten(abs(new_obj)))[0]))
     if debugging:
         gu.multislices_plot(abs(reference_obj), sum_frames=True, title='Reference object')
         gu.multislices_plot(abs(new_obj), sum_frames=True, title='Aligned object')
