@@ -22,12 +22,17 @@ import bcdi.utils.utilities as util
 from bcdi.utils import image_registration as reg
 
 
-def align_obj(reference_obj, obj, precision=1000, debugging=False):
+def align_obj(reference_obj, obj, method='modulus', support_threshold=None, precision=1000, debugging=False):
     """
     Align two arrays using dft registration and subpixel shift.
 
     :param reference_obj: 3D array, reference complex object
     :param obj: 3D array, complex density to average with
+    :param method: 'modulus' or 'support'. Object to use for the determination of the shift. If 'support', the parameter
+     'support_threshold' must also be provided since the binary support is defined by thresholding the normalized
+      modulus.
+    :param support_threshold: all points where the normalized modulus is larger than this value will be set to 1 in the
+     support.
     :param precision: precision for the DFT registration in 1/pixel
     :param debugging: set to True to see plots
     :type debugging: bool
@@ -41,7 +46,17 @@ def align_obj(reference_obj, obj, precision=1000, debugging=False):
         print('crop/pad obj')
         obj = crop_pad(array=obj, output_shape=reference_obj.shape)
 
-    shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(obj), precision=precision)
+    if method is 'modulus':
+        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(obj), precision=precision)
+    elif method is 'support':
+        ref_support = np.zeros(reference_obj.shape)
+        ref_support[abs(reference_obj) > support_threshold * abs(reference_obj).max()] = 1
+        support = np.zeros(reference_obj.shape)
+        support[abs(obj) > support_threshold * abs(obj).max()] = 1
+        shiftz, shifty, shiftx = reg.getimageregistration(ref_support, support, precision=precision)
+        del ref_support, support
+    else:
+        raise ValueError('The method should be either "modulus" or "support"')
     new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output
     print("    Shift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
           str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
@@ -49,7 +64,6 @@ def align_obj(reference_obj, obj, precision=1000, debugging=False):
     if debugging:
         gu.multislices_plot(abs(reference_obj), sum_frames=True, title='Reference object')
         gu.multislices_plot(abs(new_obj), sum_frames=True, title='Aligned object')
-
     return new_obj
 
 
