@@ -54,6 +54,9 @@ def align_obj(reference_obj, obj, method='modulus', support_threshold=None, prec
         support = np.zeros(reference_obj.shape)
         support[abs(obj) > support_threshold * abs(obj).max()] = 1
         shiftz, shifty, shiftx = reg.getimageregistration(ref_support, support, precision=precision)
+        if debugging:
+            gu.multislices_plot(abs(ref_support), sum_frames=True, title='Reference support')
+            gu.multislices_plot(abs(support), sum_frames=True, title='Support before alignement')
         del ref_support, support
     else:
         raise ValueError('The method should be either "modulus" or "support"')
