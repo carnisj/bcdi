@@ -28,9 +28,9 @@ def align_obj(reference_obj, obj, method='modulus', support_threshold=None, prec
 
     :param reference_obj: 3D array, reference complex object
     :param obj: 3D array, complex density to average with
-    :param method: 'modulus' or 'support'. Object to use for the determination of the shift. If 'support', the parameter
-     'support_threshold' must also be provided since the binary support is defined by thresholding the normalized
-      modulus.
+    :param method: 'modulus', 'support' or 'skip'. Object to use for the determination of the shift.
+     If 'support', the parameter 'support_threshold' must also be provided since the binary support is defined by
+     thresholding the normalized modulus.
     :param support_threshold: all points where the normalized modulus is larger than this value will be set to 1 in the
      support.
     :param precision: precision for the DFT registration in 1/pixel
@@ -46,6 +46,7 @@ def align_obj(reference_obj, obj, method='modulus', support_threshold=None, prec
         print('crop/pad obj')
         obj = crop_pad(array=obj, output_shape=reference_obj.shape)
 
+    # calculate the shift between the two arrays
     if method is 'modulus':
         shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(obj), precision=precision)
     elif method is 'support':
@@ -58,8 +59,13 @@ def align_obj(reference_obj, obj, method='modulus', support_threshold=None, prec
             gu.multislices_plot(abs(ref_support), sum_frames=False, title='Reference support')
             gu.multislices_plot(abs(support), sum_frames=False, title='Support before alignement')
         del ref_support, support
-    else:
-        raise ValueError('The method should be either "modulus" or "support"')
+    else:  # 'skip'
+        print('\nSkipping alignment')
+        print('\tPearson correlation coefficient = {0:.3f}'.format(pearsonr(np.ndarray.flatten(abs(reference_obj)),
+                                                                            np.ndarray.flatten(abs(obj)))[0]))
+        return obj
+
+    # align obj using subpixel shift
     new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output
     print("\tShift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
           str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
