@@ -64,7 +64,7 @@ print('Array shape', obj0.shape)
 amp0 = abs(obj0)
 sum0 = amp0.sum()
 phase0 = np.angle(obj0)
-if alignment_method is 'modulus':
+if alignment_method in ['modulus', 'skip']:
     piz0, piy0, pix0 = center_of_mass(amp0)
 else:  # 'support'
     support = np.zeros(amp0.shape)
@@ -72,7 +72,7 @@ else:  # 'support'
     piz0, piy0, pix0 = center_of_mass(support)
 
 piz0, piy0, pix0 = int(piz0), int(piy0), int(pix0)
-phase0 = phase0 - phase0[piz0, piy0, pix0]  # set the phae to 0 at the COM of the support
+phase0 = phase0 - phase0[piz0, piy0, pix0]  # set the phase to 0 at the COM of the support
 obj0 = amp0 * np.exp(1j * phase0)
 stack = np.zeros((nbfiles, nz, ny, nx), dtype=complex)
 stack[0, :, :, :] = obj0
