@@ -214,6 +214,14 @@ rescale_support.py
    :end-before: """
    :language: rst
 
+rotate_scan.py
+^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/rotate_scan.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 .. _postprocess:
 
 Postprocessing
