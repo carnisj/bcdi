@@ -58,7 +58,7 @@ gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
                     title='S' + str(scan) + '\n Data before rotation', vmin=0,
                     reciprocal_space=True, is_orthogonal=True)
 if not skip_mask:
-    gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True,
+    gu.multislices_plot(mask, sum_frames=False, scale='linear', plot_colorbar=True,
                         title='S' + str(scan) + '\n Mask before rotation', vmin=0,
                         reciprocal_space=True, is_orthogonal=True)
 
@@ -100,11 +100,13 @@ if save:
     np.savez_compressed(datadir + 'S' + str(scan) + '_data_rotated' + comment + '.npz', data=rot_data)
 
 if not skip_mask:
-    rgi = RegularGridInterpolator((old_z, old_y, old_x), mask, method='linear', bounds_error=False, fill_value=0)
+    rgi = RegularGridInterpolator((old_z, old_y, old_x), mask, method='linear', bounds_error=False, fill_value=np.nan)
     rot_mask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                    new_x.reshape((1, new_z.size)))).transpose())
     rot_mask = rot_mask.reshape((nbz, nby, nbx)).astype(mask.dtype)
-    gu.multislices_plot(rot_mask, sum_frames=True, scale='linear', plot_colorbar=True,
+    rot_mask[np.isnan(rot_mask)] = 1
+    rot_mask[np.nonzero(rot_mask)] = 1
+    gu.multislices_plot(rot_mask, sum_frames=False, scale='linear', plot_colorbar=True,
                         title='S' + str(scan) + '\n Mask after rotation', vmin=0,
                         reciprocal_space=True, is_orthogonal=True)
     if save:
