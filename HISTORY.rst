@@ -1,3 +1,12 @@
+Version 1.0.0
+-------------
+
+* Bug: in facet_strain.py, solve bugs in plane fitting when the facet is parallel to an axis
+
+* Feature: implement rotate_scan.py, to rotate a 3D reciprocal space map around a vector
+
+* Refactor: in modes_decomposition.py, implement skipping alignment between datasets or aligning based on a support
+
 Version 0.0.9
 -------------
 
