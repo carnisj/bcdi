@@ -50,6 +50,7 @@ boundaries = 'crop'  # 'mask' or 'crop'. If 'mask', pixels were not all scans ar
 correlation_threshold = 0.90  # only scans having a correlation larger than this threshold will be combined
 reference_scan = 0  # index in scans of the scan to be used as the reference for the correlation calculation
 combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
+# if a pixel is defined only in part of the dataset, its value will be used with proper rescaling
 is_orthogonal = False  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
 plot_threshold = 0  # data below this will be set to 0, only in plots
 comment = ''  # should start with _ , it will be added to the filename when saving the combined dataset
@@ -115,6 +116,10 @@ if not 0 <= corr_roi[0] < corr_roi[1] <= nbz\
     print('Incorrect value for the parameter corr_roi')
     sys.exit()
 
+# replace nans by 0 and mask them
+refmask[np.isnan(refdata)] = 1
+refdata[np.isnan(refdata)] = 0
+
 gu.multislices_plot(refdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
                     sum_frames=True, scale='log', plot_colorbar=True, title='refdata in corr_roi', vmin=0,
                     reciprocal_space=True, is_orthogonal=is_orthogonal)
@@ -140,6 +145,10 @@ for idx in range(len(scans)):
                    'S' + str(scans[idx]) + '_pynx' + suffix)['data']
     mask = np.load(homedir + samplename + parent_folder +
                    'S' + str(scans[idx]) + '_maskpynx' + suffix)['mask']
+
+    # replace nans by 0 and mask them
+    mask[np.isnan(data)] = 1
+    data[np.isnan(data)] = 0
 
     if debug:
         gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
@@ -181,8 +190,12 @@ for idx in range(len(scans)):
     else:
         print('Scan ', scans[idx], ', correlation below threshold, skip concatenation')
 
-summask[np.nonzero(summask)] = 1  # mask should be 0 or 1
-sumdata = sumdata / len(combined_list)
+#############################################################################
+# unmask voxels which are only partially masked using the values in summask #
+#############################################################################
+mean_data = np.divide(sumdata, len(combined_list) - summask)
+summask[summask != len(combined_list)] = 0  # unmask voxels which are partially masked
+summask[np.nonzero(summask)] = 1
 
 ##########################################################################################
 # exclude or mask boundaries where not all scans are defined after alignment (BCDI case) #
@@ -195,12 +208,12 @@ if alignement_method is not 'skip':
     print('\nnumber of pixels to remove (start, end) = ', shift_max, ', ', shift_min)
 
     if boundaries == 'mask':
-        sumdata[0:shift_max[0], :, :] = 0
-        sumdata[shift_min[0]:, :, :] = 0
-        sumdata[:, 0:shift_max[1], :] = 0
-        sumdata[:, shift_min[1]:, :] = 0
-        sumdata[:, :, 0:shift_max[2]] = 0
-        sumdata[:, :, shift_min[2]:] = 0
+        mean_data[0:shift_max[0], :, :] = 0
+        mean_data[shift_min[0]:, :, :] = 0
+        mean_data[:, 0:shift_max[1], :] = 0
+        mean_data[:, shift_min[1]:, :] = 0
+        mean_data[:, :, 0:shift_max[2]] = 0
+        mean_data[:, :, shift_min[2]:] = 0
 
         summask[0:shift_max[0], :, :] = 1
         summask[shift_min[0]:, :, :] = 1
@@ -263,7 +276,7 @@ if alignement_method is not 'skip':
 # crop the combined data and mask to the desired shape #
 ########################################################
 summask = pu.crop_pad(array=summask, output_shape=output_shape, crop_center=crop_center)
-sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape, crop_center=crop_center)
+mean_data = pu.crop_pad(array=mean_data, output_shape=output_shape, crop_center=crop_center)
 
 ###################################
 # save the combined data and mask #
@@ -273,20 +286,20 @@ template = '_S' + str(combined_list[0]) + 'toS' + str(combined_list[-1]) +\
 
 
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-np.savez_compressed(savedir+'combined_pynx' + template + '.npz', data=sumdata)
+np.savez_compressed(savedir+'combined_pynx' + template + '.npz', data=mean_data)
 np.savez_compressed(savedir+'combined_maskpynx' + template + '.npz', mask=summask)
 print('\nSum of ', len(combined_list), 'scans')
 
 ###################################
 # plot the combined data and mask #
 ###################################
-gu.multislices_plot(sumdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
-                    sum_frames=True, scale='log', plot_colorbar=True, title='sumdata in corr_roi', vmin=0,
+gu.multislices_plot(mean_data[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
+                    sum_frames=True, scale='log', plot_colorbar=True, title='mean_data in corr_roi', vmin=0,
                     reciprocal_space=True, is_orthogonal=is_orthogonal)
 
-sumdata[np.nonzero(summask)] = 0
-sumdata[sumdata < plot_threshold] = 0
-fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
+mean_data[np.nonzero(summask)] = 0
+mean_data[mean_data < plot_threshold] = 0
+fig, _, _ = gu.multislices_plot(mean_data, sum_frames=True, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
                                 title='Combined masked intensity', vmin=0, reciprocal_space=True)
 fig.text(0.55, 0.40, "Scans tested:", size=12)
 fig.text(0.55, 0.35, str(scans), size=8)
@@ -301,7 +314,7 @@ if plot_threshold != 0:
 plt.pause(0.1)
 plt.savefig(savedir + 'data' + template + '.png')
 
-fig, _, _ = gu.multislices_plot(sumdata, sum_frames=False, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
+fig, _, _ = gu.multislices_plot(mean_data, sum_frames=False, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
                                 slice_position=crop_center, title='Combined masked intensity', vmin=0,
                                 reciprocal_space=True)
 fig.text(0.55, 0.40, "Scans tested:", size=12)
