@@ -301,8 +301,9 @@ gu.multislices_plot(mean_data[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], 
 
 mean_data[np.nonzero(summask)] = 0
 mean_data[mean_data < plot_threshold] = 0
-fig, _, _ = gu.multislices_plot(mean_data, sum_frames=True, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
-                                title='Combined masked intensity', vmin=0, reciprocal_space=True)
+fig, _, _ = gu.multislices_plot(mean_data, sum_frames=True, scale='log', plot_colorbar=True,
+                                is_orthogonal=is_orthogonal, reciprocal_space=True,
+                                title='Combined masked intensity', vmin=0)
 fig.text(0.55, 0.40, "Scans tested:", size=12)
 fig.text(0.55, 0.35, str(scans), size=8)
 fig.text(0.55, 0.30, "Correlation coefficients:", size=12)
@@ -316,9 +317,9 @@ if plot_threshold != 0:
 plt.pause(0.1)
 plt.savefig(savedir + 'data' + template + '.png')
 
-fig, _, _ = gu.multislices_plot(mean_data, sum_frames=False, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
-                                slice_position=crop_center, title='Combined masked intensity', vmin=0,
-                                reciprocal_space=True)
+fig, _, _ = gu.multislices_plot(mean_data, sum_frames=False, scale='log', plot_colorbar=True,
+                                is_orthogonal=is_orthogonal, reciprocal_space=True,
+                                slice_position=crop_center, title='Combined masked intensity', vmin=0)
 fig.text(0.55, 0.40, "Scans tested:", size=12)
 fig.text(0.55, 0.35, str(scans), size=8)
 fig.text(0.55, 0.30, "Correlation coefficients:", size=12)
