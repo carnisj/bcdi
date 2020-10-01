@@ -193,7 +193,9 @@ for idx in range(len(scans)):
 #############################################################################
 # unmask voxels which are only partially masked using the values in summask #
 #############################################################################
-mean_data = np.divide(sumdata, len(combined_list) - summask)
+mean_data = sumdata
+unmask_ind = (summask != len(combined_list))
+mean_data[unmask_ind] = np.divide(mean_data[unmask_ind], len(combined_list) - summask[unmask_ind])
 summask[summask != len(combined_list)] = 0  # unmask voxels which are partially masked
 summask[np.nonzero(summask)] = 1
 
