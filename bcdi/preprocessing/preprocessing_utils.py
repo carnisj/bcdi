@@ -1109,7 +1109,9 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
                 mask = mask[0:data.shape[0], :, :]  # truncate the mask to have the correct size
                 numz = data.shape[0]
 
-        gridder = xu.Gridder3D(numz, numy, numx)
+        # only rectangular cuboidal voxels are supported in xrayutilities FuzzyGridder3D
+        # use the default width defined in FuzzyGridder3D
+        gridder = xu.FuzzyGridder3D(numz, numy, numx)
         # convert mask to rectangular grid in reciprocal space
         gridder(qx, qz, qy, mask)  # qx downstream, qz vertical up, qy outboard
         interp_mask = np.copy(gridder.data)
@@ -1120,9 +1122,7 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
         qx, qz, qy = [gridder.xaxis, gridder.yaxis, gridder.zaxis]  # downstream, vertical up, outboard
 
     else:
-        import sys
-        print('#TODO check Ewald sphere curvature correction')
-        sys.exit()
+        raise NotImplementedError('#TODO check Ewald sphere curvature correction')
         # TODO check Ewald sphere curvature correction
 
     # check for Nan
@@ -1153,6 +1153,10 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
     plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(interp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Regridded data', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space_sum_pix' + plot_comment)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data', is_orthogonal=True, reciprocal_space=True)
@@ -1510,7 +1514,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
                 rawdata = tempdata
                 rawmask = rawmask[0:rawdata.shape[0], :, :]  # truncate the mask to have the correct size
                 nbz = rawdata.shape[0]
-        gridder = xu.Gridder3D(nbz, nby, nbx)
+        gridder = xu.FuzzyGridder3D(nbz, nby, nbx)
         # convert mask to rectangular grid in reciprocal space
         gridder(qx, qz, qy, rawmask)  # qx downstream, qz vertical up, qy outboard
         mask = np.copy(gridder.data)
