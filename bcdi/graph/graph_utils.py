@@ -2951,7 +2951,6 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
             print('resume masking')
 
     elif key == 'q':
-        update_fig = True
         stop_masking = True
 
     else:
