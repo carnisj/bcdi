@@ -2721,6 +2721,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
 
     nbz, nby, nbx = original_data.shape
     stop_masking = False
+    update_fig = False
     if dim not in [0, 1, 2]:
         raise ValueError('dim should be 0, 1 or 2')
     elif dim == 0:
@@ -2750,14 +2751,17 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
 
     elif key == 'right':
         vmax = vmax + 1
+        update_fig = True
 
     elif key == 'left':
         vmax = vmax - 1
         if vmax < 1:
             vmax = 1
+        update_fig = True
 
     elif key == 'm':
         skip = False
+        update_fig = True
 
         # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
@@ -2797,6 +2801,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
 
     elif key == 'b':
         skip = False
+        update_fig = True
 
         # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
@@ -2842,6 +2847,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
 
     elif key == 'f':  # fill with ones
         skip = False
+        update_fig = True
 
         # check if the masking window fit in the data range (vertical axis of the 2D plot)
         if (piy - width) < 0:
@@ -2883,6 +2889,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
                 updated_data[starty:stopy, startx:stopx, :] = original_data.max()
 
     elif key == 'a':  # restart mask from beginning
+        update_fig = True
         updated_data = np.copy(original_data)
         xy = []
         click_dim = None
@@ -2901,6 +2908,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
         updated_mask = np.zeros((nbz, nby, nbx))
 
     elif key == 'p':  # plot full image
+        update_fig = True
         xmin0, xmax0 = -0.5, nbx - 0.5
         if invert_yaxis:
             ymin0, ymax0 = -0.5, nby - 0.5  # pointing up
@@ -2943,34 +2951,36 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
             print('resume masking')
 
     elif key == 'q':
+        update_fig = True
         stop_masking = True
 
     else:
         return updated_data, updated_mask, flag_pause, xy, width, vmax, click_dim, stop_masking, info_text
 
-    updated_data[original_mask == 1] = 0
-    updated_data[updated_mask == 1] = 0
+    if update_fig:
+        updated_data[original_mask == 1] = 0
+        updated_data[updated_mask == 1] = 0
 
-    axes[0].cla()
-    axes[1].cla()
-    axes[2].cla()
-    axes[0].imshow(np.log10(updated_data.sum(axis=0)), vmin=vmin, vmax=vmax, cmap=cmap)
-    axes[1].imshow(np.log10(updated_data.sum(axis=1)), vmin=vmin, vmax=vmax, cmap=cmap)
-    axes[2].imshow(np.log10(updated_data.sum(axis=2)), vmin=vmin, vmax=vmax, cmap=cmap)
-    axes[0].set_title("XY")
-    axes[0].axis('scaled')
-    if invert_yaxis:
-        axes[0].invert_yaxis()
-    axes[0].set_xlim([xmin0, xmax0])
-    axes[0].set_ylim([ymin0, ymax0])
-    axes[1].set_title("XZ")
-    axes[1].axis('scaled')
-    axes[1].set_xlim([xmin1, xmax1])
-    axes[1].set_ylim([ymin1, ymax1])
-    axes[2].set_title("YZ")
-    axes[2].axis('scaled')
-    axes[2].set_xlim([xmin2, xmax2])
-    axes[2].set_ylim([ymin2, ymax2])
+        axes[0].cla()
+        axes[1].cla()
+        axes[2].cla()
+        axes[0].imshow(np.log10(updated_data.sum(axis=0)), vmin=vmin, vmax=vmax, cmap=cmap)
+        axes[1].imshow(np.log10(updated_data.sum(axis=1)), vmin=vmin, vmax=vmax, cmap=cmap)
+        axes[2].imshow(np.log10(updated_data.sum(axis=2)), vmin=vmin, vmax=vmax, cmap=cmap)
+        axes[0].set_title("XY")
+        axes[0].axis('scaled')
+        if invert_yaxis:
+            axes[0].invert_yaxis()
+        axes[0].set_xlim([xmin0, xmax0])
+        axes[0].set_ylim([ymin0, ymax0])
+        axes[1].set_title("XZ")
+        axes[1].axis('scaled')
+        axes[1].set_xlim([xmin1, xmax1])
+        axes[1].set_ylim([ymin1, ymax1])
+        axes[2].set_title("YZ")
+        axes[2].axis('scaled')
+        axes[2].set_xlim([xmin2, xmax2])
+        axes[2].set_ylim([ymin2, ymax2])
     fig = plt.gcf()
     info_text.remove()
     if flag_pause:
