@@ -35,9 +35,9 @@ Input: a reconstruction .npz file with fields: 'amp' and 'strain'
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
 
-scan = 11  # spec scan number
-datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + '/pynxraw/'
-support_threshold = 0.36  # threshold for support determination
+scan = 1053  # spec scan number
+datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + '/pynxraw/gap_interp/'
+support_threshold = 0.48  # threshold for support determination
 voxel_size = [3, 3, 3]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
 upsampling_factor = 1  # integer, factor for upsampling the reconstruction in order to have a smoother surface
 savedir = datadir
@@ -396,13 +396,13 @@ gu.scatter_plot(array=np.asarray(np.nonzero(corners)).T, markersize=2, markercol
 ######################################
 # Initialize log files and .vti file #
 ######################################
-summary_file = open(os.path.join(savedir, "S" + str(scan) + "_planes.dat"), "w")
+summary_file = open(os.path.join(savedir, "S" + str(scan) + "_planes_iso" + str(support_threshold) + ".dat"), "w")
 summary_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('angle') + '\t' +
                    '{0: <10}'.format('points #') + '\t' + '{0: <10}'.format('<strain>') + '\t' +
                    '{0: <10}'.format('std dev') + '\t' + '{0: <10}'.format('A (x)') + '\t' +
                    '{0: <10}'.format('B (y)') + '\t' + 'C (Ax+By+C=z)' + '\t' + 'normal X' + '\t' +
                    'normal Y' + '\t' + 'normal Z' + '\n')
-allpoints_file = open(os.path.join(savedir, "S" + str(scan) + "_strain.dat"), "w")
+allpoints_file = open(os.path.join(savedir, "S" + str(scan) + "_strain_iso" + str(support_threshold) + ".dat"), "w")
 allpoints_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('Z') + '\t' + '{0: <10}'.format('Y') +
                      '\t' + '{0: <10}'.format('X') + '\t' + '{0: <10}'.format('strain')+'\n')
 
@@ -790,7 +790,7 @@ allpoints_file.close()
 
 # export data to file
 writer = vtk.vtkXMLImageDataWriter()
-writer.SetFileName(os.path.join(savedir, "S" + str(scan) + "_refined planes.vti"))
+writer.SetFileName(os.path.join(savedir, "S" + str(scan) + "_refined planes_iso" + str(support_threshold) + ".vti"))
 writer.SetInputData(image_data)
 writer.Write()
 print('\nEnd of script')
