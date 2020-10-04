@@ -446,18 +446,18 @@ def fit_plane(plane, label, debugging=False):
             no_points = True
             return 0, indices, 0, no_points
 
-        # remove also points farther away than the mean distance to the COM
+        # remove also points farther away than the median distance to the COM
         dist = np.zeros(indices.shape[1])
         x_com, y_com, z_com = center_of_mass(plane)
         for point in range(indices.shape[1]):
             dist[point] = np.sqrt((indices[0, point]-x_com)**2+(indices[1, point]-y_com)**2+(indices[2, point]-z_com)**2)
-        average_dist = np.mean(dist)
+        median_dist = np.median(dist)
         if debugging:
             gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
                             title='Points before distance threshold plane ' + str(label) + f'\niteration {idx}')
 
         for point in range(indices.shape[1]):
-            if dist[point] > average_dist:
+            if dist[point] > median_dist:
                 plane[indices[0, point], indices[1, point], indices[2, point]] = 0
         print('Fit plane', label, ', ', str(indices.shape[1] - plane[plane == 1].sum()), 'points too far from COM, ',
               str(plane[plane == 1].sum()), 'remaining')
@@ -869,6 +869,45 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     plt.pause(0.1)
 
     return labels_south, labels_north, stereo_proj, remove_row
+
+
+def surface_gradient(point, support):
+    """
+    Calculate the support gradient at point.
+
+    :param point: tuple of 3 integers (z, y, x), position where to calculate the gradient vector
+    :param support: 3D numpy binary array, being 1 in the crystal and 0 outside
+    :return: a normalized vector (tuple of 3 numbers) oriented towards the exterior of the cristal
+    """
+    gradz, grady, gradx = np.gradient(support, 1)  # support
+    # round the point to integer numbers
+    point = [int(np.rint(point[idx])) for idx in range(3)]
+
+    # calculate the gradient in a small window around point (gradient will be nonzero on a single layer)
+    gradz_slice = gradz[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
+    val = (gradz_slice != 0).sum()
+    if val == 0:
+        vector_z = 0
+    else:
+        vector_z = gradz_slice.sum() / val
+
+    grady_slice = grady[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
+    val = (grady_slice != 0).sum()
+    if val == 0:
+        vector_y = 0
+    else:
+        vector_y = grady_slice.sum() / val
+
+    gradx_slice = gradx[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
+    val = (gradx_slice != 0).sum()
+    if val == 0:
+        vector_x = 0
+    else:
+        vector_x = gradx_slice.sum() / val
+
+    # support was 1 inside, 0 outside, the vector needs to be flipped to point towards the outside
+    vector = [-vector_z, -vector_y, -vector_x]
+    return vector / np.linalg.norm(vector)
 
 
 def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33, mu=0.34, radius=0.1,
