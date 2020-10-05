@@ -750,7 +750,7 @@ duplicates = tuple([ind_0, ind_1, ind_2])
 # update the log and VTK files #
 ################################
 print('\nFiltering out voxels attributed to multiple facets')
-print(f'{len(duplicates)} points attributed to multiple facets will be removed')
+print(f'{len(duplicates[0])} points attributed to multiple facets will be removed')
 for label in summary_dict.keys():
     plane = np.zeros((nz, ny, nx), dtype=int)
     plane[summary_dict[label]['plane_indices']] = 1
