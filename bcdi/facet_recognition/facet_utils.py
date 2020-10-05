@@ -533,7 +533,7 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
 
     count_grad = 0
     for idx in range(len(indices[0])):
-        if np.dot(plane_normal, gradients[idx]) < 0.75:
+        if np.dot(plane_normal, gradients[idx]) < 0.85:
             plane[indices[0][idx], indices[1][idx], indices[2][idx]] = 0
             count_grad += 1
 
@@ -904,12 +904,14 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     return labels_south, labels_north, stereo_proj, remove_row
 
 
-def surface_gradient(points, support):
+def surface_gradient(points, support, width=2):
     """
     Calculate the support gradient at point.
 
     :param points: tuple or list of tuples of 3 integers (z, y, x), position where to calculate the gradient vector
     :param support: 3D numpy binary array, being 1 in the crystal and 0 outside
+    :param width: half-width of the window where the gradient will be calculated (the support gradient is nonzero on a
+     single layer, it avoids missing it)
     :return: a list of normalized vector(s) (array(s) of 3 numbers) oriented towards the exterior of the cristal
     """
     gradz, grady, gradx = np.gradient(support, 1)  # support
@@ -923,21 +925,27 @@ def surface_gradient(points, support):
         point = [int(np.rint(point[idx])) for idx in range(3)]
 
         # calculate the gradient in a small window around point (gradient will be nonzero on a single layer)
-        gradz_slice = gradz[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
+        gradz_slice = gradz[point[0]-width:point[0]+width+1,
+                            point[1]-width:point[1]+width+1,
+                            point[2]-width:point[2]+width+1]
         val = (gradz_slice != 0).sum()
         if val == 0:
             vector_z = 0
         else:
             vector_z = gradz_slice.sum() / val
 
-        grady_slice = grady[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
+        grady_slice = grady[point[0]-width:point[0]+width+1,
+                            point[1]-width:point[1]+width+1,
+                            point[2]-width:point[2]+width+1]
         val = (grady_slice != 0).sum()
         if val == 0:
             vector_y = 0
         else:
             vector_y = grady_slice.sum() / val
 
-        gradx_slice = gradx[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
+        gradx_slice = gradx[point[0]-width:point[0]+width+1,
+                            point[1]-width:point[1]+width+1,
+                            point[2]-width:point[2]+width+1]
         val = (gradx_slice != 0).sum()
         if val == 0:
             vector_x = 0
