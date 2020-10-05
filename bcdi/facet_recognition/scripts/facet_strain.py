@@ -35,13 +35,13 @@ Input: a reconstruction .npz file with fields: 'amp' and 'strain'
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
 
-scan = 78  # spec scan number
-datadir = "D:/data/Pt THH ex-situ/Data/HS4670/S" + str(scan) + '/pynxraw/gap_interp/'
-support_threshold = 0.25  # threshold for support determination
-voxel_size = [6, 6, 6]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+scan = 1053  # spec scan number
+datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + '/pynxraw/gap_interp/'
+support_threshold = 0.48  # threshold for support determination
+voxel_size = [3, 3, 3]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
 upsampling_factor = 1  # integer, factor for upsampling the reconstruction in order to have a smoother surface
 savedir = datadir
-reflection = np.array([0, 2, 0])  # measured crystallographic reflection
+reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 projection_axis = 1  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
 smoothing_iterations = 5  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
@@ -51,13 +51,13 @@ radius_normals = 0.1  # radius of integration for the calculation of the density
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
 peak_min_distance = 10  # pixel separation between peaks in corner_peaks()
 max_distance_plane = 0.75  # in pixels, maximum allowed distance to the facet plane of a voxel
-edges_coord = 310  # coordination threshold for isolating edges, 360 seems to work reasonably well
+edges_coord = 360  # coordination threshold for isolating edges, 360 seems to work reasonably well
 corners_coord = 310  # coordination threshold for isolating corners, 310 seems to work reasonably well
 ########################################################
 # parameters only used in the stereographic projection #
 ########################################################
-threshold_south = -2000  # background threshold in the stereographic projection from South of the density of normals
-threshold_north = -2000  # background threshold in the stereographic projection from North of the density of normals
+threshold_south = -2500  # background threshold in the stereographic projection from South of the density of normals
+threshold_north = -2500  # background threshold in the stereographic projection from North of the density of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 stereo_scale = 'linear'  # 'linear' or 'log', scale of the colorbar in the stereographic plot
 ##########################################################
@@ -69,8 +69,8 @@ kde_threshold = -0.2  # threshold for defining the background in the density est
 # define crystallographic planes of interest for the stereographic projection (cubic lattice) #
 ###############################################################################################
 planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
-planes_south['0 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([0, 2, 0]))
-# planes_south['1 1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 1]))
+# planes_south['0 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([0, 2, 0]))
+planes_south['1 1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 1]))
 # planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
 # planes_south['1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 0]))
 # planes_south['-1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, 1, 0]))
@@ -78,11 +78,11 @@ planes_south['0 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np
 # planes_south['-1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
 planes_south['2 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, 1, 0]))
 planes_south['2 -1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, -1, 0]))
-planes_south['1 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 2, 0]))
+# planes_south['1 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 2, 0]))
 
 planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
-planes_north['0 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([0, -2, 0]))
-# planes_north['-1 -1 -1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, -1]))
+# planes_north['0 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([0, -2, 0]))
+planes_north['-1 -1 -1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, -1]))
 # planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
 # planes_north['-1 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 0]))
 # planes_north['-1 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
@@ -90,7 +90,7 @@ planes_north['0 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=
 # planes_north['-1 1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
 planes_north['-2 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-2, 1, 0]))
 planes_north['-2 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-2, -1, 0]))
-planes_north['1 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([1, -2, 0]))
+# planes_north['1 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([1, -2, 0]))
 ##########################
 # end of user parameters #
 ##########################
@@ -567,13 +567,17 @@ for label in unique_labels:
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=1.5*max_distance_plane, debugging=False)
+                                    max_distance=1.5*max_distance_plane, debugging=debug)
         # here the distance threshold is larger in order to reach voxels missed by the first plane fit
         # when rounding vertices to integer. Anyway we intersect it with the surface therefore it can not go crazy.
         plane_indices = np.nonzero(plane)
         iterate = iterate + 1
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
         if plane[plane == 1].sum() == previous_nb:
+            print('Growth: maximum size reached')
+            break
+        if iterate == 50:  # it is likely that we are stuck in an infinite loop after this number of iterations
+            print('Growth: maximum iteration number reached')
             break
     grown_points = plane[plane == 1].sum().astype(int)
     print('Plane ', label, ', ', str(grown_points), 'points after growing facet at the surface')
@@ -638,6 +642,10 @@ for label in unique_labels:
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
         iterate = iterate + 1
         if plane[plane == 1].sum() == previous_nb:
+            print('Growth: maximum size reached')
+            break
+        if iterate == 50:  # it is likely that we are stuck in an infinite loop after this number of iterations
+            print('Growth: maximum iteration number reached')
             break
     grown_points = plane[plane == 1].sum().astype(int)
     # plot plane points overlaid with the support
@@ -675,7 +683,7 @@ for label in unique_labels:
     ##############################################################################
     # check that the plane normal is not flipped using the support gradient at the center of mass of the facet
     zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
-    mean_gradient = fu.surface_gradient((zcom_facet, ycom_facet, xcom_facet), support=support)
+    mean_gradient = fu.surface_gradient((zcom_facet, ycom_facet, xcom_facet), support=support)[0]
 
     # check the correct direction of the normal using the gradient of the support
     plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
