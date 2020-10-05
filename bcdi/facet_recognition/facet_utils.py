@@ -510,6 +510,10 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     coord = np.rint(convolve(obj, kernel, mode='same'))
     coord = coord.astype(int)
     coord[np.nonzero(coord)] = 1
+    if debugging:
+        gu.scatter_plot_overlaid(arrays=(np.asarray(np.nonzero(coord)).T, np.asarray(np.nonzero(obj)).T),
+                                 markersizes=(2, 8), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 title='Plane' + str(label) + ' before facet growing and coord matrix')
 
     # update plane with new voxels
     temp_plane = np.copy(plane)
@@ -517,15 +521,29 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     # remove voxels not belonging to the support
     temp_plane[support == 0] = 0
     # check distance of new voxels to the plane
-    new_indices = np.nonzero(temp_plane)
 
-    plane, no_points = distance_threshold(fit=fit, indices=new_indices, plane_shape=temp_plane.shape,
+    plane, no_points = distance_threshold(fit=fit, indices=np.nonzero(temp_plane), plane_shape=temp_plane.shape,
                                           max_distance=max_distance)
 
-    if debugging and len(new_indices[0]) != 0:
-        indices = np.nonzero(plane)
+    # calculate the support gradient at the center of mass of the facet
+    zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
+    mean_gradient = surface_gradient((zcom_facet, ycom_facet, xcom_facet), support=support)[0]
+
+    # calculate the local gradient for each point of the plane, gradients is a list of arrays of 3 vector components
+    indices = np.nonzero(plane)
+    gradients = surface_gradient(list(zip(indices[0], indices[1], indices[2])), support=support)
+
+    count_grad = 0
+    for idx in range(len(indices[0])):
+        if np.dot(mean_gradient, gradients[idx]) < 0.75:
+            plane[indices[0][idx], indices[1][idx], indices[2][idx]] = 0
+            count_grad += 1
+
+    indices = np.nonzero(plane)
+    if debugging and len(indices[0]) != 0:
         gu.scatter_plot(array=np.asarray(indices).T, labels=('x', 'y', 'z'),
                         title='Plane' + str(label) + ' after 1 cycle of facet growing')
+        print(f'{count_grad} points excluded by gradient filtering')
         print(str(len(indices[0])) + ' after 1 cycle of facet growing')
     return plane, no_points
 
@@ -887,43 +905,49 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     return labels_south, labels_north, stereo_proj, remove_row
 
 
-def surface_gradient(point, support):
+def surface_gradient(points, support):
     """
     Calculate the support gradient at point.
 
-    :param point: tuple of 3 integers (z, y, x), position where to calculate the gradient vector
+    :param points: tuple or list of tuples of 3 integers (z, y, x), position where to calculate the gradient vector
     :param support: 3D numpy binary array, being 1 in the crystal and 0 outside
-    :return: a normalized vector (tuple of 3 numbers) oriented towards the exterior of the cristal
+    :return: a list of normalized vector(s) (array(s) of 3 numbers) oriented towards the exterior of the cristal
     """
     gradz, grady, gradx = np.gradient(support, 1)  # support
-    # round the point to integer numbers
-    point = [int(np.rint(point[idx])) for idx in range(3)]
+    vectors = []
+    if not isinstance(points, list):
+        points = [points]
 
-    # calculate the gradient in a small window around point (gradient will be nonzero on a single layer)
-    gradz_slice = gradz[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
-    val = (gradz_slice != 0).sum()
-    if val == 0:
-        vector_z = 0
-    else:
-        vector_z = gradz_slice.sum() / val
+    for idx in range(len(points)):
+        point = points[idx]
+        # round the point to integer numbers
+        point = [int(np.rint(point[idx])) for idx in range(3)]
 
-    grady_slice = grady[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
-    val = (grady_slice != 0).sum()
-    if val == 0:
-        vector_y = 0
-    else:
-        vector_y = grady_slice.sum() / val
+        # calculate the gradient in a small window around point (gradient will be nonzero on a single layer)
+        gradz_slice = gradz[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
+        val = (gradz_slice != 0).sum()
+        if val == 0:
+            vector_z = 0
+        else:
+            vector_z = gradz_slice.sum() / val
 
-    gradx_slice = gradx[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
-    val = (gradx_slice != 0).sum()
-    if val == 0:
-        vector_x = 0
-    else:
-        vector_x = gradx_slice.sum() / val
+        grady_slice = grady[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
+        val = (grady_slice != 0).sum()
+        if val == 0:
+            vector_y = 0
+        else:
+            vector_y = grady_slice.sum() / val
 
-    # support was 1 inside, 0 outside, the vector needs to be flipped to point towards the outside
-    vector = [-vector_z, -vector_y, -vector_x]
-    return vector / np.linalg.norm(vector)
+        gradx_slice = gradx[point[0]-2:point[0]+3, point[1]-2:point[1]+3, point[2]-2:point[2]+3]
+        val = (gradx_slice != 0).sum()
+        if val == 0:
+            vector_x = 0
+        else:
+            vector_x = gradx_slice.sum() / val
+
+        # support was 1 inside, 0 outside, the vector needs to be flipped to point towards the outside
+        vectors.append([-vector_z, -vector_y, -vector_x] / np.linalg.norm([-vector_z, -vector_y, -vector_x]))
+    return vectors
 
 
 def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33, mu=0.34, radius=0.1,
