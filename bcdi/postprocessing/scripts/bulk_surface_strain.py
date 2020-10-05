@@ -25,12 +25,12 @@ the surface and in the remaining bulk.
 Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_strain.npz)
 """
 
-scan = 9  # spec scan number
+scan = 78  # spec scan number
 root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
 sample_name = "S"  # "S"
 datadir = root_folder + sample_name + str(scan) + "/pynxraw/gap_interp/"
-support_threshold = 0.35  # threshold applied to the modulus for reading the surface strain
-normalize = True  # if True, will normalize the histograms to the total number of points
+support_threshold = 0.25  # threshold applied to the modulus for reading the surface strain
+normalize = True  # if True, will normalize the histograms to the respective number of points
 bin_step = 2e-5  # step size for the bins (in units of strain)
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
 xlim = (-0.002, 0.002)  # limits used for the horizontal axis of histograms, leave None otherwise
@@ -144,18 +144,18 @@ hist, bin_edges = np.histogram(strain[np.nonzero(surface)],
                                bins=int((strain[np.nonzero(surface)].max()-strain[np.nonzero(surface)].min())/bin_step))
 hist = hist.astype(float)
 if normalize:
-    hist = hist / (nb_surface + nb_bulk)  # normalize the histogram to the number of points
+    hist = hist / nb_surface  # normalize the histogram to the number of points
 
 x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 
 fit_params = Parameters()
 if fit_pdf == 'skewed_gaussian':
-    fit_params.add('amp_1', value=0.002, min=0.000001, max=10000)
+    fit_params.add('amp_1', value=0.0005, min=0.000001, max=10000)
     fit_params.add('loc_1', value=0, min=-0.1, max=0.1)
     fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
     fit_params.add('alpha_1', value=0, min=-10, max=10)
 else:  # 'pseudovoigt'
-    fit_params.add('amp_1', value=0.002, min=0.000001, max=10000)
+    fit_params.add('amp_1', value=0.0005, min=0.000001, max=10000)
     fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
     fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
     fit_params.add('ratio_1', value=0.5, min=0, max=1)
@@ -236,7 +236,7 @@ hist, bin_edges = np.histogram(strain[np.nonzero(bulk)],
                                bins=int((strain[np.nonzero(bulk)].max()-strain[np.nonzero(bulk)].min())/bin_step))
 hist = hist.astype(float)
 if normalize:
-    hist = hist / (nb_surface + nb_bulk)   # normalize the histogram to the number of points
+    hist = hist / nb_bulk   # normalize the histogram to the number of points
 
 x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 
