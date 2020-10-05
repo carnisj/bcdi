@@ -525,9 +525,7 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     plane, no_points = distance_threshold(fit=fit, indices=np.nonzero(temp_plane), plane_shape=temp_plane.shape,
                                           max_distance=max_distance)
 
-    # calculate the support gradient at the center of mass of the facet
-    zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
-    mean_gradient = surface_gradient((zcom_facet, ycom_facet, xcom_facet), support=support)[0]
+    plane_normal = fit[:-1]   # normal is [a, b, c] if ax+by+cz+d=0
 
     # calculate the local gradient for each point of the plane, gradients is a list of arrays of 3 vector components
     indices = np.nonzero(plane)
@@ -535,7 +533,7 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
 
     count_grad = 0
     for idx in range(len(indices[0])):
-        if np.dot(mean_gradient, gradients[idx]) < 0.75:
+        if np.dot(plane_normal, gradients[idx]) < 0.75:
             plane[indices[0][idx], indices[1][idx], indices[2][idx]] = 0
             count_grad += 1
 
@@ -791,7 +789,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     cid = plt.connect('motion_notify_event', mouse_move)
     fig.waitforbuttonpress()
     plt.disconnect(cid)
-    
+    print('\n')
+
     # identification of local minima
     density_south[density_south > background_south] = 0  # define the background in the density of normals
     mask_south = np.copy(density_south)
