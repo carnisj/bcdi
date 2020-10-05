@@ -666,6 +666,21 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
       and North (u column2 , v column 3). The coordinates are in degrees, not indices.
      - the list of rows to remove
     """
+    def mouse_move(event):
+        nonlocal density_south, density_north, u_grid, v_grid, ax0, ax1
+        if event.inaxes == ax0:
+            index_u = util.find_nearest(u_grid[0, :], event.xdata, width=None)
+            index_v = util.find_nearest(v_grid[:, 0], event.ydata, width=None)
+            sys.stdout.write('\rKDE South:' + str('{:.0f}'.format(density_south[index_v, index_u])))
+            sys.stdout.flush()
+        elif event.inaxes == ax1:
+            index_u = util.find_nearest(u_grid[0, :], event.xdata, width=None)
+            index_v = util.find_nearest(v_grid[:, 0], event.ydata, width=None)
+            sys.stdout.write('\rKDE North:' + str('{:.0f}'.format(density_north[index_v, index_u])))
+            sys.stdout.flush()
+        else:
+            pass
+
     if comment_fig and comment_fig[-1] != '_':
         comment_fig = comment_fig + '_'
     radius_mean = 1  # normals are normalized
@@ -755,8 +770,9 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     gu.colorbar(img1)
     ax1.set_title('KDE \nNorth pole')
     fig.tight_layout()
-    plt.pause(0.1)
+    cid = plt.connect('motion_notify_event', mouse_move)
     fig.waitforbuttonpress()
+    plt.disconnect(cid)
     
     # identification of local minima
     density_south[density_south > background_south] = 0  # define the background in the density of normals
