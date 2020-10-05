@@ -28,9 +28,9 @@ Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_st
 scan = 9  # spec scan number
 root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
 sample_name = "S"  # "S"
-datadir = root_folder + sample_name + str(scan) + "/pynxraw/"
-support_threshold = 0.36  # threshold applied to the modulus for reading the surface strain
-normalize = True  # if True, will normalize the histograms to the respective number of points
+datadir = root_folder + sample_name + str(scan) + "/pynxraw/gap_interp/"
+support_threshold = 0.35  # threshold applied to the modulus for reading the surface strain
+normalize = True  # if True, will normalize the histograms to the total number of points
 bin_step = 2e-5  # step size for the bins (in units of strain)
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
 xlim = (-0.002, 0.002)  # limits used for the horizontal axis of histograms, leave None otherwise
@@ -38,6 +38,8 @@ ylim = None  # limits used for the vertical axis of histograms, leave None other
 fit_pdf = 'skewed_gaussian'  # 'pseudovoigt' or 'skewed_gaussian'
 save_txt = False  # True to save the strain values for the surface, the bulk and the full support in txt files
 debug = True  # True to see more plots
+tick_length = 4  # in plots
+tick_width = 1.5  # in plots
 ##########################
 # end of user parameters #
 ##########################
@@ -75,6 +77,10 @@ coordination_matrix = pu.calc_coordination(support=support, kernel=np.ones((3, 3
 surface = np.copy(support)
 surface[coordination_matrix > 22] = 0  # remove the bulk 22
 bulk = support - surface
+nb_surface = len(np.nonzero(surface)[0])
+nb_bulk = len(np.nonzero(bulk)[0])
+print("Number of surface points = ", str(nb_surface))
+print("Number of bulk points = ", str(nb_bulk))
 if debug:
     gu.multislices_plot(surface, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
                         title='Surface layer', scale='linear', is_orthogonal=True,
@@ -132,26 +138,24 @@ if save_txt:
 ####################################
 # fit the bulk strain distribution #
 ####################################
-nb_surface = len(np.nonzero(surface)[0])
-print("Number of surface points = ", str(nb_surface))
 print('Min surface strain = {:.5f}'.format(strain[np.nonzero(surface)].min()))
 print('Max surface strain = {:.5f}'.format(strain[np.nonzero(surface)].max()))
 hist, bin_edges = np.histogram(strain[np.nonzero(surface)],
                                bins=int((strain[np.nonzero(surface)].max()-strain[np.nonzero(surface)].min())/bin_step))
 hist = hist.astype(float)
 if normalize:
-    hist = hist / nb_surface  # normalize the histogram to the number of points
+    hist = hist / (nb_surface + nb_bulk)  # normalize the histogram to the number of points
 
 x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 
 fit_params = Parameters()
 if fit_pdf == 'skewed_gaussian':
-    fit_params.add('amp_1', value=0.005, min=0.000001, max=100000)
+    fit_params.add('amp_1', value=0.002, min=0.000001, max=10000)
     fit_params.add('loc_1', value=0, min=-0.1, max=0.1)
     fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
     fit_params.add('alpha_1', value=0, min=-10, max=10)
 else:  # 'pseudovoigt'
-    fit_params.add('amp_1', value=0.005, min=0.000001, max=100000)
+    fit_params.add('amp_1', value=0.002, min=0.000001, max=10000)
     fit_params.add('cen_1', value=0, min=-0.1, max=0.1)
     fit_params.add('sig_1', value=0.0005, min=0.0000001, max=0.1)
     fit_params.add('ratio_1', value=0.5, min=0, max=1)
@@ -176,6 +180,8 @@ if fit_pdf == 'skewed_gaussian':  # find the position of the mode (maximum of th
 ###################################################
 # plot the strain histogram for the surface layer #
 ###################################################
+surface_xaxis = np.copy(x_axis)  # will be used for the overlay plot
+surface_hist = np.copy(hist)  # will be used for the overlay plot
 fig, ax = plt.subplots(nrows=1, ncols=1)
 if plot_scale == 'log':
     hist[hist == 0] = np.nan
@@ -224,15 +230,13 @@ fig.savefig(datadir + 'surface_strain_iso' + str(support_threshold)+'_labels.png
 ####################################
 # fit the bulk strain distribution #
 ####################################
-nb_bulk = len(np.nonzero(bulk)[0])
-print("Number of bulk points = ", str(nb_bulk))
 print('Min bulk strain = {:.5f}'.format(strain[np.nonzero(bulk)].min()))
 print('Max bulk strain = {:.5f}'.format(strain[np.nonzero(bulk)].max()))
 hist, bin_edges = np.histogram(strain[np.nonzero(bulk)],
                                bins=int((strain[np.nonzero(bulk)].max()-strain[np.nonzero(bulk)].min())/bin_step))
 hist = hist.astype(float)
 if normalize:
-    hist = hist / nb_bulk  # normalize the histogram to the number of points
+    hist = hist / (nb_surface + nb_bulk)   # normalize the histogram to the number of points
 
 x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 
@@ -268,6 +272,8 @@ if fit_pdf == 'skewed_gaussian':  # find the position of the mode (maximum of th
 ##########################################
 # plot the strain histogram for the bulk #
 ##########################################
+bulk_xaxis = np.copy(x_axis)  # will be used for the overlay plot
+bulk_hist = np.copy(hist)  # will be used for the overlay plot
 fig, ax = plt.subplots(nrows=1, ncols=1)
 if plot_scale == 'log':
     hist[hist == 0] = np.nan
@@ -315,5 +321,37 @@ fig.savefig(datadir + 'bulk_strain_iso' + str(support_threshold)+'_labels.png')
 
 nb_total = len(np.nonzero(support)[0])
 print("Sanity check: Total points = {:d}".format(nb_total), ", surface+bulk = {:d}".format(nb_surface+nb_bulk))
+######################################################################
+# plot the overlay of strain histograms for the bulk and the surface #
+######################################################################
+fig, ax = plt.subplots(nrows=1, ncols=1)
+if plot_scale == 'log':
+    surface_hist[surface_hist == 0] = np.nan
+    bulk_hist[bulk_hist == 0] = np.nan
+    ax.bar(x=surface_xaxis, height=np.log10(surface_hist), width=surface_xaxis[1]-surface_xaxis[0], color='r',
+           alpha=0.5)
+    ax.bar(x=bulk_xaxis, height=np.log10(bulk_hist), width=bulk_xaxis[1]-bulk_xaxis[0], color='b', alpha=0.5)
+else:
+    ax.bar(x=surface_xaxis, height=surface_hist, width=surface_xaxis[1]-surface_xaxis[0], color='r', alpha=0.5)
+    ax.bar(x=bulk_xaxis, height=bulk_hist, width=bulk_xaxis[1]-bulk_xaxis[0], color='b', alpha=0.5)
+
+if xlim is None:
+    ax.set_xlim(-max(abs(surface_xaxis), abs(bulk_xaxis)), max(abs(surface_xaxis), abs(bulk_xaxis)))
+else:
+    assert len(xlim) == 2, 'xlim=[min, max] expected'
+    ax.set_xlim(xlim[0], xlim[1])
+if ylim is not None:
+    assert len(ylim) == 2, 'ylim=[min, max] expected'
+    ax.set_ylim(ylim[0], ylim[1])
+
+ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
+ax.tick_params(length=tick_length, width=tick_width)
+fig.savefig(datadir + 'overlay_strain_iso' + str(support_threshold)+'_labels.png')
+ax.tick_params(labelbottom=False, labelleft=False)
+ax.spines['right'].set_linewidth(tick_width)
+ax.spines['left'].set_linewidth(tick_width)
+ax.spines['top'].set_linewidth(tick_width)
+ax.spines['bottom'].set_linewidth(tick_width)
+fig.savefig(datadir + 'overlay_strain_iso' + str(support_threshold)+'.png')
 plt.ioff()
 plt.show()
