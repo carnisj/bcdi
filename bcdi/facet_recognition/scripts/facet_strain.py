@@ -470,7 +470,7 @@ for label in unique_labels:
     if stop:
         print('No points remaining after raw fit for plane', label)
         continue
-    plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
+
     # update plane by filtering out pixels too far from the fit plane
     plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, plane_shape=plane.shape,
                                         max_distance=max_distance_plane)
@@ -480,7 +480,17 @@ for label in unique_labels:
         continue
     else:
         print('Plane', label, ', ', str(grown_points), 'points after checking distance to plane')
-    plane_indices = np.nonzero(plane == 1)  # plane_indices is a tuple of 3 arrays
+    plane_indices = np.nonzero(plane)  # plane_indices is a tuple of 3 arrays
+
+    # check that the plane normal is not flipped using the support gradient at the center of mass of the facet
+    zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
+    mean_gradient = fu.surface_gradient((zcom_facet, ycom_facet, xcom_facet), support=support)[0]
+    plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
+    plane_normal = plane_normal / np.linalg.norm(plane_normal)
+    if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
+        print('Flip normal direction plane', str(label))
+        plane_normal = -1 * plane_normal
+        coeffs = (-coeffs[0], -coeffs[1], -coeffs[2], -coeffs[3])
 
     ##############################################################################################################
     # Look for the surface: correct for the offset between the plane equation and the outer shell of the support #
@@ -505,8 +515,8 @@ for label in unique_labels:
 
     # offset the plane by mean_dist/2 and see if the plane is closer to the surface or went in the wrong direction
     dist = np.zeros(len(surf0))
-    offset = mean_dist / 2 * np.dot(plane_normal / np.linalg.norm(plane_normal),
-                                    plane_normal / np.linalg.norm(plane_normal))
+    offset = mean_dist / 2
+    
     for point in range(len(surf0)):
         dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] + coeffs[2]*surf2[point]
                        + coeffs[3] - offset) / np.linalg.norm(plane_normal)
@@ -522,7 +532,7 @@ for label in unique_labels:
     else:  # moving away from the surface, wrong direction
         step_shift = -1 * np.sign(mean_dist) * step_shift
 
-    step_shift = -1*step_shift  # added JCR 24082018 because the direction of normals to plane is inwards the crystal
+    # step_shift = -1*step_shift  # added JCR 24082018 because the direction of normals to plane is inwards the crystal
 
     #########################################################################################
     # shift the fit plane along its normal until the normal is crossed and go back one step #
@@ -630,6 +640,16 @@ for label in unique_labels:
                                  title='Plane' + str(label) + ' after distance threshold at surface\n' +
                                        'Points number=' + str(len(plane_indices[0])))
 
+    # check that the plane normal is not flipped using the support gradient at the center of mass of the facet
+    zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
+    mean_gradient = fu.surface_gradient((zcom_facet, ycom_facet, xcom_facet), support=support)[0]
+    plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
+    plane_normal = plane_normal / np.linalg.norm(plane_normal)
+    if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
+        print('Flip normal direction plane', str(label))
+        plane_normal = -1 * plane_normal
+        coeffs = (-coeffs[0], -coeffs[1], -coeffs[2], -coeffs[3])
+
     ############################################
     # final growth of the facet on the surface #
     ############################################
@@ -681,17 +701,7 @@ for label in unique_labels:
     ##############################################################################
     # calculate the angle between the plane normal and the measurement direction #
     ##############################################################################
-    # check that the plane normal is not flipped using the support gradient at the center of mass of the facet
-    zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
-    mean_gradient = fu.surface_gradient((zcom_facet, ycom_facet, xcom_facet), support=support)[0]
-
-    # check the correct direction of the normal using the gradient of the support
-    plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
-    plane_normal = plane_normal / np.linalg.norm(plane_normal)
-    if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
-        print('Flip normal direction plane', str(label))
-        plane_normal = -1 * plane_normal
-    # correct plane_normal for anisotropic voxel size
+    # correct plane_normal for the eventual anisotropic voxel size
     plane_normal = np.array([plane_normal[0] * 2 * np.pi / voxel_size[0],
                              plane_normal[1] * 2 * np.pi / voxel_size[1],
                              plane_normal[2] * 2 * np.pi / voxel_size[2]])
@@ -710,7 +720,7 @@ for label in unique_labels:
 
     # calculate the angle of the plane normal to the measurement direction, which is aligned along projection_axis
     angle_plane = 180 / np.pi * np.arccos(np.dot(ref_axis, plane_normal))
-
+    print(f'Angle between plane {label} and the measurement direction = {angle_plane:.2f} degrees')
     # update the dictionnary
     summary_dict[label] = {'angle_plane': angle_plane, 'plane_coeffs': coeffs, 'plane_normal': plane_normal,
                            'plane_indices': plane_indices}
@@ -734,7 +744,6 @@ counter_dict = collections.Counter(full_indices)
 
 # creates the list of duplicated voxels, these will be set to the background later on
 duplicates = [key for key, value in counter_dict.items() if value > 1]
-print(f'{len(duplicates)} points attributed to multiple facets were removed')
 
 # modify the structure of the list so that it can be directly used for array indexing (like the output of np.nonzero)
 ind_0 = np.asarray([duplicates[point][0] for point in range(len(duplicates))])
@@ -746,9 +755,11 @@ duplicates = tuple([ind_0, ind_1, ind_2])
 # update the log and VTK files #
 ################################
 print('\nFiltering out voxels attributed to multiple facets')
+print(f'{len(duplicates)} points attributed to multiple facets will be removed')
 for label in summary_dict.keys():
     plane = np.zeros((nz, ny, nx), dtype=int)
     plane[summary_dict[label]['plane_indices']] = 1
+    number_before = (plane == 1).sum()
     # remove voxels attributed to multiple facets
     plane[duplicates] = 0
     plane_indices = np.nonzero(plane)
@@ -758,7 +769,8 @@ for label in summary_dict.keys():
         print('Plane ', label, ' , no point remaining after checking for duplicates')
         continue
     else:
-        print('Plane ', label, ' : {0} points after checking for duplicates'.format(nb_points))
+        print('Plane ', label,
+              ' : {0} points before, {1} points after checking for duplicates'.format(number_before, nb_points))
 
     surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
     gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
