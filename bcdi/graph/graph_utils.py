@@ -1353,17 +1353,29 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
                             int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
     if scale == 'linear':
         if np.isnan(min_value[0]):
-            min_value[0] = temp_array[~np.isnan(temp_array)].min()
+            try:
+                min_value[0] = temp_array[~np.isnan(temp_array)].min()
+            except ValueError:
+                min_value[0] = 0
         if np.isnan(max_value[0]):
-            max_value[0] = temp_array[~np.isnan(temp_array)].max()
+            try:
+                max_value[0] = temp_array[~np.isnan(temp_array)].max()
+            except ValueError:
+                max_value[0] = 1
         plt0 = ax0.imshow(temp_array, vmin=min_value[0], vmax=max_value[0], cmap=cmap)
     elif scale == 'log':
         if np.isnan(min_value[0]):
-            min_value[0] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
+            try:
+                min_value[0] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
+            except ValueError:
+                min_value[0] = 0
             if np.isinf(min_value[0]):
                 min_value[0] = 0
         if np.isnan(max_value[0]):
-            max_value[0] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
+            try:
+                max_value[0] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
+            except ValueError:
+                max_value[0] = 1
         plt0 = ax0.imshow(np.log10(abs(temp_array)), vmin=min_value[0], vmax=max_value[0], cmap=cmap)
     else:
         raise ValueError('Wrong value for scale')
@@ -1394,17 +1406,29 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
                             int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
     if scale == 'linear':
         if np.isnan(min_value[1]):
-            min_value[1] = temp_array[~np.isnan(temp_array)].min()
+            try:
+                min_value[1] = temp_array[~np.isnan(temp_array)].min()
+            except ValueError:
+                min_value[1] = 0
         if np.isnan(max_value[1]):
-            max_value[1] = temp_array[~np.isnan(temp_array)].max()
+            try:
+                max_value[1] = temp_array[~np.isnan(temp_array)].max()
+            except ValueError:
+                max_value[1] = 1
         plt1 = ax1.imshow(temp_array, vmin=min_value[1], vmax=max_value[1], cmap=cmap)
     elif scale == 'log':
         if np.isnan(min_value[1]):
-            min_value[1] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
+            try:
+                min_value[1] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
+            except ValueError:
+                min_value[1] = 0
             if np.isinf(min_value[1]):
                 min_value[1] = 0
         if np.isnan(max_value[1]):
-            max_value[1] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
+            try:
+                max_value[1] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
+            except ValueError:
+                max_value[1] = 1
         plt1 = ax1.imshow(np.log10(abs(temp_array)), vmin=min_value[1], vmax=max_value[1], cmap=cmap)
     else:
         raise ValueError('Wrong value for scale')
@@ -1433,17 +1457,29 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
                             int(np.rint(nby // 2 - min(width_y, nby) // 2)) + min(width_y, nby)]
     if scale == 'linear':
         if np.isnan(min_value[2]):
-            min_value[2] = temp_array[~np.isnan(temp_array)].min()
+            try:
+                min_value[2] = temp_array[~np.isnan(temp_array)].min()
+            except ValueError:
+                min_value[2] = 0
         if np.isnan(max_value[2]):
-            max_value[2] = temp_array[~np.isnan(temp_array)].max()
+            try:
+                max_value[2] = temp_array[~np.isnan(temp_array)].max()
+            except ValueError:
+                max_value[2] = 1
         plt2 = ax2.imshow(temp_array, vmin=min_value[2], vmax=max_value[2], cmap=cmap)
     elif scale == 'log':
         if np.isnan(min_value[2]):
-            min_value[2] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
+            try:
+                min_value[2] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
+            except ValueError:
+                min_value[2] = 0
             if np.isinf(min_value[2]):
                 min_value[2] = 0
         if np.isnan(max_value[2]):
-            max_value[2] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
+            try:
+                max_value[2] = np.log10(abs(temp_array[~np.isnan(temp_array)]).max())
+            except ValueError:
+                max_value[2] = 1
         plt2 = ax2.imshow(np.log10(abs(temp_array)), vmin=min_value[2], vmax=max_value[2], cmap=cmap)
     else:
         raise ValueError('Wrong value for scale')
