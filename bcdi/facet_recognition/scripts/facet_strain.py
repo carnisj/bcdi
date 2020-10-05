@@ -342,19 +342,12 @@ for idx in range(nb_vertices):
     else:  # non duplicated pixel
         all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = \
                 vertices_label[idx]
-print('\nRounded vertices belonging to multiple labels = ', duplicated_counter)
+print('\nRounded vertices belonging to multiple labels = ', duplicated_counter, '\n')
 del planes_counter, vertices_label, vertices_new
 gc.collect()
 
-#####################################################
-# define surface gradient using a conjugate support #
-#####################################################
-# this support is 1 outside, 0 inside so that the gradient points towards exterior
-# support = np.ones((nz, ny, nx))
-# support[abs(amp) > support_threshold * abs(amp).max()] = 0
-# zcom_support, ycom_support, xcom_support = center_of_mass(support)
-# print("COM at (z, y, x): (", str('{:.2f}'.format(zcom_support)), ',', str('{:.2f}'.format(ycom_support)), ',',
-#       str('{:.2f}'.format(xcom_support)), ')')
+for label in unique_labels:
+    print("Facet", str(label), ': ', str((all_planes == label).sum()), 'voxels detected')
 
 ############################################
 # define the support, surface layer & bulk #
@@ -362,7 +355,7 @@ gc.collect()
 support = np.zeros(amp.shape)
 support[abs(amp) > support_threshold * abs(amp).max()] = 1
 zcom_support, ycom_support, xcom_support = center_of_mass(support)
-print("COM at (z, y, x): (", str('{:.2f}'.format(zcom_support)), ',', str('{:.2f}'.format(ycom_support)), ',',
+print("\nCOM at (z, y, x): (", str('{:.2f}'.format(zcom_support)), ',', str('{:.2f}'.format(ycom_support)), ',',
       str('{:.2f}'.format(xcom_support)), ')')
 coordination_matrix = pu.calc_coordination(support, kernel=np.ones((3, 3, 3)), debugging=False)
 surface = np.copy(support)
@@ -453,6 +446,8 @@ gc.collect()
 #######################################################################################
 summary_dict = {}
 for label in unique_labels:
+    if label == 20:
+        print('')
     print('\nPlane', label)
     # raw fit including all points
     plane = np.copy(all_planes)
