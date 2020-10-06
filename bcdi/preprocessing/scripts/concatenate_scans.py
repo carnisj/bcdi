@@ -44,8 +44,11 @@ corr_roi = None  # [325, 400, 845, 920, 410, 485]
 output_shape = (140, 300, 300)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
 crop_center = None  # [z, y, x] pixels position in the original array of the center of the cropped output
 # if None, it will be set to the center of the original array
-boundaries = 'crop'  # 'mask' or 'crop'. If 'mask', pixels were not all scans are defined after alignement will be
-# masked, if 'crop' output_shape will be modified to remove these boundary pixels
+boundaries = 'skip'  # 'mask', 'crop' or 'skip'. If 'mask', boundary pixels were not all scans are defined after
+# alignement will be masked, if 'crop' output_shape will be modified to crop them. If 'skip', boundaries will not be
+# processed.
+partially_masked = 'unmask'  # 'unmask' or 'mask'. If 'unmask', partially masked pixels will be set to their mean value
+# and unmasked. If 'mask', partially masked pixels will be set to 0 and masked.
 correlation_threshold = 0.90  # only scans having a correlation larger than this threshold will be combined
 reference_scan = 0  # index in scans of the scan to be used as the reference for the correlation calculation
 combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
@@ -194,15 +197,6 @@ for idx in range(len(scans)):
     else:
         print('Scan ', scans[idx], ', correlation below threshold, skip concatenation')
 
-#############################################################################
-# unmask voxels which are only partially masked using the values in summask #
-#############################################################################
-mean_data = sumdata
-unmask_ind = (summask != len(combined_list))
-mean_data[unmask_ind] = np.divide(mean_data[unmask_ind], len(combined_list) - summask[unmask_ind])
-summask[summask != len(combined_list)] = 0  # unmask voxels which are partially masked
-summask[np.nonzero(summask)] = 1
-
 #####################################################################################
 # process boundaries and voxels where not all scans are defined after concatenation #
 #####################################################################################
@@ -215,12 +209,12 @@ print('\nnumber of pixels to remove (start, end) = ', shift_max, ', ', shift_min
 if boundaries == 'mask':
     # when alignment is skipped, shift_min=[0, 0, 0] and shift_max=[0, 0, 0],
     # resulting in empty slices (nothing masked)
-    mean_data[0:shift_max[0], :, :] = 0
-    mean_data[nbz-shift_min[0]:, :, :] = 0
-    mean_data[:, 0:shift_max[1], :] = 0
-    mean_data[:, nby-shift_min[1]:, :] = 0
-    mean_data[:, :, 0:shift_max[2]] = 0
-    mean_data[:, :, nbx-shift_min[2]:] = 0
+    sumdata[0:shift_max[0], :, :] = 0
+    sumdata[nbz-shift_min[0]:, :, :] = 0
+    sumdata[:, 0:shift_max[1], :] = 0
+    sumdata[:, nby-shift_min[1]:, :] = 0
+    sumdata[:, :, 0:shift_max[2]] = 0
+    sumdata[:, :, nbx-shift_min[2]:] = 0
 
     summask[0:shift_max[0], :, :] = 1
     summask[nbz-shift_min[0]:, :, :] = 1
@@ -279,9 +273,24 @@ elif boundaries == 'crop':  # will redefined output_shape and crop_center to rem
             crop_center[2] = crop_center[2] + delta_x
 
     print('new crop size for the first axis=', output_shape, 'new crop_center=', crop_center)
-else:  # 'skip'
-    print('no further process of the boundaries')
 
+else:  # 'skip'
+    print('no process of the boundaries')
+
+##################################################
+# normalize sumdata using the counter in summask #
+##################################################
+mean_data = sumdata
+if partially_masked is 'unmask':
+    unmask_ind = (summask != len(combined_list))  # summask will be = len(combined_list) for pixels totally masked
+    mean_data[unmask_ind] = np.divide(mean_data[unmask_ind], len(combined_list) - summask[unmask_ind])
+    summask[summask != len(combined_list)] = 0  # unmask voxels which are partially masked
+    summask[np.nonzero(summask)] = 1
+else:  # 'mask', mask partially masked pixels
+    summask[np.nonzero(summask)] = 1
+    mean_data[np.nonzero(summask)] = 0
+    mean_data = mean_data / len(combined_list)
+    
 ########################################################
 # crop the combined data and mask to the desired shape #
 ########################################################
