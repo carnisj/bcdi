@@ -40,8 +40,7 @@ alignement_method = 'registration'
 combining_method = 'rgi'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
 corr_roi = None  # [325, 400, 845, 920, 410, 485]
 # [420, 520, 660, 760, 600, 700]  # region of interest where to calculate the correlation between scans.
-# If None, it will use the full
-# array. [zstart, zstop, ystart, ystop, xstart, xstop]
+# If None, it will use the full array. [zstart, zstop, ystart, ystop, xstart, xstop]
 output_shape = (140, 300, 300)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
 crop_center = None  # [z, y, x] pixels position in the original array of the center of the cropped output
 # if None, it will be set to the center of the original array
@@ -100,7 +99,13 @@ refmask = np.load(homedir + samplename + parent_folder +
                   'S' + str(scans[reference_scan]) + '_maskpynx' + suffix)['mask']
 assert refdata.ndim == 3 and refmask.ndim == 3, 'data and mask should be 3D arrays'
 nbz, nby, nbx = refdata.shape
+# replace nans by 0 and mask them
+refmask[np.isnan(refdata)] = 1
+refdata[np.isnan(refdata)] = 0
 
+#################################################################
+# check parameters depending on the shape of the reference scan #
+#################################################################
 crop_center = list(crop_center or [nbz // 2, nby // 2, nbx // 2])  # if None, default to the middle of the array
 assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
 assert np.all(np.asarray(crop_center)-np.asarray(output_shape)//2 >= 0), 'crop_center incompatible with output_shape'
@@ -115,10 +120,6 @@ if not 0 <= corr_roi[0] < corr_roi[1] <= nbz\
         or not 0 <= corr_roi[4] < corr_roi[5] <= nbx:
     print('Incorrect value for the parameter corr_roi')
     sys.exit()
-
-# replace nans by 0 and mask them
-refmask[np.isnan(refdata)] = 1
-refdata[np.isnan(refdata)] = 0
 
 gu.multislices_plot(refdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
                     sum_frames=True, scale='log', plot_colorbar=True, title='refdata in corr_roi', vmin=0,
@@ -175,6 +176,9 @@ for idx in range(len(scans)):
             gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True,
                                 title='S' + str(scans[idx]) + '\n Mask after shift', vmin=0,
                                 reciprocal_space=True, is_orthogonal=is_orthogonal)
+    else:
+        shift_min = (0, 0, 0)
+        shift_max = (0, 0, 0)
 
     correlation = pearsonr(
         np.ndarray.flatten(abs(refdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]])),
@@ -199,80 +203,84 @@ mean_data[unmask_ind] = np.divide(mean_data[unmask_ind], len(combined_list) - su
 summask[summask != len(combined_list)] = 0  # unmask voxels which are partially masked
 summask[np.nonzero(summask)] = 1
 
-##########################################################################################
-# exclude or mask boundaries where not all scans are defined after alignment (BCDI case) #
-##########################################################################################
-if alignement_method is not 'skip':
-    shift_min = [int(np.ceil(abs(shift_min[axis]))) for axis in range(3)]
-    # shift_min is the number of pixels to remove at the end along each axis
-    shift_max = [int(np.ceil(shift_max[axis])) for axis in range(3)]
-    # shft_max is the number of pixels to remove at the beginning along each axis
-    print('\nnumber of pixels to remove (start, end) = ', shift_max, ', ', shift_min)
+#####################################################################################
+# process boundaries and voxels where not all scans are defined after concatenation #
+#####################################################################################
+shift_min = [int(np.ceil(abs(shift_min[axis]))) for axis in range(3)]
+# shift_min is the number of pixels to remove at the end along each axis
+shift_max = [int(np.ceil(shift_max[axis])) for axis in range(3)]
+# shft_max is the number of pixels to remove at the beginning along each axis
+print('\nnumber of pixels to remove (start, end) = ', shift_max, ', ', shift_min)
 
-    if boundaries == 'mask':
-        mean_data[0:shift_max[0], :, :] = 0
-        mean_data[shift_min[0]:, :, :] = 0
-        mean_data[:, 0:shift_max[1], :] = 0
-        mean_data[:, shift_min[1]:, :] = 0
-        mean_data[:, :, 0:shift_max[2]] = 0
-        mean_data[:, :, shift_min[2]:] = 0
+if boundaries == 'mask':
+    # when alignment is skipped, shift_min=[0, 0, 0] and shift_max=[0, 0, 0],
+    # resulting in empty slices (nothing masked)
+    mean_data[0:shift_max[0], :, :] = 0
+    mean_data[nbz-shift_min[0]:, :, :] = 0
+    mean_data[:, 0:shift_max[1], :] = 0
+    mean_data[:, nby-shift_min[1]:, :] = 0
+    mean_data[:, :, 0:shift_max[2]] = 0
+    mean_data[:, :, nbx-shift_min[2]:] = 0
 
-        summask[0:shift_max[0], :, :] = 1
-        summask[shift_min[0]:, :, :] = 1
-        summask[:, 0:shift_max[1], :] = 1
-        summask[:, shift_min[1]:, :] = 1
-        summask[:, :, 0:shift_max[2]] = 1
-        summask[:, :, shift_min[2]:] = 1
-    else:  # 'crop', will redefined output_shape and crop_center to remove boundaries
-        # check along axis 0
-        if crop_center[0] - output_shape[0] // 2 < shift_max[0]:  # not enough pixels on the lower indices side
+    summask[0:shift_max[0], :, :] = 1
+    summask[nbz-shift_min[0]:, :, :] = 1
+    summask[:, 0:shift_max[1], :] = 1
+    summask[:, nby-shift_min[1]:, :] = 1
+    summask[:, :, 0:shift_max[2]] = 1
+    summask[:, :, nbx-shift_min[2]:] = 1
+
+elif boundaries == 'crop':  # will redefined output_shape and crop_center to remove boundaries
+    # check along axis 0
+    if crop_center[0] - output_shape[0] // 2 < shift_max[0]:  # not enough pixels on the lower indices side
+        delta_z = shift_max[0] - crop_center[0] + output_shape[0] // 2
+        center_z = crop_center[0] + delta_z
+    else:
+        center_z = crop_center[0]
+    # check if this still fit on the larger indices side
+    if center_z + output_shape[0] // 2 > nbz - shift_min[0]:  # not enough pixels on the larger indices side
+        print('cannot crop the first axis to {:d}'.format(output_shape[0]))
+        # find the correct output_shape[0] taking into accournt FFT shape considerations
+        output_shape[0] = pru.smaller_primes(nbz - shift_min[0] - shift_max[0], maxprime=7, required_dividers=(2,))
+        # redefine crop_center[0] if needed
+        if crop_center[0] - output_shape[0] // 2 < shift_max[0]:
             delta_z = shift_max[0] - crop_center[0] + output_shape[0] // 2
-            center_z = crop_center[0] + delta_z
-        else:
-            center_z = crop_center[0]
-        # check if this still fit on the larger indices side
-        if center_z + output_shape[0] // 2 > nbz - shift_min[0]:  # not enough pixels on the larger indices side
-            print('cannot crop the first axis to {:d}'.format(output_shape[0]))
-            # find the correct output_shape[0] taking into accournt FFT shape considerations
-            output_shape[0] = pru.smaller_primes(nbz - shift_min[0] - shift_max[0], maxprime=7, required_dividers=(2,))
-            # redefine crop_center[0] if needed
-            if crop_center[0] - output_shape[0] // 2 < shift_max[0]:
-                delta_z = shift_max[0] - crop_center[0] + output_shape[0] // 2
-                crop_center[0] = crop_center[0] + delta_z
+            crop_center[0] = crop_center[0] + delta_z
 
-        # check along axis 1
-        if crop_center[1] - output_shape[1] // 2 < shift_max[1]:  # not enough pixels on the lower indices side
+    # check along axis 1
+    if crop_center[1] - output_shape[1] // 2 < shift_max[1]:  # not enough pixels on the lower indices side
+        delta_y = shift_max[1] - crop_center[1] + output_shape[1] // 2
+        center_y = crop_center[1] + delta_y
+    else:
+        center_y = crop_center[1]
+    # check if this still fit on the larger indices side
+    if center_y + output_shape[1] // 2 > nby - shift_min[1]:  # not enough pixels on the larger indices side
+        print('cannot crop the second axis to {:d}'.format(output_shape[1]))
+        # find the correct output_shape[1] taking into accournt FFT shape considerations
+        output_shape[1] = pru.smaller_primes(nby - shift_min[1] - shift_max[1], maxprime=7, required_dividers=(2,))
+        # redefine crop_center[1] if needed
+        if crop_center[1] - output_shape[1] // 2 < shift_max[1]:
             delta_y = shift_max[1] - crop_center[1] + output_shape[1] // 2
-            center_y = crop_center[1] + delta_y
-        else:
-            center_y = crop_center[1]
-        # check if this still fit on the larger indices side
-        if center_y + output_shape[1] // 2 > nby - shift_min[1]:  # not enough pixels on the larger indices side
-            print('cannot crop the second axis to {:d}'.format(output_shape[1]))
-            # find the correct output_shape[1] taking into accournt FFT shape considerations
-            output_shape[1] = pru.smaller_primes(nby - shift_min[1] - shift_max[1], maxprime=7, required_dividers=(2,))
-            # redefine crop_center[1] if needed
-            if crop_center[1] - output_shape[1] // 2 < shift_max[1]:
-                delta_y = shift_max[1] - crop_center[1] + output_shape[1] // 2
-                crop_center[1] = crop_center[1] + delta_y
+            crop_center[1] = crop_center[1] + delta_y
 
-        # check along axis 2
-        if crop_center[2] - output_shape[2] // 2 < shift_max[2]:  # not enough pixels on the lower indices side
+    # check along axis 2
+    if crop_center[2] - output_shape[2] // 2 < shift_max[2]:  # not enough pixels on the lower indices side
+        delta_x = shift_max[2] - crop_center[2] + output_shape[2] // 2
+        center_x = crop_center[2] + delta_x
+    else:
+        center_x = crop_center[2]
+    # check if this still fit on the larger indices side
+    if center_x + output_shape[2] // 2 > nbx - shift_min[2]:  # not enough pixels on the larger indices side
+        print('cannot crop the third axis to {:d}'.format(output_shape[2]))
+        # find the correct output_shape[2] taking into accournt FFT shape considerations
+        output_shape[2] = pru.smaller_primes(nbx - shift_min[2] - shift_max[2], maxprime=7, required_dividers=(2,))
+        # redefine crop_center[2] if needed
+        if crop_center[2] - output_shape[2] // 2 < shift_max[2]:
             delta_x = shift_max[2] - crop_center[2] + output_shape[2] // 2
-            center_x = crop_center[2] + delta_x
-        else:
-            center_x = crop_center[2]
-        # check if this still fit on the larger indices side
-        if center_x + output_shape[2] // 2 > nbx - shift_min[2]:  # not enough pixels on the larger indices side
-            print('cannot crop the third axis to {:d}'.format(output_shape[2]))
-            # find the correct output_shape[2] taking into accournt FFT shape considerations
-            output_shape[2] = pru.smaller_primes(nbx - shift_min[2] - shift_max[2], maxprime=7, required_dividers=(2,))
-            # redefine crop_center[2] if needed
-            if crop_center[2] - output_shape[2] // 2 < shift_max[2]:
-                delta_x = shift_max[2] - crop_center[2] + output_shape[2] // 2
-                crop_center[2] = crop_center[2] + delta_x
+            crop_center[2] = crop_center[2] + delta_x
 
-        print('new crop size for the first axis=', output_shape, 'new crop_center=', crop_center)
+    print('new crop size for the first axis=', output_shape, 'new crop_center=', crop_center)
+else:  # 'skip'
+    print('no further process of the boundaries')
 
 ########################################################
 # crop the combined data and mask to the desired shape #
