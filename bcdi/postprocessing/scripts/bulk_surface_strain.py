@@ -25,16 +25,16 @@ the surface and in the remaining bulk.
 Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_strain.npz)
 """
 
-scan = 11  # spec scan number
-root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
+scan = 78  # spec scan number
+root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
 sample_name = "S"  # "S"
 datadir = root_folder + sample_name + str(scan) + "/pynxraw/gap_interp/"
-support_threshold = 0.38  # threshold applied to the modulus for reading the surface strain
+support_threshold = 0.25  # threshold applied to the modulus for reading the surface strain
 normalize = True  # if True, will normalize the histograms to the respective number of points
 bin_step = 2e-5  # step size for the bins (in units of strain)
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
 xlim = (-0.002, 0.002)  # limits used for the horizontal axis of histograms, leave None otherwise
-ylim = None  # limits used for the vertical axis of histograms, leave None otherwise
+ylim = [0, 0.04]  # limits used for the vertical axis of histograms, leave None otherwise
 fit_pdf = 'skewed_gaussian'  # 'pseudovoigt' or 'skewed_gaussian'
 save_txt = False  # True to save the strain values for the surface, the bulk and the full support in txt files
 debug = True  # True to see more plots
@@ -197,7 +197,7 @@ else:
     ax.set_xlim(xlim[0], xlim[1])
 if ylim is not None:
     assert len(ylim) == 2, 'ylim=[min, max] expected'
-    ax.set_.ylim(ylim[0], ylim[1])
+    ax.set_ylim(ylim[0], ylim[1])
 
 vline1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
 ax.tick_params(labelbottom=False, labelleft=False)
