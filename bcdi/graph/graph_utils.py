@@ -1097,7 +1097,7 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
         assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
     except TypeError:  # it is a number or a string
         distance = [distance for _ in range(nb_plots)]
-    if isinstance(title, tuple):
+    if isinstance(title, (tuple, list)):
         assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
     else:  # it is a string or a number
         title = [title + '_' + str(idx) for idx in range(nb_plots)]
@@ -1191,7 +1191,7 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
         assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
     except TypeError:  # it is a number
         distance = [distance for _ in range(nb_plots)]
-    if isinstance(title, tuple):
+    if isinstance(title, (tuple, list)):
         assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
     else:  # it is a string or a number
         title = [title + '_' + str(idx) for idx in range(nb_plots)]
