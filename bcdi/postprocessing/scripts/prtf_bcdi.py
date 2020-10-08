@@ -42,8 +42,8 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 11
-root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"  # location of the .spec or log file
+scan = 9
+root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"  # location of the .spec or log file
 savedir = root_folder + "S" + str(scan) + "/pynxraw/gap_interp/"  # PRTF will be saved here, leave it to '' otherwise
 sample_name = "S"  # "SN"  #
 comment = ""  # should start with _
@@ -58,7 +58,7 @@ beamline = 'ID01'  # name of the beamline, used for data loading and normalizati
 is_series = False  # specific to series measurement at P10
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'l5'
+specfile_name = 'Pt'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -69,7 +69,7 @@ specfile_name = 'l5'
 # define detector related parameters #
 ######################################
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+template_imagefile = 'Pt_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -78,7 +78,7 @@ template_imagefile = 'data_mpx4_%05d.edf.gz'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
-sdd = 0.50678  # sample to detector distance in m
+sdd = 1.26  # sample to detector distance in m
 energy = 9000   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
@@ -367,19 +367,26 @@ except ValueError:
 print('q resolution =', str('{:.5f}'.format(q_resolution)), ' (1/nm)')
 print('resolution d= ' + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm')
 
-fig = plt.figure()
-plt.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
-plt.title('PRTF')
-plt.xlabel('q (1/nm)')
-plt.plot([defined_q.min(), defined_q.max()], [1/np.e, 1/np.e], 'k.', lw=1)
-plt.xlim(defined_q.min(), defined_q.max())
-plt.ylim(0, 1.1)
+fig, ax = plt.subplots(1, 1)
+ax.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
+
+ax.plot([defined_q.min(), defined_q.max()], [1/np.e, 1/np.e], 'k.', lw=1)
+ax.set_xlim(defined_q.min(), defined_q.max())
+ax.set_ylim(0, 1.1)
+ax.spines['right'].set_linewidth(1.5)
+ax.spines['left'].set_linewidth(1.5)
+ax.spines['top'].set_linewidth(1.5)
+ax.spines['bottom'].set_linewidth(1.5)
+ax.tick_params(labelbottom=False, labelleft=False)
 if save:
-    plt.savefig(detector.savedir + 'S' + str(scan) + '_prtf' + comment + '.png')
+    fig.savefig(detector.savedir + 'S' + str(scan) + '_prtf' + comment + '.png')
+ax.set_title('PRTF')
+ax.set_xlabel('q (1/nm)')
+ax.tick_params(labelbottom=True, labelleft=True)
 fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
 fig.text(0.15, 0.20, "q at PRTF=1/e: " + str('{:.5f}'.format(q_resolution)) + '(1/nm)', size=14)
 fig.text(0.15, 0.15, "resolution d= " + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm', size=14)
 if save:
-    plt.savefig(detector.savedir + 'S' + str(scan) + '_prtf_comments' + comment + '.png')
+    fig.savefig(detector.savedir + 'S' + str(scan) + '_prtf_comments' + comment + '.png')
 plt.ioff()
 plt.show()
