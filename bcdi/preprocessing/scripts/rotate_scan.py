@@ -13,10 +13,10 @@ import tkinter as tk
 from tkinter import filedialog
 import sys
 import gc
-
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 Rotate a 3D reciprocal space map around some axis. The data is expected to be in an orthonormal frame.
@@ -29,6 +29,7 @@ tilt = 0.0239082357814962 * np.pi / 180  # rotation angle in radians to be appli
 # -0.177905782 0.980254396 0.086318314   z/qx y/qz x/qy Python CXI/qlab
 # 0.086318314 0.980254396 -0.177905782   x/qy y/qz z/qx for the rotation
 rotation_axis = (0.086318314, 0.980254396, -0.177905782)  # in the order (x y z), z axis 0, y axis 1, x axis 2
+crop_shape = None  # None of a tuple of 3 voxels numbers. The data will be cropped symmetrically around origin.
 origin = (1161, 912, 1161)  # position in voxels of the origin of the reciprocal space (origin of the rotation)
 save = True  # True to save the rotated data
 plots = False  # if True, will show plot
@@ -48,6 +49,21 @@ file_path = filedialog.askopenfilename(initialdir=datadir,
 data, _ = util.load_file(file_path)
 nbz, nby, nbx = data.shape
 print('data shape:', data.shape)
+
+if crop_shape:
+    assert len(crop_shape) == 3, 'crop should be a sequence of 3 voxels numbers'
+    assert np.all(
+        np.asarray(origin) - np.asarray(crop_shape) // 2 >= 0), 'origin incompatible with crop_shape'
+    assert origin[0] + crop_shape[0] // 2 <= nbz and origin[1] + crop_shape[1] // 2 <= nby \
+           and origin[2] + crop_shape[2] // 2 <= nbx, 'origin incompatible with crop_shape'
+
+    data = pu.crop_pad(array=data, output_shape=crop_shape, crop_center=origin)
+    nbz, nby, nbx = data.shape
+    print('data shape after cropping:', data.shape)
+    # calculate the new position of origin
+    new_origin = (crop_shape[0]//2, crop_shape[1]//2, crop_shape[2]//2)
+else:
+    new_origin = origin
 
 if plots:
     gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
@@ -71,9 +87,9 @@ rotation_matrix = np.array([[np.cos(tilt) + (1 - np.cos(tilt)) * rotation_axis[0
                              np.cos(tilt) + (1 - np.cos(tilt)) * rotation_axis[2] ** 2]])
 
 transfer_matrix = rotation_matrix.transpose()
-old_z = np.arange(-origin[0], -origin[0] + nbz, 1)
-old_y = np.arange(-origin[1], -origin[1] + nby, 1)
-old_x = np.arange(-origin[2], -origin[2] + nbx, 1)
+old_z = np.arange(-new_origin[0], -new_origin[0] + nbz, 1)
+old_y = np.arange(-new_origin[1], -new_origin[1] + nby, 1)
+old_x = np.arange(-new_origin[2], -new_origin[2] + nbx, 1)
 
 myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing='ij')
 
@@ -114,6 +130,9 @@ except ValueError:
     skip_mask = True
 
 if not skip_mask:
+    if crop_shape:
+        mask = pu.crop_pad(array=mask, output_shape=crop_shape, crop_center=origin)
+
     if plots:
         gu.multislices_plot(mask, sum_frames=False, scale='linear', plot_colorbar=True,
                             title='S' + str(scan) + '\n Mask before rotation', vmin=0,
