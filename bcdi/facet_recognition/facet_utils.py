@@ -1071,8 +1071,8 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     return new_vertices, normals, areas, intensity, faces, err_normals
 
 
-def update_logfile(support, strain_array, summary_file, allpoints_file, label=0, angle_plane=0, plane_coeffs=(0, 0, 0),
-                   plane_normal=(0, 0, 0)):
+def update_logfile(support, strain_array, summary_file, allpoints_file, label=0, angle_plane=0,
+                   plane_coeffs=(0, 0, 0, 0), plane_normal=(0, 0, 0)):
     """
     Update log files use in the facet_strain.py script.
 
@@ -1082,7 +1082,7 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
     :param allpoints_file: the handle for the file giving the strain and the label for each voxel
     :param label: the label of the plane
     :param angle_plane: the angle of the plane with the measurement direction
-    :param plane_coeffs: the fit coefficients of the plane
+    :param plane_coeffs: the fit coefficients (a,b,c,d) of the plane such that ax+by+cz+d=0
     :param plane_normal: the normal to the plane
     :return: nothing
     """
@@ -1121,6 +1121,7 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
                        '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[0]))) + '\t' +
                        '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[1]))) + '\t' +
                        '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[2]))) + '\t' +
+                       '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[3]))) + '\t' +
                        '{0: <10}'.format(str('{:.5f}'.format(plane_normal[0]))) + '\t' +
                        '{0: <10}'.format(str('{:.5f}'.format(plane_normal[1]))) + '\t' +
                        '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')

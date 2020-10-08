@@ -57,7 +57,7 @@ corners_coord = 310  # coordination threshold for isolating corners, 310 seems t
 # parameters only used in the stereographic projection #
 ########################################################
 threshold_south = -2500  # background threshold in the stereographic projection from South of the density of normals
-threshold_north = -2500  # background threshold in the stereographic projection from North of the density of normals
+threshold_north = -1800  # background threshold in the stereographic projection from North of the density of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 stereo_scale = 'linear'  # 'linear' or 'log', scale of the colorbar in the stereographic plot
 ##########################################################
@@ -395,8 +395,8 @@ summary_file = open(os.path.join(savedir, "S" + str(scan) + "_planes_iso" + str(
 summary_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('angle') + '\t' +
                    '{0: <10}'.format('points #') + '\t' + '{0: <10}'.format('<strain>') + '\t' +
                    '{0: <10}'.format('std dev') + '\t' + '{0: <10}'.format('A (x)') + '\t' +
-                   '{0: <10}'.format('B (y)') + '\t' + 'C (Ax+By+C=z)' + '\t' + 'normal X' + '\t' +
-                   'normal Y' + '\t' + 'normal Z' + '\n')
+                   '{0: <10}'.format('B (y)') + '\t' + '{0: <10}'.format('C (z)') + '\t' + 'D (Ax+By+CZ+D=0)' + '\t' 
+                   'normal X' + '\t' + 'normal Y' + '\t' + 'normal Z' + '\n')
 allpoints_file = open(os.path.join(savedir, "S" + str(scan) + "_strain_iso" + str(support_threshold) + ".dat"), "w")
 allpoints_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('Z') + '\t' + '{0: <10}'.format('Y') +
                      '\t' + '{0: <10}'.format('X') + '\t' + '{0: <10}'.format('strain')+'\n')
