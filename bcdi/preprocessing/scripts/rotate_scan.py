@@ -13,6 +13,7 @@ import tkinter as tk
 from tkinter import filedialog
 import sys
 import gc
+
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
@@ -22,11 +23,15 @@ Rotate a 3D reciprocal space map around some axis. The data is expected to be in
 """
 
 scan = 22  # scan number
-datadir = 'D:/data/P10_March2020_CDI/data/ht_pillar3/test/'  # S' + str(scan) + '/pynxraw/'
-tilt = 5*3.1415/180  # rotation angle in radians to be applied counter-clockwise around rotation_axis
-rotation_axis = (0, 0, 1)  # in the order (x y z), z axis 0, y axis 1, x axis 0
-origin = (150, 150, 150)  # position in voxels of the origin of the reciprocal space (origin of the rotation)
-save = False  # True to save the rotated data
+datadir = '/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/ht_pillar3_{:05d}'.format(scan) + '/pynx/'
+tilt = 0.0239082357814962 * np.pi / 180  # rotation angle in radians to be applied counter-clockwise around rotation_axis
+# 0.086318314 -0.177905782 0.980254396   qy qx qz Matlab
+# -0.177905782 0.980254396 0.086318314   z/qx y/qz x/qy Python CXI/qlab
+# 0.086318314 0.980254396 -0.177905782   x/qy y/qz z/qx for the rotation
+rotation_axis = (0.086318314, 0.980254396, -0.177905782)  # in the order (x y z), z axis 0, y axis 1, x axis 2
+origin = (1161, 912, 1161)  # position in voxels of the origin of the reciprocal space (origin of the rotation)
+save = True  # True to save the rotated data
+plots = False  # if True, will show plot
 comment = ''  # should start with _, comment for the filename when saving the rotated data
 ##################################
 # end of user-defined parameters #
@@ -44,37 +49,26 @@ data, _ = util.load_file(file_path)
 nbz, nby, nbx = data.shape
 print('data shape:', data.shape)
 
-try:
-    file_path = filedialog.askopenfilename(initialdir=datadir,
-                                           title="Select 3D mask", filetypes=[("NPZ", "*.npz")])
-    mask, _ = util.load_file(file_path)
-    skip_mask = False
-except ValueError:
-    print('skip mask')
-    mask = None
-    skip_mask = True
-
-gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
-                    title='S' + str(scan) + '\n Data before rotation', vmin=0,
-                    reciprocal_space=True, is_orthogonal=True)
-if not skip_mask:
-    gu.multislices_plot(mask, sum_frames=False, scale='linear', plot_colorbar=True,
-                        title='S' + str(scan) + '\n Mask before rotation', vmin=0,
+if plots:
+    gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
+                        title='S' + str(scan) + '\n Data before rotation', vmin=0,
                         reciprocal_space=True, is_orthogonal=True)
 
 ###################
 # rotate the data #
 ###################
 # define the rotation matrix in the order (x, y, z)
-rotation_matrix = np.array([[np.cos(tilt) + (1-np.cos(tilt)) * rotation_axis[0]**2,
-                             rotation_axis[0]*rotation_axis[1]*(1-np.cos(tilt))-rotation_axis[2]*np.sin(tilt),
-                             rotation_axis[0]*rotation_axis[2]*(1-np.cos(tilt))+rotation_axis[1]*np.sin(tilt)],
-                            [rotation_axis[1]*rotation_axis[0]*(1-np.cos(tilt))+rotation_axis[2]*np.sin(tilt),
-                             np.cos(tilt) + (1-np.cos(tilt)) * rotation_axis[1]**2,
-                             rotation_axis[1]*rotation_axis[2]*(1-np.cos(tilt))-rotation_axis[0]*np.sin(tilt)],
-                            [rotation_axis[2]*rotation_axis[0]*(1-np.cos(tilt))-rotation_axis[1]*np.sin(tilt),
-                             rotation_axis[2]*rotation_axis[1]*(1-np.cos(tilt))+rotation_axis[0]*np.sin(tilt),
-                             np.cos(tilt) + (1-np.cos(tilt)) * rotation_axis[2]**2]])
+rotation_matrix = np.array([[np.cos(tilt) + (1 - np.cos(tilt)) * rotation_axis[0] ** 2,
+                             rotation_axis[0] * rotation_axis[1] * (1 - np.cos(tilt)) - rotation_axis[2] * np.sin(tilt),
+                             rotation_axis[0] * rotation_axis[2] * (1 - np.cos(tilt)) + rotation_axis[1] * np.sin(
+                                 tilt)],
+                            [rotation_axis[1] * rotation_axis[0] * (1 - np.cos(tilt)) + rotation_axis[2] * np.sin(tilt),
+                             np.cos(tilt) + (1 - np.cos(tilt)) * rotation_axis[1] ** 2,
+                             rotation_axis[1] * rotation_axis[2] * (1 - np.cos(tilt)) - rotation_axis[0] * np.sin(
+                                 tilt)],
+                            [rotation_axis[2] * rotation_axis[0] * (1 - np.cos(tilt)) - rotation_axis[1] * np.sin(tilt),
+                             rotation_axis[2] * rotation_axis[1] * (1 - np.cos(tilt)) + rotation_axis[0] * np.sin(tilt),
+                             np.cos(tilt) + (1 - np.cos(tilt)) * rotation_axis[2] ** 2]])
 
 transfer_matrix = rotation_matrix.transpose()
 old_z = np.arange(-origin[0], -origin[0] + nbz, 1)
@@ -93,22 +87,52 @@ rgi = RegularGridInterpolator((old_z, old_y, old_x), data, method='linear', boun
 rot_data = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                new_x.reshape((1, new_z.size)))).transpose())
 rot_data = rot_data.reshape((nbz, nby, nbx)).astype(data.dtype)
-gu.multislices_plot(rot_data, sum_frames=True, scale='log', plot_colorbar=True,
-                    title='S' + str(scan) + '\n Data after rotation', vmin=0,
-                    reciprocal_space=True, is_orthogonal=True)
+del data
+gc.collect()
+
+if plots:
+    gu.multislices_plot(rot_data, sum_frames=True, scale='log', plot_colorbar=True,
+                        title='S' + str(scan) + '\n Data after rotation', vmin=0,
+                        reciprocal_space=True, is_orthogonal=True)
 if save:
     np.savez_compressed(datadir + 'S' + str(scan) + '_data_rotated' + comment + '.npz', data=rot_data)
 
+del rot_data
+gc.collect()
+
+###########################
+# optional: rotate a mask #
+###########################
+try:
+    file_path = filedialog.askopenfilename(initialdir=datadir,
+                                           title="Select 3D mask", filetypes=[("NPZ", "*.npz")])
+    mask, _ = util.load_file(file_path)
+    skip_mask = False
+except ValueError:
+    print('skip mask')
+    mask = None
+    skip_mask = True
+
 if not skip_mask:
+    if plots:
+        gu.multislices_plot(mask, sum_frames=False, scale='linear', plot_colorbar=True,
+                            title='S' + str(scan) + '\n Mask before rotation', vmin=0,
+                            reciprocal_space=True, is_orthogonal=True)
+
     rgi = RegularGridInterpolator((old_z, old_y, old_x), mask, method='linear', bounds_error=False, fill_value=np.nan)
     rot_mask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                    new_x.reshape((1, new_z.size)))).transpose())
     rot_mask = rot_mask.reshape((nbz, nby, nbx)).astype(mask.dtype)
+    del mask
+    gc.collect()
+
     rot_mask[np.isnan(rot_mask)] = 1
     rot_mask[np.nonzero(rot_mask)] = 1
-    gu.multislices_plot(rot_mask, sum_frames=False, scale='linear', plot_colorbar=True,
-                        title='S' + str(scan) + '\n Mask after rotation', vmin=0,
-                        reciprocal_space=True, is_orthogonal=True)
+
+    if plots:
+        gu.multislices_plot(rot_mask, sum_frames=False, scale='linear', plot_colorbar=True,
+                            title='S' + str(scan) + '\n Mask after rotation', vmin=0,
+                            reciprocal_space=True, is_orthogonal=True)
     if save:
         np.savez_compressed(datadir + 'S' + str(scan) + '_mask_rotated' + comment + '.npz', mask=rot_mask)
 
