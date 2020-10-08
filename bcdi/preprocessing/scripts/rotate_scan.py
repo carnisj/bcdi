@@ -13,6 +13,7 @@ import tkinter as tk
 from tkinter import filedialog
 import sys
 import gc
+
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
@@ -24,12 +25,13 @@ Rotate a 3D reciprocal space map around some axis. The data is expected to be in
 
 scan = 22  # scan number
 datadir = '/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/ht_pillar3_{:05d}'.format(scan) + '/pynx/'
-tilt = 0.0239082357814962 * np.pi / 180  # rotation angle in radians to be applied counter-clockwise around rotation_axis
+tilt = 0.0239082357814962  # rotation angle in radians to be applied counter-clockwise around rotation_axis
 # 0.086318314 -0.177905782 0.980254396   qy qx qz Matlab
 # -0.177905782 0.980254396 0.086318314   z/qx y/qz x/qy Python CXI/qlab
 # 0.086318314 0.980254396 -0.177905782   x/qy y/qz z/qx for the rotation
 rotation_axis = (0.086318314, 0.980254396, -0.177905782)  # in the order (x y z), z axis 0, y axis 1, x axis 2
-crop_shape = None  # None of a tuple of 3 voxels numbers. The data will be cropped symmetrically around origin.
+crop_shape = (1400, 1600, 1450)  # None of a tuple of 3 voxels numbers.
+# The data will be cropped symmetrically around origin.
 origin = (1161, 912, 1161)  # position in voxels of the origin of the reciprocal space (origin of the rotation)
 save = True  # True to save the rotated data
 plots = False  # if True, will show plot
@@ -58,10 +60,11 @@ if crop_shape:
            and origin[2] + crop_shape[2] // 2 <= nbx, 'origin incompatible with crop_shape'
 
     data = pu.crop_pad(array=data, output_shape=crop_shape, crop_center=origin)
+    gc.collect()
     nbz, nby, nbx = data.shape
     print('data shape after cropping:', data.shape)
     # calculate the new position of origin
-    new_origin = (crop_shape[0]//2, crop_shape[1]//2, crop_shape[2]//2)
+    new_origin = (crop_shape[0] // 2, crop_shape[1] // 2, crop_shape[2] // 2)
 else:
     new_origin = origin
 
@@ -132,6 +135,7 @@ except ValueError:
 if not skip_mask:
     if crop_shape:
         mask = pu.crop_pad(array=mask, output_shape=crop_shape, crop_center=origin)
+        gc.collect()
 
     if plots:
         gu.multislices_plot(mask, sum_frames=False, scale='linear', plot_colorbar=True,
