@@ -114,6 +114,7 @@ if plots:
                         title='S' + str(scan) + '\n Data after rotation', vmin=0,
                         reciprocal_space=True, is_orthogonal=True)
 if save:
+    comment = comment + '_' + str(nbz) + '_' + str(nby) + '_' + str(nbx)
     np.savez_compressed(datadir + 'S' + str(scan) + '_data_rotated' + comment + '.npz', data=rot_data)
 
 del rot_data
