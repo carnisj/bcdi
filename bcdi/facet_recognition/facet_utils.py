@@ -533,7 +533,7 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
 
     count_grad = 0
     for idx in range(len(indices[0])):
-        if np.dot(plane_normal, gradients[idx]) < 0.85:
+        if np.dot(plane_normal, gradients[idx]) < 0.75:  # 0.85 is too restrictive checked CH4760 S11 plane 1
             plane[indices[0][idx], indices[1][idx], indices[2][idx]] = 0
             count_grad += 1
 
