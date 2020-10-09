@@ -115,7 +115,7 @@ if plots:
                         reciprocal_space=True, is_orthogonal=True)
 if save:
     comment = comment + '_' + str(nbz) + '_' + str(nby) + '_' + str(nbx)
-    np.savez_compressed(datadir + 'S' + str(scan) + '_data_rotated' + comment + '.npz', data=rot_data)
+    np.savez_compressed(datadir + 'S' + str(scan) + '_pynx_rotated' + comment + '.npz', data=rot_data)
 
 del rot_data
 gc.collect()
@@ -158,7 +158,7 @@ if not skip_mask:
                             title='S' + str(scan) + '\n Mask after rotation', vmin=0,
                             reciprocal_space=True, is_orthogonal=True)
     if save:
-        np.savez_compressed(datadir + 'S' + str(scan) + '_mask_rotated' + comment + '.npz', mask=rot_mask)
+        np.savez_compressed(datadir + 'S' + str(scan) + '_maskpynx_rotated' + comment + '.npz', mask=rot_mask)
 
 plt.ioff()
 plt.show()
