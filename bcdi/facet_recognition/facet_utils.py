@@ -888,18 +888,21 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     labels_south = watershed(-distances_south, markers_south, mask=mask_south)
     labels_north = watershed(-distances_north, markers_north, mask=mask_north)
     fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2, figsize=(12, 9))
-    ax0.imshow(labels_south, cmap=cmap, interpolation='nearest')
+    img0 = ax0.imshow(labels_south, cmap=cmap, interpolation='nearest')
     ax0.set_title('Labels South')
     ax0.invert_yaxis()
     circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
     ax0.add_artist(circle)
-    ax1.imshow(labels_north, cmap=cmap, interpolation='nearest')
+    gu.colorbar(img0, numticks=int(labels_south.max()+1))
+    img1 = ax1.imshow(labels_north, cmap=cmap, interpolation='nearest')
     ax1.set_title('Labels North')
     ax1.invert_yaxis()
     circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
     ax1.add_artist(circle)
+    gu.colorbar(img1, numticks=int(labels_north.max()+1))
     fig.tight_layout()
     plt.pause(0.1)
+    fig.savefig(savedir + comment_fig + 'labels.png')
 
     return labels_south, labels_north, stereo_proj, remove_row
 
