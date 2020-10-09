@@ -137,7 +137,7 @@ if alignement_method is 'skip':
     refdata = pu.crop_pad(array=refdata, output_shape=output_shape, crop_center=crop_center)
 
     corr_roi = [corr_roi[0]-output_shape[0]//2, corr_roi[1]-output_shape[0]//2,
-                corr_roi[2]-output_shape[0]//1, corr_roi[3]-output_shape[0]//1,
+                corr_roi[2]-output_shape[1]//2, corr_roi[3]-output_shape[1]//2,
                 corr_roi[4]-output_shape[2]//2, corr_roi[5]-output_shape[2]//2]
     if not 0 <= corr_roi[0] < corr_roi[1] <= output_shape[0]\
             or not 0 <= corr_roi[2] < corr_roi[3] <= output_shape[1]\
