@@ -71,6 +71,8 @@ if load_mask:
                                     title='Cropped mask', is_orthogonal=is_orthogonal,
                                     reciprocal_space=reciprocal_space)
     fig.savefig(datadir + 'cropped_mask_' + comment + '.png')
+    del mask
+    gc.collect()
     
 if load_qvalues:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the file containing q values",
