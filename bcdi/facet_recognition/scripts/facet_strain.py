@@ -35,9 +35,9 @@ Input: a reconstruction .npz file with fields: 'amp' and 'strain'
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
 
-scan = 1053  # spec scan number
+scan = 11  # spec scan number
 datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + '/pynxraw/gap_interp/'
-support_threshold = 0.48  # threshold for support determination
+support_threshold = 0.38  # threshold for support determination
 voxel_size = [3, 3, 3]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
 upsampling_factor = 1  # integer, factor for upsampling the reconstruction in order to have a smoother surface
 savedir = datadir
@@ -57,7 +57,7 @@ corners_coord = 310  # coordination threshold for isolating corners, 310 seems t
 # parameters only used in the stereographic projection #
 ########################################################
 threshold_south = -2500  # background threshold in the stereographic projection from South of the density of normals
-threshold_north = -1800  # background threshold in the stereographic projection from North of the density of normals
+threshold_north = -2500  # background threshold in the stereographic projection from North of the density of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 stereo_scale = 'linear'  # 'linear' or 'log', scale of the colorbar in the stereographic plot
 ##########################################################
@@ -446,8 +446,6 @@ gc.collect()
 #######################################################################################
 summary_dict = {}
 for label in unique_labels:
-    if label == 20:
-        print('')
     print('\nPlane', label)
     # raw fit including all points
     plane = np.copy(all_planes)
