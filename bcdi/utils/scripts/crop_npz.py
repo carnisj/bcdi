@@ -85,7 +85,7 @@ if load_qvalues:
     qx = pu.crop_pad_1d(qx, output_shape[0], crop_center=roi_center[0])  # qx along z
     qy = pu.crop_pad_1d(qy, output_shape[2], crop_center=roi_center[2])  # qy along x
     qz = pu.crop_pad_1d(qz, output_shape[1], crop_center=roi_center[1])  # qz along y
-    np.savez_compressed(datadir + 'S' + str(scan) + 'cropped_qvalues_' + comment + '.npz', qx=qx, qz=qz, qy=qy)
+    np.savez_compressed(datadir + 'S' + str(scan) + '_cropped_qvalues_' + comment + '.npz', qx=qx, qz=qz, qy=qy)
 
 print('End of script')
 plt.ioff()
