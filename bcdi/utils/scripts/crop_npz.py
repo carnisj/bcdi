@@ -51,8 +51,8 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the dat
 data, _ = util.load_file(file_path)
 
 data = pu.crop_pad(data, output_shape=output_shape, crop_center=roi_center, debugging=debug)
-comment = str(output_shape[0]) + '_' + str(output_shape[1]) + '_' + str(output_shape[2]) + comment + '.npz'
-np.savez_compressed(datadir + 'cropped_data_' + comment, data=data)
+comment = str(output_shape[0]) + '_' + str(output_shape[1]) + '_' + str(output_shape[2]) + comment
+np.savez_compressed(datadir + 'cropped_data_' + comment + '.npz', data=data)
 
 fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                 title='Cropped data', is_orthogonal=is_orthogonal,
@@ -66,7 +66,7 @@ if load_mask:
                                            filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
     mask, _ = util.load_file(file_path)
     mask = pu.crop_pad(mask, output_shape=output_shape, crop_center=roi_center, debugging=False)
-    np.savez_compressed(datadir + 'cropped_mask_' + comment, mask=mask)
+    np.savez_compressed(datadir + 'cropped_mask_' + comment + '.npz', mask=mask)
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     title='Cropped mask', is_orthogonal=is_orthogonal,
                                     reciprocal_space=reciprocal_space)
@@ -84,7 +84,7 @@ if load_qvalues:
     qx = pu.crop_pad_1d(qx, output_shape[0], crop_center=roi_center[0])  # qx along z
     qy = pu.crop_pad_1d(qy, output_shape[2], crop_center=roi_center[2])  # qy along x
     qz = pu.crop_pad_1d(qz, output_shape[1], crop_center=roi_center[1])  # qz along y
-    np.savez_compressed(datadir + 'cropped_qvalues_' + comment, qx=qx, qz=qz, qy=qy)
+    np.savez_compressed(datadir + 'cropped_qvalues_' + comment + '.npz', qx=qx, qz=qz, qy=qy)
 
 print('End of script')
 plt.ioff()
