@@ -92,7 +92,7 @@ else:
     print('suffix should be either a string or a list of strings')
     sys.exit()
 
-assert boundaries in ['mask', 'crop'], 'boundaries should be either "mask" or "crop"'
+assert boundaries in {'mask', 'crop', 'skip'}, 'boundaries should be either "mask", "crop" or "skip"'
 
 if is_orthogonal:
     parent_folder = '/pynx/'
