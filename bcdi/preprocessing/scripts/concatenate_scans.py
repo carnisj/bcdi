@@ -24,24 +24,24 @@ The alignment of diffraction patterns is based on the center of mass shift or df
 grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
-scans = np.arange(1138, 1141+1, 3)  # list or array of scan numbers
-scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
+scans = [22, 32]  # np.arange(1138, 1141+1, 3)  # list or array of scan numbers
+# scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
-sample_name = ['dewet2_2']  # list of sample names. If only one name is indicated,
+sample_name = ['ht_pillar3']  # list of sample names. If only one name is indicated,
 # it will be repeated to match the length of scans
-suffix = '_norm_141_580_580_1_1_1.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
-# the end of the filename template after 'pynx'
-homedir = "D:/data/P10_OER/data/"  # parent folder of scans folders
-savedir = "D:/data/P10_OER/analysis/candidate_11/dewet2_2_S" + str(scans[0]) + "_to_S" + str(scans[-1]) + "/"
+suffix = ['_cropped_1400_1600_1450.npz']  # list of sample names (end of the filename template after 'pynx'),
+# it will be repeated to match the length of scans
+homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
+savedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/ht_pillar3_combined/"
 # path of the folder to save data
-alignement_method = 'registration'
+alignement_method = 'skip'
 # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
 combining_method = 'rgi'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
-corr_roi = None  # [325, 400, 845, 920, 410, 485]
+corr_roi = [1100, 1200, 600, 700, 1025, 1125]
 # [420, 520, 660, 760, 600, 700]  # region of interest where to calculate the correlation between scans.
 # If None, it will use the full array. [zstart, zstop, ystart, ystop, xstart, xstop]
-output_shape = (140, 300, 300)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+output_shape = (800, 800, 800)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
 crop_center = None  # [z, y, x] pixels position in the original array of the center of the cropped output
 # if None, it will be set to the center of the original array
 boundaries = 'skip'  # 'mask', 'crop' or 'skip'. If 'mask', boundary pixels were not all scans are defined after
@@ -50,10 +50,10 @@ boundaries = 'skip'  # 'mask', 'crop' or 'skip'. If 'mask', boundary pixels were
 partially_masked = 'unmask'  # 'unmask' or 'mask'. If 'unmask', partially masked pixels will be set to their mean value
 # and unmasked. If 'mask', partially masked pixels will be set to 0 and masked.
 correlation_threshold = 0.90  # only scans having a correlation larger than this threshold will be combined
-reference_scan = 0  # index in scans of the scan to be used as the reference for the correlation calculation
-combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
+reference_scan = 1  # index in scans of the scan to be used as the reference for the correlation calculation
+combine_masks = True  # if True, the output mask is the combination of all masks. If False, the reference mask is used
 # if a pixel is defined only in part of the dataset, its value will be used with proper rescaling
-is_orthogonal = False  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
+is_orthogonal = True  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
 plot_threshold = 0  # data below this will be set to 0, only in plots
 comment = ''  # should start with _ , it will be added to the filename when saving the combined dataset
 debug = False  # True or False
@@ -72,7 +72,7 @@ if type(output_shape) is tuple:
 assert len(output_shape) == 3, 'output_shape should be a list or tuple of three numbers'
 assert np.all(np.asarray(output_shape) % 2 == 0), 'output_shape components should be all even due to FFT shape' \
                                                 ' considerations for phase retrieval'
-if type(sample_name) is list:
+if isinstance(sample_name, (tuple, list)):
     if len(sample_name) == 1:
         sample_name = [sample_name[0] for idx in range(len(scans))]
     assert len(sample_name) == len(scans), 'sample_name and scans should have the same length'
@@ -80,6 +80,16 @@ elif type(sample_name) is str:
     sample_name = [sample_name for idx in range(len(scans))]
 else:
     print('sample_name should be either a string or a list of strings')
+    sys.exit()
+
+if isinstance(suffix, (tuple, list)):
+    if len(suffix) == 1:
+        suffix = [suffix[0] for idx in range(len(scans))]
+    assert len(suffix) == len(scans), 'sample_name and scans should have the same length'
+elif type(suffix) is str:
+    suffix = [suffix for idx in range(len(scans))]
+else:
+    print('suffix should be either a string or a list of strings')
     sys.exit()
 
 assert boundaries in ['mask', 'crop'], 'boundaries should be either "mask" or "crop"'
@@ -97,9 +107,9 @@ print(scans)
 samplename = sample_name[reference_scan] + '_' + str('{:05d}').format(scans[reference_scan])
 print('Reference scan:', samplename)
 refdata = np.load(homedir + samplename + parent_folder +
-                  'S' + str(scans[reference_scan]) + '_pynx' + suffix)['data']
+                  'S' + str(scans[reference_scan]) + '_pynx' + suffix[reference_scan])['data']
 refmask = np.load(homedir + samplename + parent_folder +
-                  'S' + str(scans[reference_scan]) + '_maskpynx' + suffix)['mask']
+                  'S' + str(scans[reference_scan]) + '_maskpynx' + suffix[reference_scan])['mask']
 assert refdata.ndim == 3 and refmask.ndim == 3, 'data and mask should be 3D arrays'
 nbz, nby, nbx = refdata.shape
 
@@ -161,9 +171,9 @@ for idx in range(len(scans)):
     samplename = sample_name[idx] + '_' + str('{:05d}').format(scans[idx])
     print('\n Opening ', samplename)
     data = np.load(homedir + samplename + parent_folder +
-                   'S' + str(scans[idx]) + '_pynx' + suffix)['data']
+                   'S' + str(scans[idx]) + '_pynx' + suffix[idx])['data']
     mask = np.load(homedir + samplename + parent_folder +
-                   'S' + str(scans[idx]) + '_maskpynx' + suffix)['mask']
+                   'S' + str(scans[idx]) + '_maskpynx' + suffix[idx])['mask']
 
     # replace nans by 0 and mask them
     mask[np.isnan(data)] = 1
