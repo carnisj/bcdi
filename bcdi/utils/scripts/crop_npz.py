@@ -21,6 +21,7 @@ helptext = """
 Crop a stacked 3D dataset saved in NPZ format, to the desired region of interest.
 """
 
+scan = 22  # scan number, used in the filename when saving
 homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11009357/raw/mag_3_concat/"  # parent folder of scans folders
 datadir = homedir  # + 'ht_pillar3_combined/'
 roi_center = [321, 360, 321]  # center of the region of interest
@@ -52,12 +53,12 @@ data, _ = util.load_file(file_path)
 
 data = pu.crop_pad(data, output_shape=output_shape, crop_center=roi_center, debugging=debug)
 comment = str(output_shape[0]) + '_' + str(output_shape[1]) + '_' + str(output_shape[2]) + comment
-np.savez_compressed(datadir + 'cropped_data_' + comment + '.npz', data=data)
+np.savez_compressed(datadir + 'S' + str(scan) + '_pynx_cropped_' + comment + '.npz', data=data)
 
 fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                 title='Cropped data', is_orthogonal=is_orthogonal,
                                 reciprocal_space=reciprocal_space)
-fig.savefig(datadir + 'cropped_data_' + comment + '.png')
+fig.savefig(datadir + 'S' + str(scan) + '_pynx_cropped_' + comment + '.png')
 del data
 gc.collect()
 
@@ -66,11 +67,11 @@ if load_mask:
                                            filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
     mask, _ = util.load_file(file_path)
     mask = pu.crop_pad(mask, output_shape=output_shape, crop_center=roi_center, debugging=False)
-    np.savez_compressed(datadir + 'cropped_mask_' + comment + '.npz', mask=mask)
+    np.savez_compressed(datadir + 'S' + str(scan) + '_maskpynx_cropped_' + comment + '.npz', mask=mask)
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     title='Cropped mask', is_orthogonal=is_orthogonal,
                                     reciprocal_space=reciprocal_space)
-    fig.savefig(datadir + 'cropped_mask_' + comment + '.png')
+    fig.savefig(datadir + 'S' + str(scan) + '_maskpynx_cropped_' + comment + '.png')
     del mask
     gc.collect()
     
@@ -84,7 +85,7 @@ if load_qvalues:
     qx = pu.crop_pad_1d(qx, output_shape[0], crop_center=roi_center[0])  # qx along z
     qy = pu.crop_pad_1d(qy, output_shape[2], crop_center=roi_center[2])  # qy along x
     qz = pu.crop_pad_1d(qz, output_shape[1], crop_center=roi_center[1])  # qz along y
-    np.savez_compressed(datadir + 'cropped_qvalues_' + comment + '.npz', qx=qx, qz=qz, qy=qy)
+    np.savez_compressed(datadir + 'S' + str(scan) + 'cropped_qvalues_' + comment + '.npz', qx=qx, qz=qz, qy=qy)
 
 print('End of script')
 plt.ioff()
