@@ -208,6 +208,9 @@ for idx in range(len(scans)):
         mask = pu.crop_pad(array=mask, output_shape=output_shape, crop_center=crop_center)
         data = pu.crop_pad(array=data, output_shape=output_shape, crop_center=crop_center)
 
+    gu.multislices_plot(data[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
+                        sum_frames=True, scale='log', plot_colorbar=True, title='refdata in corr_roi', vmin=0,
+                        reciprocal_space=True, is_orthogonal=is_orthogonal)
     ########################################################
     # combine datasets if their correlation is good enough #
     ########################################################
