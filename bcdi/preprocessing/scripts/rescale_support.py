@@ -34,8 +34,6 @@ output_shape = (540, 540, 540)  # shape of the array for later phasing (before b
 binning_output = (1, 1, 1)  # binning that will be used in PyNX for later phasing
 qvalues_binned = True  # if True, the q values provided are expected to be binned (binning_pynx & binning_output)
 flag_interact = True  # if False, will skip thresholding and masking
-filter_name = 'skip'  # apply a filtering kernel to the support, 'skip' or 'gaussian_highpass'
-gaussian_sigma = 4.0  # sigma of the gaussian filter
 binary_support = True  # True to save the support as an array of 0 and 1
 save_intermediate = False  # if True, will save the masked data just after the interactive masking, before applying
 # other filtering and interpolation
@@ -47,6 +45,11 @@ roll_centering = (0, 0, 0)  # roll applied after masking when centering by cente
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 save_fig = True  # if True, will save the figure of the final support
 comment = ''  # should start with _
+#####################################
+# parameters for gaussian filtering #
+#####################################
+filter_name = 'skip'  # apply a filtering kernel to the support, 'skip' or 'gaussian_highpass'
+gaussian_sigma = 4.0  # sigma of the gaussian filter
 ######################################################################
 # parameters for image deconvolution using Richardson-Lucy algorithm #
 ######################################################################
