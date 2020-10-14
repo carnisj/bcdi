@@ -526,8 +526,13 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
     if crop_center is None:
         crop_center = [nbz//2, nby//2, nbx//2]
     assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
-
+    assert np.all(
+        np.asarray(crop_center) - np.asarray(output_shape) // 2 >= 0), 'crop_center incompatible with output_shape'
+    assert crop_center[0] + output_shape[0] // 2 <= nbz and crop_center[1] + output_shape[1] // 2 <= nby \
+           and crop_center[2] + output_shape[2] // 2 <= nbx, 'crop_center incompatible with output_shape'
+    
     if debugging:
+        print(f'array shape before crop/pad = {array.shape}')
         gu.multislices_plot(abs(array), sum_frames=True, scale='log', title='Before crop/pad')
 
     # crop/pad along axis 0
@@ -561,6 +566,7 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
         newobj = temp_y[:, :, crop_center[2] - newx//2:crop_center[2] + newx//2 + newx % 2]
 
     if debugging:
+        print(f'array shape after crop/pad = {newobj.shape}')
         gu.multislices_plot(abs(newobj), sum_frames=True, scale='log', title='After crop/pad')
     return newobj
 
