@@ -483,7 +483,8 @@ if binary_support:
 ###################################################
 # save and plot the support with the output shape #
 ###################################################
-filename = 'support_' + str(rebinned_shape) + '_bin_' + str(binning_output) + comment
+filename = 'support_' + str(rebinned_shape[0]) + '_' + str(rebinned_shape[1]) + '_' + str(rebinned_shape[2]) +\
+           '_bin_' + str(binning_output[0]) + '_' + str(binning_output[1]) + '_' + str(binning_output[2]) + comment
 np.savez_compressed(root_folder + filename + '.npz', obj=new_support)
 fig, _, _ = gu.multislices_plot(new_support, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                                 title='Support after interpolation\n', is_orthogonal=True,
