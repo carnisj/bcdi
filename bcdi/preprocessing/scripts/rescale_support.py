@@ -491,6 +491,7 @@ fig, _, _ = gu.multislices_plot(new_support, sum_frames=False, scale='linear', p
 if save_fig:
     fig.savefig(root_folder + filename + '.png')
 
+print('support shape', new_support.shape)
 print('End of script')
 plt.ioff()
 plt.show()
