@@ -475,7 +475,7 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
     print('Shape after interpolating the support:', new_support.shape)
 
 else:  # no need for interpolation, the data may be cropped near the support
-    new_support = pu.crop_pad(data, output_shape)
+    new_support = pu.crop_pad(data, rebinned_shape)
 
 if binary_support:
     new_support[np.nonzero(new_support)] = 1
