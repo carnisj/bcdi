@@ -41,12 +41,12 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 2227  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
+scans = 85  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/CH4760/"
+root_folder = "D:/data/test_FuzzyGridder/"
 sample_name = ["S"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
@@ -67,7 +67,7 @@ fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg] consid
 # It is useful if hotpixels or intense aliens. Leave it [] otherwise.
 fix_size = []  # crop the array to predefined size considering the full detector,
 # leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop]. ROI will be defaulted to []
-center_fft = 'crop_sym_ZYX'
+center_fft = 'skip'
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'skip'
 pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
@@ -75,12 +75,12 @@ pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the a
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
-normalize_flux = 'skip'  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
+normalize_flux = 'monitor'  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
 #################################
 # parameters for data filtering #
 #################################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
-flag_medianfilter = 'interp_isolated'
+flag_medianfilter = 'skip'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -113,9 +113,9 @@ custom_scan = False  # set it to True for a stack of images acquired without sca
 custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan
 
-rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
+rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'alignment'
+specfile_name = '2020_07_09_140423Ni'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -129,10 +129,9 @@ specfile_name = 'alignment'
 ###############################
 detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 216  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 221  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-# roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = []  # [y_bragg-160, y_bragg+160, x_bragg-160, x_bragg+160]  # [553, 1063, 1041, 1701]
+x_bragg = 175  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 335  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # [0, 516, x_bragg-179, x_bragg+181]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -142,7 +141,7 @@ photon_threshold = 0  # data[data < photon_threshold] = 0
 photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon threshold should be applied
 # if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
 background_file = ''  # root_folder + 'background.npz'  #
-hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
+hotpixels_file = ''  # root_folder + 'hotpixels_HS4670.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
 template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
@@ -157,10 +156,10 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
+use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
-sdd = 1.8  # in m, sample to detector distance in m
-energy = 10000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+sdd = 0.84895  # in m, sample to detector distance in m
+energy = 8987.1  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
@@ -177,15 +176,14 @@ custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = 0  # outer detector angle offset, not important if you use raw data
-sample_offsets = (-90, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
+offset_inplane = 1.3032  # outer detector angle offset, not important if you use raw data
+sample_offsets = (0, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
 # the sample offsets will be added to the motor values
-cch1 = 1000  # cch1 parameter from xrayutilities 2D detector calibration, vertical
-cch2 = 1000  # cch2 parameter from xrayutilities 2D detector calibration, horizontal
-# detector roi is taken into account below
-detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
-tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
-tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
+cch1 = 350.82  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch2 = 432.49  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+detrot = 0.59  # detrot parameter from xrayutilities 2D detector calibration
+tiltazimuth = 360  # tiltazimuth parameter from xrayutilities 2D detector calibration
+tilt = 0.800  # tilt parameter from xrayutilities 2D detector calibration
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -230,8 +228,8 @@ def press_key(event):
 
     :param event: button press event
     """
-    global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, info_text, my_cmap
+    global original_data, original_mask, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask
+    global flag_pause, xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, info_text, my_cmap
 
     try:
         if event.inaxes == ax0:

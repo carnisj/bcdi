@@ -209,8 +209,9 @@ def main(parameters):
 
         :param event: button press event
         """
-        nonlocal original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-        nonlocal xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text, my_cmap
+        nonlocal original_data, original_mask, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask
+        nonlocal flag_pause, xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text
+        nonlocal my_cmap
 
         try:
             if event.inaxes == ax0:
