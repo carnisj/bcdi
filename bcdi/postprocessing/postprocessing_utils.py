@@ -1347,7 +1347,7 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         myobj = crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
         print('Upsampling: shift_z, shift_y, shift_x: (', str('{:.3f}'.format(shiftz)),
               str('{:.3f}'.format(shifty)), str('{:.3f}'.format(shiftx)), ') pixels')
-        return abs(myobj)/abs(myobj).max(), np.angle(myobj)
+        return abs(myobj)/abs(myobj).max(), np.angle(myobj), shiftz, shifty, shiftx
 
     else:  # method='gradient'
 
