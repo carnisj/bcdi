@@ -393,7 +393,7 @@ class SetupPostprocessing(object):
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
                     np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
                              np.cos(mygrazing_angle) * (np.cos(inplane) * np.cos(outofplane) - 1)),
-                             np.sin(mygrazing_angle) * np.sin(inplane) * np.sin(outofplane),
+                             np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
                              np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
         if self.beamline == 'P10':
             print('using PETRAIII P10 geometry')
@@ -424,7 +424,7 @@ class SetupPostprocessing(object):
                      0,
                      tilt * distance * np.sin(inplane) * np.cos(outofplane)])
             else:
-                raise ValueError('inplane rocking for phi not yet implemented for P10')
+                raise NotImplementedError('inplane rocking for phi not yet implemented for P10')
 
         if self.beamline == 'NANOMAX':
             print('using NANOMAX geometry')
@@ -466,7 +466,7 @@ class SetupPostprocessing(object):
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
                     np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
                                np.cos(mygrazing_angle) * (np.cos(inplane) * np.cos(outofplane) - 1)),
-                              np.sin(mygrazing_angle) * np.sin(inplane) * np.sin(outofplane),
+                              np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
                               np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
 
         if self.beamline == '34ID':
@@ -497,7 +497,7 @@ class SetupPostprocessing(object):
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
                     np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
                               np.cos(mygrazing_angle) * (1 - np.cos(inplane) * np.cos(outofplane))),
-                              -np.sin(mygrazing_angle) * np.sin(inplane) * np.sin(outofplane),
+                              -np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
                               np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
 
             elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
