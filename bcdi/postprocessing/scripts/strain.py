@@ -43,16 +43,16 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 54  # spec scan number
+scan = 1065  # spec scan number
 
-datadir = "D:/data/P10_isosurface/data/p21_{:05d}".format(scan) + "/pynxraw/"
+datadir = "D:/data/P10_CO/S" + str(scan) + "/pynxraw/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [200, 512, 512]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [250, 512, 480]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor applied during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
@@ -64,7 +64,7 @@ plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the sup
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-isosurface_strain = 0.25  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.45  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect', for 'defect' it tries to remove only outer layers even if
 # the amplitude is low inside the crystal
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
@@ -73,7 +73,7 @@ offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = '_test' + '_iso' + str(isosurface_strain)  # should start with _
+comment = '_grad0.3_1.2iso' + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
@@ -82,13 +82,13 @@ beamline = "P10"  # name of the beamline, used for data loading and normalizatio
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
 sdd = 1.83  # 1.26  # sample to detector distance in m
-pixel_size = 225e-6  # detector pixel size in m, taking into account an eventual binning during preprocessing
-energy = 8820  # 9000  # x-ray energy in eV, 6eV offset at ID01
+pixel_size = 75e-6  # detector pixel size in m, taking into account an eventual binning during preprocessing
+energy = 8000  # 9000  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 42.6527  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = -0.1994  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 39.29  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = -1  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.012  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 dispersion = 4.1184E-05  # delta
@@ -106,7 +106,7 @@ threshold_refraction = 0.05  # threshold used to calculate the optical path
 simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
 flip_reconstruction = True  # True if you want to get the conjugate object
-phase_ramp_removal = 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
+phase_ramp_removal = 'gradient'  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use for ramp removal
 xrayutils_ortho = False  # True if the data is already orthogonalized
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
@@ -114,7 +114,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (-1, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
@@ -294,7 +294,7 @@ if debug:
 # phase ramp removal before phase filtering #
 #############################################
 amp, phase, rampz, rampy, rampx = pu.remove_ramp(amp=abs(avg_obj), phase=phase, initial_shape=original_size,
-                                                 method=phase_ramp_removal, amplitude_threshold=isosurface_strain,
+                                                 method='gradient', amplitude_threshold=isosurface_strain,
                                                  gradient_threshold=threshold_gradient)
 del avg_obj
 gc.collect()
