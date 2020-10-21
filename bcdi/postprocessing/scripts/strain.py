@@ -43,28 +43,28 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 1065  # spec scan number
+scan = 174  # spec scan number
 
-datadir = "D:/data/P10_CO/S" + str(scan) + "/pynxraw/"
+datadir = "D:/data/MIR_debug/S" + str(scan) + "/pynxraw/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [250, 512, 480]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [200, 336, 280]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor applied during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
-fix_voxel = np.nan  # voxel size in nm for the interpolation during the geometrical transformation
+fix_voxel = 7  # voxel size in nm for the interpolation during the geometrical transformation
 # put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the support in each direction when cropping,
 # it can be negative. It is useful in order to avoid cutting the object during the orthogonalization.
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-isosurface_strain = 0.45  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.30  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 isosurface_method = 'threshold'  # 'threshold' or 'defect', for 'defect' it tries to remove only outer layers even if
 # the amplitude is low inside the crystal
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
@@ -73,22 +73,22 @@ offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = '_grad0.3_1.2iso' + str(isosurface_strain)  # should start with _
+comment = '_iso' + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
-beamline = "P10"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
+beamline = "ID01"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
-rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
+rocking_angle = "inplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 1.83  # 1.26  # sample to detector distance in m
-pixel_size = 75e-6  # detector pixel size in m, taking into account an eventual binning during preprocessing
-energy = 8000  # 9000  # x-ray energy in eV, 6eV offset at ID01
+sdd = 0.844  # 1.26  # sample to detector distance in m
+pixel_size = 55e-6  # detector pixel size in m, taking into account an eventual binning during preprocessing
+energy = 8994  # 9000  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 39.29  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = -1  # detector nu ID01, gamma SIXS, tth 34ID
-grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.012  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+outofplane_angle = 63.1  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 67.74  # detector nu ID01, gamma SIXS, tth 34ID
+grazing_angle = 19.79  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
+tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 dispersion = 4.1184E-05  # delta
@@ -105,7 +105,7 @@ threshold_refraction = 0.05  # threshold used to calculate the optical path
 ###########
 simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
-flip_reconstruction = True  # True if you want to get the conjugate object
+flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use for ramp removal
 xrayutils_ortho = False  # True if the data is already orthogonalized
@@ -114,15 +114,16 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (-1, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (0, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
-align_crystal = True  # if True rotates the crystal to align q it along one axis of the array
-ref_axis_outplane = "y"  # "y"  # "z"  # q will be aligned along that axis
-align_inplane = False  # if True rotates afterwards the crystal inplane to align it along z for easier slicing
-ref_axis_inplane = "x"  # "x"  # will align inplane_normal to that axis
-inplane_normal = np.array([1, 0, -0.16])  # facet normal to align with ref_axis_inplane (y should be 0)
+align_q = False  # if True rotates the crystal to align q it along one axis of the array
+ref_axis_q = "y"  # q will be aligned along that axis
+align_axis = True  # if True rotates the crystal to align axis_to_align along ref_axis
+ref_axis = "y"  # will align axis_to_align to that axis
+axis_to_align = np.array([-0.011662456997498807, 0.957321364700986, -0.28879022106682123])
+# axis to align with ref_axis in the order x y z (axis 2, axis 1, axis 0)
 strain_range = 0.002  # for plots
 phase_range = np.pi  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
@@ -471,14 +472,14 @@ gc.collect()
 ##################################################
 # calculate q, kin , kout from angles and energy #
 ##################################################
-if ref_axis_outplane == "x":
+if ref_axis_q == "x":
     myaxis = np.array([1, 0, 0])  # must be in [x, y, z] order
-elif ref_axis_outplane == "y":
+elif ref_axis_q == "y":
     myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
-elif ref_axis_outplane == "z":
+elif ref_axis_q == "z":
     myaxis = np.array([0, 0, 1])  # must be in [x, y, z] order
 else:
-    ref_axis_outplane = "y"
+    ref_axis_q = "y"
     myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
 
 kin = 2*np.pi/setup.wavelength * beam_direction  # in laboratory frame z downstream, y vertical, x outboard
@@ -488,7 +489,7 @@ q = kout - kin
 Qnorm = np.linalg.norm(q)
 q = q / Qnorm
 angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=myaxis)
-print("Angle between q and", ref_axis_outplane, "=", angle, "deg")
+print("Angle between q and", ref_axis_q, "=", angle, "deg")
 print("Angle with y in zy plane", np.arctan(q[0]/q[1])*180/np.pi, "deg")
 print("Angle with y in xy plane", np.arctan(-q[2]/q[1])*180/np.pi, "deg")
 print("Angle with z in xz plane", 180+np.arctan(q[2]/q[0])*180/np.pi, "deg")
@@ -648,7 +649,7 @@ if save_labframe:
 # put back the crystal in its frame, by aligning q onto the reference axis #
 ############################################################################
 if not xrayutils_ortho:
-    print('\nAligning Q along ', ref_axis_outplane, ":", myaxis)
+    print('\nAligning Q along ', ref_axis_q, ":", myaxis)
     amp = pu.rotate_crystal(array=amp, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
                             reference_axis=myaxis, debugging=True)
     phase = pu.rotate_crystal(array=phase, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
@@ -658,33 +659,27 @@ if not xrayutils_ortho:
 # calculate the strain depending on which axis q is aligned on #
 ################################################################
 strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxel_size,
-                       reference_axis=ref_axis_outplane)
-
-# old method of A. Ulvestad
-# gradz, grady, gradx = np.gradient(planar_dist/(2*np.pi)*phase, voxel_size)  # planar_dist, voxel_size in nm
-# strain = q[0]*gradz + q[1]*grady + q[2]*gradx  # q is normalized
+                       reference_axis=ref_axis_q)
 
 ################################################################
 # rotates the crystal inplane for easier slicing of the result #
 ################################################################
 if not xrayutils_ortho:
-    if align_inplane:
-        align_crystal = True
-        if ref_axis_inplane == "x":
+    if align_axis:
+        if ref_axis == "x":
             myaxis_inplane = np.array([1, 0, 0])  # must be in [x, y, z] order
-        elif ref_axis_inplane == "z":
+        elif ref_axis == "y":
+            myaxis_inplane = np.array([0, 1, 0])  # must be in [x, y, z] order
+        else:  # ref_axis = "z"
             myaxis_inplane = np.array([0, 0, 1])  # must be in [x, y, z] order
-        else:
-            ref_axis_inplane = "z"
-            myaxis_inplane = np.array([0, 0, 1])  # must be in [x, y, z] order
-        amp = pu.rotate_crystal(array=amp, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
+        amp = pu.rotate_crystal(array=amp, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
                                 reference_axis=myaxis_inplane, debugging=True)
-        phase = pu.rotate_crystal(array=phase, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
+        phase = pu.rotate_crystal(array=phase, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
                                   reference_axis=myaxis_inplane, debugging=False)
-        strain = pu.rotate_crystal(array=strain, axis_to_align=inplane_normal/np.linalg.norm(inplane_normal),
+        strain = pu.rotate_crystal(array=strain, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
                                    reference_axis=myaxis_inplane, debugging=False)
 
-    if align_crystal:
+    if align_q:
         comment = comment + '_crystal-frame'
     else:
         comment = comment + '_lab-frame'
