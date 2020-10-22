@@ -43,54 +43,55 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 174  # spec scan number
+scan = 9  # spec scan number
 
-datadir = "D:/data/MIR_debug/S" + str(scan) + "/pynxraw/"
+datadir = "D:/data/Pt THH ex-situ/Data/HS4670/S" + str(scan) + "/pynxraw/test/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [200, 336, 280]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [400, 512, 360]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor applied during phasing
 output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
-fix_voxel = 7  # voxel size in nm for the interpolation during the geometrical transformation
+fix_voxel = 6  # voxel size in nm for the interpolation during the geometrical transformation
 # put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
 plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the support in each direction when cropping,
 # it can be negative. It is useful in order to avoid cutting the object during the orthogonalization.
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-isosurface_strain = 0.30  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
-isosurface_method = 'threshold'  # 'threshold' or 'defect', for 'defect' it tries to remove only outer layers even if
-# the amplitude is low inside the crystal
+isosurface_strain = 0.35  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 offset_origin = []  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
 offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the phase
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = '_iso' + str(isosurface_strain)  # should start with _
+comment = '_gap_iso' + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
 beamline = "ID01"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
-rocking_angle = "inplane"  # "outofplane" or "inplane", does not matter for energy scan
+rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 0.844  # 1.26  # sample to detector distance in m
+sdd = 1.26  # 1.26  # sample to detector distance in m
 pixel_size = 55e-6  # detector pixel size in m, taking into account an eventual binning during preprocessing
-energy = 8994  # 9000  # x-ray energy in eV, 6eV offset at ID01
+energy = 9000  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 63.1  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 67.74  # detector nu ID01, gamma SIXS, tth 34ID
-grazing_angle = 19.79  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
-correct_refraction = False  # True for correcting the phase shift due to refraction
-correct_absorption = False  # True for correcting the amplitude for absorption
+outofplane_angle = 41.1238  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 0.0862  # detector nu ID01, gamma SIXS, tth 34ID
+grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
+tilt_angle = 0.005  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+correct_refraction = True  # True for correcting the phase shift due to refraction
+correct_absorption = True  # True for correcting the amplitude for absorption
+optical_path_method = 'defect'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
+# support  for the optical path calculation, if 'defect' (holes) it tries to remove only outer layers even if
+# the amplitude is lower than isosurface_strain inside the crystal
 dispersion = 4.1184E-05  # delta
 # Pt:  3.0761E-05 @ 10300eV
 # 3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994eV, 5.2647E-05 @ 7994eV, 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
@@ -107,20 +108,20 @@ simu_flag = False  # set to True if it is simulation, the parameter invert_phase
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
 flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
-threshold_gradient = 0.3  # upper threshold of the gradient of the phase, use for ramp removal
+threshold_gradient = 1.0  # upper threshold of the gradient of the phase, use for ramp removal
 xrayutils_ortho = False  # True if the data is already orthogonalized
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
 save_support = False  # True to save the non-orthogonal support for later phase retrieval
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (-1, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
-align_q = False  # if True rotates the crystal to align q it along one axis of the array
+align_q = True  # if True rotates the crystal to align q it along one axis of the array
 ref_axis_q = "y"  # q will be aligned along that axis
-align_axis = True  # if True rotates the crystal to align axis_to_align along ref_axis
+align_axis = False  # if True rotates the crystal to align axis_to_align along ref_axis
 ref_axis = "y"  # will align axis_to_align to that axis
 axis_to_align = np.array([-0.011662456997498807, 0.957321364700986, -0.28879022106682123])
 # axis to align with ref_axis in the order x y z (axis 2, axis 1, axis 0)
@@ -344,7 +345,7 @@ if debug:
 # average the phase over a window or apodize to reduce noise in strain plots #
 ##############################################################################
 if hwidth != 0:
-    bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method=isosurface_method)
+    bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method='threshold')
     # the phase should be averaged only in the support defined by the isosurface
     phase = pu.mean_filter(phase=phase, support=bulk, half_width=hwidth)
     del bulk
@@ -541,7 +542,7 @@ if invert_phase:
 # refraction and absorption correction #
 ########################################
 if correct_refraction or correct_absorption:
-    bulk = pu.find_bulk(amp=amp, support_threshold=threshold_refraction, method='threshold')
+    bulk = pu.find_bulk(amp=amp, support_threshold=threshold_refraction, method=optical_path_method)
 
     # calculate the optical path of the incoming wavevector: it may be aligned with orthogonalized axis 0
     path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=True)
@@ -708,7 +709,7 @@ print("Final data shape:", numz, numy, numx)
 ##############################################################################################
 # save result to vtk (result in the laboratory frame or rotated result in the crystal frame) #
 ##############################################################################################
-bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method=isosurface_method)
+bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method='threshold')
 if save:
     if invert_phase:
         np.savez_compressed(datadir + 'S' + str(scan) + "_amp" + phase_fieldname + "strain" + comment,
