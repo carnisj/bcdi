@@ -736,16 +736,14 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=
 
     nbz, nby, nbx = amp.shape
     max_amp = abs(amp).max()
-    mysupport = np.ones((nbz, nby, nbx))
+    support = np.ones((nbz, nby, nbx))
 
     if method == 'threshold':
-        mysupport[abs(amp) < support_threshold * max_amp] = 0
-        mybulk = mysupport
-
+        support[abs(amp) < support_threshold * max_amp] = 0
     else:
-        mysupport[abs(amp) < 0.1 * max_amp] = 0  # predefine a larger support
+        support[abs(amp) < 0.05 * max_amp] = 0  # predefine a larger support
         mykernel = np.ones((9, 9, 9))
-        mycoordination_matrix = calc_coordination(mysupport, kernel=mykernel, debugging=False)
+        mycoordination_matrix = calc_coordination(support, kernel=mykernel, debugging=debugging)
         outer = np.copy(mycoordination_matrix)
         outer[np.nonzero(outer)] = 1
         if mykernel.shape == np.ones((9, 9, 9)).shape:
@@ -797,8 +795,12 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=
             else:
                 print('Surface of object reached after', idx, 'iterations')
                 break
-        mybulk = np.ones((nbz, nby, nbx)) - outer
-    return mybulk
+        support_defect = np.ones((nbz, nby, nbx)) - outer
+        support = np.ones((nbz, nby, nbx))
+        support[abs(amp) < support_threshold * max_amp] = 0
+        # add voxels detected by support_defect
+        support[np.nonzero(support_defect)] = 1
+    return support
 
 
 def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False):
