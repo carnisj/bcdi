@@ -542,7 +542,7 @@ if invert_phase:
 # refraction and absorption correction #
 ########################################
 if correct_refraction or correct_absorption:
-    bulk = pu.find_bulk(amp=amp, support_threshold=threshold_refraction, method=optical_path_method)
+    bulk = pu.find_bulk(amp=amp, support_threshold=threshold_refraction, method=optical_path_method, debugging=debug)
 
     # calculate the optical path of the incoming wavevector: it may be aligned with orthogonalized axis 0
     path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=True)
