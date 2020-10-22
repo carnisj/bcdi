@@ -411,8 +411,8 @@ class SetupPostprocessing(object):
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
             elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                print('rocking angle is mu')
-                # rocking mu angle anti-clockwise around y, mu below all other sample rotations
+                print('rocking angle is phi, omega=0')
+                # rocking phi angle clockwise around y, incident angle omega is zero (omega below phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([-pixel_x * np.cos(inplane),
                                                                        0,
                                                                        pixel_x * np.sin(inplane)])
@@ -420,11 +420,24 @@ class SetupPostprocessing(object):
                                                                        -pixel_y * np.cos(outofplane),
                                                                        pixel_y * np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
-                    [tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
+                    [tilt * distance * (np.cos(inplane) * np.cos(outofplane) - 1),
                      0,
-                     tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-            else:
-                raise NotImplementedError('inplane rocking for phi not yet implemented for P10')
+                     - tilt * distance * np.sin(inplane) * np.cos(outofplane)])
+
+            elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
+                print('rocking angle is phi, with omega non zero')
+                # rocking phi angle clockwise around y, incident angle omega is non zero (omega below phi)
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([-pixel_x * np.cos(inplane),
+                                                                       0,
+                                                                       pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       -pixel_y * np.cos(outofplane),
+                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
+                    np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
+                             np.cos(mygrazing_angle) * (np.cos(inplane) * np.cos(outofplane) - 1)),
+                             - np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
+                             - np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
 
         if self.beamline == 'NANOMAX':
             print('using NANOMAX geometry')
