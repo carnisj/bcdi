@@ -21,17 +21,17 @@ helptext = """
 Plot the modulus histogram of a complex object reconstructed by phase retrieval.
 """
 
-scan = 78    # spec scan number
-root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
+scan = 11    # spec scan number
+root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
 sample_name = "S"
 homedir = root_folder + sample_name + str(scan) + "/pynxraw/"
 # + '_' + str('{:05d}'.format(scan)) + '/pynx/1000_1000_1000_1_1_1/v1/'
 comment = ""  # should start with _
-fit_hist = False  # if True, fit the histogram with lineshape
+fit = True  # if True, fit the histogram with lineshape
 lineshape = 'pseudovoigt'
-fit_range = [0.20, 1.0]
+fit_range = [0.5, 1.0]
 histogram_Yaxis = 'linear'  # 'log' or 'linear'
-threshold_amp = 0.05  # use only points with larger modulus to calculate mean, std and the histogram
+cutoff_amp = 0.05  # use only points with a modulus larger than this value to calculate mean, std and the histogram
 save = False  # True to save the histogram plot
 ##########################
 # end of user parameters #
@@ -61,11 +61,11 @@ amp = amp / amp.max()
 gu.multislices_plot(amp, sum_frames=False, title='Normalized modulus', vmin=0, vmax=1, plot_colorbar=True,
                     is_orthogonal=True, reciprocal_space=False)
 
-mean_amp = amp[amp > threshold_amp].mean()
-std_amp = amp[amp > threshold_amp].std()
+mean_amp = amp[amp > cutoff_amp].mean()
+std_amp = amp[amp > cutoff_amp].std()
 print("Mean amp=", mean_amp)
 print("Std amp=", std_amp)
-hist, bin_edges = np.histogram(amp[amp > threshold_amp].flatten(), bins=50)
+hist, bin_edges = np.histogram(amp[amp > cutoff_amp].flatten(), bins=50)
 bin_step = (bin_edges[1]-bin_edges[0])/2
 bin_axis = bin_edges + bin_step
 bin_axis = bin_axis[0:len(hist)]
@@ -78,7 +78,7 @@ newhist = interp_hist(newbin_axis)
 ##############################################
 # fit the peak with a pseudovoigt line shape #
 ##############################################
-if fit_hist:
+if fit:
     # find indices of the histogram points belonging to the range of interest
     ind_min, ind_max = util.find_nearest(newbin_axis, [min(fit_range), max(fit_range)])
     fit_axis = newbin_axis[np.arange(ind_min, ind_max + 1, 1)]
@@ -109,7 +109,7 @@ fig, ax = plt.subplots(1, 1)
 plt.plot(bin_axis, hist, 'o', newbin_axis, newhist, '-')
 if histogram_Yaxis == 'log':
     ax.set_yscale('log')
-if fit_hist:
+if fit:
     if histogram_Yaxis == 'linear':
         ax.plot(newbin_axis, y_fit, '-')
     else:
