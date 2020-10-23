@@ -169,8 +169,6 @@ def main(parameters):
 
     :param parameters: dictionnary containing input parameters
     """
-    # global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-    # global xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text
 
     def close_event(event):
         """
@@ -781,22 +779,20 @@ def main(parameters):
                                             title='Data after aliens removal\n',
                                             is_orthogonal=not use_rawdata, reciprocal_space=True)
 
-            if flag_interact:
-                fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-                cid = plt.connect('close_event', close_event)
-                fig.waitforbuttonpress()
-                plt.disconnect(cid)
+            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+            cid = plt.connect('close_event', close_event)
+            fig.waitforbuttonpress()
+            plt.disconnect(cid)
             plt.close(fig)
 
             fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                             vmax=(nz, ny, nx), title='Mask after aliens removal\n',
                                             is_orthogonal=not use_rawdata, reciprocal_space=True)
 
-            if flag_interact:
-                fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-                cid = plt.connect('close_event', close_event)
-                fig.waitforbuttonpress()
-                plt.disconnect(cid)
+            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+            cid = plt.connect('close_event', close_event)
+            fig.waitforbuttonpress()
+            plt.disconnect(cid)
             plt.close(fig)
 
             #############################################

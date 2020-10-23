@@ -736,22 +736,20 @@ for scan_nb in range(len(scans)):
                                         title='Data after aliens removal\n',
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
 
-        if flag_interact:
-            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        cid = plt.connect('close_event', close_event)
+        fig.waitforbuttonpress()
+        plt.disconnect(cid)
         plt.close(fig)
 
         fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                         vmax=(nz, ny, nx), title='Mask after aliens removal\n',
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
 
-        if flag_interact:
-            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        cid = plt.connect('close_event', close_event)
+        fig.waitforbuttonpress()
+        plt.disconnect(cid)
         plt.close(fig)
 
         #############################################
