@@ -322,6 +322,55 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
     return params
 
 
+def cartesian2cylind(grid_shape, pivot, offset_angle, debugging=False):
+    """
+    Find the corresponding cylindrical coordinates of a cartesian 3D, including the correction for te Ewald sphere
+    curvature. The longitudinal axis of the cylindrical frame (rotation axis) is axis 1.
+
+    :param grid_shape: tuple, shape of the 3D cartesion grid
+    :param pivot: tuple of two numbers, position in pixels of the origin of reciprocal space (vertical, horizontal)
+    :param offset_angle: reference angle for the angle wrapping
+    :param debugging: True to see more plots
+    :return: the corresponding 1D array of angular coordinates, 1D array of height coordinates,
+     1D array of radial coordinates
+    """
+    assert len(grid_shape) == 3, 'grid_shape should be a tuple of three numbers'
+    assert len(pivot) == 2, 'pivot should be a tuple of two pixel numbers'
+    _, numy, numx = grid_shape  # numz = numx by construction
+    pivot_y, pivot_x = pivot
+    z_interp, y_interp, x_interp = np.meshgrid(np.linspace(-pivot_x, -pivot_x + numx, num=numx, endpoint=False),
+                                               np.linspace(pivot_y - numy, pivot_y, num=numy, endpoint=False),
+                                               np.linspace(pivot_x - numx, pivot_x, num=numx, endpoint=False),
+                                               indexing='ij')  # z_interp changes along rows, x_interp along columns
+    # z_interp downstream, same direction as detector X rotated by +90deg
+    # y_interp vertical up, opposite to detector Y
+    # x_interp along outboard, opposite to detector X
+
+    # map these points to (cdi_angle, Y, X), the measurement cylindrical coordinates
+    interp_angle = wrap(obj=np.arctan2(z_interp, -x_interp), start_angle=offset_angle * np.pi / 180,
+                        range_angle=np.pi)  # in radians, located in the range [start_angle, start_angle+np.pi[
+
+    interp_height = y_interp  # only need to flip the axis in the vertical direction (rotation axis)
+
+    sign_array = -1 * np.sign(np.cos(interp_angle)) * np.sign(x_interp)
+    sign_array[x_interp == 0] = np.sign(z_interp[x_interp == 0]) * np.sign(interp_angle[x_interp == 0])
+
+    interp_radius = np.multiply(sign_array, np.sqrt(x_interp ** 2 + z_interp ** 2))
+
+    if debugging:
+        gu.imshow_plot(interp_angle*180/np.pi, plot_colorbar=True, scale='linear',
+                       labels=('Qx (z_interp)', 'Qy (x_interp)'),
+                       title='calculated polar angle for a 2D grid\nperpendicular to the rotation axis')
+
+        gu.imshow_plot(sign_array, plot_colorbar=True, scale='linear',
+                       labels=('Qx (z_interp)', 'Qy (x_interp)'), title='sign_array')
+
+        gu.imshow_plot(interp_radius, plot_colorbar=True, scale='linear', labels=('Qx (z_interp)', 'Qy (x_interp)'),
+                       title='calculated polar radius for a 2D grid\nperpendicular to the rotation axis')
+
+    return interp_angle, interp_height, interp_radius
+
+
 def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
     """
     Find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis.
@@ -1259,7 +1308,55 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
 
     else:
         raise NotImplementedError('TODO: check Ewald sphere curvature correction, too slow')
+
+        # Calculate the coordinates of a cartesian 3D grid expressed in the cylindrical basis including the correction
+        # for the Ewald sphere curvature
+        interp_angle, interp_height, interp_radius = cartesian2cylind(grid_shape=(numx, numy, numx),
+                                                                      pivot=(directbeam_y, pivot),
+                                                                      offset_angle=cdi_angle.min(),
+                                                                      debugging=debugging)
+
+        if cdi_angle[1] - cdi_angle[0] < 0:
+            # flip rotation_angle and the data accordingly,
+            # RegularGridInterpolator takes only increasing position vectors
+            cdi_angle = np.flip(cdi_angle)
+            data = np.flip(data, axis=0)
+            mask = np.flip(mask, axis=0)
+
+        # Interpolate the data onto a cartesian 3D grid
+        print('Gridding data including correction for Ewald sphere curvature')
+        rgi = RegularGridInterpolator(
+            (cdi_angle * np.pi / 180,
+             np.arange(-directbeam_y, -directbeam_y + nby, 1),
+             np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
+            data, method='linear', bounds_error=False, fill_value=np.nan)
+        interp_data = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
+                                          interp_height.reshape((1, interp_angle.size)),
+                                          interp_radius.reshape((1, interp_angle.size)))).transpose())
+        interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
+        print('Done')
+
+        # Interpolate the mask onto a cartesian 3D grid
+        print('Gridding mask including correction for Ewald sphere curvature')
+        rgi = RegularGridInterpolator(
+            (cdi_angle * np.pi / 180,
+             np.arange(-directbeam_y, -directbeam_y + nby, 1),
+             np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
+            mask, method='linear', bounds_error=False, fill_value=np.nan)
+        interp_mask = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
+                                          interp_height.reshape((1, interp_angle.size)),
+                                          interp_radius.reshape((1, interp_angle.size)))).transpose())
+        interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
+        interp_mask[np.nonzero(interp_mask)] = 1
+        print('Done')
+
         # TODO check Ewald sphere curvature correction
+        # qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
+        # qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
+        # qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
+        #
+        # new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
+        #
         # from scipy.interpolate import griddata
         # # calculate exact q values for each voxel of the 3D dataset
         # old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
