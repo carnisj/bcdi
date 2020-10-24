@@ -1072,7 +1072,8 @@ def get_opticalpath(support, direction, k, width_z=None, width_y=None, width_x=N
     return path
 
 
-def get_strain(phase, planar_distance, voxel_size, reference_axis='y'):
+def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_phase=2*np.pi,
+               method='default', debugging=False):
     """
     Calculate the 3D strain array.
 
@@ -1080,22 +1081,52 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y'):
     :param planar_distance: the planar distance of the material corresponding to the measured Bragg peak
     :param voxel_size: the voxel size of the phase array in nm, should be isotropic
     :param reference_axis: the axis of the array along which q is aligned: 'x', 'y' or 'z' (CXI convention)
+    :param extent_phase: range for phase wrapping, specify it when the phase spans over more than 2*pi
+    :param method: 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
+     value for the strain (Felix Hofmann's method 2019).
+    :param debugging: True to see plots
     :return: the strain 3D array
     """
-    if phase.ndim != 3:
-        raise ValueError('phase should be a 3D array')
+    from bcdi.preprocessing.preprocessing_utils import wrap
 
-    if reference_axis == "x":
-        _, _, strain = np.gradient(planar_distance / (2 * np.pi) * phase,
-                                   voxel_size)  # q is along x after rotating the crystal
-    elif reference_axis == "y":
-        _, strain, _ = np.gradient(planar_distance / (2 * np.pi) * phase,
-                                   voxel_size)  # q is along y after rotating the crystal
-    elif reference_axis == "z":
-        strain, _, _ = np.gradient(planar_distance / (2 * np.pi) * phase,
-                                   voxel_size)  # q is along z after rotating the crystal
-    else:  # default is ref_axis_outplane = "y"
-        raise ValueError("Wrong value for the reference axis, it should be 'x', 'y' or 'z'")
+    assert phase.ndim == 3, 'phase should be a 3D array'
+    assert reference_axis in ('x', 'y', 'z'), "The reference axis should be 'x', 'y' or 'z'"
+
+    strain = np.inf * np.ones(phase.shape)
+    if method == 'defect':
+        offsets = np.pi / 10 * np.linspace(-10, 10, num=11)
+        print('Strain method = defect, the following phase offsets will be processed:', offsets)
+    else:  # 'default'
+        offsets = (0,)
+
+    for offset in offsets:
+        # offset the phase
+        if method == 'defect':
+            temp_phase = np.copy(phase)
+            temp_phase = temp_phase + offset
+            # wrap again the offseted phase
+            temp_phase = wrap(obj=temp_phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+        else:  # no need to copy the phase, offset = 0
+            temp_phase = phase
+
+        # calculate the strain for this offset
+        if reference_axis == "x":
+            _, _, temp_strain = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
+                                            voxel_size)  # q is along x after rotating the crystal
+        elif reference_axis == "y":
+            _, temp_strain, _ = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
+                                            voxel_size)  # q is along y after rotating the crystal
+        else:  # "z"
+            temp_strain, _, _ = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
+                                            voxel_size)  # q is along z after rotating the crystal
+
+        # update the strain values
+        strain = np.where(abs(strain) < abs(temp_strain), strain, temp_strain)
+        if debugging:
+            gu.multislices_plot(temp_phase, sum_frames=False, title='Offseted phase', vmin=-np.pi, vmax=np.pi,
+                                plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
+            gu.multislices_plot(strain, sum_frames=False, title='strain', vmin=-0.002, vmax=0.002,
+                                plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
     return strain
 
 
