@@ -1282,6 +1282,7 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
         pivot = nbx - directbeam_x
 
     if not correct_curvature:
+        loop_2d = True
         dqx = 2 * np.pi / lambdaz * pixel_x  # in 1/nm, downstream, pixel_x is the binned pixel size
         dqz = 2 * np.pi / lambdaz * pixel_y  # in 1/nm, vertical up, pixel_y is the binned pixel size
         dqy = 2 * np.pi / lambdaz * pixel_x  # in 1/nm, outboard, pixel_x is the binned pixel size
@@ -1294,61 +1295,61 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
         print('q spacing for interpolation (z,y,x)=', str('{:.6f}'.format(dqx)), str('{:.6f}'.format(dqz)),
               str('{:.6f}'.format(dqy)), ' (1/nm)')
 
-        # find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis
-        interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=pivot, offset_angle=cdi_angle.min(),
-                                                      debugging=debugging)
+        if loop_2d:  # loop over 2D slices perpendicular to the rotation axis, slower but needs less memory
 
-        interp_data = grid_cylindrical(array=data, rotation_angle=cdi_angle, direct_beam=directbeam_x,
-                                       interp_angle=interp_angle, interp_radius=interp_radius, comment='data')
+            # find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis
+            interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=pivot, offset_angle=cdi_angle.min(),
+                                                          debugging=debugging)
 
-        interp_mask = grid_cylindrical(array=mask, rotation_angle=cdi_angle, direct_beam=directbeam_x,
-                                       interp_angle=interp_angle, interp_radius=interp_radius, comment='mask')
+            interp_data = grid_cylindrical(array=data, rotation_angle=cdi_angle, direct_beam=directbeam_x,
+                                           interp_angle=interp_angle, interp_radius=interp_radius, comment='data')
 
-        interp_mask[np.nonzero(interp_mask)] = 1
+            interp_mask = grid_cylindrical(array=mask, rotation_angle=cdi_angle, direct_beam=directbeam_x,
+                                           interp_angle=interp_angle, interp_radius=interp_radius, comment='mask')
 
-    else:
+            interp_mask[np.nonzero(interp_mask)] = 1
+        else:  # interpolate in one shoot using a 3D RegularGridInterpolator
+
+            # Calculate the coordinates of a cartesian 3D grid expressed in the cylindrical basis
+            interp_angle, interp_height, interp_radius = cartesian2cylind(grid_shape=(numx, numy, numx),
+                                                                          pivot=(directbeam_y, pivot),
+                                                                          offset_angle=cdi_angle.min(),
+                                                                          debugging=debugging)
+
+            if cdi_angle[1] - cdi_angle[0] < 0:
+                # flip rotation_angle and the data accordingly,
+                # RegularGridInterpolator takes only increasing position vectors
+                cdi_angle = np.flip(cdi_angle)
+                data = np.flip(data, axis=0)
+                mask = np.flip(mask, axis=0)
+
+            # Interpolate the data onto a cartesian 3D grid
+            print('Gridding data')
+            rgi = RegularGridInterpolator(
+                (cdi_angle * np.pi / 180,
+                 np.arange(-directbeam_y, -directbeam_y + nby, 1),
+                 np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
+                data, method='linear', bounds_error=False, fill_value=np.nan)
+            interp_data = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
+                                              interp_height.reshape((1, interp_angle.size)),
+                                              interp_radius.reshape((1, interp_angle.size)))).transpose())
+            interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
+
+            # Interpolate the mask onto a cartesian 3D grid
+            print('Gridding mask')
+            rgi = RegularGridInterpolator(
+                (cdi_angle * np.pi / 180,
+                 np.arange(-directbeam_y, -directbeam_y + nby, 1),
+                 np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
+                mask, method='linear', bounds_error=False, fill_value=np.nan)
+            interp_mask = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
+                                              interp_height.reshape((1, interp_angle.size)),
+                                              interp_radius.reshape((1, interp_angle.size)))).transpose())
+            interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
+            interp_mask[np.nonzero(interp_mask)] = 1
+
+    else:  # correction for Ewald sphere curvature
         raise NotImplementedError('TODO: check Ewald sphere curvature correction, too slow')
-
-        # Calculate the coordinates of a cartesian 3D grid expressed in the cylindrical basis including the correction
-        # for the Ewald sphere curvature
-        interp_angle, interp_height, interp_radius = cartesian2cylind(grid_shape=(numx, numy, numx),
-                                                                      pivot=(directbeam_y, pivot),
-                                                                      offset_angle=cdi_angle.min(),
-                                                                      debugging=debugging)
-
-        if cdi_angle[1] - cdi_angle[0] < 0:
-            # flip rotation_angle and the data accordingly,
-            # RegularGridInterpolator takes only increasing position vectors
-            cdi_angle = np.flip(cdi_angle)
-            data = np.flip(data, axis=0)
-            mask = np.flip(mask, axis=0)
-
-        # Interpolate the data onto a cartesian 3D grid
-        print('Gridding data including correction for Ewald sphere curvature')
-        rgi = RegularGridInterpolator(
-            (cdi_angle * np.pi / 180,
-             np.arange(-directbeam_y, -directbeam_y + nby, 1),
-             np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
-            data, method='linear', bounds_error=False, fill_value=np.nan)
-        interp_data = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
-                                          interp_height.reshape((1, interp_angle.size)),
-                                          interp_radius.reshape((1, interp_angle.size)))).transpose())
-        interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
-        print('Done')
-
-        # Interpolate the mask onto a cartesian 3D grid
-        print('Gridding mask including correction for Ewald sphere curvature')
-        rgi = RegularGridInterpolator(
-            (cdi_angle * np.pi / 180,
-             np.arange(-directbeam_y, -directbeam_y + nby, 1),
-             np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
-            mask, method='linear', bounds_error=False, fill_value=np.nan)
-        interp_mask = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
-                                          interp_height.reshape((1, interp_angle.size)),
-                                          interp_radius.reshape((1, interp_angle.size)))).transpose())
-        interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
-        interp_mask[np.nonzero(interp_mask)] = 1
-        print('Done')
 
         # TODO check Ewald sphere curvature correction
         # qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
