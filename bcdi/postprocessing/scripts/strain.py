@@ -435,16 +435,10 @@ print('\nShape before orthogonalization', avg_obj.shape)
 if not xrayutils_ortho:
     obj_ortho, voxel_size = setup.orthogonalize(obj=avg_obj, initial_shape=original_size, voxel_size=fix_voxel)
     print("VTK spacing :", str('{:.2f}'.format(voxel_size)), "nm")
-    if True:
-        phase, _ = pu.unwrap(obj_ortho, support_threshold=0.05, debugging=True)
-        gu.multislices_plot(abs(obj_ortho), width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                            sum_frames=False, plot_colorbar=True, vmin=0, vmax=abs(obj_ortho).max(),
-                            title='Amp after orthogonalization')
-        gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                            sum_frames=False, plot_colorbar=True,
-                            title='Unwrapped phase after orthogonalization')
-        del phase
-        gc.collect()
+
+    gu.multislices_plot(abs(obj_ortho), width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
+                        sum_frames=False, plot_colorbar=True, vmin=0, vmax=abs(obj_ortho).max(),
+                        title='Amp after orthogonalization')
 
 else:  # data already orthogonalized using xrayutilities, will be in crystal frame
     obj_ortho = avg_obj
@@ -585,10 +579,9 @@ amp, phase, _, _, _ = pu.remove_ramp(amp=amp, phase=phase, initial_shape=origina
                                      amplitude_threshold=isosurface_strain, gradient_threshold=threshold_gradient,
                                      debugging=debug)
 
-if True:
-    gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                        sum_frames=False, plot_colorbar=True,
-                        title='Orthogonal phase before offset removal')
+gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
+                    sum_frames=False, plot_colorbar=True,
+                    title='Orthogonal phase before offset removal')
 
 if len(offset_origin) == 0:  # use offset_method to remove the phase offset
     support = np.zeros(amp.shape)
