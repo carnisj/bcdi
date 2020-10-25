@@ -45,7 +45,7 @@ or data[z, y, x] for real space
 
 scan = 2290  # spec scan number
 
-datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + "/pynxraw/test/"
+datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + "/pynxraw/gap_interp/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
@@ -66,14 +66,14 @@ plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the sup
 #############################################################
 isosurface_strain = 0.48  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 strain_method = 'defect'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
-# value for the strain (Felix Hofmann's method 2019)
+# magnitude value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 offset_origin = []  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
 offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the phase
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = '_defect_iso' + str(isosurface_strain)  # should start with _
+comment = '_defect_gap_iso' + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
@@ -100,7 +100,7 @@ dispersion = 4.1184E-05  # delta
 absorption = 3.4298E-06  # beta
 # Pt:  2.0982E-06 @ 10300eV
 # 2.3486E-06 @ 9994eV, 3.4298E-06 @ 8994eV, 5.2245E-06 @ 7994eV, 4.1969E-06 @ 8500eV
-threshold_refraction = 0.05  # threshold used to calculate the optical path
+threshold_unwrap_refraction = 0.05  # threshold used to calculate the optical path
 # the threshold for refraction/absorption corrections should be low, to correct for an object larger than the real one,
 # otherwise it messes up the phase
 ###########
@@ -287,13 +287,14 @@ gc.collect()
 ################
 # unwrap phase #
 ################
-phase, extent_phase = pu.unwrap(avg_obj, support_threshold=0.05, debugging=debug)
+phase, extent_phase = pu.unwrap(avg_obj, support_threshold=threshold_unwrap_refraction, debugging=True)
 
 print('Extent of the phase over an extended support (ceil(phase range))~ ', int(extent_phase), '(rad)')
 phase = pru.wrap(phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         plot_colorbar=True, title='Phase after unwrap + wrap')
+
 #############################################
 # phase ramp removal before phase filtering #
 #############################################
@@ -399,7 +400,7 @@ gu.multislices_plot(abs(avg_obj), width_z=2*zrange, width_y=2*yrange, width_x=2*
                     sum_frames=False, plot_colorbar=True, vmin=0, vmax=abs(avg_obj).max(),
                     title='Amp before orthogonalization')
 if debug:
-    phase, _ = pu.unwrap(avg_obj, support_threshold=0.05, debugging=True)
+    phase, _ = pu.unwrap(avg_obj, support_threshold=threshold_unwrap_refraction, debugging=True)
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         sum_frames=False, plot_colorbar=True,
                         title='Unwrapped phase before orthogonalization')
@@ -516,7 +517,7 @@ planar_dist = planar_dist / 10  # switch to nm
 ######################
 obj_ortho = pu.center_com(obj_ortho)
 amp = abs(obj_ortho)
-phase, extent_phase = pu.unwrap(obj_ortho, support_threshold=0.05, debugging=debug)
+phase, extent_phase = pu.unwrap(obj_ortho, support_threshold=threshold_unwrap_refraction, debugging=debug)
 del obj_ortho
 gc.collect()
 
@@ -538,7 +539,8 @@ if invert_phase:
 # refraction and absorption correction #
 ########################################
 if correct_refraction or correct_absorption:
-    bulk = pu.find_bulk(amp=amp, support_threshold=threshold_refraction, method=optical_path_method, debugging=debug)
+    bulk = pu.find_bulk(amp=amp, support_threshold=threshold_unwrap_refraction, method=optical_path_method,
+                        debugging=debug)
 
     # calculate the optical path of the incoming wavevector: it may be aligned with orthogonalized axis 0
     path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=True)
