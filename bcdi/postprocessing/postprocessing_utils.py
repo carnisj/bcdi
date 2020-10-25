@@ -1094,7 +1094,7 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_ph
 
     strain = np.inf * np.ones(phase.shape)
     if method == 'defect':
-        offsets = np.pi / 10 * np.linspace(-10, 10, num=11)
+        offsets = 2*np.pi / 10 * np.linspace(-10, 10, num=11)
         print('Strain method = defect, the following phase offsets will be processed:', offsets)
     else:  # 'default'
         offsets = (0,)
@@ -1767,7 +1767,7 @@ def unwrap(obj, support_threshold, debugging=True):
         if ndim == 3:
             gu.multislices_plot(phase_wrapped.data, plot_colorbar=True, title='Object before unwrapping')
 
-    phase_unwrapped = unwrap_phase(phase_wrapped).data
+    phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=0).data
     phase_unwrapped[np.nonzero(unwrap_support)] = 0
     if debugging:
         if ndim == 3:
