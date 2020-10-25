@@ -1746,13 +1746,14 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
     return tukey3
 
 
-def unwrap(obj, support_threshold, debugging=True):
+def unwrap(obj, support_threshold, seed=0, debugging=True):
     """
     Unwrap the phase of a complex object, based on skimage.restoration.unwrap_phase. A mask can be applied by
      thresholding the modulus of the object.
 
     :param obj: number or array to be wrapped
     :param support_threshold: threshold used to define a support from abs(obj)
+    :param seed: int, random seed. Use always the same value if you want a deterministic behavior.
     :param debugging: set to True to see plots
     :return: unwrapped phase, unwrapped phase range
     """
@@ -1767,7 +1768,7 @@ def unwrap(obj, support_threshold, debugging=True):
         if ndim == 3:
             gu.multislices_plot(phase_wrapped.data, plot_colorbar=True, title='Object before unwrapping')
 
-    phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=0).data
+    phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=seed).data
     phase_unwrapped[np.nonzero(unwrap_support)] = 0
     if debugging:
         if ndim == 3:
