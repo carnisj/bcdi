@@ -28,6 +28,11 @@ ideally the first mode should be as high as possible. Adapted from PyNX.
 datadir = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_2_debug/"
 user_comment = ''  # string, should start with "_"
 nb_mode = 5  # number of modes to return in the mode array (starting from 0)
+alignment_method = 'modulus'  # 'modulus' or 'support'
+# if 'modulus', use the center of mass of the modulus. If 'support', use the center of mass of a support object defined
+# by support_threshold
+support_threshold = 0.05  # threshold on the normalized modulus to define the support if alignement_method is 'support'
+debug = True  # True to see debugging plots
 ################
 # Load objects #
 ################
@@ -59,9 +64,15 @@ print('Array shape', obj0.shape)
 amp0 = abs(obj0)
 sum0 = amp0.sum()
 phase0 = np.angle(obj0)
-piz0, piy0, pix0 = center_of_mass(amp0)
+if alignment_method in ['modulus', 'skip']:
+    piz0, piy0, pix0 = center_of_mass(amp0)
+else:  # 'support'
+    support = np.zeros(amp0.shape)
+    support[amp0 > support_threshold * amp0.max()] = 1
+    piz0, piy0, pix0 = center_of_mass(support)
+
 piz0, piy0, pix0 = int(piz0), int(piy0), int(pix0)
-phase0 = phase0 - phase0[piz0, piy0, pix0]  # set the phae to 0 at the COM of the support
+phase0 = phase0 - phase0[piz0, piy0, pix0]  # set the phase to 0 at the COM of the support
 obj0 = amp0 * np.exp(1j * phase0)
 stack = np.zeros((nbfiles, nz, ny, nx), dtype=complex)
 stack[0, :, :, :] = obj0
@@ -69,10 +80,11 @@ del amp0, phase0
 gc.collect()
 
 for idx in range(1, nbfiles):
-    print(os.path.basename(file_path[idx]))
+    print('\n' + os.path.basename(file_path[idx]))
     obj, _ = util.load_file(file_path[idx])
     obj = pu.crop_pad(array=obj, output_shape=obj0.shape)
-    obj = pu.align_obj(reference_obj=obj0, obj=obj)
+    obj = pu.align_obj(reference_obj=obj0, obj=obj, method=alignment_method, support_threshold=support_threshold,
+                       debugging=debug)
     amp = abs(obj)
     phase = np.angle(obj) - np.angle(obj)[piz0, piy0, pix0]  # set the phase to 0 at the same pixel
     obj = amp * np.exp(1j * phase)
@@ -86,7 +98,7 @@ for idx in range(nbfiles):
 ############################
 # decomposition into modes #
 ############################
-modes, weights = pu.ortho_modes(array_stack=stack, nb_mode=nb_mode, method='eig')
+modes, _, weights = pu.ortho_modes(array_stack=stack, nb_mode=nb_mode, method='eig')
 print('\nWeights of the', len(weights), ' modes:', weights)
 
 highest_weight = np.unravel_index(np.argmax(weights), shape=weights.shape)[0]

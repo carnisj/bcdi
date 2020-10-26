@@ -29,18 +29,18 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 958
-root_folder = 'D:/data/P10_OER/data/'
-sample_name = "dewet2_2"
+scan = 15
+root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
+sample_name = "S"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
 peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 normalize_flux = 'monitor'  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
-debug = True  # True to see more plots
+debug = False  # True to see more plots
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 is_series = False  # specific to series measurement at P10
 
@@ -54,7 +54,7 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # SIXS: beta, mu, gamma, delta
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = ''
+specfile_name = 'alignment'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -63,16 +63,16 @@ specfile_name = ''
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 716  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 817  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg-290, y_bragg+290, x_bragg-290, x_bragg+290]
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+x_bragg = None  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = None  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = []  # [y_bragg-290, y_bragg+290, x_bragg-290, x_bragg+290]
 # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430
 # leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 high_threshold = 1000000  # everything above will be considered as hotpixel
-hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
-flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
-template_imagefile = '_master.h5'
+hotpixels_file = ''  # root_folder + 'hotpixels_HS4670.npz'  #
+flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  #
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -81,16 +81,20 @@ template_imagefile = '_master.h5'
 ###################################
 # define setup related parameters #
 ###################################
+beam_direction = (1, 0, 0)  # beam along z
+directbeam_x = 154  # x horizontal,  cch2 in xrayutilities
+directbeam_y = 208  # y vertical,  cch1 in xrayutilities
+direct_inplane = 0.0  # outer angle in xrayutilities
+direct_outofplane = 0.0
+sdd = 0.50678  # sample to detector distance in m
+energy = 9000  # in eV, offset of 6eV at ID01
+################################################
+# parameters related to temperature estimation #
+################################################
+get_temperature = False  # True to estimate the temperature using the reference spacing of the material. Only for Pt.
 reflection = np.array([1, 1, 1])  # measured reflection, use for estimating the temperature
 reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to Pt 3.9236/norm(reflection)
 reference_temperature = None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
-beam_direction = (1, 0, 0)  # beam along z
-directbeam_x = 476  # x horizontal,  cch2 in xrayutilities
-directbeam_y = 1374  # y vertical,  cch1 in xrayutilities
-direct_inplane = -2.0  # outer angle in xrayutilities
-direct_outofplane = 0.8
-sdd = 1.83  # sample to detector distance in m
-energy = 10300  # in eV, offset of 6eV at ID01
 ##########################################################
 # end of user parameters
 ##########################################################
@@ -262,11 +266,11 @@ print("\nBragg angles after correction = (gam, del): ", str('{:.4f}'.format(brag
 setup_post.inplane_angle = bragg_inplane
 setup_post.outofplane_angle = bragg_outofplane
 
-d_rocking_angle = tilt[1] - tilt[0]
+rocking_step = tilt[1] - tilt[0]
 
 print("\nGrazing angle=", str('{:.4f}'.format(grazing)), 'deg')
 
-print("\nRocking step=", str('{:.4f}'.format(d_rocking_angle)), 'deg')
+print("\nRocking step=", str('{:.5f}'.format(rocking_step)), 'deg')
 
 ####################################
 # wavevector transfer calculations #
@@ -277,17 +281,24 @@ q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
 Qnorm = np.linalg.norm(q)
 dist_plane = 2 * np.pi / Qnorm
 print("\nWavevector transfer of Bragg peak: ", q, str('{:.4f}'.format(Qnorm)))
-print("Interplanar distance: ", str('{:.4f}'.format(dist_plane)), "angstroms")
-temperature = pu.bragg_temperature(spacing=dist_plane, reflection=reflection, spacing_ref=reference_spacing,
-                                   temperature_ref=reference_temperature, use_q=False, material="Pt")
+print("Interplanar distance: ", str('{:.6f}'.format(dist_plane)), "angstroms")
+
+if get_temperature:
+    print('\nEstimating the temperature:')
+    temperature = pu.bragg_temperature(spacing=dist_plane, reflection=reflection, spacing_ref=reference_spacing,
+                                       temperature_ref=reference_temperature, use_q=False, material="Pt")
 
 #########################
 # calculate voxel sizes #
 #########################
-dz_realspace = setup_post.wavelength * 1e9 / (nb_frames * d_rocking_angle * np.pi / 180)  # in nm
-dy_realspace = setup_post.wavelength * 1e9 * sdd / (numy * detector.pixelsize_y)  # in nm
-dx_realspace = setup_post.wavelength * 1e9 * sdd / (numx * detector.pixelsize_x)  # in nm
-print('Real space voxel size (z, y, x): ', str('{:.2f}'.format(dz_realspace)), 'nm',
+#  update the detector angles in setup_post
+setup_post.inplane_angle = bragg_inplane
+setup_post.outofplane_angle = bragg_outofplane
+dz_realspace, dy_realspace, dx_realspace = setup_post.voxel_sizes((nb_frames, numy, numx), tilt_angle=rocking_step,
+                                                                  pixel_x=detector.pixelsize_x,
+                                                                  pixel_y=detector.pixelsize_y)
+
+print('\nReal space voxel size (z, y, x): ', str('{:.2f}'.format(dz_realspace)), 'nm',
       str('{:.2f}'.format(dy_realspace)), 'nm', str('{:.2f}'.format(dx_realspace)), 'nm')
 
 #################################

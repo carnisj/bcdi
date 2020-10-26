@@ -12,6 +12,8 @@ import h5py
 import numpy as np
 from scipy.special import erf
 from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
+from matplotlib import pyplot as plt
 import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 sys.path.append('D:/myscripts/bcdi/')
@@ -185,6 +187,20 @@ def gaussian(x_axis, amp, cen, sig):
     return amp*np.exp(-(x_axis-cen)**2/(2.*sig**2))
 
 
+def is_numeric(string):
+    """
+    Return True is the string represents a number.
+
+    :param string: the string to be checked
+    :return: True of False
+    """
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
+
+
 def load_file(file_path, fieldname=None):
     """
     Load a file. In case of .cxi or .h5 file, it will use a default path to the data.
@@ -213,7 +229,7 @@ def load_file(file_path, fieldname=None):
         # group_key = list(h5file.keys())[1]
         # subgroup_key = list(h5file[group_key])
         # dataset = h5file['/'+group_key+'/'+subgroup_key[0]+'/data'].value
-        dataset = h5file['/entry_1/data_1/data'].value
+        dataset = h5file['/entry_1/data_1/data'][()]
     elif extension == '.h5':  # modes.h5
         h5file = h5py.File(file_path, 'r')
         group_key = list(h5file.keys())[0]
@@ -271,6 +287,127 @@ def objective_lmfit(params, x_axis, data, distribution):
                                                       distribution=distribution)
     # now flatten this to a 1D array, as minimize() needs
     return resid.flatten()
+
+
+def line(x_array, a, b):
+    """
+    Return y values such that y = a*x + b
+
+    :param x_array: a 1D numpy array of length N
+    :param a: coefficient for x values
+    :param b: constant offset
+    :return: an array of length N containing the y values
+    """
+    return a * x_array + b
+
+
+def plane(xy_array, a, b, c):
+    """
+    Return z values such that z = a*x + b*y + c
+
+    :param xy_array: a (2xN) numpy array, x values being the first row and y values the second row
+    :param a: coefficient for x values
+    :param b:  coefficient for y values
+    :param c: constant offset
+    :return: an array of length N containing the z values
+    """
+    return a * xy_array[0, :] + b * xy_array[1, :] + c
+
+
+def plane_dist(indices, params):
+    """
+    Calculate the distance of an ensemble of voxels to a plane given by its parameters.
+
+    :param indices: a (3xN) numpy array, x values being the 1st row, y values the 2nd row and z values the 3rd row
+    :param params: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0
+    :return: a array of shape (N,) containing the distance to the plane for each voxel
+    """
+    distance = np.zeros(len(indices[0]))
+    plane_normal = np.array([params[0], params[1], params[2]])  # normal is [a, b, c] if ax+by+cz+d=0
+    for point in range(len(indices[0])):
+        distance[point] = abs(params[0]*indices[0, point] + params[1]*indices[1, point] + params[2]*indices[2, point] +
+                              params[3]) / np.linalg.norm(plane_normal)
+    return distance
+
+
+def plane_fit(indices, label='', threshold=1, debugging=False):
+    """
+    Fit a plane to the voxels defined by indices.
+
+    :param indices: a (3xN) numpy array, x values being the 1st row, y values the 2nd row and z values the 3rd row
+    :param label: int, label of the plane used for the title in the debugging plot
+    :param threshold: the fit will be considered as good if the mean distance of the voxels to the plane is smaller than
+     this value
+    :param debugging: True to see plots
+    :return: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0, the matrix of covariant values
+    """
+    valid_plane = True
+    indices = np.asarray(indices)
+    params3d, pcov3d = curve_fit(plane, indices[0:2, :], indices[2, :])
+    std_param3d = np.sqrt(np.diag(pcov3d))
+    params = (-params3d[0], -params3d[1], 1, -params3d[2])
+    std_param = (std_param3d[0], std_param3d[1], 0, std_param3d[2])
+
+    if debugging:
+        _, ax = gu.scatter_plot(np.transpose(indices), labels=('axis 0', 'axis 1', 'axis 2'),
+                                title='Points and fitted plane ' + str(label))
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        meshx, meshy = np.meshgrid(np.arange(xlim[0], xlim[1] + 1, 1), np.arange(ylim[0], ylim[1] + 1, 1))
+        # meshx varies horizontally, meshy vertically
+        meshz = plane(np.vstack((meshx.flatten(), meshy.flatten())),
+                      params3d[0], params3d[1], params3d[2]).reshape(meshx.shape)
+        ax.plot_wireframe(meshx, meshy, meshz, color='k')
+        plt.pause(0.1)
+
+    # calculate the mean distance to the fitted plane
+    distance = plane_dist(indices=indices, params=params)
+    print(f'plane fit using z=a*x+b*y+c: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}')
+
+    if distance.mean() > threshold and distance.mean() / distance.std() > 1:
+        # probably z does not depend on x and y, try to fit  y = a*x + b
+        print('z=a*x+b*y+c: z may not depend on x and y')
+        params2d, pcov2d = curve_fit(line, indices[0, :], indices[1, :])
+        std_param2d = np.sqrt(np.diag(pcov2d))
+        params = (-params2d[0], 1, 0, -params2d[1])
+        std_param = (std_param2d[0], 0, 0, std_param2d[1])
+        if debugging:
+            _, ax = gu.scatter_plot(np.transpose(indices), labels=('axis 0', 'axis 1', 'axis 2'),
+                                    title='Points and fitted plane ' + str(label))
+            xlim = ax.get_xlim()
+            zlim = ax.get_zlim()
+            meshx, meshz = np.meshgrid(np.arange(xlim[0], xlim[1] + 1, 1), np.arange(zlim[0], zlim[1] + 1, 1))
+            meshy = line(x_array=meshx.flatten(), a=params2d[0], b=params2d[1]).reshape(meshx.shape)
+            ax.plot_wireframe(meshx, meshy, meshz, color='k')
+            plt.pause(0.1)
+        # calculate the mean distance to the fitted plane
+        distance = plane_dist(indices=indices, params=params)
+        print(f'plane fit using y=a*x+b: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}')
+
+        if distance.mean() > threshold and distance.mean() / distance.std() > 1:
+            # probably y does not depend on x, that means x = constant
+            print('y=a*x+b: y may not depend on x')
+            constant = indices[0, :].mean()
+            params = (1, 0, 0, -constant)
+            std_param = (0, 0, 0, indices[0, :].std())
+            if debugging:
+                _, ax = gu.scatter_plot(np.transpose(indices), labels=('axis 0', 'axis 1', 'axis 2'),
+                                        title='Points and fitted plane ' + str(label))
+                ylim = ax.get_ylim()
+                zlim = ax.get_zlim()
+                meshy, meshz = np.meshgrid(np.arange(ylim[0], ylim[1] + 1, 1), np.arange(zlim[0], zlim[1] + 1, 1))
+                meshx = np.ones(meshy.shape) * constant
+                ax.plot_wireframe(meshx, meshy, meshz, color='k')
+                plt.pause(0.1)
+            # calculate the mean distance to the fitted plane
+            distance = plane_dist(indices=indices, params=params)
+            print(f'plane fit using x=constant: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}')
+
+    if distance.mean() > threshold and distance.mean() / distance.std() > 1:
+        # probably the distribution of points is not flat
+        print('distance.mean() > 1, probably the distribution of points is not flat')
+        valid_plane = False
+    return params, std_param, valid_plane
 
 
 def pseudovoigt(x_axis, amp, cen, sig, ratio):

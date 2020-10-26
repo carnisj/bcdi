@@ -42,10 +42,10 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 1301
-root_folder = 'C:/Users/Jerome/Documents/data/SIXS_2019/'  # location of the .spec or log file
-savedir = 'C:/Users/Jerome/Documents/data/SIXS_2019/'  # PRTF will be saved here, leave it to '' otherwise
-sample_name = "S"  # "SN"  #
+scan = 54
+sample_name = "p21"  # "SN"  #
+root_folder = "D:/data/P10_isosurface/data/"  # location of the .spec or log file
+savedir = ""  # PRTF will be saved here, leave it to '' otherwise
 comment = ""  # should start with _
 crop_roi = []  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
@@ -53,23 +53,23 @@ align_pattern = False  # if True, will align the retrieved diffraction amplitude
 ############################
 # beamline parameters #
 ############################
-beamline = 'SIXS_2019'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 is_series = False  # specific to series measurement at P10
-rocking_angle = "inplane"  # "outofplane" or "inplane"
+rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = root_folder + 'alias_dict_2019.txt'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
 # template for SIXS_2019: ''
-# template for P10: sample_name + '_%05d'
+# template for P10: ''
 # template for CRISTAL: ''
-#############################################################
-# define detector related parameters and region of interest #
-#############################################################
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-template_imagefile = 'Pt_ascan_mu_%05d.nxs'
+######################################
+# define detector related parameters #
+######################################
+detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -78,14 +78,14 @@ template_imagefile = 'Pt_ascan_mu_%05d.nxs'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
-sdd = 1  # sample to detector distance in m
-energy = 8000   # x-ray energy in eV, 6eV offset at ID01
+sdd = 1.83  # sample to detector distance in m
+energy = 8820   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-pre_binning = (1, 3, 1)  # binning factor applied during preprocessing: rocking curve axis, detector vertical and
+pre_binning = (1, 3, 3)  # binning factor applied during preprocessing: rocking curve axis, detector vertical and
 # horizontal axis. This is necessary to calculate correctly q values.
-phasing_binning = (1, 2, 2)  # binning factor applied during phasing: rocking curve axis, detector vertical and
+phasing_binning = (1, 1, 1)  # binning factor applied during phasing: rocking curve axis, detector vertical and
 # horizontal axis.
 # If the reconstructed object was further cropped after phasing, it will be automatically padded back to the FFT window
 # shape used during phasing (after binning) before calculating the Fourier transform.
@@ -135,23 +135,29 @@ if simulation:
     detector.datadir = root_folder
     detector.savedir = root_folder
 else:
-    if setup.beamline != 'P10':
+    if setup.beamline == 'P10':
+        specfile = sample_name + '_{:05d}'.format(scan)
+        homedir = root_folder + specfile + '/'
+        detector.datadir = homedir + 'e4m/'
+        imagefile = specfile + template_imagefile
+        detector.template_imagefile = imagefile
+    elif setup.beamline == 'NANOMAX':
+        homedir = root_folder + sample_name + '{:06d}'.format(scan) + '/'
+        detector.datadir = homedir + 'data/'
+        specfile = specfile_name
+    else:
         homedir = root_folder + sample_name + str(scan) + '/'
         detector.datadir = homedir + "data/"
-    else:
-        specfile_name = specfile_name % scan
-        homedir = root_folder + specfile_name + '/'
-        detector.datadir = homedir + 'e4m/'
-        template_imagefile = specfile_name + template_imagefile
-        detector.template_imagefile = template_imagefile
+        specfile = specfile_name
+
     if savedir == '':
-        detector.savedir = os.path.abspath(os.path.join(detector.datadir, os.pardir))
+        detector.savedir = os.path.abspath(os.path.join(detector.datadir, os.pardir)) + '/'
     else:
         detector.savedir = savedir
     print('Datadir:', detector.datadir)
     print('Savedir:', detector.savedir)
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
-                                 filename=specfile_name)
+                                 filename=specfile)
 
 #############################################
 # Initialize geometry for orthogonalization #
@@ -314,7 +320,7 @@ diff_pattern[diff_pattern == 0] = np.nan  # discard zero valued pixels
 prtf_matrix = abs(phased_fft) / np.sqrt(diff_pattern)
 
 gu.multislices_plot(prtf_matrix, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
-                    title='prtf_matrix', scale='linear', vmin=0, vmax=1.1,
+                    title='prtf_matrix', scale='linear', vmin=0,
                     reciprocal_space=True)
 
 #################################
@@ -367,19 +373,26 @@ except ValueError:
 print('q resolution =', str('{:.5f}'.format(q_resolution)), ' (1/nm)')
 print('resolution d= ' + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm')
 
-fig = plt.figure()
-plt.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
-plt.title('PRTF')
-plt.xlabel('q (1/nm)')
-plt.plot([defined_q.min(), defined_q.max()], [1/np.e, 1/np.e], 'k.', lw=1)
-plt.xlim(defined_q.min(), defined_q.max())
-plt.ylim(0, 1.1)
+fig, ax = plt.subplots(1, 1)
+ax.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
+
+ax.plot([defined_q.min(), defined_q.max()], [1/np.e, 1/np.e], 'k.', lw=1)
+ax.set_xlim(defined_q.min(), defined_q.max())
+ax.set_ylim(0, 1.1)
+ax.spines['right'].set_linewidth(1.5)
+ax.spines['left'].set_linewidth(1.5)
+ax.spines['top'].set_linewidth(1.5)
+ax.spines['bottom'].set_linewidth(1.5)
+ax.tick_params(labelbottom=False, labelleft=False)
 if save:
-    plt.savefig(detector.savedir + 'S' + str(scan) + '_prtf' + comment + '.png')
+    fig.savefig(detector.savedir + 'S' + str(scan) + '_prtf' + comment + '.png')
+ax.set_title('PRTF')
+ax.set_xlabel('q (1/nm)')
+ax.tick_params(labelbottom=True, labelleft=True)
 fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
 fig.text(0.15, 0.20, "q at PRTF=1/e: " + str('{:.5f}'.format(q_resolution)) + '(1/nm)', size=14)
 fig.text(0.15, 0.15, "resolution d= " + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm', size=14)
 if save:
-    plt.savefig(detector.savedir + 'S' + str(scan) + '_prtf_comments' + comment + '.png')
+    fig.savefig(detector.savedir + 'S' + str(scan) + '_prtf_comments' + comment + '.png')
 plt.ioff()
 plt.show()

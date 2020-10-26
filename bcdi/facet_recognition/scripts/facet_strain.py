@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import collections
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
@@ -34,36 +35,34 @@ Input: a reconstruction .npz file with fields: 'amp' and 'strain'
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
 
-scan = 15  # spec scan number
-datadir = 'D:/data/P10_isosurface/data/p15_2_{:05d}/pynxraw/'.format(scan)
-support_threshold = 0.5  # threshold for support determination
-voxel_size = [6, 6, 6]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+scan = 11  # spec scan number
+datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + '/pynxraw/gap_interp/'
+support_threshold = 0.38  # threshold for support determination
+voxel_size = [3, 3, 3]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
 upsampling_factor = 1  # integer, factor for upsampling the reconstruction in order to have a smoother surface
 savedir = datadir
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 projection_axis = 1  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
-smoothing_iterations = 10  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
+smoothing_iterations = 5  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
 smooth_lamda = 0.33  # lambda parameter in Taubin smoothing
 smooth_mu = 0.34  # mu parameter in Taubin smoothing
 radius_normals = 0.1  # radius of integration for the calculation of the density of normals
 projection_method = 'stereographic'  # 'stereographic' or 'equirectangular'
-peak_min_distance = 25  # pixel separation between peaks in corner_peaks()
+peak_min_distance = 10  # pixel separation between peaks in corner_peaks()
 max_distance_plane = 0.75  # in pixels, maximum allowed distance to the facet plane of a voxel
-top_part = False  # if True, will also update logfiles with a support cropped at z_cutoff (remove bottom part)
-z_cutoff = 75  # in pixels. If top_pat=True, will set all support pixels below this value to 0
-edges_coord = 370  # coordination threshold for isolating edges, 350 seems to work reasonably well
-corners_coord = 280  # coordination threshold for isolating corners, 260 seems to work reasonably well
-#########################################################
+edges_coord = 360  # coordination threshold for isolating edges, 360 seems to work reasonably well
+corners_coord = 310  # coordination threshold for isolating corners, 310 seems to work reasonably well
+########################################################
 # parameters only used in the stereographic projection #
-#########################################################
-threshold_south = -250  # background threshold in the stereographic projection from South of the density of normals
-threshold_north = -250  # background threshold in the stereographic projection from North of the density of normals
+########################################################
+threshold_south = -2500  # background threshold in the stereographic projection from South of the density of normals
+threshold_north = -2500  # background threshold in the stereographic projection from North of the density of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 stereo_scale = 'linear'  # 'linear' or 'log', scale of the colorbar in the stereographic plot
-#########################################################
+##########################################################
 # parameters only used in the equirectangular projection #
-#########################################################
+##########################################################
 bw_method = 0.03  # bandwidth in the gaussian kernel density estimation
 kde_threshold = -0.2  # threshold for defining the background in the density estimation of normals
 ###############################################################################################
@@ -72,20 +71,26 @@ kde_threshold = -0.2  # threshold for defining the background in the density est
 planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
 # planes_south['0 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([0, 2, 0]))
 planes_south['1 1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 1]))
-planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
-planes_south['1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 0]))
-planes_south['-1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, 1, 0]))
-planes_south['1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, -1, 1]))
-planes_south['-1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
+# planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
+# planes_south['1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 0]))
+# planes_south['-1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, 1, 0]))
+# planes_south['1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, -1, 1]))
+# planes_south['-1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
+planes_south['2 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, 1, 0]))
+planes_south['2 -1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, -1, 0]))
+# planes_south['1 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 2, 0]))
 
 planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
-# planes_south['0 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([0, -2, 0]))
+# planes_north['0 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([0, -2, 0]))
 planes_north['-1 -1 -1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, -1]))
-planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
-planes_north['-1 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 0]))
-planes_north['-1 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
-planes_north['-1 -1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 1]))
-planes_north['-1 1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
+# planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
+# planes_north['-1 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 0]))
+# planes_north['-1 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
+# planes_north['-1 -1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 1]))
+# planes_north['-1 1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
+planes_north['-2 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-2, 1, 0]))
+planes_north['-2 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-2, -1, 0]))
+# planes_north['1 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([1, -2, 0]))
 ##########################
 # end of user parameters #
 ##########################
@@ -172,6 +177,9 @@ if projection_method == 'stereographic':
                               save_txt=False, plot_planes=True, planes_south=planes_south, planes_north=planes_north,
                               max_angle=max_angle, voxel_size=voxel_size, projection_axis=projection_axis,
                               scale=stereo_scale, debugging=debug)
+    # labels_south and labels_north are 2D arrays for projections from South and North
+    # stereo_proj is a (Nx4) array containint the projected coordinates of normals from South (u column 0, v column 1)
+    # and North (u column2 , v column 3). The coordinates are in degrees, not indices.
 
     # remove rows containing nan values
     normals = np.delete(normals, remove_row, axis=0)
@@ -190,10 +198,11 @@ if projection_method == 'stereographic':
     # duplicated_labels stores bottom_labels which are duplicate from top_labels [0 duplicated_labels unique_label ...]
     for label in range(1, labels_top.max()+1, 1):
         label_points = np.argwhere(labels_top == label)
-        label_points[:, 0] = (label_points[:, 0] * 2*max_angle / numy) - max_angle  # rescale to [-max_angle max_angle]
-        label_points[:, 1] = (label_points[:, 1] * 2*max_angle / numx) - max_angle  # rescale to [-max_angle max_angle]
+        # rescale label_points to angles instead of indices, the angular range is [-max_angle max_angle]
+        label_points[:, 0] = (label_points[:, 0] * 2*max_angle / numy) - max_angle
+        label_points[:, 1] = (label_points[:, 1] * 2*max_angle / numx) - max_angle
 
-        label_distances = np.sqrt(label_points[:, 0]**2 + label_points[:, 1]**2)
+        label_distances = np.sqrt(label_points[:, 0]**2 + label_points[:, 1]**2)  # distance in angle from the origin
         if (label_distances <= 90).sum() == label_points.shape[0]:  # all points inside the 90deg border
             continue  # do nothing, the facet is valid
         elif (label_distances > 90).sum() == label_points.shape[0]:  # all points outside the 90deg border
@@ -204,55 +213,55 @@ if projection_method == 'stereographic':
             for idx in range(nb_normals):
                 # calculate the corresponding index coordinates
                 # by rescaling from [-max_angle max_angle] to [0 numy] or [0 numx]
-                u_top = int((stereo_proj[idx, 0] + max_angle) * numx / (2*max_angle))  # u axis horizontal
-                v_top = int((stereo_proj[idx, 1] + max_angle) * numy / (2*max_angle))  # v axis vertical
-                u_bottom = int((stereo_proj[idx, 2] + max_angle) * numx / (2*max_angle))  # u axis horizontal
-                v_bottom = int((stereo_proj[idx, 3] + max_angle) * numy / (2*max_angle))  # v axis vertical
+                u_top = int(np.rint((stereo_proj[idx, 0] + max_angle) * numx / (2*max_angle)))  # u axis horizontal
+                v_top = int(np.rint((stereo_proj[idx, 1] + max_angle) * numy / (2*max_angle)))  # v axis vertical
+                u_bottom = int(np.rint((stereo_proj[idx, 2] + max_angle) * numx / (2*max_angle)))  # u axis horizontal
+                v_bottom = int(np.rint((stereo_proj[idx, 3] + max_angle) * numy / (2*max_angle)))  # v axis vertical
 
                 try:
-                    if labels_top[u_top, v_top] == label and \
-                            labels_bottom[u_bottom, v_bottom] not in duplicated_labels:
+                    if labels_top[v_top, u_top] == label and \
+                            labels_bottom[v_bottom, u_bottom] not in duplicated_labels:
                         # only the first duplicated point will be checked, then the whole bottom_label is changed
                         # to label and there is no need to check anymore
-                        duplicated_labels.append(labels_bottom[u_bottom, v_bottom])
+                        duplicated_labels.append(labels_bottom[v_bottom, u_bottom])
                         duplicated_labels.append(label)
-                        print('  Corresponding label :', labels_bottom[u_bottom, v_bottom], 'changed to', label)
-                        labels_bottom[labels_bottom == labels_bottom[u_bottom, v_bottom]] = label
+                        print('  Corresponding label :', labels_bottom[v_bottom, u_bottom], 'changed to', label)
+                        labels_bottom[labels_bottom == labels_bottom[v_bottom, u_bottom]] = label
                 except IndexError:
                     # the IndexError exception arises because we are spanning all normals for labels_top, even those
                     # whose stereographic projection is farther than max_angle.
                     continue
 
-        del label_points, label_distances
-        gc.collect()
+    del label_points, label_distances
+    gc.collect()
 
-    # reorganize stereo_proj to keep only the projected point which is in the range [-90 90]
-    pole_proj = np.zeros((nb_normals, 3), dtype=stereo_proj.dtype)
+    # reorganize stereo_proj to keep only the projected point which is in the angular range [-90 90]
+    # stereo_proj coordinates are in polar degrees, we want coordinates to be in indices
+    coordinates = np.zeros((nb_normals, 3), dtype=stereo_proj.dtype)
     # 1st and 2nd columns are coordinates
-    # the 3rd column is an indicator for using South or North projected coordinates
+    # the 3rd column is a flag for using the South (0) or North (1) projected coordinates
     for idx in range(nb_normals):
         if np.sqrt(stereo_proj[idx, 0]**2 + stereo_proj[idx, 1]**2) > 90:
-            pole_proj[idx, 0:2] = stereo_proj[idx, 2:]  # use values for the projection from North pole
-            pole_proj[idx, 2] = 1  # use values from labels_bottom (projection from North pole)
+            coordinates[idx, 0] = stereo_proj[idx, 3]  # use v values for the projection from North pole
+            coordinates[idx, 1] = stereo_proj[idx, 2]  # use u values for the projection from North pole
+            coordinates[idx, 2] = 1  # use values from labels_bottom (projection from North pole)
         else:
-            pole_proj[idx, 0:2] = stereo_proj[idx, 0:2]  # use values for the projection from South pole
-            pole_proj[idx, 2] = 0  # use values from labels_top (projection from South pole)
+            coordinates[idx, 0] = stereo_proj[idx, 1]  # use v values for the projection from South pole
+            coordinates[idx, 1] = stereo_proj[idx, 0]  # use u values for the projection from South pole
+            coordinates[idx, 2] = 0  # use values from labels_top (projection from South pole)
     del stereo_proj
     gc.collect()
 
-    # rescale euclidian u axis from [-max_angle max_angle] to [0 numy]
-    pole_proj[:, 0] = (pole_proj[:, 0] + max_angle) * numy / (2*max_angle)
-    # rescale euclidian v axis from [-max_angle max_angle] to [0 numx]
-    pole_proj[:, 1] = (pole_proj[:, 1] + max_angle) * numx / (2*max_angle)
-    # change pole_proj to an array of integer indices
-    coordinates = pole_proj.astype(int)
+    # rescale euclidian v axis from [-max_angle max_angle] to [0 numy]
+    coordinates[:, 0] = (coordinates[:, 0] + max_angle) * numy / (2*max_angle)
+    # rescale euclidian u axis from [-max_angle max_angle] to [0 numx]
+    coordinates[:, 1] = (coordinates[:, 1] + max_angle) * numx / (2*max_angle)
+    # change coordinates to an array of integer indices
+    coordinates = coordinates.astype(int)
 
-    del pole_proj
-    gc.collect()
-
-    ##############################################
-    # assign back labels to normals and vertices #
-    ##############################################
+    #############################################################################################################
+    # now that we have the labels and coordinates in indices, we can assign back labels to normals and vertices #
+    #############################################################################################################
     normals_label = np.zeros(nb_normals, dtype=int)
     vertices_label = np.zeros(nb_vertices, dtype=int)  # the number of vertices is: vertices_new.shape[0]
     for idx in range(nb_normals):
@@ -265,7 +274,7 @@ if projection_method == 'stereographic':
             label_idx = 0  # duplicated facet, set it to the background
         normals_label[idx] = label_idx  # attribute the label to the normal
         vertices_label[faces[idx, :]] = label_idx  # attribute the label to the corresponding vertices
-
+    del labels_top, labels_bottom
 elif projection_method == 'equirectangular':
     labels, longitude_latitude = fu.equirectangular_proj(normals=normals, intensity=intensity, bw_method=bw_method,
                                                          background_threshold=kde_threshold,
@@ -279,7 +288,7 @@ elif projection_method == 'equirectangular':
     # rescale the vertical axis from [-pi/2 pi/2] to [0 numy]
     longitude_latitude[:, 1] = (longitude_latitude[:, 1] + np.pi / 2) * numy / np.pi  # latitude
     # change longitude_latitude to an array of integer indices
-    coordinates = np.fliplr(longitude_latitude).astype(int)  # put the vertical axis in first position
+    coordinates = np.rint(np.fliplr(longitude_latitude)).astype(int)  # put the vertical axis in first position
     duplicated_labels = []
     max_label = labels.max()
 
@@ -300,11 +309,14 @@ else:
     print('Invalid value for projection_method')
     sys.exit()
 
-unique_labels = [label for label in np.arange(1, max_label+1) if label not in duplicated_labels[1::2]]
+unique_labels = [label for label in np.arange(1, max_label+1)
+                 if label not in duplicated_labels[1::2]]  # label 0 is the background
+if len(duplicated_labels[1::2]) == 0:
+    print('\nNo duplicated label')
 print('\nBackground: ', str((normals_label == 0).sum()), 'normals')
 for label in unique_labels:
     print("Facet", str(label), ': ', str((normals_label == label).sum()), 'normals detected')
-del normals_label, coordinates, faces
+del normals, normals_label, coordinates, faces, duplicated_labels, intensity
 gc.collect()
 
 ###############################################
@@ -319,34 +331,32 @@ for idx in range(nb_vertices):
         planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] + 1
     # check duplicated voxels and discard them if they belong to different planes
     # it happens when some vertices are close and they give the same voxel after rounding their position to integers
-    if planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] > 1:
+    # one side effect is that the border of areas obtained by watershed segmentation will be set to the background
+    if planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] > 1:  # a rounded voxel was already added
         if all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] != vertices_label[idx]:
             # belongs to different labels, therefore it is set as background (label 0)
             all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = 0
             duplicated_counter = duplicated_counter + 1
+            # if np.all([all_planes[temp_indices[0], temp_indices[1], temp_indices[2]], vertices_label[idx]]):
+            #     print(all_planes[temp_indices[0], temp_indices[1], temp_indices[2]], vertices_label[idx])
     else:  # non duplicated pixel
         all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = \
                 vertices_label[idx]
-print('\nRounded vertices belonging to multiple labels = ', duplicated_counter)
+print('\nRounded vertices belonging to multiple labels = ', duplicated_counter, '\n')
 del planes_counter, vertices_label, vertices_new
 gc.collect()
 
-#####################################################
-# define surface gradient using a conjugate support #
-#####################################################
-# this support is 1 outside, 0 inside so that the gradient points towards exterior
-support = np.ones((nz, ny, nx))
-support[abs(amp) > support_threshold * abs(amp).max()] = 0
-zCOM, yCOM, xCOM = center_of_mass(support)
-print("COM at (z, y, x): (", str('{:.2f}'.format(zCOM)), ',', str('{:.2f}'.format(yCOM)), ',',
-      str('{:.2f}'.format(xCOM)), ')')
-gradz, grady, gradx = np.gradient(support, 1)  # support
+for label in unique_labels:
+    print("Facet", str(label), ': ', str((all_planes == label).sum()), 'voxels detected')
 
 ############################################
 # define the support, surface layer & bulk #
 ############################################
 support = np.zeros(amp.shape)
 support[abs(amp) > support_threshold * abs(amp).max()] = 1
+zcom_support, ycom_support, xcom_support = center_of_mass(support)
+print("\nCOM at (z, y, x): (", str('{:.2f}'.format(zcom_support)), ',', str('{:.2f}'.format(ycom_support)), ',',
+      str('{:.2f}'.format(xcom_support)), ')')
 coordination_matrix = pu.calc_coordination(support, kernel=np.ones((3, 3, 3)), debugging=False)
 surface = np.copy(support)
 surface[coordination_matrix > 22] = 0  # remove the bulk 22
@@ -363,8 +373,8 @@ if debug:
     gu.multislices_plot(edges, vmin=0, title='Coordination matrix')
 edges[edges > edges_coord] = 0  # remove facets and bulk
 edges[np.nonzero(edges)] = 1  # edge support
-gu.scatter_plot(array=np.asarray(np.nonzero(edges)).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'),
-                title='edges')
+gu.scatter_plot(array=np.asarray(np.nonzero(edges)).T, markersize=2, markercolor='b',
+                labels=('axis 0', 'axis 1', 'axis 2'), title='edges')
 
 ########################################################
 # define corners using the coordination number of voxels #
@@ -375,19 +385,19 @@ if debug:
     gu.multislices_plot(corners, vmin=0, title='Coordination matrix')
 corners[corners > corners_coord] = 0  # remove edges, facets and bulk
 corners[np.nonzero(corners)] = 1  # corner support
-gu.scatter_plot(array=np.asarray(np.nonzero(corners)).T, markersize=2, markercolor='b', labels=('x', 'y', 'z'),
-                title='corners')
+gu.scatter_plot(array=np.asarray(np.nonzero(corners)).T, markersize=2, markercolor='b',
+                labels=('axis 0', 'axis 1', 'axis 2'), title='corners')
 
 ######################################
 # Initialize log files and .vti file #
 ######################################
-summary_file = open(os.path.join(savedir, "S" + str(scan) + "_planes.dat"), "w")
+summary_file = open(os.path.join(savedir, "S" + str(scan) + "_planes_iso" + str(support_threshold) + ".dat"), "w")
 summary_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('angle') + '\t' +
                    '{0: <10}'.format('points #') + '\t' + '{0: <10}'.format('<strain>') + '\t' +
                    '{0: <10}'.format('std dev') + '\t' + '{0: <10}'.format('A (x)') + '\t' +
-                   '{0: <10}'.format('B (y)') + '\t' + 'C (Ax+By+C=z)' + '\t' + 'normal X' + '\t' +
-                   'normal Y' + '\t' + 'normal Z' + '\n')
-allpoints_file = open(os.path.join(savedir, "S" + str(scan) + "_strain.dat"), "w")
+                   '{0: <10}'.format('B (y)') + '\t' + '{0: <10}'.format('C (z)') + '\t' + 'D (Ax+By+CZ+D=0)' + '\t' 
+                   'normal X' + '\t' + 'normal Y' + '\t' + 'normal Z' + '\n')
+allpoints_file = open(os.path.join(savedir, "S" + str(scan) + "_strain_iso" + str(support_threshold) + ".dat"), "w")
 allpoints_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('Z') + '\t' + '{0: <10}'.format('Y') +
                      '\t' + '{0: <10}'.format('X') + '\t' + '{0: <10}'.format('strain')+'\n')
 
@@ -401,29 +411,40 @@ image_data.SetExtent(0, nz - 1, 0, ny - 1, 0, nx - 1)
 pd = image_data.GetPointData()
 pd.SetScalars(amp_array)
 pd.GetArray(0).SetName("amp")
-index_vti = 1
 
+# update vti file with edges
+edges_array = np.transpose((np.flip(edges, 2))).reshape(edges.size)
+edges_array = numpy_support.numpy_to_vtk(edges_array)
+pd.AddArray(edges_array)
+pd.GetArray(1).SetName("edges")
+pd.Update()
+
+index_vti = 2
+del amp, amp_array, edges_array
+gc.collect()
 ##################################################
 # save bulk, edges and corners strain to logfile #
 ##################################################
 fu.update_logfile(support=bulk, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='bulk', top_part=top_part, z_cutoff=z_cutoff)
+                  label='bulk')
 
 fu.update_logfile(support=surface, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='surface', top_part=top_part, z_cutoff=z_cutoff)
+                  label='surface')
 
 fu.update_logfile(support=edges, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='edges', top_part=top_part, z_cutoff=z_cutoff)
+                  label='edges')
 
 fu.update_logfile(support=corners, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='corners', top_part=top_part, z_cutoff=z_cutoff)
+                  label='corners')
 
 del bulk, corners
 gc.collect()
 
-##############################################################################################
-# fit points by a plane, exclude points far away, loof for the surface layer, refine the fit #
-##############################################################################################
+#######################################################################################
+# Iterate over the planes to find the corresponding surface facet                     #
+# Effect of meshing/smoothing: the meshed support is smaller than the initial support #
+#######################################################################################
+summary_dict = {}
 for label in unique_labels:
     print('\nPlane', label)
     # raw fit including all points
@@ -433,149 +454,92 @@ for label in unique_labels:
     if plane[plane == 1].sum() == 0:  # no points on the plane
         print('Raw fit: no points for plane', label)
         continue
-    # Why not using direclty the centroid to find plane equation?
+    ################################################################
+    # fit a plane to the voxels isolated by watershed segmentation #
+    ################################################################
+    # Why not using directly the centroid to find plane equation?
     # Because it does not distinguish pixels coming from different but parallel facets
     coeffs,  plane_indices, errors, stop = fu.fit_plane(plane=plane, label=label, debugging=debug)
-    if stop == 1:
+    if stop:
         print('No points remaining after raw fit for plane', label)
         continue
 
     # update plane by filtering out pixels too far from the fit plane
-    plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
+    plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, plane_shape=plane.shape,
                                         max_distance=max_distance_plane)
     grown_points = plane[plane == 1].sum().astype(int)
-    if stop == 1:  # no points on the plane
+    if stop:  # no points on the plane
         print('Refined fit: no points for plane', label)
         continue
     else:
         print('Plane', label, ', ', str(grown_points), 'points after checking distance to plane')
-    plane_indices = np.nonzero(plane == 1)
+    plane_indices = np.nonzero(plane)  # plane_indices is a tuple of 3 arrays
 
-    if debug:
+    # check that the plane normal is not flipped using the support gradient at the center of mass of the facet
+    zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
+    mean_gradient = fu.surface_gradient((zcom_facet, ycom_facet, xcom_facet), support=support)[0]
+    plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
+    plane_normal = plane_normal / np.linalg.norm(plane_normal)
+    if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
+        print('Flip normal direction plane', str(label))
+        plane_normal = -1 * plane_normal
+        coeffs = (-coeffs[0], -coeffs[1], -coeffs[2], -coeffs[3])
 
-        gu.scatter_plot(array=np.asarray(plane_indices).T, labels=('x', 'y', 'z'),
-                        title='Plane' + str(label) + ' after raw fit')
-
-    ##########################################################################################################
-    # Look for the surface: correct for the offset between plane equation and the outer shell of the support #
-    # Effect of meshing/smoothing: the meshed support is smaller than the initial support #
-    #############################################################################################
+    ##############################################################################################################
+    # Look for the surface: correct for the offset between the plane equation and the outer shell of the support #
+    ##############################################################################################################
     # crop the support to a small ROI included in the plane box
     surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
+    if debug:
+        gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                         np.concatenate((surf0[:, np.newaxis],
+                                                         surf1[:, np.newaxis],
+                                                         surf2[:, np.newaxis]), axis=1)),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
+                                 title='Plane' + str(label) + ' before shifting')
 
-    plane_normal = np.array([coeffs[0], coeffs[1], -1])  # normal is [a, b, c] if ax+by+cz+d=0
-
+    # find the direction in which the plane should be shifted to cross the surface
     dist = np.zeros(len(surf0))
     for point in range(len(surf0)):
-        dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] - surf2[point] + coeffs[2]) \
+        dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] + coeffs[2]*surf2[point] + coeffs[3])\
                / np.linalg.norm(plane_normal)
     mean_dist = dist.mean()
-    print('Mean distance of plane ', label, ' to outer shell = ' + str('{:.2f}'.format(mean_dist)) + 'pixels')
+    print('Mean distance of plane ', label, ' to outer shell = ' + str('{:.2f}'.format(mean_dist)) + ' pixels')
 
+    # offset the plane by mean_dist/2 and see if the plane is closer to the surface or went in the wrong direction
     dist = np.zeros(len(surf0))
+    offset = mean_dist / 2
+    
     for point in range(len(surf0)):
-        dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] - surf2[point]
-                       + (coeffs[2] - mean_dist / 2)) / np.linalg.norm(plane_normal)
+        dist[point] = (coeffs[0]*surf0[point] + coeffs[1]*surf1[point] + coeffs[2]*surf2[point]
+                       + coeffs[3] - offset) / np.linalg.norm(plane_normal)
     new_dist = dist.mean()
-    step_shift = 0.25  # will scan by half pixel through the crystal in order to not miss voxels
+    print('<distance> of plane ', label, ' to outer shell after offsetting by mean_distance/2 = '
+          + str('{:.2f}'.format(new_dist)) + ' pixels')
     # these directions are for a mesh smaller than the support
-    if mean_dist*new_dist < 0:  # crossed the support surface
+    step_shift = 0.5  # will scan with subpixel step through the crystal in order to not miss voxels
+    if mean_dist*new_dist < 0:  # crossed the support surface, correct direction
         step_shift = np.sign(mean_dist) * step_shift
-    elif abs(new_dist) - abs(mean_dist) < 0:
+    elif abs(new_dist) - abs(mean_dist) < 0:  # moving towards the surface, correct direction
         step_shift = np.sign(mean_dist) * step_shift
-    else:  # going away from surface, wrong direction
+    else:  # moving away from the surface, wrong direction
         step_shift = -1 * np.sign(mean_dist) * step_shift
 
-    step_shift = -1*step_shift  # added JCR 24082018 because the direction of normals was flipped
+    # step_shift = -1*step_shift  # added JCR 24082018 because the direction of normals to plane is inwards the crystal
 
-    common_previous = 0
-    found_plane = 0
-    nbloop = 1
-    crossed_surface = 0
-    shift_direction = 0
-    while found_plane == 0:
-        common_points = 0
-        # shift indices
-        plane_newindices0, plane_newindices1, plane_newindices2 =\
-            fu.offset_plane(indices=plane_indices, offset=nbloop*step_shift, plane_normal=plane_normal)
+    #########################################################################################
+    # shift the fit plane along its normal until the normal is crossed and go back one step #
+    #########################################################################################
+    total_offset = fu.find_facet(refplane_indices=plane_indices, surf_indices=(surf0, surf1, surf2),
+                                 original_shape=surface.shape, step_shift=step_shift, plane_label=label,
+                                 plane_coeffs=coeffs, min_points=grown_points/5, debugging=debug)
 
-        for point in range(len(plane_newindices0)):
-            for point2 in range(len(surf0)):
-                if plane_newindices0[point] == surf0[point2] and plane_newindices1[point] == surf1[point2]\
-                        and plane_newindices2[point] == surf2[point2]:
-                    common_points = common_points + 1
-
-        if debug:
-            tempcoeff2 = coeffs[2] - nbloop * step_shift
-            dist = np.zeros(len(surf0))
-            for point in range(len(surf0)):
-                dist[point] = (coeffs[0] * surf0[point] + coeffs[1] * surf1[point] - surf2[point] + tempcoeff2) \
-                              / np.linalg.norm(plane_normal)
-            temp_mean_dist = dist.mean()
-            plane = np.zeros(surface.shape)
-            plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
-
-            # plot plane points overlaid with the support
-            gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_newindices0[:, np.newaxis],
-                                                             plane_newindices1[:, np.newaxis],
-                                                             plane_newindices2[:, np.newaxis]), axis=1),
-                                             np.concatenate((surf0[:, np.newaxis],
-                                                             surf1[:, np.newaxis],
-                                                             surf2[:, np.newaxis]), axis=1)),
-                                     markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
-                                     title='Plane' + str(label) + ' after shifting facet - iteration' + str(nbloop))
-
-            print('(while) iteration ', nbloop, '- Mean distance of the plane to outer shell = ' +
-                  str('{:.2f}'.format(temp_mean_dist)) + '\n pixels - common_points = ', common_points)
-
-        if common_points != 0:
-            if common_points >= common_previous:
-                found_plane = 0
-                common_previous = common_points
-                print('(while) iteration ', nbloop, ' - ', common_previous, 'points belonging to the facet for plane ',
-                      label)
-                nbloop = nbloop + 1
-                crossed_surface = 1
-            elif common_points < grown_points / 5:  # try to keep enough points for statistics, half step back
-                found_plane = 1
-                print('Exiting while loop after threshold reached - ', common_previous,
-                      'points belonging to the facet for plane ', label, '- next step common points=', common_points)
-            else:
-                found_plane = 0
-                common_previous = common_points
-                print('(while) iteration ', nbloop, ' - ', common_previous, 'points belonging to the facet for plane ',
-                      label)
-                nbloop = nbloop + 1
-                crossed_surface = 1
-        else:
-            if crossed_surface == 1:  # found the outer shell, which is 1 step before
-                found_plane = 1
-                print('Exiting while loop - ', common_previous, 'points belonging to the facet for plane ', label,
-                      '- next step common points=', common_points)
-            elif nbloop < 5:
-                print('(while) iteration ', nbloop, ' - ', common_previous, 'points belonging to the facet for plane ',
-                      label)
-                nbloop = nbloop + 1
-            else:
-                if shift_direction == 1:  # already unsuccessful in the other direction
-                    print('No point from support is intersecting the plane ', label)
-                    stop = 1
-                    break
-                else:  # distance to support metric not reliable, start again in the other direction
-                    shift_direction = 1
-                    print('Shift scanning direction')
-                    step_shift = -1 * step_shift
-                    nbloop = 1
-
-    if stop == 1:  # no points on the plane
-        print('Intersecting with support: no points for plane', label)
-        continue
-
-    # go back one step
-    coeffs[2] = coeffs[2] - (nbloop-1)*step_shift
-    # shift indices
+    # correct the offset of the fit plane to match the surface
+    coeffs = list(coeffs)
+    coeffs[3] = coeffs[3] - total_offset
+    # shift plane indices
     plane_newindices0, plane_newindices1, plane_newindices2 = \
-        fu.offset_plane(indices=plane_indices, offset=(nbloop-1)*step_shift, plane_normal=plane_normal)
+        fu.offset_plane(indices=plane_indices, offset=total_offset, plane_normal=plane_normal)
 
     plane = np.zeros(surface.shape)
     plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
@@ -590,7 +554,7 @@ for label in unique_labels:
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
-                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
                                  title='Plane' + str(label) + ' after finding the surface\n' +
                                        'Points number=' + str(len(plane_indices[0])))
 
@@ -598,21 +562,25 @@ for label in unique_labels:
         print('Plane ', label, ' , no point belongs to support')
         continue
 
-    #######################################
-    # grow again the facet on the surface #
-    #######################################
+    #################################
+    # grow the facet on the surface #
+    #################################
     print('Growing the facet at the surface')
     iterate = 0
     while stop == 0:
         previous_nb = plane[plane == 1].sum()
         plane, stop = fu.grow_facet(fit=coeffs, plane=plane, label=label, support=support,
-                                    max_distance=1.5*max_distance_plane, debugging=False)
+                                    max_distance=1.5*max_distance_plane, debugging=debug)
         # here the distance threshold is larger in order to reach voxels missed by the first plane fit
         # when rounding vertices to integer. Anyway we intersect it with the surface therefore it can not go crazy.
         plane_indices = np.nonzero(plane)
         iterate = iterate + 1
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
         if plane[plane == 1].sum() == previous_nb:
+            print('Growth: maximum size reached')
+            break
+        if iterate == 50:  # it is likely that we are stuck in an infinite loop after this number of iterations
+            print('Growth: maximum iteration number reached')
             break
     grown_points = plane[plane == 1].sum().astype(int)
     print('Plane ', label, ', ', str(grown_points), 'points after growing facet at the surface')
@@ -624,7 +592,7 @@ for label in unique_labels:
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
-                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
                                  title='Plane' + str(label) + ' after 1st growth at the surface\n iteration' +
                                        str(iterate) + '- Points number=' + str(len(plane_indices[0])))
 
@@ -632,7 +600,7 @@ for label in unique_labels:
     # refine plane fit, now we are sure that we are at the surface #
     ################################################################
     coeffs, plane_indices, errors, stop = fu.fit_plane(plane=plane, label=label, debugging=debug)
-    if stop == 1:
+    if stop:
         print('No points remaining after refined fit for plane', label)
         continue
 
@@ -642,14 +610,14 @@ for label in unique_labels:
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
-                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
                                  title='Plane' + str(label) + ' after refined fit at surface\n iteration' +
                                        str(iterate) + '- Points number=' + str(len(plane_indices[0])))
 
     # update plane by filtering out pixels too far from the fit plane
-    plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, shape=plane.shape,
+    plane, stop = fu.distance_threshold(fit=coeffs, indices=plane_indices, plane_shape=plane.shape,
                                         max_distance=max_distance_plane)
-    if stop == 1:  # no points on the plane
+    if stop:  # no points on the plane
         print('Refined fit: no points for plane', label)
         continue
     print('Plane', label, ', ', str(plane[plane == 1].sum()), 'points after refined fit')
@@ -661,9 +629,19 @@ for label in unique_labels:
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
-                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
                                  title='Plane' + str(label) + ' after distance threshold at surface\n' +
                                        'Points number=' + str(len(plane_indices[0])))
+
+    # check that the plane normal is not flipped using the support gradient at the center of mass of the facet
+    zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
+    mean_gradient = fu.surface_gradient((zcom_facet, ycom_facet, xcom_facet), support=support)[0]
+    plane_normal = np.array([coeffs[0], coeffs[1], coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
+    plane_normal = plane_normal / np.linalg.norm(plane_normal)
+    if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
+        print('Flip normal direction plane', str(label))
+        plane_normal = -1 * plane_normal
+        coeffs = (-coeffs[0], -coeffs[1], -coeffs[2], -coeffs[3])
 
     ############################################
     # final growth of the facet on the surface #
@@ -677,6 +655,10 @@ for label in unique_labels:
         plane = plane * surface  # use only pixels belonging to the outer shell of the support
         iterate = iterate + 1
         if plane[plane == 1].sum() == previous_nb:
+            print('Growth: maximum size reached')
+            break
+        if iterate == 50:  # it is likely that we are stuck in an infinite loop after this number of iterations
+            print('Growth: maximum iteration number reached')
             break
     grown_points = plane[plane == 1].sum().astype(int)
     # plot plane points overlaid with the support
@@ -689,7 +671,7 @@ for label in unique_labels:
                                          np.concatenate((surf0[:, np.newaxis],
                                                          surf1[:, np.newaxis],
                                                          surf2[:, np.newaxis]), axis=1)),
-                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
                                  title='Plane' + str(label) + ' final growth at the surface\nPoints number='
                                        + str(len(plane_indices[0])))
 
@@ -698,41 +680,21 @@ for label in unique_labels:
     #####################################
     plane[np.nonzero(edges)] = 0
     plane_indices = np.nonzero(plane)
-    surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
-    gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
-                                     np.concatenate((surf0[:, np.newaxis],
-                                                     surf1[:, np.newaxis],
-                                                     surf2[:, np.newaxis]), axis=1)),
-                             markersizes=(8, 2), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
-                             title='Plane' + str(label) + ' after edge removal\nPoints number='
-                                   + str(len(plane_indices[0])))
+    if debug:
+        surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
+        gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                         np.concatenate((surf0[:, np.newaxis],
+                                                         surf1[:, np.newaxis],
+                                                         surf2[:, np.newaxis]), axis=1)),
+                                 markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
+                                 title='Plane' + str(label) + ' after edge removal\nPoints number='
+                                       + str(len(plane_indices[0])))
     print('Plane ', label, ', ', str(len(plane_indices[0])), 'points after removing edges')
 
-    #################################################################
-    # calculate quantities of interest and update log and VTK files #
-    #################################################################
-    # calculate mean gradient
-    mean_gradient = np.zeros(3)
-    ind_z = plane_indices[0]
-    ind_y = plane_indices[1]
-    ind_x = plane_indices[2]
-    for point in range(len(plane_indices[0])):
-        mean_gradient[0] = mean_gradient[0] + (ind_z[point] - zCOM)
-        mean_gradient[1] = mean_gradient[1] + (ind_y[point] - yCOM)
-        mean_gradient[2] = mean_gradient[2] + (ind_x[point] - xCOM)
-
-    if np.linalg.norm(mean_gradient) == 0:
-        print('gradient at surface is 0, cannot determine the correct direction of surface normal')
-    else:
-        mean_gradient = mean_gradient / np.linalg.norm(mean_gradient)
-
-    # check the correct direction of the normal using the gradient of the support
-    plane_normal = np.array([coeffs[0], coeffs[1], -1])  # normal is [a, b, c] if ax+by+cz+d=0
-    plane_normal = plane_normal / np.linalg.norm(plane_normal)
-    if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
-        print('Flip normal direction plane', str(label))
-        plane_normal = -1 * plane_normal
-    # correct plane_normal for anisotropic voxel size
+    ##############################################################################
+    # calculate the angle between the plane normal and the measurement direction #
+    ##############################################################################
+    # correct plane_normal for the eventual anisotropic voxel size
     plane_normal = np.array([plane_normal[0] * 2 * np.pi / voxel_size[0],
                              plane_normal[1] * 2 * np.pi / voxel_size[1],
                              plane_normal[2] * 2 * np.pi / voxel_size[2]])
@@ -751,15 +713,75 @@ for label in unique_labels:
 
     # calculate the angle of the plane normal to the measurement direction, which is aligned along projection_axis
     angle_plane = 180 / np.pi * np.arccos(np.dot(ref_axis, plane_normal))
+    print(f'Angle between plane {label} and the measurement direction = {angle_plane:.2f} degrees')
+    # update the dictionnary
+    summary_dict[label] = {'angle_plane': angle_plane, 'plane_coeffs': coeffs, 'plane_normal': plane_normal,
+                           'plane_indices': plane_indices}
 
-    # update the log files
+del support, all_planes
+gc.collect()
+
+#################################################
+# look for voxels attributed to multiple facets #
+#################################################
+# full_indices is a list a tuples, each tuple being a point (z, y, x)
+full_indices = [list(zip(summary_dict[label]['plane_indices'][0],
+                         summary_dict[label]['plane_indices'][1],
+                         summary_dict[label]['plane_indices'][2]))[point]
+                for label in summary_dict.keys()
+                for point in range(len(list(zip(summary_dict[label]['plane_indices'][0],
+                                                summary_dict[label]['plane_indices'][1],
+                                                summary_dict[label]['plane_indices'][2]))))]
+# count the number of times each point appears in the list
+counter_dict = collections.Counter(full_indices)
+
+# creates the list of duplicated voxels, these will be set to the background later on
+duplicates = [key for key, value in counter_dict.items() if value > 1]
+
+# modify the structure of the list so that it can be directly used for array indexing (like the output of np.nonzero)
+ind_0 = np.asarray([duplicates[point][0] for point in range(len(duplicates))])
+ind_1 = np.asarray([duplicates[point][1] for point in range(len(duplicates))])
+ind_2 = np.asarray([duplicates[point][2] for point in range(len(duplicates))])
+duplicates = tuple([ind_0, ind_1, ind_2])
+
+################################
+# update the log and VTK files #
+################################
+print('\nFiltering out voxels attributed to multiple facets')
+print(f'{len(duplicates[0])} points attributed to multiple facets will be removed')
+for label in summary_dict.keys():
+    plane = np.zeros((nz, ny, nx), dtype=int)
+    plane[summary_dict[label]['plane_indices']] = 1
+    number_before = (plane == 1).sum()
+    # remove voxels attributed to multiple facets
+    plane[duplicates] = 0
+    plane_indices = np.nonzero(plane)
+
+    nb_points = len(plane_indices[0])
+    if nb_points == 0:  # no point belongs to the support
+        print('Plane ', label, ' , no point remaining after checking for duplicates')
+        continue
+    else:
+        print('Plane ', label,
+              ' : {0} points before, {1} points after checking for duplicates'.format(number_before, nb_points))
+
+    surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
+    gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
+                                     np.concatenate((surf0[:, np.newaxis],
+                                                     surf1[:, np.newaxis],
+                                                     surf2[:, np.newaxis]), axis=1)),
+                             markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
+                             title='Final plane' + str(label) + ' after checking for duplicates\nPoints number='
+                                   + str(nb_points))
+
     fu.update_logfile(support=plane, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                      label=label, angle_plane=angle_plane, plane_coeffs=coeffs, plane_normal=plane_normal,
-                      top_part=False)
+                      label=label, angle_plane=summary_dict[label]['angle_plane'],
+                      plane_coeffs=summary_dict[label]['plane_coeffs'],
+                      plane_normal=summary_dict[label]['plane_normal'])
 
     # update vti file
-    PLANE = np.transpose(np.flip(plane, 2)).reshape(plane.size)  # VTK axis 2 is flipped
-    plane_array = numpy_support.numpy_to_vtk(PLANE)
+    plane_array = np.transpose(np.flip(plane, 2)).reshape(plane.size)  # VTK axis 2 is flipped
+    plane_array = numpy_support.numpy_to_vtk(plane_array)
     pd.AddArray(plane_array)
     pd.GetArray(index_vti).SetName("plane_"+str(label))
     pd.Update()
@@ -773,16 +795,9 @@ allpoints_file.write('\n'+'Isosurface value'+'\t' '{0: <10}'.format(str(support_
 summary_file.close()
 allpoints_file.close()
 
-# update vti file with edges
-EDGES = np.transpose((np.flip(edges, 2))).reshape(edges.size)
-edges_array = numpy_support.numpy_to_vtk(EDGES)
-pd.AddArray(edges_array)
-pd.GetArray(index_vti).SetName("edges")
-pd.Update()
-
 # export data to file
 writer = vtk.vtkXMLImageDataWriter()
-writer.SetFileName(os.path.join(savedir, "S" + str(scan) + "_refined planes.vti"))
+writer.SetFileName(os.path.join(savedir, "S" + str(scan) + "_refined planes_iso" + str(support_threshold) + ".vti"))
 writer.SetInputData(image_data)
 writer.Write()
 print('\nEnd of script')

@@ -6,6 +6,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from scipy.ndimage.measurements import center_of_mass
+from scipy.signal import convolve
+from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import griddata
+from scipy import stats
+from scipy import ndimage
+from skimage.feature import corner_peaks
+from skimage.morphology import watershed
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
@@ -13,6 +21,7 @@ import gc
 import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 
 colormap = gu.Colormap()
 default_cmap = colormap.cmap
@@ -62,6 +71,7 @@ def calc_stereoproj_facet(projection_axis, vectors, radius_mean, stereo_center):
             stereo_proj[idx, 2] = radius_mean * vectors[idx, 0] / (radius_mean + stereo_center - vectors[idx, 2])  # u_n
             stereo_proj[idx, 3] = radius_mean * vectors[idx, 1] / (radius_mean + stereo_center - vectors[idx, 2])  # v_n
         uv_labels = ('axis 0', 'axis 1')  # axes corresponding to u and v respectively, used in plots
+
     stereo_proj = stereo_proj / radius_mean * 90  # rescale from radius_mean to 90
 
     return stereo_proj, uv_labels
@@ -91,34 +101,34 @@ def detect_edges(faces):
     return unique_edges
 
 
-def distance_threshold(fit, indices, shape, max_distance=0.90):
+def distance_threshold(fit, indices, plane_shape, max_distance=0.90):
     """
     Filter out pixels depending on their distance to a fit plane
 
-    :param fit: coefficients of the plane (tuple of 3 numbers)
-    :param indices: plane indices
-    :param shape: shape of the intial plane array
+    :param fit: coefficients of the plane (a, b, c, d) such that a*x + b*y + c*z + d = 0
+    :param indices: tuple or array of plane indices, x being the 1st tuple element or array row,
+     y the 2nd tuple element or array row and z the third tuple element or array row
+    :param plane_shape: shape of the initial plane array
     :param max_distance: max distance allowed from the fit plane in pixels
     :return: the updated plane, a stop flag
     """
-    plane = np.zeros(shape, dtype=int)
-    no_points = 0
-    indx = indices[0]
-    indy = indices[1]
-    indz = indices[2]
+    indices = np.asarray(indices)
+    plane = np.zeros(plane_shape, dtype=int)
+    no_points = False
     if len(indices[0]) == 0:
-        no_points = 1
+        no_points = True
         return plane, no_points
-    # remove outsiders based on distance to plane
-    plane_normal = np.array([fit[0], fit[1], -1])  # normal is [a, b, c] if ax+by+cz+d=0
+
+    # remove outsiders based on their distance to the plane
+    plane_normal = np.array([fit[0], fit[1], fit[2]])  # normal is [a, b, c] if ax+by+cz+d=0
     for point in range(len(indices[0])):
-        dist = abs(fit[0]*indx[point] + fit[1]*indy[point] -
-                   indz[point] + fit[2])/np.linalg.norm(plane_normal)
+        dist = abs(fit[0]*indices[0, point] + fit[1]*indices[1, point] + fit[2]*indices[2, point] + fit[3])\
+               / np.linalg.norm(plane_normal)
         if dist < max_distance:
-            plane[indx[point], indy[point], indz[point]] = 1
+            plane[indices[0, point], indices[1, point], indices[2, point]] = 1
     if plane[plane == 1].sum() == 0:
         print('Distance_threshold: no points for plane')
-        no_points = 1
+        no_points = True
         return plane, no_points
     return plane, no_points
 
@@ -138,11 +148,6 @@ def equirectangular_proj(normals, intensity, cmap=default_cmap, bw_method=0.03, 
     :param debugging: if True, show plots for debugging
     :return: ndarray of labelled regions
     """
-    from scipy import stats
-    from scipy import ndimage
-    from skimage.feature import corner_peaks
-    from skimage.morphology import watershed
-
     # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
     normals = np.delete(normals, list_nan[::3, 0], axis=0)
@@ -251,6 +256,122 @@ def equirectangular_proj(normals, intensity, cmap=default_cmap, bw_method=0.03, 
     return labels, long_lat
 
 
+def find_facet(refplane_indices, surf_indices, original_shape, step_shift, plane_label, plane_coeffs, min_points,
+               debugging=False):
+    """
+    Shift a fit plane along its normal until it reaches the surface of a faceted object.
+
+    :param refplane_indices: a tuple of 3 arrays (1D, length N) describing the coordinates of the plane voxels
+     x values being the 1st tuple element, y values the 2nd tuple element and z values the 3rd tuple element
+     (output of np.nonzero)
+    :param surf_indices: a tuple of 3 arrays (1D, length N) describing the coordinates of the surface voxels
+     x values being the 1st tuple element, y values the 2nd tuple element and z values the 3rd tuple element
+     (output of np.nonzero)
+    :param original_shape: the shape of the full dataset (amplitude object, eventually upsampled)
+    :param step_shift: the amplitude of the shift to be applied to the plane along its normal
+    :param plane_label: the label of the plane, used in comments
+    :param plane_coeffs: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0
+    :param min_points: threshold, minimum number of points that should coincide between the fit plane and the object
+     surface
+    :param debugging: True to see debugging plots
+    :return: the shift that needs to be applied to the fit plane in order to best match with the object surface
+    """
+    if not isinstance(refplane_indices, tuple):
+        raise ValueError('refplane_indices should be a tuple of 3 1D ndarrays')
+    if not isinstance(surf_indices, tuple):
+        raise ValueError('surf_indices should be a tuple of 3 1D ndarrays')
+    surf0, surf1, surf2 = surf_indices
+    plane_normal = np.array([plane_coeffs[0], plane_coeffs[1], plane_coeffs[2]])  # normal is [a, b, c] if ax+by+cz+d=0
+    # loop until the surface is crossed or the iteration limit is reached
+    common_previous = 0
+    found_plane = 0
+    nbloop = 1
+    crossed_surface = 0
+    shift_direction = 0
+    while found_plane == 0:
+        common_points = 0
+        # shift indices
+        plane_newindices0, plane_newindices1, plane_newindices2 =\
+            offset_plane(indices=refplane_indices, offset=nbloop*step_shift, plane_normal=plane_normal)
+
+        for point in range(len(plane_newindices0)):
+            for point2 in range(len(surf0)):
+                if plane_newindices0[point] == surf0[point2] and plane_newindices1[point] == surf1[point2]\
+                        and plane_newindices2[point] == surf2[point2]:
+                    common_points = common_points + 1
+
+        if debugging:
+            temp_coeff3 = plane_coeffs[3] - nbloop * step_shift
+            dist = np.zeros(len(surf0))
+            for point in range(len(surf0)):
+                dist[point] = (plane_coeffs[0]*surf0[point] + plane_coeffs[1]*surf1[point] +
+                               plane_coeffs[2]*surf2[point] + temp_coeff3) \
+                              / np.linalg.norm(plane_normal)
+            temp_mean_dist = dist.mean()
+            plane = np.zeros(original_shape)
+            plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
+
+            # plot plane points overlaid with the support
+            gu.scatter_plot_overlaid(arrays=(np.concatenate((plane_newindices0[:, np.newaxis],
+                                                             plane_newindices1[:, np.newaxis],
+                                                             plane_newindices2[:, np.newaxis]), axis=1),
+                                             np.concatenate((surf0[:, np.newaxis],
+                                                             surf1[:, np.newaxis],
+                                                             surf2[:, np.newaxis]), axis=1)),
+                                     markersizes=(8, 2), markercolors=('b', 'r'), labels=('axis 0', 'axis 1', 'axis 2'),
+                                     title='Plane' + str(plane_label) + ' after shifting - iteration' + str(nbloop))
+
+            print('(while) iteration ', nbloop, '- Mean distance of the plane to outer shell = ' +
+                  str('{:.2f}'.format(temp_mean_dist)) + '\n pixels - common_points = ', common_points)
+
+        if common_points != 0:  # some plane points are in commun with the surface layer
+            if common_points >= common_previous:
+                found_plane = 0
+                common_previous = common_points
+                print('(while, common_points != 0), iteration ', nbloop, ' - ', common_previous,
+                      'points belonging to the facet for plane ', plane_label)
+                nbloop = nbloop + 1
+                crossed_surface = 1
+            elif common_points < min_points:  # try to keep enough points for statistics, half step back
+                found_plane = 1
+                print('(while, common_points != 0), exiting while loop after threshold reached - ', common_previous,
+                      'points belonging to the facet for plane ', plane_label,
+                      '- next step common points=', common_points)
+            else:
+                found_plane = 0
+                common_previous = common_points
+                print('(while, common_points != 0), iteration ', nbloop, ' - ', common_previous,
+                      'points belonging to the facet for plane ', plane_label)
+                nbloop = nbloop + 1
+                crossed_surface = 1
+        else:  # no commun points, the plane is not intersecting the surface layer
+            if crossed_surface == 1:  # found the outer shell, which is 1 step before
+                found_plane = 1
+                print('(while, common_points = 0), exiting while loop - ', common_previous,
+                      'points belonging to the facet for plane ', plane_label,
+                      '- next step common points=', common_points)
+            elif not shift_direction:
+                if nbloop < 5:  # continue to scan
+                    print('(while, common_points = 0), iteration ', nbloop, ' - ', common_previous,
+                          'points belonging to the facet for plane ', plane_label)
+                    nbloop = nbloop + 1
+                else:  # scan in the other direction
+                    shift_direction = 1
+                    print('Shift scanning direction')
+                    step_shift = -1 * step_shift
+                    nbloop = 1
+            else:  # shift_direction = 1
+                if nbloop < 10:
+                    print('(while, common_points = 0), iteration ', nbloop, ' - ', common_previous,
+                          'points belonging to the facet for plane ', plane_label)
+                    nbloop = nbloop + 1
+                else:  # we were already unsuccessfull in the other direction, give up
+                    print('(while, common_points = 0), no point from support is intersecting the plane ', plane_label)
+                    break
+
+    return (nbloop-1)*step_shift
+
+
 def find_neighbours(vertices, faces):
     """
     Get the list of neighbouring vertices for each vertex.
@@ -285,116 +406,95 @@ def find_neighbours(vertices, faces):
     return neighbors
 
 
-def fit_plane(plane, label, debugging=1):
+def fit_plane(plane, label, debugging=False):
     """
-    Fit a plane to labelled indices, ax+by+c=z
+    Fit a plane to labelled indices using the equation a*x+ b*y + c*z + d = 0.
 
-    :param plane: 3D binary array of the shape of the data
-    :param label: int, only used for title in plot
+    :param plane: 3D binary array, where the voxels belonging to the plane are set to 1 and others are set to 0.
+    :param label: int, label of the plane used for the title in plots
     :param debugging: show plots for debugging
-    :return: matrix of fit parameters [a, b, c], plane indices, errors associated, a stop flag
+    :return: fit parameters (a, b, c, d), plane indices after filtering, errors associated, a stop flag
     """
-    from scipy.ndimage.measurements import center_of_mass
+    indices = np.asarray(np.nonzero(plane))
+    no_points = False
 
-    indices = np.nonzero(plane)
-    no_points = 0
     if len(indices[0]) == 0:
-        no_points = 1
+        no_points = True
         return 0, indices, 0, no_points
-    tmp_x = indices[0]
-    tmp_y = indices[1]
-    tmp_z = indices[2]
-    x_com, y_com, z_com = center_of_mass(plane)
 
-    # remove isolated points, which probably do not belong to the plane
-    for point in range(tmp_x.shape[0]):
-        neighbors = plane[tmp_x[point]-2:tmp_x[point]+3, tmp_y[point]-2:tmp_y[point]+3,
-                          tmp_z[point]-2:tmp_z[point]+3].sum()
-        if neighbors < 5:
-            plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
-    print('Fit plane', label, ', ', str(tmp_x.shape[0]-plane[plane == 1].sum()), 'points isolated, ',
-          str(plane[plane == 1].sum()), 'remaining')
+    for idx in range(2):
+        # remove isolated points, which probably do not belong to the plane
+        if debugging:
+            gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                            title='Points before coordination threshold plane ' + str(label) + f'\niteration {idx}')
 
-    # update plane indices
-    indices = np.nonzero(plane)
-    if len(indices[0]) == 0:
-        no_points = 1
-        return 0, indices, 0, no_points
-    tmp_x = indices[0]
-    tmp_y = indices[1]
-    tmp_z = indices[2]
+        for point in range(indices.shape[1]):
+            neighbors = plane[indices[0, point]-2:indices[0, point]+3, indices[1, point]-2:indices[1, point]+3,
+                              indices[2, point]-2:indices[2, point]+3].sum()
+            if neighbors < 5:
+                plane[indices[0, point], indices[1, point], indices[2, point]] = 0
 
-    # remove also points farther than 2 times the mean distance to the COM
-    dist = np.zeros(tmp_x.shape[0])
-    for point in range(tmp_x.shape[0]):
-        dist[point] = np.sqrt((tmp_x[point]-x_com)**2+(tmp_y[point]-y_com)**2+(tmp_z[point]-z_com)**2)
-    average_dist = np.mean(dist)
-    for point in range(tmp_x.shape[0]):
-        if dist[point] > 2 * average_dist:
-            plane[tmp_x[point], tmp_y[point], tmp_z[point]] = 0
-    print('Fit plane', label, ', ', str(tmp_x.shape[0] - plane[plane == 1].sum()), 'points too far from COM, ',
-          str(plane[plane == 1].sum()), 'remaining')
+        print('Fit plane', label, ', ', str(indices.shape[1]-plane[plane == 1].sum()), 'points isolated, ',
+              str(plane[plane == 1].sum()), 'remaining')
+        if debugging:
+            gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                            title='Points after coordination threshold plane ' + str(label) + f'\niteration {idx}')
 
-    # update plane indices and check if enough points remain
-    indices = np.nonzero(plane)
-    if len(indices[0]) < 5:
-        no_points = 1
-        return 0, indices, 0, no_points
-    tmp_x = indices[0]
-    tmp_y = indices[1]
-    tmp_z = indices[2]
+        # update plane indices
+        indices = np.asarray(np.nonzero(plane))
+        if len(indices[0]) == 0:
+            no_points = True
+            return 0, indices, 0, no_points
 
-    tmp_x = tmp_x[:, np.newaxis]
-    tmp_y = tmp_y[:, np.newaxis]
-    tmp_1 = np.ones((tmp_y.shape[0], 1))
+        # remove also points farther away than the median distance to the COM
+        dist = np.zeros(indices.shape[1])
+        x_com, y_com, z_com = center_of_mass(plane)
+        for point in range(indices.shape[1]):
+            dist[point] = np.sqrt((indices[0, point]-x_com)**2+(indices[1, point]-y_com)**2+(indices[2, point]-z_com)**2)
+        median_dist = np.median(dist)
+        if debugging:
+            gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                            title='Points before distance threshold plane ' + str(label) + f'\niteration {idx}')
 
-    # calculate plane parameters
-    # TODO: update this part (numpy.matrix will not be supported anymore in the future)
-    a = np.matrix(np.concatenate((tmp_x, tmp_y, tmp_1), axis=1))
-    b = np.matrix(tmp_z).T
-    fit = (a.T * a).I * a.T * b
-    errors = b - a * fit
-    fit = np.asarray(fit)
-    fit = fit[:, 0]
+        for point in range(indices.shape[1]):
+            if dist[point] > median_dist:
+                plane[indices[0, point], indices[1, point], indices[2, point]] = 0
+        print('Fit plane', label, ', ', str(indices.shape[1] - plane[plane == 1].sum()), 'points too far from COM, ',
+              str(plane[plane == 1].sum()), 'remaining')
+        if debugging:
+            gu.scatter_plot(np.asarray(np.nonzero(plane)).transpose(), labels=('axis 0', 'axis 1', 'axis 2'),
+                            title='Points after distance threshold plane ' + str(label) + f'\niteration {idx}')
 
-    if debugging:
-        plt.figure()
-        ax = plt.subplot(111, projection='3d')
-        ax.scatter(tmp_x, tmp_y, tmp_z, color='b')
-        ax.set_xlabel('x')  # first dimension is x for plots, but z for NEXUS convention
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-        xlim = ax.get_xlim()  # first dimension is x for plots, but z for NEXUS convention
-        ylim = ax.get_ylim()
-        meshx, meshy = np.meshgrid(np.arange(xlim[0], xlim[1]+1, 1), np.arange(ylim[0], ylim[1]+1, 1))
-        meshz = np.zeros(meshx.shape)
-        for row in range(meshx.shape[0]):
-            for col in range(meshx.shape[1]):
-                meshz[row, col] = fit[0] * meshx[row, col] +\
-                                      fit[1] * meshy[row, col] + fit[2]
-        ax.plot_wireframe(meshx, meshy, meshz, color='k')
-        plt.title("Points and fitted plane" + str(label))
-        plt.pause(0.1)
-    return fit, indices, errors, no_points
+        # update plane indices and check if enough points remain
+        indices = np.asarray(np.nonzero(plane))
+        if len(indices[0]) < 5:
+            no_points = True
+            return 0, indices, 0, no_points
+
+    # the fit parameters are (a, b, c, d) such that a*x + b*y + c*z + d = 0
+    params, std_param, valid_plane = util.plane_fit(indices=indices, label=label, threshold=1, debugging=debugging)
+    if not valid_plane:
+        plane[indices] = 0
+        no_points = True
+    return params, indices, std_param, no_points
 
 
 def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     """
     Find voxels of the object which belong to a facet using the facet plane equation and the distance to the plane.
 
-    :param fit: coefficients of the plane (tuple of 3 numbers)
-    :param plane: 3D binary array of the shape of the data
+    :param fit: coefficients of the plane (a, b, c, d) such that a*x + b*y + c*z + d = 0
+    :param plane: 3D binary support of the plane, with shape of the full dataset
     :param label: the label of the plane processed
-    :param support: binary support of the object
+    :param support: 3D binary support of the reconstructed object, with shape of the full dataset
     :param max_distance: in pixels, maximum allowed distance to the facet plane of a voxel
     :param debugging: set to True to see plots
     :return: the updated plane, a stop flag
     """
-    from scipy.signal import convolve
     nbz, nby, nbx = plane.shape
     indices = np.nonzero(plane)
     if len(indices[0]) == 0:
-        no_points = 1
+        no_points = True
         return plane, no_points
     kernel = np.ones((3, 3, 3))
 
@@ -410,6 +510,10 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     coord = np.rint(convolve(obj, kernel, mode='same'))
     coord = coord.astype(int)
     coord[np.nonzero(coord)] = 1
+    if debugging:
+        gu.scatter_plot_overlaid(arrays=(np.asarray(np.nonzero(coord)).T, np.asarray(np.nonzero(obj)).T),
+                                 markersizes=(2, 8), markercolors=('b', 'r'), labels=('x', 'y', 'z'),
+                                 title='Plane' + str(label) + ' before facet growing and coord matrix')
 
     # update plane with new voxels
     temp_plane = np.copy(plane)
@@ -417,15 +521,27 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     # remove voxels not belonging to the support
     temp_plane[support == 0] = 0
     # check distance of new voxels to the plane
-    new_indices = np.nonzero(temp_plane)
 
-    plane, no_points = distance_threshold(fit=fit, indices=new_indices, shape=temp_plane.shape,
+    plane, no_points = distance_threshold(fit=fit, indices=np.nonzero(temp_plane), plane_shape=temp_plane.shape,
                                           max_distance=max_distance)
 
-    if debugging and len(new_indices[0]) != 0:
-        indices = np.nonzero(plane)
+    plane_normal = fit[:-1]   # normal is [a, b, c] if ax+by+cz+d=0
+
+    # calculate the local gradient for each point of the plane, gradients is a list of arrays of 3 vector components
+    indices = np.nonzero(plane)
+    gradients = surface_gradient(list(zip(indices[0], indices[1], indices[2])), support=support)
+
+    count_grad = 0
+    for idx in range(len(indices[0])):
+        if np.dot(plane_normal, gradients[idx]) < 0.75:  # 0.85 is too restrictive checked CH4760 S11 plane 1
+            plane[indices[0][idx], indices[1][idx], indices[2][idx]] = 0
+            count_grad += 1
+
+    indices = np.nonzero(plane)
+    if debugging and len(indices[0]) != 0:
         gu.scatter_plot(array=np.asarray(indices).T, labels=('x', 'y', 'z'),
                         title='Plane' + str(label) + ' after 1 cycle of facet growing')
+        print(f'{count_grad} points excluded by gradient filtering')
         print(str(len(indices[0])) + ' after 1 cycle of facet growing')
     return plane, no_points
 
@@ -522,8 +638,9 @@ def surface_indices(surface, plane_indices, margin=3):
     """
     if surface.ndim != 3:
         raise ValueError('Surface should be a 3D array')
-    if len(plane_indices) != 3:
-        raise ValueError('plane_indices should be a tuple of 3 1D-arrays')
+    if not isinstance(plane_indices, tuple):
+        plane_indices = tuple(plane_indices)
+
     surf_indices = np.nonzero(surface[
                                  plane_indices[0].min() - margin:plane_indices[0].max() + margin,
                                  plane_indices[1].min() - margin:plane_indices[1].max() + margin,
@@ -536,7 +653,8 @@ def surface_indices(surface, plane_indices, margin=3):
 
 def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, projection_axis, min_distance=10,
                        background_south=-1000, background_north=-1000, save_txt=False, cmap=default_cmap,
-                       planes_south=None, planes_north=None, plot_planes=True, scale='linear', debugging=False):
+                       planes_south=None, planes_north=None, plot_planes=True, scale='linear',
+                       comment_fig='', debugging=False):
     """
     Detect facets in an object using a stereographic projection of normals to mesh triangles
      and watershed segmentation.
@@ -556,15 +674,31 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     :param planes_north: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
     :param plot_planes: if True, will draw circles corresponding to crystallographic planes in the pole figure
     :param scale: 'linear' or 'log', scale for the colorbar of the plot
+    :param comment_fig: string, comment for the filename when saving figures
     :param debugging: show plots for debugging
-    :return: labels for each projection from South and North, one array for each projection from South and North,
-     list of rows to remove
+    :return:
+     - labels_south and labels_north as 2D arrays for each projection from South and North
+     - a (Nx4) array: projected coordinates of normals from South (u column 0, v column 1)
+      and North (u column2 , v column 3). The coordinates are in degrees, not indices.
+     - the list of rows to remove
     """
-    from scipy.interpolate import griddata
-    from scipy import ndimage
-    from skimage.feature import corner_peaks
-    from skimage.morphology import watershed
+    def mouse_move(event):
+        nonlocal density_south, density_north, u_grid, v_grid, ax0, ax1
+        if event.inaxes == ax0:
+            index_u = util.find_nearest(u_grid[0, :], event.xdata, width=None)
+            index_v = util.find_nearest(v_grid[:, 0], event.ydata, width=None)
+            sys.stdout.write('\rKDE South:' + str('{:.0f}'.format(density_south[index_v, index_u])))
+            sys.stdout.flush()
+        elif event.inaxes == ax1:
+            index_u = util.find_nearest(u_grid[0, :], event.xdata, width=None)
+            index_v = util.find_nearest(v_grid[:, 0], event.ydata, width=None)
+            sys.stdout.write('\rKDE North:' + str('{:.0f}'.format(density_north[index_v, index_u])))
+            sys.stdout.flush()
+        else:
+            pass
 
+    if comment_fig and comment_fig[-1] != '_':
+        comment_fig = comment_fig + '_'
     radius_mean = 1  # normals are normalized
     stereo_center = 0  # COM of the weighted point density, where the projection plane intersects the reference axis
     # since the normals have their origin at 0, the projection plane is the equator and stereo_center=0
@@ -599,12 +733,14 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
 
     fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=stereo_proj[:, 1], color=intensity,
                                       radius_mean=radius_mean, planes=planes_south, max_angle=max_angle, scale=scale,
-                                      title="Projection from\nSouth pole", plot_planes=plot_planes, uv_labels=uv_labels)
-    fig.savefig(savedir + 'South pole_' + scale + '.png')
+                                      title="Projection from\nSouth pole", plot_planes=plot_planes, uv_labels=uv_labels,
+                                      debugging=debugging)
+    fig.savefig(savedir + comment_fig + 'South pole_' + scale + '.png')
     fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=stereo_proj[:, 3], color=intensity,
                                       radius_mean=radius_mean, planes=planes_north, max_angle=max_angle, scale=scale,
-                                      title="Projection from\nNorth pole", plot_planes=plot_planes, uv_labels=uv_labels)
-    fig.savefig(savedir + 'North pole_' + scale + '.png')
+                                      title="Projection from\nNorth pole", plot_planes=plot_planes, uv_labels=uv_labels,
+                                      debugging=debugging)
+    fig.savefig(savedir + comment_fig + 'North pole_' + scale + '.png')
 
     # regrid stereo_proj
     # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
@@ -650,10 +786,11 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     gu.colorbar(img1)
     ax1.set_title('KDE \nNorth pole')
     fig.tight_layout()
-    plt.pause(0.1)
+    cid = plt.connect('motion_notify_event', mouse_move)
     fig.waitforbuttonpress()
-    plt.close(fig)
-    
+    plt.disconnect(cid)
+    print('\n')
+
     # identification of local minima
     density_south[density_south > background_south] = 0  # define the background in the density of normals
     mask_south = np.copy(density_south)
@@ -751,20 +888,76 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     labels_south = watershed(-distances_south, markers_south, mask=mask_south)
     labels_north = watershed(-distances_north, markers_north, mask=mask_north)
     fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2, figsize=(12, 9))
-    ax0.imshow(labels_south, cmap=cmap, interpolation='nearest')
-    ax0.set_title('Separated objects South')
+    img0 = ax0.imshow(labels_south, cmap=cmap, interpolation='nearest')
+    ax0.set_title('Labels South')
     ax0.invert_yaxis()
     circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
     ax0.add_artist(circle)
-    ax1.imshow(labels_north, cmap=cmap, interpolation='nearest')
-    ax1.set_title('Separated objects North')
+    gu.colorbar(img0, numticks=int(labels_south.max()+1))
+    img1 = ax1.imshow(labels_north, cmap=cmap, interpolation='nearest')
+    ax1.set_title('Labels North')
     ax1.invert_yaxis()
     circle = patches.Ellipse((nbx // 2, nby // 2), 361, 361, color='r', fill=False, linewidth=1.5)
     ax1.add_artist(circle)
+    gu.colorbar(img1, numticks=int(labels_north.max()+1))
     fig.tight_layout()
     plt.pause(0.1)
+    fig.savefig(savedir + comment_fig + 'labels.png')
 
     return labels_south, labels_north, stereo_proj, remove_row
+
+
+def surface_gradient(points, support, width=2):
+    """
+    Calculate the support gradient at point.
+
+    :param points: tuple or list of tuples of 3 integers (z, y, x), position where to calculate the gradient vector
+    :param support: 3D numpy binary array, being 1 in the crystal and 0 outside
+    :param width: half-width of the window where the gradient will be calculated (the support gradient is nonzero on a
+     single layer, it avoids missing it)
+    :return: a list of normalized vector(s) (array(s) of 3 numbers) oriented towards the exterior of the cristal
+    """
+    gradz, grady, gradx = np.gradient(support, 1)  # support
+    vectors = []
+    if not isinstance(points, list):
+        points = [points]
+
+    for idx in range(len(points)):
+        point = points[idx]
+        # round the point to integer numbers
+        point = [int(np.rint(point[idx])) for idx in range(3)]
+
+        # calculate the gradient in a small window around point (gradient will be nonzero on a single layer)
+        gradz_slice = gradz[point[0]-width:point[0]+width+1,
+                            point[1]-width:point[1]+width+1,
+                            point[2]-width:point[2]+width+1]
+        val = (gradz_slice != 0).sum()
+        if val == 0:
+            vector_z = 0
+        else:
+            vector_z = gradz_slice.sum() / val
+
+        grady_slice = grady[point[0]-width:point[0]+width+1,
+                            point[1]-width:point[1]+width+1,
+                            point[2]-width:point[2]+width+1]
+        val = (grady_slice != 0).sum()
+        if val == 0:
+            vector_y = 0
+        else:
+            vector_y = grady_slice.sum() / val
+
+        gradx_slice = gradx[point[0]-width:point[0]+width+1,
+                            point[1]-width:point[1]+width+1,
+                            point[2]-width:point[2]+width+1]
+        val = (gradx_slice != 0).sum()
+        if val == 0:
+            vector_x = 0
+        else:
+            vector_x = gradx_slice.sum() / val
+
+        # support was 1 inside, 0 outside, the vector needs to be flipped to point towards the outside
+        vectors.append([-vector_z, -vector_y, -vector_x] / np.linalg.norm([-vector_z, -vector_y, -vector_x]))
+    return vectors
 
 
 def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33, mu=0.34, radius=0.1,
@@ -881,8 +1074,8 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     return new_vertices, normals, areas, intensity, faces, err_normals
 
 
-def update_logfile(support, strain_array, summary_file, allpoints_file, label=0, angle_plane=0, plane_coeffs=(0, 0, 0),
-                   plane_normal=(0, 0, 0), top_part=False, z_cutoff=0):
+def update_logfile(support, strain_array, summary_file, allpoints_file, label=0, angle_plane=0,
+                   plane_coeffs=(0, 0, 0, 0), plane_normal=(0, 0, 0)):
     """
     Update log files use in the facet_strain.py script.
 
@@ -892,10 +1085,8 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
     :param allpoints_file: the handle for the file giving the strain and the label for each voxel
     :param label: the label of the plane
     :param angle_plane: the angle of the plane with the measurement direction
-    :param plane_coeffs: the fit coefficients of the plane
+    :param plane_coeffs: the fit coefficients (a,b,c,d) of the plane such that ax+by+cz+d=0
     :param plane_normal: the normal to the plane
-    :param top_part: if True, it will save values only for the top part of the nanoparticle
-    :param z_cutoff: if top_pat=True, will set all support points below this value to 0
     :return: nothing
     """
     if (support.ndim != 3) or (strain_array.ndim != 3):
@@ -933,49 +1124,10 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
                        '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[0]))) + '\t' +
                        '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[1]))) + '\t' +
                        '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[2]))) + '\t' +
+                       '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[3]))) + '\t' +
                        '{0: <10}'.format(str('{:.5f}'.format(plane_normal[0]))) + '\t' +
                        '{0: <10}'.format(str('{:.5f}'.format(plane_normal[1]))) + '\t' +
                        '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
-
-    if top_part:
-        new_support = np.copy(support)  # support is mutable, need to make a copy
-        new_support[:, :, :z_cutoff] = 0
-        new_label = str(label) + '_top'
-        support_indices = np.nonzero(new_support == 1)
-        ind_z = support_indices[0]
-        ind_y = support_indices[1]
-        ind_x = support_indices[2]
-        nb_points = len(support_indices[0])
-        for idx in range(nb_points):
-            if strain_array[ind_z[idx], ind_y[idx], ind_x[idx]] != 0:
-                # remove the artefact from YY reconstrutions at the bottom facet
-                allpoints_file.write('{0: <10}'.format(new_label) + '\t' +
-                                     '{0: <10}'.format(str(ind_z[idx])) + '\t' +
-                                     '{0: <10}'.format(str(ind_y[idx])) + '\t' +
-                                     '{0: <10}'.format(str(ind_x[idx])) + '\t' +
-                                     '{0: <10}'.format(str('{:.7f}'.format(strain_array[ind_z[idx],
-                                                                                        ind_y[idx],
-                                                                                        ind_x[idx]])))
-                                     + '\n')
-
-        str_array = strain_array[new_support == 1]
-        str_array[str_array == 0] = np.nan  # remove the artefact from YY reconstrutions at the bottom facet
-        support_strain = np.mean(str_array[~np.isnan(str_array)])
-        support_deviation = np.std(str_array[~np.isnan(str_array)])
-
-        # support_strain = np.mean(strain_array[support == 1])
-        # support_deviation = np.std(strain_array[support == 1])
-        summary_file.write('{0: <10}'.format(new_label) + '\t' +
-                           '{0: <10}'.format(str('{:.3f}'.format(angle_plane))) + '\t' +
-                           '{0: <10}'.format(str(nb_points)) + '\t' +
-                           '{0: <10}'.format(str('{:.7f}'.format(support_strain))) + '\t' +
-                           '{0: <10}'.format(str('{:.7f}'.format(support_deviation))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[0]))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[1]))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_coeffs[2]))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_normal[0]))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_normal[1]))) + '\t' +
-                           '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
 
 
 def upsample(array, upsampling_factor, voxelsizes, title='', debugging=False):
@@ -989,8 +1141,6 @@ def upsample(array, upsampling_factor, voxelsizes, title='', debugging=False):
     :param debugging: True to see plots
     :return: the upsampled array
     """
-    from scipy.interpolate import RegularGridInterpolator
-
     if array.ndim != 3:
         raise ValueError('Expecting a 3D array as input')
 

@@ -21,7 +21,7 @@ helptext = """
 Graphical interface to visualize 2D slices through a 3D stacked dataset.
 """
 
-datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynxraw/"
+datadir = "D:/data/Pt THH ex-situ/Data/HS4670/S9/pynxraw/"
 savedir = datadir  # "D:/data/CH5309/S614/test/"
 scale = 'log'  # 'linear' or 'log', scale of the 2D plots
 field = None  # data field name. Leave it to None for default.
@@ -77,6 +77,7 @@ nbfiles = len(file_path)
 plt.ion()
 
 data, extension = util.load_file(file_path, fieldname=field)
+data = abs(data)
 
 if data.max() <= 0:
     scale = 'linear'

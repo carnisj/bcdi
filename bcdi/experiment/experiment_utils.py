@@ -65,6 +65,13 @@ class SetupPostprocessing(object):
             # origin is at the top
             self.detector_ver = 'z-'
 
+    def __repr__(self):
+        """
+        :return: a nicely formatted representation string
+        """
+        return f"{self.__class__.__name__}: beamline={self.beamline}, energy={self.energy}eV," \
+               f" sample to detector distance={self.distance}m, pixel size (VxH)=({self.pixel_y},{self.pixel_x})"
+
     def detector_frame(self, obj, voxelsize, width_z=None, width_y=None, width_x=None,
                        debugging=False, **kwargs):
         """
@@ -238,30 +245,32 @@ class SetupPostprocessing(object):
             gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
                                 title=title+' in detector frame')
 
-        tilt_sign = np.sign(self.tilt_angle)
-        wavelength = 12.398 * 1e-7 / self.energy  # in m
+        # estimate the direct space voxel sizes in nm based on the FFT window shape used in phase retrieval
+        dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(initial_shape, tilt_angle=abs(self.tilt_angle),
+                                                                    pixel_x=self.pixel_x, pixel_y=self.pixel_y)
 
-        dz_realspace = wavelength / (initial_shape[0] * abs(self.tilt_angle) * np.pi / 180) * 1e9  # in nm
-        dy_realspace = wavelength * self.distance / (initial_shape[1] * self.pixel_y) * 1e9  # in nm
-        dx_realspace = wavelength * self.distance / (initial_shape[2] * self.pixel_x) * 1e9  # in nm
-        print('Real space pixel size (z, y, x) based on initial FFT shape: (',
+        print('Direct space voxel sizes (z, y, x) based on initial FFT shape: (',
               str('{:.2f}'.format(dz_realspace)), 'nm,',
               str('{:.2f}'.format(dy_realspace)), 'nm,',
               str('{:.2f}'.format(dx_realspace)), 'nm )')
 
         nbz, nby, nbx = obj.shape  # could be smaller if the object was cropped around the support
         if nbz != initial_shape[0] or nby != initial_shape[1] or nbx != initial_shape[2]:
-            tilt = tilt_sign * wavelength / (nbz * dz_realspace * np.pi / 180) * 1e9  # in m
-            pixel_y = wavelength * self.distance / (nby * dy_realspace) * 1e9  # in m
-            pixel_x = wavelength * self.distance / (nbx * dx_realspace) * 1e9  # in m
-            print('Tilt, pixel_y, pixel_x based on actual array shape: (',
+            # recalculate the tilt and pixel sizes to accomodate a shape change
+            tilt = self.tilt_angle * initial_shape[0] / nbz
+            pixel_y = self.pixel_y * initial_shape[1] / nby
+            pixel_x = self.pixel_x * initial_shape[2] / nbx
+            print('Tilt, pixel_y, pixel_x based on cropped array shape: (',
                   str('{:.4f}'.format(tilt)), 'deg,',
                   str('{:.2f}'.format(pixel_y * 1e6)), 'um,',
                   str('{:.2f}'.format(pixel_x * 1e6)), 'um)')
-            dz_realspace = wavelength / (nbz * abs(tilt) * np.pi / 180) * 1e9  # in nm
-            dy_realspace = wavelength * self.distance / (nby * pixel_y) * 1e9  # in nm
-            dx_realspace = wavelength * self.distance / (nbx * pixel_x) * 1e9  # in nm
-            print('New real space pixel size (z, y, x) based on actual array shape: (',
+
+            # sanity check, the direct space voxel sizes calculated below should be equal to the original ones
+            dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes((nbz, nby, nbx),
+                                                                        tilt_angle=abs(tilt),
+                                                                        pixel_x=pixel_x, pixel_y=pixel_y)
+
+            print('Sanity check, recalculated direct space voxel sizes: (',
                   str('{:.2f}'.format(dz_realspace)), ' nm,',
                   str('{:.2f}'.format(dy_realspace)), 'nm,',
                   str('{:.2f}'.format(dx_realspace)), 'nm )')
@@ -388,7 +397,7 @@ class SetupPostprocessing(object):
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
                     np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
                              np.cos(mygrazing_angle) * (np.cos(inplane) * np.cos(outofplane) - 1)),
-                             np.sin(mygrazing_angle) * np.sin(inplane) * np.sin(outofplane),
+                             np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
                              np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
         if self.beamline == 'P10':
             print('using PETRAIII P10 geometry')
@@ -406,8 +415,8 @@ class SetupPostprocessing(object):
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
             elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                print('rocking angle is mu')
-                # rocking mu angle anti-clockwise around y, mu below all other sample rotations
+                print('rocking angle is phi, omega=0')
+                # rocking phi angle clockwise around y, incident angle omega is zero (omega below phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([-pixel_x * np.cos(inplane),
                                                                        0,
                                                                        pixel_x * np.sin(inplane)])
@@ -415,11 +424,24 @@ class SetupPostprocessing(object):
                                                                        -pixel_y * np.cos(outofplane),
                                                                        pixel_y * np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
-                    [tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
+                    [tilt * distance * (np.cos(inplane) * np.cos(outofplane) - 1),
                      0,
-                     tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-            else:
-                raise ValueError('inplane rocking for phi not yet implemented for P10')
+                     - tilt * distance * np.sin(inplane) * np.cos(outofplane)])
+
+            elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
+                print('rocking angle is phi, with omega non zero')
+                # rocking phi angle clockwise around y, incident angle omega is non zero (omega below phi)
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([-pixel_x * np.cos(inplane),
+                                                                       0,
+                                                                       pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       -pixel_y * np.cos(outofplane),
+                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
+                    np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
+                             np.cos(mygrazing_angle) * (np.cos(inplane) * np.cos(outofplane) - 1)),
+                             - np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
+                             - np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
 
         if self.beamline == 'NANOMAX':
             print('using NANOMAX geometry')
@@ -461,7 +483,7 @@ class SetupPostprocessing(object):
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
                     np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
                                np.cos(mygrazing_angle) * (np.cos(inplane) * np.cos(outofplane) - 1)),
-                              np.sin(mygrazing_angle) * np.sin(inplane) * np.sin(outofplane),
+                              np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
                               np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
 
         if self.beamline == '34ID':
@@ -492,7 +514,7 @@ class SetupPostprocessing(object):
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
                     np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
                               np.cos(mygrazing_angle) * (1 - np.cos(inplane) * np.cos(outofplane))),
-                              -np.sin(mygrazing_angle) * np.sin(inplane) * np.sin(outofplane),
+                              -np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
                               np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
 
             elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
@@ -560,6 +582,31 @@ class SetupPostprocessing(object):
 
         transfer_matrix = 2 * np.pi * np.linalg.inv(mymatrix).transpose()
         return transfer_matrix
+
+    def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, debug=False):
+        """
+        Calculate the direct space voxel sizes in the laboratory frame (z downstream, y vertical up, x outboard).
+
+        :param array_shape: shape of the 3D array to orthogonalize
+        :param tilt_angle: angular step during the rocking curve, in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        :param debug: True to have printed comments
+        :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
+        """
+        transfer_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
+                                             pixel_x=pixel_x, pixel_y=pixel_y)
+        rec_matrix = 2 * np.pi * np.linalg.inv(transfer_matrix).transpose()
+        qx_range = np.linalg.norm(rec_matrix[0, :])
+        qy_range = np.linalg.norm(rec_matrix[1, :])
+        qz_range = np.linalg.norm(rec_matrix[2, :])
+        if debug:
+            print('q_range_z, q_range_y, q_range_x=({0:.5f}, {1:.5f}, {2:.5f}) (1/nm)'.format(qz_range, qy_range,
+                                                                                              qx_range))
+            print('voxelsize_z, voxelsize_y, voxelsize_x='
+                  '({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)'.format(2 * np.pi / qz_range, 2 * np.pi / qy_range,
+                                                              2 * np.pi / qx_range))
+        return 2 * np.pi / qz_range, 2 * np.pi / qy_range, 2 * np.pi / qx_range
 
 
 class SetupPreprocessing(object):
@@ -655,6 +702,13 @@ class SetupPreprocessing(object):
             # origin is at the top
             self.detector_ver = 'z-'
 
+    def __repr__(self):
+        """
+        :return: a nicely formatted representation string
+        """
+        return f"{self.__class__.__name__}: beamline={self.beamline}, energy={self.energy}eV," \
+               f" sample to detector distance={self.distance}m"
+
 
 class Detector(object):
     """
@@ -707,40 +761,40 @@ class Detector(object):
         if name == 'Maxipix':
             nb_pixel_x = nb_pixel_x or 516
             nb_pixel_y = nb_pixel_y or 516
-            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
+            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'mpx4inr'
         elif name == 'Eiger2M':
             nb_pixel_x = nb_pixel_x or 1030
             nb_pixel_y = nb_pixel_y or 2164
-            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
+            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = 'ei2minr'
         elif name == 'Eiger4M':
             nb_pixel_x = nb_pixel_x or 2070
             nb_pixel_y = nb_pixel_y or 2167
-            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
+            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = ''  # unused
         elif name == 'Timepix':
             nb_pixel_x = nb_pixel_x or 256
             nb_pixel_y = nb_pixel_y or 256
-            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
+            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = ''  # unused
         elif name == 'Merlin':
             nb_pixel_x = nb_pixel_x or 515
             nb_pixel_y = nb_pixel_y or 515
-            self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // previous_binning[1]
+            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'alba2'
@@ -771,6 +825,12 @@ class Detector(object):
         self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
         self.pixelsize_y = self.pixelsize_y * self.previous_binning[1] * self.binning[1]
         self.pixelsize_x = self.pixelsize_x * self.previous_binning[2] * self.binning[2]
+
+    def __repr__(self):
+        """
+        :return: a nicely formatted representation string
+        """
+        return f"{self.__class__.__name__}: {self.name}"
 
     def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
         """
@@ -902,3 +962,9 @@ class Detector(object):
             raise NotImplementedError('Detector not implemented')
 
         return data, mask
+
+
+if __name__ == "__main__":
+    my = SetupPostprocessing(beamline='ID01', energy=8800, outofplane_angle=0, inplane_angle=7.248, tilt_angle=0.01,
+                             rocking_angle='inplane', distance=7.25, grazing_angle=0, pixel_x=110e-6, pixel_y=110e-6)
+    print(my.voxel_sizes((41, 256, 256), tilt_angle=0.01, pixel_x=110e-6, pixel_y=110e-6, debug=True))

@@ -6,6 +6,7 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
 import numpy as np
+import warnings
 import time
 import datetime
 import matplotlib.pyplot as plt
@@ -319,6 +320,55 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
         print(params)
 
     return params
+
+
+def cartesian2cylind(grid_shape, pivot, offset_angle, debugging=False):
+    """
+    Find the corresponding cylindrical coordinates of a cartesian 3D, including the correction for te Ewald sphere
+    curvature. The longitudinal axis of the cylindrical frame (rotation axis) is axis 1.
+
+    :param grid_shape: tuple, shape of the 3D cartesion grid
+    :param pivot: tuple of two numbers, position in pixels of the origin of reciprocal space (vertical, horizontal)
+    :param offset_angle: reference angle for the angle wrapping
+    :param debugging: True to see more plots
+    :return: the corresponding 1D array of angular coordinates, 1D array of height coordinates,
+     1D array of radial coordinates
+    """
+    assert len(grid_shape) == 3, 'grid_shape should be a tuple of three numbers'
+    assert len(pivot) == 2, 'pivot should be a tuple of two pixel numbers'
+    _, numy, numx = grid_shape  # numz = numx by construction
+    pivot_y, pivot_x = pivot
+    z_interp, y_interp, x_interp = np.meshgrid(np.linspace(-pivot_x, -pivot_x + numx, num=numx, endpoint=False),
+                                               np.linspace(pivot_y - numy, pivot_y, num=numy, endpoint=False),
+                                               np.linspace(pivot_x - numx, pivot_x, num=numx, endpoint=False),
+                                               indexing='ij')  # z_interp changes along rows, x_interp along columns
+    # z_interp downstream, same direction as detector X rotated by +90deg
+    # y_interp vertical up, opposite to detector Y
+    # x_interp along outboard, opposite to detector X
+
+    # map these points to (cdi_angle, Y, X), the measurement cylindrical coordinates
+    interp_angle = wrap(obj=np.arctan2(z_interp, -x_interp), start_angle=offset_angle * np.pi / 180,
+                        range_angle=np.pi)  # in radians, located in the range [start_angle, start_angle+np.pi[
+
+    interp_height = y_interp  # only need to flip the axis in the vertical direction (rotation axis)
+
+    sign_array = -1 * np.sign(np.cos(interp_angle)) * np.sign(x_interp)
+    sign_array[x_interp == 0] = np.sign(z_interp[x_interp == 0]) * np.sign(interp_angle[x_interp == 0])
+
+    interp_radius = np.multiply(sign_array, np.sqrt(x_interp ** 2 + z_interp ** 2))
+
+    if debugging:
+        gu.imshow_plot(interp_angle*180/np.pi, plot_colorbar=True, scale='linear',
+                       labels=('Qx (z_interp)', 'Qy (x_interp)'),
+                       title='calculated polar angle for a 2D grid\nperpendicular to the rotation axis')
+
+        gu.imshow_plot(sign_array, plot_colorbar=True, scale='linear',
+                       labels=('Qx (z_interp)', 'Qy (x_interp)'), title='sign_array')
+
+        gu.imshow_plot(interp_radius, plot_colorbar=True, scale='linear', labels=('Qx (z_interp)', 'Qy (x_interp)'),
+                       title='calculated polar radius for a 2D grid\nperpendicular to the rotation axis')
+
+    return interp_angle, interp_height, interp_radius
 
 
 def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
@@ -1108,7 +1158,9 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
                 mask = mask[0:data.shape[0], :, :]  # truncate the mask to have the correct size
                 numz = data.shape[0]
 
-        gridder = xu.Gridder3D(numz, numy, numx)
+        # only rectangular cuboidal voxels are supported in xrayutilities FuzzyGridder3D
+        # use the default width defined in FuzzyGridder3D
+        gridder = xu.FuzzyGridder3D(numz, numy, numx)
         # convert mask to rectangular grid in reciprocal space
         gridder(qx, qz, qy, mask)  # qx downstream, qz vertical up, qy outboard
         interp_mask = np.copy(gridder.data)
@@ -1119,9 +1171,7 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
         qx, qz, qy = [gridder.xaxis, gridder.yaxis, gridder.zaxis]  # downstream, vertical up, outboard
 
     else:
-        import sys
-        print('#TODO check Ewald sphere curvature correction')
-        sys.exit()
+        raise NotImplementedError('#TODO check Ewald sphere curvature correction')
         # TODO check Ewald sphere curvature correction
 
     # check for Nan
@@ -1152,6 +1202,10 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
     plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(interp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Regridded data', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space_sum_pix' + plot_comment)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data', is_orthogonal=True, reciprocal_space=True)
@@ -1228,6 +1282,7 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
         pivot = nbx - directbeam_x
 
     if not correct_curvature:
+        loop_2d = True
         dqx = 2 * np.pi / lambdaz * pixel_x  # in 1/nm, downstream, pixel_x is the binned pixel size
         dqz = 2 * np.pi / lambdaz * pixel_y  # in 1/nm, vertical up, pixel_y is the binned pixel size
         dqy = 2 * np.pi / lambdaz * pixel_x  # in 1/nm, outboard, pixel_x is the binned pixel size
@@ -1240,21 +1295,69 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
         print('q spacing for interpolation (z,y,x)=', str('{:.6f}'.format(dqx)), str('{:.6f}'.format(dqz)),
               str('{:.6f}'.format(dqy)), ' (1/nm)')
 
-        # find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis
-        interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=pivot, offset_angle=cdi_angle.min(),
-                                                      debugging=debugging)
+        if loop_2d:  # loop over 2D slices perpendicular to the rotation axis, slower but needs less memory
 
-        interp_data = grid_cylindrical(array=data, rotation_angle=cdi_angle, direct_beam=directbeam_x,
-                                       interp_angle=interp_angle, interp_radius=interp_radius, comment='data')
+            # find the corresponding polar coordinates of a cartesian 2D grid perpendicular to the rotation axis
+            interp_angle, interp_radius = cartesian2polar(nb_pixels=numx, pivot=pivot, offset_angle=cdi_angle.min(),
+                                                          debugging=debugging)
 
-        interp_mask = grid_cylindrical(array=mask, rotation_angle=cdi_angle, direct_beam=directbeam_x,
-                                       interp_angle=interp_angle, interp_radius=interp_radius, comment='mask')
+            interp_data = grid_cylindrical(array=data, rotation_angle=cdi_angle, direct_beam=directbeam_x,
+                                           interp_angle=interp_angle, interp_radius=interp_radius, comment='data')
 
-        interp_mask[np.nonzero(interp_mask)] = 1
+            interp_mask = grid_cylindrical(array=mask, rotation_angle=cdi_angle, direct_beam=directbeam_x,
+                                           interp_angle=interp_angle, interp_radius=interp_radius, comment='mask')
 
-    else:
+            interp_mask[np.nonzero(interp_mask)] = 1
+        else:  # interpolate in one shoot using a 3D RegularGridInterpolator
+
+            # Calculate the coordinates of a cartesian 3D grid expressed in the cylindrical basis
+            interp_angle, interp_height, interp_radius = cartesian2cylind(grid_shape=(numx, numy, numx),
+                                                                          pivot=(directbeam_y, pivot),
+                                                                          offset_angle=cdi_angle.min(),
+                                                                          debugging=debugging)
+
+            if cdi_angle[1] - cdi_angle[0] < 0:
+                # flip rotation_angle and the data accordingly,
+                # RegularGridInterpolator takes only increasing position vectors
+                cdi_angle = np.flip(cdi_angle)
+                data = np.flip(data, axis=0)
+                mask = np.flip(mask, axis=0)
+
+            # Interpolate the data onto a cartesian 3D grid
+            print('Gridding data')
+            rgi = RegularGridInterpolator(
+                (cdi_angle * np.pi / 180,
+                 np.arange(-directbeam_y, -directbeam_y + nby, 1),
+                 np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
+                data, method='linear', bounds_error=False, fill_value=np.nan)
+            interp_data = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
+                                              interp_height.reshape((1, interp_angle.size)),
+                                              interp_radius.reshape((1, interp_angle.size)))).transpose())
+            interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
+
+            # Interpolate the mask onto a cartesian 3D grid
+            print('Gridding mask')
+            rgi = RegularGridInterpolator(
+                (cdi_angle * np.pi / 180,
+                 np.arange(-directbeam_y, -directbeam_y + nby, 1),
+                 np.arange(-directbeam_x, -directbeam_x + nbx, 1)),
+                mask, method='linear', bounds_error=False, fill_value=np.nan)
+            interp_mask = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
+                                              interp_height.reshape((1, interp_angle.size)),
+                                              interp_radius.reshape((1, interp_angle.size)))).transpose())
+            interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
+            interp_mask[np.nonzero(interp_mask)] = 1
+
+    else:  # correction for Ewald sphere curvature
         raise NotImplementedError('TODO: check Ewald sphere curvature correction, too slow')
+
         # TODO check Ewald sphere curvature correction
+        # qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
+        # qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
+        # qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
+        #
+        # new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
+        #
         # from scipy.interpolate import griddata
         # # calculate exact q values for each voxel of the 3D dataset
         # old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
@@ -1438,6 +1541,8 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values for normalization
     """
+    warnings.warn("deprecated, use load_bcdi_data() and grid_bcdi() instead", DeprecationWarning)
+
     # default values for kwargs
     follow_bragg = False
 
@@ -1507,7 +1612,7 @@ def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=Non
                 rawdata = tempdata
                 rawmask = rawmask[0:rawdata.shape[0], :, :]  # truncate the mask to have the correct size
                 nbz = rawdata.shape[0]
-        gridder = xu.Gridder3D(nbz, nby, nbx)
+        gridder = xu.FuzzyGridder3D(nbz, nby, nbx)
         # convert mask to rectangular grid in reciprocal space
         gridder(qx, qz, qy, rawmask)  # qx downstream, qz vertical up, qy outboard
         mask = np.copy(gridder.data)
@@ -2487,7 +2592,7 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
             if 'Col' in words and ('ipetra' in words or 'curpetra' in words):
                 # template = ' Col 6 ipetra DOUBLE\n' (2018) or ' Col 6 curpetra DOUBLE\n' (2019)
                 index_monitor = int(words[1]) - 1  # python index starts at 0
-            if index_monitor and words[0].isnumeric():  # we are reading data and index_monitor is defined
+            if index_monitor and util.is_numeric(words[0]):  # we are reading data and index_monitor is defined
                 monitor.append(float(words[index_monitor]))
         fio.close()
         monitor = np.asarray(monitor, dtype=float)
@@ -2570,7 +2675,7 @@ def load_p10_monitor(logfile):
         if 'Col' in words and ('ipetra' in words or 'curpetra' in words):
             # template = ' Col 6 ipetra DOUBLE\n' (2018) or ' Col 6 curpetra DOUBLE\n' (2019)
             index_monitor = int(words[1]) - 1  # python index starts at 0
-        if index_monitor and words[0].isnumeric():  # we are reading data and index_monitor is defined
+        if index_monitor and util.is_numeric(words[0]):  # we are reading data and index_monitor is defined
             monitor.append(float(words[index_monitor]))
     fio.close()
     monitor = np.asarray(monitor, dtype=float)
@@ -2963,9 +3068,11 @@ def motor_positions_p10(logfile, setup):
             if 'mu' in words and '=' in words:  # template for positioners: 'mu = 0.0\n'
                 mu = float(words[2])
 
-            if index_om and words[0].isnumeric():  # we are reading data and index_om is defined (outofplane case)
+            if index_om is not None and util.is_numeric(words[0]):
+                # reading data and index_om is defined (outofplane case)
                 om.append(float(words[index_om]))
-            if index_om and words[0].isnumeric():  # we are reading data and index_phi is defined (inplane case)
+            if index_phi is not None and util.is_numeric(words[0]):
+                # reading data and index_phi is defined (inplane case)
                 phi.append(float(words[index_phi]))
 
         if setup.rocking_angle == "outofplane":
@@ -3011,7 +3118,7 @@ def motor_positions_p10_saxs(logfile, setup):
                     # template = ' Col 0 sprz DOUBLE\n'
                     index_phi = int(words[1]) - 1  # python index starts at 0
                     print(words, '  Index Phi=', index_phi)
-            if index_phi and words[0].isnumeric():  # we are reading data and index_phi is defined
+            if index_phi is not None and util.is_numeric(words[0]):  # we are reading data and index_phi is defined
                 phi.append(float(words[index_phi]))
 
         phi = np.asarray(phi, dtype=float)
@@ -3746,7 +3853,7 @@ def scan_motor_p10(logfile, motor_name):
         if 'Col' in words and motor_name in words:  # motor_name scanned, template = ' Col 0 motor_name DOUBLE\n'
             index_motor = int(words[1]) - 1  # python index starts at 0
 
-        if index_motor and words[0].isnumeric():  # we are reading data and index_motor is defined
+        if index_motor is not None and util.is_numeric(words[0]):  # we are reading data and index_motor is defined
             motor_pos.append(float(words[index_motor]))
 
     fio.close()

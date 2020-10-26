@@ -22,12 +22,17 @@ import bcdi.utils.utilities as util
 from bcdi.utils import image_registration as reg
 
 
-def align_obj(reference_obj, obj, precision=1000, debugging=False):
+def align_obj(reference_obj, obj, method='modulus', support_threshold=None, precision=1000, debugging=False):
     """
     Align two arrays using dft registration and subpixel shift.
 
     :param reference_obj: 3D array, reference complex object
     :param obj: 3D array, complex density to average with
+    :param method: 'modulus', 'support' or 'skip'. Object to use for the determination of the shift.
+     If 'support', the parameter 'support_threshold' must also be provided since the binary support is defined by
+     thresholding the normalized modulus.
+    :param support_threshold: all points where the normalized modulus is larger than this value will be set to 1 in the
+     support.
     :param precision: precision for the DFT registration in 1/pixel
     :param debugging: set to True to see plots
     :type debugging: bool
@@ -41,15 +46,34 @@ def align_obj(reference_obj, obj, precision=1000, debugging=False):
         print('crop/pad obj')
         obj = crop_pad(array=obj, output_shape=reference_obj.shape)
 
-    shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(obj), precision=precision)
-    new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output
-    print("    Shift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
-          str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
+    # calculate the shift between the two arrays
+    if method is 'modulus':
+        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(obj), precision=precision)
+    elif method is 'support':
+        ref_support = np.zeros(reference_obj.shape)
+        ref_support[abs(reference_obj) > support_threshold * abs(reference_obj).max()] = 1
+        support = np.zeros(reference_obj.shape)
+        support[abs(obj) > support_threshold * abs(obj).max()] = 1
+        shiftz, shifty, shiftx = reg.getimageregistration(ref_support, support, precision=precision)
+        if debugging:
+            gu.multislices_plot(abs(ref_support), sum_frames=False, title='Reference support')
+            gu.multislices_plot(abs(support), sum_frames=False, title='Support before alignement')
+        del ref_support, support
+    else:  # 'skip'
+        print('\nSkipping alignment')
+        print('\tPearson correlation coefficient = {0:.3f}'.format(pearsonr(np.ndarray.flatten(abs(reference_obj)),
+                                                                            np.ndarray.flatten(abs(obj)))[0]))
+        return obj
 
+    # align obj using subpixel shift
+    new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output
+    print("\tShift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
+          str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
+    print('\tPearson correlation coefficient = {0:.3f}'.format(pearsonr(np.ndarray.flatten(abs(reference_obj)),
+                                                                        np.ndarray.flatten(abs(new_obj)))[0]))
     if debugging:
         gu.multislices_plot(abs(reference_obj), sum_frames=True, title='Reference object')
         gu.multislices_plot(abs(new_obj), sum_frames=True, title='Aligned object')
-
     return new_obj
 
 
@@ -504,6 +528,7 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
     assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
 
     if debugging:
+        print(f'array shape before crop/pad = {array.shape}')
         gu.multislices_plot(abs(array), sum_frames=True, scale='log', title='Before crop/pad')
 
     # crop/pad along axis 0
@@ -514,7 +539,9 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
             temp_z = np.ones((output_shape[0], nby, nbx), dtype=array.dtype)
         temp_z[pad_start[0]:pad_start[0]+nbz, :, :] = array
     else:  # crop
-        temp_z = array[crop_center[0] - newz//2:crop_center[0] + newz//2, :, :]
+        assert (crop_center[0] - output_shape[0] // 2 >= 0) and (crop_center[0] + output_shape[0] // 2 <= nbz),\
+            'crop_center[0] incompatible with output_shape[0]'
+        temp_z = array[crop_center[0] - newz//2:crop_center[0] + newz//2 + newz % 2, :, :]
 
     # crop/pad along axis 1
     if newy >= nby:  # pad
@@ -524,7 +551,9 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
             temp_y = np.ones((newz, newy, nbx), dtype=array.dtype)
         temp_y[:, pad_start[1]:pad_start[1]+nby, :] = temp_z
     else:  # crop
-        temp_y = temp_z[:, crop_center[1] - newy//2:crop_center[1] + newy//2, :]
+        assert (crop_center[1] - output_shape[1] // 2 >= 0) and (crop_center[1] + output_shape[1] // 2 <= nby),\
+            'crop_center[1] incompatible with output_shape[1]'
+        temp_y = temp_z[:, crop_center[1] - newy//2:crop_center[1] + newy//2 + newy % 2, :]
 
     # crop/pad along axis 2
     if newx >= nbx:  # pad
@@ -534,9 +563,12 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
             newobj = np.ones((newz, newy, newx), dtype=array.dtype)
         newobj[:, :, pad_start[2]:pad_start[2]+nbx] = temp_y
     else:  # crop
-        newobj = temp_y[:, :, crop_center[2] - newx//2:crop_center[2] + newx//2]
+        assert (crop_center[2] - output_shape[2] // 2 >= 0) and (crop_center[2] + output_shape[2] // 2 <= nbx),\
+            'crop_center[2] incompatible with output_shape[2]'
+        newobj = temp_y[:, :, crop_center[2] - newx//2:crop_center[2] + newx//2 + newx % 2]
 
     if debugging:
+        print(f'array shape after crop/pad = {newobj.shape}')
         gu.multislices_plot(abs(newobj), sum_frames=True, scale='log', title='After crop/pad')
     return newobj
 
@@ -580,7 +612,9 @@ def crop_pad_2d(array, output_shape, padwith_ones=False, pad_start=None, crop_ce
             temp_y = np.ones((output_shape[0], nbx), dtype=array.dtype)
         temp_y[pad_start[0]:pad_start[0]+nby, :] = array
     else:  # crop
-        temp_y = array[crop_center[0] - newy//2:crop_center[0] + newy//2, :]
+        assert (crop_center[0] - output_shape[0] // 2 >= 0) and (crop_center[0] + output_shape[0] // 2 <= nby),\
+            'crop_center[0] incompatible with output_shape[0]'
+        temp_y = array[crop_center[0] - newy//2:crop_center[0] + newy//2 + newy % 2, :]
 
     # crop/pad along axis 1
     if newx >= nbx:  # pad
@@ -590,7 +624,9 @@ def crop_pad_2d(array, output_shape, padwith_ones=False, pad_start=None, crop_ce
             newobj = np.ones((newy, newx), dtype=array.dtype)
         newobj[:, pad_start[1]:pad_start[1]+nbx] = temp_y
     else:  # crop
-        newobj = temp_y[:, crop_center[1] - newx//2:crop_center[1] + newx//2]
+        assert (crop_center[1] - output_shape[1] // 2 >= 0) and (crop_center[1] + output_shape[1] // 2 <= nbx),\
+            'crop_center[1] incompatible with output_shape[1]'
+        newobj = temp_y[:, crop_center[1] - newx//2:crop_center[1] + newx//2 + newx % 2]
 
     if debugging:
         gu.imshow_plot(abs(array), sum_frames=True, scale='log', title='After crop/pad')
@@ -635,7 +671,9 @@ def crop_pad_1d(array, output_length, padwith_ones=False, pad_start=None, crop_c
             pad_start = array[0] - ((newx - nbx) // 2) * spacing
             newobj = pad_start + np.arange(newx) * spacing
     else:  # crop
-        newobj = array[crop_center - newx//2:crop_center + newx//2]
+        assert crop_center - output_length // 2 >= 0, 'crop_center incompatible with output_length'
+        assert crop_center + output_length // 2 <= nbx, 'crop_center incompatible with output_length'
+        newobj = array[crop_center - newx//2:crop_center + newx//2 + newx % 2]
 
     return newobj
 
@@ -698,16 +736,14 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=
 
     nbz, nby, nbx = amp.shape
     max_amp = abs(amp).max()
-    mysupport = np.ones((nbz, nby, nbx))
+    support = np.ones((nbz, nby, nbx))
 
     if method == 'threshold':
-        mysupport[abs(amp) < support_threshold * max_amp] = 0
-        mybulk = mysupport
-
+        support[abs(amp) < support_threshold * max_amp] = 0
     else:
-        mysupport[abs(amp) < 0.1 * max_amp] = 0  # predefine a larger support
+        support[abs(amp) < 0.05 * max_amp] = 0  # predefine a larger support
         mykernel = np.ones((9, 9, 9))
-        mycoordination_matrix = calc_coordination(mysupport, kernel=mykernel, debugging=False)
+        mycoordination_matrix = calc_coordination(support, kernel=mykernel, debugging=debugging)
         outer = np.copy(mycoordination_matrix)
         outer[np.nonzero(outer)] = 1
         if mykernel.shape == np.ones((9, 9, 9)).shape:
@@ -759,8 +795,12 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=
             else:
                 print('Surface of object reached after', idx, 'iterations')
                 break
-        mybulk = np.ones((nbz, nby, nbx)) - outer
-    return mybulk
+        support_defect = np.ones((nbz, nby, nbx)) - outer
+        support = np.ones((nbz, nby, nbx))
+        support[abs(amp) < support_threshold * max_amp] = 0
+        # add voxels detected by support_defect
+        support[np.nonzero(support_defect)] = 1
+    return support
 
 
 def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False):
@@ -1032,7 +1072,8 @@ def get_opticalpath(support, direction, k, width_z=None, width_y=None, width_x=N
     return path
 
 
-def get_strain(phase, planar_distance, voxel_size, reference_axis='y'):
+def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_phase=2*np.pi,
+               method='default', debugging=False):
     """
     Calculate the 3D strain array.
 
@@ -1040,22 +1081,52 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y'):
     :param planar_distance: the planar distance of the material corresponding to the measured Bragg peak
     :param voxel_size: the voxel size of the phase array in nm, should be isotropic
     :param reference_axis: the axis of the array along which q is aligned: 'x', 'y' or 'z' (CXI convention)
+    :param extent_phase: range for phase wrapping, specify it when the phase spans over more than 2*pi
+    :param method: 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
+     value for the strain (Felix Hofmann's method 2019).
+    :param debugging: True to see plots
     :return: the strain 3D array
     """
-    if phase.ndim != 3:
-        raise ValueError('phase should be a 3D array')
+    from bcdi.preprocessing.preprocessing_utils import wrap
 
-    if reference_axis == "x":
-        _, _, strain = np.gradient(planar_distance / (2 * np.pi) * phase,
-                                   voxel_size)  # q is along x after rotating the crystal
-    elif reference_axis == "y":
-        _, strain, _ = np.gradient(planar_distance / (2 * np.pi) * phase,
-                                   voxel_size)  # q is along y after rotating the crystal
-    elif reference_axis == "z":
-        strain, _, _ = np.gradient(planar_distance / (2 * np.pi) * phase,
-                                   voxel_size)  # q is along z after rotating the crystal
-    else:  # default is ref_axis_outplane = "y"
-        raise ValueError("Wrong value for the reference axis, it should be 'x', 'y' or 'z'")
+    assert phase.ndim == 3, 'phase should be a 3D array'
+    assert reference_axis in ('x', 'y', 'z'), "The reference axis should be 'x', 'y' or 'z'"
+
+    strain = np.inf * np.ones(phase.shape)
+    if method == 'defect':
+        offsets = 2*np.pi / 10 * np.linspace(-10, 10, num=11)
+        print('Strain method = defect, the following phase offsets will be processed:', offsets)
+    else:  # 'default'
+        offsets = (0,)
+
+    for offset in offsets:
+        # offset the phase
+        if method == 'defect':
+            temp_phase = np.copy(phase)
+            temp_phase = temp_phase + offset
+            # wrap again the offseted phase
+            temp_phase = wrap(obj=temp_phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+        else:  # no need to copy the phase, offset = 0
+            temp_phase = phase
+
+        # calculate the strain for this offset
+        if reference_axis == "x":
+            _, _, temp_strain = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
+                                            voxel_size)  # q is along x after rotating the crystal
+        elif reference_axis == "y":
+            _, temp_strain, _ = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
+                                            voxel_size)  # q is along y after rotating the crystal
+        else:  # "z"
+            temp_strain, _, _ = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
+                                            voxel_size)  # q is along z after rotating the crystal
+
+        # update the strain values
+        strain = np.where(abs(strain) < abs(temp_strain), strain, temp_strain)
+        if debugging:
+            gu.multislices_plot(temp_phase, sum_frames=False, title='Offseted phase', vmin=-np.pi, vmax=np.pi,
+                                plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
+            gu.multislices_plot(strain, sum_frames=False, title='strain', vmin=-0.002, vmax=0.002,
+                                plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
     return strain
 
 
@@ -1309,7 +1380,7 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         myobj = crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
         print('Upsampling: shift_z, shift_y, shift_x: (', str('{:.3f}'.format(shiftz)),
               str('{:.3f}'.format(shifty)), str('{:.3f}'.format(shiftx)), ') pixels')
-        return abs(myobj)/abs(myobj).max(), np.angle(myobj)
+        return abs(myobj)/abs(myobj).max(), np.angle(myobj), shiftz, shifty, shiftx
 
     else:  # method='gradient'
 
@@ -1324,10 +1395,12 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupportz = np.zeros((nbz, nby, nbx))
         mysupportz[abs(mygradz) < gradient_threshold] = 1
         mysupportz = mysupportz * mysupport
+        if mysupportz.sum(initial=None) == 0:
+            raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
         myrampz = mygradz[mysupportz == 1].mean()
         if debugging:
-            gu.multislices_plot(mygradz, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-0.2, vmax=0.2, title='Phase gradient along Z')
+            gu.multislices_plot(mygradz, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along Z')
             gu.multislices_plot(mysupportz, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Thresholded support along Z')
         del mysupportz, mygradz
@@ -1338,10 +1411,12 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupporty = np.zeros((nbz, nby, nbx))
         mysupporty[abs(mygrady) < gradient_threshold] = 1
         mysupporty = mysupporty * mysupport
+        if mysupporty.sum(initial=None) == 0:
+            raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
         myrampy = mygrady[mysupporty == 1].mean()
         if debugging:
-            gu.multislices_plot(mygrady, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-0.2, vmax=0.2, title='Phase gradient along Y')
+            gu.multislices_plot(mygrady, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along Y')
             gu.multislices_plot(mysupporty, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Thresholded support along Y')
         del mysupporty, mygrady
@@ -1352,10 +1427,12 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupportx = np.zeros((nbz, nby, nbx))
         mysupportx[abs(mygradx) < gradient_threshold] = 1
         mysupportx = mysupportx * mysupport
+        if mysupportx.sum(initial=None) == 0:
+            raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
         myrampx = mygradx[mysupportx == 1].mean()
         if debugging:
-            gu.multislices_plot(mygradx, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-0.2, vmax=0.2, title='Phase gradient along X')
+            gu.multislices_plot(mygradx, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along X')
             gu.multislices_plot(mysupportx, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Thresholded support along X')
         del mysupportx, mygradx, mysupport
@@ -1669,13 +1746,14 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
     return tukey3
 
 
-def unwrap(obj, support_threshold, debugging=True):
+def unwrap(obj, support_threshold, seed=0, debugging=True):
     """
     Unwrap the phase of a complex object, based on skimage.restoration.unwrap_phase. A mask can be applied by
      thresholding the modulus of the object.
 
     :param obj: number or array to be wrapped
     :param support_threshold: threshold used to define a support from abs(obj)
+    :param seed: int, random seed. Use always the same value if you want a deterministic behavior.
     :param debugging: set to True to see plots
     :return: unwrapped phase, unwrapped phase range
     """
@@ -1690,7 +1768,7 @@ def unwrap(obj, support_threshold, debugging=True):
         if ndim == 3:
             gu.multislices_plot(phase_wrapped.data, plot_colorbar=True, title='Object before unwrapping')
 
-    phase_unwrapped = unwrap_phase(phase_wrapped).data
+    phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=seed).data
     phase_unwrapped[np.nonzero(unwrap_support)] = 0
     if debugging:
         if ndim == 3:

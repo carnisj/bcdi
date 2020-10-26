@@ -41,13 +41,13 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 329  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
+scans = 85  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/Nanomax/"
-sample_name = [""]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
+root_folder = "D:/data/test_FuzzyGridder/"
+sample_name = ["S"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -75,7 +75,7 @@ pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the a
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
-normalize_flux = 'skip'  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
+normalize_flux = 'monitor'  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
 #################################
 # parameters for data filtering #
 #################################
@@ -104,7 +104,7 @@ save_asint = False  # if True, the result will be saved as an array of integers 
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'NANOMAX'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX', '34ID'
 is_series = False  # specific to series measurement at P10
 
@@ -113,9 +113,9 @@ custom_scan = False  # set it to True for a stack of images acquired without sca
 custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan
 
-rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
+rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = ''
+specfile_name = '2020_07_09_140423Ni'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -127,12 +127,11 @@ specfile_name = ''
 ###############################
 # detector related parameters #
 ###############################
-detector = "Merlin"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 160  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 325  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-# roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
-roi_detector = [y_bragg-160, y_bragg+160, x_bragg-160, x_bragg+160]  # [553, 1063, 1041, 1701]
+x_bragg = 175  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 335  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # [0, 516, x_bragg-179, x_bragg+181]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -142,9 +141,9 @@ photon_threshold = 0  # data[data < photon_threshold] = 0
 photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon threshold should be applied
 # if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
 background_file = ''  # root_folder + 'background.npz'  #
-hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
+hotpixels_file = ''  # root_folder + 'hotpixels_HS4670.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = '%06d.h5'
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -152,13 +151,15 @@ template_imagefile = '%06d.h5'
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
+use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
-sdd = 1.8  # in m, sample to detector distance in m
-energy = 10000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+sdd = 0.84895  # in m, sample to detector distance in m
+energy = 8987.1  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
@@ -175,15 +176,14 @@ custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = 0  # outer detector angle offset, not important if you use raw data
-sample_offsets = (-90, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
+offset_inplane = 1.3032  # outer detector angle offset, not important if you use raw data
+sample_offsets = (0, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
 # the sample offsets will be added to the motor values
-cch1 = 1000  # cch1 parameter from xrayutilities 2D detector calibration, vertical
-cch2 = 1000  # cch2 parameter from xrayutilities 2D detector calibration, horizontal
-# detector roi is taken into account below
-detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
-tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
-tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
+cch1 = 350.82  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch2 = 432.49  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+detrot = 0.59  # detrot parameter from xrayutilities 2D detector calibration
+tiltazimuth = 360  # tiltazimuth parameter from xrayutilities 2D detector calibration
+tilt = 0.800  # tilt parameter from xrayutilities 2D detector calibration
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -228,8 +228,8 @@ def press_key(event):
 
     :param event: button press event
     """
-    global original_data, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, info_text
+    global original_data, original_mask, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask
+    global flag_pause, xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, info_text, my_cmap
 
     try:
         if event.inaxes == ax0:
@@ -252,7 +252,7 @@ def press_key(event):
                                               piy=int(np.rint(event.ydata)), original_data=original_data,
                                               original_mask=original_mask, updated_data=data, updated_mask=mask,
                                               axes=(ax0, ax1, ax2, ax3), width=width, dim=dim, frame_index=frame_index,
-                                              vmin=0, vmax=max_colorbar, invert_yaxis=not use_rawdata)
+                                              vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=not use_rawdata)
             elif flag_mask:
                 if previous_axis == ax0:
                     click_dim = 0
@@ -276,7 +276,7 @@ def press_key(event):
                                             original_mask=mask, updated_data=data, updated_mask=updated_mask,
                                             axes=(ax0, ax1, ax2, ax3), flag_pause=flag_pause, points=points,
                                             xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
-                                            vmin=0, vmax=max_colorbar, invert_yaxis=not use_rawdata)
+                                            vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=not use_rawdata)
                 if click_dim is None:
                     previous_axis = None
             else:
@@ -331,20 +331,23 @@ else:
     print('sample_name should be either a string or a list of strings')
     sys.exit()
 
+###################
+# define colormap #
+###################
+colormap = gu.Colormap()
+my_cmap = colormap.cmap
+plt.rcParams["keymap.fullscreen"] = [""]
+
 #######################
 # Initialize detector #
 #######################
 kwargs = dict()  # create dictionnary
 kwargs['is_series'] = is_series
 kwargs['previous_binning'] = previous_binning
-try:
+if nb_pixel_x:
     kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
-except NameError:  # nb_pixel_x not declared
-    pass
-try:
+if nb_pixel_y:
     kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
-except NameError:  # nb_pixel_y not declared
-    pass
 
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
                         binning=binning, **kwargs)
@@ -588,6 +591,7 @@ for scan_nb in range(len(scans)):
                 fig.savefig(savedir + 'monitor_gridded_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
                             str(nx) + binning_comment + '.png')
                 if flag_interact:
+                    fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
                     cid = plt.connect('close_event', close_event)
                     fig.waitforbuttonpress()
                     plt.disconnect(cid)
@@ -629,6 +633,7 @@ for scan_nb in range(len(scans)):
         plt.savefig(savedir + 'data_before_masking_sum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
                     str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
     if flag_interact:
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
         cid = plt.connect('close_event', close_event)
         fig.waitforbuttonpress()
         plt.disconnect(cid)
@@ -644,6 +649,7 @@ for scan_nb in range(len(scans)):
         plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
                     str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
     if flag_interact:
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
         cid = plt.connect('close_event', close_event)
         fig.waitforbuttonpress()
         plt.disconnect(cid)
@@ -657,6 +663,7 @@ for scan_nb in range(len(scans)):
                     str(nx) + '_' + str(binning[0]) + '_' + str(binning[1]) + '_' + str(binning[2]) + '.png')
 
     if flag_interact:
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
         cid = plt.connect('close_event', close_event)
         fig.waitforbuttonpress()
         plt.disconnect(cid)
@@ -701,9 +708,9 @@ for scan_nb in range(len(scans)):
         original_data = np.copy(data)
         original_mask = np.copy(mask)
         frame_index = starting_frame
-        ax0.imshow(data[frame_index[0], :, :], vmin=0, vmax=max_colorbar)
-        ax1.imshow(data[:, frame_index[1], :], vmin=0, vmax=max_colorbar)
-        ax2.imshow(data[:, :, frame_index[2]], vmin=0, vmax=max_colorbar)
+        ax0.imshow(data[frame_index[0], :, :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax1.imshow(data[:, frame_index[1], :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax2.imshow(data[:, :, frame_index[2]], vmin=0, vmax=max_colorbar, cmap=my_cmap)
         ax3.set_visible(False)
         ax0.axis('scaled')
         ax1.axis('scaled')
@@ -729,20 +736,20 @@ for scan_nb in range(len(scans)):
                                         title='Data after aliens removal\n',
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
 
-        if flag_interact:
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        cid = plt.connect('close_event', close_event)
+        fig.waitforbuttonpress()
+        plt.disconnect(cid)
         plt.close(fig)
 
         fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                         vmax=(nz, ny, nx), title='Mask after aliens removal\n',
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
 
-        if flag_interact:
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        cid = plt.connect('close_event', close_event)
+        fig.waitforbuttonpress()
+        plt.disconnect(cid)
         plt.close(fig)
 
         #############################################
@@ -761,9 +768,9 @@ for scan_nb in range(len(scans)):
         original_data = np.copy(data)
         updated_mask = np.zeros((nz, ny, nx))
         data[mask == 1] = 0  # will appear as grey in the log plot (nan)
-        ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar)
-        ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar)
-        ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar)
+        ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
         ax3.set_visible(False)
         ax0.axis('scaled')
         ax1.axis('scaled')

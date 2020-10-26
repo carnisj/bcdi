@@ -58,6 +58,7 @@ setup(name='bcdi', version='0.0.9',
                'bcdi/preprocessing/scripts/read_edf.py',
                'bcdi/preprocessing/scripts/read_data_P10.py',
                'bcdi/preprocessing/scripts/rescale_support.py',
+               'bcdi/preprocessing/scripts/rotate_scan.py',
                'bcdi/publication/scripts/coefficient_variation.py',
                'bcdi/publication/scripts/paper_figure_diffpattern.py',
                'bcdi/publication/scripts/paper_figure_isosurface.py',
@@ -111,9 +112,9 @@ setup(name='bcdi', version='0.0.9',
       url='https://github.com/carnisj/bcdi',
       project_urls={
           'Documentation': 'https://bcdi.readthedocs.io/en/latest/'},
-      python_requires='>=3.6',
+      python_requires='==3.6.*',
       install_requires=['numpy', 'scipy', 'scikit-image', 'matplotlib', 'hdf5plugin', 'h5py', 'vtk', 'mayavi',
-                        'xrayutilities', 'fabio', 'silx'],
+                        'xrayutilities', 'fabio', 'silx', 'lmfit'],
       classifiers=[
           # How mature is this project? Common values are
           #   3 - Alpha
@@ -131,6 +132,6 @@ setup(name='bcdi', version='0.0.9',
           # that you indicate whether you support Python 2, Python 3 or both.
           # These classifiers are *not* checked by 'pip install'. See instead
           # 'python_requires' below.
-          'Programming Language :: Python :: 3 :: Only',
+          'Programming Language :: Python :: 3.6 :: Only',
       ],
       )

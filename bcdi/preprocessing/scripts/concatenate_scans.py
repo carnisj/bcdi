@@ -24,34 +24,38 @@ The alignment of diffraction patterns is based on the center of mass shift or df
 grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
-scans = np.arange(1138, 1141+1, 3)  # list or array of scan numbers
-scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
+scans = [22, 32]  # np.arange(1138, 1141+1, 3)  # list or array of scan numbers
+# scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
-sample_name = ['dewet2_2']  # list of sample names. If only one name is indicated,
+sample_name = ['ht_pillar3']  # list of sample names. If only one name is indicated,
 # it will be repeated to match the length of scans
-suffix = '_norm_141_580_580_1_1_1.npz'  # '_ortho_norm_1160_1083_1160_2_2_2.npz'
-# the end of the filename template after 'pynx'
-homedir = "D:/data/P10_OER/data/"  # parent folder of scans folders
-savedir = "D:/data/P10_OER/analysis/candidate_11/dewet2_2_S" + str(scans[0]) + "_to_S" + str(scans[-1]) + "/"
+suffix = ['_cropped_1400_1600_1450.npz']  # list of sample names (end of the filename template after 'pynx'),
+# it will be repeated to match the length of scans
+homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
+savedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/ht_pillar3_combined/"
 # path of the folder to save data
-alignement_method = 'registration'
+alignement_method = 'skip'
 # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
 combining_method = 'rgi'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
-corr_roi = None  # [325, 400, 845, 920, 410, 485]
+corr_roi = [1100, 1200, 600, 700, 1025, 1125]
 # [420, 520, 660, 760, 600, 700]  # region of interest where to calculate the correlation between scans.
-# If None, it will use the full
-# array. [zstart, zstop, ystart, ystop, xstart, xstop]
-output_shape = (140, 300, 300)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+# If None, it will use the full array. [zstart, zstop, ystart, ystop, xstart, xstop]
+output_shape = (800, 800, 800)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
 crop_center = None  # [z, y, x] pixels position in the original array of the center of the cropped output
 # if None, it will be set to the center of the original array
-boundaries = 'crop'  # 'mask' or 'crop'. If 'mask', pixels were not all scans are defined after alignement will be
-# masked, if 'crop' output_shape will be modified to remove these boundary pixels
+boundaries = 'skip'  # 'mask', 'crop' or 'skip'. If 'mask', boundary pixels were not all scans are defined after
+# alignement will be masked, if 'crop' output_shape will be modified to crop them. If 'skip', boundaries will not be
+# processed.
+partially_masked = 'unmask'  # 'unmask' or 'mask'. If 'unmask', partially masked pixels will be set to their mean value
+# and unmasked. If 'mask', partially masked pixels will be set to 0 and masked.
 correlation_threshold = 0.90  # only scans having a correlation larger than this threshold will be combined
-reference_scan = 0  # index in scans of the scan to be used as the reference for the correlation calculation
-combine_masks = False  # if True, the output mask is the combination of all masks. If False, the reference mask is used
-is_orthogonal = False  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
+reference_scan = 1  # index in scans of the scan to be used as the reference for the correlation calculation
+combine_masks = True  # if True, the output mask is the combination of all masks. If False, the reference mask is used
+# if a pixel is defined only in part of the dataset, its value will be used with proper rescaling
+is_orthogonal = True  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
 plot_threshold = 0  # data below this will be set to 0, only in plots
+comment = ''  # should start with _ , it will be added to the filename when saving the combined dataset
 debug = False  # True or False
 ##################################
 # end of user-defined parameters #
@@ -66,9 +70,8 @@ if reference_scan is None:
 if type(output_shape) is tuple:
     output_shape = list(output_shape)
 assert len(output_shape) == 3, 'output_shape should be a list or tuple of three numbers'
-assert np.all(np.asarray(output_shape) % 2 == 0), 'output_shape components should be all even due to FFT shape' \
-                                                ' considerations for phase retrieval'
-if type(sample_name) is list:
+
+if isinstance(sample_name, (tuple, list)):
     if len(sample_name) == 1:
         sample_name = [sample_name[0] for idx in range(len(scans))]
     assert len(sample_name) == len(scans), 'sample_name and scans should have the same length'
@@ -78,7 +81,17 @@ else:
     print('sample_name should be either a string or a list of strings')
     sys.exit()
 
-assert boundaries in ['mask', 'crop'], 'boundaries should be either "mask" or "crop"'
+if isinstance(suffix, (tuple, list)):
+    if len(suffix) == 1:
+        suffix = [suffix[0] for idx in range(len(scans))]
+    assert len(suffix) == len(scans), 'sample_name and scans should have the same length'
+elif type(suffix) is str:
+    suffix = [suffix for idx in range(len(scans))]
+else:
+    print('suffix should be either a string or a list of strings')
+    sys.exit()
+
+assert boundaries in {'mask', 'crop', 'skip'}, 'boundaries should be either "mask", "crop" or "skip"'
 
 if is_orthogonal:
     parent_folder = '/pynx/'
@@ -93,12 +106,15 @@ print(scans)
 samplename = sample_name[reference_scan] + '_' + str('{:05d}').format(scans[reference_scan])
 print('Reference scan:', samplename)
 refdata = np.load(homedir + samplename + parent_folder +
-                  'S' + str(scans[reference_scan]) + '_pynx' + suffix)['data']
+                  'S' + str(scans[reference_scan]) + '_pynx' + suffix[reference_scan])['data']
 refmask = np.load(homedir + samplename + parent_folder +
-                  'S' + str(scans[reference_scan]) + '_maskpynx' + suffix)['mask']
+                  'S' + str(scans[reference_scan]) + '_maskpynx' + suffix[reference_scan])['mask']
 assert refdata.ndim == 3 and refmask.ndim == 3, 'data and mask should be 3D arrays'
 nbz, nby, nbx = refdata.shape
 
+#################################################################
+# check parameters depending on the shape of the reference scan #
+#################################################################
 crop_center = list(crop_center or [nbz // 2, nby // 2, nbx // 2])  # if None, default to the middle of the array
 assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
 assert np.all(np.asarray(crop_center)-np.asarray(output_shape)//2 >= 0), 'crop_center incompatible with output_shape'
@@ -114,13 +130,31 @@ if not 0 <= corr_roi[0] < corr_roi[1] <= nbz\
     print('Incorrect value for the parameter corr_roi')
     sys.exit()
 
+# crop the data directly to output_shape if no alignment is required, update corr_roi accordingly
+if alignement_method is 'skip':
+    refmask = pu.crop_pad(array=refmask, output_shape=output_shape, crop_center=crop_center)
+    refdata = pu.crop_pad(array=refdata, output_shape=output_shape, crop_center=crop_center)
+
+    corr_roi = [corr_roi[0]-output_shape[0]//2, corr_roi[1]-output_shape[0]//2,
+                corr_roi[2]-output_shape[1]//2, corr_roi[3]-output_shape[1]//2,
+                corr_roi[4]-output_shape[2]//2, corr_roi[5]-output_shape[2]//2]
+    if not 0 <= corr_roi[0] < corr_roi[1] <= output_shape[0]\
+            or not 0 <= corr_roi[2] < corr_roi[3] <= output_shape[1]\
+            or not 0 <= corr_roi[4] < corr_roi[5] <= output_shape[2]:
+        print('Incorrect value for the parameter corr_roi')
+        sys.exit()
+
+# replace nans by 0 and mask them
+refmask[np.isnan(refdata)] = 1
+refdata[np.isnan(refdata)] = 0
+
 gu.multislices_plot(refdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
                     sum_frames=True, scale='log', plot_colorbar=True, title='refdata in corr_roi', vmin=0,
                     reciprocal_space=True, is_orthogonal=is_orthogonal)
 
-###########################
-# combine the other scans #
-###########################
+###################################################
+# combine the other scans with the reference scan #
+###################################################
 shift_min = [0, 0, 0]  # min of the shift of the first axis after alignement
 shift_max = [0, 0, 0]  # max of the shift of the first axis after alignement
 combined_list = []  # list of scans with correlation coeeficient >= threshold
@@ -136,9 +170,13 @@ for idx in range(len(scans)):
     samplename = sample_name[idx] + '_' + str('{:05d}').format(scans[idx])
     print('\n Opening ', samplename)
     data = np.load(homedir + samplename + parent_folder +
-                   'S' + str(scans[idx]) + '_pynx' + suffix)['data']
+                   'S' + str(scans[idx]) + '_pynx' + suffix[idx])['data']
     mask = np.load(homedir + samplename + parent_folder +
-                   'S' + str(scans[idx]) + '_maskpynx' + suffix)['mask']
+                   'S' + str(scans[idx]) + '_maskpynx' + suffix[idx])['mask']
+
+    # replace nans by 0 and mask them
+    mask[np.isnan(data)] = 1
+    data[np.isnan(data)] = 0
 
     if debug:
         gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True,
@@ -165,13 +203,21 @@ for idx in range(len(scans)):
             gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True,
                                 title='S' + str(scans[idx]) + '\n Mask after shift', vmin=0,
                                 reciprocal_space=True, is_orthogonal=is_orthogonal)
+    else:  # crop the data directly to output_shape
+        mask = pu.crop_pad(array=mask, output_shape=output_shape, crop_center=crop_center)
+        data = pu.crop_pad(array=data, output_shape=output_shape, crop_center=crop_center)
 
+    gu.multislices_plot(data[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
+                        sum_frames=True, scale='log', plot_colorbar=True, title='data in corr_roi', vmin=0,
+                        reciprocal_space=True, is_orthogonal=is_orthogonal)
+    ########################################################
+    # combine datasets if their correlation is good enough #
+    ########################################################
     correlation = pearsonr(
         np.ndarray.flatten(abs(refdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]])),
         np.ndarray.flatten(abs(data[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]])))[0]
-    print('Rocking curve ', idx+1, ': Pearson correlation coefficient = ', str('{:.2f}'.format(correlation)))
+    print('Dataset ', idx+1, ': Pearson correlation coefficient = ', str('{:.3f}'.format(correlation)))
     corr_coeff.append(round(correlation, 2))
-
     if correlation >= correlation_threshold:
         combined_list.append(scans[idx])
         sumdata = sumdata + data
@@ -180,12 +226,9 @@ for idx in range(len(scans)):
     else:
         print('Scan ', scans[idx], ', correlation below threshold, skip concatenation')
 
-summask[np.nonzero(summask)] = 1  # mask should be 0 or 1
-sumdata = sumdata / len(combined_list)
-
-##########################################################################################
-# exclude or mask boundaries where not all scans are defined after alignment (BCDI case) #
-##########################################################################################
+###################################################################################
+# process boundaries, where some voxels can be undefined after aligning a dataset #
+###################################################################################
 if alignement_method is not 'skip':
     shift_min = [int(np.ceil(abs(shift_min[axis]))) for axis in range(3)]
     # shift_min is the number of pixels to remove at the end along each axis
@@ -194,20 +237,23 @@ if alignement_method is not 'skip':
     print('\nnumber of pixels to remove (start, end) = ', shift_max, ', ', shift_min)
 
     if boundaries == 'mask':
+        # when alignment is skipped, shift_min=[0, 0, 0] and shift_max=[0, 0, 0],
+        # resulting in empty slices (nothing masked)
         sumdata[0:shift_max[0], :, :] = 0
-        sumdata[shift_min[0]:, :, :] = 0
+        sumdata[nbz-shift_min[0]:, :, :] = 0
         sumdata[:, 0:shift_max[1], :] = 0
-        sumdata[:, shift_min[1]:, :] = 0
+        sumdata[:, nby-shift_min[1]:, :] = 0
         sumdata[:, :, 0:shift_max[2]] = 0
-        sumdata[:, :, shift_min[2]:] = 0
+        sumdata[:, :, nbx-shift_min[2]:] = 0
 
         summask[0:shift_max[0], :, :] = 1
-        summask[shift_min[0]:, :, :] = 1
+        summask[nbz-shift_min[0]:, :, :] = 1
         summask[:, 0:shift_max[1], :] = 1
-        summask[:, shift_min[1]:, :] = 1
+        summask[:, nby-shift_min[1]:, :] = 1
         summask[:, :, 0:shift_max[2]] = 1
-        summask[:, :, shift_min[2]:] = 1
-    else:  # 'crop', will redefined output_shape and crop_center to remove boundaries
+        summask[:, :, nbx-shift_min[2]:] = 1
+
+    elif boundaries == 'crop':  # will redefined output_shape and crop_center to remove boundaries
         # check along axis 0
         if crop_center[0] - output_shape[0] // 2 < shift_max[0]:  # not enough pixels on the lower indices side
             delta_z = shift_max[0] - crop_center[0] + output_shape[0] // 2
@@ -258,35 +304,51 @@ if alignement_method is not 'skip':
 
         print('new crop size for the first axis=', output_shape, 'new crop_center=', crop_center)
 
-########################################################
-# crop the combined data and mask to the desired shape #
-########################################################
-summask = pu.crop_pad(array=summask, output_shape=output_shape, crop_center=crop_center)
-sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape, crop_center=crop_center)
+    else:  # 'skip'
+        print('no process of the boundaries')
+
+    # crop the combined data and mask to the desired shape, when alignment_method is 'skip' it is done beforehand
+    summask = pu.crop_pad(array=summask, output_shape=output_shape, crop_center=crop_center)
+    sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape, crop_center=crop_center)
+
+##################################################
+# normalize sumdata using the counter in summask #
+##################################################
+mean_data = sumdata
+if partially_masked is 'unmask':
+    unmask_ind = (summask != len(combined_list))  # summask will be = len(combined_list) for pixels totally masked
+    mean_data[unmask_ind] = np.divide(mean_data[unmask_ind], len(combined_list) - summask[unmask_ind])
+    summask[summask != len(combined_list)] = 0  # unmask voxels which are partially masked
+    summask[np.nonzero(summask)] = 1
+else:  # 'mask', mask partially masked pixels
+    summask[np.nonzero(summask)] = 1
+    mean_data[np.nonzero(summask)] = 0
+    mean_data = mean_data / len(combined_list)
 
 ###################################
 # save the combined data and mask #
 ###################################
 template = '_S' + str(combined_list[0]) + 'toS' + str(combined_list[-1]) +\
-           '_{:d}_{:d}_{:d=}'.format(output_shape[0], output_shape[1], output_shape[2])
+           '_{:d}_{:d}_{:d=}'.format(output_shape[0], output_shape[1], output_shape[2]) + comment
 
 
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-np.savez_compressed(savedir+'combined_pynx' + template + '.npz', data=sumdata)
+np.savez_compressed(savedir+'combined_pynx' + template + '.npz', data=mean_data)
 np.savez_compressed(savedir+'combined_maskpynx' + template + '.npz', mask=summask)
 print('\nSum of ', len(combined_list), 'scans')
 
 ###################################
 # plot the combined data and mask #
 ###################################
-gu.multislices_plot(sumdata[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
-                    sum_frames=True, scale='log', plot_colorbar=True, title='sumdata in corr_roi', vmin=0,
+gu.multislices_plot(mean_data[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
+                    sum_frames=True, scale='log', plot_colorbar=True, title='mean_data in corr_roi', vmin=0,
                     reciprocal_space=True, is_orthogonal=is_orthogonal)
 
-sumdata[np.nonzero(summask)] = 0
-sumdata[sumdata < plot_threshold] = 0
-fig, _, _ = gu.multislices_plot(sumdata, sum_frames=True, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
-                                title='Combined masked intensity', vmin=0, reciprocal_space=True)
+mean_data[np.nonzero(summask)] = 0
+mean_data[mean_data < plot_threshold] = 0
+fig, _, _ = gu.multislices_plot(mean_data, sum_frames=True, scale='log', plot_colorbar=True,
+                                is_orthogonal=is_orthogonal, reciprocal_space=True,
+                                title='Combined masked intensity', vmin=0)
 fig.text(0.55, 0.40, "Scans tested:", size=12)
 fig.text(0.55, 0.35, str(scans), size=8)
 fig.text(0.55, 0.30, "Correlation coefficients:", size=12)
@@ -300,9 +362,12 @@ if plot_threshold != 0:
 plt.pause(0.1)
 plt.savefig(savedir + 'data' + template + '.png')
 
-fig, _, _ = gu.multislices_plot(sumdata, sum_frames=False, scale='log', plot_colorbar=True, is_orthogonal=is_orthogonal,
-                                slice_position=crop_center, title='Combined masked intensity', vmin=0,
-                                reciprocal_space=True)
+fig, _, _ = gu.multislices_plot(mean_data, sum_frames=False, scale='log', plot_colorbar=True,
+                                is_orthogonal=is_orthogonal, reciprocal_space=True,
+                                slice_position=[crop_center[0]-output_shape[0]//2,
+                                                crop_center[1]-output_shape[1]//2,
+                                                crop_center[2]-output_shape[2]//2],
+                                title='Combined masked intensity', vmin=0)
 fig.text(0.55, 0.40, "Scans tested:", size=12)
 fig.text(0.55, 0.35, str(scans), size=8)
 fig.text(0.55, 0.30, "Correlation coefficients:", size=12)
