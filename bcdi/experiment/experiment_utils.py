@@ -608,6 +608,26 @@ class SetupPostprocessing(object):
                                                               2 * np.pi / qx_range))
         return 2 * np.pi / qz_range, 2 * np.pi / qy_range, 2 * np.pi / qx_range
 
+    def voxel_sizes_detector(self, array_shape, tilt_angle, pixel_x, pixel_y, debug=False):
+        """
+        Calculate the direct space voxel sizes in the detector frame
+         (z rocking angle, y detector vertical axis, x detector horizontal axis).
+
+        :param array_shape: shape of the 3D array used in phase retrieval
+        :param tilt_angle: angular step during the rocking curve, in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        :param debug: True to have printed comments
+        :return: the direct space voxel sizes in nm, in the detector frame (voxel_z, voxel_y, voxel_x)
+        """
+        voxel_z = self.wavelength / (array_shape[0] * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
+        voxel_y = self.wavelength * self.distance / (array_shape[1] * pixel_y) * 1e9  # in nm
+        voxel_x = self.wavelength * self.distance / (array_shape[2] * pixel_x) * 1e9  # in nm
+        if debug:
+            print('voxelsize_z, voxelsize_y, voxelsize_x='
+                  '({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)'.format(voxel_z, voxel_y, voxel_x))
+        return voxel_z, voxel_y, voxel_x
+
 
 class SetupPreprocessing(object):
     """
