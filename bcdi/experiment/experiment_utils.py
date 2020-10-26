@@ -214,7 +214,7 @@ class SetupPostprocessing(object):
         return coeff_inplane
 
     def orthogonalize(self, obj, initial_shape=(), voxel_size=np.nan, width_z=None, width_y=None,
-                      width_x=None, debugging=False, **kwargs):
+                      width_x=None, verbose=True, debugging=False, **kwargs):
         """
         Interpolate obj on the orthogonal reference frame defined by the setup.
 
@@ -224,6 +224,7 @@ class SetupPostprocessing(object):
         :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
         :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
         :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :param verbose: True to have printed comments
         :param debugging: True to show plots before and after interpolation
         :param kwargs:
          - 'title': title for the debugging plots
@@ -249,10 +250,11 @@ class SetupPostprocessing(object):
         dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(initial_shape, tilt_angle=abs(self.tilt_angle),
                                                                     pixel_x=self.pixel_x, pixel_y=self.pixel_y)
 
-        print('Direct space voxel sizes (z, y, x) based on initial FFT shape: (',
-              str('{:.2f}'.format(dz_realspace)), 'nm,',
-              str('{:.2f}'.format(dy_realspace)), 'nm,',
-              str('{:.2f}'.format(dx_realspace)), 'nm )')
+        if verbose:
+            print('Direct space voxel sizes (z, y, x) based on initial FFT shape: (',
+                  str('{:.2f}'.format(dz_realspace)), 'nm,',
+                  str('{:.2f}'.format(dy_realspace)), 'nm,',
+                  str('{:.2f}'.format(dx_realspace)), 'nm )')
 
         nbz, nby, nbx = obj.shape  # could be smaller if the object was cropped around the support
         if nbz != initial_shape[0] or nby != initial_shape[1] or nbx != initial_shape[2]:
@@ -260,20 +262,21 @@ class SetupPostprocessing(object):
             tilt = self.tilt_angle * initial_shape[0] / nbz
             pixel_y = self.pixel_y * initial_shape[1] / nby
             pixel_x = self.pixel_x * initial_shape[2] / nbx
-            print('Tilt, pixel_y, pixel_x based on cropped array shape: (',
-                  str('{:.4f}'.format(tilt)), 'deg,',
-                  str('{:.2f}'.format(pixel_y * 1e6)), 'um,',
-                  str('{:.2f}'.format(pixel_x * 1e6)), 'um)')
+            if verbose:
+                print('Tilt, pixel_y, pixel_x based on cropped array shape: (',
+                      str('{:.4f}'.format(tilt)), 'deg,',
+                      str('{:.2f}'.format(pixel_y * 1e6)), 'um,',
+                      str('{:.2f}'.format(pixel_x * 1e6)), 'um)')
 
             # sanity check, the direct space voxel sizes calculated below should be equal to the original ones
             dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes((nbz, nby, nbx),
                                                                         tilt_angle=abs(tilt),
                                                                         pixel_x=pixel_x, pixel_y=pixel_y)
-
-            print('Sanity check, recalculated direct space voxel sizes: (',
-                  str('{:.2f}'.format(dz_realspace)), ' nm,',
-                  str('{:.2f}'.format(dy_realspace)), 'nm,',
-                  str('{:.2f}'.format(dx_realspace)), 'nm )')
+            if verbose:
+                print('Sanity check, recalculated direct space voxel sizes: (',
+                      str('{:.2f}'.format(dz_realspace)), ' nm,',
+                      str('{:.2f}'.format(dy_realspace)), 'nm,',
+                      str('{:.2f}'.format(dx_realspace)), 'nm )')
         else:
             tilt = self.tilt_angle
             pixel_y = self.pixel_y
