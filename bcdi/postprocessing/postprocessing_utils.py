@@ -1287,6 +1287,49 @@ def regrid(array, voxel_zyx, voxel):
     return new_array
 
 
+def remove_offset(array, support, offset_method='COM', user_offset=0, offset_origin=None, title='',
+                  debugging=False):
+    """
+    Remove the offset in a 3D array based on a 3D support.
+
+    :param array: a 3D array
+    :param support: A 3D suuport of the same shape as array, defining the object
+    :param offset_method: 'COM' or 'mean'. If 'COM', the value of array at the center of mass of the support will be
+     subtracted to the array. If 'mean', the mean value of array on the support will be subtracted to the array.
+    :param user_offset: value to add to the array
+    :param offset_origin: If provided, the value of array at this voxel will be subtracted to the array.
+    :param title: string, used in plot title
+    :param debugging: True to see plots
+    :return: the processed array
+    """
+    assert array.ndim == 3 and support.ndim == 3, 'array and support should be 3D arrayse'
+    assert array.shape == support.shape, 'array and support should have the same shape'
+    if debugging:
+        gu.multislices_plot(array, sum_frames=False, plot_colorbar=True, title=title + ' before offset removal')
+
+    if offset_origin is None:  # use offset_method to remove the offset
+        if offset_method == 'COM':
+            zcom, ycom, xcom = center_of_mass(support)
+            zcom, ycom, xcom = int(np.rint(zcom)), int(np.rint(ycom)), int(np.rint(xcom))
+            print("\nCOM at pixels (z, y, x): ", zcom, ycom, xcom)
+            print("Offset at COM(support) of:", str('{:.2f}'.format(array[zcom, ycom, xcom])), "rad")
+            array = array - array[zcom, ycom, xcom] + user_offset
+        elif offset_method == 'mean':
+            array = array - array[support == 1].mean() + user_offset
+        else:
+            raise ValueError('Invalid setting for parameter "offset_method"')
+    else:
+        assert len(offset_origin) == 3, 'offset_origin should be a tuple of three pixel positions'
+        print("\nOrigin for offset removal at pixels (z, y, x): ", offset_origin[0], offset_origin[1], offset_origin[2])
+        print("Offset of ",
+              str('{:.2f}'.format(array[offset_origin[0], offset_origin[1], offset_origin[2]])), "rad")
+        array = array - array[offset_origin[0], offset_origin[1], offset_origin[2]] + user_offset
+
+    if debugging:
+        gu.multislices_plot(array, sum_frames=False, plot_colorbar=True, title=title + ' after offset removal')
+    return array
+
+
 def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=None,
                 amplitude_threshold=0.25, gradient_threshold=0.2, method='gradient', ups_factor=2, debugging=False):
     """
