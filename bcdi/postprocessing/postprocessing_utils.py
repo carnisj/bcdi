@@ -1079,7 +1079,7 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_ph
 
     :param phase: 3D phase array (do not forget the -1 sign if the phasing algorithm is python or matlab-based)
     :param planar_distance: the planar distance of the material corresponding to the measured Bragg peak
-    :param voxel_size: the voxel size of the phase array in nm, should be isotropic
+    :param voxel_size: float or tuple of three floats, the voxel size of the phase array in nm
     :param reference_axis: the axis of the array along which q is aligned: 'x', 'y' or 'z' (CXI convention)
     :param extent_phase: range for phase wrapping, specify it when the phase spans over more than 2*pi
     :param method: 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
@@ -1091,6 +1091,10 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_ph
 
     assert phase.ndim == 3, 'phase should be a 3D array'
     assert reference_axis in ('x', 'y', 'z'), "The reference axis should be 'x', 'y' or 'z'"
+    try:
+        assert len(voxel_size) == 3, 'voxel_size should be a tuple of three floats'
+    except TypeError:  # voxel_size is a number
+        voxel_size = (voxel_size, voxel_size, voxel_size)
 
     strain = np.inf * np.ones(phase.shape)
     if method == 'defect':
@@ -1112,13 +1116,13 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_ph
         # calculate the strain for this offset
         if reference_axis == "x":
             _, _, temp_strain = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
-                                            voxel_size)  # q is along x after rotating the crystal
+                                            voxel_size[2])  # q is along x after rotating the crystal
         elif reference_axis == "y":
             _, temp_strain, _ = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
-                                            voxel_size)  # q is along y after rotating the crystal
+                                            voxel_size[1])  # q is along y after rotating the crystal
         else:  # "z"
             temp_strain, _, _ = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
-                                            voxel_size)  # q is along z after rotating the crystal
+                                            voxel_size[0])  # q is along z after rotating the crystal
 
         # update the strain values
         strain = np.where(abs(strain) < abs(temp_strain), strain, temp_strain)
