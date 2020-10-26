@@ -308,41 +308,17 @@ if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
                         plot_colorbar=True, title='Phase after ramp removal')
 
-#######################################
-# phase offset removal (COM then mean) #
-#######################################
+########################
+# phase offset removal #
+########################
 support = np.zeros(amp.shape)
 support[amp > isosurface_strain*amp.max()] = 1
-
-zcom, ycom, xcom = center_of_mass(support)
-print("COM at (z, y, x): (", str('{:.2f}'.format(zcom)), ',', str('{:.2f}'.format(ycom)), ',',
-      str('{:.2f}'.format(xcom)), ')')
-print("Phase offset at COM(amp) of:", str('{:.2f}'.format(phase[int(zcom), int(ycom), int(xcom)])), "rad")
-
-if debug:
-    gu.combined_plots((phase[int(zcom), :, :], phase[:, int(ycom), :], phase[:, :, int(xcom)]), tuple_sum_frames=False,
-                      tuple_sum_axis=0, tuple_width_v=None, tuple_width_h=None, tuple_colorbar=True,
-                      tuple_vmin=np.nan, tuple_vmax=np.nan,
-                      tuple_title=('phase at COM in xy', 'phase at COM in xz', 'phase at COM in yz'),
-                      tuple_scale='linear', cmap=my_cmap, is_orthogonal=False, reciprocal_space=False)
-
-phase = phase - phase[int(zcom), int(ycom), int(xcom)]
-
-phase = pru.wrap(obj=phase, start_angle=-extent_phase/2, range_angle=extent_phase)
-
-if debug:
-    gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                        plot_colorbar=True, title='Phase after offset removal')
-
-print("Mean phase:", phase[support == 1].mean(), "rad")
-phase = phase - phase[support == 1].mean() + phase_offset
-del support, zcom, ycom, xcom
+phase = pu.remove_offset(array=phase, support=support, offset_method=offset_method, user_offset=phase_offset,
+                         offset_origin=offset_origin, title='Phase', debugging=debug)
+del support
 gc.collect()
 
-phase = pru.wrap(obj=phase, start_angle=-extent_phase/2, range_angle=extent_phase)
-if debug:
-    gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                        plot_colorbar=True, title='Phase after mean removal')
+phase = pru.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
 
 ##############################################################################
 # average the phase over a window or apodize to reduce noise in strain plots #
@@ -581,48 +557,17 @@ amp, phase, _, _, _ = pu.remove_ramp(amp=amp, phase=phase, initial_shape=origina
                                      amplitude_threshold=isosurface_strain, gradient_threshold=threshold_gradient,
                                      debugging=debug)
 
-gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                    sum_frames=False, plot_colorbar=True,
-                    title='Orthogonal phase before offset removal')
-
-if len(offset_origin) == 0:  # use offset_method to remove the phase offset
-    support = np.zeros(amp.shape)
-    support[amp > isosurface_strain*amp.max()] = 1
-    if offset_method == 'COM':
-        zcom, ycom, xcom = center_of_mass(support)
-        zcom, ycom, xcom = int(np.rint(zcom)), int(np.rint(ycom)), int(np.rint(xcom))
-        print("\nOrthogonal COM in pixels (z, y, x): ", zcom, ycom, xcom)
-        print("Orthogonal phase offset at COM(amp) of:",
-              str('{:.2f}'.format(phase[zcom, ycom, xcom])), "rad")
-
-        phase = phase - phase[zcom, ycom, xcom] + phase_offset
-
-    elif offset_method == 'mean':
-        phase = phase - phase[support == 1].mean() + phase_offset
-    else:
-        sys.exit('Invalid setting for parameter "offset_method"')
-
-    del support
-    gc.collect()
-else:
-    assert len(offset_origin) == 3, 'Invalid setting for parameter "offset_origin", [z,y,x] pixel position expected'
-    print("\nOrthogonal phase offset at voxel ", offset_origin, " of",
-          str('{:.2f}'.format(phase[offset_origin[0], offset_origin[1], offset_origin[2]])), "rad")
-    phase = phase - phase[offset_origin[0], offset_origin[1], offset_origin[2]] + phase_offset
+########################
+# phase offset removal #
+########################
+support = np.zeros(amp.shape)
+support[amp > isosurface_strain*amp.max()] = 1
+phase = pu.remove_offset(array=phase, support=support, offset_method=offset_method, user_offset=phase_offset,
+                         offset_origin=offset_origin, title='Orthogonal phase', debugging=debug)
+del support
+gc.collect()
 
 phase = pru.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
-
-if len(offset_origin) == 0:
-    if offset_method == 'COM':
-        print("Orthogonal phase offset after wrapping at COM(amp) of:",
-              str('{:.2f}'.format(phase[zcom, ycom, xcom])), "rad")
-else:
-    print("Orthogonal phase offset after wrapping at voxel ", offset_origin, " of",
-          str('{:.2f}'.format(phase[offset_origin[0], offset_origin[1], offset_origin[2]])), "rad")
-
-gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                    sum_frames=False, plot_colorbar=True,
-                    title='Orthogonal phase after offset removal')
 
 ################################
 # save to VTK before rotations #
