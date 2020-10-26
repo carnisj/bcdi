@@ -284,6 +284,10 @@ class SetupPostprocessing(object):
         myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * voxel,
                                     np.arange(-nby // 2, nby // 2, 1) * voxel,
                                     np.arange(-nbx // 2, nbx // 2, 1) * voxel, indexing='ij')
+
+        # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
+        # in RGI, we want to calculate the coordinates that would have a grid of the laboratory frame expressed in the
+        # detector frame, i.e. one has to inverse the transformation matrix.
         ortho_imatrix = np.linalg.inv(ortho_matrix)
         new_x = ortho_imatrix[0, 0] * myx + ortho_imatrix[0, 1] * myy + ortho_imatrix[0, 2] * myz
         new_y = ortho_imatrix[1, 0] * myx + ortho_imatrix[1, 1] * myy + ortho_imatrix[1, 2] * myz
