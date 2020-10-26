@@ -316,6 +316,28 @@ class SetupPostprocessing(object):
                                 title=title+' in the orthogonal laboratory frame')
         return ortho_obj, voxel
 
+    def orthogonalize_vector(self, vector, array_shape, tilt_angle, pixel_x, pixel_y):
+        """
+        Calculate the direct space voxel sizes in the laboratory frame (z downstream, y vertical up, x outboard).
+
+        :param vector: tuple of 3 coordinates, vector to be transformed in the detector frame
+        :param array_shape: shape of the 3D array to orthogonalize
+        :param tilt_angle: angular step during the rocking curve, in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
+        """
+        ortho_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
+                                          pixel_x=pixel_x, pixel_y=pixel_y)
+        # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
+        # Here, we want to calculate the coordinates that would have a vector of the laboratory frame expressed in the
+        # detector frame, i.e. one has to inverse the transformation matrix.
+        ortho_imatrix = np.linalg.inv(ortho_matrix)
+        new_x = ortho_imatrix[0, 0] * vector[2] + ortho_imatrix[0, 1] * vector[1] + ortho_imatrix[0, 2] * vector[0]
+        new_y = ortho_imatrix[1, 0] * vector[2] + ortho_imatrix[1, 1] * vector[1] + ortho_imatrix[1, 2] * vector[0]
+        new_z = ortho_imatrix[2, 0] * vector[2] + ortho_imatrix[2, 1] * vector[1] + ortho_imatrix[2, 2] * vector[0]
+        return new_z, new_y, new_x
+
     def outofplane_coeff(self):
         """
         Define a coefficient +/- 1 depending on the detector out of plane rotation direction and the detector out of
