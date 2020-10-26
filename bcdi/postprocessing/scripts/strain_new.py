@@ -405,9 +405,10 @@ else:  # calculate the strain in the detector frame
                                              pixel_y=pixel_size, debug=debug)
 
     gu.multislices_plot(phase, sum_frames=False, title='Phase in detector frame',
-                        vmin=-phase, vmax=phase, plot_colorbar=True, cmap=my_cmap,
+                        vmin=-phase_range, vmax=phase_range, plot_colorbar=True, cmap=my_cmap,
                         is_orthogonal=False, reciprocal_space=False)
-
+    phase, extent_phase = pu.unwrap(amp * np.exp(1j * phase), support_threshold=threshold_unwrap_refraction,
+                                    debugging=debug)
     strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxel_sizes,
                            reference_axis=ref_axis_q, debugging=debug)
 
