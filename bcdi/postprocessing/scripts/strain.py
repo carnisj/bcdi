@@ -43,16 +43,16 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 2290  # spec scan number
+scan = 11  # spec scan number
 
-datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + "/pynxraw/gap_interp/"
+datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + "/pynxraw/test/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [240, 450, 432]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [252, 420, 392]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor applied during phasing
 output_size = (200, 200, 200)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
@@ -64,16 +64,16 @@ plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the sup
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-isosurface_strain = 0.48  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
-strain_method = 'defect'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
+isosurface_strain = 0.38  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+strain_method = 'default'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
 # magnitude value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
-offset_origin = []  # the phase at this pixels will be set to phase_offset, leave it as [] to use offset_method instead
+offset_origin = None  # the phase at this voxel will be set to phase_offset, None otherwise
 offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the phase
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = '_defect_gap_iso' + str(isosurface_strain)  # should start with _
+comment = '_gap_iso' + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
@@ -85,10 +85,10 @@ sdd = 0.50678  # 1.26  # sample to detector distance in m
 pixel_size = 55e-6  # detector pixel size in m, taking into account an eventual binning during preprocessing
 energy = 9000  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 35.2694  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = -2.5110  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 35.3627  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = 0.4864  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.01016  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.01015  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 optical_path_method = 'threshold'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
@@ -110,7 +110,7 @@ simu_flag = False  # set to True if it is simulation, the parameter invert_phase
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
 flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
-threshold_gradient = 0.1  # upper threshold of the gradient of the phase, use for ramp removal
+threshold_gradient = 1.0  # upper threshold of the gradient of the phase, use for ramp removal
 xrayutils_ortho = False  # True if the data is already orthogonalized
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
 save_support = False  # True to save the non-orthogonal support for later phase retrieval
@@ -600,12 +600,6 @@ if not xrayutils_ortho:
 ################################################################
 # calculate the strain depending on which axis q is aligned on #
 ################################################################
-support = np.zeros(amp.shape)
-support[amp > isosurface_strain*amp.max()] = 1
-zcom, ycom, xcom = center_of_mass(support)
-del support
-gc.collect()
-
 strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxel_size, reference_axis=ref_axis_q,
                        extent_phase=extent_phase, method=strain_method, debugging=debug)
 
