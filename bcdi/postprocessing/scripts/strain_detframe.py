@@ -14,6 +14,7 @@ import tkinter as tk
 from tkinter import filedialog
 import gc
 import sys
+
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
@@ -109,7 +110,7 @@ threshold_unwrap_refraction = 0.05  # threshold used to calculate the optical pa
 simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
 flip_reconstruction = False  # True if you want to get the conjugate object
-phase_ramp_removal = 'gradient'  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
+phase_ramp_removal = 'upsampling'  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient = 0.1  # upper threshold of the gradient of the phase, use for ramp removal
 is_orthogonal = False  # True if the data is already orthogonalized
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
@@ -117,7 +118,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (0, 0, 0)  # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
@@ -155,9 +156,61 @@ apodize_window = 'blackman'  # filtering window, multivariate 'normal' or 'tukey
 mu = np.array([0.0, 0.0, 0.0])  # mu of the gaussian window
 sigma = np.array([0.30, 0.30, 0.30])  # sigma of the gaussian window
 alpha = np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
+
+
 ##################################
 # end of user-defined parameters #
 ##################################
+
+
+def extrapol(strain, weight=2, debugging=True):
+    for _ in range(10):
+        support = np.ones(strain.shape)
+        support[~np.isnan(strain)] = 0
+        coordination_matrix = pu.calc_coordination(support, kernel=np.ones((3, 3, 3)), debugging=debugging)
+        surface = np.copy(support)
+        del support
+        surface[coordination_matrix > 22] = 0  # remove the bulk 22
+        surface[0:1, :, :] = 0
+        surface[-1:, :, :] = 0
+        surface[:, 0:1, :] = 0
+        surface[:, -1:, :] = 0
+        surface[:, :, 0:1] = 0
+        surface[:, :, -1:] = 0
+        if debugging:
+            gu.multislices_plot(surface, sum_frames=False, title='surface layer',
+                                vmin=0, vmax=1, plot_colorbar=True, cmap=my_cmap,
+                                is_orthogonal=False, reciprocal_space=False)
+            gu.multislices_plot(strain, sum_frames=False, title='strain before extrapolation',
+                                vmin=-strain_range, vmax=strain_range, plot_colorbar=True, cmap=my_cmap,
+                                is_orthogonal=False, reciprocal_space=False)
+        indices = np.argwhere(surface != 0)
+        for voxel in indices:
+            # take a small window around the voxel
+            window = strain[voxel[0] - 1: voxel[0] + 2, voxel[1] - 1: voxel[1] + 2, voxel[2] - 1: voxel[2] + 2]
+            # find the indices of the voxels belonging to the object
+            obj_ind = np.argwhere(~np.isnan(window))
+            # calculate the weighted distance of these voxels with voxel
+            if len(obj_ind) != 0:
+                strain[voxel[0], voxel[1], voxel[2]] = 0  # remove the nan
+                weighted_distance = np.zeros(obj_ind.shape[0])
+                for idx in range(obj_ind.shape[0]):
+                    weighted_distance[idx] = 1 / (np.sqrt(
+                        (obj_ind[idx, 0] - 1) ** 2 + (obj_ind[idx, 1] - 1) ** 2 + (obj_ind[idx, 2] - 1) ** 2)) ** weight
+                    # take the average value weighted by the distance
+                    strain[voxel[0], voxel[1], voxel[2]] += \
+                        weighted_distance[idx] * strain[
+                            voxel[0] + obj_ind[idx, 0] - 1, voxel[1] + obj_ind[idx, 1] - 1, voxel[2] + obj_ind[
+                                idx, 2] - 1]
+                # normalize by the weights
+                strain[voxel[0], voxel[1], voxel[2]] = strain[voxel[0], voxel[1], voxel[2]] / weighted_distance.sum()
+        if debugging:
+            gu.multislices_plot(strain, sum_frames=False, title='strain after extrapolation',
+                                vmin=-strain_range, vmax=strain_range, plot_colorbar=True, cmap=my_cmap,
+                                is_orthogonal=False, reciprocal_space=False)
+
+    return strain
+
 
 ####################
 # Check parameters #
@@ -225,7 +278,7 @@ nz, ny, nx = obj.shape
 ###########################################################################
 # define range for orthogonalization and plotting - speed up calculations #
 ###########################################################################
-zrange, yrange, xrange =\
+zrange, yrange, xrange = \
     pu.find_datarange(array=obj, plot_margin=plot_margin, amplitude_threshold=0.1, keep_size=keep_size)
 
 numz = zrange * 2
@@ -283,6 +336,18 @@ print('\nAverage performed over ', avg_counter, 'reconstructions\n')
 del obj, ref_obj
 gc.collect()
 
+######################
+# centering of array #
+######################
+if centering_method is 'max':
+    avg_obj = pu.center_max(avg_obj)
+    # shift based on max value, required if it spans across the edge of the array before COM
+elif centering_method is 'com':
+    avg_obj = pu.center_com(avg_obj)
+elif centering_method is 'max_com':
+    avg_obj = pu.center_max(avg_obj)
+    avg_obj = pu.center_com(avg_obj)
+
 ##################################################
 # calculate q, kin , kout from angles and energy #
 ##################################################
@@ -296,7 +361,7 @@ else:
     ref_axis_q = "y"
     myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
 
-kin = 2*np.pi/setup.wavelength * beam_direction  # in laboratory frame z downstream, y vertical, x outboard
+kin = 2 * np.pi / setup.wavelength * beam_direction  # in laboratory frame z downstream, y vertical, x outboard
 kout = setup.exit_wavevector()  # in laboratory frame z downstream, y vertical, x outboard
 
 q = kout - kin
@@ -304,11 +369,11 @@ Qnorm = np.linalg.norm(q)
 q = q / Qnorm
 angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=myaxis)
 print("Angle between q and", ref_axis_q, "=", angle, "deg")
-print("Angle with y in zy plane", np.arctan(q[0]/q[1])*180/np.pi, "deg")
-print("Angle with y in xy plane", np.arctan(-q[2]/q[1])*180/np.pi, "deg")
-print("Angle with z in xz plane", 180 + np.arctan(q[2]/q[0])*180/np.pi, "deg")
+print("Angle with y in zy plane", np.arctan(q[0] / q[1]) * 180 / np.pi, "deg")
+print("Angle with y in xy plane", np.arctan(-q[2] / q[1]) * 180 / np.pi, "deg")
+print("Angle with z in xz plane", 180 + np.arctan(q[2] / q[0]) * 180 / np.pi, "deg")
 Qnorm = Qnorm * 1e-10  # switch to angstroms
-planar_dist = 2*np.pi/Qnorm  # Qnorm should be in angstroms
+planar_dist = 2 * np.pi / Qnorm  # Qnorm should be in angstroms
 print("Normalized wavevector transfer [z, y, x]:", q)
 print("Wavevector transfer: (angstroms)", str('{:.4f}'.format(Qnorm)))
 print("Atomic plane distance: (angstroms)", str('{:.4f}'.format(planar_dist)), "angstroms")
@@ -348,7 +413,7 @@ if is_orthogonal:  # transform kin and kout back into the crystal frame (xrayuti
     avg_obj = pu.regrid(avg_obj, (dz_real, dy_real, dx_real), voxel_size)
     amp = abs(avg_obj)
     phase = np.angle(avg_obj)
-    
+
 else:  # transform back q in the detector frame, we need it to align q along one the array axis and calculate the strain
     q_lab = setup.orthogonalize_vector(vector=q, array_shape=original_size, tilt_angle=tilt_angle, pixel_x=pixel_size,
                                        pixel_y=pixel_size)
@@ -404,15 +469,22 @@ else:  # calculate the strain in the detector frame
     voxel_sizes = setup.voxel_sizes_detector(array_shape=original_size, tilt_angle=tilt_angle, pixel_x=pixel_size,
                                              pixel_y=pixel_size, debug=debug)
 
-    gu.multislices_plot(phase, sum_frames=False, title='Phase in detector frame',
-                        vmin=-phase_range, vmax=phase_range, plot_colorbar=True, cmap=my_cmap,
-                        is_orthogonal=False, reciprocal_space=False)
-    phase, extent_phase = pu.unwrap(amp * np.exp(1j * phase), support_threshold=threshold_unwrap_refraction,
-                                    debugging=debug)
-    strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxel_sizes,
-                           reference_axis=ref_axis_q, debugging=debug)
+    if strain_method is not 'defect':  # need to unwrap the phase in this case
+        print('strain_method=', strain_method, ' - Unwrapping the phase before calculating the strain')
+        phase, extent_phase = pu.unwrap(amp * np.exp(1j * phase), support_threshold=threshold_unwrap_refraction,
+                                        debugging=debug)
+    else:
+        extent_phase = 2 * np.pi
+    print(strain_method)
 
-    gu.multislices_plot(strain, sum_frames=False, title='Strain in detector frame, rotated',
+    strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxel_sizes, reference_axis=ref_axis_q,
+                           extent_phase=extent_phase, method=strain_method, debugging=debug)
+
+    gu.multislices_plot(strain, sum_frames=False, title='Strain in detector frame, calculated',
+                        vmin=-strain_range, vmax=strain_range, plot_colorbar=True, cmap=my_cmap,
+                        is_orthogonal=False, reciprocal_space=False)
+
+    gu.multislices_plot(strain, sum_frames=False, title='Strain in detector frame, extrapolated',
                         vmin=-strain_range, vmax=strain_range, plot_colorbar=True, cmap=my_cmap,
                         is_orthogonal=False, reciprocal_space=False)
 
@@ -423,7 +495,7 @@ else:  # calculate the strain in the detector frame
                               reference_axis=np.array([q_lab[2], q_lab[1], q_lab[0]]) / np.linalg.norm(q_lab))
     strain = pu.rotate_crystal(array=strain, axis_to_align=myaxis, debugging=False,
                                reference_axis=np.array([q_lab[2], q_lab[1], q_lab[0]]) / np.linalg.norm(q_lab))
-    gu.multislices_plot(strain, sum_frames=False, title='Strain in detector frame',
+    gu.multislices_plot(strain, sum_frames=False, title='Strain in detector frame, rotated back',
                         vmin=-strain_range, vmax=strain_range, plot_colorbar=True, cmap=my_cmap,
                         is_orthogonal=False, reciprocal_space=False)
 
@@ -438,19 +510,25 @@ else:  # calculate the strain in the detector frame
     if save_raw:
         if invert_phase:
             np.savez_compressed(datadir + 'S' + str(scan) + "_detframe_amp" + phase_fieldname + "strain" + comment,
-                                amp=amp/amp.max(), displacement=phase, strain=strain)
+                                amp=amp / amp.max(), displacement=phase, strain=strain)
         else:
             np.savez_compressed(datadir + 'S' + str(scan) + "_detframe_amp" + phase_fieldname + "strain" + comment,
-                                amp=amp/amp.max(), phase=phase, strain=strain)
+                                amp=amp / amp.max(), phase=phase, strain=strain)
         # save amp, phase % strain to VTK
         # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
         gu.save_to_vti(filename=datadir + "S" + str(scan) + "_detframe_amp-phase-strain" + comment + ".vti",
-                       voxel_size=voxel_sizes, tuple_array=(amp/amp.max(), phase, strain),
+                       voxel_size=voxel_sizes, tuple_array=(amp / amp.max(), phase, strain),
                        tuple_fieldnames=('amp', phase_fieldname, 'strain'), amplitude_threshold=0.01)
 
     # unwrap the phase before interpolating in the laboratory frame
     phase, extent_phase = pu.unwrap(amp * np.exp(1j * phase), support_threshold=threshold_unwrap_refraction,
                                     debugging=debug)
+
+    # extrapolate the strain at the surface to avoid artefacts
+    bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method='threshold')
+    strain[bulk == 0] = np.nan
+    del bulk
+    strain = extrapol(strain, debugging=debug)
 
     # interpolate into the laboratory frame
     amp, voxel_size = setup.orthogonalize(obj=amp, initial_shape=original_size, voxel_size=fix_voxel, verbose=True)
@@ -459,18 +537,18 @@ else:  # calculate the strain in the detector frame
     print("VTK spacing :", str('{:.2f}'.format(voxel_size)), "nm")
 
     print('\nAligning Q along ', ref_axis_q, ":", myaxis)
-    amp = pu.rotate_crystal(array=amp, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
+    amp = pu.rotate_crystal(array=amp, axis_to_align=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q),
                             reference_axis=myaxis, debugging=True)
-    phase = pu.rotate_crystal(array=phase, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
+    phase = pu.rotate_crystal(array=phase, axis_to_align=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q),
                               reference_axis=myaxis, debugging=False)
-    strain = pu.rotate_crystal(array=strain, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
+    strain = pu.rotate_crystal(array=strain, axis_to_align=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q),
                                reference_axis=myaxis, debugging=False)
 
 ########################
 # phase offset removal #
 ########################
 support = np.zeros(amp.shape)
-support[amp > isosurface_strain*amp.max()] = 1
+support[amp > isosurface_strain * amp.max()] = 1
 phase = pu.remove_offset(array=phase, support=support, offset_method=offset_method, user_offset=phase_offset,
                          offset_origin=offset_origin, title='Orthogonal phase', debugging=debug)
 del support
@@ -504,10 +582,10 @@ if save:
 
     # save amp & phase to VTK
     # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
-    gu.save_to_vti(filename=os.path.join(datadir, "S"+str(scan)+"_amp-"+phase_fieldname+"-strain"+comment+".vti"),
-                   voxel_size=(voxel_size, voxel_size, voxel_size), tuple_array=(amp, bulk, phase, strain),
-                   tuple_fieldnames=('amp', 'bulk', phase_fieldname, 'strain'), amplitude_threshold=0.01)
-
+    gu.save_to_vti(
+        filename=os.path.join(datadir, "S" + str(scan) + "_amp-" + phase_fieldname + "-strain" + comment + ".vti"),
+        voxel_size=(voxel_size, voxel_size, voxel_size), tuple_array=(amp, bulk, phase, strain),
+        tuple_fieldnames=('amp', 'bulk', phase_fieldname, 'strain'), amplitude_threshold=0.01)
 
 ########################
 # calculate the volume #
@@ -516,7 +594,7 @@ amp = amp / amp.max()
 temp_amp = np.copy(amp)
 temp_amp[amp < isosurface_strain] = 0
 temp_amp[np.nonzero(temp_amp)] = 1
-volume = temp_amp.sum()*voxel_size**3  # in nm3
+volume = temp_amp.sum() * voxel_size ** 3  # in nm3
 del temp_amp
 gc.collect()
 
@@ -525,8 +603,8 @@ gc.collect()
 #######################
 pixel_spacing = tick_spacing / voxel_size
 
-print('Phase extent before and after thresholding:', phase.max()-phase.min(),
-      phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min())
+print('Phase extent before and after thresholding:', phase.max() - phase.min(),
+      phase[np.nonzero(bulk)].max() - phase[np.nonzero(bulk)].min())
 piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
 print('phase.max() = ', phase[np.nonzero(bulk)].max(), ', at coordinates ', piz, piy, pix)
 strain[bulk == 0] = np.nan
@@ -569,7 +647,7 @@ if save:
 
 # amplitude histogram
 fig, ax = plt.subplots(1, 1)
-ax.hist(amp[amp > 0.05*amp.max()].flatten(), bins=250)
+ax.hist(amp[amp > 0.05 * amp.max()].flatten(), bins=250)
 ax.set_ylim(bottom=1)
 ax.tick_params(labelbottom=True, labelleft=True, direction='out', length=tick_length, width=tick_width)
 ax.spines['right'].set_linewidth(1.5)
@@ -580,7 +658,8 @@ fig.savefig(datadir + 'S' + str(scan) + '_histo_amp' + comment + '.png')
 
 # phase
 fig, _, _ = gu.multislices_plot(phase, sum_frames=False, title='Orthogonal displacement',
-                                vmin=-phase_range/2, vmax=phase_range/2, tick_direction=tick_direction, cmap=my_cmap,
+                                vmin=-phase_range / 2, vmax=phase_range / 2, tick_direction=tick_direction,
+                                cmap=my_cmap,
                                 tick_width=tick_width, tick_length=tick_length, pixel_spacing=pixel_spacing,
                                 plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
 fig.text(0.60, 0.30, "Scan " + str(scan), size=20)
@@ -588,7 +667,7 @@ fig.text(0.60, 0.25, "Voxel size=" + str('{:.2f}'.format(voxel_size)) + "nm", si
 fig.text(0.60, 0.20, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
 fig.text(0.60, 0.15, "Average over " + str(avg_counter) + " reconstruction(s)", size=20)
 if hwidth > 0:
-    fig.text(0.60, 0.10, "Averaging over " + str(2*hwidth+1) + " pixels", size=20)
+    fig.text(0.60, 0.10, "Averaging over " + str(2 * hwidth + 1) + " pixels", size=20)
 else:
     fig.text(0.60, 0.10, "No phase averaging", size=20)
 if save:
@@ -604,12 +683,11 @@ fig.text(0.60, 0.25, "Voxel size=" + str('{:.2f}'.format(voxel_size)) + "nm", si
 fig.text(0.60, 0.20, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
 fig.text(0.60, 0.15, "Average over " + str(avg_counter) + " reconstruction(s)", size=20)
 if hwidth > 0:
-    fig.text(0.60, 0.10, "Averaging over " + str(2*hwidth+1) + " pixels", size=20)
+    fig.text(0.60, 0.10, "Averaging over " + str(2 * hwidth + 1) + " pixels", size=20)
 else:
     fig.text(0.60, 0.10, "No phase averaging", size=20)
 if save:
     plt.savefig(datadir + 'S' + str(scan) + '_strain' + comment + '.png')
-
 
 print('End of script')
 plt.ioff()
