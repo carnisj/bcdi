@@ -8,7 +8,6 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.ndimage.measurements import center_of_mass
 import os
 import tkinter as tk
 from tkinter import filedialog
