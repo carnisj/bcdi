@@ -21,8 +21,8 @@ Open an npz file (3D diffraction pattern) and save individual figures
 
 
 scan = 2227  # spec scan number
-datadir = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_1,01/'  # "C:/Users/carnis/Work Folders/Documents/data/HC3207/SN"+str(scan)+"/pynxraw/"
-savedir = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_1,01/'  # "C:/Users/carnis/Work Folders/Documents/data/HC3207/SN"+str(scan)+"/figures/"
+datadir = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_1,01/'
+savedir = 'D:/data/BCDI_isosurface/S2227/oversampling/real_space_interpolation/sdd_1,01/'
 colorbar_range = [-1, 6]  # [vmin, vmax] log scale in photon counts
 save_YZ = False  # True to save the strain in YZ plane
 save_XZ = False  # True to save the strain in XZ plane

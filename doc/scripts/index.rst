@@ -338,26 +338,26 @@ coefficient_variation.py
    :end-before: """
    :language: rst
 
-paper_figure_strain.py
-^^^^^^^^^^^^^^^^^^^^^^
+plot_strain.py
+^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/publication/scripts/paper_figure_strain.py
+.. literalinclude:: ../../bcdi/publication/scripts/plot_strain.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-paper_figure_isosurface.py
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+compa_simu_exp.py
+^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/publication/scripts/paper_figure_isosurface.py
+.. literalinclude:: ../../bcdi/publication/scripts/compa_simu_exp.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-paper_figure_diffpattern.py
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+plot_diffpattern.py
+^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/publication/scripts/paper_figure_diffpattern.py
+.. literalinclude:: ../../bcdi/publication/scripts/plot_diffpattern.py
    :start-after: helptext
    :end-before: """
    :language: rst
