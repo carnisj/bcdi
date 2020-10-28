@@ -29,18 +29,27 @@ scan = 85  # spec scan number
 root_folder = "D:/data/test_FuzzyGridder/"
 sample_name = "S"
 datadir = root_folder + sample_name + str(scan) + '/pynx/'
-savedir = datadir
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
-colorbar_range = [-1, 6]  # [vmin, vmax] log scale in photon counts
-grey_background = True  # True to set nans to grey in the plots
+##############################
+# settings related to saving #
+##############################
+savedir = datadir
 save_qzqx = True  # True to save the strain in QzQx plane
 save_qyqx = True  # True to save the strain in QyQx plane
 save_qyqz = True  # True to save the strain in QyQz plane
 save_sum = False  # True to save the summed diffraction pattern in the detector, False to save the central slice only
+comment = ''  # should start with _
+##########################
+# settings for the plots #
+##########################
 plot_symmetrical = False  # if False, will not use the parameter half_range
 half_range = (None, None, None)  # tuple of three pixel numbers, half-range in each direction. Use None to use the
 # maximum symmetrical data range along one direction e.g. [20, None, None]
-comment = '_' + str(colorbar_range)  # should start with _
+colorbar_range = (-1, 6)  # [vmin, vmax] log scale in photon counts
+grey_background = True  # True to set nans to grey in the plots
+tick_direction = 'out'  # 'out', 'in', 'inout'
+tick_length = 4  # in plots
+tick_width = 1  # in plots
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -126,7 +135,8 @@ if save_qyqz:
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
     if load_qvalues:
         ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
-                        labelbottom=False, labelleft=False)
+                        labelbottom=False, labelleft=False, direction=tick_direction,
+                        length=tick_length, width=tick_width)
     else:
         ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
                         labelbottom=False, labelleft=False)
@@ -149,8 +159,13 @@ if save_qyqx:
         plt0 = ax0.imshow(np.log10(data[zcom - plot_range[0]:zcom + plot_range[1], ycom,
                                         xcom - plot_range[4]:xcom + plot_range[5]]),
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
-    ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
-                    labelbottom=False, labelleft=False)
+    if load_qvalues:
+        ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+                        labelbottom=False, labelleft=False, direction=tick_direction,
+                        length=tick_length, width=tick_width)
+    else:
+        ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
+                        labelbottom=False, labelleft=False)
     plt.savefig(savedir + 'diffpattern' + comment + '_qyqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
     ax0.set_xlabel('Qy')
@@ -169,8 +184,13 @@ if save_qzqx:
         plt0 = ax0.imshow(np.log10(data[zcom - plot_range[0]:zcom + plot_range[1],
                                         ycom - plot_range[2]:ycom + plot_range[3], xcom]),
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
-    ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
-                    labelbottom=False, labelleft=False)
+    if load_qvalues:
+        ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+                        labelbottom=False, labelleft=False, direction=tick_direction,
+                        length=tick_length, width=tick_width)
+    else:
+        ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
+                        labelbottom=False, labelleft=False)
     plt.savefig(savedir + 'diffpattern' + comment + '_qzqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
     ax0.set_xlabel('Qz')
