@@ -16,6 +16,7 @@ import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 Template for figures of the following article: 
@@ -31,14 +32,15 @@ root_folder = "D:/data/test_FuzzyGridder/"
 sample_name = "S"
 datadir = root_folder + sample_name + str(scan) + '/pynx/'
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
+is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Used for plot labels
 ##############################
 # settings related to saving #
 ##############################
-savedir = datadir
+savedir = datadir  # path of the saving directory
 save_qyqz = True  # True to save the strain in QyQz plane
 save_qyqx = True  # True to save the strain in QyQx plane
 save_qzqx = True  # True to save the strain in QzQx plane
-save_sum = False  # True to save the summed diffraction pattern in the detector, False to save the central slice only
+save_sum = True  # True to save the summed diffraction pattern in the detector, False to save the central slice only
 comment = ''  # should start with _
 ##########################
 # settings for the plots #
@@ -46,8 +48,8 @@ comment = ''  # should start with _
 plot_symmetrical = False  # if False, will not use the parameter half_range
 half_range = (None, None, None)  # tuple of three pixel numbers, half-range in each direction. Use None to use the
 # maximum symmetrical data range along one direction e.g. [20, None, None]
-colorbar_range = (-1, 6)  # [vmin, vmax] log scale in photon counts
-grey_background = True  # True to set nans to grey in the plots
+colorbar_range = (0, 6)  # [vmin, vmax] log scale in photon counts
+grey_background = False  # True to set nans to grey in the plots
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 4  # in plots
 tick_width = 1.5  # in plots
@@ -67,7 +69,10 @@ try:
     assert len(tick_spacing) == 3, 'tick_spacing should be a tuple of three numbers'
 except TypeError:  # a single number was provided
     tick_spacing = (tick_spacing, tick_spacing, tick_spacing)
-
+if is_orthogonal:
+    labels = ('Qx', 'Qz', 'Qy')
+else:
+    labels = ('rocking angle', 'detector Y', 'detector X')
 ###################
 # define colormap #
 ###################
@@ -100,7 +105,7 @@ except TypeError:
 nbz, nby, nbx = data.shape
 zcom, ycom, xcom = center_of_mass(data)
 zcom, ycom, xcom = int(np.rint(zcom)), int(np.rint(ycom)), int(np.rint(xcom))
-
+print('Center of mass of the diffraction pattern at pixel:', zcom, ycom, xcom)
 plot_range = []
 if plot_symmetrical:
     max_range = (min(zcom, nbz-zcom), min(zcom, nbz-zcom),
@@ -113,7 +118,7 @@ for idx, val in enumerate(half_range):
     plot_range.append(min(val or max_range[2*idx], max_range[2*idx]))
     plot_range.append(min(val or max_range[2*idx+1], max_range[2*idx+1]))
 print('Plotting symmetrical ranges:', plot_symmetrical)
-print('Plotting range:', plot_range)
+print('Plotting range from the center of mass:', plot_range)
 
 ################################
 # optionally load the q values #
@@ -125,14 +130,19 @@ if load_qvalues:
     qx = q_values['qx']
     qz = q_values['qz']
     qy = q_values['qy']
-    print('qx shape:', qx.shape, 'qz shape:', qz.shape, 'qy shape:', qy.shape)
+    print('Loaded: qx shape:', qx.shape, 'qz shape:', qz.shape, 'qy shape:', qy.shape)
     assert (*qx.shape, *qz.shape, *qy.shape) == data.shape, 'q values and data shape are incompatible'
 
+    # crop the q values to the region of interest used in plots
+    qx = pu.crop_pad_1d(array=qx, output_length=plot_range[0] + plot_range[1], crop_center=zcom)
+    qz = pu.crop_pad_1d(array=qz, output_length=plot_range[2] + plot_range[3], crop_center=ycom)
+    qy = pu.crop_pad_1d(array=qy, output_length=plot_range[4] + plot_range[5], crop_center=xcom)
+    print('Cropped: qx shape:', qx.shape, 'qz shape:', qz.shape, 'qy shape:', qy.shape)
+
     q_range = (qx.min(), qx.max(), qz.min(), qz.max(), qy.min(), qy.max())
-    dqx, dqz, dqy = qx[1] - qx[0], qz[1] - qz[0], qy[1] - qy[0]
 else:
-    q_range = (0, nbz, 0, nby, 0, nbx)
-    dqx, dqz, dqy = 1, 1, 1
+    # crop the q values to the region of interest used in plots
+    q_range = (0, plot_range[0] + plot_range[1], 0, plot_range[2] + plot_range[3], 0, plot_range[4] + plot_range[5])
 
 print('q range:', q_range)
 
@@ -152,8 +162,8 @@ if save_qyqz:
     fig, ax0 = plt.subplots(1, 1)
     if save_sum:
         # extent (left, right, bottom, top)
-        plt0 = ax0.imshow(np.log10(data[ycom-plot_range[2]:ycom+plot_range[3],
-                                        xcom-plot_range[4]:xcom+plot_range[5]]),
+        plt0 = ax0.imshow(np.log10(data[:, ycom-plot_range[2]:ycom+plot_range[3],
+                                        xcom-plot_range[4]:xcom+plot_range[5]].sum(axis=0)),
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[4], q_range[5], q_range[3], q_range[2]])
     else:
@@ -162,7 +172,7 @@ if save_qyqz:
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[4], q_range[5], q_range[3], q_range[2]])
     if load_qvalues:
-        ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+        ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
     else:
@@ -179,9 +189,9 @@ if save_qyqz:
     plt.axis('scaled')
     plt.savefig(savedir + 'diffpattern' + comment + '_qyqz.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
-    ax0.set_xlabel('Qy')
-    ax0.set_ylabel('Qz')
-    ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+    ax0.set_xlabel(labels[2])
+    ax0.set_ylabel(labels[1])
+    ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                     labelbottom=True, labelleft=True)
     plt.savefig(savedir + 'diffpattern' + comment + '_qyqz_colorbar.png', bbox_inches="tight")
 
@@ -192,8 +202,8 @@ if save_qyqx:
     fig, ax0 = plt.subplots(1, 1)
     if save_sum:
         # extent (left, right, bottom, top)
-        plt0 = ax0.imshow(np.log10(data[zcom-plot_range[0]:zcom+plot_range[1],
-                                        xcom-plot_range[4]:xcom+plot_range[5]]),
+        plt0 = ax0.imshow(np.log10(data[zcom-plot_range[0]:zcom+plot_range[1], :,
+                                        xcom-plot_range[4]:xcom+plot_range[5]].sum(axis=1)),
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[4], q_range[5], q_range[1], q_range[0]])
     else:
@@ -202,7 +212,7 @@ if save_qyqx:
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[4], q_range[5], q_range[1], q_range[0]])
     if load_qvalues:
-        ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+        ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
     else:
@@ -218,9 +228,9 @@ if save_qyqx:
     plt.axis('scaled')
     plt.savefig(savedir + 'diffpattern' + comment + '_qyqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
-    ax0.set_xlabel('Qy')
-    ax0.set_ylabel('Qx')
-    ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+    ax0.set_xlabel(labels[2])
+    ax0.set_ylabel(labels[0])
+    ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                     labelbottom=True, labelleft=True)
     plt.savefig(savedir + 'diffpattern' + comment + '_qyqx_colorbar.png', bbox_inches="tight")
 
@@ -232,7 +242,7 @@ if save_qzqx:
     if save_sum:
         # extent (left, right, bottom, top)
         plt0 = ax0.imshow(np.log10(data[zcom-plot_range[0]:zcom+plot_range[1],
-                                        ycom-plot_range[2]:ycom+plot_range[3]]),
+                                        ycom-plot_range[2]:ycom+plot_range[3], :].sum(axis=2)),
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
     else:
@@ -241,7 +251,7 @@ if save_qzqx:
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
     if load_qvalues:
-        ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+        ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
     else:
@@ -257,9 +267,9 @@ if save_qzqx:
     plt.axis('scaled')
     plt.savefig(savedir + 'diffpattern' + comment + '_qzqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
-    ax0.set_xlabel('Qz')
-    ax0.set_ylabel('Qx')
-    ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+    ax0.set_xlabel(labels[1])
+    ax0.set_ylabel(labels[0])
+    ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                     labelbottom=True, labelleft=True)
     plt.savefig(savedir + 'diffpattern' + comment + '_qzqx_colorbar.png', bbox_inches="tight")
 
