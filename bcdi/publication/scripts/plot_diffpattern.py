@@ -8,6 +8,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.ticker as ticker
 import tkinter as tk
 from tkinter import filedialog
 from scipy.ndimage.measurements import center_of_mass
@@ -34,9 +35,9 @@ load_qvalues = True  # True to load the q values. It expects a single npz file w
 # settings related to saving #
 ##############################
 savedir = datadir
-save_qzqx = True  # True to save the strain in QzQx plane
-save_qyqx = True  # True to save the strain in QyQx plane
 save_qyqz = True  # True to save the strain in QyQz plane
+save_qyqx = True  # True to save the strain in QyQx plane
+save_qzqx = True  # True to save the strain in QzQx plane
 save_sum = False  # True to save the summed diffraction pattern in the detector, False to save the central slice only
 comment = ''  # should start with _
 ##########################
@@ -49,7 +50,9 @@ colorbar_range = (-1, 6)  # [vmin, vmax] log scale in photon counts
 grey_background = True  # True to set nans to grey in the plots
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 4  # in plots
-tick_width = 1  # in plots
+tick_width = 1.5  # in plots
+tick_spacing = (0.05, 0.05, 0.05)  # tuple of three numbers, in 1/A. Leave None for default.
+num_ticks = 5  # number of ticks to use in axes when tick_spacing is not defined
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -60,6 +63,11 @@ tick_width = 1  # in plots
 if save_sum:
     comment = comment + '_sum'
 numticks_colorbar = colorbar_range[1] - colorbar_range[0] + 1
+try:
+    assert len(tick_spacing) == 3, 'tick_spacing should be a tuple of three numbers'
+except TypeError:  # a single number was provided
+    tick_spacing = (tick_spacing, tick_spacing, tick_spacing)
+
 ###################
 # define colormap #
 ###################
@@ -120,27 +128,55 @@ if load_qvalues:
     print('qx shape:', qx.shape, 'qz shape:', qz.shape, 'qy shape:', qy.shape)
     assert (*qx.shape, *qz.shape, *qy.shape) == data.shape, 'q values and data shape are incompatible'
 
+    q_range = (qx.min(), qx.max(), qz.min(), qz.max(), qy.min(), qy.max())
+    dqx, dqz, dqy = qx[1] - qx[0], qz[1] - qz[0], qy[1] - qy[0]
+else:
+    q_range = (0, nbz, 0, nby, 0, nbx)
+    dqx, dqz, dqy = 1, 1, 1
+
+print('q range:', q_range)
+
+##############################
+# define the ticks positions #
+##############################
+# use 5 ticks by default if tick_spacing is None for the axis
+pixel_spacing = ((tick_spacing[0] or (q_range[1]-q_range[0])/num_ticks),
+                 (tick_spacing[1] or (q_range[3]-q_range[2])/num_ticks),
+                 (tick_spacing[2] or (q_range[5]-q_range[4])/num_ticks))
+print('Pixel spacing:', pixel_spacing)
+
 ############################
-# plot the different views #
+# plot views in QyQz plane #
 ############################
 if save_qyqz:
     fig, ax0 = plt.subplots(1, 1)
     if save_sum:
+        # extent (left, right, bottom, top)
         plt0 = ax0.imshow(np.log10(data[ycom-plot_range[2]:ycom+plot_range[3],
                                         xcom-plot_range[4]:xcom+plot_range[5]]),
-                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
+                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
+                          extent=[q_range[4], q_range[5], q_range[3], q_range[2]])
     else:
         plt0 = ax0.imshow(np.log10(data[zcom, ycom - plot_range[2]:ycom + plot_range[3],
                                         xcom - plot_range[4]:xcom + plot_range[5]]),
-                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
+                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
+                          extent=[q_range[4], q_range[5], q_range[3], q_range[2]])
     if load_qvalues:
         ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
     else:
         ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
-                        labelbottom=False, labelleft=False)
+                        labelbottom=False, labelleft=False, direction=tick_direction,
+                        length=tick_length, width=tick_width)
     ax0.invert_yaxis()  # qz is pointing up
+    ax0.spines['right'].set_linewidth(tick_width)
+    ax0.spines['left'].set_linewidth(tick_width)
+    ax0.spines['top'].set_linewidth(tick_width)
+    ax0.spines['bottom'].set_linewidth(tick_width)
+    ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
+    ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
+    plt.axis('scaled')
     plt.savefig(savedir + 'diffpattern' + comment + '_qyqz.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
     ax0.set_xlabel('Qy')
@@ -149,23 +185,37 @@ if save_qyqz:
                     labelbottom=True, labelleft=True)
     plt.savefig(savedir + 'diffpattern' + comment + '_qyqz_colorbar.png', bbox_inches="tight")
 
+############################
+# plot views in QyQx plane #
+############################
 if save_qyqx:
     fig, ax0 = plt.subplots(1, 1)
     if save_sum:
+        # extent (left, right, bottom, top)
         plt0 = ax0.imshow(np.log10(data[zcom-plot_range[0]:zcom+plot_range[1],
                                         xcom-plot_range[4]:xcom+plot_range[5]]),
-                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
+                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
+                          extent=[q_range[4], q_range[5], q_range[1], q_range[0]])
     else:
         plt0 = ax0.imshow(np.log10(data[zcom - plot_range[0]:zcom + plot_range[1], ycom,
                                         xcom - plot_range[4]:xcom + plot_range[5]]),
-                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
+                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
+                          extent=[q_range[4], q_range[5], q_range[1], q_range[0]])
     if load_qvalues:
         ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
     else:
         ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
-                        labelbottom=False, labelleft=False)
+                        labelbottom=False, labelleft=False, direction=tick_direction,
+                        length=tick_length, width=tick_width)
+    ax0.spines['right'].set_linewidth(tick_width)
+    ax0.spines['left'].set_linewidth(tick_width)
+    ax0.spines['top'].set_linewidth(tick_width)
+    ax0.spines['bottom'].set_linewidth(tick_width)
+    ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
+    ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
+    plt.axis('scaled')
     plt.savefig(savedir + 'diffpattern' + comment + '_qyqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
     ax0.set_xlabel('Qy')
@@ -174,23 +224,37 @@ if save_qyqx:
                     labelbottom=True, labelleft=True)
     plt.savefig(savedir + 'diffpattern' + comment + '_qyqx_colorbar.png', bbox_inches="tight")
 
+############################
+# plot views in QzQx plane #
+############################
 if save_qzqx:
     fig, ax0 = plt.subplots(1, 1)
     if save_sum:
+        # extent (left, right, bottom, top)
         plt0 = ax0.imshow(np.log10(data[zcom-plot_range[0]:zcom+plot_range[1],
                                         ycom-plot_range[2]:ycom+plot_range[3]]),
-                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
+                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
+                          extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
     else:
         plt0 = ax0.imshow(np.log10(data[zcom - plot_range[0]:zcom + plot_range[1],
                                         ycom - plot_range[2]:ycom + plot_range[3], xcom]),
-                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
+                          cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
+                          extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
     if load_qvalues:
         ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
     else:
         ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
-                        labelbottom=False, labelleft=False)
+                        labelbottom=False, labelleft=False, direction=tick_direction,
+                        length=tick_length, width=tick_width)
+    ax0.spines['right'].set_linewidth(tick_width)
+    ax0.spines['left'].set_linewidth(tick_width)
+    ax0.spines['top'].set_linewidth(tick_width)
+    ax0.spines['bottom'].set_linewidth(tick_width)
+    ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
+    ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
+    plt.axis('scaled')
     plt.savefig(savedir + 'diffpattern' + comment + '_qzqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
     ax0.set_xlabel('Qz')
