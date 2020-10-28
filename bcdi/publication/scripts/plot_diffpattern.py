@@ -20,7 +20,9 @@ helptext = """
 Template for figures of the following article: 
 Carnis et al. Scientific Reports 9, 17357 (2019) https://doi.org/10.1038/s41598-019-53774-2
 For simulated data or experimental data, open a npz file (3D diffraction pattern) and save individual figures.
-q values can be provided optionally.
+q values can be provided optionally. 
+For everything else than q values, the convention is the CXI convention: (z downstream, y vertical up, x outboard).
+For q values, the convention is (qx downstream, qz vertical up, qy outboard).
 """
 
 scan = 85  # spec scan number
@@ -31,9 +33,9 @@ savedir = datadir
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 colorbar_range = [-1, 6]  # [vmin, vmax] log scale in photon counts
 grey_background = True  # True to set nans to grey in the plots
-save_YZ = True  # True to save the strain in YZ plane
-save_XZ = True  # True to save the strain in XZ plane
-save_XY = True  # True to save the strain in XY plane
+save_qzqx = True  # True to save the strain in QzQx plane
+save_qyqx = True  # True to save the strain in QyQx plane
+save_qyqz = True  # True to save the strain in QyQz plane
 save_sum = False  # True to save the summed diffraction pattern in the detector, False to save the central slice only
 plot_symmetrical = False  # if False, will not use the parameter half_range
 half_range = (None, None, None)  # tuple of three pixel numbers, half-range in each direction. Use None to use the
@@ -112,7 +114,7 @@ if load_qvalues:
 ############################
 # plot the different views #
 ############################
-if save_XY:
+if save_qyqz:
     fig, ax0 = plt.subplots(1, 1)
     if save_sum:
         plt0 = ax0.imshow(np.log10(data[ycom-plot_range[2]:ycom+plot_range[3],
@@ -122,13 +124,22 @@ if save_XY:
         plt0 = ax0.imshow(np.log10(data[zcom, ycom - plot_range[2]:ycom + plot_range[3],
                                         xcom - plot_range[4]:xcom + plot_range[5]]),
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
-    ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
-                    labelbottom=False, labelleft=False)
-    plt.savefig(savedir + 'diffpattern' + comment + '_XY.png', bbox_inches="tight")
+    if load_qvalues:
+        ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+                        labelbottom=False, labelleft=False)
+    else:
+        ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
+                        labelbottom=False, labelleft=False)
+    ax0.invert_yaxis()  # qz is pointing up
+    plt.savefig(savedir + 'diffpattern' + comment + '_qyqz.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
-    plt.savefig(savedir + 'diffpattern' + comment + '_XY_colorbar.png', bbox_inches="tight")
+    ax0.set_xlabel('Qy')
+    ax0.set_ylabel('Qz')
+    ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+                    labelbottom=True, labelleft=True)
+    plt.savefig(savedir + 'diffpattern' + comment + '_qyqz_colorbar.png', bbox_inches="tight")
 
-if save_XZ:
+if save_qyqx:
     fig, ax0 = plt.subplots(1, 1)
     if save_sum:
         plt0 = ax0.imshow(np.log10(data[zcom-plot_range[0]:zcom+plot_range[1],
@@ -140,11 +151,15 @@ if save_XZ:
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
     ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
                     labelbottom=False, labelleft=False)
-    plt.savefig(savedir + 'diffpattern' + comment + '_XZ.png', bbox_inches="tight")
+    plt.savefig(savedir + 'diffpattern' + comment + '_qyqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
-    plt.savefig(savedir + 'diffpattern' + comment + '_XZ_colorbar.png', bbox_inches="tight")
+    ax0.set_xlabel('Qy')
+    ax0.set_ylabel('Qx')
+    ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+                    labelbottom=True, labelleft=True)
+    plt.savefig(savedir + 'diffpattern' + comment + '_qyqx_colorbar.png', bbox_inches="tight")
 
-if save_YZ:
+if save_qzqx:
     fig, ax0 = plt.subplots(1, 1)
     if save_sum:
         plt0 = ax0.imshow(np.log10(data[zcom-plot_range[0]:zcom+plot_range[1],
@@ -156,9 +171,13 @@ if save_YZ:
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1])
     ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
                     labelbottom=False, labelleft=False)
-    plt.savefig(savedir + 'diffpattern' + comment + '_YZ.png', bbox_inches="tight")
+    plt.savefig(savedir + 'diffpattern' + comment + '_qzqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
-    plt.savefig(savedir + 'diffpattern' + comment + '_YZ_colorbar.png', bbox_inches="tight")
+    ax0.set_xlabel('Qz')
+    ax0.set_ylabel('Qx')
+    ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
+                    labelbottom=True, labelleft=True)
+    plt.savefig(savedir + 'diffpattern' + comment + '_qzqx_colorbar.png', bbox_inches="tight")
 
 plt.ioff()
 plt.show()
