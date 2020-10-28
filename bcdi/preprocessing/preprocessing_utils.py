@@ -1161,11 +1161,16 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
         # only rectangular cuboidal voxels are supported in xrayutilities FuzzyGridder3D
         # use the default width defined in FuzzyGridder3D
         gridder = xu.FuzzyGridder3D(numz, numy, numx)
+        # define the width of data points (rectangular datapoints, xrayutilities use half of these values but there are
+        # artefacts sometimes)
+        wx = (qx.max()-qx.min())/numz
+        wz = (qz.max()-qz.min())/numy
+        wy = (qy.max()-qy.min())/numx
         # convert mask to rectangular grid in reciprocal space
-        gridder(qx, qz, qy, mask)  # qx downstream, qz vertical up, qy outboard
+        gridder(qx, qz, qy, mask, width=(wx, wz, wy))  # qx downstream, qz vertical up, qy outboard
         interp_mask = np.copy(gridder.data)
         # convert data to rectangular grid in reciprocal space
-        gridder(qx, qz, qy, data)  # qx downstream, qz vertical up, qy outboard
+        gridder(qx, qz, qy, data, width=(wx, wz, wy))  # qx downstream, qz vertical up, qy outboard
         interp_data = gridder.data
 
         qx, qz, qy = [gridder.xaxis, gridder.yaxis, gridder.zaxis]  # downstream, vertical up, outboard
