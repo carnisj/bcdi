@@ -307,8 +307,8 @@ if len(fix_size) != 0:
     roi_detector = []
 
 if correct_curvature:
-    print('correction of the curvature of Ewalt sphere not yet implemented, defaulting to False')
-    correct_curvature = False  # TODO: implement this
+    raise NotImplementedError('correction of the curvature of Ewalt sphere not yet implemented, defaulting to False')
+    # TODO: implement this
 
 if not reload_previous:
     previous_binning = [1, 1, 1]
@@ -318,18 +318,17 @@ if reload_orthogonal:
     use_rawdata = False
 
 if not use_rawdata and not reload_orthogonal and previous_binning[0] != 1:
-    print('previous_binning along axis 0 should be 1 for reloaded data to be gridded (angles will not match)')
-    sys.exit()
+    raise ValueError('previous_binning along axis 0 should be 1 when gridding reloaded data (angles will not match)')
 
 if type(sample_name) is list:
     if len(sample_name) == 1:
+        assert type(sample_name[0]) == str, 'sample_name should be either a string or a list of strings'
         sample_name = [sample_name[0] for idx in range(len(scans))]
     assert len(sample_name) == len(scans), 'sample_name and scan_list should have the same length'
 elif type(sample_name) is str:
     sample_name = [sample_name for idx in range(len(scans))]
 else:
-    print('sample_name should be either a string or a list of strings')
-    sys.exit()
+    raise ValueError('sample_name should be either a string or a list of strings')
 
 ###################
 # define colormap #
