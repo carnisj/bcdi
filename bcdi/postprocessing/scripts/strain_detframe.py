@@ -450,11 +450,14 @@ if invert_phase:
 ################################
 # phase averaging, apodization #
 ################################
+if hwidth != 0 or apodize_flag:
+    raise NotImplementedError
 # TODO: when should we save the PRTF? Here the phase ramp has been removed already
 ########################################
 # refraction and absorption correction #
 ########################################
-
+if correct_refraction or correct_absorption:
+    raise NotImplementedError
 #############################################################
 # calculate the strain, interpolate in the laboratory frame #
 #############################################################
@@ -488,6 +491,9 @@ else:  # calculate the strain in the detector frame
                         vmin=-strain_range, vmax=strain_range, plot_colorbar=True, cmap=my_cmap,
                         is_orthogonal=False, reciprocal_space=False)
 
+    if not align_q:
+        raise NotImplementedError
+
     print('Rotating back the crystal in laboratory frame')
     amp = pu.rotate_crystal(array=amp, axis_to_align=myaxis, debugging=True,
                             reference_axis=np.array([q_lab[2], q_lab[1], q_lab[0]]) / np.linalg.norm(q_lab))
@@ -499,6 +505,9 @@ else:  # calculate the strain in the detector frame
                         vmin=-strain_range, vmax=strain_range, plot_colorbar=True, cmap=my_cmap,
                         is_orthogonal=False, reciprocal_space=False)
 
+    if align_axis:
+        raise NotImplementedError
+    
     if save_support:  # to be used as starting support in phasing, hence still in the detector frame
         support = np.zeros((numz, numy, numx))
         support[amp / amp.max() > 0.01] = 1
