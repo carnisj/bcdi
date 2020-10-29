@@ -24,19 +24,20 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_August2020_CDI/data/mag_5_00097/'
+root_folder = 'D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/current_paper/test/'
+savedir = root_folder
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
-origin = [290, 228, 290]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
+origin = [np.nan, np.nan, np.nan]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
 bin_factor = 1  # the data will be binned by bin_factor is the three directions
-vertical_lines = []  # [0.104, 0.144, 0.172, 0.208]  # plot vertical dashed lines at these q values, leave [] otherwise
+vertical_lines = [0.104, 0.144, 0.172, 0.208]  # plot vertical dashed lines at these q values, leave [] otherwise
 # position in pixels of the origin of the angular average in the array.
 # if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
 threshold = 0  # data < threshold will be set to 0
 debug = False  # True to show more plots
 xlim = None  # [0, 0.8]  # [start, stop] limits used for the horizontal axis of the angular plot, leave None otherwise
 ylim = None  # [start, stop] limits used for the vertical axis of plots, leave None otherwise
-save_txt = False  # True to save q values and the average in .txt format
+save_txt = True  # True to save q values and the average in .txt format
 subtract_median = False  # if True, will subtract the median to the mean at each q, to see peaks more clearly
 ##########################
 # end of user parameters #
@@ -114,13 +115,12 @@ q_axis, y_mean_masked, y_median_masked = xcca.angular_avg(data=diff_pattern, q_v
 #############
 # save data #
 #############
-np.savez_compressed(root_folder + 'q+angular_avg.npz', q=q_axis, avg=y_mean_masked, median=y_median_masked)
+np.savez_compressed(savedir + 'q+angular_avg.npz', q=q_axis, avg=y_mean_masked, median=y_median_masked)
 if save_txt:
-    file = open(root_folder + 'q+angular_avg.txt', "w")
-    file.write('{:8s}'.format('q') + '\t' + '{:10s}'.format('avg') + '\n')
-    for idx in range(len(q_axis)):
-        file.write('{:8.6f}'.format(q_axis[idx]) + '\t' + '{:10.1f}'.format(y_mean_masked[idx]) + '\n')
-    file.close()
+    with open(savedir + 'q+angular_avg.txt', "w") as file:
+        file.write('{:8s}'.format('q') + '\t' + '{:10s}'.format('avg') + '\n')
+        for idx in range(len(q_axis)):
+            file.write('{:8.6f}'.format(q_axis[idx]) + '\t' + '{:10.1f}'.format(y_mean_masked[idx]) + '\n')
 
 #############
 # plot data #
@@ -155,13 +155,13 @@ for counter, value in enumerate(vertical_lines):
     ax0.vlines(x=value, ymin=ymin, ymax=np.log10(y_mean_masked[q_vline[counter]]),
                colors='b', linestyle='dashed')
 legend = ax0.legend()
-plt.savefig(root_folder + 'angular_' + comment + '_labels.png')
+plt.savefig(savedir + 'angular_' + comment + '_labels.png')
 ax0.tick_params(labelbottom=False, labelleft=False)
 plt.xlabel('')
 plt.ylabel('')
 legend.remove()
 plt.draw()
-plt.savefig(root_folder + 'angular_' + comment + '.png')
+plt.savefig(savedir + 'angular_' + comment + '.png')
 
 plt.ioff()
 plt.show()
