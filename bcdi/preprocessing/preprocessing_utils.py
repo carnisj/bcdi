@@ -1211,6 +1211,7 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data', is_orthogonal=True, reciprocal_space=True)
     fig.savefig(detector.savedir + 'reciprocal_space_sum_pix' + plot_comment)
+    plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data', is_orthogonal=True, reciprocal_space=True)
