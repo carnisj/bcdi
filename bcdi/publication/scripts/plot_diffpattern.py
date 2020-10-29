@@ -27,10 +27,11 @@ For everything else than q values, the convention is the CXI convention: (z down
 For q values, the convention is (qx downstream, qz vertical up, qy outboard).
 """
 
-scan = 85  # spec scan number
-root_folder = "D:/data/test_FuzzyGridder/"
+scan = 11  # spec scan number
+root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
 sample_name = "S"
 datadir = root_folder + sample_name + str(scan) + '/pynx/'
+photon_threshold = 1  # everythin <= this value will be set to 0
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Used for plot labels
 ##############################
@@ -38,17 +39,17 @@ is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Us
 ##############################
 savedir = datadir  # path of the saving directory
 save_qyqz = True  # True to save the strain in QyQz plane
-save_qyqx = True  # True to save the strain in QyQx plane
-save_qzqx = True  # True to save the strain in QzQx plane
+save_qyqx = False  # True to save the strain in QyQx plane
+save_qzqx = False  # True to save the strain in QzQx plane
 save_sum = True  # True to save the summed diffraction pattern in the detector, False to save the central slice only
 comment = ''  # should start with _
 ##########################
 # settings for the plots #
 ##########################
-plot_symmetrical = False  # if False, will not use the parameter half_range
+plot_symmetrical = True  # if False, will not use the parameter half_range
 half_range = (None, None, None)  # tuple of three pixel numbers, half-range in each direction. Use None to use the
 # maximum symmetrical data range along one direction e.g. [20, None, None]
-colorbar_range = (0, 6)  # [vmin, vmax] log scale in photon counts
+colorbar_range = (-0.5, 6)  # [vmin, vmax] log scale in photon counts
 grey_background = False  # True to set nans to grey in the plots
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 4  # in plots
@@ -64,7 +65,7 @@ num_ticks = 5  # number of ticks to use in axes when tick_spacing is not defined
 ####################
 if save_sum:
     comment = comment + '_sum'
-numticks_colorbar = colorbar_range[1] - colorbar_range[0] + 1
+numticks_colorbar = int(np.floor(colorbar_range[1] - colorbar_range[0] + 1))
 try:
     assert len(tick_spacing) == 3, 'tick_spacing should be a tuple of three numbers'
 except TypeError:  # a single number was provided
@@ -93,6 +94,7 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the dif
                                        filetypes=[("NPZ", "*.npz")])
 data, _ = util.load_file(file_path)
 print('Initial data shape:', data.shape)
+data[data <= photon_threshold] = 0
 
 ############################
 # Check the plotting range #
