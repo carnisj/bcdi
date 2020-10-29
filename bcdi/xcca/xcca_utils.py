@@ -74,7 +74,7 @@ def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debuggin
         ang_avg[index] = temp_data[np.logical_and((~np.isnan(temp_data)), (temp_mask != 1))].mean()
         ang_median[index] = np.median(temp_data[np.logical_and((~np.isnan(temp_data)), (temp_mask != 1))])
 
-    q_axis = q_axis[:-1]
+    q_axis = q_axis[:-1] + (q_axis[1]-q_axis[0])/2
 
     # prepare for masking arrays - 'conventional' arrays won't do it
     y_mean = np.ma.array(ang_avg)
