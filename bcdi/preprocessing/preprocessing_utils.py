@@ -1314,6 +1314,7 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
                                            interp_angle=interp_angle, interp_radius=interp_radius, comment='mask')
 
             interp_mask[np.nonzero(interp_mask)] = 1
+            interp_mask = interp_mask.astype(int)
         else:  # interpolate in one shoot using a 3D RegularGridInterpolator
 
             # Calculate the coordinates of a cartesian 3D grid expressed in the cylindrical basis
@@ -1339,7 +1340,7 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
             interp_data = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
                                               interp_height.reshape((1, interp_angle.size)),
                                               interp_radius.reshape((1, interp_angle.size)))).transpose())
-            interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
+            interp_data = interp_data.reshape((numx, numy, numx))
 
             # Interpolate the mask onto a cartesian 3D grid
             print('Gridding mask')
@@ -1351,8 +1352,9 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
             interp_mask = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
                                               interp_height.reshape((1, interp_angle.size)),
                                               interp_radius.reshape((1, interp_angle.size)))).transpose())
-            interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
+            interp_mask = interp_mask.reshape((numx, numy, numx))
             interp_mask[np.nonzero(interp_mask)] = 1
+            interp_mask = interp_mask.astype(int)
 
     else:  # correction for Ewald sphere curvature
         raise NotImplementedError('TODO: check Ewald sphere curvature correction, too slow')
@@ -1748,7 +1750,7 @@ def interp_2dslice(array, slice_index, rotation_angle, direct_beam, interp_angle
     # interpolate the data onto the new points
     tmp_array = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
                                     interp_radius.reshape((1, interp_angle.size)))).transpose())
-    tmp_array = tmp_array.reshape(interp_angle.shape).astype(array.dtype)
+    tmp_array = tmp_array.reshape(interp_angle.shape)
 
     return tmp_array, slice_index
 
