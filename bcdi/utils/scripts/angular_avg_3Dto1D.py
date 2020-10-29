@@ -63,6 +63,8 @@ diff_pattern = pu.bin_data(npzfile[list(npzfile.files)[0]], (bin_factor, bin_fac
 diff_pattern[diff_pattern < threshold] = 0
 nz, ny, nx = diff_pattern.shape
 print('Data shape after binning:', nz, ny, nx)
+print('Data type:', diff_pattern.dtype)
+
 gu.multislices_plot(diff_pattern, sum_frames=True, plot_colorbar=True, cmap=my_cmap,
                     title='diffraction pattern', scale='log', vmin=np.nan, vmax=np.nan,
                     reciprocal_space=True, is_orthogonal=True)
