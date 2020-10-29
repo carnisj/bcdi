@@ -961,6 +961,8 @@ def main(parameters):
         # save final data and mask #
         ############################
         print('\nSaving directory:', savedir)
+        print('Data type before saving:', data.dtype)
+        print('Mask type before saving:', mask.dtype)
         if not use_rawdata and len(q_values) != 0:
             if save_to_npz:
                 np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment, qx=qx, qz=qz, qy=qy)
