@@ -165,7 +165,7 @@ def beamstop_correction(data, detector, setup, debugging=False):
     :return: the corrected data
     """
     energy = setup.energy
-    print('Applying beamstop correction for the X-ray energy of {:d}eV'.format(int(energy)))
+    print(f'Applying beamstop correction for the X-ray energy of {energy}eV')
 
     if energy not in [8200, 8700, 10000, 10235]:
         print('no beam stop information for the X-ray energy of {:d}eV,'
@@ -1839,7 +1839,7 @@ def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpix
         rawdata = pu.crop_pad(array=rawdata, pad_start=start, output_shape=(rawdata.shape[0],
                                                                             detector.roi[1] - detector.roi[0],
                                                                             detector.roi[3] - detector.roi[2]))
-        rawmask = pu.crop_pad(array=rawmask, padwith_ones=True, pad_start=start,
+        rawmask = pu.crop_pad(array=rawmask, pad_value=1, pad_start=start,
                               output_shape=(rawmask.shape[0], detector.roi[1] - detector.roi[0],
                                             detector.roi[3] - detector.roi[2]))
 
@@ -1929,7 +1929,7 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
         rawdata = pu.crop_pad(array=rawdata, pad_start=start, output_shape=(rawdata.shape[0],
                                                                             detector.roi[1] - detector.roi[0],
                                                                             detector.roi[3] - detector.roi[2]))
-        rawmask = pu.crop_pad(array=rawmask, padwith_ones=True, pad_start=start,
+        rawmask = pu.crop_pad(array=rawmask, pad_value=1, pad_start=start,
                               output_shape=(rawmask.shape[0], detector.roi[1] - detector.roi[0],
                                             detector.roi[3] - detector.roi[2]))
 
@@ -3654,7 +3654,7 @@ def reload_bcdi_data(data, mask, logfile, scan_number, detector, setup, normaliz
         data = pu.crop_pad(array=data, pad_start=start, output_shape=(data.shape[0],
                                                                       detector.roi[1] - detector.roi[0],
                                                                       detector.roi[3] - detector.roi[2]))
-        mask = pu.crop_pad(array=mask, padwith_ones=True, pad_start=start,
+        mask = pu.crop_pad(array=mask, pad_value=1, pad_start=start,
                            output_shape=(mask.shape[0], detector.roi[1] - detector.roi[0],
                                          detector.roi[3] - detector.roi[2]))
 
@@ -3738,7 +3738,7 @@ def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize
         data = pu.crop_pad(array=data, pad_start=start, output_shape=(data.shape[0],
                                                                       detector.roi[1] - detector.roi[0],
                                                                       detector.roi[3] - detector.roi[2]))
-        mask = pu.crop_pad(array=mask, padwith_ones=True, pad_start=start,
+        mask = pu.crop_pad(array=mask, pad_value=1, pad_start=start,
                            output_shape=(mask.shape[0], detector.roi[1] - detector.roi[0],
                                          detector.roi[3] - detector.roi[2]))
 
