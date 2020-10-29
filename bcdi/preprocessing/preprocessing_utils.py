@@ -248,6 +248,17 @@ def beamstop_correction(data, detector, setup, debugging=False):
         data[idx, :, :] = tempdata
 
     if debugging:
+        width = 40
+        _, (ax0, ax1) = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+        ax0.plot(np.log10(data[:, directbeam_y, directbeam_x-width:directbeam_x+width].sum(axis=0)))
+        ax0.set_title('horizontal cut after absorption correction')
+        ax0.vlines(x=[width+pixels_large[2], width+pixels_large[3], width+pixels_small[2], width+pixels_small[3]],
+                   ymin=ax0.get_ylim()[0], ymax=ax0.get_ylim()[1], colors='b', linestyle='dashed')
+        ax1.plot(np.log10(data[:, directbeam_y-width:directbeam_y+width, directbeam_x].sum(axis=0)))
+        ax1.set_title('vertical cut after absorption correction')
+        ax1.vlines(x=[width+pixels_large[0], width+pixels_large[1], width+pixels_small[0], width+pixels_small[1]],
+                   ymin=ax1.get_ylim()[0], ymax=ax1.get_ylim()[1], colors='b', linestyle='dashed')
+
         gu.imshow_plot(data, sum_frames=True, sum_axis=0, vmin=0, vmax=11, plot_colorbar=True, scale='log',
                        title='data after absorption correction', is_orthogonal=False, reciprocal_space=True)
 
@@ -278,6 +289,17 @@ def beamstop_correction(data, detector, setup, debugging=False):
         data[frame, :, :] = tempdata
 
     if debugging:
+        width = 40
+        _, (ax0, ax1) = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+        ax0.plot(np.log10(data[:, directbeam_y, directbeam_x-width:directbeam_x+width].sum(axis=0)))
+        ax0.set_title('horizontal cut after interpolating border')
+        ax0.vlines(x=[width+pixels_large[2], width+pixels_large[3], width+pixels_small[2], width+pixels_small[3]],
+                   ymin=ax0.get_ylim()[0], ymax=ax0.get_ylim()[1], colors='b', linestyle='dashed')
+        ax1.plot(np.log10(data[:, directbeam_y-width:directbeam_y+width, directbeam_x].sum(axis=0)))
+        ax1.set_title('vertical cut after interpolating border')
+        ax1.vlines(x=[width+pixels_large[0], width+pixels_large[1], width+pixels_small[0], width+pixels_small[1]],
+                   ymin=ax1.get_ylim()[0], ymax=ax1.get_ylim()[1], colors='b', linestyle='dashed')
+
         gu.imshow_plot(data, sum_frames=True, sum_axis=0, vmin=0, vmax=11, plot_colorbar=True, scale='log',
                        title='data after interpolating the border of beam stops',
                        is_orthogonal=False, reciprocal_space=True)
