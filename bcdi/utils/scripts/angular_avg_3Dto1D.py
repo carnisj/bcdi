@@ -58,7 +58,7 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the diffraction pattern",
                                        filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
-diff_pattern = pu.bin_data(npzfile[list(npzfile.files)[0]].astype(int), (bin_factor, bin_factor, bin_factor),
+diff_pattern = pu.bin_data(npzfile[list(npzfile.files)[0]], (bin_factor, bin_factor, bin_factor),
                            debugging=False)
 diff_pattern[diff_pattern < threshold] = 0
 nz, ny, nx = diff_pattern.shape
