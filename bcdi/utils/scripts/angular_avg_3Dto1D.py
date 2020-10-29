@@ -118,9 +118,13 @@ q_axis, y_mean_masked, y_median_masked = xcca.angular_avg(data=diff_pattern, q_v
 np.savez_compressed(savedir + 'q+angular_avg.npz', q=q_axis, avg=y_mean_masked, median=y_median_masked)
 if save_txt:
     with open(savedir + 'q+angular_avg.txt', "w") as file:
-        file.write('{:8s}'.format('q') + '\t' + '{:10s}'.format('avg') + '\n')
+        file.write('{:8s}'.format('q') + '\t' +
+                   '{:10s}'.format('mean') + '\t' +
+                   '{:10s}'.format('median') + '\n')
         for idx in range(len(q_axis)):
-            file.write('{:8.6f}'.format(q_axis[idx]) + '\t' + '{:10.1f}'.format(y_mean_masked[idx]) + '\n')
+            file.write('{:8.6f}'.format(q_axis[idx]) + '\t' +
+                       '{:10.1f}'.format(y_mean_masked[idx]) + '\t' +
+                       '{:10.1f}'.format(y_median_masked[idx]) + '\n')
 
 #############
 # plot data #
