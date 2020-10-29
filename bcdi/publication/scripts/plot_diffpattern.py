@@ -31,7 +31,7 @@ scan = 11  # spec scan number
 root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
 sample_name = "S"
 datadir = root_folder + sample_name + str(scan) + '/pynx/'
-photon_threshold = 1  # everythin <= this value will be set to 0
+photon_threshold = 0  # everything < this value will be set to 0
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Used for plot labels
 ##############################
@@ -49,7 +49,7 @@ comment = ''  # should start with _
 plot_symmetrical = True  # if False, will not use the parameter half_range
 half_range = (None, None, None)  # tuple of three pixel numbers, half-range in each direction. Use None to use the
 # maximum symmetrical data range along one direction e.g. [20, None, None]
-colorbar_range = (-0.5, 6)  # [vmin, vmax] log scale in photon counts
+colorbar_range = (-1, 6)  # [vmin, vmax] log scale in photon counts
 grey_background = False  # True to set nans to grey in the plots
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 4  # in plots
@@ -94,7 +94,7 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the dif
                                        filetypes=[("NPZ", "*.npz")])
 data, _ = util.load_file(file_path)
 print('Initial data shape:', data.shape)
-data[data <= photon_threshold] = 0
+data[data < photon_threshold] = 0
 
 ############################
 # Check the plotting range #
