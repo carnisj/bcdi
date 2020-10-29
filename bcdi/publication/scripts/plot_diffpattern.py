@@ -187,13 +187,13 @@ if save_qyqz:
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
     plt.axis('scaled')
-    plt.savefig(savedir + 'diffpattern' + comment + '_qyqz.png', bbox_inches="tight")
+    fig.savefig(savedir + 'diffpattern' + comment + '_qyqz.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
     ax0.set_xlabel(labels[2])
     ax0.set_ylabel(labels[1])
     ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                     labelbottom=True, labelleft=True)
-    plt.savefig(savedir + 'diffpattern' + comment + '_qyqz_colorbar.png', bbox_inches="tight")
+    fig.savefig(savedir + 'diffpattern' + comment + '_qyqz_colorbar.png', bbox_inches="tight")
 
 ############################
 # plot views in QyQx plane #
@@ -226,13 +226,13 @@ if save_qyqx:
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
     plt.axis('scaled')
-    plt.savefig(savedir + 'diffpattern' + comment + '_qyqx.png', bbox_inches="tight")
+    fig.savefig(savedir + 'diffpattern' + comment + '_qyqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
     ax0.set_xlabel(labels[2])
     ax0.set_ylabel(labels[0])
     ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                     labelbottom=True, labelleft=True)
-    plt.savefig(savedir + 'diffpattern' + comment + '_qyqx_colorbar.png', bbox_inches="tight")
+    fig.savefig(savedir + 'diffpattern' + comment + '_qyqx_colorbar.png', bbox_inches="tight")
 
 ############################
 # plot views in QzQx plane #
@@ -265,13 +265,13 @@ if save_qzqx:
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
     plt.axis('scaled')
-    plt.savefig(savedir + 'diffpattern' + comment + '_qzqx.png', bbox_inches="tight")
+    fig.savefig(savedir + 'diffpattern' + comment + '_qzqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
     ax0.set_xlabel(labels[1])
     ax0.set_ylabel(labels[0])
     ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                     labelbottom=True, labelleft=True)
-    plt.savefig(savedir + 'diffpattern' + comment + '_qzqx_colorbar.png', bbox_inches="tight")
+    fig.savefig(savedir + 'diffpattern' + comment + '_qzqx_colorbar.png', bbox_inches="tight")
 
 plt.ioff()
 plt.show()
