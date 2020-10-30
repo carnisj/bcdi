@@ -34,7 +34,7 @@ root_folder = "D:/data/P10_March2020_CDI/data/"
 sample_name = "non_ht_sphere_c"
 homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/'
 comment = ""  # should start with _
-binning = [1, 1, 1]  # binning for the measured diffraction pattern in each dimension
+binning = (1, 1, 1)  # binning for the measured diffraction pattern in each dimension
 tick_spacing = 0.2  # in 1/nm, spacing between ticks
 threshold_isosurface = 4.5  # log scale
 ##########################
