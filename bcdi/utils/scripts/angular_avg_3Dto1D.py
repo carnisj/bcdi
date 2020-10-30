@@ -132,12 +132,13 @@ if save_txt:
 #############
 # plot data #
 #############
-fig, ax = plt.subplots(1, 1)
+_, ax = plt.subplots(1, 1)
 ax.plot(q_axis, np.log10(y_mean_masked), 'r', label='mean')
 ax.plot(q_axis, np.log10(y_median_masked), 'b', label='median')
 ax.set_xlabel('q (1/nm)')
 ax.set_ylabel('Angular average (A.U.)')
 ax.legend()
+plt.pause(0.1)
 
 q_vline = util.find_nearest(q_axis, vertical_lines)
 
@@ -148,21 +149,21 @@ else:
     comment = 'mean'
 
 fig, ax0 = plt.subplots(1, 1)
-plt0 = ax0.plot(q_axis, np.log10(y_mean_masked), 'r', label=comment)
-plt.xlabel('q (1/nm)')
-plt.ylabel('Angular average (A.U.)')
-if xlim is not None:
-    plt.xlim(xlim[0], xlim[1])
-if ylim is not None:
-    ymin = ylim[0]
-    plt.ylim(ylim[0], ylim[1])
-else:
-    ymin, _ = ax0.get_ylim()
+ax0.plot(q_axis, np.log10(y_mean_masked), 'r', label=comment)
+ax0.plot(q_axis, np.log10(y_median_masked), 'b', linestyle='dashed', label='median')
+ax0.set_xlabel('q (1/nm)')
+ax0.set_ylabel('Angular average (A.U.)')
+if xlim is None:
+    xlim = ax0.get_xlim()
+if ylim is None:
+    ylim = ax0.get_ylim()
 for counter, value in enumerate(vertical_lines):
-    ax0.vlines(x=value, ymin=ymin, ymax=np.log10(y_mean_masked[q_vline[counter]]),
-               colors='b', linestyle='dashed')
+    ax0.vlines(x=value, ymin=ylim[0], ymax=np.log10(y_mean_masked[q_vline[counter]]),
+               colors='k', linestyle='dotted')
 legend = ax0.legend()
-plt.savefig(savedir + 'angular_' + comment + '_labels.png')
+ax0.set_xlim(xlim[0], xlim[1])
+ax0.set_ylim(ylim[0], ylim[1])
+fig.savefig(savedir + 'angular_' + comment + '_labels.png')
 ax0.tick_params(labelbottom=False, labelleft=False)
 plt.xlabel('')
 plt.ylabel('')
