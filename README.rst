@@ -86,7 +86,7 @@ The following third-party packages are required:
 
 * pytables: when loading the dictionnary for SIXS data
 
-* imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/) for creating movies
+* moviepy, imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/) for creating movies
 
 Download & Installation
 =======================
