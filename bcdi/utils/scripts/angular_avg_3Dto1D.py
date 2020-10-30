@@ -30,6 +30,7 @@ load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
 origin = [np.nan, np.nan, np.nan]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
 bin_factor = 1  # the data will be binned by bin_factor is the three directions
+nb_bins = 200  # number of bins for the q axis in the angular average
 vertical_lines = [0.104, 0.144, 0.172, 0.208]  # plot vertical dashed lines at these q values, leave [] otherwise
 # position in pixels of the origin of the angular average in the array.
 # if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
@@ -113,7 +114,7 @@ else:  # work with pixels, supposing that the data is in an orthonormal frame
     qy = np.arange(nx) - origin[2]
 
 q_axis, y_mean_masked, y_median_masked = xcca.angular_avg(data=diff_pattern, q_values=(qx, qz, qy), origin=origin,
-                                                          mask=mask, debugging=debug)
+                                                          mask=mask, nb_bins=nb_bins, debugging=debug)
 #############
 # save data #
 #############
