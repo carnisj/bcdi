@@ -16,7 +16,7 @@ from scipy.interpolate import RegularGridInterpolator
 import gc
 import sys
 sys.path.append('D:/myscripts/bcdi/')
-# sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
+import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
@@ -50,13 +50,8 @@ root.withdraw()
 
 file_path = filedialog.askopenfilename(initialdir=homedir, title="Select the diffraction pattern",
                                        filetypes=[("NPZ", "*.npz")])
-data = np.load(file_path)
-npz_key = data.files
-data = data[npz_key[0]].astype(float)
-
-if data.ndim != 3:
-    print('a 3D array is expected')
-    sys.exit()
+data = util.load_file(file_path)
+assert data.ndim == 3, 'data should be a 3D array'
 
 nz, ny, nx = data.shape
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
