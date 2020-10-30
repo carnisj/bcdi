@@ -7,8 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-from matplotlib import pyplot as plt
-# import mayavi
+import moviepy.editor as mpy
 from mayavi import mlab
 import tkinter as tk
 from tkinter import filedialog
@@ -16,47 +15,58 @@ from scipy.interpolate import RegularGridInterpolator
 import gc
 import sys
 sys.path.append('D:/myscripts/bcdi/')
-# sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
+import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 Template for 3d isosurface figures of a diffraction pattern.
-
 The data will be interpolated on an isotropic range in order to fulfill the desired tick spacing.
-
 Note that qy values (axis 2) are opposite to the correct ones, because there is no easy way to flip an axis in mayvi.
-
 The diffraction pattern is supposed to be in an orthonormal frame and q values need to be provided.
+Optionally creates a movie from a 3D real space reconstruction in each direction. This requires moviepy.
 """
 
-scan = 76    # spec scan number
-root_folder = "D:/data/P10_March2020_CDI/data/"
-sample_name = "non_ht_sphere_c"
-homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/'
+scan = 22    # spec scan number
+root_folder = 'D:/data/P10_August2019_CDI/data/'
+sample_name = "gold_2_2_2"
+homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/test/'
 comment = ""  # should start with _
-binning = [1, 1, 1]  # binning for the measured diffraction pattern in each dimension
+binning = (2, 2, 2)  # binning for the measured diffraction pattern in each dimension
 tick_spacing = 0.2  # in 1/nm, spacing between ticks
 threshold_isosurface = 4.5  # log scale
+fig_size = (1000, 1000)  # figure size in pixels (horizontal, vertical)
+##########################
+# settings for the movie #
+##########################
+duration = 10  # duration of the movie in s
+frame_per_second = 20  # number of frames per second, there will be duration*frame_per_second frames in total
+output_format = 'mp4'  # 'gif', 'mp4' or None for no movie
 ##########################
 # end of user parameters #
 ##########################
 
+
+def rotate_scene(t):
+    """
+    Rotate the camera of the mayavi scene at time t.
+
+    :param t: time in the range [0, duration]
+    :return: a screenshot of the scene
+    """
+    mlab.view(azimuth=360/duration*t, elevation=63, distance=distance)
+    return mlab.screenshot(figure=myfig, mode='rgb', antialiased=True)  # return a RGB image
+
+
 #############
 # load data #
 #############
-plt.ion()
 root = tk.Tk()
 root.withdraw()
 
 file_path = filedialog.askopenfilename(initialdir=homedir, title="Select the diffraction pattern",
                                        filetypes=[("NPZ", "*.npz")])
-data = np.load(file_path)
-npz_key = data.files
-data = data[npz_key[0]].astype(float)
-
-if data.ndim != 3:
-    print('a 3D array is expected')
-    sys.exit()
+data, _ = util.load_file(file_path)
+assert data.ndim == 3, 'data should be a 3D array'
 
 nz, ny, nx = data.shape
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
@@ -124,12 +134,14 @@ grid_qx, grid_qz, grid_qy = np.mgrid[-tick_spacing*half_labels:tick_spacing*half
                                      -tick_spacing*half_labels:tick_spacing*half_labels:1j * nx]
 # in CXI convention, z is downstream, y vertical and x outboard
 # for q: classical convention qx downstream, qz vertical and qy outboard
-myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=(1000, 1000))
+myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
 mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(newdata),
-               contours=[0.5*threshold_isosurface, 0.6*threshold_isosurface, 0.7*threshold_isosurface, 0.8*threshold_isosurface, 0.9*threshold_isosurface, threshold_isosurface, 1.1*threshold_isosurface, 1.2*threshold_isosurface],
+               contours=[0.5*threshold_isosurface, 0.6*threshold_isosurface, 0.7*threshold_isosurface,
+                         0.8*threshold_isosurface, 0.9*threshold_isosurface, threshold_isosurface,
+                         1.1*threshold_isosurface, 1.2*threshold_isosurface],
                opacity=0.2, colormap='hsv', vmin=3.5, vmax=5.5)  # , color=(0.7, 0.7, 0.7))
-
-mlab.view(azimuth=38, elevation=63, distance=5*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max())
+distance = 5*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max()
+mlab.view(azimuth=38, elevation=63, distance=distance)
 # azimut is the rotation around z axis of mayavi (x)
 mlab.roll(0)
 
@@ -145,4 +157,16 @@ ax.axes.x_axis_visibility = False
 ax.axes.y_axis_visibility = False
 ax.axes.z_axis_visibility = False
 mlab.savefig(homedir + 'S' + str(scan) + comment + '.png', figure=myfig)
+mlab.draw(myfig)
+
+if output_format == 'mp4':
+    animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
+    fname = homedir + "S" + str(scan) + "_movie.mp4"
+    animation.write_videofile(fname, fps=frame_per_second)
+elif output_format == 'gif':
+    animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
+    fname = homedir + "S" + str(scan) + "_movie.gif"
+    animation.write_gif(fname, fps=frame_per_second)
+
 mlab.show()
+

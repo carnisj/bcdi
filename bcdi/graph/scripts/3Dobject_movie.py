@@ -24,9 +24,9 @@ or ffmpeg (http://ffmpeg.zeranoe.com/builds/).
 """
 
 scan = 22
-root_folder = 'D:/data/P10_August2019/data/'  # location of the .spec or log file
+root_folder = 'D:/data/P10_August2019_CDI/data/'  # location of the .spec or log file
 sample_name = "gold_2_2_2_000"  # "SN"  #
-datadir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/maximum_likelihood/'
+datadir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/current_paper/'
 comment = ''  # should start with _
 movie_z = False  # save movie along z axis (downstream)
 movie_y = True  # save movie along y axis (vertical up)
@@ -37,6 +37,11 @@ vmin_vmax = [0, 1]  # scale for plotting the data
 roi = []  # ROI to be plotted, leave it as [] to use all the reconstruction [zstart, ztop, ystart, ystop, xstart, xstop]
 field_name = ''  # name or ''
 # load the field name in a .npz file, if '' load the complex object and plot the normalized modulus
+align_axes = ((0.2, 1, 0.02), (1, 0, -0.1))
+# sequence of vectors of 3 elements each in the order xyz, e.g. ((x1,y1,z1), ...). None otherwise.
+ref_axes = ((0, 1, 0), (1, 0, 0))
+# sequence of reference vectors, same length as align_axes. Each vector in align_axes will be aligned to the
+# corresponding reference axis of ref_axes
 threshold = 0.05  # threshold apply on the object, if np.nan nothing happens
 output_format = 'gif'  # 'gif', 'mp4'
 ##################################
@@ -89,18 +94,16 @@ nbz, nby, nbx = obj.shape
 #################
 # rotate object #
 #################
-new_shape = [int(1.2*nbz), int(1.2*nby), int(1.2*nbx)]
-obj = pu.crop_pad(array=obj, output_shape=new_shape, debugging=False)
-nbz, nby, nbx = obj.shape
-
-print("Cropped/padded object size before rotating: (", nbz, ',', nby, ',', nbx, ')')
-print('Rotating object to have the crystallographic axes along array axes')
-axis_to_align = np.array([0.2, 1, 0.02])  # in order x y z for rotate_crystal()
-obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([0, 1, 0]),
-                        debugging=True)  # out of plane alignement
-axis_to_align = np.array([1, 0, -0.1])  # in order x y z for rotate_crystal()
-obj = pu.rotate_crystal(array=obj, axis_to_align=axis_to_align, reference_axis=np.array([1, 0, 0]),
-                        debugging=True)  # inplane alignement
+if align_axes:
+    assert len(align_axes) == len(ref_axes), 'align_axes and ref_axes should have the same length'
+    new_shape = [int(1.2*nbz), int(1.2*nby), int(1.2*nbx)]
+    obj = pu.crop_pad(array=obj, output_shape=new_shape, debugging=False)
+    nbz, nby, nbx = obj.shape
+    print('Rotating object to have the crystallographic axes along array axes')
+    for axis, ref_axis in zip(align_axes, ref_axes):
+        print('axis to align, reference axis:', axis, ref_axis)
+        obj = pu.rotate_crystal(array=obj, axis_to_align=axis, reference_axis=ref_axis,
+                                debugging=True)  # out of plane alignement
 
 ###################
 # apply threshold #
