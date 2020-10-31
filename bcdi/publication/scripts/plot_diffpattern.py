@@ -27,7 +27,7 @@ For everything else than q values, the convention is the CXI convention: (z down
 For q values, the convention is (qx downstream, qz vertical up, qy outboard).
 """
 
-scan = 9  # spec scan number
+scan = 78  # spec scan number
 root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
 sample_name = "S"
 datadir = root_folder + sample_name + str(scan) + '/pynx/'
@@ -54,7 +54,7 @@ grey_background = False  # True to set nans to grey in the plots
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 4  # in plots
 tick_width = 1.5  # in plots
-tick_spacing = (0.05, 0.05, 0.05)  # tuple of three numbers, in 1/A. Leave None for default.
+tick_spacing = (0.025, 0.025, 0.025)  # tuple of three numbers, in 1/A. Leave None for default.
 num_ticks = 5  # number of ticks to use in axes when tick_spacing is not defined
 ##################################
 # end of user-defined parameters #
@@ -193,13 +193,13 @@ if save_qyqz:
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
     plt.axis('scaled')
-    fig.savefig(savedir + 'diffpattern' + comment + '_qyqz.png', bbox_inches="tight")
+    fig.savefig(savedir + 'S' + str(scan) + comment + '_qyqz.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
     ax0.set_xlabel(labels[2])
     ax0.set_ylabel(labels[1])
     ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                     labelbottom=True, labelleft=True)
-    fig.savefig(savedir + 'diffpattern' + comment + '_qyqz_colorbar.png', bbox_inches="tight")
+    fig.savefig(savedir + 'S' + str(scan) + comment + '_qyqz_colorbar.png', bbox_inches="tight")
 
 ############################
 # plot views in QyQx plane #
@@ -232,13 +232,13 @@ if save_qyqx:
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
     plt.axis('scaled')
-    fig.savefig(savedir + 'diffpattern' + comment + '_qyqx.png', bbox_inches="tight")
+    fig.savefig(savedir + 'S' + str(scan) + comment + '_qyqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
     ax0.set_xlabel(labels[2])
     ax0.set_ylabel(labels[0])
     ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                     labelbottom=True, labelleft=True)
-    fig.savefig(savedir + 'diffpattern' + comment + '_qyqx_colorbar.png', bbox_inches="tight")
+    fig.savefig(savedir + 'S' + str(scan) + comment + '_qyqx_colorbar.png', bbox_inches="tight")
 
 ############################
 # plot views in QzQx plane #
@@ -271,13 +271,13 @@ if save_qzqx:
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
     plt.axis('scaled')
-    fig.savefig(savedir + 'diffpattern' + comment + '_qzqx.png', bbox_inches="tight")
+    fig.savefig(savedir + 'S' + str(scan) + comment + '_qzqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
     ax0.set_xlabel(labels[1])
     ax0.set_ylabel(labels[0])
     ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
                     labelbottom=True, labelleft=True)
-    fig.savefig(savedir + 'diffpattern' + comment + '_qzqx_colorbar.png', bbox_inches="tight")
+    fig.savefig(savedir + 'S' + str(scan) + comment + '_qzqx_colorbar.png', bbox_inches="tight")
 
 plt.ioff()
 plt.show()
