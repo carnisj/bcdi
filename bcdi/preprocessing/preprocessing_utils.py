@@ -1205,6 +1205,7 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
     interp_mask[np.isnan(interp_data)] = 1
     interp_data[np.isnan(interp_data)] = 0
     interp_mask[np.isnan(interp_mask)] = 1
+    interp_mask = interp_mask.astype(int)
 
     # apply the mask to the data
     interp_data[np.nonzero(interp_mask)] = 0
