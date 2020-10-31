@@ -3416,7 +3416,9 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         chi = chi + setup.sample_offsets[0]
         phi = phi + setup.sample_offsets[1]
         eta = eta + setup.sample_offsets[2]
+        print('chi', chi)
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
+            print('phi', phi)
             nb_steps = len(eta)
             tilt_angle = eta[1] - eta[0]
 
