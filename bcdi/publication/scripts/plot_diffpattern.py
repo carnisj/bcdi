@@ -49,7 +49,7 @@ comment = ''  # should start with _
 plot_symmetrical = True  # if False, will not use the parameter half_range
 half_range = (None, None, None)  # tuple of three pixel numbers, half-range in each direction. Use None to use the
 # maximum symmetrical data range along one direction e.g. [20, None, None]
-colorbar_range = (-1, 6)  # [vmin, vmax] log scale in photon counts
+colorbar_range = (0, 6)  # [vmin, vmax] log scale in photon counts
 grey_background = False  # True to set nans to grey in the plots
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 4  # in plots
@@ -94,6 +94,7 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the dif
                                        filetypes=[("NPZ", "*.npz")])
 data, _ = util.load_file(file_path)
 print('Initial data shape:', data.shape)
+print('Data type', data.dtype)
 data[data < photon_threshold] = 0
 
 ############################
@@ -121,6 +122,12 @@ for idx, val in enumerate(half_range):
     plot_range.append(min(val or max_range[2*idx+1], max_range[2*idx+1]))
 print('Plotting symmetrical ranges:', plot_symmetrical)
 print('Plotting range from the center of mass:', plot_range)
+
+gu.multislices_plot(array=data[zcom-plot_range[0]:zcom+plot_range[1],
+                               ycom-plot_range[2]:ycom+plot_range[3],
+                               xcom-plot_range[4]:xcom+plot_range[5]],
+                    sum_frames=True, scale='log', cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
+                    reciprocal_space=True, is_orthogonal=is_orthogonal)
 
 ################################
 # optionally load the q values #
