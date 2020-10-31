@@ -27,11 +27,11 @@ For everything else than q values, the convention is the CXI convention: (z down
 For q values, the convention is (qx downstream, qz vertical up, qy outboard).
 """
 
-scan = 11  # spec scan number
-root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
+scan = 9  # spec scan number
+root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
 sample_name = "S"
 datadir = root_folder + sample_name + str(scan) + '/pynx/'
-photon_threshold = 0  # everything < this value will be set to 0
+photon_threshold = 1  # everything < this value will be set to 0
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Used for plot labels
 ##############################
@@ -123,11 +123,8 @@ for idx, val in enumerate(half_range):
 print('Plotting symmetrical ranges:', plot_symmetrical)
 print('Plotting range from the center of mass:', plot_range)
 
-gu.multislices_plot(array=data[zcom-plot_range[0]:zcom+plot_range[1],
-                               ycom-plot_range[2]:ycom+plot_range[3],
-                               xcom-plot_range[4]:xcom+plot_range[5]],
-                    sum_frames=True, scale='log', cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
-                    reciprocal_space=True, is_orthogonal=is_orthogonal)
+gu.multislices_plot(array=data, sum_frames=True, scale='log', cmap=my_cmap, vmin=colorbar_range[0],
+                    vmax=colorbar_range[1], reciprocal_space=True, is_orthogonal=is_orthogonal)
 
 ################################
 # optionally load the q values #
