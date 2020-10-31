@@ -41,12 +41,12 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 85  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
+scans = 1053  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/test_FuzzyGridder/"
+root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
 sample_name = ["S"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
@@ -113,9 +113,9 @@ custom_scan = False  # set it to True for a stack of images acquired without sca
 custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan
 
-rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
+rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = '2020_07_09_140423Ni'
+specfile_name = 'alignment'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -129,8 +129,8 @@ specfile_name = '2020_07_09_140423Ni'
 ###############################
 detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 175  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 335  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+x_bragg = None  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = None  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 roi_detector = []  # [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # [0, 516, x_bragg-179, x_bragg+181]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
@@ -143,7 +143,7 @@ photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon thre
 background_file = ''  # root_folder + 'background.npz'  #
 hotpixels_file = ''  # root_folder + 'hotpixels_HS4670.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+template_imagefile = 'l5_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -158,8 +158,8 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
-sdd = 0.84895  # in m, sample to detector distance in m
-energy = 8987.1  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+sdd = 0.50678  # in m, sample to detector distance in m
+energy = 9000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
@@ -176,14 +176,14 @@ custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = 1.3032  # outer detector angle offset, not important if you use raw data
+offset_inplane = -0.6358  # outer detector angle offset, not important if you use raw data
 sample_offsets = (0, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
 # the sample offsets will be added to the motor values
-cch1 = 350.82  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-cch2 = 432.49  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-detrot = 0.59  # detrot parameter from xrayutilities 2D detector calibration
-tiltazimuth = 360  # tiltazimuth parameter from xrayutilities 2D detector calibration
-tilt = 0.800  # tilt parameter from xrayutilities 2D detector calibration
+cch1 = 207.88  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch2 = 50.49  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+detrot = -0.436  # detrot parameter from xrayutilities 2D detector calibration
+tiltazimuth = 273.2  # tiltazimuth parameter from xrayutilities 2D detector calibration
+tilt = 3.940  # tilt parameter from xrayutilities 2D detector calibration
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -900,6 +900,8 @@ for scan_nb in range(len(scans)):
     # save final data and mask #
     ############################
     print('\nSaving directory:', savedir)
+    print('Data type before saving:', data.dtype)
+    print('Mask type before saving:', mask.dtype)
     if not use_rawdata and len(q_values) != 0:
         if save_to_npz:
             np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
