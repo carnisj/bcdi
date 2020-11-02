@@ -28,18 +28,24 @@ Open images or series data at P10 beamline.
 
 scan_nb = 22  # scan number as it appears in the folder name
 sample_name = "gold_2_2_2"  # without _ at the end
-root_directory = "D:/data/P10_August2019_CDI/data/"
-file_list = np.arange(1, 21+1)
+root_directory = "/nfs/fs/fscxi/experiments/2019/PETRA/P10/11007170/raw/"
+file_list = np.arange(1, 381+1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
 detector_name = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 counter_roi = []  # plot the integrated intensity in this region of interest. Leave it to [] to use the full detector
 # [Vstart, Vstop, Hstart, Hstop]
 # if data is a series, the condition becomes log10(data.sum(axis=0)) > high_threshold * nb_frames
-save_directory = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
+save_directory = '/home/carnisj/phasing/'  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
 is_scan = True  # set to True is the measurement is a scan or a time series, False for a single image
-compare_ends = True  # set to True to plot the difference between the last frame and the first frame
+compare_ends = False  # set to True to plot the difference between the last frame and the first frame
 save_mask = False  # True to save the mask as 'hotpixels.npz'
 multiprocessing = True  # True to use multiprocessing
+#######################################
+# parameters related to visualization #
+#######################################
+photon_threshold = 1  # everything below this threshold will be set to 0
+vmin = 0  # vmin for the plots, None for default
+vmax = 0  # vmax for the plots, should be larger than vmin, None for default
 ##########################
 # end of user parameters #
 ##########################
@@ -49,11 +55,17 @@ multiprocessing = True  # True to use multiprocessing
 ##############################################
 params = {'scan': scan_nb, 'sample_name': sample_name, 'rootdir': root_directory, 'file_list': file_list,
           'detector': detector_name, 'counter_roi': counter_roi, 'savedir': save_directory, 'is_scan': is_scan,
-          'compare_ends': compare_ends, 'save_mask': save_mask,
-          'multiprocessing': multiprocessing}
+          'compare_ends': compare_ends, 'save_mask': save_mask, 'threshold': photon_threshold, 'cb_min': vmin,
+          'cb_max': vmax, 'multiprocessing': multiprocessing}
+
+#########################
+# check some parameters #
+#########################
+if vmin and vmax:
+    assert vmax > vmin, 'vmax should be larger than vmin'
 
 
-def load_p10_file(my_detector, my_file, file_index, roi):
+def load_p10_file(my_detector, my_file, file_index, roi, threshold):
     """
     Load a P10 data file, mask the fetector gaps and eventually concatenate the series.
 
@@ -61,12 +73,14 @@ def load_p10_file(my_detector, my_file, file_index, roi):
     :param my_file: file name of the data to load
     :param file_index: index of the data file in the total file list, used to sort frames afterwards
     :param roi: region of interest used to calculate the counter (integrated intensity in the ROI)
+    :param threshold: threshold applied to each frame, intensities <= threshold are set to 0
     :return: the 2D data, 2D mask, counter and file index
     """
     roi_sum = []
     file = h5py.File(my_file, 'r')
     dataset = file['entry']['data']['data'][:]
     mask_2d = np.zeros((dataset.shape[1], dataset.shape[2]))
+    dataset[dataset <= threshold] = 0
     [roi_sum.append(dataset[frame, roi[0]:roi[1], roi[2]:roi[3]].sum())
      for frame in range(dataset.shape[0])]
     nb_img = dataset.shape[0]  # collect the number of frames in the eventual series
@@ -88,13 +102,14 @@ def main(parameters):
         :param result: the output of load_p10_file, containing the 2d data, 2d mask, counter for each frame, and the
          file index
         """
-        nonlocal sumdata, mask, counter
+        nonlocal sumdata, mask, counter, nb_files, current_point
         # result is a tuple: data, mask, counter, file_index
+        current_point += 1
         sumdata = sumdata + result[0]
         mask[np.nonzero(result[1])] = 1
         counter.append(result[2])
 
-        sys.stdout.write('\rFile {:d}'.format(result[2][1]))
+        sys.stdout.write('\rFile {:d} / {:d}'.format(current_point, nb_files))
         sys.stdout.flush()
 
     ######################################
@@ -110,6 +125,9 @@ def main(parameters):
     compare_end = parameters['compare_ends']
     savemask = parameters['save_mask']
     multiproc = parameters['multiprocessing']
+    threshold = parameters['threshold']
+    cb_min = parameters['cb_min']
+    cb_max = parameters['cb_max']
 
     #######################
     # Initialize detector #
@@ -153,6 +171,7 @@ def main(parameters):
     plt.ion()
     filenames = [template_file + '{:06d}.h5'.format(image_nb[idx]) for idx in range(nb_files)]
     roi_counter = None
+    current_point = 0
     start = time.time()
 
     if multiproc:
@@ -176,6 +195,7 @@ def main(parameters):
             sys.stdout.flush()
             h5file = h5py.File(filenames[idx], 'r')
             data = h5file['entry']['data']['data'][:]
+            data[data <= threshold] = 0
             nbz, nby, nbx = data.shape
             [counter.append(data[index, counterroi[0]:counterroi[1], counterroi[2]:counterroi[3]].sum())
                 for index in range(nbz)]
@@ -225,7 +245,10 @@ def main(parameters):
         plt.title('Integrated intensity in counter_roi')
         plt.pause(0.1)
 
-    fig, _, _ = gu.imshow_plot(sumdata, plot_colorbar=True, title=plot_title, vmin=0, scale='log')
+    cb_min = cb_min or sumdata.min()
+    cb_max = cb_max or sumdata.max()
+
+    fig, _, _ = gu.imshow_plot(sumdata, plot_colorbar=True, title=plot_title, vmin=cb_min, vmax=cb_max, scale='log')
     np.savez_compressed(savedir + 'hotpixels.npz', mask=mask)
     fig.savefig(savedir + filename)
     plt.show()
