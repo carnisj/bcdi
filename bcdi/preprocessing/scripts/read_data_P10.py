@@ -35,7 +35,8 @@ detector_name = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 counter_roi = []  # plot the integrated intensity in this region of interest. Leave it to [] to use the full detector
 # [Vstart, Vstop, Hstart, Hstop]
 # if data is a series, the condition becomes log10(data.sum(axis=0)) > high_threshold * nb_frames
-save_directory = '/home/carnisj/phasing/'  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
+save_directory = '/home/carnisj/phasing/'
+# images will be saved here, leave it to '' otherwise (default to data directory's parent)
 is_scan = True  # set to True is the measurement is a scan or a time series, False for a single image
 compare_ends = False  # set to True to plot the difference between the last frame and the first frame
 save_mask = False  # True to save the mask as 'hotpixels.npz'
@@ -43,6 +44,7 @@ multiprocessing = True  # True to use multiprocessing
 #######################################
 # parameters related to visualization #
 #######################################
+grey_background = True  # if True, nans will be set to grey in imshow plots
 photon_threshold = 1  # everything below this threshold will be set to 0
 vmin = 0  # vmin for the plots, None for default
 vmax = 0  # vmax for the plots, should be larger than vmin, None for default
@@ -56,7 +58,7 @@ vmax = 0  # vmax for the plots, should be larger than vmin, None for default
 params = {'scan': scan_nb, 'sample_name': sample_name, 'rootdir': root_directory, 'file_list': file_list,
           'detector': detector_name, 'counter_roi': counter_roi, 'savedir': save_directory, 'is_scan': is_scan,
           'compare_ends': compare_ends, 'save_mask': save_mask, 'threshold': photon_threshold, 'cb_min': vmin,
-          'cb_max': vmax, 'multiprocessing': multiprocessing}
+          'cb_max': vmax, 'multiprocessing': multiprocessing, 'grey_bckg': grey_background}
 
 #########################
 # check some parameters #
@@ -128,6 +130,16 @@ def main(parameters):
     threshold = parameters['threshold']
     cb_min = parameters['cb_min']
     cb_max = parameters['cb_max']
+    grey_bckg = parameters['grey_bckg']
+    ###################
+    # define colormap #
+    ###################
+    if grey_bckg:
+        bad_color = '0.7'
+    else:
+        bad_color = '1.0'  # white background
+    colormap = gu.Colormap(bad_color=bad_color)
+    my_cmap = colormap.cmap
 
     #######################
     # Initialize detector #
@@ -248,7 +260,8 @@ def main(parameters):
     cb_min = cb_min or sumdata.min()
     cb_max = cb_max or sumdata.max()
 
-    fig, _, _ = gu.imshow_plot(sumdata, plot_colorbar=True, title=plot_title, vmin=cb_min, vmax=cb_max, scale='log')
+    fig, _, _ = gu.imshow_plot(sumdata, plot_colorbar=True, title=plot_title, vmin=cb_min, vmax=cb_max, scale='log',
+                               cmap=my_cmap)
     np.savez_compressed(savedir + 'hotpixels.npz', mask=mask)
     fig.savefig(savedir + filename)
     plt.show()
