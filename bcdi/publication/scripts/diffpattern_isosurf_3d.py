@@ -30,6 +30,7 @@ scan = 22    # spec scan number
 root_folder = 'D:/data/P10_August2019_CDI/data/'
 sample_name = "gold_2_2_2"
 homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/test/'
+savedir = homedir  # saving directory
 comment = ""  # should start with _
 binning = (2, 2, 2)  # binning for the measured diffraction pattern in each dimension
 tick_spacing = 0.2  # in 1/nm, spacing between ticks
