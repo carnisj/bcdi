@@ -32,7 +32,7 @@ sample_name = "gold_2_2_2"
 homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/test/'
 savedir = homedir  # saving directory
 comment = ""  # should start with _
-binning = (2, 2, 2)  # binning for the measured diffraction pattern in each dimension
+binning = (1, 1, 1)  # binning for the measured diffraction pattern in each dimension
 tick_spacing = 0.2  # in 1/nm, spacing between ticks
 threshold_isosurface = 4.5  # log scale
 fig_size = (1000, 1000)  # figure size in pixels (horizontal, vertical)
@@ -70,7 +70,7 @@ data, _ = util.load_file(file_path)
 assert data.ndim == 3, 'data should be a 3D array'
 
 nz, ny, nx = data.shape
-print("Initial data size: (", nz, ',', ny, ',', nx, ')')
+print("Initial data shape: ", nz, ny, nx)
 
 file_path = filedialog.askopenfilename(initialdir=homedir, title="Select q values",
                                        filetypes=[("NPZ", "*.npz")])
@@ -140,7 +140,7 @@ mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(newdata),
                contours=[0.8*threshold_isosurface, 0.9*threshold_isosurface, threshold_isosurface,
                          1.1*threshold_isosurface, 1.2*threshold_isosurface],
                opacity=0.2, colormap='hsv', vmin=3.5, vmax=5.5)  # , color=(0.7, 0.7, 0.7))
-distance = 5*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max()
+distance = 3*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max()
 mlab.view(azimuth=38, elevation=63, distance=distance)
 # azimut is the rotation around z axis of mayavi (x)
 mlab.roll(0)
