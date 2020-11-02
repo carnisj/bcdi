@@ -136,8 +136,7 @@ grid_qx, grid_qz, grid_qy = np.mgrid[-tick_spacing*half_labels:tick_spacing*half
 # for q: classical convention qx downstream, qz vertical and qy outboard
 myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
 mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(newdata),
-               contours=[0.5*threshold_isosurface, 0.6*threshold_isosurface, 0.7*threshold_isosurface,
-                         0.8*threshold_isosurface, 0.9*threshold_isosurface, threshold_isosurface,
+               contours=[0.8*threshold_isosurface, 0.9*threshold_isosurface, threshold_isosurface,
                          1.1*threshold_isosurface, 1.2*threshold_isosurface],
                opacity=0.2, colormap='hsv', vmin=3.5, vmax=5.5)  # , color=(0.7, 0.7, 0.7))
 distance = 5*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max()
@@ -149,23 +148,23 @@ ax = mlab.axes(line_width=2.0, nb_labels=2*half_labels+1)
 mlab.xlabel('Qx (1/nm)')
 mlab.ylabel('Qz (1/nm)')
 mlab.zlabel('-Qy (1/nm)')
-mlab.savefig(homedir + 'S' + str(scan) + comment + '_labels.png', figure=myfig)
+mlab.savefig(savedir + 'S' + str(scan) + comment + '_labels.png', figure=myfig)
 ax.label_text_property.opacity = 0.0
 ax.title_text_property.opacity = 0.0
-mlab.savefig(homedir + 'S' + str(scan) + comment + '_axes.png', figure=myfig)
+mlab.savefig(savedir + 'S' + str(scan) + comment + '_axes.png', figure=myfig)
 ax.axes.x_axis_visibility = False
 ax.axes.y_axis_visibility = False
 ax.axes.z_axis_visibility = False
-mlab.savefig(homedir + 'S' + str(scan) + comment + '.png', figure=myfig)
+mlab.savefig(savedir + 'S' + str(scan) + comment + '.png', figure=myfig)
 mlab.draw(myfig)
 
 if output_format == 'mp4':
     animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
-    fname = homedir + "S" + str(scan) + "_movie.mp4"
+    fname = savedir + "S" + str(scan) + "_movie.mp4"
     animation.write_videofile(fname, fps=frame_per_second)
 elif output_format == 'gif':
     animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
-    fname = homedir + "S" + str(scan) + "_movie.gif"
+    fname = savedir + "S" + str(scan) + "_movie.gif"
     animation.write_gif(fname, fps=frame_per_second)
 
 mlab.show()
