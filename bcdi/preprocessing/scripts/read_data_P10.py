@@ -180,7 +180,7 @@ def main(parameters):
         pool = mp.Pool(processes=min(mp.cpu_count(), len(filenames)))  # use this number of processes
 
         for file in range(nb_files):
-            pool.apply_async(load_p10_file, args=(detector, filenames[file], file, counterroi),
+            pool.apply_async(load_p10_file, args=(detector, filenames[file], file, counterroi, threshold),
                              callback=collect_result, error_callback=util.catch_error)
 
         pool.close()
