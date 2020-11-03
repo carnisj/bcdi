@@ -1490,7 +1490,6 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
     """
 
     assert array.ndim == 3, 'a 3D array is expected'
-    global interp_array, number_y, slices_done
 
     def collect_result(result):
         """
@@ -1498,7 +1497,7 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
 
         :param result: the output of interp_slice, containing the 2d interpolated slice and the slice index
         """
-        global interp_array, number_y, slices_done
+        nonlocal interp_array, number_y, slices_done
         slices_done = slices_done + 1
         # result is a tuple: data, mask, counter, file_index
         # stack the 2D interpolated frame along the rotation axis, taking into account the flip of the
