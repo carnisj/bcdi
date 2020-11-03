@@ -1023,6 +1023,7 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     nby = int((detector.roi[1] - detector.roi[0]) / detector.binning[1])
     nbx = int((detector.roi[3] - detector.roi[2]) / detector.binning[2])
     pixelsize_x = detector.pixelsize_x * 1e9  # in nm, pixel size in the horizontal direction
+    pixelsize_y = detector.pixelsize_y * 1e9  # in nm, pixel size in the horizontal direction
     distance = setup.distance * 1e9  # in nm
     qz = np.zeros((nbz, nby, nbx))
     qy = np.zeros((nbz, nby, nbx))
@@ -1045,7 +1046,7 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
                                indexing='ij')
 
         two_theta = np.arctan(myx * pixelsize_x / distance)
-        alpha_f = np.arctan(np.divide(myy, np.sqrt((distance/pixelsize_x)**2 + np.power(myx, 2))))
+        alpha_f = np.arctan(np.divide(myy * pixelsize_y, np.sqrt(distance**2 + np.power(myx * pixelsize_x, 2))))
 
         qlab0 = 2 * np.pi / wavelength * (np.cos(alpha_f) * np.cos(two_theta) - kin[0])  # along z* downstream
         qlab1 = 2 * np.pi / wavelength * (np.sin(alpha_f) - kin[1])  # along y* vertical up
