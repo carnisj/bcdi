@@ -354,10 +354,10 @@ compa_simu_exp.py
    :end-before: """
    :language: rst
 
-plot_diffpattern.py
-^^^^^^^^^^^^^^^^^^^
+plot_diffpattern_2d.py
+^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/publication/scripts/plot_diffpattern.py
+.. literalinclude:: ../../bcdi/publication/scripts/plot_diffpattern_2d.py
    :start-after: helptext
    :end-before: """
    :language: rst
