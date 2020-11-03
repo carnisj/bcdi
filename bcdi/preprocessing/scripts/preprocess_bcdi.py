@@ -41,12 +41,12 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 1053  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
+scans = 78  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
+root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
 sample_name = ["S"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
@@ -115,7 +115,7 @@ custom_monitor = np.ones(51)  # monitor values for normalization for the custom_
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'alignment'
+specfile_name = 'psic_nano_20141204'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -141,9 +141,9 @@ photon_threshold = 0  # data[data < photon_threshold] = 0
 photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon threshold should be applied
 # if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
 background_file = ''  # root_folder + 'background.npz'  #
-hotpixels_file = ''  # root_folder + 'hotpixels_HS4670.npz'  #
-flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'l5_mpx4_%05d.edf.gz'
+hotpixels_file = root_folder + 'hotpixels_HS4670.npz'  #
+flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  #
+template_imagefile = 'Pt4_%04d.edf'  # .gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -158,7 +158,7 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
-sdd = 0.50678  # in m, sample to detector distance in m
+sdd = 1.2646  # in m, sample to detector distance in m
 energy = 9000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file
@@ -176,14 +176,14 @@ custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = -0.6358  # outer detector angle offset, not important if you use raw data
-sample_offsets = (0, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
+offset_inplane = 0  # -2.9981  # outer detector angle offset, not important if you use raw data
+sample_offsets = (0, 180, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
 # the sample offsets will be added to the motor values
-cch1 = 207.88  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-cch2 = 50.49  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
-detrot = -0.436  # detrot parameter from xrayutilities 2D detector calibration
-tiltazimuth = 273.2  # tiltazimuth parameter from xrayutilities 2D detector calibration
-tilt = 3.940  # tilt parameter from xrayutilities 2D detector calibration
+cch1 = 369.5  # 370.09  # cch1 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+cch2 = 138.5  # -1066.35  # cch2 parameter from xrayutilities 2D detector calibration, detector roi is taken into account below
+detrot = 0.128  # detrot parameter from xrayutilities 2D detector calibration
+tiltazimuth = 360  # tiltazimuth parameter from xrayutilities 2D detector calibration
+tilt = 3.136  # tilt parameter from xrayutilities 2D detector calibration
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -558,7 +558,7 @@ for scan_nb in range(len(scans)):
         else:
             tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
             tmp_data[mask == 1] = 0
-            fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+            fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                             title='Data before gridding\n', is_orthogonal=False, reciprocal_space=True)
             plt.savefig(savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
                         str(nx) + binning_comment + '.png')
