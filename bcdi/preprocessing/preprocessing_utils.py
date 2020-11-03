@@ -1474,9 +1474,10 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
 
 
 def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_radius, comment='',
-                     multiprocessing=True):
+                     multiprocessing=False):
     """
-    Interpolate a 3D array in cylindrical coordinated (tomographic dataset) onto cartesian coordinates.
+    Interpolate a 3D array in cylindrical coordinated (tomographic dataset) onto cartesian coordinates. There is no
+     benefit from multiprocessing, the data transfers are the limiting factor.
 
     :param array: 3D array of intensities measured in the detector frame
     :param rotation_angle: array, rotation angle values for the rocking scan
