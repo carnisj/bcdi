@@ -1338,7 +1338,7 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
 
             interp_mask[np.nonzero(interp_mask)] = 1
             interp_mask = interp_mask.astype(int)
-        else:  # interpolate in one shoot using a 3D RegularGridInterpolator
+        else:  # interpolate in one shot using a 3D RegularGridInterpolator
 
             # Calculate the coordinates of a cartesian 3D grid expressed in the cylindrical basis
             interp_angle, interp_height, interp_radius = cartesian2cylind(grid_shape=(numx, numy, numx),
@@ -1383,12 +1383,6 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
         raise NotImplementedError('TODO: check Ewald sphere curvature correction, too slow')
 
         # TODO check Ewald sphere curvature correction
-        # qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
-        # qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
-        # qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
-        #
-        # new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
-        #
         # from scipy.interpolate import griddata
         # # calculate exact q values for each voxel of the 3D dataset
         # old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
