@@ -39,6 +39,7 @@ fig_size = (1000, 1000)  # figure size in pixels (horizontal, vertical)
 ##########################
 # settings for the movie #
 ##########################
+make_movie = True  # True to save a movie
 duration = 10  # duration of the movie in s
 frame_per_second = 20  # number of frames per second, there will be duration*frame_per_second frames in total
 output_format = 'mp4'  # 'gif', 'mp4' or None for no movie
@@ -159,14 +160,15 @@ ax.axes.z_axis_visibility = False
 mlab.savefig(savedir + 'S' + str(scan) + comment + '.png', figure=myfig)
 mlab.draw(myfig)
 
-if output_format == 'mp4':
-    animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
-    fname = savedir + "S" + str(scan) + "_movie.mp4"
-    animation.write_videofile(fname, fps=frame_per_second)
-elif output_format == 'gif':
-    animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
-    fname = savedir + "S" + str(scan) + "_movie.gif"
-    animation.write_gif(fname, fps=frame_per_second)
+if make_movie:
+    if output_format == 'mp4':
+        animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
+        fname = savedir + "S" + str(scan) + "_movie.mp4"
+        animation.write_videofile(fname, fps=frame_per_second)
+    elif output_format == 'gif':
+        animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
+        fname = savedir + "S" + str(scan) + "_movie.gif"
+        animation.write_gif(fname, fps=frame_per_second)
 
 mlab.show()
 
