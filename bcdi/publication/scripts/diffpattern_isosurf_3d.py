@@ -13,6 +13,7 @@ import tkinter as tk
 from tkinter import filedialog
 from scipy.interpolate import RegularGridInterpolator
 from scipy.ndimage.measurements import center_of_mass
+from traits.api import push_exception_handler
 import gc
 import sys
 sys.path.append('D:/myscripts/bcdi/')
@@ -70,6 +71,7 @@ def rotate_scene(t):
 #############
 # load data #
 #############
+push_exception_handler(reraise_exceptions=True)  # force exceptions to be re-raised in Traits
 root = tk.Tk()
 root.withdraw()
 
@@ -174,7 +176,7 @@ else:
 # for q: classical convention qx downstream, qz vertical and qy outboard
 myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
 mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(data), contours=contours, opacity=0.2, colormap='hsv',
-               vmin=0, vmax=np.ceil(np.log10(data.max())))
+               vmin=0, vmax=np.ceil(np.log10(data[~np.isnan(data)].max())))
 if distance:
     mlab.view(azimuth=38, elevation=63, distance=distance)
 else:
