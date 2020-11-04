@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import griddata
 import xrayutilities as xu
 import fabio
 import os
@@ -1381,35 +1382,35 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
             interp_mask = interp_mask.astype(int)
 
     else:  # correction for Ewald sphere curvature
-        raise NotImplementedError('TODO: check Ewald sphere curvature correction, too slow')
+        # calculate exact q values for each voxel of the 3D dataset
+        old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
 
-        # TODO check Ewald sphere curvature correction
-        # from scipy.interpolate import griddata
-        # # calculate exact q values for each voxel of the 3D dataset
-        # old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
-        #
-        # # create the grid for interpolation
-        # qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
-        # qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
-        # qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
-        #
-        # new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
-        #
-        # # interpolate the data onto the new points using griddata (the original grid is not regular)
-        # interp_data = griddata(
-        #     np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
-        #     np.ndarray.flatten(data),
-        #     np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
-        #     method='linear', fill_value=np.nan)
-        # interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
-        #
-        # # interpolate the mask onto the new points
-        # interp_mask = griddata(
-        #     np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
-        #     np.ndarray.flatten(mask),
-        #     np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
-        #     method='linear', fill_value=np.nan)
-        # interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
+        # create the grid for interpolation
+        qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
+        qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
+        qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
+
+        new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
+
+        # interpolate the data onto the new points using griddata (the original grid is not regular)
+        print('Interpolating the data using griddata, will take time...')
+        interp_data = griddata(
+            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
+            np.ndarray.flatten(data),
+            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
+            method='linear', fill_value=np.nan)
+        interp_data = interp_data.reshape((numx, numy, numx))
+
+        # interpolate the mask onto the new points
+        print('Interpolating the mask using griddata, will take time...')
+        interp_mask = griddata(
+            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
+            np.ndarray.flatten(mask),
+            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
+            method='linear', fill_value=np.nan)
+        interp_mask = interp_mask.reshape((numx, numy, numx))
+        interp_mask[np.nonzero(interp_mask)] = 1
+        interp_mask = interp_mask.astype(int)
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
