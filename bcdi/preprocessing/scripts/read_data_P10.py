@@ -26,17 +26,17 @@ helptext = """
 Open images or series data at P10 beamline.
 """
 
-scan_nb = 22  # scan number as it appears in the folder name
-sample_name = "gold_2_2_2"  # without _ at the end
-root_directory = "/nfs/fs/fscxi/experiments/2019/PETRA/P10/11007170/raw/"
-file_list = np.arange(1, 381+1)
+scan_nb = 54  # scan number as it appears in the folder name
+sample_name = "p21"  # without _ at the end
+root_directory = "D:/data/P10_isosurface/data/"
+file_list = np.arange(1, 201+1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
 detector_name = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 counter_roi = []  # plot the integrated intensity in this region of interest. Leave it to [] to use the full detector
 # [Vstart, Vstop, Hstart, Hstop]
 # if data is a series, the condition becomes log10(data.sum(axis=0)) > high_threshold * nb_frames
-save_directory = '/home/carnisj/phasing/'
-# images will be saved here, leave it to '' otherwise (default to data directory's parent)
+save_directory = None
+# images will be saved here, leave it to None otherwise (default to data directory's parent)
 is_scan = True  # set to True is the measurement is a scan or a time series, False for a single image
 compare_ends = False  # set to True to plot the difference between the last frame and the first frame
 save_mask = False  # True to save the mask as 'hotpixels.npz'
@@ -45,9 +45,9 @@ multiprocessing = True  # True to use multiprocessing
 # parameters related to visualization #
 #######################################
 grey_background = True  # if True, nans will be set to grey in imshow plots
-photon_threshold = 1  # everything below this threshold will be set to 0
+photon_threshold = 0  # everything below this threshold will be set to 0
 vmin = 0  # vmin for the plots, None for default
-vmax = 0  # vmax for the plots, should be larger than vmin, None for default
+vmax = 3  # vmax for the plots, should be larger than vmin, None for default
 ##########################
 # end of user parameters #
 ##########################
@@ -174,8 +174,7 @@ def main(parameters):
         template_file = datadir + samplename + '_take_' + str('{:05d}'.format(scan)) + "_data_"
         compare_end = False
 
-    if savedir == '':
-        savedir = os.path.abspath(os.path.join(datadir, os.pardir)) + '/'
+    savedir = savedir or os.path.abspath(os.path.join(datadir, os.pardir)) + '/'
 
     #############
     # Load data #
