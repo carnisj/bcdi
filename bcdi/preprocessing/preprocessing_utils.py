@@ -3428,6 +3428,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
                 eta = eta[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
 
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            print('eta', eta)
             nb_steps = len(phi)
             tilt_angle = phi[1] - phi[0]
 
@@ -3496,7 +3497,10 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         chi = chi + setup.sample_offsets[0]
         phi = phi + setup.sample_offsets[1]
         om = om + setup.sample_offsets[2]
+        print('chi', chi)
+        print('mu', mu)
         if setup.rocking_angle == 'outofplane':  # om rocking curve
+            print('phi', phi)
             nb_steps = len(om)
             tilt_angle = om[1] - om[0]
 
@@ -3510,6 +3514,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
                 om = om[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
 
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            print('om', om)
             nb_steps = len(phi)
             tilt_angle = phi[1] - phi[0]
 
