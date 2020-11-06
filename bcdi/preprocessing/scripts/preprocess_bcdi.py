@@ -41,17 +41,17 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 54  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
+scans = 15  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
 root_folder = "D:/data/P10_isosurface/data/"
-sample_name = ["p21"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
+sample_name = ["p15_2"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 3, 3]  # binning that will be used for phasing
+binning = [1, 2, 2]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
@@ -129,9 +129,9 @@ specfile_name = ''
 ###############################
 detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 1282  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 830  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg - 768, y_bragg + 768, x_bragg - 768, x_bragg + 768]
+x_bragg = 1346  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 763  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = [y_bragg - 350, y_bragg + 350, x_bragg - 250, x_bragg + 250]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -369,14 +369,20 @@ if rocking_angle == "energy":
 if not use_rawdata:
     qconv, offsets = pru.init_qconversion(setup)
     detector.offsets = offsets
-    hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x downstream, y outboard, z vertical
+    hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane,  en=energy, qconv=qconv)
+    # x downstream, y outboard, z vertical
     # first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
-    cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
-    cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
+    cch1 = cch1 - detector.roi[0]  # Vertical direct beam position, take into account the roi if the image is cropped
+    cch2 = cch2 - detector.roi[2]  # Horizontal direct beam position, take into account the roi if the image is cropped
+    # number of pixels after taking into account the roi and binning
+    nch1 = (detector.roi[1] - detector.roi[0]) // (previous_binning[1] * binning[1]) +\
+        (detector.roi[1] - detector.roi[0]) % (previous_binning[1] * binning[1])
+    nch2 = (detector.roi[3] - detector.roi[2]) // (previous_binning[2] * binning[2]) +\
+        (detector.roi[3] - detector.roi[2]) % (previous_binning[2] * binning[2])
+    # detector init_area method, pixel sizes are the binned ones
     hxrd.Ang2Q.init_area(setup.detector_ver, setup.detector_hor, cch1=cch1, cch2=cch2,
-                         Nch1=detector.roi[1] - detector.roi[0], Nch2=detector.roi[3] - detector.roi[2],
-                         pwidth1=detector.pixelsize_y, pwidth2=detector.pixelsize_x, distance=sdd, detrot=detrot,
-                         tiltazimuth=tiltazimuth, tilt=tilt)
+                         Nch1=nch1, Nch2=nch2, pwidth1=detector.pixelsize_y, pwidth2=detector.pixelsize_x,
+                         distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
     # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
 ############################################
