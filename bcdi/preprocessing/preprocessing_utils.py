@@ -3610,6 +3610,11 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
 
+    # bin q values in the detector plane (binning of the rocking angle already performed)
+    _, ny, nx = qx.shape  # shape before binning the detector plane
+    qx = qx[:, :ny - (ny % binning[1]):binning[1], :nx - (nx % binning[2]):binning[2]]
+    qz = qz[:, :ny - (ny % binning[1]):binning[1], :nx - (nx % binning[2]):binning[2]]
+    qy = qy[:, :ny - (ny % binning[1]):binning[1], :nx - (nx % binning[2]):binning[2]]
     return qx, qz, qy, frames_logical
 
 
