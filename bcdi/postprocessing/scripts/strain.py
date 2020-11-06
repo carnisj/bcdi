@@ -42,19 +42,19 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 11  # spec scan number
+scan = 15  # spec scan number
 
-datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + "/pynxraw/test/"
+datadir = "D:/data/P10_isosurface/data/p15_2_000" + str(scan) + "/pynx/"
 
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [252, 420, 392]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [200, 350, 250]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor applied during phasing
-output_size = (200, 200, 200)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
+output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
 fix_voxel = 3  # voxel size in nm for the interpolation during the geometrical transformation
 # put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
@@ -63,7 +63,7 @@ plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the sup
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-isosurface_strain = 0.38  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.5  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 strain_method = 'default'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
 # magnitude value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
@@ -76,18 +76,18 @@ comment = '_gap_iso' + str(isosurface_strain)  # should start with _
 #################################
 # define the experimental setup #
 #################################
-beamline = "ID01"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
+beamline = "P10"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 0.50678  # 1.26  # sample to detector distance in m
-pixel_size = 55e-6  # detector pixel size in m, taking into account an eventual binning during preprocessing
-energy = 9000  # x-ray energy in eV, 6eV offset at ID01
+sdd = 1.83  # 1.26  # sample to detector distance in m
+pixel_size = 150-6  # detector pixel size in m, taking into account an eventual binning during preprocessing
+energy = 8820  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 35.3627  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = 0.4864  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 36.7975  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = -1.8465  # detector nu ID01, gamma SIXS, tth 34ID
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.01015  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 optical_path_method = 'threshold'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
@@ -107,10 +107,10 @@ threshold_unwrap_refraction = 0.05  # threshold used to calculate the optical pa
 ###########
 simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
-flip_reconstruction = False  # True if you want to get the conjugate object
+flip_reconstruction = True  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient = 1.0  # upper threshold of the gradient of the phase, use for ramp removal
-xrayutils_ortho = False  # True if the data is already orthogonalized
+xrayutils_ortho = True  # True if the data is already orthogonalized
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
 save_support = False  # True to save the non-orthogonal support for later phase retrieval
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
@@ -432,12 +432,13 @@ else:  # data already orthogonalized using xrayutilities, will be in crystal fra
     dy_real = 2 * np.pi / abs(qz.max() - qz.min()) / 10  # in nm qz=y in nexus convention
     dx_real = 2 * np.pi / abs(qy.max() - qy.min()) / 10  # in nm qy=x in nexus convention
     dz_real = 2 * np.pi / abs(qx.max() - qx.min()) / 10  # in nm qx=z in nexus convention
+    print(f'direct space voxel size from q values: {dz_real:.2f}nm, {dy_real:.2f}nm, {dx_real:.2f}nm')
     if fix_voxel != 0:
         voxel_size = fix_voxel
     else:
         voxel_size = np.mean([dz_real, dy_real, dx_real])  # in nm
-    print('real space pixel size: ', str('{:.2f}'.format(voxel_size)), 'nm')
-    print('Use the same voxel size in each dimensions: interpolating...\n\n')
+    print('Direct space pixel size for the interpolation: ', str('{:.2f}'.format(voxel_size)), 'nm')
+    print('Interpolating...\n')
     obj_ortho = pu.regrid(obj_ortho, (dz_real, dy_real, dx_real), voxel_size)
 del avg_obj
 gc.collect()
