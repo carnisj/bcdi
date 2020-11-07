@@ -25,7 +25,7 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 11
+scan = 1053
 root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
 sample_name = "S"  # string in front of the scan number in the folder name
 savedir = None  # images will be saved here, leave it to None otherwise (default to data directory's parent)
@@ -48,7 +48,7 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 is_series = False  # specific to series measurement at P10
-specfile_name = 'l5'
+specfile_name = 'alignment'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -65,7 +65,7 @@ peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 high_threshold = 150000  # everything above will be considered as hotpixel
 hotpixels_file = ''  # root_folder + 'merlin_mask_190222_14keV.h5'  #
 flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+template_imagefile = 'l5_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -78,7 +78,7 @@ template_imagefile = 'data_mpx4_%05d.edf.gz'
 vmin = 0  # min of the colorbar (log scale)
 vmax = 6  # max of the colorbar (log scale)
 low_threshold = 1  # everthing <= 1 will be set to 0 in the plot
-width = [50, 50]  # [vertical, horizontal]
+width = [50, 50]  # [vertical, horizontal], leave None for default
 # half width in pixels of the region of interest centered on the peak for the plot
 ##################################
 # end of user-defined parameters #
@@ -202,6 +202,16 @@ else:  # 2D
     data[data <= low_threshold] = 0
     title = f'peak method={peak_method}\n'
 
+######################################################################################
+# cehck the width parameter for plotting the region of interest centered on the peak #
+######################################################################################
+if width is None:
+    width = [y0, numy-y0, x0, numx-x0]  # plot the full range
+else:
+    width = [min(width[0], y0, numy-y0), min(width[0], y0, numy-y0),
+             min(width[1], x0, numx-x0), min(width[1], x0, numx-x0)]
+print(f'width for plotting: {width}')
+
 ############################################
 # plot mask, monitor and concatenated data #
 ############################################
@@ -216,15 +226,11 @@ gu.combined_plots(tuple_array=(monitor, mask), tuple_sum_frames=False, tuple_sum
 max_y, max_x = np.unravel_index(abs(data).argmax(), data.shape)
 print("Max at (y, x): ", max_y, max_x, ' Max = ', int(data[max_y, max_x]))
 
-# check the width for plotting the region of interest centered on the peak
-width[0] = min(width[0], y0, numy-y0)
-width[1] = min(width[1], x0, numx-x0)
-
 # plot the region of interest centered on the peak
 # extent (left, right, bottom, top)
 fig, ax = plt.subplots(nrows=1, ncols=1)
-plot = ax.imshow(np.log10(data[y0-width[0]:y0+width[0], x0-width[1]:x0+width[1]]), vmin=vmin, vmax=vmax, cmap=my_cmap,
-                 extent=[x0-width[1], x0+width[1], y0+width[0], y0-width[0]])
+plot = ax.imshow(np.log10(data[y0-width[0]:y0+width[1], x0-width[2]:x0+width[3]]), vmin=vmin, vmax=vmax, cmap=my_cmap,
+                 extent=[x0-width[2]-0.5, x0+width[3]-0.5, y0+width[1]-0.5, y0-width[0]-0.5])
 ax.set_title(f'{title} Peak at (y, x): ({y0},{x0})   Peak value = {int(data[y0, x0])}')
 if beamline == 'NANOMAX':
     ax.invert_yaxis()  # the detector is mounted upside-down on the robot arm at Nanomax
