@@ -3614,7 +3614,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
-
+    print('Use "sample_offsets" to correct the diffractometer values\n')
     return qx, qz, qy, frames_logical
 
 
