@@ -29,18 +29,18 @@ The diffraction pattern is supposed to be in an orthonormal frame and q values n
 Optionally creates a movie from a 3D real space reconstruction in each direction. This requires moviepy.
 """
 
-scan = 11    # spec scan number
+scan = 1053    # spec scan number
 root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
 sample_name = "S"
 homedir = root_folder + sample_name + str(scan) + "/pynx/"
 savedir = homedir  # saving directory
 comment = ""  # should start with _
-binning = (1, 1, 1)  # binning for the measured diffraction pattern in each dimension
+binning = (2, 2, 2)  # binning for the measured diffraction pattern in each dimension
 geometry = 'Bragg'  # 'SAXS' or 'Bragg'
-crop_symmetric = True  # if True, will crop the data ot the largest symmetrical range around the direct beam
+crop_symmetric = False  # if True, will crop the data ot the largest symmetrical range around the direct beam
 # (geometry = 'SAXS') or the Brapp peak (geometry = 'Bragg')
 tick_spacing = 0.05  # in 1/nm, spacing between ticks
-contours = [0, 0.15, 0.3, 0.45, 0.75, 1.25, 2, 4]  # contours for the isosurface in log scale
+contours = [0.75, 1.25, 2, 4]  # contours for the isosurface in log scale
 # contours = [3.6, 4.05, 4.5, 4.95, 5.4]  # gold_2_2_2_00022
 fig_size = (500, 500)  # figure size in pixels (horizontal, vertical)
 distance = 1  # distance of the camera in q, leave None for default
@@ -98,6 +98,7 @@ qz = qz[:ny - (ny % binning[1]):binning[1]]
 qy = qy[:nx - (nx % binning[2]):binning[2]]
 data = pu.bin_data(data, (binning[0], binning[1], binning[2]), debugging=False)
 print('Diffraction data shape after binning', data.shape)
+nz, ny, nx = data.shape
 
 ##########################################
 # take the largest data symmetrical in q #
@@ -130,6 +131,7 @@ if crop_symmetric:
                 indices_qy.min():indices_qy.max()+1]
     nz, ny, nx = data.shape
     print("Shape of the largest symmetrical dataset:", nz, ny, nx)
+    del indices_qx, indices_qy, indices_qz
 
     ##############################################################
     # interpolate the data to have ticks at the desired location #
@@ -170,7 +172,9 @@ if crop_symmetric:
                                          qz_com-tick_spacing*half_labels:qz_com+tick_spacing*half_labels:1j * ny,
                                          qy_com-tick_spacing*half_labels:qy_com+tick_spacing*half_labels:1j * nx]
 else:
-    grid_qx, grid_qz, grid_qy = np.mgrid[qx, qz, qy]
+    grid_qx, grid_qz, grid_qy = np.mgrid[qx.min():qx.max():1j*nz,
+                                         qz.min():qz.max():1j*ny,
+                                         qy.min():qy.max():1j*nx]
 
 # in CXI convention, z is downstream, y vertical and x outboard
 # for q: classical convention qx downstream, qz vertical and qy outboard
@@ -185,7 +189,11 @@ else:
 # azimut is the rotation around z axis of mayavi (x)
 mlab.roll(0)
 
-ax = mlab.axes(line_width=2.0, nb_labels=2*half_labels+1)
+if crop_symmetric:
+    ax = mlab.axes(line_width=2.0, nb_labels=2*half_labels+1)
+else:
+    ax = mlab.axes(line_width=2.0, nb_labels=4)
+
 mlab.xlabel('Qx (1/nm)')
 mlab.ylabel('Qz (1/nm)')
 mlab.zlabel('-Qy (1/nm)')
