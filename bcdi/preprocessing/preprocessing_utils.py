@@ -2657,7 +2657,9 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
                     sys.stdout.write('\rLoading frame {:d}'.format(idx+1))
                     sys.stdout.flush()
                 idx = idx + 1
-            except ValueError:  # reached the end of the series
+            except IndexError:  # reached the end of the series
+                break
+            except ValueError:  # something went wrong
                 break
         if is_series:
             data[file_idx, :, :] = np.asarray(series_data).sum(axis=0)
