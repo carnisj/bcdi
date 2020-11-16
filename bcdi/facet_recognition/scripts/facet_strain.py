@@ -360,7 +360,6 @@ print("\nCOM at (z, y, x): (", str('{:.2f}'.format(zcom_support)), ',', str('{:.
 coordination_matrix = pu.calc_coordination(support, kernel=np.ones((3, 3, 3)), debugging=False)
 surface = np.copy(support)
 surface[coordination_matrix > 22] = 0  # remove the bulk 22
-bulk = support - surface
 del coordination_matrix
 gc.collect()
 
@@ -398,8 +397,9 @@ summary_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('angl
                    '{0: <10}'.format('B (y)') + '\t' + '{0: <10}'.format('C (z)') + '\t' + 'D (Ax+By+CZ+D=0)' + '\t' 
                    'normal X' + '\t' + 'normal Y' + '\t' + 'normal Z' + '\n')
 allpoints_file = open(os.path.join(savedir, "S" + str(scan) + "_strain_iso" + str(support_threshold) + ".dat"), "w")
-allpoints_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('Z') + '\t' + '{0: <10}'.format('Y') +
-                     '\t' + '{0: <10}'.format('X') + '\t' + '{0: <10}'.format('strain')+'\n')
+allpoints_file.write('{0: <10}'.format('Plane #') + '\t' + '{0: <10}'.format('angle') + '\t' +
+                     '{0: <10}'.format('strain') + '\t' + '{0: <10}'.format('Z') +
+                     '\t' + '{0: <10}'.format('Y') + '\t' + '{0: <10}'.format('X') + '\n')
 
 # prepare amp for vti file
 amp_array = np.transpose(np.flip(amp, 2)).reshape(amp.size)  # VTK axis 2 is flipped
@@ -422,12 +422,9 @@ pd.Update()
 index_vti = 2
 del amp, amp_array, edges_array
 gc.collect()
-##################################################
-# save bulk, edges and corners strain to logfile #
-##################################################
-fu.update_logfile(support=bulk, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
-                  label='bulk')
-
+#########################################################
+# save surface, edges and corners strain to the logfile #
+#########################################################
 fu.update_logfile(support=surface, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
                   label='surface')
 
@@ -437,7 +434,7 @@ fu.update_logfile(support=edges, strain_array=strain, summary_file=summary_file,
 fu.update_logfile(support=corners, strain_array=strain, summary_file=summary_file, allpoints_file=allpoints_file,
                   label='corners')
 
-del bulk, corners
+del corners
 gc.collect()
 
 #######################################################################################

@@ -1074,7 +1074,7 @@ def taubin_smooth(faces, vertices, cmap=default_cmap, iterations=10, lamda=0.33,
     return new_vertices, normals, areas, intensity, faces, err_normals
 
 
-def update_logfile(support, strain_array, summary_file, allpoints_file, label=0, angle_plane=0,
+def update_logfile(support, strain_array, summary_file, allpoints_file, label=0, angle_plane=np.nan,
                    plane_coeffs=(0, 0, 0, 0), plane_normal=(0, 0, 0)):
     """
     Update log files use in the facet_strain.py script.
@@ -1101,13 +1101,13 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
         if strain_array[ind_z[idx], ind_y[idx], ind_x[idx]] != 0:
             # remove the artefact from YY reconstrutions at the bottom facet
             allpoints_file.write('{0: <10}'.format(str(label)) + '\t' +
-                                 '{0: <10}'.format(str(ind_z[idx])) + '\t' +
-                                 '{0: <10}'.format(str(ind_y[idx])) + '\t' +
-                                 '{0: <10}'.format(str(ind_x[idx])) + '\t' +
+                                 '{0: <10}'.format(str('{:.3f}'.format(angle_plane))) + '\t' +
                                  '{0: <10}'.format(str('{:.7f}'.format(strain_array[ind_z[idx],
                                                                                     ind_y[idx],
-                                                                                    ind_x[idx]])))
-                                 + '\n')
+                                                                                    ind_x[idx]]))) + '\t' +
+                                 '{0: <10}'.format(str(ind_z[idx])) + '\t' +
+                                 '{0: <10}'.format(str(ind_y[idx])) + '\t' +
+                                 '{0: <10}'.format(str(ind_x[idx])) + '\n')
 
     str_array = strain_array[support == 1]
     str_array[str_array == 0] = np.nan  # remove the artefact from YY reconstrutions at the bottom facet
