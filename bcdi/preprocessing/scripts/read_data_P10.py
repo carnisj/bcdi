@@ -26,8 +26,8 @@ helptext = """
 Open images or series data at P10 beamline.
 """
 
-scan_nb = 54  # scan number as it appears in the folder name
-sample_name = "p21"  # without _ at the end
+scan_nb = 15  # scan number as it appears in the folder name
+sample_name = "p15_2"  # without _ at the end
 root_directory = "D:/data/P10_isosurface/data/"
 file_list = np.arange(1, 201+1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
@@ -47,7 +47,7 @@ multiprocessing = True  # True to use multiprocessing
 grey_background = True  # if True, nans will be set to grey in imshow plots
 photon_threshold = 0  # everything below this threshold will be set to 0
 vmin = 0  # vmin for the plots, None for default
-vmax = 3  # vmax for the plots, should be larger than vmin, None for default
+vmax = 5  # vmax for the plots, should be larger than vmin, None for default
 ##########################
 # end of user parameters #
 ##########################
@@ -175,6 +175,8 @@ def main(parameters):
         compare_end = False
 
     savedir = savedir or os.path.abspath(os.path.join(datadir, os.pardir)) + '/'
+    print(f'datadir: {datadir}')
+    print(f'savedir: {savedir}')
 
     #############
     # Load data #
