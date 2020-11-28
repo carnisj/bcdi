@@ -43,6 +43,7 @@ output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 
 
 scans = [32]  # list or array of scan numbers
 root_folder = "D:/data/P10_March2020_CDI/data/"
+savedir = "D:/data/P10_March2020_CDI/test/"  # images will be saved here, leave it to None otherwise (default to data directory's parent)
 sample_name = ['ht_pillar3']  # "S"  # # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 user_comment = ''  # string, should start with "_"
@@ -370,15 +371,15 @@ for scan_nb in range(len(scans)):
     print('Scan type: ', setup.rocking_angle)
     print('Sample to detector distance: ', setup.distance, 'm')
     print('Energy:', setup.energy, 'ev')
-
+    savedir = savedir or homedir
     if not use_rawdata:
         comment = comment + '_ortho'
-        savedir = homedir + "pynx/"
+        savedir = savedir + "pynx/"
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
         print('Output will interpolated in the orthogonal laboratory frame')
         plot_title = ['QzQx', 'QyQx', 'QyQz']
     else:
-        savedir = homedir + "pynxraw/"
+        savedir = savedir + "pynxraw/"
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
         print('Output will be non orthogonal, in the detector frame')
         plot_title = ['YZ', 'XZ', 'XY']
