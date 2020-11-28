@@ -41,22 +41,23 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 15  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
+scans = 52  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/P10_isosurface/data/"
-sample_name = ["p15_2"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
+root_folder = "D:/data/P10_Longfei/"
+savedir = "D:/data/P10_Longfei/test/"  # images will be saved here, leave it to None otherwise (default to data directory's parent)
+sample_name = ["B10_syn_S5"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 2, 2]  # binning that will be used for phasing
+binning = [1, 1, 1]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = True  # True to interact with plots, False to close it automatically
+flag_interact = False  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
@@ -113,7 +114,7 @@ custom_scan = False  # set it to True for a stack of images acquired without sca
 custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan
 
-rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
+rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
@@ -129,9 +130,9 @@ specfile_name = ''
 ###############################
 detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
-x_bragg = 1346  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 763  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg - 350, y_bragg + 350, x_bragg - 250, x_bragg + 250]
+x_bragg = 1300  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 840  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -156,10 +157,10 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
+use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 sdd = 1.83  # in m, sample to detector distance in m
-energy = 8820  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
@@ -176,11 +177,11 @@ custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -
 beam_direction = (1, 0, 0)  # beam along z
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-offset_inplane = 0  # -2.9981  # outer detector angle offset, not important if you use raw data
-sample_offsets = (-90, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
+offset_inplane = 0  # outer detector angle offset, not important if you use raw data
+sample_offsets = (0, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
 # the sample offsets will be added to the motor values
-cch1 = 1053  # direct beam vertical position in the full unbinned detector for xrayutilities 2D detector calibration
-cch2 = 1343  # direct beam horizontal position in the full unbinned detector for xrayutilities 2D detector calibration
+cch1 = 256  # direct beam vertical position in the full unbinned detector for xrayutilities 2D detector calibration
+cch2 = 256  # direct beam horizontal position in the full unbinned detector for xrayutilities 2D detector calibration
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 360  # tiltazimuth parameter from xrayutilities 2D detector calibration
 tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
@@ -429,17 +430,17 @@ for scan_nb in range(len(scans)):
     print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
     print('Specfile: ', specfile)
     print('Scan type: ', setup.rocking_angle)
-
+    savedir = savedir or homedir
     if not use_rawdata:
         comment = comment + '_ortho'
-        savedir = homedir + "pynx/"
+        savedir = savedir + "pynx/"
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
         print('Output will be orthogonalized by xrayutilities')
         print('Energy:', setup.energy, 'ev')
         print('Sample to detector distance: ', setup.distance, 'm')
         plot_title = ['QzQx', 'QyQx', 'QyQz']
     else:
-        savedir = homedir + "pynxraw/"
+        savedir = savedir + "pynxraw/"
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
         print('Output will be non orthogonal, in the detector frame')
         plot_title = ['YZ', 'XZ', 'XY']
