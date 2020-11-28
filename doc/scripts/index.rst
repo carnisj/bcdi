@@ -476,6 +476,14 @@ angular_avg_3Dto1D.py
    :end-before: """
    :language: rst
 
+center_of_rotation.py
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/center_of_rotation.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 correlation_realspace.py
 ^^^^^^^^^^^^^^^^^^^^^^^^
 

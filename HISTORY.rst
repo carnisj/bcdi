@@ -1,6 +1,8 @@
 Version 1.0.0
 -------------
 
+* Feature: implement center_of_rotation.py, to calculate the distance of the crystal to the center of rotation
+
 * Bug: in facet_strain.py, solve bugs in plane fitting when the facet is parallel to an axis
 
 * Feature: implement rotate_scan.py, to rotate a 3D reciprocal space map around a vector
