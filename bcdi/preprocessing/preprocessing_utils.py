@@ -1182,14 +1182,20 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
                 mask = mask[0:data.shape[0], :, :]  # truncate the mask to have the correct size
                 numz = data.shape[0]
 
+        maxbins = []
+        for dim in (qx, qy, qz):
+            maxstep = max((abs(np.diff(dim, axis=j)).max() for j in range(3)))
+            maxbins.append(int(abs(dim.max() - dim.min()) / maxstep))
+        print(f'Maximum number of bins based on the sampling in q: {maxbins}')
+
         # only rectangular cuboidal voxels are supported in xrayutilities FuzzyGridder3D
-        # use the default width defined in FuzzyGridder3D
-        gridder = xu.FuzzyGridder3D(numz, numy, numx)
+        gridder = xu.FuzzyGridder3D(*maxbins)
+        #
         # define the width of data points (rectangular datapoints, xrayutilities use half of these values but there are
         # artefacts sometimes)
-        wx = (qx.max()-qx.min())/numz
-        wz = (qz.max()-qz.min())/numy
-        wy = (qy.max()-qy.min())/numx
+        wx = (qx.max()-qx.min()) / maxbins[0]
+        wz = (qz.max()-qz.min()) / maxbins[1]
+        wy = (qy.max()-qy.min()) / maxbins[2]
         # convert mask to rectangular grid in reciprocal space
         gridder(qx, qz, qy, mask, width=(wx, wz, wy))  # qx downstream, qz vertical up, qy outboard
         interp_mask = np.copy(gridder.data)
@@ -1386,9 +1392,9 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
         old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
 
         # create the grid for interpolation
-        qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
-        qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
-        qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
+        qx = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # z downstream
+        qz = np.linspace(old_qz.min(), old_qz.max(), numy, endpoint=False)  # y vertical up
+        qy = np.linspace(old_qy.min(), old_qy.max(), numx, endpoint=False)  # x outboard
 
         new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
 
@@ -2588,7 +2594,19 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
 
     h5file = h5py.File(ccdfiletmp, 'r')
-    nb_img = len(list(h5file['entry/data']))
+    is_series = detector.is_series
+    if is_series:
+        nb_img = len(list(h5file['entry/data']))
+    else:
+        idx = 0
+        nb_img = 0
+        while True:
+            data_path = 'data_' + str('{:06d}'.format(idx + 1))
+            try:
+                nb_img += len(h5file['entry']['data'][data_path])
+                idx += 1
+            except KeyError:
+                break
     print('Number of points :', nb_img)
 
     # define the loading ROI, the detector ROI may be larger than the physical detector size
@@ -2626,15 +2644,12 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
     else:  # 'skip'
         monitor = np.ones(nb_img)
 
-    is_series = detector.is_series
+    start_index = 0  # offset when not is_series
     for file_idx in range(nb_img):
         idx = 0
         series_data = []
         series_monitor = []
-        if is_series:
-            data_path = 'data_' + str('{:06d}'.format(file_idx+1))
-        else:
-            data_path = 'data_000001'
+        data_path = 'data_' + str('{:06d}'.format(file_idx + 1))
         while True:
             try:
                 try:
@@ -2654,7 +2669,7 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
                     ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
                 series_data.append(ccdraw)
                 if not is_series:
-                    sys.stdout.write('\rLoading frame {:d}'.format(idx+1))
+                    sys.stdout.write('\rLoading frame {:d}'.format(start_index+idx+1))
                     sys.stdout.flush()
                 idx = idx + 1
             except IndexError:  # reached the end of the series
@@ -2668,10 +2683,13 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
             sys.stdout.write('\rSeries: loading frame {:d}'.format(file_idx+1))
             sys.stdout.flush()
         else:
-            data = np.asarray(series_data)
+            tempdata_length = len(series_data)
+            data[start_index:start_index+tempdata_length, :, :] = np.asarray(series_data)
             if normalize == 'sum_roi':
-                monitor = np.asarray(series_monitor)
-            break
+                monitor[start_index:start_index+tempdata_length] = np.asarray(series_monitor)
+            start_index += tempdata_length
+            if start_index == nb_img:
+                break
     print('')
     mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
