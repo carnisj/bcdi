@@ -33,6 +33,7 @@ savedir = ''  # images will be saved here, leave it to '' otherwise (default to 
 sum_roi = [550, 1050, 0, 2070]  # region of interest for integrating the intensity.
 # [ystart, ystop, xstart, xstop], in the unbinned detector indices. Leave it to [] to use the full detector
 normalize_flux = False  # will normalize the intensity by the default monitor
+threshold = 5  # data <= threshold will be set to 0
 ###########################
 # mesh related parameters #
 ###########################
@@ -220,6 +221,11 @@ data, mask, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number
 nz, ny, nx = data.shape
 print('Data shape: ', nz, ny, nx)
 data[np.nonzero(mask)] = 0
+
+#######################
+# intensity threshold #
+#######################
+data[data <= threshold] = 0
 
 ###########################
 # intensity normalization #
