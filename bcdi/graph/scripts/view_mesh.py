@@ -26,20 +26,20 @@ import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 
 
-scan = 1  # scan number as it appears in the folder name
-sample_name = "p15_2"  # without _ at the end
-root_folder = "D:/data/P10_isosurface/data/"
+scan = 26  # scan number as it appears in the folder name
+sample_name = "B10_syn_S5"  # without _ at the end
+root_folder = "D:/data/P10_Longfei/"
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
-sum_roi = [50, 150, 100, 300]  # integrate the intensity in this region of interest. [ystart, ystop, xstart, xstop]
-# Leave it to [] to use the full detector
+sum_roi = [550, 1050, 0, 2070]  # region of interest for integrating the intensity.
+# [ystart, ystop, xstart, xstop], in the unbinned detector indices. Leave it to [] to use the full detector
 normalize_flux = False  # will normalize the intensity by the default monitor
 ###########################
 # mesh related parameters #
 ###########################
-fast_motor = 'hpy'  # fast scanning motor for the mesh
-nb_fast = 41  # number of steps for the fast scanning motor
-slow_motor = 'hpx'  # slow scanning motor for the mesh
-nb_slow = 16  # number of steps for the slow scanning motor
+fast_motor = 'hpx'  # fast scanning motor for the mesh
+nb_fast = 51  # number of steps for the fast scanning motor
+slow_motor = 'hpy'  # slow scanning motor for the mesh
+nb_slow = 51  # number of steps for the slow scanning motor
 ###########################
 # plot related parameters #
 ###########################
@@ -103,10 +103,10 @@ def onselect(click, release):
     :param release: position of the mouse release event
     """
     global ax1, data, nb_slow, nb_fast, my_cmap, min_fast, min_slow, max_fast, max_slow, fast_motor
-    global slow_motor, ny, nx, invert_xaxis, invert_yaxis, motor_text, sum_int, figure
+    global slow_motor, ny, nx, invert_xaxis, invert_yaxis, motor_text, sum_int, figure, rectangle
 
     y_start, y_stop, x_start, x_stop = int(click.ydata), int(release.ydata), int(click.xdata), int(release.xdata)
-
+    rectangle.extents = (x_start, x_stop, y_start, y_stop)
     ax1.cla()
     if fast_axis == 'vertical':
         sum_int = data[:, y_start:y_stop, x_start:x_stop].sum(axis=(1, 2)).reshape((nb_fast, nb_slow))
@@ -137,7 +137,7 @@ def press_key(event):
 
     :param event: button press event
     """
-    global sumdata, max_colorbar, ax0
+    global sumdata, max_colorbar, ax0, my_cmap, figure, rectangle, onselect, rectprops
 
     if event.key == 'right':
         max_colorbar = max_colorbar + 1
@@ -145,12 +145,17 @@ def press_key(event):
         max_colorbar = max_colorbar - 1
         if max_colorbar < 1:
             max_colorbar = 1
-
+    extents = rectangle.extents
     ax0.cla()
-    ax0.imshow(np.log10(sumdata), vmin=0, vmax=max_colorbar)
+    ax0.imshow(np.log10(sumdata), vmin=0, vmax=max_colorbar, cmap=my_cmap)
     ax0.set_title("detector plane (sum)")
     ax0.axis('scaled')
     plt.draw()
+    rectangle = RectangleSelector(ax0, onselect, drawtype='box', useblit=False, button=[1], interactive=True,
+                                  rectprops=rectprops)  # don't use middle and right buttons
+    rectangle.to_draw.set_visible(True)
+    figure.canvas.draw()
+    rectangle.extents = extents
 
 
 ###################
@@ -199,6 +204,9 @@ logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, r
 assert fast_axis in ['vertical', 'horizontal'], print('fast_axis parameter value not supported')
 if len(sum_roi) == 0:
     sum_roi = [0, detector.nb_pixel_y, 0, detector.nb_pixel_x]
+
+sum_roi = (sum_roi[0] // binning[0], sum_roi[1] // binning[0], sum_roi[2] // binning[1], sum_roi[3] // binning[1])
+print(f'sum_roi = {sum_roi}')
 
 assert (sum_roi[0] >= 0 and sum_roi[1] <= detector.nb_pixel_y // binning[0]
         and sum_roi[2] >= 0 and sum_roi[3] <= detector.nb_pixel_x // binning[1]),\
