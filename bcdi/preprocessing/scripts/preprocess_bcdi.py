@@ -430,7 +430,11 @@ for scan_nb in range(len(scans)):
     print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
     print('Specfile: ', specfile)
     print('Scan type: ', setup.rocking_angle)
-    savedir = savedir or homedir
+    if savedir:
+        savedir = savedir + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
+    else:
+        savedir = homedir
+
     if not use_rawdata:
         comment = comment + '_ortho'
         savedir = savedir + "pynx/"
