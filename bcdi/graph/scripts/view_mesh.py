@@ -33,7 +33,7 @@ savedir = ''  # images will be saved here, leave it to '' otherwise (default to 
 sum_roi = [550, 1050, 0, 2070]  # region of interest for integrating the intensity.
 # [ystart, ystop, xstart, xstop], in the unbinned detector indices. Leave it to [] to use the full detector
 normalize_flux = False  # will normalize the intensity by the default monitor
-threshold = 5  # data <= threshold will be set to 0
+threshold = 2  # data <= threshold will be set to 0
 ###########################
 # mesh related parameters #
 ###########################
@@ -47,7 +47,7 @@ nb_slow = 51  # number of steps for the slow scanning motor
 background_plot = '0.7'  # in level of grey in [0,1], 0 being dark. For visual comfort
 fast_axis = 'horizontal'  # 'vertical' to plot the fast scanning motor vertically, 'horizontal' otherwise
 invert_xaxis = False  # True to inverse the horizontal axis
-invert_yaxis = False  # True to inverse the vertical axis
+invert_yaxis = True  # True to inverse the vertical axis
 ###############################
 # beamline related parameters #
 ###############################
@@ -138,7 +138,7 @@ def press_key(event):
 
     :param event: button press event
     """
-    global sumdata, max_colorbar, ax0, my_cmap, figure, rectangle, onselect, rectprops
+    global sumdata, max_colorbar, ax0, my_cmap, figure, rectangle, onselect, rectprops, detector, binning
 
     if event.key == 'right':
         max_colorbar = max_colorbar + 1
@@ -148,7 +148,8 @@ def press_key(event):
             max_colorbar = 1
     extents = rectangle.extents
     ax0.cla()
-    ax0.imshow(np.log10(sumdata), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+    ax0.imshow(np.log10(sumdata), vmin=0, vmax=max_colorbar, cmap=my_cmap,
+               extent=[0, detector.nb_pixel_y, detector.nb_pixel_x, 0])
     ax0.set_title("detector plane (sum)")
     ax0.axis('scaled')
     plt.draw()
@@ -262,7 +263,10 @@ ax0 = figure.add_subplot(121)
 ax1 = figure.add_subplot(122)
 figure.canvas.mpl_disconnect(figure.canvas.manager.key_press_handler_id)
 original_data = np.copy(data)
-ax0.imshow(np.log10(sumdata), cmap=my_cmap, vmin=0, vmax=max_colorbar)
+ax0.imshow(np.log10(sumdata), cmap=my_cmap, vmin=0, vmax=max_colorbar,
+           extent=[0, detector.nb_pixel_y, detector.nb_pixel_x, 0])
+# extent (left, right, bottom, top)
+
 if fast_axis == 'vertical':
     sum_int = data[:, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].sum(axis=(1, 2)).reshape((nb_fast, nb_slow))
     # extent (left, right, bottom, top)
