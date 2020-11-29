@@ -107,7 +107,13 @@ def onselect(click, release):
     global slow_motor, ny, nx, invert_xaxis, invert_yaxis, motor_text, sum_int, figure, rectangle
 
     y_start, y_stop, x_start, x_stop = int(click.ydata), int(release.ydata), int(click.xdata), int(release.xdata)
-    rectangle.extents = (x_start, x_stop, y_start, y_stop)
+
+    rectangle.extents = (x_start, x_stop, y_start, y_stop)  # in the unbinned detector pixel coordinates
+
+    # correct for data binning
+    y_start, y_stop = y_start // binning[0], y_stop // binning[0]
+    x_start, x_stop = x_start // binning[1], x_stop // binning[1]
+
     ax1.cla()
     if fast_axis == 'vertical':
         sum_int = data[:, y_start:y_stop, x_start:x_stop].sum(axis=(1, 2)).reshape((nb_fast, nb_slow))
@@ -296,6 +302,7 @@ rectangle = RectangleSelector(ax0, onselect, drawtype='box', useblit=False, butt
                               rectprops=rectprops)  # don't use middle and right buttons
 rectangle.to_draw.set_visible(True)
 figure.canvas.draw()
-rectangle.extents = (sum_roi[2], sum_roi[3], sum_roi[0], sum_roi[1])  # extents (xmin, xmax, ymin, ymax)
+rectangle.extents = (sum_roi[2]*binning[1], sum_roi[3]*binning[1], sum_roi[0]*binning[0], sum_roi[1]*binning[0])
+# in the unbinned detector pixel coordinates, extents (xmin, xmax, ymin, ymax)
 figure.set_facecolor(background_plot)
 plt.show()
