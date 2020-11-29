@@ -30,6 +30,8 @@ scan = 26  # scan number as it appears in the folder name
 sample_name = "B10_syn_S5"  # without _ at the end
 root_folder = "D:/data/P10_Longfei/"
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
+crop_roi = [550, 1050, 0, 2070]  # only this region of interest of the detector will be considered (unbinned indices).
+# Leave [] to use the full detector. [ystart, ystop, xstart, xstop]
 sum_roi = [550, 1050, 0, 2070]  # region of interest for integrating the intensity.
 # [ystart, ystop, xstart, xstop], in the unbinned detector indices. Leave it to [] to use the full detector
 normalize_flux = False  # will normalize the intensity by the default monitor
@@ -103,12 +105,17 @@ def onselect(click, release):
     :param click: position of the mouse click event
     :param release: position of the mouse release event
     """
-    global ax1, data, nb_slow, nb_fast, my_cmap, min_fast, min_slow, max_fast, max_slow, fast_motor
+    global ax1, data, nb_slow, nb_fast, my_cmap, min_fast, min_slow, max_fast, max_slow, fast_motor, binning
     global slow_motor, ny, nx, invert_xaxis, invert_yaxis, motor_text, sum_int, figure, rectangle
 
     y_start, y_stop, x_start, x_stop = int(click.ydata), int(release.ydata), int(click.xdata), int(release.xdata)
 
-    rectangle.extents = (x_start, x_stop, y_start, y_stop)  # in the unbinned detector pixel coordinates
+    rectangle.extents = (x_start, x_stop, y_start, y_stop)  # in the unbinned full detector pixel coordinates,
+    # extents (xmin, xmax, ymin, ymax)
+
+    # remove the offset due to crop_roi
+    y_start, y_stop = y_start - crop_roi[0], y_stop - crop_roi[0]
+    x_start, x_stop = x_start - crop_roi[2], x_stop - crop_roi[2]
 
     # correct for data binning
     y_start, y_stop = y_start // binning[0], y_stop // binning[0]
@@ -144,7 +151,7 @@ def press_key(event):
 
     :param event: button press event
     """
-    global sumdata, max_colorbar, ax0, my_cmap, figure, rectangle, onselect, rectprops, detector, binning
+    global sumdata, max_colorbar, ax0, my_cmap, figure, rectangle, onselect, rectprops
 
     if event.key == 'right':
         max_colorbar = max_colorbar + 1
@@ -153,12 +160,17 @@ def press_key(event):
         if max_colorbar < 1:
             max_colorbar = 1
     extents = rectangle.extents
+    xmin0, xmax0 = ax0.get_xlim()
+    ymin0, ymax0 = ax0.get_ylim()
+
     ax0.cla()
     ax0.imshow(np.log10(sumdata), vmin=0, vmax=max_colorbar, cmap=my_cmap,
-               extent=[0, detector.nb_pixel_x, detector.nb_pixel_y, 0])
+               extent=[crop_roi[2], crop_roi[3], crop_roi[1], crop_roi[0]])  # unbinned pixel coordinates
     # extent (left, right, bottom, top)
     ax0.set_title("detector plane (sum)")
     ax0.axis('scaled')
+    ax0.set_xlim(xmin0, xmax0)
+    ax0.set_ylim(ymin0, ymax0)
     plt.draw()
     rectangle = RectangleSelector(ax0, onselect, drawtype='box', useblit=False, button=[1], interactive=True,
                                   rectprops=rectprops)  # don't use middle and right buttons
@@ -180,9 +192,11 @@ plt.ion()
 #################################################
 kwargs = dict()  # create dictionnary
 kwargs['is_series'] = is_series
+
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, sum_roi=sum_roi,
                         binning=[1, binning[0], binning[1]], **kwargs)
-
+crop_roi = crop_roi or (0, detector.nb_pixel_y, 0, detector.nb_pixel_x)
+detector.roi = crop_roi
 setup = exp.SetupPreprocessing(beamline=beamline)
 
 if setup.beamline == 'P10':
@@ -214,11 +228,17 @@ assert fast_axis in ['vertical', 'horizontal'], print('fast_axis parameter value
 if len(sum_roi) == 0:
     sum_roi = [0, detector.nb_pixel_y, 0, detector.nb_pixel_x]
 
-sum_roi = (sum_roi[0] // binning[0], sum_roi[1] // binning[0], sum_roi[2] // binning[1], sum_roi[3] // binning[1])
-print(f'sum_roi = {sum_roi}')
+print(f'sum_roi before binning and offset correction = {sum_roi}')
 
-assert (sum_roi[0] >= 0 and sum_roi[1] <= detector.nb_pixel_y // binning[0]
-        and sum_roi[2] >= 0 and sum_roi[3] <= detector.nb_pixel_x // binning[1]),\
+# correct the offset due to crop_roi and take into account data binning
+sum_roi = ((sum_roi[0]-crop_roi[0]) // binning[0],
+           (sum_roi[1]-crop_roi[0]) // binning[0],
+           (sum_roi[2]-crop_roi[2]) // binning[1],
+           (sum_roi[3]-crop_roi[2]) // binning[1])
+print(f'sum_roi after binning and offset correction = {sum_roi}')
+
+assert (sum_roi[0] >= 0 and sum_roi[1] <= (crop_roi[1]-crop_roi[0]) // binning[0]
+        and sum_roi[2] >= 0 and sum_roi[3] <= (crop_roi[3]-crop_roi[2]) // binning[1]),\
     'sum_roi setting does not match the binned detector size'
 
 #############
@@ -271,7 +291,7 @@ ax1 = figure.add_subplot(122)
 figure.canvas.mpl_disconnect(figure.canvas.manager.key_press_handler_id)
 original_data = np.copy(data)
 ax0.imshow(np.log10(sumdata), cmap=my_cmap, vmin=0, vmax=max_colorbar,
-           extent=[0, detector.nb_pixel_x, detector.nb_pixel_y, 0])
+           extent=[crop_roi[2], crop_roi[3], crop_roi[1], crop_roi[0]])  # unbinned pixel coordinates
 # extent (left, right, bottom, top)
 
 if fast_axis == 'vertical':
@@ -302,7 +322,8 @@ rectangle = RectangleSelector(ax0, onselect, drawtype='box', useblit=False, butt
                               rectprops=rectprops)  # don't use middle and right buttons
 rectangle.to_draw.set_visible(True)
 figure.canvas.draw()
-rectangle.extents = (sum_roi[2]*binning[1], sum_roi[3]*binning[1], sum_roi[0]*binning[0], sum_roi[1]*binning[0])
-# in the unbinned detector pixel coordinates, extents (xmin, xmax, ymin, ymax)
+rectangle.extents = (sum_roi[2]*binning[1] + crop_roi[2], sum_roi[3]*binning[1] + crop_roi[2],
+                     sum_roi[0]*binning[0] + crop_roi[0], sum_roi[1]*binning[0] + crop_roi[0])
+# in the unbinned full detector pixel coordinates, extents (xmin, xmax, ymin, ymax)
 figure.set_facecolor(background_plot)
 plt.show()
