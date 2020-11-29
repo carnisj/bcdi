@@ -90,10 +90,10 @@ def onclick(click_event):
     if click_event.inaxes == ax1:  # click in the 2D scanning map
         motor_text.remove()
         if fast_axis == 'horizontal':
-            motor_text = figure.text(0.55, 0.90, fast_motor + ' = {:.2f}, '.format(click_event.xdata) +
+            motor_text = figure.text(0.40, 0.95, fast_motor + ' = {:.2f}, '.format(click_event.xdata) +
                                      slow_motor + ' = {:.2f}'.format(click_event.ydata), size=12)
         else:
-            motor_text = figure.text(0.55, 0.90, fast_motor + ' = {:.2f}, '.format(click_event.ydata) +
+            motor_text = figure.text(0.40, 0.95, fast_motor + ' = {:.2f}, '.format(click_event.ydata) +
                                      slow_motor + ' = {:.2f}'.format(click_event.xdata), size=12)
         plt.draw()
 
@@ -139,7 +139,7 @@ def onselect(click, release):
     if invert_yaxis:
         ax1.invert_yaxis()
     motor_text.remove()
-    motor_text = figure.text(0.55, 0.90, '', size=12)
+    motor_text = figure.text(0.40, 0.95, '', size=12)
     ax1.axis('scaled')
     ax1.set_title("integrated intensity in the ROI")
     plt.draw()
@@ -314,7 +314,7 @@ ax0.axis('scaled')
 ax1.axis('scaled')
 ax0.set_title("sum of all images")
 ax1.set_title("integrated intensity in the ROI")
-motor_text = figure.text(0.55, 0.90, '', size=12)
+motor_text = figure.text(0.40, 0.95, '', size=12)
 plt.tight_layout()
 plt.connect('key_press_event', press_key)
 plt.connect('button_press_event', onclick)
