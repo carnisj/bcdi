@@ -149,7 +149,8 @@ def press_key(event):
     extents = rectangle.extents
     ax0.cla()
     ax0.imshow(np.log10(sumdata), vmin=0, vmax=max_colorbar, cmap=my_cmap,
-               extent=[0, detector.nb_pixel_y, detector.nb_pixel_x, 0])
+               extent=[0, detector.nb_pixel_x, detector.nb_pixel_y, 0])
+    # extent (left, right, bottom, top)
     ax0.set_title("detector plane (sum)")
     ax0.axis('scaled')
     plt.draw()
@@ -264,7 +265,7 @@ ax1 = figure.add_subplot(122)
 figure.canvas.mpl_disconnect(figure.canvas.manager.key_press_handler_id)
 original_data = np.copy(data)
 ax0.imshow(np.log10(sumdata), cmap=my_cmap, vmin=0, vmax=max_colorbar,
-           extent=[0, detector.nb_pixel_y, detector.nb_pixel_x, 0])
+           extent=[0, detector.nb_pixel_x, detector.nb_pixel_y, 0])
 # extent (left, right, bottom, top)
 
 if fast_axis == 'vertical':
