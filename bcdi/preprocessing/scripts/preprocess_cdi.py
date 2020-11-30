@@ -372,7 +372,7 @@ for scan_nb in range(len(scans)):
     print('Sample to detector distance: ', setup.distance, 'm')
     print('Energy:', setup.energy, 'ev')
     if savedir:
-        savedir = savedir + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
+        savedir = savedir + sample_name[scan_nb] + '_' + str(scans[scan_nb]) + '/'
     else:
         savedir = homedir
 

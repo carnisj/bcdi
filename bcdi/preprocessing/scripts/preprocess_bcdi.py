@@ -431,7 +431,7 @@ for scan_nb in range(len(scans)):
     print('Specfile: ', specfile)
     print('Scan type: ', setup.rocking_angle)
     if savedir:
-        savedir = savedir + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
+        savedir = savedir + sample_name[scan_nb] + '_' + str(scans[scan_nb]) + '/'
     else:
         savedir = homedir
 
