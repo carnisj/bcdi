@@ -504,10 +504,16 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
 
     if centering == 'max':
         z0, y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
-        print("Max at (qx, qz, qy): ", z0, y0, x0)
+        if q_values:
+            print(f"Max at (qx, qz, qy): {qx[z0]:.5f}, {qz[y0]:.5f}, {qy[x0]:.5f}")
+        else:
+            print("Max at pixel (Z, Y, X): ", z0, y0, x0)
     elif centering == 'com':
         z0, y0, x0 = center_of_mass(data)
-        print("Center of mass at (qx, qz, qy): ", z0, y0, x0)
+        if q_values:
+            print(f"Center of mass at (qx, qz, qy): {qx[z0]:.5f}, {qz[y0]:.5f}, {qy[x0]:.5f}")
+        else:
+            print("Center of mass at pixel (Z, Y, X): ", z0, y0, x0)
     else:
         raise ValueError("Incorrect value for 'centering' parameter")
 
@@ -521,7 +527,7 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
         print("Peak intensity position after considering detector ROI and binning in detector plane: ", z0, y0, x0)
 
     iz0, iy0, ix0 = int(round(z0)), int(round(y0)), int(round(x0))
-    print('Data peak value = ', data[iz0, iy0, ix0])
+    print(f'Data peak value = {data[iz0, iy0, ix0]:.1f}')
 
     # Max symmetrical box around center of mass
     nbz, nby, nbx = np.shape(data)
