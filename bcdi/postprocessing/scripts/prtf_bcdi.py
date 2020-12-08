@@ -141,8 +141,12 @@ def on_click(event):
         plt0, = ax0.plot([x0, endpoint[2]], [y0, endpoint[1]], 'ro-')  # sum axis 0
         plt1, = ax1.plot([x0, endpoint[2]], [z0, endpoint[0]], 'ro-')  # sum axis 1
         plt2, = ax2.plot([y0, endpoint[1]], [z0, endpoint[0]], 'ro-')  # sum axis 2
+
         ax3.cla()
-        ax3.plot(cut)
+        ax3.plot(np.linspace(distances_q[z0, y0, x0], distances_q[endpoint[0], endpoint[1], endpoint[2]], num=len(cut)),
+                 cut)
+        ax3.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)
+        # ax3.plot([temp_dist.min(), temp_dist.max()], [1 / np.e, 1 / np.e], 'k.', lw=1)  # horizontal line at 1/e
         ax3.axis('auto')
         ax3.set_xlabel('q (1/nm)')
         ax3.set_ylabel('PRTF')
@@ -383,7 +387,7 @@ diff_pattern[diff_pattern == 0] = np.nan  # discard zero valued pixels
 prtf_matrix = abs(phased_fft) / np.sqrt(diff_pattern)
 # np.savez_compressed(detector.savedir+'prtf_3d.npz', prtf=prtf_matrix)
 if normalize_prtf:
-    print('Normalizing the PRTF to 1 at the center of mass ...')
+    print('Normalizing the PRTF to 1 at the center of mass of the diffraction pattern ...')
     prtf_matrix = prtf_matrix / prtf_matrix[z0, y0, x0]
 
 gu.multislices_plot(prtf_matrix, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
@@ -405,7 +409,10 @@ if flag_interact:
     ax0.imshow(np.log10(diff_pattern.sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
     ax1.imshow(np.log10(diff_pattern.sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
     ax2.imshow(np.log10(diff_pattern.sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
-    ax3.plot(cut)
+    ax3.plot(np.linspace(distances_q[z0, y0, x0], distances_q[endpoint[0], endpoint[1], endpoint[2]], num=len(cut)),
+             cut)
+    ax3.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)
+    # ax3.plot([temp_dist.min(), temp_dist.max()], [1 / np.e, 1 / np.e], 'k.', lw=1)  # horizontal line at 1/e
     plt0, = ax0.plot([x0, endpoint[2]], [y0, endpoint[1]], 'ro-')  # sum axis 0
     plt1, = ax1.plot([x0, endpoint[2]], [z0, endpoint[0]], 'ro-')  # sum axis 1
     plt2, = ax2.plot([y0, endpoint[1]], [z0, endpoint[0]], 'ro-')  # sum axis 2
