@@ -913,13 +913,14 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     return fig, axis, plot
 
 
-def linecut(array, start_indices, stop_indices, debugging=False):
+def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False):
     """
     Linecut through a 2D or 3D array given the indices of the starting voxel and of the end voxel.
 
     :param array: a 2D or 3D array
     :param start_indices: tuple of indices, of the same length as the number of dimension of array
     :param stop_indices: tuple of indices, of the same length as the number of dimension of array
+    :param interp_order: order of the spline interpolation, default is 3. The order has to be in the range 0-5.
     :param debugging: True to see plots
     :return: a 1D array interpolated between the start and stop indices
     """
@@ -940,7 +941,8 @@ def linecut(array, start_indices, stop_indices, debugging=False):
                                  (stop_indices[2]-start_indices[2])**2))
         cut = map_coordinates(array, np.vstack((np.linspace(start_indices[0], stop_indices[0], num_points),
                                                 np.linspace(start_indices[1], stop_indices[1], num_points),
-                                                np.linspace(start_indices[2], stop_indices[2], num_points))))
+                                                np.linspace(start_indices[2], stop_indices[2], num_points))),
+                              order=interp_order)
     else:
         raise ValueError('array should be 2D or 3D')
 
@@ -952,10 +954,10 @@ def linecut(array, start_indices, stop_indices, debugging=False):
             ax0.plot([start_indices[0], stop_indices[0]], [start_indices[1], stop_indices[1]], 'ro-')
             ax1.plot(cut)
         else:
-            fig, (ax0, ax1, ax2, ax3), _ = multislices_plot(array, sum_frames=True)
-            ax0.plot([start_indices[1], stop_indices[1]], [start_indices[2], stop_indices[2]], 'ro-')  # sum axis 0
-            ax1.plot([start_indices[0], stop_indices[0]], [start_indices[2], stop_indices[2]], 'ro-')  # sum axis 1
-            ax2.plot([start_indices[0], stop_indices[0]], [start_indices[1], stop_indices[1]], 'ro-')  # sum axis 2
+            fig, (ax0, ax1, ax2, ax3), _ = multislices_plot(array, sum_frames=False)
+            ax0.plot([start_indices[2], stop_indices[2]], [start_indices[1], stop_indices[1]], 'ro-')  # sum axis 0
+            ax1.plot([start_indices[2], stop_indices[2]], [start_indices[0], stop_indices[0]], 'ro-')  # sum axis 1
+            ax2.plot([start_indices[1], stop_indices[1]], [start_indices[0], stop_indices[0]], 'ro-')  # sum axis 2
             ax3.set_visible(True)
             ax3.cla()
             ax3.plot(cut)
@@ -3263,13 +3265,13 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
 
 
 # if __name__ == "__main__":
-#     x, y, z = np.mgrid[-5:5:0.1, -5:5:0.1, -5:5:0.1]
-#     w = np.sqrt(x ** 2 + y ** 2 + z ** 2) + np.sin(x ** 2 + y ** 2 + z **2)
-#     x0, y0, z0 = 5, 4, 3  # These are in _pixel_ coordinates!!
-#     x1, y1, z1 = 60, 75, 24
-#     mycut = linecut(w, (x0, y0, z0), (x1, y1, z1), debugging=True)
-#
-#     datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop300/test/'
+# #
+#     datadir = 'D:/data/P10_isosurface/data/p21_00054/'
+#     prtf = np.load(datadir + 'prtf_3d.npz')['prtf']
+#     print(prtf.shape)
+#     start = (96, 256, 256)
+#     stop = (198, 510, 510)
+#     cut = linecut(prtf, start_indices=start, stop_indices=stop, debugging=True)
 #     strain = np.load(datadir +
 #                      'S2227_ampphasestrain_1_gaussianthreshold_iso_0.68_avg1_apodize_crystal-frame.npz')['strain']
 #     voxel_size = 4.0
@@ -3282,5 +3284,5 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
 #                      vmin=-0.0002, vmax=0.0002, tick_direction=tick_direction,
 #                      tick_width=tick_width, tick_length=tick_length, plot_colorbar=True,
 #                      pixel_spacing=pixel_spacing)
-#     plt.ioff()
-#     plt.show()
+    plt.ioff()
+    plt.show()
