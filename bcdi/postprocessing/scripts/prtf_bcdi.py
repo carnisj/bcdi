@@ -50,6 +50,7 @@ comment = ""  # should start with _
 crop_roi = []  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
 align_pattern = False  # if True, will align the retrieved diffraction amplitude with the measured one
+flag_interact = True  # True to calculate interactively the PRTF along particular directions of reciprocal space
 ############################
 # beamline parameters #
 ############################
@@ -103,9 +104,71 @@ tilt_simu = 0.0102  # angular step size for rocking angle, eta @ ID01
 normalize_prtf = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = False  # True to show more plots
 save = True  # True to save the prtf figure
+background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 ##########################
 # end of user parameters #
 ##########################
+
+
+def on_click(event):
+    """
+    Function to interact with a plot, return the position of clicked pixel. If flag_pause==1 or
+    if the mouse is out of plot axes, it will not register the click
+
+    :param event: mouse click event
+    """
+    global ax0, ax1, ax2, ax3, prtf_matrix, z0, y0, x0, endpoint, distances_q, plt0, plt1, plt2, cut
+    if event.inaxes == ax0:
+        endpoint[2], endpoint[1] = int(np.rint(event.xdata)), int(np.rint(event.ydata))
+        inaxes = True
+    elif event.inaxes == ax1:
+        endpoint[2], endpoint[0] = int(np.rint(event.xdata)), int(np.rint(event.ydata))
+        inaxes = True
+    elif event.inaxes == ax2:
+        endpoint[1], endpoint[0] = int(np.rint(event.xdata)), int(np.rint(event.ydata))
+        inaxes = True
+    else:
+        inaxes = False
+    print(endpoint)
+
+    if inaxes:
+        cut = gu.linecut(prtf_matrix, start_indices=(z0, y0, x0), stop_indices=endpoint, interp_order=1,
+                         debugging=False)
+        plt0.remove()
+        plt1.remove()
+        plt2.remove()
+
+        plt0, = ax0.plot([x0, endpoint[2]], [y0, endpoint[1]], 'ro-')  # sum axis 0
+        plt1, = ax1.plot([x0, endpoint[2]], [z0, endpoint[0]], 'ro-')  # sum axis 1
+        plt2, = ax2.plot([y0, endpoint[1]], [z0, endpoint[0]], 'ro-')  # sum axis 2
+        ax3.cla()
+        ax3.plot(cut)
+        ax3.axis('auto')
+        ax3.set_xlabel('q (1/nm)')
+        ax3.set_ylabel('PRTF')
+        plt.tight_layout()
+        plt.draw()
+
+
+def press_key(event):
+    """
+    Interact with the PRTF plot.
+
+    :param event: button press event
+    """
+    global detector, endpoint, fig_prtf
+    try:
+        close_fig = False
+        if event.inaxes:
+            if event.key == 's':
+                fig_prtf.savefig(detector.savedir+f'PRTF_endpoint={endpoint}.png')
+            elif event.key == 'q':
+                close_fig = True
+        if close_fig:
+            plt.close(close_fig)
+    except AttributeError:  # mouse pointer out of axes
+        pass
+
 
 #################################################
 # Initialize paths, detector, setup and logfile #
@@ -318,10 +381,50 @@ gu.combined_plots(tuple_array=(diff_pattern, phased_fft), tuple_sum_frames=False
 #########################
 diff_pattern[diff_pattern == 0] = np.nan  # discard zero valued pixels
 prtf_matrix = abs(phased_fft) / np.sqrt(diff_pattern)
+# np.savez_compressed(detector.savedir+'prtf_3d.npz', prtf=prtf_matrix)
+if normalize_prtf:
+    print('Normalizing the PRTF to 1 at the center of mass ...')
+    prtf_matrix = prtf_matrix / prtf_matrix[z0, y0, x0]
 
 gu.multislices_plot(prtf_matrix, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
                     title='prtf_matrix', scale='linear', vmin=0,
                     reciprocal_space=True)
+
+#######################################################################
+# interactive interface to check the PRTF along particular directions #
+#######################################################################
+if flag_interact:
+    plt.ioff()
+    max_colorbar = 5
+    endpoint = [0, 0, 0]
+    cut = gu.linecut(prtf_matrix, start_indices=(z0, y0, x0), stop_indices=endpoint, interp_order=1,
+                     debugging=False)
+    diff_pattern[np.isnan(diff_pattern)] = 0  # discard nans
+    fig_prtf, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
+    fig_prtf.canvas.mpl_disconnect(fig_prtf.canvas.manager.key_press_handler_id)
+    ax0.imshow(np.log10(diff_pattern.sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+    ax1.imshow(np.log10(diff_pattern.sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+    ax2.imshow(np.log10(diff_pattern.sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+    ax3.plot(cut)
+    plt0, = ax0.plot([x0, endpoint[2]], [y0, endpoint[1]], 'ro-')  # sum axis 0
+    plt1, = ax1.plot([x0, endpoint[2]], [z0, endpoint[0]], 'ro-')  # sum axis 1
+    plt2, = ax2.plot([y0, endpoint[1]], [z0, endpoint[0]], 'ro-')  # sum axis 2
+    ax0.axis('scaled')
+    ax1.axis('scaled')
+    ax2.axis('scaled')
+    ax3.axis('auto')
+    ax0.set_title("horizontal=X  vertical=Y")
+    ax1.set_title("horizontal=X  vertical=rocking curve")
+    ax2.set_title("horizontal=Y  vertical=rocking curve")
+    ax3.set_xlabel('q (1/nm)')
+    ax3.set_ylabel('PRTF')
+    fig_prtf.text(0.01, 0.8, "click to select\nthe endpoint", size=10)
+    fig_prtf.text(0.01, 0.7, "q to quit\ns to save", size=10)
+    plt.tight_layout()
+    plt.connect('key_press_event', press_key)
+    plt.connect('button_press_event', on_click)
+    fig_prtf.set_facecolor(background_plot)
+    plt.show()
 
 #################################
 # average over spherical shells #
@@ -337,10 +440,6 @@ for index in range(nb_bins):
     temp = prtf_matrix[logical_array]
     prtf_avg[index] = temp[~np.isnan(temp)].mean()
 q_axis = q_axis[:-1]
-
-if normalize_prtf:
-    print('Normalizing the PRTF to 1 ...')
-    prtf_avg = prtf_avg / prtf_avg[~np.isnan(prtf_avg)].max()  # normalize to 1
 
 #############################
 # plot and save the 1D PRTF #
