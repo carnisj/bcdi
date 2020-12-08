@@ -25,16 +25,16 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 1053
-root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
-sample_name = "S"  # string in front of the scan number in the folder name
+scan = 329
+root_folder = "D:/data/Nanomax/"
+sample_name = ""  # string in front of the scan number in the folder name
 savedir = None  # images will be saved here, leave it to None otherwise (default to data directory's parent)
 save_mask = False  # set to True to save the mask
 debug = False  # True to see more plots
 ###############################
 # beamline related parameters #
 ###############################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'NANOMAX'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX'
 
 custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
@@ -46,9 +46,9 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 
-rocking_angle = "outofplane"  # "outofplane" or "inplane"
+rocking_angle = "inplane"  # "outofplane" or "inplane"
 is_series = False  # specific to series measurement at P10
-specfile_name = 'alignment'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -59,13 +59,13 @@ specfile_name = 'alignment'
 ###############################
 # detector related parameters #
 ###############################
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M" or 'Merlin'
+detector = "Merlin"    # "Eiger2M" or "Maxipix" or "Eiger4M" or 'Merlin'
 bragg_position = []  # Bragg peak position [vertical, horizontal], leave it as [] if there is a single peak
 peak_method = 'maxcom'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 high_threshold = 150000  # everything above will be considered as hotpixel
 hotpixels_file = ''  # root_folder + 'merlin_mask_190222_14keV.h5'  #
-flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'l5_mpx4_%05d.edf.gz'
+flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
+template_imagefile = '%06d.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -78,7 +78,7 @@ template_imagefile = 'l5_mpx4_%05d.edf.gz'
 vmin = 0  # min of the colorbar (log scale)
 vmax = 6  # max of the colorbar (log scale)
 low_threshold = 1  # everthing <= 1 will be set to 0 in the plot
-width = [50, 50]  # [vertical, horizontal], leave None for default
+width = None  # [50, 50]  # [vertical, horizontal], leave None for default
 # half width in pixels of the region of interest centered on the peak for the plot
 ##################################
 # end of user-defined parameters #
@@ -232,8 +232,6 @@ fig, ax = plt.subplots(nrows=1, ncols=1)
 plot = ax.imshow(np.log10(data[y0-width[0]:y0+width[1], x0-width[2]:x0+width[3]]), vmin=vmin, vmax=vmax, cmap=my_cmap,
                  extent=[x0-width[2]-0.5, x0+width[3]-0.5, y0+width[1]-0.5, y0-width[0]-0.5])
 ax.set_title(f'{title} Peak at (y, x): ({y0},{x0})   Peak value = {int(data[y0, x0])}')
-if beamline == 'NANOMAX':
-    ax.invert_yaxis()  # the detector is mounted upside-down on the robot arm at Nanomax
 gu.colorbar(plot)
 fig.savefig(detector.savedir + 'sum_S' + str(scan) + '.png')
 plt.show()
