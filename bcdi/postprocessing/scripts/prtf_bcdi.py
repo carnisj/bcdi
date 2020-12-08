@@ -129,7 +129,7 @@ def on_click(event):
         inaxes = True
     else:
         inaxes = False
-    print(endpoint)
+    print(f'endpoint = {endpoint}')
 
     if inaxes:
         cut = gu.linecut(prtf_matrix, start_indices=(z0, y0, x0), stop_indices=endpoint, interp_order=1,
