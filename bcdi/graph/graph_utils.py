@@ -927,7 +927,8 @@ def linecut(array, start_indices, stop_indices, debugging=False):
         assert len(start_indices) == 2 and len(stop_indices) == 2,\
             'ndim=2, start_indices and stop_indices should be of length 2'
 
-        num_points = int(np.sqrt((stop_indices[0]-start_indices[0])**2 + (stop_indices[1]-start_indices[1]**2)))
+        num_points = int(np.sqrt((stop_indices[0]-start_indices[0])**2 +
+                                 (stop_indices[1]-start_indices[1])**2))
         cut = map_coordinates(array, np.vstack((np.linspace(start_indices[0], stop_indices[0], num_points),
                                                 np.linspace(start_indices[1], stop_indices[1], num_points))))
     elif array.ndim == 3:
@@ -936,7 +937,7 @@ def linecut(array, start_indices, stop_indices, debugging=False):
 
         num_points = int(np.sqrt((stop_indices[0]-start_indices[0])**2 +
                                  (stop_indices[1]-start_indices[1])**2 +
-                                 (stop_indices[2]-start_indices[2]**2)))
+                                 (stop_indices[2]-start_indices[2])**2))
         cut = map_coordinates(array, np.vstack((np.linspace(start_indices[0], stop_indices[0], num_points),
                                                 np.linspace(start_indices[1], stop_indices[1], num_points),
                                                 np.linspace(start_indices[2], stop_indices[2], num_points))))
