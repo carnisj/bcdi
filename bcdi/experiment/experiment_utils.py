@@ -51,19 +51,15 @@ class SetupPostprocessing(object):
 
         # horizontal axis:
         if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX']:
-            # we look at the detector from downstream
+            # we look at the detector from downstream, detector X along the outboard direction
             self.detector_hor = 'y+'
         else:  # 'P10', '34ID'
-            # we look at the detector from upstream
+            # we look at the detector from upstream, detector X opposite to the outboard direction
             self.detector_hor = 'y-'
 
         # vertical axis:
-        if beamline in ['NANOMAX']:
-            # detector in flip upside-down on the robot arm at Nanomax, the origin is at the bottom
-            self.detector_ver = 'z+'
-        else:
-            # origin is at the top
-            self.detector_ver = 'z-'
+        # origin is at the top, detector Y along vertical down
+        self.detector_ver = 'z-'
 
     def __repr__(self):
         """
@@ -757,19 +753,15 @@ class SetupPreprocessing(object):
 
         # horizontal axis:
         if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX']:
-            # we look at the detector from downstream
+            # we look at the detector from downstream, detector X along the outboard direction
             self.detector_hor = 'y+'
         else:  # 'P10', '34ID'
-            # we look at the detector from upstream
+            # we look at the detector from upstream, detector X opposite to the outboard direction
             self.detector_hor = 'y-'
 
         # vertical axis:
-        if beamline in ['NANOMAX']:
-            # detector in flip upside-down on the robot arm at Nanomax, the origin is at the bottom
-            self.detector_ver = 'z+'
-        else:
-            # origin is at the top
-            self.detector_ver = 'z-'
+        # origin is at the top, detector Y along vertical down
+        self.detector_ver = 'z-'
 
     def __repr__(self):
         """
