@@ -14,6 +14,7 @@ import matplotlib.patches as patches
 import matplotlib.ticker as ticker
 import matplotlib.colors as colors
 from matplotlib.colors import LinearSegmentedColormap
+from scipy.ndimage import map_coordinates
 from operator import itemgetter
 
 # define a colormap
@@ -910,6 +911,57 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     plt.pause(0.5)
     plt.ioff()
     return fig, axis, plot
+
+
+def linecut(array, start_indices, stop_indices, debugging=False):
+    """
+    Linecut through a 2D or 3D array given the indices of the starting voxel and of the end voxel.
+
+    :param array: a 2D or 3D array
+    :param start_indices: tuple of indices, of the same length as the number of dimension of array
+    :param stop_indices: tuple of indices, of the same length as the number of dimension of array
+    :param debugging: True to see plots
+    :return: a 1D array interpolated between the start and stop indices
+    """
+    if array.ndim == 2:
+        assert len(start_indices) == 2 and len(stop_indices) == 2,\
+            'ndim=2, start_indices and stop_indices should be of length 2'
+
+        num_points = int(np.sqrt((stop_indices[0]-start_indices[0])**2 + (stop_indices[1]-start_indices[1]**2)))
+        cut = map_coordinates(array, np.vstack((np.linspace(start_indices[0], stop_indices[0], num_points),
+                                                np.linspace(start_indices[1], stop_indices[1], num_points))))
+    elif array.ndim == 3:
+        assert len(start_indices) == 3 and len(stop_indices) == 3,\
+            'ndim=3, start_indices and stop_indices should be of length 3'
+
+        num_points = int(np.sqrt((stop_indices[0]-start_indices[0])**2 +
+                                 (stop_indices[1]-start_indices[1])**2 +
+                                 (stop_indices[2]-start_indices[2]**2)))
+        cut = map_coordinates(array, np.vstack((np.linspace(start_indices[0], stop_indices[0], num_points),
+                                                np.linspace(start_indices[1], stop_indices[1], num_points),
+                                                np.linspace(start_indices[2], stop_indices[2], num_points))))
+    else:
+        raise ValueError('array should be 2D or 3D')
+
+    if debugging:
+        plt.ion()
+        if array.ndim == 2:
+            fig, (ax0, ax1) = plt.subplots(ncols=2)
+            ax0.imshow(array)
+            ax0.plot([start_indices[0], stop_indices[0]], [start_indices[1], stop_indices[1]], 'ro-')
+            ax1.plot(cut)
+        else:
+            fig, (ax0, ax1, ax2, ax3), _ = multislices_plot(array, sum_frames=True)
+            ax0.plot([start_indices[1], stop_indices[1]], [start_indices[2], stop_indices[2]], 'ro-')  # sum axis 0
+            ax1.plot([start_indices[0], stop_indices[0]], [start_indices[2], stop_indices[2]], 'ro-')  # sum axis 1
+            ax2.plot([start_indices[0], stop_indices[0]], [start_indices[1], stop_indices[1]], 'ro-')  # sum axis 2
+            ax3.set_visible(True)
+            ax3.cla()
+            ax3.plot(cut)
+            ax3.axis('auto')
+            plt.draw()
+
+    return cut
 
 
 def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vmin=None, vmax=None):
@@ -3210,6 +3262,12 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
 
 
 # if __name__ == "__main__":
+#     x, y, z = np.mgrid[-5:5:0.1, -5:5:0.1, -5:5:0.1]
+#     w = np.sqrt(x ** 2 + y ** 2 + z ** 2) + np.sin(x ** 2 + y ** 2 + z **2)
+#     x0, y0, z0 = 5, 4, 3  # These are in _pixel_ coordinates!!
+#     x1, y1, z1 = 60, 75, 24
+#     mycut = linecut(w, (x0, y0, z0), (x1, y1, z1), debugging=True)
+#
 #     datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop300/test/'
 #     strain = np.load(datadir +
 #                      'S2227_ampphasestrain_1_gaussianthreshold_iso_0.68_avg1_apodize_crystal-frame.npz')['strain']
