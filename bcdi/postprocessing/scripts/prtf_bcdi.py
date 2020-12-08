@@ -146,7 +146,6 @@ def on_click(event):
         ax3.plot(np.linspace(distances_q[z0, y0, x0], distances_q[endpoint[0], endpoint[1], endpoint[2]], num=len(cut)),
                  cut)
         ax3.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)
-        # ax3.plot([temp_dist.min(), temp_dist.max()], [1 / np.e, 1 / np.e], 'k.', lw=1)  # horizontal line at 1/e
         ax3.axis('auto')
         ax3.set_xlabel('q (1/nm)')
         ax3.set_ylabel('PRTF')
