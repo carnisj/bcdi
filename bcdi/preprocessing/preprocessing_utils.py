@@ -2870,7 +2870,10 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
 
     assert data.shape == mask.shape, 'data and mask should have the same shape'
 
-    target_pixels = np.argwhere(data == target_val)
+    if target_val is np.nan:
+        target_pixels = np.argwhere(np.isnan(data))
+    else:
+        target_pixels = np.argwhere(data == target_val)
     nb_pixels = 0
 
     if data.ndim == 2:
@@ -2884,7 +2887,7 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
             pixrow = target_pixels[indx, 0]
             pixcol = target_pixels[indx, 1]
             temp = data[pixrow-extent:pixrow+extent+1, pixcol-extent:pixcol+extent+1]
-            if temp.size != 0 and temp.sum() > min_count*nb_neighbours and sum(sum(temp != 0)) >= nb_neighbours:
+            if temp.size != 0 and temp.sum() >= min_count*nb_neighbours and sum(sum(temp != 0)) >= nb_neighbours:
                 # mask/interpolate if at least min_count photons in each neighboring pixels
                 nb_pixels = nb_pixels + 1
                 if interpolate == 'interp_isolated':
@@ -2911,7 +2914,7 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
             pix_y = target_pixels[indx, 1]
             pix_x = target_pixels[indx, 2]
             temp = data[pix_z-extent:pix_z+extent+1, pix_y-extent:pix_y+extent+1, pix_x-extent:pix_x+extent+1]
-            if temp.size != 0 and temp.sum() > min_count*nb_neighbours and sum(sum(temp != 0)) >= nb_neighbours:
+            if temp.size != 0 and temp.sum() >= min_count*nb_neighbours and sum(sum(temp != 0)) >= nb_neighbours:
                 # mask/interpolate if at least min_count photons in each neighboring pixels
                 nb_pixels = nb_pixels + 1
                 if interpolate == 'interp_isolated':
