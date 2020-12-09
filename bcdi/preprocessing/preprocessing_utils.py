@@ -2869,6 +2869,8 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
     mask = mask or np.zeros(data.shape)
 
     assert data.shape == mask.shape, 'data and mask should have the same shape'
+    assert np.isnan(target_val) or isinstance(target_val, int), 'target_val should be nan or an integer, cannot assess'\
+                                                                'float equality'
 
     if target_val is np.nan:
         target_pixels = np.argwhere(np.isnan(data))
@@ -2887,12 +2889,13 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
             pixrow = target_pixels[indx, 0]
             pixcol = target_pixels[indx, 1]
             temp = data[pixrow-extent:pixrow+extent+1, pixcol-extent:pixcol+extent+1]
-            if temp.size != 0 and temp.sum() >= min_count*nb_neighbours and sum(sum(temp != 0)) >= nb_neighbours:
+            n_pix = np.logical_and(~np.isnan(temp), temp != target_val).sum()  # nb of pixels not equal to target_val
+            if temp.size != 0 and temp[~np.isnan(temp)].sum() >= min_count*nb_neighbours \
+                    and n_pix >= nb_neighbours:
                 # mask/interpolate if at least min_count photons in each neighboring pixels
                 nb_pixels = nb_pixels + 1
                 if interpolate == 'interp_isolated':
-                    value = temp.sum() / sum(sum(temp != 0))
-                    data[pixrow, pixcol] = value
+                    data[pixrow, pixcol] = temp[~np.isnan(temp)].sum() / n_pix
                     mask[pixrow, pixcol] = 0
                 else:
                     mask[pixrow, pixcol] = 1
@@ -2914,12 +2917,13 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
             pix_y = target_pixels[indx, 1]
             pix_x = target_pixels[indx, 2]
             temp = data[pix_z-extent:pix_z+extent+1, pix_y-extent:pix_y+extent+1, pix_x-extent:pix_x+extent+1]
-            if temp.size != 0 and temp.sum() >= min_count*nb_neighbours and sum(sum(temp != 0)) >= nb_neighbours:
+            n_pix = np.logical_and(~np.isnan(temp), temp != target_val).sum()  # nb of pixels not equal to target_val
+            if temp.size != 0 and temp[~np.isnan(temp)].sum() >= min_count*nb_neighbours \
+                    and n_pix >= nb_neighbours:
                 # mask/interpolate if at least min_count photons in each neighboring pixels
                 nb_pixels = nb_pixels + 1
                 if interpolate == 'interp_isolated':
-                    value = temp.sum() / sum(sum(temp != 0))
-                    data[pix_z, pix_y, pix_x] = value
+                    data[pix_z, pix_y, pix_x] = temp[~np.isnan(temp)].sum() / n_pix
                     mask[pix_z, pix_y, pix_x] = 0
                 else:
                     mask[pix_z, pix_y, pix_x] = 1
