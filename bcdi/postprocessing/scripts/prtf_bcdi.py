@@ -139,9 +139,9 @@ def on_click(event):
         update_cut = False
     else:
         update_cut = False
-    print(f'endpoint = {endpoint}')
 
     if update_cut:
+        print(f'endpoint = {endpoint}')
         cut = gu.linecut(linecut_prtf, start_indices=(z0, y0, x0), stop_indices=endpoint, interp_order=1,
                          debugging=False)
         plt0.remove()
@@ -176,7 +176,7 @@ def press_key(event):
             elif event.key == 'q':
                 close_fig = True
         if close_fig:
-            plt.close(fig_prtf)
+            plt.close('all')
     except AttributeError:  # mouse pointer out of axes
         pass
 
@@ -379,7 +379,9 @@ plt.pause(0.1)
 
 phased_fft[np.nonzero(mask)] = 0  # do not take mask voxels into account
 print(f'Max(retrieved amplitude) = {abs(phased_fft).max():.1f}')
-print('COM of the retrieved diffraction pattern after masking: ', center_of_mass(abs(phased_fft)), '\n')
+phased_com_z, phased_com_y, phased_com_x = center_of_mass(abs(phased_fft))
+print(f'COM of the retrieved diffraction pattern after masking: {phased_com_z:.2f}, {phased_com_y:.2f},'
+      f' {phased_com_x:.2f}\n')
 del mask
 gc.collect()
 
@@ -460,7 +462,8 @@ if flag_interact:
 #################################
 # average over spherical shells #
 #################################
-print('Distance max:', distances_q.max(), ' (1/A) at: ', np.unravel_index(abs(distances_q).argmax(), distances_q.shape))
+print(f'\nDistance max: {distances_q.max():.1f}(1/A) at:'
+      f' {np.unravel_index(abs(distances_q).argmax(), distances_q.shape)}')
 nb_bins = numz // 3
 prtf_avg = np.zeros(nb_bins)
 dq = distances_q.max() / nb_bins  # in 1/A
@@ -501,12 +504,11 @@ except ValueError:
     print('min(PRTF) = ', prtf_avg[~np.isnan(prtf_avg)].min())
     q_resolution = 10 * q_axis[len(prtf_avg[~np.isnan(prtf_avg)])-1]
 print('q resolution =', str('{:.5f}'.format(q_resolution)), ' (1/nm)')
-print('resolution d= ' + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm')
+print('resolution d= ' + str('{:.1f}'.format(2*np.pi / q_resolution)) + 'nm')
 
 fig, ax = plt.subplots(1, 1)
 ax.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
-
-ax.plot([defined_q.min(), defined_q.max()], [1/np.e, 1/np.e], 'k.', lw=1)
+ax.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)  # horizontal line at PRTF=1/e
 ax.set_xlim(defined_q.min(), defined_q.max())
 ax.set_ylim(0, 1.1)
 ax.spines['right'].set_linewidth(1.5)
