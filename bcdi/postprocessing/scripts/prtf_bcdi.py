@@ -11,6 +11,7 @@ import numpy as np
 from numpy.fft import fftn, fftshift
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
+from scipy.ndimage import median_filter
 import tkinter as tk
 from tkinter import filedialog
 import xrayutilities as xu
@@ -90,6 +91,8 @@ phasing_binning = (1, 1, 1)  # binning factor applied during phasing: rocking cu
 # horizontal axis.
 # If the reconstructed object was further cropped after phasing, it will be automatically padded back to the FFT window
 # shape used during phasing (after binning) before calculating the Fourier transform.
+sample_offsets = (-90, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
+# the sample offsets will be added to the motor values
 ###############################
 # only needed for simulations #
 ###############################
@@ -102,6 +105,7 @@ tilt_simu = 0.0102  # angular step size for rocking angle, eta @ ID01
 # options #
 ###########
 normalize_prtf = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
+interpolate_nans = False  # if True, interpolate nans in the PRTF before the interactive interface. Time consuming
 debug = False  # True to show more plots
 save = True  # True to save the prtf figure
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
@@ -117,22 +121,28 @@ def on_click(event):
 
     :param event: mouse click event
     """
-    global ax0, ax1, ax2, ax3, prtf_matrix, z0, y0, x0, endpoint, distances_q, plt0, plt1, plt2, cut
-    if event.inaxes == ax0:
+    global linecut_prtf, z0, y0, x0, endpoint, distances_q
+    global fig_prtf, ax0, ax1, ax2, ax3, plt0, plt1, plt2, cut, res_text
+    if event.inaxes == ax0:  # hor=X, ver=Y
         endpoint[2], endpoint[1] = int(np.rint(event.xdata)), int(np.rint(event.ydata))
-        inaxes = True
-    elif event.inaxes == ax1:
+        update_cut = True
+    elif event.inaxes == ax1:  # hor=X, ver=rocking curve
         endpoint[2], endpoint[0] = int(np.rint(event.xdata)), int(np.rint(event.ydata))
-        inaxes = True
-    elif event.inaxes == ax2:
+        update_cut = True
+    elif event.inaxes == ax2:  # hor=Y, ver=rocking curve
         endpoint[1], endpoint[0] = int(np.rint(event.xdata)), int(np.rint(event.ydata))
-        inaxes = True
+        update_cut = True
+    elif event.inaxes == ax3:  # print the resolution at the mouse position
+        res_text.remove()
+        res_text = fig_prtf.text(0.55, 0.20, f'Resolution={2*np.pi/(10*event.xdata):.1f} nm', size=10)
+        plt.draw()
+        update_cut = False
     else:
-        inaxes = False
+        update_cut = False
     print(f'endpoint = {endpoint}')
 
-    if inaxes:
-        cut = gu.linecut(prtf_matrix, start_indices=(z0, y0, x0), stop_indices=endpoint, interp_order=1,
+    if update_cut:
+        cut = gu.linecut(linecut_prtf, start_indices=(z0, y0, x0), stop_indices=endpoint, interp_order=1,
                          debugging=False)
         plt0.remove()
         plt1.remove()
@@ -144,11 +154,9 @@ def on_click(event):
 
         ax3.cla()
         ax3.plot(np.linspace(distances_q[z0, y0, x0], distances_q[endpoint[0], endpoint[1], endpoint[2]], num=len(cut)),
-                 cut)
+                 cut, '-or', markersize=3)
         ax3.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)
         ax3.axis('auto')
-        ax3.set_xlabel('q (1/nm)')
-        ax3.set_ylabel('PRTF')
         plt.tight_layout()
         plt.draw()
 
@@ -168,7 +176,7 @@ def press_key(event):
             elif event.key == 'q':
                 close_fig = True
         if close_fig:
-            plt.close(close_fig)
+            plt.close(fig_prtf)
     except AttributeError:  # mouse pointer out of axes
         pass
 
@@ -186,8 +194,7 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 
 setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, distance=sdd, energy=energy,
                                beam_direction=beam_direction, sample_inplane=sample_inplane,
-                               sample_outofplane=sample_outofplane,
-                               offset_inplane=0)  # no need to worry about offsets, work relatively to the Bragg peak
+                               sample_outofplane=sample_outofplane, sample_offsets=sample_offsets)
 
 print('\nScan', scan)
 print('Setup: ', setup.beamline)
@@ -274,12 +281,13 @@ diff_pattern = pu.bin_data(array=diff_pattern, binning=phasing_binning, debuggin
 mask = pu.bin_data(array=mask, binning=phasing_binning, debugging=False)
 
 numz, numy, numx = diff_pattern.shape  # this shape will be used for the calculation of q values
-print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
+print(f'\nMeasured data shape = {numz}, {numy}, {numx}, Max(measured amplitude)={np.sqrt(diff_pattern).max():.1f}')
 diff_pattern[np.nonzero(mask)] = 0
 
 z0, y0, x0 = center_of_mass(diff_pattern)
 z0, y0, x0 = [int(z0), int(y0), int(x0)]
-print("COM of measured pattern after masking: ", z0, y0, x0, ' Number of unmasked photons =', diff_pattern.sum())
+print(f'COM of measured pattern after masking: {z0:.2f}, {y0:.2f}, {x0:.2f},'
+      f' Number of unmasked photons = {diff_pattern.sum():.0f}/n')
 
 fig, _, _ = gu.multislices_plot(np.sqrt(diff_pattern), sum_frames=False, title='3D diffraction amplitude', vmin=0,
                                 vmax=3.5, is_orthogonal=False, reciprocal_space=True, slice_position=[z0, y0, x0],
@@ -312,7 +320,7 @@ if debug:
 qxCOM = qx[z0, y0, x0]
 qyCOM = qy[z0, y0, x0]
 qzCOM = qz[z0, y0, x0]
-print('COM[qx, qy, qz] = ', qxCOM, qyCOM, qzCOM)
+print(f'COM[qx, qz, qy] = {qxCOM:.2f}, {qzCOM:.2f}, {qyCOM:.2f}')
 distances_q = np.sqrt((qx - qxCOM)**2 + (qy - qyCOM)**2 + (qz - qzCOM)**2)  # if reconstructions are centered
 #  and of the same shape q values will be identical
 del qx, qy, qz
@@ -370,8 +378,8 @@ plt.colorbar()
 plt.pause(0.1)
 
 phased_fft[np.nonzero(mask)] = 0  # do not take mask voxels into account
-print('Max(retrieved amplitude) =', abs(phased_fft).max())
-print('COM of the retrieved diffraction pattern after masking: ', center_of_mass(abs(phased_fft)))
+print(f'Max(retrieved amplitude) = {abs(phased_fft).max():.1f}')
+print('COM of the retrieved diffraction pattern after masking: ', center_of_mass(abs(phased_fft)), '\n')
 del mask
 gc.collect()
 
@@ -384,7 +392,7 @@ gu.combined_plots(tuple_array=(diff_pattern, phased_fft), tuple_sum_frames=False
 #########################
 diff_pattern[diff_pattern == 0] = np.nan  # discard zero valued pixels
 prtf_matrix = abs(phased_fft) / np.sqrt(diff_pattern)
-# np.savez_compressed(detector.savedir+'prtf_3d.npz', prtf=prtf_matrix)
+
 if normalize_prtf:
     print('Normalizing the PRTF to 1 at the center of mass of the diffraction pattern ...')
     prtf_matrix = prtf_matrix / prtf_matrix[z0, y0, x0]
@@ -397,6 +405,21 @@ gu.multislices_plot(prtf_matrix, sum_frames=False, plot_colorbar=True, cmap=my_c
 # interactive interface to check the PRTF along particular directions #
 #######################################################################
 if flag_interact:
+    if interpolate_nans:  # filter out the nan values
+        linecut_prtf = np.copy(prtf_matrix)
+        print('\nInterpolating the 3D PRTF on nan values, it will take some time ...')
+        print(f'nb_nans before interpolation = {np.isnan(linecut_prtf).sum()}')
+        linecut_prtf, nb_filtered, _ = pru.mean_filter(data=linecut_prtf, nb_neighbours=1,
+                                                       interpolate='interp_isolated', min_count=0, extent=1,
+                                                       target_val=np.nan, debugging=debug)
+        print(f'nb_nans after = {np.isnan(linecut_prtf).sum()}')
+        gu.multislices_plot(linecut_prtf, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
+                            title='prtf_matrix after interpolation', scale='linear', vmin=0,
+                            reciprocal_space=True)
+        np.savez_compressed(detector.savedir + 'linecut_prtf.npz', data=linecut_prtf)
+    else:
+        linecut_prtf = prtf_matrix
+
     plt.ioff()
     max_colorbar = 5
     endpoint = [0, 0, 0]
@@ -409,7 +432,7 @@ if flag_interact:
     ax1.imshow(np.log10(diff_pattern.sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
     ax2.imshow(np.log10(diff_pattern.sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
     ax3.plot(np.linspace(distances_q[z0, y0, x0], distances_q[endpoint[0], endpoint[1], endpoint[2]], num=len(cut)),
-             cut)
+             cut, '-or', markersize=3)
     ax3.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)
     # ax3.plot([temp_dist.min(), temp_dist.max()], [1 / np.e, 1 / np.e], 'k.', lw=1)  # horizontal line at 1/e
     plt0, = ax0.plot([x0, endpoint[2]], [y0, endpoint[1]], 'ro-')  # sum axis 0
@@ -422,8 +445,10 @@ if flag_interact:
     ax0.set_title("horizontal=X  vertical=Y")
     ax1.set_title("horizontal=X  vertical=rocking curve")
     ax2.set_title("horizontal=Y  vertical=rocking curve")
-    ax3.set_xlabel('q (1/nm)')
+    ax3.set_xlabel('q (1/A)')
     ax3.set_ylabel('PRTF')
+    res_text = fig_prtf.text(0.55, 0.20, '', size=10)
+    fig_prtf.text(0.55, 0.15, 'click to read the resolution', size=10)
     fig_prtf.text(0.01, 0.8, "click to select\nthe endpoint", size=10)
     fig_prtf.text(0.01, 0.7, "q to quit\ns to save", size=10)
     plt.tight_layout()
