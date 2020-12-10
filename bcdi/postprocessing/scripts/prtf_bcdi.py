@@ -141,6 +141,8 @@ def on_click(event):
         update_cut = False
 
     if update_cut:
+        res_text.remove()
+        res_text = fig_prtf.text(0.55, 0.25, '', size=10)
         print(f'endpoint = {endpoint}')
         cut = gu.linecut(linecut_prtf, start_indices=(z0, y0, x0), stop_indices=endpoint, interp_order=1,
                          debugging=False)
@@ -459,8 +461,8 @@ if flag_interact:
     ax2.set_title("horizontal=Y  vertical=rocking curve")
     ax3.set_xlabel('q (1/A)')
     ax3.set_ylabel('PRTF')
-    res_text = fig_prtf.text(0.55, 0.20, '', size=10)
-    fig_prtf.text(0.55, 0.25, 'click to read the resolution', size=10)
+    res_text = fig_prtf.text(0.55, 0.25, '', size=10)
+    fig_prtf.text(0.55, 0.15, 'click to read the resolution', size=10)
     fig_prtf.text(0.01, 0.8, "click to select\nthe endpoint", size=10)
     fig_prtf.text(0.01, 0.7, "q to quit\ns to save", size=10)
     plt.tight_layout()
