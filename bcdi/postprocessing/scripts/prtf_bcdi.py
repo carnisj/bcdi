@@ -134,7 +134,7 @@ def on_click(event):
         update_cut = True
     elif event.inaxes == ax3:  # print the resolution at the mouse position
         res_text.remove()
-        res_text = fig_prtf.text(0.55, 0.20, f'Resolution={2*np.pi/(10*event.xdata):.1f} nm', size=10)
+        res_text = fig_prtf.text(0.55, 0.25, f'Resolution={2*np.pi/(10*event.xdata):.1f} nm', size=10)
         plt.draw()
         update_cut = False
     else:
@@ -285,9 +285,11 @@ print(f'\nMeasured data shape = {numz}, {numy}, {numx}, Max(measured amplitude)=
 diff_pattern[np.nonzero(mask)] = 0
 
 z0, y0, x0 = center_of_mass(diff_pattern)
-z0, y0, x0 = [int(z0), int(y0), int(x0)]
-print(f'COM of measured pattern after masking: {z0:.2f}, {y0:.2f}, {x0:.2f},'
-      f' Number of unmasked photons = {diff_pattern.sum():.0f}/n')
+print(f'COM of measured pattern after masking: {z0:.2f}, {y0:.2f}, {x0:.2f}')
+# refine the COM in a small ROI centered on the approximate COM, to avoid detector gaps
+fine_com = center_of_mass(diff_pattern[int(z0)-20:int(z0)+21, int(y0)-20:int(y0)+21, int(x0)-20:int(x0)+21])
+z0, y0, x0 = [int(np.rint(z0-20+fine_com[0])), int(np.rint(y0-20+fine_com[1])), int(np.rint(x0-20+fine_com[2]))]
+print(f'refined COM: {z0}, {y0}, {x0}, Number of unmasked photons = {diff_pattern.sum():.0f}\n')
 
 fig, _, _ = gu.multislices_plot(np.sqrt(diff_pattern), sum_frames=False, title='3D diffraction amplitude', vmin=0,
                                 vmax=3.5, is_orthogonal=False, reciprocal_space=True, slice_position=[z0, y0, x0],
@@ -371,12 +373,6 @@ if align_pattern:
     phased_fft, _ = pru.align_diffpattern(reference_data=diff_pattern, data=phased_fft, method='registration',
                                           combining_method='subpixel')
 
-plt.figure()
-plt.imshow(np.log10(abs(phased_fft).sum(axis=0)), cmap=my_cmap, vmin=0, vmax=3.5)
-plt.title('abs(retrieved amplitude).sum(axis=0)')
-plt.colorbar()
-plt.pause(0.1)
-
 phased_fft[np.nonzero(mask)] = 0  # do not take mask voxels into account
 print(f'Max(retrieved amplitude) = {abs(phased_fft).max():.1f}')
 phased_com_z, phased_com_y, phased_com_x = center_of_mass(abs(phased_fft))
@@ -385,9 +381,23 @@ print(f'COM of the retrieved diffraction pattern after masking: {phased_com_z:.2
 del mask
 gc.collect()
 
-gu.combined_plots(tuple_array=(diff_pattern, phased_fft), tuple_sum_frames=False, tuple_sum_axis=(0, 0),
+if normalize_prtf:
+    print('Normalizing the phased data to the sqrt of the measurement at the center of mass'
+          ' of the diffraction pattern ...')
+    norm_factor = np.sqrt(diff_pattern[z0-3:z0+4, y0-3:y0+4, x0-3:x0+4]).sum() /\
+        abs(phased_fft[z0-3:z0+4, y0-3:y0+4, x0-3:x0+4]).sum()
+    print(f'Normalization factor = {norm_factor:.2f}\n')
+    phased_fft = phased_fft * norm_factor
+
+plt.figure()
+plt.imshow(np.log10(abs(phased_fft).sum(axis=0)), cmap=my_cmap, vmin=0, vmax=3.5)
+plt.title('abs(retrieved amplitude).sum(axis=0)')
+plt.colorbar()
+plt.pause(0.1)
+
+gu.combined_plots(tuple_array=(np.sqrt(diff_pattern), phased_fft), tuple_sum_frames=False, tuple_sum_axis=(0, 0),
                   tuple_width_v=None, tuple_width_h=None, tuple_colorbar=False, tuple_vmin=(-1, -1),
-                  tuple_vmax=np.nan, tuple_title=('measurement', 'phased_fft'), tuple_scale='log')
+                  tuple_vmax=np.nan, tuple_title=('sqrt(measurement)', 'phased_fft'), tuple_scale='log')
 
 #########################
 # calculate the 3D PRTF #
@@ -395,9 +405,9 @@ gu.combined_plots(tuple_array=(diff_pattern, phased_fft), tuple_sum_frames=False
 diff_pattern[diff_pattern == 0] = np.nan  # discard zero valued pixels
 prtf_matrix = abs(phased_fft) / np.sqrt(diff_pattern)
 
-if normalize_prtf:
-    print('Normalizing the PRTF to 1 at the center of mass of the diffraction pattern ...')
-    prtf_matrix = prtf_matrix / prtf_matrix[z0, y0, x0]
+# if normalize_prtf:
+#     print('Normalizing the PRTF to 1 at the center of mass of the diffraction pattern ...')
+#     prtf_matrix = prtf_matrix / prtf_matrix[z0, y0, x0]
 
 gu.multislices_plot(prtf_matrix, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
                     title='prtf_matrix', scale='linear', vmin=0,
@@ -450,7 +460,7 @@ if flag_interact:
     ax3.set_xlabel('q (1/A)')
     ax3.set_ylabel('PRTF')
     res_text = fig_prtf.text(0.55, 0.20, '', size=10)
-    fig_prtf.text(0.55, 0.15, 'click to read the resolution', size=10)
+    fig_prtf.text(0.55, 0.25, 'click to read the resolution', size=10)
     fig_prtf.text(0.01, 0.8, "click to select\nthe endpoint", size=10)
     fig_prtf.text(0.01, 0.7, "q to quit\ns to save", size=10)
     plt.tight_layout()
