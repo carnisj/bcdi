@@ -963,6 +963,10 @@ for scan_nb in range(len(scans)):
 
     del data, mask
     gc.collect()
+
+    if len(scans) > 1:
+        plt.close('all')
+
 print('\nEnd of script')
 plt.ioff()
 plt.show()
