@@ -284,7 +284,7 @@ def press_key(event):
                 stop_masking = False
 
             if stop_masking:
-                plt.close(fig_mask)
+                plt.close('all')
 
     except AttributeError:  # mouse pointer out of axes
         pass
@@ -409,14 +409,17 @@ for scan_nb in range(len(scans)):
         detector.datadir = homedir + 'e4m/'
         imagefile = specfile + template_imagefile
         detector.template_imagefile = imagefile
+        scan_template = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb]) + '/'  # used to create the folder
     elif setup.beamline == 'NANOMAX':
         homedir = root_folder + sample_name[scan_nb] + '{:06d}'.format(scans[scan_nb]) + '/'
         detector.datadir = homedir + 'data/'
         specfile = specfile_name
+        scan_template = sample_name[scan_nb] + '_{:06d}'.format(scans[scan_nb]) + '/'  # used to create the folder
     else:
         homedir = root_folder + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
         detector.datadir = homedir + "data/"
         specfile = specfile_name
+        scan_template = sample_name[scan_nb] + '_' + str(scans[scan_nb]) + '/'  # used to create the folder
 
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
                                  root_folder=root_folder, filename=specfile)
@@ -431,7 +434,7 @@ for scan_nb in range(len(scans)):
     print('Specfile: ', specfile)
     print('Scan type: ', setup.rocking_angle)
     if save_dir:
-        savedir = save_dir + sample_name[scan_nb] + '_' + str(scans[scan_nb]) + '/'
+        savedir = save_dir + scan_template
     else:
         savedir = homedir
 

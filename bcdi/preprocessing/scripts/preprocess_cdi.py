@@ -246,7 +246,7 @@ def press_key(event):
                 stop_masking = False
 
             if stop_masking:
-                plt.close(fig_mask)
+                plt.close('all')
 
     except AttributeError:  # mouse pointer out of axes
         pass
