@@ -41,14 +41,14 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 139  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
+scans = 128  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/MIR_debug_inplaneRC/"
+root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"
 save_dir = None  # images will be saved here, leave it to None otherwise (default to data directory's parent)
-sample_name = ["S"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
+sample_name = ["PtNP1"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -76,12 +76,12 @@ pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the a
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
-normalize_flux = 'monitor'  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
+normalize_flux = 'skip'  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
 #################################
 # parameters for data filtering #
 #################################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
-flag_medianfilter = 'skip'
+flag_medianfilter = 'interp_isolated'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -90,7 +90,7 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 #################################################
 # parameters used when reloading processed data #
 #################################################
-reload_previous = False  # True to resume a previous masking (load data and mask)
+reload_previous = True  # True to resume a previous masking (load data and mask)
 reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
 previous_binning = [1, 1, 1]  # binning factors in each dimension of the binned data to be reloaded
 save_previous = False  # if True, will save the previous data and mask
@@ -105,18 +105,18 @@ save_asint = False  # if True, the result will be saved as an array of integers 
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX', '34ID'
-is_series = False  # specific to series measurement at P10
+is_series = True  # specific to series measurement at P10
 
 custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available
 custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan
 
-rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
+rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = '2020_07_09_140423Ni'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -128,7 +128,7 @@ specfile_name = '2020_07_09_140423Ni'
 ###############################
 # detector related parameters #
 ###############################
-detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 # nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
 x_bragg = 1300  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 y_bragg = 840  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
@@ -144,7 +144,7 @@ photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon thre
 background_file = ''  # root_folder + 'background.npz'  #
 hotpixels_file = ''  # root_folder + 'hotpixels_HS4670.npz'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -157,7 +157,7 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
+use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 sdd = 1.00  # in m, sample to detector distance in m
 energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
@@ -428,7 +428,8 @@ for scan_nb in range(len(scans)):
     print('Setup: ', setup.beamline)
     print('Detector: ', detector.name)
     print('Pixel number (VxH): ', detector.nb_pixel_y, detector.nb_pixel_x)
-    print('Detector ROI:', roi_detector)
+    if not reload_previous:
+        print('Detector ROI:', detector.roi)
     print('Horizontal pixel size with binning: ', detector.pixelsize_x, 'm')
     print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
     print('Specfile: ', specfile)
@@ -475,6 +476,9 @@ for scan_nb in range(len(scans)):
         data = data[npz_key[0]]
         nz, ny, nx = np.shape(data)
 
+        # check that the ROI is correctly defined
+        detector.roi = roi_detector or [0, ny, 0, nx]
+        print('Detector ROI:', detector.roi)
         # update savedir to save the data in the same directory as the reloaded data
         savedir = os.path.dirname(file_path) + '/'
         detector.savedir = savedir
@@ -499,7 +503,7 @@ for scan_nb in range(len(scans)):
             except FileNotFoundError:
                 q_values = []
 
-            normalize_flux = False  # we assume that normalization was already performed
+            normalize_flux = 'skip'  # we assume that normalization was already performed
             monitor = []  # we assume that normalization was already performed
             center_fft = 'skip'  # we assume that crop/pad/centering was already performed
             fix_size = []  # we assume that crop/pad/centering was already performed
