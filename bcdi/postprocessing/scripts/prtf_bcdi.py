@@ -407,10 +407,6 @@ gu.combined_plots(tuple_array=(np.sqrt(diff_pattern), phased_fft), tuple_sum_fra
 diff_pattern[diff_pattern == 0] = np.nan  # discard zero valued pixels
 prtf_matrix = abs(phased_fft) / np.sqrt(diff_pattern)
 
-# if normalize_prtf:
-#     print('Normalizing the PRTF to 1 at the center of mass of the diffraction pattern ...')
-#     prtf_matrix = prtf_matrix / prtf_matrix[z0, y0, x0]
-
 gu.multislices_plot(prtf_matrix, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
                     title='prtf_matrix', scale='linear', vmin=0,
                     reciprocal_space=True)
@@ -447,8 +443,7 @@ if flag_interact:
     ax2.imshow(np.log10(diff_pattern.sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
     ax3.plot(np.linspace(distances_q[z0, y0, x0], distances_q[endpoint[0], endpoint[1], endpoint[2]], num=len(cut)),
              cut, '-or', markersize=3)
-    ax3.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)
-    # ax3.plot([temp_dist.min(), temp_dist.max()], [1 / np.e, 1 / np.e], 'k.', lw=1)  # horizontal line at 1/e
+    ax3.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)  # horizontal line at 1/e
     plt0, = ax0.plot([x0, endpoint[2]], [y0, endpoint[1]], 'ro-')  # sum axis 0
     plt1, = ax1.plot([x0, endpoint[2]], [z0, endpoint[0]], 'ro-')  # sum axis 1
     plt2, = ax2.plot([y0, endpoint[1]], [z0, endpoint[0]], 'ro-')  # sum axis 2
