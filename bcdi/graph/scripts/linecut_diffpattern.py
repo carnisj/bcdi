@@ -27,7 +27,8 @@ For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 
 datadir = 'D:/data/P10_isosurface/data/p21_00054/pynx/'  # data directory
 savedir = None  # if None, it will default to the data directory
-load_qvalues = False  # True to load the q values
+load_qvalues = True  # True to load the q values (a NPZ file with the fields 'qx', 'qy', 'qz', each one containing
+# a 1D or 3D array)
 load_mask = False  # True to load a mask (same shape than the diffraction pattern)
 #######################################
 # parameters related to visualization #
@@ -55,10 +56,10 @@ def on_click(event):
     if event.inaxes == ax3:  # print the distance value at the mouse position
         q_text.remove()
         if load_qvalues:
-            q_text = fig_diff.text(0.55, 0.43, f'q value  = {event.xdata:.1f} (1/A)',
+            q_text = fig_diff.text(0.55, 0.43, f'distance = {event.xdata:.3f} (1/A)',
                                    size=10)
         else:
-            q_text = fig_diff.text(0.55, 0.43, f'pixel value = {event.xdata:.1f}',
+            q_text = fig_diff.text(0.55, 0.43, f'distance = {event.xdata:.1f}',
                                    size=10)
         plt.draw()
         update_cut = False
@@ -246,7 +247,10 @@ elif qx.ndim == 3:
 else:
     raise ValueError('q components should be 1D or 3D arrays')
 
-print(f'COM[qx, qz, qy] = {qxCOM:.2f}, {qzCOM:.2f}, {qyCOM:.2f}')
+if load_qvalues:
+    print(f'COM[qx, qz, qy] = {qxCOM:.3f} 1/A, {qzCOM:.3f} 1/A, {qyCOM:.3f} 1/A')
+else:
+    print(f'COM[qx, qz, qy] = {qxCOM:.3f}, {qzCOM:.3f}, {qyCOM:.3f}')
 
 ####################
 # interactive plot #
@@ -292,19 +296,18 @@ if load_qvalues:
     ax1.set_title("horizontal=qy  vertical=qx")
     ax2.set_title("horizontal=qz  vertical=qx")
     ax3.set_xlabel('distance along the linecut (1/A)')
-    fig_diff.text(0.55, 0.38, 'click to read the q value', size=10)
 else:
     ax0.set_title("horizontal=X  vertical=Y")
     ax1.set_title("horizontal=X  vertical=rocking curve")
     ax2.set_title("horizontal=Y  vertical=rocking curve")
     ax3.set_xlabel('distance along the linecut (pixels)')
-    fig_diff.text(0.55, 0.38, 'click to read the pixel value', size=10)
 
 ax3.set_ylabel('Int (A.U.)')
 q_text = fig_diff.text(0.55, 0.43, '', size=10)
 fig_diff.text(0.01, 0.9, "left click to select\nthe starting point", size=10)
 fig_diff.text(0.01, 0.8, "right click to select\nthe endpoint", size=10)
 fig_diff.text(0.01, 0.7, "q to quit\ns to save", size=10)
+fig_diff.text(0.85, 0.40, 'click to read\nthe distance', size=10)
 plt.tight_layout()
 plt.connect('key_press_event', press_key)
 plt.connect('button_press_event', on_click)
