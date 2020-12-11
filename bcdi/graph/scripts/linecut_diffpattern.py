@@ -28,6 +28,7 @@ For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 datadir = 'D:/data/P10_isosurface/data/p21_00054/pynx/'  # data directory
 savedir = None  # if None, it will default to the data directory
 load_qvalues = False  # True to load the q values
+load_mask = False  # True to load a mask (same shape than the diffraction pattern)
 #######################################
 # parameters related to visualization #
 #######################################
@@ -128,6 +129,11 @@ def on_click(event):
 
         ax3.cla()
         ax3.plot(np.linspace(0, distance, num=len(cut)), np.log10(cut), '-or', markersize=3)
+        if load_qvalues:
+            ax3.set_xlabel('distance along the linecut (1/A)')
+        else:
+            ax3.set_xlabel('distance along the linecut (pixels)')
+        ax3.set_ylabel('Int (A.U.)')
         ax3.axis('auto')
         ax3.set_ylim(bottom=-2)
         plt.tight_layout()
@@ -186,10 +192,13 @@ nz, ny, nx = diff_pattern.shape
 ############################
 # load the mask (optional) #
 ############################
-file_path = filedialog.askopenfilename(initialdir=datadir, title="Select mask (optional)",
-                                       filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
-if file_path:  # file_path will be an empty string if no file selected
+if load_mask:
+    file_path = filedialog.askopenfilename(initialdir=datadir, title="Select mask (optional)",
+                                           filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
+    if not file_path:
+        raise ValueError('a mask should be provided if the parameter "load_mask" is set to True')
     mask, _ = util.load_file(file_path)
+    assert mask.shape == diff_pattern.shape, 'the mask should have the same shape as the diffraction pattern'
     diff_pattern[np.nonzero(mask)] = 0
     del mask
     gc.collect()
@@ -230,24 +239,14 @@ if qx.ndim == 1:
     qxCOM = qx[z0]
     qzCOM = qz[y0]
     qyCOM = qy[x0]
-    distances = np.sqrt((qx[:, np.newaxis, np.newaxis] - qxCOM)**2 +
-                        (qz[np.newaxis, :, np.newaxis] - qyCOM)**2 +
-                        (qy[np.newaxis, np.newaxis, :] - qzCOM)**2)
 elif qx.ndim == 3:
     qxCOM = qx[z0, y0, x0]
     qyCOM = qy[z0, y0, x0]
     qzCOM = qz[z0, y0, x0]
-    distances = np.sqrt((qx - qxCOM)**2 + (qy - qyCOM)**2 + (qz - qzCOM)**2)
 else:
     raise ValueError('q components should be 1D or 3D arrays')
 
 print(f'COM[qx, qz, qy] = {qxCOM:.2f}, {qzCOM:.2f}, {qyCOM:.2f}')
-if load_qvalues:
-    print(f'\nDistance max: {distances.max():.1f} (1/A) at:'
-          f' {np.unravel_index(abs(distances).argmax(), distances.shape)}')
-else:
-    print(f'\nDistance max: {distances.max():.1f} (pixels) at:'
-          f' {np.unravel_index(abs(distances).argmax(), distances.shape)}')
 
 ####################
 # interactive plot #
@@ -292,13 +291,13 @@ if load_qvalues:
     ax0.set_title("horizontal=qy  vertical=qz")
     ax1.set_title("horizontal=qy  vertical=qx")
     ax2.set_title("horizontal=qz  vertical=qx")
-    ax3.set_xlabel('distance (1/A)')
+    ax3.set_xlabel('distance along the linecut (1/A)')
     fig_diff.text(0.55, 0.38, 'click to read the q value', size=10)
 else:
     ax0.set_title("horizontal=X  vertical=Y")
     ax1.set_title("horizontal=X  vertical=rocking curve")
     ax2.set_title("horizontal=Y  vertical=rocking curve")
-    ax3.set_xlabel('distance (pixels)')
+    ax3.set_xlabel('distance along the linecut (pixels)')
     fig_diff.text(0.55, 0.38, 'click to read the pixel value', size=10)
 
 ax3.set_ylabel('Int (A.U.)')
