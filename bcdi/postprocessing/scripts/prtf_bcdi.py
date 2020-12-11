@@ -108,7 +108,7 @@ normalize_prtf = True  # set to True when the solution is the first mode - then 
 interpolate_nans = False  # if True, interpolate nans in the PRTF before the interactive interface. Time consuming
 debug = False  # True to show more plots
 save = True  # True to save the prtf figure
-background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
+background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort when using the GUI
 ##########################
 # end of user parameters #
 ##########################
