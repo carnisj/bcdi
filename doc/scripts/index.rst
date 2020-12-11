@@ -80,6 +80,14 @@ Graph
    :end-before: """
    :language: rst
 
+linecut_diffpattern.py
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/graph/scripts/linecut_diffpattern.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 merge3D_qspace.py
 ^^^^^^^^^^^^^^^^^
 
