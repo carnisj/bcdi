@@ -25,6 +25,7 @@ datadir = "D:/data/P10_December2020_BCDI/data_nanolab/dataset_1/"
 savedir = datadir  # "D:/data/CH5309/S614/test/"
 scale = 'linear'  # 'linear' or 'log', scale of the 2D plots
 normalize = True  # if True, the data will be normalized by abs(data).max()
+plot_sum = True  # if True, it will plot a single figure with the summed data in each dimension
 field = None  # data field name. Leave it to None for default.
 # It will take abs() for 'modulus', numpy.angle() for 'angle'
 grey_background = True
@@ -97,6 +98,7 @@ if vmax is None:
         vmax = data.max()
     else:  # 'log', we are sure that data.max() is > 0
         vmax = np.log10(data.max())
+
 #########################
 # loop through the data #
 #########################
@@ -104,59 +106,62 @@ plt.ioff()
 nz, ny, nx = np.shape(data)
 max_colorbar = vmax
 
-# in XY
-dim = 0
-fig_loop = plt.figure(figsize=(12, 9))
-fig_loop.canvas.mpl_disconnect(fig_loop.canvas.manager.key_press_handler_id)
-axis = fig_loop.add_subplot(111)
-idx = 0
-original_data = np.copy(data)
-if scale == 'linear':
-    plot = axis.imshow(data[idx, :, :], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
-else:  # 'log'
-    plot = axis.imshow(np.log10(data[idx, :, :]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
-axis.set_title("Frame " + str(idx + 1) + "/" + str(nz) + "\n"
-               "q quit ; u next frame ; d previous frame ; p unzoom\n"
-               "right darker ; left brighter ; r save 2D frame")
-gu.colorbar(plot, numticks=5)
-plt.connect('key_press_event', press_key)
-fig_loop.set_facecolor(background_plot)
-plt.show()
+if plot_sum:
+    gu.multislices_plot(data, sum_frames=True, scale=scale, plot_colorbar=True, cmap=my_cmap)
+else:
+    # in XY
+    dim = 0
+    fig_loop = plt.figure(figsize=(12, 9))
+    fig_loop.canvas.mpl_disconnect(fig_loop.canvas.manager.key_press_handler_id)
+    axis = fig_loop.add_subplot(111)
+    idx = 0
+    original_data = np.copy(data)
+    if scale == 'linear':
+        plot = axis.imshow(data[idx, :, :], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+    else:  # 'log'
+        plot = axis.imshow(np.log10(data[idx, :, :]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+    axis.set_title("Frame " + str(idx + 1) + "/" + str(nz) + "\n"
+                   "q quit ; u next frame ; d previous frame ; p unzoom\n"
+                   "right darker ; left brighter ; r save 2D frame")
+    gu.colorbar(plot, numticks=5)
+    plt.connect('key_press_event', press_key)
+    fig_loop.set_facecolor(background_plot)
+    plt.show()
 
-# in XZ
-dim = 1
-fig_loop = plt.figure(figsize=(12, 9))
-fig_loop.canvas.mpl_disconnect(fig_loop.canvas.manager.key_press_handler_id)
-axis = fig_loop.add_subplot(111)
-idx = 0
-if scale == 'linear':
-    plot = axis.imshow(data[:, idx, :], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
-else:  # 'log'
-    plot = axis.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
-axis.set_title("Frame " + str(idx + 1) + "/" + str(ny) + "\n"
-               "q quit ; u next frame ; d previous frame ; p unzoom\n"
-               "right darker ; left brighter ; r save 2D frame")
-gu.colorbar(plot, numticks=5)
-plt.connect('key_press_event', press_key)
-fig_loop.set_facecolor(background_plot)
-plt.show()
+    # in XZ
+    dim = 1
+    fig_loop = plt.figure(figsize=(12, 9))
+    fig_loop.canvas.mpl_disconnect(fig_loop.canvas.manager.key_press_handler_id)
+    axis = fig_loop.add_subplot(111)
+    idx = 0
+    if scale == 'linear':
+        plot = axis.imshow(data[:, idx, :], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+    else:  # 'log'
+        plot = axis.imshow(np.log10(data[:, idx, :]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+    axis.set_title("Frame " + str(idx + 1) + "/" + str(ny) + "\n"
+                   "q quit ; u next frame ; d previous frame ; p unzoom\n"
+                   "right darker ; left brighter ; r save 2D frame")
+    gu.colorbar(plot, numticks=5)
+    plt.connect('key_press_event', press_key)
+    fig_loop.set_facecolor(background_plot)
+    plt.show()
 
-# in YZ
-dim = 2
-fig_loop = plt.figure(figsize=(12, 9))
-fig_loop.canvas.mpl_disconnect(fig_loop.canvas.manager.key_press_handler_id)
-axis = fig_loop.add_subplot(111)
-idx = 0
-if scale == 'linear':
-    plot = axis.imshow(data[:, :, idx], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
-else:  # 'log'
-    plot = axis.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
-axis.set_title("Frame " + str(idx + 1) + "/" + str(nx) + "\n"
-               "q quit ; u next frame ; d previous frame ; p unzoom\n"
-               "right darker ; left brighter ; r save 2D frame")
-gu.colorbar(plot, numticks=5)
-plt.connect('key_press_event', press_key)
-fig_loop.set_facecolor(background_plot)
-plt.show()
+    # in YZ
+    dim = 2
+    fig_loop = plt.figure(figsize=(12, 9))
+    fig_loop.canvas.mpl_disconnect(fig_loop.canvas.manager.key_press_handler_id)
+    axis = fig_loop.add_subplot(111)
+    idx = 0
+    if scale == 'linear':
+        plot = axis.imshow(data[:, :, idx], vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+    else:  # 'log'
+        plot = axis.imshow(np.log10(data[:, :, idx]), vmin=vmin, vmax=max_colorbar, cmap=my_cmap)
+    axis.set_title("Frame " + str(idx + 1) + "/" + str(nx) + "\n"
+                   "q quit ; u next frame ; d previous frame ; p unzoom\n"
+                   "right darker ; left brighter ; r save 2D frame")
+    gu.colorbar(plot, numticks=5)
+    plt.connect('key_press_event', press_key)
+    fig_loop.set_facecolor(background_plot)
 
+plt.show()
 print('End of script')
