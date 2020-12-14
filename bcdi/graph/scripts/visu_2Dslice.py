@@ -21,17 +21,17 @@ helptext = """
 Graphical interface to visualize 2D slices through a 3D stacked dataset.
 """
 
-datadir = "D:/data/P10_December2020_BCDI/data_nanolab/dataset_1/"
+datadir = "D:/data/P10_December2020_BCDI/data_nanolab/PtNP1_00314/"
 savedir = datadir  # "D:/data/CH5309/S614/test/"
-scale = 'linear'  # 'linear' or 'log', scale of the 2D plots
-normalize = True  # if True, the data will be normalized by abs(data).max()
+scale = 'log'  # 'linear' or 'log', scale of the 2D plots
+normalize = False  # if True, the data will be normalized by abs(data).max()
 plot_sum = True  # if True, it will plot a single figure with the summed data in each dimension
 field = None  # data field name. Leave it to None for default.
 # It will take abs() for 'modulus', numpy.angle() for 'angle'
 grey_background = True
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort
-vmin = None  # lower boundary of the colorbar, leave it to None for default
-vmax = None  # higher boundary of the colorbar, leave it to None for default
+vmin = 0  # lower boundary of the colorbar, leave it to None for default
+vmax = 6  # higher boundary of the colorbar, leave it to None for default
 
 
 def press_key(event):
@@ -107,7 +107,7 @@ nz, ny, nx = np.shape(data)
 max_colorbar = vmax
 
 if plot_sum:
-    gu.multislices_plot(data, sum_frames=True, scale=scale, plot_colorbar=True, cmap=my_cmap)
+    gu.multislices_plot(data, sum_frames=True, scale=scale, plot_colorbar=True, cmap=my_cmap, vmin=vmin, vmax=vmax)
 else:
     # in XY
     dim = 0
