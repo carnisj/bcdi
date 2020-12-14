@@ -21,9 +21,10 @@ helptext = """
 Graphical interface to visualize 2D slices through a 3D stacked dataset.
 """
 
-datadir = "D:/data/Pt THH ex-situ/Data/HS4670/S9/pynxraw/"
+datadir = "D:/data/P10_December2020_BCDI/data_nanolab/dataset_1/"
 savedir = datadir  # "D:/data/CH5309/S614/test/"
-scale = 'log'  # 'linear' or 'log', scale of the 2D plots
+scale = 'linear'  # 'linear' or 'log', scale of the 2D plots
+normalize = True  # if True, the data will be normalized by abs(data).max()
 field = None  # data field name. Leave it to None for default.
 # It will take abs() for 'modulus', numpy.angle() for 'angle'
 grey_background = True
@@ -78,6 +79,9 @@ plt.ion()
 
 data, extension = util.load_file(file_path, fieldname=field)
 data = abs(data)
+
+if normalize:
+    data = data / abs(data).max()
 
 if data.max() <= 0:
     scale = 'linear'
