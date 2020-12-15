@@ -28,7 +28,7 @@ class SetupPostprocessing(object):
         :param tilt_angle: angular step of the sample during the rocking curve, in degrees
         :param rocking_angle: name of the angle which is tilted during the rocking curve, 'outofplane' or 'inplane'
         :param distance: sample to detector distance in meters
-        :param grazing_angle: grazing angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
+        :param grazing_angle: grazing angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS), in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
         """
@@ -39,7 +39,7 @@ class SetupPostprocessing(object):
         self.inplane_angle = inplane_angle  # in degrees
         self.tilt_angle = tilt_angle  # in degrees
         self.rocking_angle = rocking_angle  # string
-        self.grazing_angle = grazing_angle  # string
+        self.grazing_angle = grazing_angle  # in degrees
         self.distance = distance  # in meters
         self.pixel_x = pixel_x  # in meters
         self.pixel_y = pixel_y  # in meters
@@ -50,7 +50,7 @@ class SetupPostprocessing(object):
         # the frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up
 
         # horizontal axis:
-        if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX']:
+        if beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX'}:
             # we look at the detector from downstream, detector X along the outboard direction
             self.detector_hor = 'y+'
         else:  # 'P10', '34ID'
@@ -726,7 +726,7 @@ class SetupPreprocessing(object):
         # the frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up
 
         # horizontal axis:
-        if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX']:
+        if beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX'}:
             # we look at the detector from downstream, detector X along the outboard direction
             self.detector_hor = 'y+'
         else:  # 'P10', '34ID'
