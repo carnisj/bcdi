@@ -43,10 +43,10 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 54
-sample_name = "p21"  # "SN"  #
-root_folder = "D:/data/P10_isosurface/data/"  # location of the .spec or log file
-savedir = ""  # PRTF will be saved here, leave it to '' otherwise
+scan = 314
+sample_name = "PtNP1"  # "SN"  #
+root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # location of the .spec or log file
+savedir = "D:/data/P10_December2020_BCDI/data_nanolab/dataset_2/"  # PRTF will be saved here, leave it to '' otherwise
 comment = ""  # should start with _
 crop_roi = []  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
@@ -57,7 +57,7 @@ flag_interact = True  # True to calculate interactively the PRTF along particula
 ############################
 beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
-is_series = False  # specific to series measurement at P10
+is_series = True  # specific to series measurement at P10
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ''
@@ -81,13 +81,13 @@ template_imagefile = '_master.h5'
 # parameters for calculating q values #
 ################################################################################
 sdd = 1.83  # sample to detector distance in m
-energy = 8820   # x-ray energy in eV, 6eV offset at ID01
+energy = 8170   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-pre_binning = (1, 3, 3)  # binning factor applied during preprocessing: rocking curve axis, detector vertical and
+pre_binning = (1, 1, 1)  # binning factor applied during preprocessing: rocking curve axis, detector vertical and
 # horizontal axis. This is necessary to calculate correctly q values.
-phasing_binning = (1, 1, 1)  # binning factor applied during phasing: rocking curve axis, detector vertical and
+phasing_binning = (1, 2, 2)  # binning factor applied during phasing: rocking curve axis, detector vertical and
 # horizontal axis.
 # If the reconstructed object was further cropped after phasing, it will be automatically padded back to the FFT window
 # shape used during phasing (after binning) before calculating the Fourier transform.
@@ -471,7 +471,7 @@ if flag_interact:
 #################################
 # average over spherical shells #
 #################################
-print(f'\nDistance max: {distances_q.max():.1f}(1/A) at:'
+print(f'\nDistance max: {distances_q.max():.2f}(1/A) at:'
       f' {np.unravel_index(abs(distances_q).argmax(), distances_q.shape)}')
 nb_bins = numz // 3
 prtf_avg = np.zeros(nb_bins)
