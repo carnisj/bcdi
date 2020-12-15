@@ -187,41 +187,31 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     else:  # it is a string or a number
         tuple_scale = (tuple_scale,) * nb_subplots
 
-    # default values for kwargs
-    xlabel = None
-    ylabel = None
-    position = None
-    invert_y = [None for _ in range(nb_subplots)]
-
+    # load kwargs
+    xlabel = kwargs.get('xlabel', None)
+    ylabel = kwargs.get('ylabel', None)
+    position = kwargs.get('position', None)
+    invert_y = kwargs.get('invert_y', (None for _ in range(nb_subplots)))
     for k in kwargs.keys():
-        if k in ['xlabel']:
-            xlabel = kwargs['xlabel']
-            if isinstance(xlabel, tuple):
-                assert len(xlabel) == nb_subplots, 'len(xlabel) incompatible with the numer of arrays'
-            else:  # it is a string or a number
-                xlabel = (xlabel,) * nb_subplots
-        elif k in ['ylabel']:
-            ylabel = kwargs['ylabel']
-            if isinstance(ylabel, tuple):
-                assert len(ylabel) == nb_subplots, 'len(ylabel) incompatible with the numer of arrays'
-            else:  # it is a string or a number
-                ylabel = (ylabel,) * nb_subplots
-        elif k in ['position']:
-            position = kwargs['position']
-            try:
-                assert len(position) == nb_subplots, 'len(position) incompatible with the numer of arrays'
-            except TypeError:  # it is a number
-                raise ValueError('"position" should be a tuple of subplot positions')
-        elif k in ['invert_y']:
-            invert_y = kwargs['invert_y']
-            try:
-                assert len(invert_y) == nb_subplots, 'len(invert_y) incompatible with the numer of arrays'
-            except TypeError:  # it is a boolean or number
-                invert_y = (invert_y,) * nb_subplots
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is"
-                            "'xlabel' and 'ylabel'")
+        if k not in {'xlabel', 'ylabel', 'position', 'invert_y'}:
+            raise Exception("unknown keyword argument given:", k)
+
+    if isinstance(xlabel, tuple):
+        assert len(xlabel) == nb_subplots, 'len(xlabel) incompatible with the numer of arrays'
+    else:  # it is a string or a number
+        xlabel = (xlabel,) * nb_subplots
+    if isinstance(ylabel, tuple):
+        assert len(ylabel) == nb_subplots, 'len(ylabel) incompatible with the numer of arrays'
+    else:  # it is a string or a number
+        ylabel = (ylabel,) * nb_subplots
+    try:
+        assert len(position) == nb_subplots, 'len(position) incompatible with the numer of arrays'
+    except TypeError:  # it is a number
+        raise ValueError('"position" should be a tuple of subplot positions')
+    try:
+        assert len(invert_y) == nb_subplots, 'len(invert_y) incompatible with the numer of arrays'
+    except TypeError:  # it is a boolean or number
+        invert_y = (invert_y,) * nb_subplots
 
     xlabel = xlabel or ['' for _ in range(nb_subplots)]
     ylabel = ylabel or ['' for _ in range(nb_subplots)]
@@ -752,15 +742,11 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  fig, axis, plot instances
     """
-    # default values for kwargs
-    invert_y = None
-
+    # load kwargs
+    invert_y = kwargs.get('invert_y', None)
     for k in kwargs.keys():
-        if k in ['invert_y']:
-            invert_y = kwargs['invert_y']
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is 'invert_y'")
+        if k not in {'invert_y'}:
+            raise Exception("unknown keyword argument given:", k)
 
     nb_dim = array.ndim
     array = array.astype(float)
@@ -1383,17 +1369,13 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     else:
         fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 9))
 
+    # load kwargs
+    invert_y = kwargs.get('invert_y', None)
+    if invert_y is not None:  # override the default behavior for inver_yaxis
+        invert_yaxis = invert_y
     for k in kwargs.keys():
-        if k in ['invert_y']:
-            invert_y = kwargs['invert_y']
-            try:
-                if invert_y:  # overwrite invert_yaxis parameter
-                    invert_yaxis = invert_y
-            except NameError:
-                pass
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is 'invert_y'")
+        if k not in {'invert_y'}:
+            raise Exception("unknown keyword argument given:", k)
 
     # axis 0
     temp_array = np.copy(array)
