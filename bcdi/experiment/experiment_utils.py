@@ -83,14 +83,11 @@ class SetupPostprocessing(object):
          - 'title': title for the debugging plots
         :return: object interpolated on an orthogonal grid
         """
-        # default values for kwargs
-        title = 'Object'
+        title = kwargs.get('title', 'Object')
 
         for k in kwargs.keys():
-            if k in ['title']:
-                title = kwargs['title']
-            else:
-                raise Exception("unknown keyword argument given: allowed is 'title'")
+            if k not in {'title'}:
+                raise Exception("unknown keyword argument given:", k)
 
         nbz, nby, nbx = obj.shape
 
@@ -226,14 +223,11 @@ class SetupPostprocessing(object):
          - 'title': title for the debugging plots
         :return: object interpolated on an orthogonal grid
         """
-        # default values for kwargs
-        title = 'Object'
+        title = kwargs.get('title', 'Object')
 
         for k in kwargs.keys():
-            if k in ['title']:
-                title = kwargs['title']
-            else:
-                raise Exception("unknown keyword argument given: allowed is 'title'")
+            if k not in {'title'}:
+                raise Exception("unknown keyword argument given:", k)
 
         if len(initial_shape) == 0:
             initial_shape = obj.shape
@@ -703,38 +697,18 @@ class SetupPreprocessing(object):
          - 'custom_monitor' = list of monitor values for normalization for the custom_scan
          - 'custom_motors' = dictionnary of motors values during the scan
         """
-        # default values for kwargs
-        filtered_data = False
-        is_orthogonal = False
-        custom_scan = False
-        custom_images = []
-        custom_monitor = []
-        custom_motors = {}
-
         for k in kwargs.keys():
-            if k in ['filtered_data']:
-                filtered_data = kwargs['filtered_data']
-            elif k in ['is_orthogonal']:
-                is_orthogonal = kwargs['is_orthogonal']
-            elif k in ['custom_scan']:
-                custom_scan = kwargs['custom_scan']
-            elif k in ['custom_images']:
-                custom_images = kwargs['custom_images']
-            elif k in ['custom_monitor']:
-                custom_monitor = kwargs['custom_monitor']
-            elif k in ['custom_motors']:
-                custom_motors = kwargs['custom_motors']
-            else:
-                raise Exception("unknown keyword argument given: allowed is"
-                                "'custom_images', 'custom_monitor', 'custom_motors'")
+            if k not in {'filtered_data', 'is_orthogonal', 'custom_scan', 'custom_images', 'custom_monitor',
+                         'custom_motors'}:
+                raise Exception("unknown keyword argument given:", k)
 
         self.beamline = beamline  # string
-        self.filtered_data = filtered_data  # boolean
-        self.is_orthogonal = is_orthogonal
-        self.custom_scan = custom_scan  # boolean
-        self.custom_images = custom_images  # list
-        self.custom_monitor = custom_monitor  # list
-        self.custom_motors = custom_motors  # dictionnary
+        self.filtered_data = kwargs.get('filtered_data', False)  # boolean
+        self.is_orthogonal = kwargs.get('is_orthogonal', False)  # boolean
+        self.custom_scan = kwargs.get('custom_scan', False)  # boolean
+        self.custom_images = kwargs.get('custom_images', [])  # list
+        self.custom_monitor = kwargs.get('custom_monitor', [])  # list
+        self.custom_motors = kwargs.get('custom_motors', {})  # dictionnary
         self.energy = energy  # in eV
         self.wavelength = 12.398 * 1e-7 / energy  # in m
         self.rocking_angle = rocking_angle  # string
@@ -796,66 +770,55 @@ class Detector(object):
          - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
          - 'previous_binning': tuple or list of the three binning factors for reloaded binned data
         """
-        # default values for kwargs
-        nb_pixel_x = None
-        nb_pixel_y = None
-        previous_binning = None
-        is_series = False
+        self.is_series = kwargs.get('is_series', False)
+        self.nb_pixel_x = kwargs.get('nb_pixel_x', None)
+        self.nb_pixel_y = kwargs.get('nb_pixel_y', None)
+        self.previous_binning = kwargs.get('previous_binning', None) or (1, 1, 1)
 
         for k in kwargs.keys():
-            if k in ['is_series']:
-                is_series = kwargs['is_series']
-            elif k in ['nb_pixel_x']:
-                nb_pixel_x = kwargs['nb_pixel_x']
-            elif k in ['nb_pixel_y']:
-                nb_pixel_y = kwargs['nb_pixel_y']
-            elif k in ['previous_binning']:
-                previous_binning = kwargs['previous_binning']
-            else:
+            if k not in {'is_series', 'nb_pixel_x', 'nb_pixel_y', 'previous_binning'}:
                 raise Exception("unknown keyword argument given:", k)
 
-        self.previous_binning = previous_binning or (1, 1, 1)
-        self.is_series = is_series
         self.name = name  # string
         self.offsets = ()
 
         if name == 'Maxipix':
-            nb_pixel_x = nb_pixel_x or 516
-            nb_pixel_y = nb_pixel_y or 516
-            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
+            self.nb_pixel_x = self.nb_pixel_x or 516
+            self.nb_pixel_y = self.nb_pixel_y or 516
+            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'mpx4inr'
         elif name == 'Eiger2M':
-            nb_pixel_x = nb_pixel_x or 1030
-            nb_pixel_y = nb_pixel_y or 2164
-            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
+            self.nb_pixel_x = self.nb_pixel_x or 1030
+            self.nb_pixel_y = self.nb_pixel_y or 2164
+            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = 'ei2minr'
         elif name == 'Eiger4M':
-            nb_pixel_x = nb_pixel_x or 2070
-            nb_pixel_y = nb_pixel_y or 2167
-            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
+            self.nb_pixel_x = self.nb_pixel_x or 2070
+            self.nb_pixel_y = self.nb_pixel_y or 2167
+            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = ''  # unused
         elif name == 'Timepix':
-            nb_pixel_x = nb_pixel_x or 256
-            nb_pixel_y = nb_pixel_y or 256
-            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
+            self.nb_pixel_x = self.nb_pixel_x or 256
+            self.nb_pixel_y = self.nb_pixel_y or 256
+            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = ''  # unused
         elif name == 'Merlin':
-            nb_pixel_x = nb_pixel_x or 515
-            nb_pixel_y = nb_pixel_y or 515
-            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
+            self.nb_pixel_x = self.nb_pixel_x or 515
+            self.nb_pixel_y = self.nb_pixel_y or 515
+            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'alba2'
