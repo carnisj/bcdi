@@ -1781,13 +1781,14 @@ def unwrap(obj, support_threshold, seed=0, debugging=True):
      thresholding the modulus of the object.
 
     :param obj: number or array to be wrapped
-    :param support_threshold: threshold used to define a support from abs(obj)
+    :param support_threshold: relative threshold used to define a support from abs(obj)
     :param seed: int, random seed. Use always the same value if you want a deterministic behavior.
     :param debugging: set to True to see plots
     :return: unwrapped phase, unwrapped phase range
     """
     from skimage.restoration import unwrap_phase
     import numpy.ma as ma
+    assert 0 <= support_threshold <= 1, 'support_threshold is a relative threshold, expected value between 0 and 1'
     ndim = obj.ndim
     unwrap_support = np.ones(obj.shape, dtype=int)
     unwrap_support[abs(obj) > support_threshold * abs(obj).max()] = 0  # 0 is a valid entry for ma.masked_array
