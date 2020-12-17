@@ -631,7 +631,7 @@ class SetupPostprocessing(object):
         transfer_matrix = 2 * np.pi * np.linalg.inv(mymatrix).transpose()
         return transfer_matrix
 
-    def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False, debug=False):
+    def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
         Calculate the direct space voxel sizes in the laboratory frame (z downstream, y vertical up, x outboard).
 
@@ -640,7 +640,6 @@ class SetupPostprocessing(object):
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
         :param verbose: True to have printed comments
-        :param debug: True to have printed comments
         :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
         """
         transfer_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
@@ -649,7 +648,7 @@ class SetupPostprocessing(object):
         qx_range = np.linalg.norm(rec_matrix[0, :])
         qy_range = np.linalg.norm(rec_matrix[1, :])
         qz_range = np.linalg.norm(rec_matrix[2, :])
-        if debug:
+        if verbose:
             print('q_range_z, q_range_y, q_range_x=({0:.5f}, {1:.5f}, {2:.5f}) (1/nm)'.format(qz_range, qy_range,
                                                                                               qx_range))
             print('voxelsize_z, voxelsize_y, voxelsize_x='
@@ -657,7 +656,7 @@ class SetupPostprocessing(object):
                                                               2 * np.pi / qx_range))
         return 2 * np.pi / qz_range, 2 * np.pi / qy_range, 2 * np.pi / qx_range
 
-    def voxel_sizes_detector(self, array_shape, tilt_angle, pixel_x, pixel_y, debug=False):
+    def voxel_sizes_detector(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
         Calculate the direct space voxel sizes in the detector frame
          (z rocking angle, y detector vertical axis, x detector horizontal axis).
@@ -666,13 +665,13 @@ class SetupPostprocessing(object):
         :param tilt_angle: angular step during the rocking curve, in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
-        :param debug: True to have printed comments
+        :param verbose: True to have printed comments
         :return: the direct space voxel sizes in nm, in the detector frame (voxel_z, voxel_y, voxel_x)
         """
         voxel_z = self.wavelength / (array_shape[0] * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
         voxel_y = self.wavelength * self.distance / (array_shape[1] * pixel_y) * 1e9  # in nm
         voxel_x = self.wavelength * self.distance / (array_shape[2] * pixel_x) * 1e9  # in nm
-        if debug:
+        if verbose:
             print('voxelsize_z, voxelsize_y, voxelsize_x='
                   '({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)'.format(voxel_z, voxel_y, voxel_x))
         return voxel_z, voxel_y, voxel_x
