@@ -407,11 +407,9 @@ if save_raw:
                         amp=abs(avg_obj), phase=np.angle(avg_obj))
 
     # voxel sizes in the detector frame
-    voxel_z = setup.wavelength / (original_size[0] * abs(tilt_angle) * preprocessing_binning[0] * phasing_binning[0] *
-                                  np.pi / 180) * 1e9  # in nm
-    voxel_y = setup.wavelength * sdd / (original_size[1] * detector.pixelsize_y) * 1e9  # in nm
-    voxel_x = setup.wavelength * sdd / (original_size[2] * detector.pixelsize_x) * 1e9  # in nm
-
+    voxel_z, voxel_y, voxel_x = setup.voxel_sizes_detector(array_shape=original_size, tilt_angle=tilt_angle,
+                                                           pixel_x=detector.pixelsize_x, pixel_y=detector.pixelsize_y,
+                                                           verbose=True)
     # save raw amp & phase to VTK
     # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
     gu.save_to_vti(filename=os.path.join(datadir, "S" + str(scan) + "_raw_amp-phase" + comment + ".vti"),
