@@ -7,9 +7,234 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
+from numbers import Number
+import warnings
 import bcdi.graph.graph_utils as gu
 from scipy.interpolate import RegularGridInterpolator
 import gc
+
+
+class Setup(object):
+    """
+    Class for defining the experimental geometry.
+    """
+    def __init__(self, beamline, energy=None, distance=None, outofplane_angle=None, inplane_angle=None, tilt_angle=None,
+                 rocking_angle=None, pixel_x=None, pixel_y=None, **kwargs):
+
+        # kwargs for preprocessing forward CDI data
+        self.direct_beam = kwargs.get('direct_beam', None)
+        if self.direct_beam:
+            assert isinstance(self.direct_beam, (tuple, list)) and len(self.direct_beam) == 2 and \
+                   all(isinstance(val, Number) for val in self.direct_beam), 'direct_beam should be a list/tuple' \
+                                                                             ' of two numbers'
+
+        # kwargs for loading and preprocessing data
+        self.filtered_data = kwargs.get('filtered_data', False)  # boolean
+        assert isinstance(self.filtered_data, bool), 'filtered_data should be a boolean'
+        self.is_orthogonal = kwargs.get('is_orthogonal', False)  # boolean
+        assert isinstance(self.is_orthogonal, bool), 'is_orthogonal should be a boolean'
+        self.custom_scan = kwargs.get('custom_scan', False)  # boolean
+        assert isinstance(self.custom_scan, bool), 'custom_scan should be a boolean'
+        self.custom_images = kwargs.get('custom_images', [])  # list or tuple
+        assert isinstance(self.custom_images, (tuple, list)), 'custom_images should be a list/tuple of image numbers'
+        self.custom_monitor = kwargs.get('custom_monitor', [])  # list or tuple
+        assert isinstance(self.custom_monitor, (tuple, list)), 'custom_monitor should be a list/tuple of monitor values'
+        self.custom_motors = kwargs.get('custom_motors', {})  # dictionnary
+        assert isinstance(self.custom_motors, dict), 'custom_motors should be a dictionnary'
+
+        # kwargs for xrayutilities, delegate the test on their values to xrayutilities
+        self.beam_direction = kwargs.get('beam_direction', (1, 0, 0))
+        self.sample_inplane = kwargs.get('sample_inplane', (1, 0, 0))
+        self.sample_outofplane = kwargs.get('sample_outofplane', (0, 0, 1))
+        self.sample_offsets = kwargs.get('sample_offsets', (0, 0, 0))
+        self.offset_inplane = kwargs.get('offset_inplane', 0)
+
+        # load positional arguments corresponding to instance properties
+        self.beamline = beamline
+        self.energy = energy
+        self.distance = distance
+        self.outofplane_angle = outofplane_angle
+        self.inplane_angle = inplane_angle
+        self.tilt_angle = tilt_angle
+        self.rocking_angle = rocking_angle
+        self.pixel_x = pixel_x
+        self.pixel_y = pixel_y
+
+    @property
+    def beamline(self):
+        """
+        Name of the beamline.
+        """
+        return self._beamline
+
+    @beamline.setter
+    def beamline(self, value):
+        if value not in {'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL', 'NANOMAX'}:
+            raise ValueError(f'Beamline {value} not supported')
+        else:
+            self._beamline = value
+
+    @property
+    def detector_hor(self):
+        """
+        Defines the horizontal detector orientation for xrayutilities depending on the beamline.
+         The frame convention of xrayutilities is the following: x downstream, y outboard, z vertical up.
+        """
+        if self.beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX'}:
+            # we look at the detector from downstream, detector X along the outboard direction
+            return 'y+'
+        else:  # 'P10', '34ID'
+            # we look at the detector from upstream, detector X opposite to the outboard direction
+            return 'y-'
+
+    @property
+    def detector_ver(self):
+        """
+        Defines the vertical detector orientation for xrayutilities depending on the beamline.
+         The frame convention of xrayutilities is the following: x downstream, y outboard, z vertical up.
+        """
+        if self.beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX', 'P10', '34ID'}:
+            # origin is at the top, detector Y along vertical down
+            return 'z-'
+        else:
+            return 'z+'
+
+    @property
+    def energy(self):
+        """
+        Energy setting of the beamline, in eV.
+        """
+        return self._energy
+
+    @energy.setter
+    def energy(self, value):
+        if value is None:
+            self._energy = value
+        elif not isinstance(value, Number):
+            raise TypeError('energy should be a number in eV')
+        elif value <= 0:
+            raise ValueError('energy should be a strictly positive number in eV')
+        else:
+            self._energy = value
+
+    @property
+    def wavelength(self):
+        if self.energy:
+            return 12.398 * 1e-7 / self.energy  # in m
+
+    @property
+    def distance(self):
+        """
+        Distance setting of the beamline, in m.
+        """
+        return self._distance
+
+    @distance.setter
+    def distance(self, value):
+        if value is None:
+            self._distance = value
+        elif not isinstance(value, Number):
+            raise TypeError('distance should be a number in m')
+        elif value <= 0:
+            raise ValueError('distance should be a strictly positive number in m')
+        else:
+            self._distance = value
+
+    @property
+    def outofplane_angle(self):
+        """
+        Vertical detector angle, in degrees.
+        """
+        return self._outofplane_angle
+
+    @outofplane_angle.setter
+    def outofplane_angle(self, value):
+        if not isinstance(value, Number) and value is not None:
+            raise TypeError('outofplane_angle should be a number in degrees')
+        else:
+            self._outofplane_angle = value
+
+    @property
+    def inplane_angle(self):
+        """
+        Horizontal detector angle, in degrees.
+        """
+        return self._inplane_angle
+
+    @inplane_angle.setter
+    def inplane_angle(self, value):
+        if not isinstance(value, Number) and value is not None:
+            raise TypeError('inplane_angle should be a number in degrees')
+        else:
+            self._inplane_angle = value
+
+    @property
+    def tilt_angle(self):
+        """
+        Angular step of the rocking curve, in degrees.
+        """
+        return self._tilt_angle
+
+    @tilt_angle.setter
+    def tilt_angle(self, value):
+        if not isinstance(value, Number) and value is not None:
+            raise TypeError('tilt_angle should be a number in degrees')
+        else:
+            self._tilt_angle = value
+
+    @property
+    def rocking_angle(self):
+        """
+        Name of the angle which is tilted during the rocking curve, 'outofplane' or 'inplane'
+        """
+        return self._rocking_angle
+
+    @rocking_angle.setter
+    def rocking_angle(self, value):
+        if value is None:
+            self._rocking_angle = value
+        elif not isinstance(value, str):
+            raise TypeError('rocking_angle should be a str')
+        elif value not in {'outofplane', 'inplane'}:
+            raise ValueError('rocking_angle can take only the value "outofplane" or "inplane"')
+        else:
+            self._rocking_angle = value
+
+    @property
+    def pixel_x(self):
+        """
+        Detector horizontal pixel size, in meters.
+        """
+        return self._pixel_x
+
+    @pixel_x.setter
+    def pixel_x(self, value):
+        if value is None:
+            self._pixel_x = value
+        elif not isinstance(value, Number):
+            raise TypeError('pixel_x should be a number in m')
+        elif value <= 0:
+            raise ValueError('pixel_x should be a strictly positive number in m')
+        else:
+            self._pixel_x = value
+
+    @property
+    def pixel_y(self):
+        """
+        Detector vertical pixel size, in meters.
+        """
+        return self._pixel_y
+
+    @pixel_y.setter
+    def pixel_y(self, value):
+        if value is None:
+            self._pixel_y = value
+        elif not isinstance(value, Number):
+            raise TypeError('pixel_y should be a number in m')
+        elif value <= 0:
+            raise ValueError('pixel_y should be a strictly positive number in m')
+        else:
+            self._pixel_y = value
 
 
 class SetupPostprocessing(object):
@@ -32,6 +257,7 @@ class SetupPostprocessing(object):
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
         """
+        warnings.warn("deprecated, use the class Setup instead", DeprecationWarning)
         self.beamline = beamline  # string
         self.energy = energy  # in eV
         self.wavelength = 12.398 * 1e-7 / energy  # in m
@@ -696,6 +922,7 @@ class SetupPreprocessing(object):
          - 'custom_monitor' = list of monitor values for normalization for the custom_scan
          - 'custom_motors' = dictionnary of motors values during the scan
         """
+        warnings.warn("deprecated, use the class Setup instead", DeprecationWarning)
         for k in kwargs.keys():
             if k not in {'filtered_data', 'is_orthogonal', 'custom_scan', 'custom_images', 'custom_monitor',
                          'custom_motors'}:
