@@ -53,7 +53,8 @@ correlation_threshold = 0.90
 #########################################################
 original_size = [252, 420, 392]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-binning = (1, 1, 1)  # binning factor applied during phasing
+phasing_binning = (1, 1, 1)  # binning factor applied during phase retrieval
+preprocessing_binning = (1, 1, 1)  # binning factors in each dimension used in preprocessing (not phase retrieval)
 output_size = (200, 200, 200)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
 fix_voxel = 3  # voxel size in nm for the interpolation during the geometrical transformation
@@ -81,7 +82,9 @@ beamline = "ID01"  # name of the beamline, used for data loading and normalizati
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
 sdd = 0.50678  # 1.26  # sample to detector distance in m
-pixel_size = 55e-6  # detector pixel size in m, taking into account an eventual binning during preprocessing
+detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 energy = 9000  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z
 outofplane_angle = 35.3627  # detector delta ID01, delta SIXS, gamma 34ID
@@ -180,19 +183,28 @@ else:
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
 
+#######################
+# Initialize detector #
+#######################
+kwargs = dict()  # create dictionnary
+kwargs['previous_binning'] = preprocessing_binning
+if nb_pixel_x:
+    kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+if nb_pixel_y:
+    kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+
+detector = exp.Detector(name=detector, datadir='', binning=phasing_binning, **kwargs)
+
 ####################################
 # define the experimental geometry #
 ####################################
-pixel_size = pixel_size * binning[1]
-tilt_angle = tilt_angle * binning[0]
-
-if binning[1] != binning[2]:
-    print('Binning size different for each detector direction - not yet implemented')
-    sys.exit()
+# correct the tilt_angle for binning
+tilt_angle = tilt_angle * preprocessing_binning[0] * phasing_binning[0]
 
 setup = exp.SetupPostprocessing(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle,
                                 inplane_angle=inplane_angle, tilt_angle=tilt_angle, rocking_angle=rocking_angle,
-                                grazing_angle=grazing_angle, distance=sdd, pixel_x=pixel_size, pixel_y=pixel_size)
+                                grazing_angle=grazing_angle, distance=sdd, pixel_x=detector.pixelsize_x,
+                                pixel_y=detector.pixelsize_y)
 
 ################
 # preload data #
@@ -215,9 +227,9 @@ nz, ny, nx = obj.shape
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
 if len(original_size) == 0:
     original_size = obj.shape
-print("FFT size before accounting for binning", original_size)
-original_size = tuple([original_size[index] // binning[index] for index in range(len(binning))])
-print("Binning used during phasing:", binning)
+print("FFT size before accounting for phasing_binning", original_size)
+original_size = tuple([original_size[index] // phasing_binning[index] for index in range(len(phasing_binning))])
+print("Binning used during phasing:", phasing_binning)
 print("Padding back to original FFT size", original_size)
 obj = pu.crop_pad(array=obj, output_shape=original_size)
 nz, ny, nx = obj.shape
@@ -394,9 +406,11 @@ if save_raw:
     np.savez_compressed(datadir + 'S' + str(scan) + '_raw_amp-phase' + comment,
                         amp=abs(avg_obj), phase=np.angle(avg_obj))
 
-    voxel_z = setup.wavelength / (original_size[0] * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
-    voxel_y = setup.wavelength * sdd / (original_size[1] * pixel_size) * 1e9  # in nm
-    voxel_x = setup.wavelength * sdd / (original_size[2] * pixel_size) * 1e9  # in nm
+    # voxel sizes in the detector frame
+    voxel_z = setup.wavelength / (original_size[0] * abs(tilt_angle) * preprocessing_binning[0] * phasing_binning[0] *
+                                  np.pi / 180) * 1e9  # in nm
+    voxel_y = setup.wavelength * sdd / (original_size[1] * detector.pixelsize_y) * 1e9  # in nm
+    voxel_x = setup.wavelength * sdd / (original_size[2] * detector.pixelsize_x) * 1e9  # in nm
 
     # save raw amp & phase to VTK
     # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
