@@ -80,6 +80,14 @@ Graph
    :end-before: """
    :language: rst
 
+linecut_diffpattern.py
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/graph/scripts/linecut_diffpattern.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 merge3D_qspace.py
 ^^^^^^^^^^^^^^^^^
 
@@ -354,10 +362,10 @@ compa_simu_exp.py
    :end-before: """
    :language: rst
 
-plot_diffpattern.py
-^^^^^^^^^^^^^^^^^^^
+plot_diffpattern_2d.py
+^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/publication/scripts/plot_diffpattern.py
+.. literalinclude:: ../../bcdi/publication/scripts/plot_diffpattern_2d.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -472,6 +480,14 @@ angular_avg_3Dto1D.py
 ^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/utils/scripts/angular_avg_3Dto1D.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+center_of_rotation.py
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/center_of_rotation.py
    :start-after: helptext
    :end-before: """
    :language: rst

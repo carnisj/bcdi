@@ -22,6 +22,7 @@ import gc
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
+import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 
@@ -42,6 +43,7 @@ output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 
 
 scans = [32]  # list or array of scan numbers
 root_folder = "D:/data/P10_March2020_CDI/data/"
+savedir = "D:/data/P10_March2020_CDI/test/"  # images will be saved here, leave it to None otherwise (default to data directory's parent)
 sample_name = ['ht_pillar3']  # "S"  # # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 user_comment = ''  # string, should start with "_"
@@ -145,668 +147,373 @@ custom_motors = None  # {"hprz": np.linspace(0, 184, num=737, endpoint=True)}
 ##################################
 # end of user-defined parameters #
 ##################################
-##############################################
-# create the dictionnary of input parameters #
-##############################################
-params = {'scans': scans, 'root_folder': root_folder, 'sample_name': sample_name, 'user_comment': user_comment,
-          'debug': debug, 'binning': binning, 'flag_interact': flag_interact,
-          'background_plot': background_plot, 'normalize_method': normalize_method, 'normalize_roi': normalize_roi,
-          'mask_zero_event': mask_zero_event, 'flag_medianfilter': flag_medianfilter,
-          'medfilt_order': medfilt_order, 'reload_previous': reload_previous, 'reload_orthogonal': reload_orthogonal,
-          'previous_binning': previous_binning, 'save_previous': save_previous, 'use_rawdata': use_rawdata,
-          'correct_curvature': correct_curvature, 'fit_datarange': fit_datarange, 'sdd': sdd, 'energy': energy,
-          'save_rawdata': save_rawdata, 'save_to_npz': save_to_npz, 'save_to_mat': save_to_mat,
-          'save_to_vti': save_to_vti, 'save_asint': save_asint, 'beamline': beamline, 'rocking_angle': rocking_angle,
-          'is_series': is_series, 'specfile_name': specfile_name, 'detector': detector, 'direct_beam': direct_beam,
-          'roi_detector': roi_detector, 'photon_threshold': photon_threshold, 'photon_filter': photon_filter,
-          'background_file': background_file, 'hotpixels_file': hotpixels_file, 'flatfield_file': flatfield_file,
-          'template_imagefile': template_imagefile}
 
 
-def main(parameters):
+def close_event(event):
     """
-    Protection for multiprocessing.
+    This function handles closing events on plots.
 
-    :param parameters: dictionnary containing input parameters
+    :return: nothing
     """
+    print(event, 'Click on the figure instead of closing it!')
+    sys.exit()
 
-    def close_event(event):
-        """
-        This function handles closing events on plots.
 
-        :return: nothing
-        """
-        print(event, 'Click on the figure instead of closing it!')
-        sys.exit()
+def on_click(event):
+    """
+    Function to interact with a plot, return the position of clicked pixel. If flag_pause==1 or
+    if the mouse is out of plot axes, it will not register the click
 
-    def on_click(event):
-        """
-        Function to interact with a plot, return the position of clicked pixel. If flag_pause==1 or
-        if the mouse is out of plot axes, it will not register the click
+    :param event: mouse click event
+    """
+    global xy, flag_pause, previous_axis
+    if not event.inaxes:
+        return
+    if not flag_pause:
 
-        :param event: mouse click event
-        """
-        nonlocal xy, flag_pause, previous_axis
-        if not event.inaxes:
-            return
-        if not flag_pause:
+        if (previous_axis == event.inaxes) or (previous_axis is None):  # collect points
+            _x, _y = int(np.rint(event.xdata)), int(np.rint(event.ydata))
+            xy.append([_x, _y])
+            if previous_axis is None:
+                previous_axis = event.inaxes
+        else:  # the click is not in the same subplot, restart collecting points
+            print('Please select mask polygon vertices within the same subplot: restart masking...')
+            xy = []
+            previous_axis = None
 
-            if (previous_axis == event.inaxes) or (previous_axis is None):  # collect points
-                _x, _y = int(np.rint(event.xdata)), int(np.rint(event.ydata))
-                xy.append([_x, _y])
-                if previous_axis is None:
-                    previous_axis = event.inaxes
-            else:  # the click is not in the same subplot, restart collecting points
-                print('Please select mask polygon vertices within the same subplot: restart masking...')
-                xy = []
-                previous_axis = None
 
-    def press_key(event):
-        """
-        Interact with a plot for masking parasitic diffraction intensity or detector gaps
+def press_key(event):
+    """
+    Interact with a plot for masking parasitic diffraction intensity or detector gaps
 
-        :param event: button press event
-        """
-        nonlocal original_data, original_mask, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask
-        nonlocal flag_pause, xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text
-        nonlocal my_cmap
+    :param event: button press event
+    """
+    global original_data, original_mask, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask
+    global flag_pause, xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text
+    global my_cmap
 
-        try:
-            if event.inaxes == ax0:
-                dim = 0
-                inaxes = True
-            elif event.inaxes == ax1:
-                dim = 1
-                inaxes = True
-            elif event.inaxes == ax2:
-                dim = 2
-                inaxes = True
-            else:
-                dim = -1
-                inaxes = False
+    try:
+        if event.inaxes == ax0:
+            dim = 0
+            inaxes = True
+        elif event.inaxes == ax1:
+            dim = 1
+            inaxes = True
+        elif event.inaxes == ax2:
+            dim = 2
+            inaxes = True
+        else:
+            dim = -1
+            inaxes = False
 
-            if inaxes:
-                invert_yaxis = (not use_rawdata) and (not detector_plane)
-                if flag_aliens:
-                    data, mask, width, max_colorbar, frame_index, stop_masking = \
-                        gu.update_aliens_combined(key=event.key, pix=int(np.rint(event.xdata)),
-                                                  piy=int(np.rint(event.ydata)), original_data=original_data,
-                                                  original_mask=original_mask, updated_data=data, updated_mask=mask,
-                                                  axes=(ax0, ax1, ax2), width=width, dim=dim, frame_index=frame_index,
-                                                  vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=invert_yaxis)
-                elif flag_mask:
-                    if previous_axis == ax0:
-                        click_dim = 0
-                        x, y = np.meshgrid(np.arange(nx), np.arange(ny))
-                        points = np.stack((x.flatten(), y.flatten()), axis=0).T
-                    elif previous_axis == ax1:
-                        click_dim = 1
-                        x, y = np.meshgrid(np.arange(nx), np.arange(nz))
-                        points = np.stack((x.flatten(), y.flatten()), axis=0).T
-                    elif previous_axis == ax2:
-                        click_dim = 2
-                        x, y = np.meshgrid(np.arange(ny), np.arange(nz))
-                        points = np.stack((x.flatten(), y.flatten()), axis=0).T
-                    else:
-                        click_dim = None
-                        points = None
-
-                    data, updated_mask, flag_pause, xy, width, max_colorbar, click_dim, stop_masking, info_text = \
-                        gu.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
-                                                piy=int(np.rint(event.ydata)), original_data=original_data,
-                                                original_mask=mask, updated_data=data, updated_mask=updated_mask,
-                                                axes=(ax0, ax1, ax2), flag_pause=flag_pause, points=points,
-                                                xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
-                                                vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=invert_yaxis)
-
-                    if click_dim is None:
-                        previous_axis = None
+        if inaxes:
+            invert_yaxis = (not use_rawdata) and (not detector_plane)
+            if flag_aliens:
+                data, mask, width, max_colorbar, frame_index, stop_masking = \
+                    gu.update_aliens_combined(key=event.key, pix=int(np.rint(event.xdata)),
+                                              piy=int(np.rint(event.ydata)), original_data=original_data,
+                                              original_mask=original_mask, updated_data=data, updated_mask=mask,
+                                              axes=(ax0, ax1, ax2), width=width, dim=dim, frame_index=frame_index,
+                                              vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=invert_yaxis)
+            elif flag_mask:
+                if previous_axis == ax0:
+                    click_dim = 0
+                    x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
+                elif previous_axis == ax1:
+                    click_dim = 1
+                    x, y = np.meshgrid(np.arange(nx), np.arange(nz))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
+                elif previous_axis == ax2:
+                    click_dim = 2
+                    x, y = np.meshgrid(np.arange(ny), np.arange(nz))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
                 else:
-                    stop_masking = False
+                    click_dim = None
+                    points = None
 
-                if stop_masking:
-                    plt.close(fig_mask)
+                data, updated_mask, flag_pause, xy, width, max_colorbar, click_dim, stop_masking, info_text = \
+                    gu.update_mask_combined(key=event.key, pix=int(np.rint(event.xdata)),
+                                            piy=int(np.rint(event.ydata)), original_data=original_data,
+                                            original_mask=mask, updated_data=data, updated_mask=updated_mask,
+                                            axes=(ax0, ax1, ax2), flag_pause=flag_pause, points=points,
+                                            xy=xy, width=width, dim=dim, click_dim=click_dim, info_text=info_text,
+                                            vmin=0, vmax=max_colorbar, cmap=my_cmap, invert_yaxis=invert_yaxis)
 
-        except AttributeError:  # mouse pointer out of axes
-            pass
+                if click_dim is None:
+                    previous_axis = None
+            else:
+                stop_masking = False
 
-    ######################################
-    # load the dictionnary of parameters #
-    ######################################
-    scans = parameters['scans']
-    root_folder = parameters['root_folder']
-    sample_name = parameters['sample_name']
-    user_comment = parameters['user_comment']
-    debug = parameters['debug']
-    binning = parameters['binning']
-    flag_interact = parameters['flag_interact']
-    background_plot = parameters['background_plot']
-    normalize_method = parameters['normalize_method']
-    normalize_roi = parameters['normalize_roi']
-    mask_zero_event = parameters['mask_zero_event']
-    flag_medianfilter = parameters['flag_medianfilter']
-    medfilt_order = parameters['medfilt_order']
-    reload_previous = parameters['reload_previous']
-    reload_orthogonal = parameters['reload_orthogonal']
-    previous_binning = parameters['previous_binning']
-    save_previous = parameters['save_previous']
-    use_rawdata = parameters['use_rawdata']
-    correct_curvature = parameters['correct_curvature']
-    fit_datarange = parameters['fit_datarange']
-    sdd = parameters['sdd']
-    energy = parameters['energy']
-    save_rawdata = parameters['save_rawdata']
-    save_to_npz = parameters['save_to_npz']
-    save_to_mat = parameters['save_to_mat']
-    save_to_vti = parameters['save_to_vti']
-    save_asint = parameters['save_asint']
-    beamline = parameters['beamline']
-    rocking_angle = parameters['rocking_angle']
-    is_series = parameters['is_series']
-    specfile_name = parameters['specfile_name']
-    detector = parameters['detector']
-    direct_beam = parameters['direct_beam']
-    roi_detector = parameters['roi_detector']
-    photon_threshold = parameters['photon_threshold']
-    photon_filter = parameters['photon_filter']
-    background_file = parameters['background_file']
-    hotpixels_file = parameters['hotpixels_file']
-    flatfield_file = parameters['flatfield_file']
-    template_imagefile = parameters['template_imagefile']
+            if stop_masking:
+                plt.close('all')
 
-    #########################
-    # check some parameters #
-    #########################
-    min_range = None
-    q_values = None
-    qx = None
-    qy = None
-    qz = None
+    except AttributeError:  # mouse pointer out of axes
+        pass
 
-    if not reload_previous:
-        previous_binning = [1, 1, 1]
-        reload_orthogonal = False
+
+#########################
+# check some parameters #
+#########################
+min_range = None
+q_values = None
+qx = None
+qy = None
+qz = None
+
+if not reload_previous:
+    previous_binning = [1, 1, 1]
+    reload_orthogonal = False
+else:
+    print('\nReloading... update the direct beam position taking into account previous_binning')
+    direct_beam = (direct_beam[0] // previous_binning[1], direct_beam[1] // previous_binning[2])
+
+if reload_orthogonal:
+    use_rawdata = False
+
+if not use_rawdata:
+    if reload_orthogonal:  # data already gridded, one can bin the first axis
+        pass
+    else:  # data in the detector frame, one cannot bin the first axis because it is done during interpolation
+        print('\nuse_rawdata=False: defaulting the binning factor along the stacking dimension to 1')
+        # the vertical axis y being the rotation axis, binning along z downstream and x outboard will be the same
+        binning[0] = 1
+        if previous_binning[0] != 1:
+            print('previous_binning along axis 0 should be 1 for reloaded data to be gridded'
+                  ' (angles will not match)')
+            sys.exit()
+
+if type(sample_name) is list:
+    if len(sample_name) == 1:
+        sample_name = [sample_name[0] for idx in range(len(scans))]
+    assert len(sample_name) == len(scans), 'sample_name and scan_list should have the same length'
+elif type(sample_name) is str:
+    sample_name = [sample_name for idx in range(len(scans))]
+else:
+    print('sample_name should be either a string or a list of strings')
+    sys.exit()
+
+###################
+# define colormap #
+###################
+colormap = gu.Colormap()
+my_cmap = colormap.cmap
+plt.rcParams["keymap.fullscreen"] = [""]
+
+#######################
+# Initialize detector #
+#######################
+kwargs = dict()  # create dictionnary
+kwargs['is_series'] = is_series
+kwargs['previous_binning'] = previous_binning
+if nb_pixel_x:
+    kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+if nb_pixel_y:
+    kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+
+detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
+                        sum_roi=normalize_roi, binning=binning, **kwargs)
+
+####################
+# Initialize setup #
+####################
+setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+                               direct_beam=direct_beam, custom_scan=custom_scan, custom_images=custom_images,
+                               custom_monitor=custom_monitor, custom_motors=custom_motors)
+
+############################################
+# Initialize values for callback functions #
+############################################
+detector_plane = False
+flag_mask = False
+flag_aliens = False
+plt.rcParams["keymap.quit"] = ["ctrl+w", "cmd+w"]  # this one to avoid that q closes window (matplotlib default)
+
+############################
+# start looping over scans #
+############################
+root = tk.Tk()
+root.withdraw()
+
+for scan_nb in range(len(scans)):
+    plt.ion()
+
+    comment = user_comment  # initialize comment
+
+    if setup.beamline != 'P10':
+        homedir = root_folder + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
+        detector.datadir = homedir + "data/"
+        specfile = specfile_name
     else:
-        print('\nReloading... update the direct beam position taking into account previous_binning')
-        direct_beam = (direct_beam[0] // previous_binning[1], direct_beam[1] // previous_binning[2])
+        specfile = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb])
+        homedir = root_folder + specfile + '/'
+        if custom_scan:
+            detector.datadir = root_folder + sample_name[scan_nb]
+            detector.template_imagefile = template_imagefile
+        else:
+            detector.datadir = homedir + 'e4m/'
+            imagefile = specfile + template_imagefile
+            detector.template_imagefile = imagefile
 
-    if reload_orthogonal:
-        use_rawdata = False
+    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
+                                 root_folder=root_folder, filename=specfile)
+
+    print('\nScan', scans[scan_nb])
+    print('Sample name: ', sample_name[scan_nb])
+    print('Setup: ', setup.beamline)
+    print('Direct beam (VxH)', direct_beam)
+    print('Detector: ', detector.name)
+    print('Pixel number (VxH): ', detector.nb_pixel_y, detector.nb_pixel_x)
+    print('Detector ROI:', roi_detector)
+    print('Horizontal pixel size with binning: ', detector.pixelsize_x, 'm')
+    print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
+    print('Specfile: ', specfile)
+    print('Scan type: ', setup.rocking_angle)
+    print('Sample to detector distance: ', setup.distance, 'm')
+    print('Energy:', setup.energy, 'ev')
+    if savedir:
+        savedir = savedir + sample_name[scan_nb] + '_' + str(scans[scan_nb]) + '/'
+    else:
+        savedir = homedir
 
     if not use_rawdata:
-        if reload_orthogonal:  # data already gridded, one can bin the first axis
-            pass
-        else:  # data in the detector frame, one cannot bin the first axis because it is done during interpolation
-            print('\nuse_rawdata=False: defaulting the binning factor along the stacking dimension to 1')
-            # the vertical axis y being the rotation axis, binning along z downstream and x outboard will be the same
-            binning[0] = 1
-            if previous_binning[0] != 1:
-                print('previous_binning along axis 0 should be 1 for reloaded data to be gridded'
-                      ' (angles will not match)')
-                sys.exit()
-
-    if type(sample_name) is list:
-        if len(sample_name) == 1:
-            sample_name = [sample_name[0] for idx in range(len(scans))]
-        assert len(sample_name) == len(scans), 'sample_name and scan_list should have the same length'
-    elif type(sample_name) is str:
-        sample_name = [sample_name for idx in range(len(scans))]
+        comment = comment + '_ortho'
+        savedir = savedir + "pynx/"
+        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
+        print('Output will interpolated in the orthogonal laboratory frame')
+        plot_title = ['QzQx', 'QyQx', 'QyQz']
     else:
-        print('sample_name should be either a string or a list of strings')
-        sys.exit()
+        savedir = savedir + "pynxraw/"
+        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
+        print('Output will be non orthogonal, in the detector frame')
+        plot_title = ['YZ', 'XZ', 'XY']
 
-    ###################
-    # define colormap #
-    ###################
-    colormap = gu.Colormap()
-    my_cmap = colormap.cmap
-    plt.rcParams["keymap.fullscreen"] = [""]
+    detector.savedir = savedir
 
-    #######################
-    # Initialize detector #
-    #######################
-    kwargs = dict()  # create dictionnary
-    kwargs['is_series'] = is_series
-    kwargs['previous_binning'] = previous_binning
-    if nb_pixel_x:
-        kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
-    if nb_pixel_y:
-        kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+    if normalize_method != 'skip':
+        comment = comment + '_norm'
 
-    detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
-                            sum_roi=normalize_roi, binning=binning, **kwargs)
+    #############
+    # Load data #
+    #############
+    if reload_previous:  # resume previous masking
+        print('Resuming previous masking')
+        file_path = filedialog.askopenfilename(initialdir=homedir, title="Select data file",
+                                               filetypes=[("NPZ", "*.npz")])
+        data, _ = util.load_file(file_path)
+        nz, ny, nx = np.shape(data)
 
-    ####################
-    # Initialize setup #
-    ####################
-    setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
-                                   direct_beam=direct_beam, custom_scan=custom_scan, custom_images=custom_images,
-                                   custom_monitor=custom_monitor, custom_motors=custom_motors)
-
-    ############################################
-    # Initialize values for callback functions #
-    ############################################
-    detector_plane = False
-    flag_mask = False
-    flag_aliens = False
-    plt.rcParams["keymap.quit"] = ["ctrl+w", "cmd+w"]  # this one to avoid that q closes window (matplotlib default)
-
-    ############################
-    # start looping over scans #
-    ############################
-    root = tk.Tk()
-    root.withdraw()
-
-    for scan_nb in range(len(scans)):
-        plt.ion()
-
-        comment = user_comment  # initialize comment
-
-        if setup.beamline != 'P10':
-            homedir = root_folder + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
-            detector.datadir = homedir + "data/"
-            specfile = specfile_name
-        else:
-            specfile = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb])
-            homedir = root_folder + specfile + '/'
-            if custom_scan:
-                detector.datadir = root_folder + sample_name[scan_nb]
-                detector.template_imagefile = template_imagefile
-            else:
-                detector.datadir = homedir + 'e4m/'
-                imagefile = specfile + template_imagefile
-                detector.template_imagefile = imagefile
-
-        logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
-                                     root_folder=root_folder, filename=specfile)
-
-        print('\nScan', scans[scan_nb])
-        print('Sample name: ', sample_name[scan_nb])
-        print('Setup: ', setup.beamline)
-        print('Direct beam (VxH)', direct_beam)
-        print('Detector: ', detector.name)
-        print('Pixel number (VxH): ', detector.nb_pixel_y, detector.nb_pixel_x)
-        print('Detector ROI:', roi_detector)
-        print('Horizontal pixel size with binning: ', detector.pixelsize_x, 'm')
-        print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
-        print('Specfile: ', specfile)
-        print('Scan type: ', setup.rocking_angle)
-        print('Sample to detector distance: ', setup.distance, 'm')
-        print('Energy:', setup.energy, 'ev')
-
-        if not use_rawdata:
-            comment = comment + '_ortho'
-            savedir = homedir + "pynx/"
-            pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-            print('Output will interpolated in the orthogonal laboratory frame')
-            plot_title = ['QzQx', 'QyQx', 'QyQz']
-        else:
-            savedir = homedir + "pynxraw/"
-            pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-            print('Output will be non orthogonal, in the detector frame')
-            plot_title = ['YZ', 'XZ', 'XY']
-
+        # update savedir to save the data in the same directory as the reloaded data
+        savedir = os.path.dirname(file_path) + '/'
         detector.savedir = savedir
 
-        if normalize_method != 'skip':
-            comment = comment + '_norm'
+        file_path = filedialog.askopenfilename(initialdir=savedir, title="Select mask file",
+                                               filetypes=[("NPZ", "*.npz")])
+        mask, _ = util.load_file(file_path)
 
-        #############
-        # Load data #
-        #############
-        if reload_previous:  # resume previous masking
-            print('Resuming previous masking')
-            file_path = filedialog.askopenfilename(initialdir=homedir, title="Select data file",
-                                                   filetypes=[("NPZ", "*.npz")])
-            data = np.load(file_path)
-            npz_key = data.files
-            data = data[npz_key[0]]
-            nz, ny, nx = np.shape(data)
+        if save_previous:
+            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous', data=data)
+            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx_previous', mask=mask)
 
-            # update savedir to save the data in the same directory as the reloaded data
-            savedir = os.path.dirname(file_path) + '/'
-            detector.savedir = savedir
-
-            file_path = filedialog.askopenfilename(initialdir=savedir, title="Select mask file",
-                                                   filetypes=[("NPZ", "*.npz")])
-            mask = np.load(file_path)
-            npz_key = mask.files
-            mask = mask[npz_key[0]]
-
-            if save_previous:
-                np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous', data=data)
-                np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx_previous', mask=mask)
-
-            if reload_orthogonal:  # the data is gridded in the orthonormal laboratory frame
-                use_rawdata = False
-                try:
-                    file_path = filedialog.askopenfilename(initialdir=homedir, title="Select q values",
-                                                           filetypes=[("NPZ", "*.npz")])
-                    reload_qvalues = np.load(file_path)
-                    q_values = [reload_qvalues['qx'], reload_qvalues['qz'], reload_qvalues['qy']]
-                except FileNotFoundError:
-                    q_values = []
-
-                normalize_method = 'skip'  # we assume that normalization was already performed
-                monitor = []  # we assume that normalization was already performed
-                min_range = (nx / 2) * np.sqrt(2)  # used when fit_datarange is True, keep the full array because
-                # we do not know the position of the origin of reciprocal space
-                frames_logical = np.ones(nz)
-
-                # bin data and mask if needed
-                if (detector.binning[0] != 1) or (detector.binning[1] != 1) or (detector.binning[2] != 1):
-                    print('Binning the reloaded orthogonal data by', detector.binning)
-                    data = pu.bin_data(data, binning=detector.binning, debugging=False)
-                    mask = pu.bin_data(mask, binning=detector.binning, debugging=False)
-                    mask[np.nonzero(mask)] = 1
-                    if len(q_values) != 0:
-                        qx = q_values[0]
-                        qz = q_values[1]
-                        qy = q_values[2]
-                        numz, numy, numx = len(qx), len(qz), len(qy)
-                        qx = qx[:numz - (numz % binning[2]):binning[2]]  # along z downstream, same binning as along x
-                        qz = qz[:numy - (numy % binning[1]):binning[1]]  # along y vertical, the axis of rotation
-                        qy = qy[:numx - (numx % binning[2]):binning[2]]  # along x outboard
-                        del numz, numy, numx
-            else:  # the data is in the detector frame
-                if photon_filter == 'loading':
-                    data, mask, frames_logical, monitor = pru.reload_cdi_data(logfile=logfile,
-                                                                              scan_number=scans[scan_nb],
-                                                                              data=data, mask=mask, detector=detector,
-                                                                              setup=setup, debugging=debug,
-                                                                              normalize_method=normalize_method,
-                                                                              photon_threshold=photon_threshold)
-                else:  # photon_filter = 'postprocessing'
-                    data, mask, frames_logical, monitor = pru.reload_cdi_data(logfile=logfile,
-                                                                              scan_number=scans[scan_nb],
-                                                                              data=data, mask=mask, detector=detector,
-                                                                              setup=setup, debugging=debug,
-                                                                              normalize_method=normalize_method)
-
-        else:  # new masking process
-            reload_orthogonal = False  # the data is in the detector plane
-            flatfield = pru.load_flatfield(flatfield_file)
-            hotpix_array = pru.load_hotpixels(hotpixels_file)
-            background = pru.load_background(background_file)
-
-            if photon_filter == 'loading':
-                data, mask, frames_logical, monitor = pru.load_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
-                                                                        detector=detector, setup=setup,
-                                                                        flatfield=flatfield,
-                                                                        hotpixels=hotpix_array, background=background,
-                                                                        normalize=normalize_method, debugging=debug,
-                                                                        photon_threshold=photon_threshold)
-            else:  # photon_filter = 'postprocessing'
-                data, mask, frames_logical, monitor = pru.load_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
-                                                                        detector=detector, setup=setup,
-                                                                        flatfield=flatfield,
-                                                                        hotpixels=hotpix_array, background=background,
-                                                                        normalize=normalize_method, debugging=debug)
-        nz, ny, nx = np.shape(data)
-        print('\nInput data shape:', nz, ny, nx)
-
-        if not reload_orthogonal:
-            dirbeam = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
-            # updated horizontal direct beam
-            min_range = min(dirbeam, nx - dirbeam)  # crop at the maximum symmetrical range
-            print('\nMaximum symmetrical range with defined data along'
-                  ' detector horizontal direction: 2*{0} pixels'.format(min_range))
-            assert min_range > 0, 'error in calculating min_range, check the direct beam position'
-
-            if save_rawdata:
-                np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack', data=data)
-                if save_to_mat:
-                    # save to .mat, the new order is x y z (outboard, vertical up, downstream)
-                    savemat(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack.mat',
-                            {'data': np.moveaxis(data, [0, 1, 2], [-1, -2, -3])})
-
-            if flag_interact:
-                # masking step in the detector plane
-                plt.ioff()
-                width = 0
-                max_colorbar = 5
-                detector_plane = True
-                flag_aliens = False
-                flag_mask = True
-                flag_pause = False  # press x to pause for pan/zoom
-                previous_axis = None
-                xy = []  # list of points for mask
-
-                fig_mask = plt.figure(figsize=(12, 9))
-                ax0 = fig_mask.add_subplot(121)
-                ax1 = fig_mask.add_subplot(322)
-                ax2 = fig_mask.add_subplot(324)
-                fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
-                original_data = np.copy(data)
-                updated_mask = np.zeros((nz, ny, nx))
-                data[mask == 1] = 0  # will appear as grey in the log plot (nan)
-                ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
-                ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
-                ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
-                ax0.axis('scaled')
-                ax1.axis('scaled')
-                ax2.axis('scaled')
-                ax0.set_title("XY")
-                ax1.set_title("XZ")
-                ax2.set_title("YZ")
-                fig_mask.text(0.60, 0.27, "click to select the vertices of a polygon mask", size=10)
-                fig_mask.text(0.60, 0.24, "x to pause/resume polygon masking for pan/zoom", size=10)
-                fig_mask.text(0.60, 0.21, "p plot mask ; r reset current points", size=10)
-                fig_mask.text(0.60, 0.18, "m square mask ; b unmask ; right darker ; left brighter", size=10)
-                fig_mask.text(0.60, 0.15, "up larger masking box ; down smaller masking box", size=10)
-                fig_mask.text(0.60, 0.12, "a restart ; q quit", size=10)
-                info_text = fig_mask.text(0.60, 0.05, "masking enabled", size=16)
-                plt.tight_layout()
-                plt.connect('key_press_event', press_key)
-                plt.connect('button_press_event', on_click)
-                fig_mask.set_facecolor(background_plot)
-                plt.show()
-
-                mask[np.nonzero(updated_mask)] = 1
-                data = original_data
-                detector_plane = False
-                del fig_mask, original_data, updated_mask
-                gc.collect()
-
-            if use_rawdata:
+        if reload_orthogonal:  # the data is gridded in the orthonormal laboratory frame
+            use_rawdata = False
+            try:
+                file_path = filedialog.askopenfilename(initialdir=homedir, title="Select q values",
+                                                       filetypes=[("NPZ", "*.npz")])
+                reload_qvalues = np.load(file_path)
+                q_values = [reload_qvalues['qx'], reload_qvalues['qz'], reload_qvalues['qy']]
+            except FileNotFoundError:
                 q_values = []
-                binning_comment = '_' + str(previous_binning[0] * binning[0]) + '_'\
-                                  + str(previous_binning[1] * binning[1]) + '_' + str(previous_binning[2] * binning[2])
-                # binning along axis 0 is done after masking
-                data[np.nonzero(mask)] = 0
-            else:  # the data will be gridded, binning[0] is already set to 1
-                # sample rotation around the vertical direction at P10:
-                # the effective binning in axis 0 is previous_binning[2]*binning[2]
-                binning_comment = '_' + str(previous_binning[2] * binning[2]) + '_'\
-                                  + str(previous_binning[1] * binning[1]) + '_' + str(previous_binning[2] * binning[2])
 
-                tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
-                tmp_data[mask == 1] = 0
-                fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                                title='Data before gridding\n', is_orthogonal=False,
-                                                reciprocal_space=True)
-                plt.savefig(savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' +
-                            str(ny) + '_' + str(nx) + binning_comment + '.png')
-                plt.close(fig)
-                del tmp_data
-                gc.collect()
+            normalize_method = 'skip'  # we assume that normalization was already performed
+            monitor = []  # we assume that normalization was already performed
+            min_range = (nx / 2) * np.sqrt(2)  # used when fit_datarange is True, keep the full array because
+            # we do not know the position of the origin of reciprocal space
+            frames_logical = np.ones(nz)
 
-                print('\nGridding the data in the orthonormal laboratory frame')
-                data, mask, q_values, frames_logical = \
-                    pru.grid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
-                                 frames_logical=frames_logical, correct_curvature=correct_curvature, debugging=debug)
+            # bin data and mask if needed
+            if (detector.binning[0] != 1) or (detector.binning[1] != 1) or (detector.binning[2] != 1):
+                print('Binning the reloaded orthogonal data by', detector.binning)
+                data = pu.bin_data(data, binning=detector.binning, debugging=False)
+                mask = pu.bin_data(mask, binning=detector.binning, debugging=False)
+                mask[np.nonzero(mask)] = 1
+                if len(q_values) != 0:
+                    qx = q_values[0]
+                    qz = q_values[1]
+                    qy = q_values[2]
+                    numz, numy, numx = len(qx), len(qz), len(qy)
+                    qx = qx[:numz - (numz % binning[2]):binning[2]]  # along z downstream, same binning as along x
+                    qz = qz[:numy - (numy % binning[1]):binning[1]]  # along y vertical, the axis of rotation
+                    qy = qy[:numx - (numx % binning[2]):binning[2]]  # along x outboard
+                    del numz, numy, numx
+        else:  # the data is in the detector frame
+            if photon_filter == 'loading':
+                data, mask, frames_logical, monitor = pru.reload_cdi_data(logfile=logfile,
+                                                                          scan_number=scans[scan_nb],
+                                                                          data=data, mask=mask, detector=detector,
+                                                                          setup=setup, debugging=debug,
+                                                                          normalize_method=normalize_method,
+                                                                          photon_threshold=photon_threshold)
+            else:  # photon_filter = 'postprocessing'
+                data, mask, frames_logical, monitor = pru.reload_cdi_data(logfile=logfile,
+                                                                          scan_number=scans[scan_nb],
+                                                                          data=data, mask=mask, detector=detector,
+                                                                          setup=setup, debugging=debug,
+                                                                          normalize_method=normalize_method)
 
-                # plot normalization by incident monitor for the gridded data
-                if normalize_method != 'skip':
-                    plt.ion()
-                    tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
-                    tmp_data[tmp_data < 5] = 0  # threshold the background
-                    tmp_data[mask == 1] = 0
-                    fig = gu.combined_plots(tuple_array=(monitor, tmp_data), tuple_sum_frames=(False, True),
-                                            tuple_sum_axis=(0, 1), tuple_width_v=None,
-                                            tuple_width_h=None, tuple_colorbar=(False, False),
-                                            tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
-                                            tuple_title=('monitor.min() / monitor',
-                                                         'Gridded normed data (threshold 5)\n'),
-                                            tuple_scale=('linear', 'log'), xlabel=('Frame number', "Q$_y$"),
-                                            ylabel=('Counts (a.u.)', "Q$_x$"), position=(323, 122),
-                                            is_orthogonal=not use_rawdata, reciprocal_space=True)
+    else:  # new masking process
+        reload_orthogonal = False  # the data is in the detector plane
+        flatfield = pru.load_flatfield(flatfield_file)
+        hotpix_array = pru.load_hotpixels(hotpixels_file)
+        background = pru.load_background(background_file)
 
-                    fig.savefig(savedir + 'monitor_gridded_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) +
-                                '_' + str(nx) + binning_comment + '.png')
-                    if flag_interact:
-                        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-                        cid = plt.connect('close_event', close_event)
-                        fig.waitforbuttonpress()
-                        plt.disconnect(cid)
-                    plt.close(fig)
-                    plt.ioff()
-                    del tmp_data
-                    gc.collect()
+        if photon_filter == 'loading':
+            data, mask, frames_logical, monitor = pru.load_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                    detector=detector, setup=setup,
+                                                                    flatfield=flatfield,
+                                                                    hotpixels=hotpix_array, background=background,
+                                                                    normalize=normalize_method, debugging=debug,
+                                                                    photon_threshold=photon_threshold)
+        else:  # photon_filter = 'postprocessing'
+            data, mask, frames_logical, monitor = pru.load_cdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                                                                    detector=detector, setup=setup,
+                                                                    flatfield=flatfield,
+                                                                    hotpixels=hotpix_array, background=background,
+                                                                    normalize=normalize_method, debugging=debug)
+    nz, ny, nx = np.shape(data)
+    print('\nInput data shape:', nz, ny, nx)
 
-        else:  # reload_orthogonal=True, the data is already gridded, binning was realized along each axis
-            binning_comment = '_' + str(previous_binning[0] * binning[0]) + '_' +\
-                              str(previous_binning[1] * binning[1]) + '_' + str(previous_binning[2] * binning[2])
+    if not reload_orthogonal:
+        dirbeam = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
+        # updated horizontal direct beam
+        min_range = min(dirbeam, nx - dirbeam)  # crop at the maximum symmetrical range
+        print('\nMaximum symmetrical range with defined data along'
+              ' detector horizontal direction: 2*{0} pixels'.format(min_range))
+        assert min_range > 0, 'error in calculating min_range, check the direct beam position'
 
-        nz, ny, nx = np.shape(data)
-        plt.ioff()
-
-        ##########################################
-        # optional masking of zero photon events #
-        ##########################################
-        if mask_zero_event:
-            # mask points when there is no intensity along the whole rocking curve - probably dead pixels
-            temp_mask = np.zeros((ny, nx))
-            temp_mask[np.sum(data, axis=0) == 0] = 1
-            mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nz, axis=0) == 1] = 1
-            del temp_mask
-
-        #####################################
-        # save data and mask before masking #
-        #####################################
-        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                        title='Data before aliens removal\n',
-                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
-        if debug:
-            plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                        str(nx) + binning_comment + '.png')
+        if save_rawdata:
+            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack', data=data)
+            if save_to_mat:
+                # save to .mat, the new order is x y z (outboard, vertical up, downstream)
+                savemat(savedir + 'S' + str(scans[scan_nb]) + '_data_before_masking_stack.mat',
+                        {'data': np.moveaxis(data, [0, 1, 2], [-1, -2, -3])})
 
         if flag_interact:
-            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
-        plt.close(fig)
-
-        fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                        vmax=(nz, ny, nx), title='Mask before aliens removal\n',
-                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
-        if debug:
-            plt.savefig(savedir + 'mask_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                        str(nx) + binning_comment + '.png')
-
-        if flag_interact:
-            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
-        plt.close(fig)
-
-        ###############################################
-        # save the orthogonalized diffraction pattern #
-        ###############################################
-        if not use_rawdata and len(q_values) != 0:
-            qx = q_values[0]  # downstream
-            qz = q_values[1]  # vertical up
-            qy = q_values[2]  # outboard
-
-            if save_to_vti:
-                nqx, nqz, nqy = data.shape  # in nexus z downstream, y vertical / in q z vertical, x downstream
-                print('\ndqx, dqy, dqz = ', qx[1] - qx[0], qy[1] - qy[0], qz[1] - qz[0])
-                # in nexus z downstream, y vertical / in q z vertical, x downstream
-                qx0 = qx.min()
-                dqx = (qx.max() - qx0) / nqx
-                qy0 = qy.min()
-                dqy = (qy.max() - qy0) / nqy
-                qz0 = qz.min()
-                dqz = (qz.max() - qz0) / nqz
-
-                gu.save_to_vti(filename=os.path.join(savedir, "S"+str(scans[scan_nb])+"_ortho_int"+comment+".vti"),
-                               voxel_size=(dqx, dqz, dqy), tuple_array=data, tuple_fieldnames='int',
-                               origin=(qx0, qz0, qy0))
-
-        if flag_interact:
+            # masking step in the detector plane
             plt.ioff()
-            #############################################
-            # remove aliens
-            #############################################
-            nz, ny, nx = np.shape(data)
-            width = 5
-            max_colorbar = 5
-            flag_mask = False
-            flag_aliens = True
-
-            fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
-            fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
-            original_data = np.copy(data)
-            original_mask = np.copy(mask)
-            frame_index = [0, 0, 0]
-            ax0.imshow(data[frame_index[0], :, :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
-            ax1.imshow(data[:, frame_index[1], :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
-            ax2.imshow(data[:, :, frame_index[2]], vmin=0, vmax=max_colorbar, cmap=my_cmap)
-            ax3.set_visible(False)
-            ax0.axis('scaled')
-            ax1.axis('scaled')
-            ax2.axis('scaled')
-            if not use_rawdata:
-                ax0.invert_yaxis()  # detector Y is vertical down
-            ax0.set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nz))
-            ax1.set_title("XZ - Frame " + str(frame_index[1] + 1) + "/" + str(ny))
-            ax2.set_title("YZ - Frame " + str(frame_index[2] + 1) + "/" + str(nx))
-            fig_mask.text(0.60, 0.30, "m mask ; b unmask ; u next frame ; d previous frame", size=12)
-            fig_mask.text(0.60, 0.25, "up larger ; down smaller ; right darker ; left brighter", size=12)
-            fig_mask.text(0.60, 0.20, "p plot full image ; q quit", size=12)
-            plt.tight_layout()
-            plt.connect('key_press_event', press_key)
-            fig_mask.set_facecolor(background_plot)
-            plt.show()
-            del fig_mask, original_data, original_mask
-            gc.collect()
-
-            mask[np.nonzero(mask)] = 1
-
-            fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                            title='Data after aliens removal\n',
-                                            is_orthogonal=not use_rawdata, reciprocal_space=True)
-
-            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
-            plt.close(fig)
-
-            fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                            vmax=(nz, ny, nx), title='Mask after aliens removal\n',
-                                            is_orthogonal=not use_rawdata, reciprocal_space=True)
-
-            fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-            cid = plt.connect('close_event', close_event)
-            fig.waitforbuttonpress()
-            plt.disconnect(cid)
-            plt.close(fig)
-
-            #############################################
-            # define mask
-            #############################################
             width = 0
             max_colorbar = 5
+            detector_plane = True
             flag_aliens = False
             flag_mask = True
             flag_pause = False  # press x to pause for pan/zoom
             previous_axis = None
             xy = []  # list of points for mask
 
-            fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
+            fig_mask = plt.figure(figsize=(12, 9))
+            ax0 = fig_mask.add_subplot(121)
+            ax1 = fig_mask.add_subplot(322)
+            ax2 = fig_mask.add_subplot(324)
             fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
             original_data = np.copy(data)
             updated_mask = np.zeros((nz, ny, nx))
@@ -814,21 +521,18 @@ def main(parameters):
             ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
             ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
             ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
-            ax3.set_visible(False)
             ax0.axis('scaled')
             ax1.axis('scaled')
             ax2.axis('scaled')
-            if not use_rawdata:
-                ax0.invert_yaxis()  # detector Y is vertical down
             ax0.set_title("XY")
             ax1.set_title("XZ")
             ax2.set_title("YZ")
-            fig_mask.text(0.60, 0.45, "click to select the vertices of a polygon mask", size=12)
-            fig_mask.text(0.60, 0.40, "then p to apply and see the result", size=12)
-            fig_mask.text(0.60, 0.30, "x to pause/resume masking for pan/zoom", size=12)
-            fig_mask.text(0.60, 0.25, "up larger masking box ; down smaller masking box", size=12)
-            fig_mask.text(0.60, 0.20, "m mask ; b unmask ; right darker ; left brighter", size=12)
-            fig_mask.text(0.60, 0.15, "p plot full masked data ; a restart ; q quit", size=12)
+            fig_mask.text(0.60, 0.27, "click to select the vertices of a polygon mask", size=10)
+            fig_mask.text(0.60, 0.24, "x to pause/resume polygon masking for pan/zoom", size=10)
+            fig_mask.text(0.60, 0.21, "p plot mask ; r reset current points", size=10)
+            fig_mask.text(0.60, 0.18, "m square mask ; b unmask ; right darker ; left brighter", size=10)
+            fig_mask.text(0.60, 0.15, "up larger masking box ; down smaller masking box", size=10)
+            fig_mask.text(0.60, 0.12, "a restart ; q quit", size=10)
             info_text = fig_mask.text(0.60, 0.05, "masking enabled", size=16)
             plt.tight_layout()
             plt.connect('key_press_event', press_key)
@@ -838,180 +542,414 @@ def main(parameters):
 
             mask[np.nonzero(updated_mask)] = 1
             data = original_data
-            del fig_mask, flag_pause, flag_mask, original_data, updated_mask
+            detector_plane = False
+            del fig_mask, original_data, updated_mask
             gc.collect()
 
-        mask[np.nonzero(mask)] = 1
-        data[mask == 1] = 0
+        if use_rawdata:
+            q_values = []
+            binning_comment = '_' + str(previous_binning[0] * binning[0]) + '_'\
+                              + str(previous_binning[1] * binning[1]) + '_' + str(previous_binning[2] * binning[2])
+            # binning along axis 0 is done after masking
+            data[np.nonzero(mask)] = 0
+        else:  # the data will be gridded, binning[0] is already set to 1
+            # sample rotation around the vertical direction at P10:
+            # the effective binning in axis 0 is previous_binning[2]*binning[2]
+            binning_comment = '_' + str(previous_binning[2] * binning[2]) + '_'\
+                              + str(previous_binning[1] * binning[1]) + '_' + str(previous_binning[2] * binning[2])
 
-        ###############################################
-        # mask or median filter isolated empty pixels #
-        ###############################################
-        if flag_medianfilter == 'mask_isolated' or flag_medianfilter == 'interp_isolated':
-            print("\nFiltering isolated pixels")
-            nb_pix = 0
-            for idx in range(nz):  # filter only frames whith data (not padded)
-                data[idx, :, :], numb_pix, mask[idx, :, :] = \
-                    pru.mean_filter(data=data[idx, :, :], nb_neighbours=medfilt_order, mask=mask[idx, :, :],
-                                    interpolate=flag_medianfilter, min_count=3, debugging=debug)
-                nb_pix = nb_pix + numb_pix
-                print("Processed image nb: ", idx)
-            if flag_medianfilter == 'mask_isolated':
-                print("\nTotal number of masked isolated pixels: ", nb_pix)
-            if flag_medianfilter == 'interp_isolated':
-                print("\nTotal number of interpolated isolated pixels: ", nb_pix)
-
-        elif flag_medianfilter == 'median':  # apply median filter
-            for idx in range(nz):  # filter only frames whith data (not padded)
-                data[idx, :, :] = scipy.signal.medfilt2d(data[idx, :, :], [3, 3])
-            print("\nApplying median filtering")
-        else:
-            print("\nSkipping median filtering")
-
-        ##########################
-        # apply photon threshold #
-        ##########################
-        if photon_threshold != 0:
-            mask[data < photon_threshold] = 1
-            data[data < photon_threshold] = 0
-            print("\nApplying photon threshold < ", photon_threshold)
-
-        ########################################
-        # check for nans / inf, convert to int #
-        ########################################
-        plt.ion()
-        nz, ny, nx = np.shape(data)
-        print('\nData size after masking:', nz, ny, nx)
-
-        # check for Nan
-        mask[np.isnan(data)] = 1
-        data[np.isnan(data)] = 0
-        mask[np.isnan(mask)] = 1
-        # check for Inf
-        mask[np.isinf(data)] = 1
-        data[np.isinf(data)] = 0
-        mask[np.isinf(mask)] = 1
-
-        data[mask == 1] = 0
-        if save_asint:
-            data = data.astype(int)
-
-        ####################
-        # debugging plots  #
-        ####################
-        if debug:
-            z0, y0, x0 = center_of_mass(data)
-            fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
-                                            title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
-                                            is_orthogonal=not use_rawdata, reciprocal_space=True)
-            plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                        str(nx) + binning_comment + '.png')
-            if not flag_interact:
-                plt.close(fig)
-
-            fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                            title='Masked data', is_orthogonal=not use_rawdata, reciprocal_space=True)
-            plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                        str(nx) + binning_comment + '.png')
-            if not flag_interact:
-                plt.close(fig)
-
-            fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                            vmax=(nz, ny, nx), title='Mask', is_orthogonal=not use_rawdata,
+            tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
+            tmp_data[mask == 1] = 0
+            fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                            title='Data before gridding\n', is_orthogonal=False,
                                             reciprocal_space=True)
-            plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
-                        str(nx) + binning_comment + '.png')
-            if not flag_interact:
+            plt.savefig(savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' +
+                        str(ny) + '_' + str(nx) + binning_comment + '.png')
+            plt.close(fig)
+            del tmp_data
+            gc.collect()
+
+            print('\nGridding the data in the orthonormal laboratory frame')
+            data, mask, q_values, frames_logical = \
+                pru.grid_cdi(data=data, mask=mask, logfile=logfile, detector=detector, setup=setup,
+                             frames_logical=frames_logical, correct_curvature=correct_curvature, debugging=debug)
+
+            # plot normalization by incident monitor for the gridded data
+            if normalize_method != 'skip':
+                plt.ion()
+                tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
+                tmp_data[tmp_data < 5] = 0  # threshold the background
+                tmp_data[mask == 1] = 0
+                fig = gu.combined_plots(tuple_array=(monitor, tmp_data), tuple_sum_frames=(False, True),
+                                        tuple_sum_axis=(0, 1), tuple_width_v=None,
+                                        tuple_width_h=None, tuple_colorbar=(False, False),
+                                        tuple_vmin=(np.nan, 0), tuple_vmax=(np.nan, np.nan),
+                                        tuple_title=('monitor.min() / monitor',
+                                                     'Gridded normed data (threshold 5)\n'),
+                                        tuple_scale=('linear', 'log'), xlabel=('Frame number', "Q$_y$"),
+                                        ylabel=('Counts (a.u.)', "Q$_x$"), position=(323, 122),
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+
+                fig.savefig(savedir + 'monitor_gridded_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) +
+                            '_' + str(nx) + binning_comment + '.png')
+                if flag_interact:
+                    fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+                    cid = plt.connect('close_event', close_event)
+                    fig.waitforbuttonpress()
+                    plt.disconnect(cid)
                 plt.close(fig)
+                plt.ioff()
+                del tmp_data
+                gc.collect()
 
-        if not use_rawdata and fit_datarange:
-            ############################################################
-            # select the largest cubic array fitting inside data range #
-            ############################################################
-            # this is to avoid having large masked areas near the corner of the area
-            # which is a side effect of regridding the data from cylindrical coordinates
-            final_nxz = int(np.floor(min_range*2 / np.sqrt(2)))
-            if (final_nxz % 2) != 0:
-                final_nxz = final_nxz - 1  # we want the number of pixels to be even
-            data = data[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :,
-                        (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
-            mask = mask[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :,
-                        (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
-            print('\nData size after taking the largest data-defined area:', data.shape)
-            if len(q_values) != 0:
-                qx = qx[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along Z
-                qy = qy[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along X
-                # qz (along Y) keeps the same number of pixels
-            else:
-                print('fit_datarange: q values are not provided')
+    else:  # reload_orthogonal=True, the data is already gridded, binning was realized along each axis
+        binning_comment = '_' + str(previous_binning[0] * binning[0]) + '_' +\
+                          str(previous_binning[1] * binning[1]) + '_' + str(previous_binning[2] * binning[2])
 
-        ###############################################################################################################
-        # only for non gridded data, bin the stacking axis, the detector plane was already binned during data loading #
-        ###############################################################################################################
-        if detector.binning[0] != 1 and not reload_orthogonal:  # for data to be gridded, binning[0] is set to 1
-            data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
-            mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
-            mask[np.nonzero(mask)] = 1
+    nz, ny, nx = np.shape(data)
+    plt.ioff()
 
-        nz, ny, nx = data.shape
-        print('\nData size after binning the stacking dimension:', data.shape)
-        comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx) + binning_comment
+    ##########################################
+    # optional masking of zero photon events #
+    ##########################################
+    if mask_zero_event:
+        # mask points when there is no intensity along the whole rocking curve - probably dead pixels
+        temp_mask = np.zeros((ny, nx))
+        temp_mask[np.sum(data, axis=0) == 0] = 1
+        mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nz, axis=0) == 1] = 1
+        del temp_mask
 
-        ############################
-        # save final data and mask #
-        ############################
-        print('\nSaving directory:', savedir)
-        print('Data type before saving:', data.dtype)
-        print('Mask type before saving:', mask.dtype)
-        if not use_rawdata and len(q_values) != 0:
-            if save_to_npz:
-                np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment, qx=qx, qz=qz, qy=qy)
-            if save_to_mat:
-                savemat(savedir + 'S' + str(scans[scan_nb]) + '_qx.mat', {'qx': qx})
-                savemat(savedir + 'S' + str(scans[scan_nb]) + '_qy.mat', {'qy': qy})
-                savemat(savedir + 'S' + str(scans[scan_nb]) + '_qz.mat', {'qz': qz})
-            fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=True, title='Final data',
-                                          levels=np.linspace(0, int(np.log10(data.max(initial=None))), 150,
-                                                             endpoint=False),
-                                          plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-            fig.savefig(detector.savedir + 'final_reciprocal_space_S' + str(scans[scan_nb]) + comment + '.png')
+    #####################################
+    # save data and mask before masking #
+    #####################################
+    fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Data before aliens removal\n',
+                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
+    if debug:
+        plt.savefig(savedir + 'data_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
+
+    if flag_interact:
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        cid = plt.connect('close_event', close_event)
+        fig.waitforbuttonpress()
+        plt.disconnect(cid)
+    plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                    vmax=(nz, ny, nx), title='Mask before aliens removal\n',
+                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
+    if debug:
+        plt.savefig(savedir + 'mask_before_masking_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
+
+    if flag_interact:
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        cid = plt.connect('close_event', close_event)
+        fig.waitforbuttonpress()
+        plt.disconnect(cid)
+    plt.close(fig)
+
+    ###############################################
+    # save the orthogonalized diffraction pattern #
+    ###############################################
+    if not use_rawdata and len(q_values) != 0:
+        qx = q_values[0]  # downstream
+        qz = q_values[1]  # vertical up
+        qy = q_values[2]  # outboard
+
+        if save_to_vti:
+            nqx, nqz, nqy = data.shape  # in nexus z downstream, y vertical / in q z vertical, x downstream
+            print('\ndqx, dqy, dqz = ', qx[1] - qx[0], qy[1] - qy[0], qz[1] - qz[0])
+            # in nexus z downstream, y vertical / in q z vertical, x downstream
+            qx0 = qx.min()
+            dqx = (qx.max() - qx0) / nqx
+            qy0 = qy.min()
+            dqy = (qy.max() - qy0) / nqy
+            qz0 = qz.min()
+            dqz = (qz.max() - qz0) / nqz
+
+            gu.save_to_vti(filename=os.path.join(savedir, "S"+str(scans[scan_nb])+"_ortho_int"+comment+".vti"),
+                           voxel_size=(dqx, dqz, dqy), tuple_array=data, tuple_fieldnames='int',
+                           origin=(qx0, qz0, qy0))
+
+    if flag_interact:
+        plt.ioff()
+        #############################################
+        # remove aliens
+        #############################################
+        nz, ny, nx = np.shape(data)
+        width = 5
+        max_colorbar = 5
+        flag_mask = False
+        flag_aliens = True
+
+        fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
+        fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
+        original_data = np.copy(data)
+        original_mask = np.copy(mask)
+        frame_index = [0, 0, 0]
+        ax0.imshow(data[frame_index[0], :, :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax1.imshow(data[:, frame_index[1], :], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax2.imshow(data[:, :, frame_index[2]], vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax3.set_visible(False)
+        ax0.axis('scaled')
+        ax1.axis('scaled')
+        ax2.axis('scaled')
+        if not use_rawdata:
+            ax0.invert_yaxis()  # detector Y is vertical down
+        ax0.set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nz))
+        ax1.set_title("XZ - Frame " + str(frame_index[1] + 1) + "/" + str(ny))
+        ax2.set_title("YZ - Frame " + str(frame_index[2] + 1) + "/" + str(nx))
+        fig_mask.text(0.60, 0.30, "m mask ; b unmask ; u next frame ; d previous frame", size=12)
+        fig_mask.text(0.60, 0.25, "up larger ; down smaller ; right darker ; left brighter", size=12)
+        fig_mask.text(0.60, 0.20, "p plot full image ; q quit", size=12)
+        plt.tight_layout()
+        plt.connect('key_press_event', press_key)
+        fig_mask.set_facecolor(background_plot)
+        plt.show()
+        del fig_mask, original_data, original_mask
+        gc.collect()
+
+        mask[np.nonzero(mask)] = 1
+
+        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                        title='Data after aliens removal\n',
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        cid = plt.connect('close_event', close_event)
+        fig.waitforbuttonpress()
+        plt.disconnect(cid)
+        plt.close(fig)
+
+        fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                        vmax=(nz, ny, nx), title='Mask after aliens removal\n',
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+
+        fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+        cid = plt.connect('close_event', close_event)
+        fig.waitforbuttonpress()
+        plt.disconnect(cid)
+        plt.close(fig)
+
+        #############################################
+        # define mask
+        #############################################
+        width = 0
+        max_colorbar = 5
+        flag_aliens = False
+        flag_mask = True
+        flag_pause = False  # press x to pause for pan/zoom
+        previous_axis = None
+        xy = []  # list of points for mask
+
+        fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
+        fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
+        original_data = np.copy(data)
+        updated_mask = np.zeros((nz, ny, nx))
+        data[mask == 1] = 0  # will appear as grey in the log plot (nan)
+        ax0.imshow(np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax1.imshow(np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax2.imshow(np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap)
+        ax3.set_visible(False)
+        ax0.axis('scaled')
+        ax1.axis('scaled')
+        ax2.axis('scaled')
+        if not use_rawdata:
+            ax0.invert_yaxis()  # detector Y is vertical down
+        ax0.set_title("XY")
+        ax1.set_title("XZ")
+        ax2.set_title("YZ")
+        fig_mask.text(0.60, 0.45, "click to select the vertices of a polygon mask", size=12)
+        fig_mask.text(0.60, 0.40, "then p to apply and see the result", size=12)
+        fig_mask.text(0.60, 0.30, "x to pause/resume masking for pan/zoom", size=12)
+        fig_mask.text(0.60, 0.25, "up larger masking box ; down smaller masking box", size=12)
+        fig_mask.text(0.60, 0.20, "m mask ; b unmask ; right darker ; left brighter", size=12)
+        fig_mask.text(0.60, 0.15, "p plot full masked data ; a restart ; q quit", size=12)
+        info_text = fig_mask.text(0.60, 0.05, "masking enabled", size=16)
+        plt.tight_layout()
+        plt.connect('key_press_event', press_key)
+        plt.connect('button_press_event', on_click)
+        fig_mask.set_facecolor(background_plot)
+        plt.show()
+
+        mask[np.nonzero(updated_mask)] = 1
+        data = original_data
+        del fig_mask, flag_pause, flag_mask, original_data, updated_mask
+        gc.collect()
+
+    mask[np.nonzero(mask)] = 1
+    data[mask == 1] = 0
+
+    ###############################################
+    # mask or median filter isolated empty pixels #
+    ###############################################
+    if flag_medianfilter == 'mask_isolated' or flag_medianfilter == 'interp_isolated':
+        print("\nFiltering isolated pixels")
+        nb_pix = 0
+        for idx in range(nz):  # filter only frames whith data (not padded)
+            data[idx, :, :], numb_pix, mask[idx, :, :] = \
+                pru.mean_filter(data=data[idx, :, :], nb_neighbours=medfilt_order, mask=mask[idx, :, :],
+                                interpolate=flag_medianfilter, min_count=3, debugging=debug)
+            nb_pix = nb_pix + numb_pix
+            print("Processed image nb: ", idx)
+        if flag_medianfilter == 'mask_isolated':
+            print("\nTotal number of masked isolated pixels: ", nb_pix)
+        if flag_medianfilter == 'interp_isolated':
+            print("\nTotal number of interpolated isolated pixels: ", nb_pix)
+
+    elif flag_medianfilter == 'median':  # apply median filter
+        for idx in range(nz):  # filter only frames whith data (not padded)
+            data[idx, :, :] = scipy.signal.medfilt2d(data[idx, :, :], [3, 3])
+        print("\nApplying median filtering")
+    else:
+        print("\nSkipping median filtering")
+
+    ##########################
+    # apply photon threshold #
+    ##########################
+    if photon_threshold != 0:
+        mask[data < photon_threshold] = 1
+        data[data < photon_threshold] = 0
+        print("\nApplying photon threshold < ", photon_threshold)
+
+    ########################################
+    # check for nans / inf, convert to int #
+    ########################################
+    plt.ion()
+    nz, ny, nx = np.shape(data)
+    print('\nData size after masking:', nz, ny, nx)
+
+    # check for Nan
+    mask[np.isnan(data)] = 1
+    data[np.isnan(data)] = 0
+    mask[np.isnan(mask)] = 1
+    # check for Inf
+    mask[np.isinf(data)] = 1
+    data[np.isinf(data)] = 0
+    mask[np.isinf(mask)] = 1
+
+    data[mask == 1] = 0
+    if save_asint:
+        data = data.astype(int)
+
+    ####################
+    # debugging plots  #
+    ####################
+    if debug:
+        z0, y0, x0 = center_of_mass(data)
+        fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                                        title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
+                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
+        plt.savefig(savedir + 'middle_frame_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
+        if not flag_interact:
             plt.close(fig)
 
-        if save_to_npz:
-            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
-            np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
-
-        if save_to_mat:
-            # save to .mat, the new order is x y z (outboard, vertical up, downstream)
-            savemat(savedir + 'S' + str(scans[scan_nb]) + '_data.mat',
-                    {'data': np.moveaxis(data.astype(np.float32), [0, 1, 2], [-1, -2, -3])})
-            savemat(savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
-                    {'data': np.moveaxis(mask.astype(np.int8), [0, 1, 2], [-1, -2, -3])})
-
-        ############################
-        # plot final data and mask #
-        ############################
-        data[np.nonzero(mask)] = 0
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
-                                        title='Final data', is_orthogonal=not use_rawdata,
-                                        reciprocal_space=True)
-        plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
+                                        title='Masked data', is_orthogonal=not use_rawdata, reciprocal_space=True)
+        plt.savefig(savedir + 'sum_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
         if not flag_interact:
             plt.close(fig)
 
         fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
-                                        vmax=(nz, ny, nx), title='Final mask',
-                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
-        plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
+                                        vmax=(nz, ny, nx), title='Mask', is_orthogonal=not use_rawdata,
+                                        reciprocal_space=True)
+        plt.savefig(savedir + 'mask_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+                    str(nx) + binning_comment + '.png')
         if not flag_interact:
             plt.close(fig)
 
-        del data, mask
-        gc.collect()
-    print('\nEnd of script')
-    plt.ioff()
-    plt.show()
+    if not use_rawdata and fit_datarange:
+        ############################################################
+        # select the largest cubic array fitting inside data range #
+        ############################################################
+        # this is to avoid having large masked areas near the corner of the area
+        # which is a side effect of regridding the data from cylindrical coordinates
+        final_nxz = int(np.floor(min_range*2 / np.sqrt(2)))
+        if (final_nxz % 2) != 0:
+            final_nxz = final_nxz - 1  # we want the number of pixels to be even
+        data = data[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :,
+                    (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
+        mask = mask[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz, :,
+                    (nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]
+        print('\nData size after taking the largest data-defined area:', data.shape)
+        if len(q_values) != 0:
+            qx = qx[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along Z
+            qy = qy[(nz-final_nxz)//2:(nz-final_nxz)//2 + final_nxz]  # along X
+            # qz (along Y) keeps the same number of pixels
+        else:
+            print('fit_datarange: q values are not provided')
 
+    ###############################################################################################################
+    # only for non gridded data, bin the stacking axis, the detector plane was already binned during data loading #
+    ###############################################################################################################
+    if detector.binning[0] != 1 and not reload_orthogonal:  # for data to be gridded, binning[0] is set to 1
+        data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
+        mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
+        mask[np.nonzero(mask)] = 1
 
-if __name__ == "__main__":
-    main(parameters=params)
+    nz, ny, nx = data.shape
+    print('\nData size after binning the stacking dimension:', data.shape)
+    comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx) + binning_comment
+
+    ############################
+    # save final data and mask #
+    ############################
+    print('\nSaving directory:', savedir)
+    print('Data type before saving:', data.dtype)
+    print('Mask type before saving:', mask.dtype)
+    if not use_rawdata and len(q_values) != 0:
+        if save_to_npz:
+            np.savez_compressed(savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment, qx=qx, qz=qz, qy=qy)
+        if save_to_mat:
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qx.mat', {'qx': qx})
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qy.mat', {'qy': qy})
+            savemat(savedir + 'S' + str(scans[scan_nb]) + '_qz.mat', {'qz': qz})
+        fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=True, title='Final data',
+                                      levels=np.linspace(0, int(np.log10(data.max(initial=None))), 150,
+                                                         endpoint=False),
+                                      plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+        fig.savefig(detector.savedir + 'final_reciprocal_space_S' + str(scans[scan_nb]) + comment + '.png')
+        plt.close(fig)
+
+    if save_to_npz:
+        np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
+        np.savez_compressed(savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
+
+    if save_to_mat:
+        # save to .mat, the new order is x y z (outboard, vertical up, downstream)
+        savemat(savedir + 'S' + str(scans[scan_nb]) + '_data.mat',
+                {'data': np.moveaxis(data.astype(np.float32), [0, 1, 2], [-1, -2, -3])})
+        savemat(savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
+                {'data': np.moveaxis(mask.astype(np.int8), [0, 1, 2], [-1, -2, -3])})
+
+    ############################
+    # plot final data and mask #
+    ############################
+    data[np.nonzero(mask)] = 0
+    fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Final data', is_orthogonal=not use_rawdata,
+                                    reciprocal_space=True)
+    plt.savefig(savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
+    if not flag_interact:
+        plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
+                                    vmax=(nz, ny, nx), title='Final mask',
+                                    is_orthogonal=not use_rawdata, reciprocal_space=True)
+    plt.savefig(savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
+    if not flag_interact:
+        plt.close(fig)
+
+    del data, mask
+    gc.collect()
+
+    if len(scans) > 1:
+        plt.close('all')
+
+print('\nEnd of script')
+plt.ioff()
+plt.show()

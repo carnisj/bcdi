@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import griddata
 import xrayutilities as xu
 import fabio
 import os
@@ -503,10 +504,16 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
 
     if centering == 'max':
         z0, y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
-        print("Max at (qx, qz, qy): ", z0, y0, x0)
+        if q_values:
+            print(f"Max at (qx, qz, qy): {qx[z0]:.5f}, {qz[y0]:.5f}, {qy[x0]:.5f}")
+        else:
+            print("Max at pixel (Z, Y, X): ", z0, y0, x0)
     elif centering == 'com':
         z0, y0, x0 = center_of_mass(data)
-        print("Center of mass at (qx, qz, qy): ", z0, y0, x0)
+        if q_values:
+            print(f"Center of mass at (qx, qz, qy): {qx[z0]:.5f}, {qz[y0]:.5f}, {qy[x0]:.5f}")
+        else:
+            print("Center of mass at pixel (Z, Y, X): ", z0, y0, x0)
     else:
         raise ValueError("Incorrect value for 'centering' parameter")
 
@@ -520,7 +527,7 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
         print("Peak intensity position after considering detector ROI and binning in detector plane: ", z0, y0, x0)
 
     iz0, iy0, ix0 = int(round(z0)), int(round(y0)), int(round(x0))
-    print('Data peak value = ', data[iz0, iy0, ix0])
+    print(f'Data peak value = {data[iz0, iy0, ix0]:.1f}')
 
     # Max symmetrical box around center of mass
     nbz, nby, nbx = np.shape(data)
@@ -1023,6 +1030,7 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     nby = int((detector.roi[1] - detector.roi[0]) / detector.binning[1])
     nbx = int((detector.roi[3] - detector.roi[2]) / detector.binning[2])
     pixelsize_x = detector.pixelsize_x * 1e9  # in nm, pixel size in the horizontal direction
+    pixelsize_y = detector.pixelsize_y * 1e9  # in nm, pixel size in the horizontal direction
     distance = setup.distance * 1e9  # in nm
     qz = np.zeros((nbz, nby, nbx))
     qy = np.zeros((nbz, nby, nbx))
@@ -1045,7 +1053,7 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
                                indexing='ij')
 
         two_theta = np.arctan(myx * pixelsize_x / distance)
-        alpha_f = np.arctan(np.divide(myy, np.sqrt((distance/pixelsize_x)**2 + np.power(myx, 2))))
+        alpha_f = np.arctan(np.divide(myy * pixelsize_y, np.sqrt(distance**2 + np.power(myx * pixelsize_x, 2))))
 
         qlab0 = 2 * np.pi / wavelength * (np.cos(alpha_f) * np.cos(two_theta) - kin[0])  # along z* downstream
         qlab1 = 2 * np.pi / wavelength * (np.sin(alpha_f) - kin[1])  # along y* vertical up
@@ -1180,14 +1188,20 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
                 mask = mask[0:data.shape[0], :, :]  # truncate the mask to have the correct size
                 numz = data.shape[0]
 
+        maxbins = []
+        for dim in (qx, qy, qz):
+            maxstep = max((abs(np.diff(dim, axis=j)).max() for j in range(3)))
+            maxbins.append(int(abs(dim.max() - dim.min()) / maxstep))
+        print(f'Maximum number of bins based on the sampling in q: {maxbins}')
+
         # only rectangular cuboidal voxels are supported in xrayutilities FuzzyGridder3D
-        # use the default width defined in FuzzyGridder3D
-        gridder = xu.FuzzyGridder3D(numz, numy, numx)
+        gridder = xu.FuzzyGridder3D(*maxbins)
+        #
         # define the width of data points (rectangular datapoints, xrayutilities use half of these values but there are
         # artefacts sometimes)
-        wx = (qx.max()-qx.min())/numz
-        wz = (qz.max()-qz.min())/numy
-        wy = (qy.max()-qy.min())/numx
+        wx = (qx.max()-qx.min()) / maxbins[0]
+        wz = (qz.max()-qz.min()) / maxbins[1]
+        wy = (qy.max()-qy.min()) / maxbins[2]
         # convert mask to rectangular grid in reciprocal space
         gridder(qx, qz, qy, mask, width=(wx, wz, wy))  # qx downstream, qz vertical up, qy outboard
         interp_mask = np.copy(gridder.data)
@@ -1338,7 +1352,7 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
 
             interp_mask[np.nonzero(interp_mask)] = 1
             interp_mask = interp_mask.astype(int)
-        else:  # interpolate in one shoot using a 3D RegularGridInterpolator
+        else:  # interpolate in one shot using a 3D RegularGridInterpolator
 
             # Calculate the coordinates of a cartesian 3D grid expressed in the cylindrical basis
             interp_angle, interp_height, interp_radius = cartesian2cylind(grid_shape=(numx, numy, numx),
@@ -1380,41 +1394,35 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
             interp_mask = interp_mask.astype(int)
 
     else:  # correction for Ewald sphere curvature
-        raise NotImplementedError('TODO: check Ewald sphere curvature correction, too slow')
+        # calculate exact q values for each voxel of the 3D dataset
+        old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
 
-        # TODO check Ewald sphere curvature correction
-        # qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
-        # qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
-        # qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
-        #
-        # new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
-        #
-        # from scipy.interpolate import griddata
-        # # calculate exact q values for each voxel of the 3D dataset
-        # old_qx, old_qz, old_qy = ewald_curvature_saxs(cdi_angle=cdi_angle, detector=detector, setup=setup)
-        #
-        # # create the grid for interpolation
-        # qx = np.linspace(old_qz.min(), old_qz.max(), numx, endpoint=False)  # z downstream
-        # qz = np.linspace(old_qy.min(), old_qy.max(), numy, endpoint=False)  # y vertical up
-        # qy = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # x outboard
-        #
-        # new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
-        #
-        # # interpolate the data onto the new points using griddata (the original grid is not regular)
-        # interp_data = griddata(
-        #     np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
-        #     np.ndarray.flatten(data),
-        #     np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
-        #     method='linear', fill_value=np.nan)
-        # interp_data = interp_data.reshape((numx, numy, numx)).astype(data.dtype)
-        #
-        # # interpolate the mask onto the new points
-        # interp_mask = griddata(
-        #     np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
-        #     np.ndarray.flatten(mask),
-        #     np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
-        #     method='linear', fill_value=np.nan)
-        # interp_mask = interp_mask.reshape((numx, numy, numx)).astype(mask.dtype)
+        # create the grid for interpolation
+        qx = np.linspace(old_qx.min(), old_qx.max(), numx, endpoint=False)  # z downstream
+        qz = np.linspace(old_qz.min(), old_qz.max(), numy, endpoint=False)  # y vertical up
+        qy = np.linspace(old_qy.min(), old_qy.max(), numx, endpoint=False)  # x outboard
+
+        new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing='ij')
+
+        # interpolate the data onto the new points using griddata (the original grid is not regular)
+        print('Interpolating the data using griddata, will take time...')
+        interp_data = griddata(
+            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
+            np.ndarray.flatten(data),
+            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
+            method='linear', fill_value=np.nan)
+        interp_data = interp_data.reshape((numx, numy, numx))
+
+        # interpolate the mask onto the new points
+        print('Interpolating the mask using griddata, will take time...')
+        interp_mask = griddata(
+            np.array([np.ndarray.flatten(old_qx), np.ndarray.flatten(old_qz), np.ndarray.flatten(old_qy)]).T,
+            np.ndarray.flatten(mask),
+            np.array([np.ndarray.flatten(new_qx), np.ndarray.flatten(new_qz), np.ndarray.flatten(new_qy)]).T,
+            method='linear', fill_value=np.nan)
+        interp_mask = interp_mask.reshape((numx, numy, numx))
+        interp_mask[np.nonzero(interp_mask)] = 1
+        interp_mask = interp_mask.astype(int)
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
@@ -1474,9 +1482,10 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
 
 
 def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_radius, comment='',
-                     multiprocessing=True):
+                     multiprocessing=False):
     """
-    Interpolate a 3D array in cylindrical coordinated (tomographic dataset) onto cartesian coordinates.
+    Interpolate a 3D array in cylindrical coordinated (tomographic dataset) onto cartesian coordinates. There is no
+     benefit from multiprocessing, the data transfers are the limiting factor.
 
     :param array: 3D array of intensities measured in the detector frame
     :param rotation_angle: array, rotation angle values for the rocking scan
@@ -1489,7 +1498,6 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
     """
 
     assert array.ndim == 3, 'a 3D array is expected'
-    global interp_array, number_y, slices_done
 
     def collect_result(result):
         """
@@ -1497,7 +1505,7 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
 
         :param result: the output of interp_slice, containing the 2d interpolated slice and the slice index
         """
-        global interp_array, number_y, slices_done
+        nonlocal interp_array, number_y, slices_done
         slices_done = slices_done + 1
         # result is a tuple: data, mask, counter, file_index
         # stack the 2D interpolated frame along the rotation axis, taking into account the flip of the
@@ -2592,7 +2600,19 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
 
     h5file = h5py.File(ccdfiletmp, 'r')
-    nb_img = len(list(h5file['entry/data']))
+    is_series = detector.is_series
+    if is_series:
+        nb_img = len(list(h5file['entry/data']))
+    else:
+        idx = 0
+        nb_img = 0
+        while True:
+            data_path = 'data_' + str('{:06d}'.format(idx + 1))
+            try:
+                nb_img += len(h5file['entry']['data'][data_path])
+                idx += 1
+            except KeyError:
+                break
     print('Number of points :', nb_img)
 
     # define the loading ROI, the detector ROI may be larger than the physical detector size
@@ -2630,15 +2650,12 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
     else:  # 'skip'
         monitor = np.ones(nb_img)
 
-    is_series = detector.is_series
+    start_index = 0  # offset when not is_series
     for file_idx in range(nb_img):
         idx = 0
         series_data = []
         series_monitor = []
-        if is_series:
-            data_path = 'data_' + str('{:06d}'.format(file_idx+1))
-        else:
-            data_path = 'data_000001'
+        data_path = 'data_' + str('{:06d}'.format(file_idx + 1))
         while True:
             try:
                 try:
@@ -2658,10 +2675,12 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
                     ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
                 series_data.append(ccdraw)
                 if not is_series:
-                    sys.stdout.write('\rLoading frame {:d}'.format(idx+1))
+                    sys.stdout.write('\rLoading frame {:d}'.format(start_index+idx+1))
                     sys.stdout.flush()
                 idx = idx + 1
-            except ValueError:  # reached the end of the series
+            except IndexError:  # reached the end of the series
+                break
+            except ValueError:  # something went wrong
                 break
         if is_series:
             data[file_idx, :, :] = np.asarray(series_data).sum(axis=0)
@@ -2670,10 +2689,13 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
             sys.stdout.write('\rSeries: loading frame {:d}'.format(file_idx+1))
             sys.stdout.flush()
         else:
-            data = np.asarray(series_data)
+            tempdata_length = len(series_data)
+            data[start_index:start_index+tempdata_length, :, :] = np.asarray(series_data)
             if normalize == 'sum_roi':
-                monitor = np.asarray(series_monitor)
-            break
+                monitor[start_index:start_index+tempdata_length] = np.asarray(series_monitor)
+            start_index += tempdata_length
+            if start_index == nb_img:
+                break
     print('')
     mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
@@ -2825,7 +2847,8 @@ def load_sixs_monitor(logfile, beamline):
     return monitor
 
 
-def mean_filter(data, nb_neighbours, mask, min_count=3, interpolate='mask_isolated', debugging=False):
+def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_count=3, interpolate='mask_isolated',
+                debugging=False):
     """
     Mask or apply a mean filter if the empty pixel is surrounded by nb_neighbours or more pixels with at least
     min_count intensity per pixel.
@@ -2833,6 +2856,9 @@ def mean_filter(data, nb_neighbours, mask, min_count=3, interpolate='mask_isolat
     :param data: 2D array to be filtered
     :param nb_neighbours: minimum number of non-zero neighboring pixels for median filtering
     :param mask: 2D mask array
+    :param target_val: value where to interpolate
+    :param extent: in pixels, extent of the averaging window from the reference pixel
+     (extent=1, 2, 3 ... corresponds to window width=3, 5, 7 ... )
     :param min_count: minimum intensity in the neighboring pixels
     :param interpolate: based on 'nb_neighbours', if 'mask_isolated' will mask isolated pixels,
       if 'interp_isolated' will interpolate isolated pixels
@@ -2840,40 +2866,81 @@ def mean_filter(data, nb_neighbours, mask, min_count=3, interpolate='mask_isolat
     :type debugging: bool
     :return: updated data and mask, number of pixels treated
     """
-    threshold = min_count*nb_neighbours
-    if data.ndim != 2 or mask.ndim != 2:
-        raise ValueError('Data and mask should be 2D arrays')
+    mask = mask or np.zeros(data.shape)
 
-    if debugging:
-        gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
-                          tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
-                          tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
-                          tuple_title=('Data before filtering', 'Mask before filtering'), reciprocal_space=True)
-    zero_pixels = np.argwhere(data == 0)
+    assert data.shape == mask.shape, 'data and mask should have the same shape'
+    assert np.isnan(target_val) or isinstance(target_val, int), 'target_val should be nan or an integer, cannot assess'\
+                                                                'float equality'
+
+    if target_val is np.nan:
+        target_pixels = np.argwhere(np.isnan(data))
+    else:
+        target_pixels = np.argwhere(data == target_val)
     nb_pixels = 0
-    for indx in range(zero_pixels.shape[0]):
-        pixrow = zero_pixels[indx, 0]
-        pixcol = zero_pixels[indx, 1]
-        temp = data[pixrow-1:pixrow+2, pixcol-1:pixcol+2]
-        if temp.size != 0 and temp.sum() > threshold and sum(sum(temp != 0)) >= nb_neighbours:
-            # mask/interpolate if at least 3 photons in each neighboring pixels
-            nb_pixels = nb_pixels + 1
-            if interpolate == 'interp_isolated':
-                value = temp.sum() / sum(sum(temp != 0))
-                data[pixrow, pixcol] = value
-                mask[pixrow, pixcol] = 0
-            else:
-                mask[pixrow, pixcol] = 1
+
+    if data.ndim == 2:
+        if debugging:
+            gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
+                              tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
+                              tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
+                              tuple_title=('Data before filtering', 'Mask before filtering'), reciprocal_space=True)
+
+        for indx in range(target_pixels.shape[0]):
+            pixrow = target_pixels[indx, 0]
+            pixcol = target_pixels[indx, 1]
+            temp = data[pixrow-extent:pixrow+extent+1, pixcol-extent:pixcol+extent+1]
+            n_pix = np.logical_and(~np.isnan(temp), temp != target_val).sum()  # nb of pixels not equal to target_val
+            if temp.size != 0 and temp[~np.isnan(temp)].sum() >= min_count*nb_neighbours \
+                    and n_pix >= nb_neighbours:
+                # mask/interpolate if at least min_count photons in each neighboring pixels
+                nb_pixels = nb_pixels + 1
+                if interpolate == 'interp_isolated':
+                    data[pixrow, pixcol] = temp[~np.isnan(temp)].sum() / n_pix
+                    mask[pixrow, pixcol] = 0
+                else:
+                    mask[pixrow, pixcol] = 1
+
+        if debugging:
+            gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
+                              tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
+                              tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
+                              tuple_title=('Data after filtering', 'Mask after filtering'), reciprocal_space=True)
+    elif data.ndim == 3:
+        if debugging:
+            gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(True, True), tuple_sum_axis=(0, 0),
+                              tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
+                              tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
+                              tuple_title=('Data before filtering', 'Mask before filtering'), reciprocal_space=True)
+
+        for indx in range(target_pixels.shape[0]):
+            pix_z = target_pixels[indx, 0]
+            pix_y = target_pixels[indx, 1]
+            pix_x = target_pixels[indx, 2]
+            temp = data[pix_z-extent:pix_z+extent+1, pix_y-extent:pix_y+extent+1, pix_x-extent:pix_x+extent+1]
+            n_pix = np.logical_and(~np.isnan(temp), temp != target_val).sum()  # nb of pixels not equal to target_val
+            if temp.size != 0 and temp[~np.isnan(temp)].sum() >= min_count*nb_neighbours \
+                    and n_pix >= nb_neighbours:
+                # mask/interpolate if at least min_count photons in each neighboring pixels
+                nb_pixels = nb_pixels + 1
+                if interpolate == 'interp_isolated':
+                    data[pix_z, pix_y, pix_x] = temp[~np.isnan(temp)].sum() / n_pix
+                    mask[pix_z, pix_y, pix_x] = 0
+                else:
+                    mask[pix_z, pix_y, pix_x] = 1
+
+        if debugging:
+            gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(True, True), tuple_sum_axis=(0, 0),
+                              tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
+                              tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
+                              tuple_title=('Data after filtering', 'Mask after filtering'), reciprocal_space=True)
+    else:
+        raise ValueError('data should be 2D or 3D')
+
     if interpolate == 'interp_isolated':
-        print("Nb of filtered pixel: ", nb_pixels)
+        print("Nb of interpolated pixel: ", nb_pixels)
     else:
         print("Nb of masked pixel: ", nb_pixels)
 
-    if debugging:
-        gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
-                          tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
-                          tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
-                          tuple_title=('Data after filtering', 'Mask after filtering'), reciprocal_space=True)
     return data, nb_pixels, mask
 
 
@@ -3432,6 +3499,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
                 eta = eta[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
 
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            print('eta', eta)
             nb_steps = len(phi)
             tilt_angle = phi[1] - phi[0]
 
@@ -3500,7 +3568,10 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         chi = chi + setup.sample_offsets[0]
         phi = phi + setup.sample_offsets[1]
         om = om + setup.sample_offsets[2]
+        print('chi', chi)
+        print('mu', mu)
         if setup.rocking_angle == 'outofplane':  # om rocking curve
+            print('phi', phi)
             nb_steps = len(om)
             tilt_angle = om[1] - om[0]
 
@@ -3514,6 +3585,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
                 om = om[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
 
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            print('om', om)
             nb_steps = len(phi)
             tilt_angle = phi[1] - phi[0]
 
@@ -3613,7 +3685,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
-
+    print('Use "sample_offsets" to correct the diffractometer values\n')
     return qx, qz, qy, frames_logical
 
 

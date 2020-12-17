@@ -1,6 +1,12 @@
 Version 1.0.0
 -------------
 
+* Feature: implement linecut_diffpattern.py, a GUI to get a linecut of a 3D diffraction pattern along a desired direction
+
+* Feature: add a GUI to prtf_bcdi.py, to get a linecut of the 3D PRTF along a desired direction
+
+* Feature: implement center_of_rotation.py, to calculate the distance of the crystal to the center of rotation
+
 * Bug: in facet_strain.py, solve bugs in plane fitting when the facet is parallel to an axis
 
 * Feature: implement rotate_scan.py, to rotate a 3D reciprocal space map around a vector

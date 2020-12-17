@@ -12,10 +12,13 @@ from mayavi import mlab
 import tkinter as tk
 from tkinter import filedialog
 from scipy.interpolate import RegularGridInterpolator
+from scipy.ndimage.measurements import center_of_mass
+from traits.api import push_exception_handler
 import gc
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.utils.utilities as util
+import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
@@ -26,19 +29,26 @@ The diffraction pattern is supposed to be in an orthonormal frame and q values n
 Optionally creates a movie from a 3D real space reconstruction in each direction. This requires moviepy.
 """
 
-scan = 22    # spec scan number
-root_folder = 'D:/data/P10_August2019_CDI/data/'
-sample_name = "gold_2_2_2"
-homedir = root_folder + sample_name + '_' + str('{:05d}'.format(scan)) + '/pynx/test/'
+scan = 1053    # spec scan number
+root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
+sample_name = "S"
+homedir = root_folder + sample_name + str(scan) + "/pynx/"
 savedir = homedir  # saving directory
 comment = ""  # should start with _
-binning = (1, 1, 1)  # binning for the measured diffraction pattern in each dimension
-tick_spacing = 0.2  # in 1/nm, spacing between ticks
-threshold_isosurface = 4.5  # log scale
-fig_size = (1000, 1000)  # figure size in pixels (horizontal, vertical)
+binning = (2, 2, 2)  # binning for the measured diffraction pattern in each dimension
+geometry = 'Bragg'  # 'SAXS' or 'Bragg'
+crop_symmetric = False  # if True, will crop the data ot the largest symmetrical range around the direct beam
+# (geometry = 'SAXS') or the Brapp peak (geometry = 'Bragg')
+tick_spacing = 0.05  # in 1/nm, spacing between ticks
+contours = [0.75, 1.25, 2, 4]  # contours for the isosurface in log scale
+# contours = [3.6, 4.05, 4.5, 4.95, 5.4]  # gold_2_2_2_00022
+fig_size = (500, 500)  # figure size in pixels (horizontal, vertical)
+distance = 1  # distance of the camera in q, leave None for default
+debug = False  # True to see contour plots for debugging
 ##########################
 # settings for the movie #
 ##########################
+make_movie = False  # True to save a movie
 duration = 10  # duration of the movie in s
 frame_per_second = 20  # number of frames per second, there will be duration*frame_per_second frames in total
 output_format = 'mp4'  # 'gif', 'mp4' or None for no movie
@@ -61,6 +71,7 @@ def rotate_scene(t):
 #############
 # load data #
 #############
+push_exception_handler(reraise_exceptions=True)  # force exceptions to be re-raised in Traits
 root = tk.Tk()
 root.withdraw()
 
@@ -87,65 +98,102 @@ qz = qz[:ny - (ny % binning[1]):binning[1]]
 qy = qy[:nx - (nx % binning[2]):binning[2]]
 data = pu.bin_data(data, (binning[0], binning[1], binning[2]), debugging=False)
 print('Diffraction data shape after binning', data.shape)
+nz, ny, nx = data.shape
 
 ##########################################
 # take the largest data symmetrical in q #
 ##########################################
-min_range = min(min(abs(qx.min()), qx.max()), min(abs(qz.min()), qz.max()), min(abs(qy.min()), qy.max()))
-indices_qx = np.argwhere(abs(qx) < min_range)[:, 0]
-indices_qz = np.argwhere(abs(qz) < min_range)[:, 0]
-indices_qy = np.argwhere(abs(qy) < min_range)[:, 0]
-qx = qx[indices_qx]
-qz = qz[indices_qz]
-qy = qy[indices_qy]
-data = data[indices_qx.min():indices_qx.max()+1,
-            indices_qz.min():indices_qz.max()+1,
-            indices_qy.min():indices_qy.max()+1]
-nz, ny, nx = data.shape
-print("Shape of the largest symmetrical dataset:", nz, ny, nx)
+if crop_symmetric:
+    if geometry == 'SAXS':
+        # the reference if the center of reciprocal space at qx=qy=qz=0
+        qx_com, qz_com, qy_com = 0, 0, 0
+    elif geometry == 'Bragg':
+        # find the position of the Bragg peak
+        zcom, ycom, xcom = center_of_mass(data)
+        zcom, ycom, xcom = int(np.rint(zcom)), int(np.rint(ycom)), int(np.rint(xcom))
+        print('Center of mass of the diffraction pattern at pixel:', zcom, ycom, xcom)
+        qx_com, qz_com, qy_com = qx[zcom], qz[ycom], qy[xcom]
+    else:
+        raise ValueError('supported geometry: "SAXS" or "Bragg"')
 
-##############################################################
-# interpolate the data to have ticks at the desired location #
-##############################################################
-half_labels = int(min_range // tick_spacing)  # the number of labels is (2*half_labels+1)
-rgi = RegularGridInterpolator((np.linspace(qx.min(), qx.max(), num=nz),
-                               np.linspace(qz.min(), qz.max(), num=ny),
-                               np.linspace(qy.min(), qy.max(), num=nx)),
-                              data, method='linear', bounds_error=False, fill_value=0)
+    min_range = min(min(abs(qx.min()-qx_com,), qx.max()-qx_com,),
+                    min(abs(qz.min()-qz_com), qz.max()-qz_com),
+                    min(abs(qy.min()-qy_com), qy.max()-qy_com))
+    indices_qx = np.argwhere(abs(qx-qx_com) < min_range)[:, 0]
+    indices_qz = np.argwhere(abs(qz-qz_com) < min_range)[:, 0]
+    indices_qy = np.argwhere(abs(qy-qy_com) < min_range)[:, 0]
 
-new_z, new_y, new_x = np.meshgrid(np.linspace(-tick_spacing*half_labels, tick_spacing*half_labels, num=nz),
-                                  np.linspace(-tick_spacing*half_labels, tick_spacing*half_labels, num=ny),
-                                  np.linspace(-tick_spacing*half_labels, tick_spacing*half_labels, num=nx),
-                                  indexing='ij')
+    qx = qx[indices_qx]
+    qz = qz[indices_qz]
+    qy = qy[indices_qy]
+    data = data[indices_qx.min():indices_qx.max()+1,
+                indices_qz.min():indices_qz.max()+1,
+                indices_qy.min():indices_qy.max()+1]
+    nz, ny, nx = data.shape
+    print("Shape of the largest symmetrical dataset:", nz, ny, nx)
+    del indices_qx, indices_qy, indices_qz
 
-newdata = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                              new_x.reshape((1, new_z.size)))).transpose())
-newdata = newdata.reshape((nz, ny, nx)).astype(data.dtype)
+    ##############################################################
+    # interpolate the data to have ticks at the desired location #
+    ##############################################################
+    rgi = RegularGridInterpolator((np.linspace(qx.min(), qx.max(), num=nz),
+                                   np.linspace(qz.min(), qz.max(), num=ny),
+                                   np.linspace(qy.min(), qy.max(), num=nx)),
+                                  data, method='linear', bounds_error=False, fill_value=0)
 
-del data, new_z, new_y, new_x, rgi
-gc.collect()
+    half_labels = int(min_range // tick_spacing)  # the number of labels is (2*half_labels+1)
+
+    new_z, new_y, new_x = np.meshgrid(
+        np.linspace(qx_com-tick_spacing*half_labels, qx_com+tick_spacing*half_labels, num=nz),
+        np.linspace(qz_com-tick_spacing*half_labels, qz_com + tick_spacing*half_labels, num=ny),
+        np.linspace(qy_com-tick_spacing*half_labels, qy_com+tick_spacing*half_labels, num=nx),
+        indexing='ij')
+
+    data = rgi(np.concatenate((new_z.reshape((1, new_z.size)),
+                               new_y.reshape((1, new_z.size)),
+                               new_x.reshape((1, new_z.size)))).transpose())
+    data = data.reshape((nz, ny, nx))
+    print('Interpolation done')
+    del new_z, new_y, new_x, rgi
+    gc.collect()
+
+if debug:
+    gu.contour_slices(data, (qx, qz, qy), sum_frames=True, title='data',
+                      levels=np.linspace(0, np.ceil(np.log10(data.max())), 150, endpoint=True),
+                      plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
 
 #########################################
 # plot 3D isosurface (perspective view) #
 #########################################
-newdata = np.flip(newdata, 2)  # mayavi expects xyz, data order is downstream/upward/outboard
-newdata[newdata == 0] = np.nan
-grid_qx, grid_qz, grid_qy = np.mgrid[-tick_spacing*half_labels:tick_spacing*half_labels:1j * nz,
-                                     -tick_spacing*half_labels:tick_spacing*half_labels:1j * ny,
-                                     -tick_spacing*half_labels:tick_spacing*half_labels:1j * nx]
+data = np.flip(data, 2)  # mayavi expects xyz, data order is downstream/upward/outboard
+data[data == 0] = np.nan
+if crop_symmetric:
+    grid_qx, grid_qz, grid_qy = np.mgrid[qx_com-tick_spacing*half_labels:qx_com+tick_spacing*half_labels:1j * nz,
+                                         qz_com-tick_spacing*half_labels:qz_com+tick_spacing*half_labels:1j * ny,
+                                         qy_com-tick_spacing*half_labels:qy_com+tick_spacing*half_labels:1j * nx]
+else:
+    grid_qx, grid_qz, grid_qy = np.mgrid[qx.min():qx.max():1j*nz,
+                                         qz.min():qz.max():1j*ny,
+                                         qy.min():qy.max():1j*nx]
+
 # in CXI convention, z is downstream, y vertical and x outboard
 # for q: classical convention qx downstream, qz vertical and qy outboard
 myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
-mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(newdata),
-               contours=[0.8*threshold_isosurface, 0.9*threshold_isosurface, threshold_isosurface,
-                         1.1*threshold_isosurface, 1.2*threshold_isosurface],
-               opacity=0.2, colormap='hsv', vmin=3.5, vmax=5.5)  # , color=(0.7, 0.7, 0.7))
-distance = 3*np.sqrt(grid_qx**2+grid_qz**2+grid_qy**2).max()
-mlab.view(azimuth=38, elevation=63, distance=distance)
+mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(data), contours=contours, opacity=0.2, colormap='hsv',
+               vmin=0, vmax=np.ceil(np.log10(data[~np.isnan(data)].max())))
+if distance:
+    mlab.view(azimuth=38, elevation=63, distance=distance)
+else:
+    mlab.view(azimuth=38, elevation=63, distance=np.sqrt(qx.max()**2+qz.max()**2+qy.max()**2))
+
 # azimut is the rotation around z axis of mayavi (x)
 mlab.roll(0)
 
-ax = mlab.axes(line_width=2.0, nb_labels=2*half_labels+1)
+if crop_symmetric:
+    ax = mlab.axes(line_width=2.0, nb_labels=2*half_labels+1)
+else:
+    ax = mlab.axes(line_width=2.0, nb_labels=4)
+
 mlab.xlabel('Qx (1/nm)')
 mlab.ylabel('Qz (1/nm)')
 mlab.zlabel('-Qy (1/nm)')
@@ -159,14 +207,15 @@ ax.axes.z_axis_visibility = False
 mlab.savefig(savedir + 'S' + str(scan) + comment + '.png', figure=myfig)
 mlab.draw(myfig)
 
-if output_format == 'mp4':
-    animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
-    fname = savedir + "S" + str(scan) + "_movie.mp4"
-    animation.write_videofile(fname, fps=frame_per_second)
-elif output_format == 'gif':
-    animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
-    fname = savedir + "S" + str(scan) + "_movie.gif"
-    animation.write_gif(fname, fps=frame_per_second)
+if make_movie:
+    if output_format == 'mp4':
+        animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
+        fname = savedir + "S" + str(scan) + "_movie.mp4"
+        animation.write_videofile(fname, fps=frame_per_second)
+    elif output_format == 'gif':
+        animation = mpy.VideoClip(rotate_scene, duration=duration).resize(width=fig_size[0], height=fig_size[1])
+        fname = savedir + "S" + str(scan) + "_movie.gif"
+        animation.write_gif(fname, fps=frame_per_second)
 
 mlab.show()
 

@@ -26,27 +26,30 @@ import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 
 
-scan = 1  # scan number as it appears in the folder name
-sample_name = "p15_2"  # without _ at the end
-root_folder = "D:/data/P10_isosurface/data/"
+scan = 26  # scan number as it appears in the folder name
+sample_name = "B10_syn_S5"  # without _ at the end
+root_folder = "D:/data/P10_Longfei/"
 savedir = ''  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
-sum_roi = [50, 150, 100, 300]  # integrate the intensity in this region of interest. [ystart, ystop, xstart, xstop]
-# Leave it to [] to use the full detector
+crop_roi = [550, 1050, 0, 2070]  # only this region of interest of the detector will be considered (unbinned indices).
+# Leave [] to use the full detector. [ystart, ystop, xstart, xstop]
+sum_roi = [550, 1050, 0, 2070]  # region of interest for integrating the intensity.
+# [ystart, ystop, xstart, xstop], in the unbinned detector indices. Leave it to [] to use the full detector
 normalize_flux = False  # will normalize the intensity by the default monitor
+threshold = 2  # data <= threshold will be set to 0
 ###########################
 # mesh related parameters #
 ###########################
-fast_motor = 'hpy'  # fast scanning motor for the mesh
-nb_fast = 41  # number of steps for the fast scanning motor
-slow_motor = 'hpx'  # slow scanning motor for the mesh
-nb_slow = 16  # number of steps for the slow scanning motor
+fast_motor = 'hpx'  # fast scanning motor for the mesh
+nb_fast = 51  # number of steps for the fast scanning motor
+slow_motor = 'hpy'  # slow scanning motor for the mesh
+nb_slow = 51  # number of steps for the slow scanning motor
 ###########################
 # plot related parameters #
 ###########################
 background_plot = '0.7'  # in level of grey in [0,1], 0 being dark. For visual comfort
 fast_axis = 'horizontal'  # 'vertical' to plot the fast scanning motor vertically, 'horizontal' otherwise
 invert_xaxis = False  # True to inverse the horizontal axis
-invert_yaxis = False  # True to inverse the vertical axis
+invert_yaxis = True  # True to inverse the vertical axis
 ###############################
 # beamline related parameters #
 ###############################
@@ -87,10 +90,10 @@ def onclick(click_event):
     if click_event.inaxes == ax1:  # click in the 2D scanning map
         motor_text.remove()
         if fast_axis == 'horizontal':
-            motor_text = figure.text(0.55, 0.90, fast_motor + ' = {:.2f}, '.format(click_event.xdata) +
+            motor_text = figure.text(0.40, 0.95, fast_motor + ' = {:.2f}, '.format(click_event.xdata) +
                                      slow_motor + ' = {:.2f}'.format(click_event.ydata), size=12)
         else:
-            motor_text = figure.text(0.55, 0.90, fast_motor + ' = {:.2f}, '.format(click_event.ydata) +
+            motor_text = figure.text(0.40, 0.95, fast_motor + ' = {:.2f}, '.format(click_event.ydata) +
                                      slow_motor + ' = {:.2f}'.format(click_event.xdata), size=12)
         plt.draw()
 
@@ -102,10 +105,21 @@ def onselect(click, release):
     :param click: position of the mouse click event
     :param release: position of the mouse release event
     """
-    global ax1, data, nb_slow, nb_fast, my_cmap, min_fast, min_slow, max_fast, max_slow, fast_motor
-    global slow_motor, ny, nx, invert_xaxis, invert_yaxis, motor_text, sum_int, figure
+    global ax1, data, nb_slow, nb_fast, my_cmap, min_fast, min_slow, max_fast, max_slow, fast_motor, binning
+    global slow_motor, ny, nx, invert_xaxis, invert_yaxis, motor_text, sum_int, figure, rectangle
 
     y_start, y_stop, x_start, x_stop = int(click.ydata), int(release.ydata), int(click.xdata), int(release.xdata)
+
+    rectangle.extents = (x_start, x_stop, y_start, y_stop)  # in the unbinned full detector pixel coordinates,
+    # extents (xmin, xmax, ymin, ymax)
+
+    # remove the offset due to crop_roi
+    y_start, y_stop = y_start - crop_roi[0], y_stop - crop_roi[0]
+    x_start, x_stop = x_start - crop_roi[2], x_stop - crop_roi[2]
+
+    # correct for data binning
+    y_start, y_stop = y_start // binning[0], y_stop // binning[0]
+    x_start, x_stop = x_start // binning[1], x_stop // binning[1]
 
     ax1.cla()
     if fast_axis == 'vertical':
@@ -125,7 +139,7 @@ def onselect(click, release):
     if invert_yaxis:
         ax1.invert_yaxis()
     motor_text.remove()
-    motor_text = figure.text(0.55, 0.90, '', size=12)
+    motor_text = figure.text(0.40, 0.95, '', size=12)
     ax1.axis('scaled')
     ax1.set_title("integrated intensity in the ROI")
     plt.draw()
@@ -137,7 +151,7 @@ def press_key(event):
 
     :param event: button press event
     """
-    global sumdata, max_colorbar, ax0
+    global sumdata, max_colorbar, ax0, my_cmap, figure, rectangle, onselect, rectprops
 
     if event.key == 'right':
         max_colorbar = max_colorbar + 1
@@ -145,12 +159,24 @@ def press_key(event):
         max_colorbar = max_colorbar - 1
         if max_colorbar < 1:
             max_colorbar = 1
+    extents = rectangle.extents
+    xmin0, xmax0 = ax0.get_xlim()
+    ymin0, ymax0 = ax0.get_ylim()
 
     ax0.cla()
-    ax0.imshow(np.log10(sumdata), vmin=0, vmax=max_colorbar)
+    ax0.imshow(np.log10(sumdata), vmin=0, vmax=max_colorbar, cmap=my_cmap,
+               extent=[crop_roi[2], crop_roi[3], crop_roi[1], crop_roi[0]])  # unbinned pixel coordinates
+    # extent (left, right, bottom, top)
     ax0.set_title("detector plane (sum)")
     ax0.axis('scaled')
+    ax0.set_xlim(xmin0, xmax0)
+    ax0.set_ylim(ymin0, ymax0)
     plt.draw()
+    rectangle = RectangleSelector(ax0, onselect, drawtype='box', useblit=False, button=[1], interactive=True,
+                                  rectprops=rectprops)  # don't use middle and right buttons
+    rectangle.to_draw.set_visible(True)
+    figure.canvas.draw()
+    rectangle.extents = extents
 
 
 ###################
@@ -166,9 +192,11 @@ plt.ion()
 #################################################
 kwargs = dict()  # create dictionnary
 kwargs['is_series'] = is_series
+
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, sum_roi=sum_roi,
                         binning=[1, binning[0], binning[1]], **kwargs)
-
+crop_roi = crop_roi or (0, detector.nb_pixel_y, 0, detector.nb_pixel_x)
+detector.roi = crop_roi
 setup = exp.SetupPreprocessing(beamline=beamline)
 
 if setup.beamline == 'P10':
@@ -200,8 +228,17 @@ assert fast_axis in ['vertical', 'horizontal'], print('fast_axis parameter value
 if len(sum_roi) == 0:
     sum_roi = [0, detector.nb_pixel_y, 0, detector.nb_pixel_x]
 
-assert (sum_roi[0] >= 0 and sum_roi[1] <= detector.nb_pixel_y // binning[0]
-        and sum_roi[2] >= 0 and sum_roi[3] <= detector.nb_pixel_x // binning[1]),\
+print(f'sum_roi before binning and offset correction = {sum_roi}')
+
+# correct the offset due to crop_roi and take into account data binning
+sum_roi = ((sum_roi[0]-crop_roi[0]) // binning[0],
+           (sum_roi[1]-crop_roi[0]) // binning[0],
+           (sum_roi[2]-crop_roi[2]) // binning[1],
+           (sum_roi[3]-crop_roi[2]) // binning[1])
+print(f'sum_roi after binning and offset correction = {sum_roi}')
+
+assert (sum_roi[0] >= 0 and sum_roi[1] <= (crop_roi[1]-crop_roi[0]) // binning[0]
+        and sum_roi[2] >= 0 and sum_roi[3] <= (crop_roi[3]-crop_roi[2]) // binning[1]),\
     'sum_roi setting does not match the binned detector size'
 
 #############
@@ -212,6 +249,11 @@ data, mask, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number
 nz, ny, nx = data.shape
 print('Data shape: ', nz, ny, nx)
 data[np.nonzero(mask)] = 0
+
+#######################
+# intensity threshold #
+#######################
+data[data <= threshold] = 0
 
 ###########################
 # intensity normalization #
@@ -248,7 +290,10 @@ ax0 = figure.add_subplot(121)
 ax1 = figure.add_subplot(122)
 figure.canvas.mpl_disconnect(figure.canvas.manager.key_press_handler_id)
 original_data = np.copy(data)
-ax0.imshow(np.log10(sumdata), cmap=my_cmap, vmin=0, vmax=max_colorbar)
+ax0.imshow(np.log10(sumdata), cmap=my_cmap, vmin=0, vmax=max_colorbar,
+           extent=[crop_roi[2], crop_roi[3], crop_roi[1], crop_roi[0]])  # unbinned pixel coordinates
+# extent (left, right, bottom, top)
+
 if fast_axis == 'vertical':
     sum_int = data[:, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].sum(axis=(1, 2)).reshape((nb_fast, nb_slow))
     # extent (left, right, bottom, top)
@@ -269,7 +314,7 @@ ax0.axis('scaled')
 ax1.axis('scaled')
 ax0.set_title("sum of all images")
 ax1.set_title("integrated intensity in the ROI")
-motor_text = figure.text(0.55, 0.90, '', size=12)
+motor_text = figure.text(0.40, 0.95, '', size=12)
 plt.tight_layout()
 plt.connect('key_press_event', press_key)
 plt.connect('button_press_event', onclick)
@@ -277,6 +322,8 @@ rectangle = RectangleSelector(ax0, onselect, drawtype='box', useblit=False, butt
                               rectprops=rectprops)  # don't use middle and right buttons
 rectangle.to_draw.set_visible(True)
 figure.canvas.draw()
-rectangle.extents = (sum_roi[2], sum_roi[3], sum_roi[0], sum_roi[1])  # extents (xmin, xmax, ymin, ymax)
+rectangle.extents = (sum_roi[2]*binning[1] + crop_roi[2], sum_roi[3]*binning[1] + crop_roi[2],
+                     sum_roi[0]*binning[0] + crop_roi[0], sum_roi[1]*binning[0] + crop_roi[0])
+# in the unbinned full detector pixel coordinates, extents (xmin, xmax, ymin, ymax)
 figure.set_facecolor(background_plot)
 plt.show()

@@ -134,15 +134,21 @@ if not 0 <= corr_roi[0] < corr_roi[1] <= nbz\
 if alignement_method is 'skip':
     refmask = pu.crop_pad(array=refmask, output_shape=output_shape, crop_center=crop_center)
     refdata = pu.crop_pad(array=refdata, output_shape=output_shape, crop_center=crop_center)
-
-    corr_roi = [corr_roi[0]-output_shape[0]//2, corr_roi[1]-output_shape[0]//2,
-                corr_roi[2]-output_shape[1]//2, corr_roi[3]-output_shape[1]//2,
-                corr_roi[4]-output_shape[2]//2, corr_roi[5]-output_shape[2]//2]
-    if not 0 <= corr_roi[0] < corr_roi[1] <= output_shape[0]\
-            or not 0 <= corr_roi[2] < corr_roi[3] <= output_shape[1]\
-            or not 0 <= corr_roi[4] < corr_roi[5] <= output_shape[2]:
-        print('Incorrect value for the parameter corr_roi')
-        sys.exit()
+    # correct for the offset due to cropping
+    corr_roi = [corr_roi[0] - (crop_center[0] - output_shape[0] // 2),
+                corr_roi[1] - (crop_center[0] - output_shape[0] // 2),
+                corr_roi[2] - (crop_center[1] - output_shape[1] // 2),
+                corr_roi[3] - (crop_center[1] - output_shape[1] // 2),
+                corr_roi[4] - (crop_center[2] - output_shape[2] // 2),
+                corr_roi[5] - (crop_center[2] - output_shape[2] // 2)]
+    # check if this still fits the cropped data, default to the data range otherwise
+    corr_roi[0] = max(0, corr_roi[0])
+    corr_roi[1] = min(output_shape[0], corr_roi[1])
+    corr_roi[2] = max(0, corr_roi[2])
+    corr_roi[3] = min(output_shape[1], corr_roi[3])
+    corr_roi[4] = max(0, corr_roi[4])
+    corr_roi[5] = min(output_shape[2], corr_roi[5])
+    print('Corrected corr_roi after cropping:', corr_roi)
 
 # replace nans by 0 and mask them
 refmask[np.isnan(refdata)] = 1

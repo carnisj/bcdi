@@ -14,6 +14,7 @@ import matplotlib.patches as patches
 import matplotlib.ticker as ticker
 import matplotlib.colors as colors
 from matplotlib.colors import LinearSegmentedColormap
+from scipy.ndimage import map_coordinates
 from operator import itemgetter
 
 # define a colormap
@@ -186,41 +187,31 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     else:  # it is a string or a number
         tuple_scale = (tuple_scale,) * nb_subplots
 
-    # default values for kwargs
-    xlabel = None
-    ylabel = None
-    position = None
-    invert_y = [None for _ in range(nb_subplots)]
-
+    # load kwargs
+    xlabel = kwargs.get('xlabel', None)
+    ylabel = kwargs.get('ylabel', None)
+    position = kwargs.get('position', None)
+    invert_y = kwargs.get('invert_y', (None for _ in range(nb_subplots)))
     for k in kwargs.keys():
-        if k in ['xlabel']:
-            xlabel = kwargs['xlabel']
-            if isinstance(xlabel, tuple):
-                assert len(xlabel) == nb_subplots, 'len(xlabel) incompatible with the numer of arrays'
-            else:  # it is a string or a number
-                xlabel = (xlabel,) * nb_subplots
-        elif k in ['ylabel']:
-            ylabel = kwargs['ylabel']
-            if isinstance(ylabel, tuple):
-                assert len(ylabel) == nb_subplots, 'len(ylabel) incompatible with the numer of arrays'
-            else:  # it is a string or a number
-                ylabel = (ylabel,) * nb_subplots
-        elif k in ['position']:
-            position = kwargs['position']
-            try:
-                assert len(position) == nb_subplots, 'len(position) incompatible with the numer of arrays'
-            except TypeError:  # it is a number
-                raise ValueError('"position" should be a tuple of subplot positions')
-        elif k in ['invert_y']:
-            invert_y = kwargs['invert_y']
-            try:
-                assert len(invert_y) == nb_subplots, 'len(invert_y) incompatible with the numer of arrays'
-            except TypeError:  # it is a boolean or number
-                invert_y = (invert_y,) * nb_subplots
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is"
-                            "'xlabel' and 'ylabel'")
+        if k not in {'xlabel', 'ylabel', 'position', 'invert_y'}:
+            raise Exception("unknown keyword argument given:", k)
+
+    if isinstance(xlabel, tuple):
+        assert len(xlabel) == nb_subplots, 'len(xlabel) incompatible with the numer of arrays'
+    else:  # it is a string or a number
+        xlabel = (xlabel,) * nb_subplots
+    if isinstance(ylabel, tuple):
+        assert len(ylabel) == nb_subplots, 'len(ylabel) incompatible with the numer of arrays'
+    else:  # it is a string or a number
+        ylabel = (ylabel,) * nb_subplots
+    try:
+        assert len(position) == nb_subplots, 'len(position) incompatible with the numer of arrays'
+    except TypeError:  # it is a number
+        raise ValueError('"position" should be a tuple of subplot positions')
+    try:
+        assert len(invert_y) == nb_subplots, 'len(invert_y) incompatible with the numer of arrays'
+    except TypeError:  # it is a boolean or number
+        invert_y = (invert_y,) * nb_subplots
 
     xlabel = xlabel or ['' for _ in range(nb_subplots)]
     ylabel = ylabel or ['' for _ in range(nb_subplots)]
@@ -751,15 +742,11 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  fig, axis, plot instances
     """
-    # default values for kwargs
-    invert_y = None
-
+    # load kwargs
+    invert_y = kwargs.get('invert_y', None)
     for k in kwargs.keys():
-        if k in ['invert_y']:
-            invert_y = kwargs['invert_y']
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is 'invert_y'")
+        if k not in {'invert_y'}:
+            raise Exception("unknown keyword argument given:", k)
 
     nb_dim = array.ndim
     array = array.astype(float)
@@ -910,6 +897,60 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     plt.pause(0.5)
     plt.ioff()
     return fig, axis, plot
+
+
+def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False):
+    """
+    Linecut through a 2D or 3D array given the indices of the starting voxel and of the end voxel.
+
+    :param array: a 2D or 3D array
+    :param start_indices: tuple of indices, of the same length as the number of dimension of array
+    :param stop_indices: tuple of indices, of the same length as the number of dimension of array
+    :param interp_order: order of the spline interpolation, default is 3. The order has to be in the range 0-5.
+    :param debugging: True to see plots
+    :return: a 1D array interpolated between the start and stop indices
+    """
+    if array.ndim == 2:
+        assert len(start_indices) == 2 and len(stop_indices) == 2,\
+            'ndim=2, start_indices and stop_indices should be of length 2'
+
+        num_points = 2*int(np.sqrt((stop_indices[0]-start_indices[0])**2 +
+                                   (stop_indices[1]-start_indices[1])**2))
+        cut = map_coordinates(array, np.vstack((np.linspace(start_indices[0], stop_indices[0], num_points),
+                                                np.linspace(start_indices[1], stop_indices[1], num_points))))
+    elif array.ndim == 3:
+        assert len(start_indices) == 3 and len(stop_indices) == 3,\
+            'ndim=3, start_indices and stop_indices should be of length 3'
+
+        num_points = int(np.sqrt((stop_indices[0]-start_indices[0])**2 +
+                                 (stop_indices[1]-start_indices[1])**2 +
+                                 (stop_indices[2]-start_indices[2])**2))
+        cut = map_coordinates(array, np.vstack((np.linspace(start_indices[0], stop_indices[0], num_points),
+                                                np.linspace(start_indices[1], stop_indices[1], num_points),
+                                                np.linspace(start_indices[2], stop_indices[2], num_points))),
+                              order=interp_order)
+    else:
+        raise ValueError('array should be 2D or 3D')
+
+    if debugging:
+        plt.ion()
+        if array.ndim == 2:
+            fig, (ax0, ax1) = plt.subplots(ncols=2)
+            ax0.imshow(array)
+            ax0.plot([start_indices[0], stop_indices[0]], [start_indices[1], stop_indices[1]], 'ro-')
+            ax1.plot(cut)
+        else:
+            fig, (ax0, ax1, ax2, ax3), _ = multislices_plot(array, sum_frames=False)
+            ax0.plot([start_indices[2], stop_indices[2]], [start_indices[1], stop_indices[1]], 'ro-')  # sum axis 0
+            ax1.plot([start_indices[2], stop_indices[2]], [start_indices[0], stop_indices[0]], 'ro-')  # sum axis 1
+            ax2.plot([start_indices[1], stop_indices[1]], [start_indices[0], stop_indices[0]], 'ro-')  # sum axis 2
+            ax3.set_visible(True)
+            ax3.cla()
+            ax3.plot(cut)
+            ax3.axis('auto')
+            plt.draw()
+
+    return cut
 
 
 def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vmin=None, vmax=None):
@@ -1328,17 +1369,13 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     else:
         fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 9))
 
+    # load kwargs
+    invert_y = kwargs.get('invert_y', None)
+    if invert_y is not None:  # override the default behavior for inver_yaxis
+        invert_yaxis = invert_y
     for k in kwargs.keys():
-        if k in ['invert_y']:
-            invert_y = kwargs['invert_y']
-            try:
-                if invert_y:  # overwrite invert_yaxis parameter
-                    invert_yaxis = invert_y
-            except NameError:
-                pass
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is 'invert_y'")
+        if k not in {'invert_y'}:
+            raise Exception("unknown keyword argument given:", k)
 
     # axis 0
     temp_array = np.copy(array)
@@ -3210,7 +3247,13 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
 
 
 # if __name__ == "__main__":
-#     datadir = 'D:/review paper/BCDI_isosurface/S2227/simu/crop300/test/'
+# #
+#     datadir = 'D:/data/P10_isosurface/data/p21_00054/'
+#     prtf = np.load(datadir + 'prtf_3d.npz')['prtf']
+#     print(prtf.shape)
+#     start = (96, 256, 256)
+#     stop = (198, 510, 510)
+#     cut = linecut(prtf, start_indices=start, stop_indices=stop, debugging=True)
 #     strain = np.load(datadir +
 #                      'S2227_ampphasestrain_1_gaussianthreshold_iso_0.68_avg1_apodize_crystal-frame.npz')['strain']
 #     voxel_size = 4.0
@@ -3223,5 +3266,5 @@ def update_mask_2d(key, pix, piy, original_data, original_mask, updated_data, up
 #                      vmin=-0.0002, vmax=0.0002, tick_direction=tick_direction,
 #                      tick_width=tick_width, tick_length=tick_length, plot_colorbar=True,
 #                      pixel_spacing=pixel_spacing)
-#     plt.ioff()
-#     plt.show()
+    plt.ioff()
+    plt.show()

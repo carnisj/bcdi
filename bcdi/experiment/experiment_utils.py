@@ -28,7 +28,7 @@ class SetupPostprocessing(object):
         :param tilt_angle: angular step of the sample during the rocking curve, in degrees
         :param rocking_angle: name of the angle which is tilted during the rocking curve, 'outofplane' or 'inplane'
         :param distance: sample to detector distance in meters
-        :param grazing_angle: grazing angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
+        :param grazing_angle: grazing angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS), in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
         """
@@ -39,7 +39,7 @@ class SetupPostprocessing(object):
         self.inplane_angle = inplane_angle  # in degrees
         self.tilt_angle = tilt_angle  # in degrees
         self.rocking_angle = rocking_angle  # string
-        self.grazing_angle = grazing_angle  # string
+        self.grazing_angle = grazing_angle  # in degrees
         self.distance = distance  # in meters
         self.pixel_x = pixel_x  # in meters
         self.pixel_y = pixel_y  # in meters
@@ -50,20 +50,16 @@ class SetupPostprocessing(object):
         # the frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up
 
         # horizontal axis:
-        if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX']:
-            # we look at the detector from downstream
+        if beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX'}:
+            # we look at the detector from downstream, detector X along the outboard direction
             self.detector_hor = 'y+'
         else:  # 'P10', '34ID'
-            # we look at the detector from upstream
+            # we look at the detector from upstream, detector X opposite to the outboard direction
             self.detector_hor = 'y-'
 
         # vertical axis:
-        if beamline in ['NANOMAX']:
-            # detector in flip upside-down on the robot arm at Nanomax, the origin is at the bottom
-            self.detector_ver = 'z+'
-        else:
-            # origin is at the top
-            self.detector_ver = 'z-'
+        # origin is at the top, detector Y along vertical down
+        self.detector_ver = 'z-'
 
     def __repr__(self):
         """
@@ -87,14 +83,11 @@ class SetupPostprocessing(object):
          - 'title': title for the debugging plots
         :return: object interpolated on an orthogonal grid
         """
-        # default values for kwargs
-        title = 'Object'
+        title = kwargs.get('title', 'Object')
 
         for k in kwargs.keys():
-            if k in ['title']:
-                title = kwargs['title']
-            else:
-                raise Exception("unknown keyword argument given: allowed is 'title'")
+            if k not in {'title'}:
+                raise Exception("unknown keyword argument given:", k)
 
         nbz, nby, nbx = obj.shape
 
@@ -230,14 +223,11 @@ class SetupPostprocessing(object):
          - 'title': title for the debugging plots
         :return: object interpolated on an orthogonal grid
         """
-        # default values for kwargs
-        title = 'Object'
+        title = kwargs.get('title', 'Object')
 
         for k in kwargs.keys():
-            if k in ['title']:
-                title = kwargs['title']
-            else:
-                raise Exception("unknown keyword argument given: allowed is 'title'")
+            if k not in {'title'}:
+                raise Exception("unknown keyword argument given:", k)
 
         if len(initial_shape) == 0:
             initial_shape = obj.shape
@@ -706,38 +696,18 @@ class SetupPreprocessing(object):
          - 'custom_monitor' = list of monitor values for normalization for the custom_scan
          - 'custom_motors' = dictionnary of motors values during the scan
         """
-        # default values for kwargs
-        filtered_data = False
-        is_orthogonal = False
-        custom_scan = False
-        custom_images = []
-        custom_monitor = []
-        custom_motors = {}
-
         for k in kwargs.keys():
-            if k in ['filtered_data']:
-                filtered_data = kwargs['filtered_data']
-            elif k in ['is_orthogonal']:
-                is_orthogonal = kwargs['is_orthogonal']
-            elif k in ['custom_scan']:
-                custom_scan = kwargs['custom_scan']
-            elif k in ['custom_images']:
-                custom_images = kwargs['custom_images']
-            elif k in ['custom_monitor']:
-                custom_monitor = kwargs['custom_monitor']
-            elif k in ['custom_motors']:
-                custom_motors = kwargs['custom_motors']
-            else:
-                raise Exception("unknown keyword argument given: allowed is"
-                                "'custom_images', 'custom_monitor', 'custom_motors'")
+            if k not in {'filtered_data', 'is_orthogonal', 'custom_scan', 'custom_images', 'custom_monitor',
+                         'custom_motors'}:
+                raise Exception("unknown keyword argument given:", k)
 
         self.beamline = beamline  # string
-        self.filtered_data = filtered_data  # boolean
-        self.is_orthogonal = is_orthogonal
-        self.custom_scan = custom_scan  # boolean
-        self.custom_images = custom_images  # list
-        self.custom_monitor = custom_monitor  # list
-        self.custom_motors = custom_motors  # dictionnary
+        self.filtered_data = kwargs.get('filtered_data', False)  # boolean
+        self.is_orthogonal = kwargs.get('is_orthogonal', False)  # boolean
+        self.custom_scan = kwargs.get('custom_scan', False)  # boolean
+        self.custom_images = kwargs.get('custom_images', [])  # list
+        self.custom_monitor = kwargs.get('custom_monitor', [])  # list
+        self.custom_motors = kwargs.get('custom_motors', {})  # dictionnary
         self.energy = energy  # in eV
         self.wavelength = 12.398 * 1e-7 / energy  # in m
         self.rocking_angle = rocking_angle  # string
@@ -755,20 +725,16 @@ class SetupPreprocessing(object):
         # the frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up
 
         # horizontal axis:
-        if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX']:
-            # we look at the detector from downstream
+        if beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX'}:
+            # we look at the detector from downstream, detector X along the outboard direction
             self.detector_hor = 'y+'
         else:  # 'P10', '34ID'
-            # we look at the detector from upstream
+            # we look at the detector from upstream, detector X opposite to the outboard direction
             self.detector_hor = 'y-'
 
         # vertical axis:
-        if beamline in ['NANOMAX']:
-            # detector in flip upside-down on the robot arm at Nanomax, the origin is at the bottom
-            self.detector_ver = 'z+'
-        else:
-            # origin is at the top
-            self.detector_ver = 'z-'
+        # origin is at the top, detector Y along vertical down
+        self.detector_ver = 'z-'
 
     def __repr__(self):
         """
@@ -803,67 +769,56 @@ class Detector(object):
          - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
          - 'previous_binning': tuple or list of the three binning factors for reloaded binned data
         """
-        # default values for kwargs
-        nb_pixel_x = None
-        nb_pixel_y = None
-        previous_binning = None
-        is_series = False
+        self.is_series = kwargs.get('is_series', False)
+        self.nb_pixel_x = kwargs.get('nb_pixel_x', None)
+        self.nb_pixel_y = kwargs.get('nb_pixel_y', None)
+        self.previous_binning = kwargs.get('previous_binning', None) or (1, 1, 1)
 
         for k in kwargs.keys():
-            if k in ['is_series']:
-                is_series = kwargs['is_series']
-            elif k in ['nb_pixel_x']:
-                nb_pixel_x = kwargs['nb_pixel_x']
-            elif k in ['nb_pixel_y']:
-                nb_pixel_y = kwargs['nb_pixel_y']
-            elif k in ['previous_binning']:
-                previous_binning = kwargs['previous_binning']
-            else:
+            if k not in {'is_series', 'nb_pixel_x', 'nb_pixel_y', 'previous_binning'}:
                 raise Exception("unknown keyword argument given:", k)
 
-        self.previous_binning = previous_binning or (1, 1, 1)
-        self.is_series = is_series
         self.name = name  # string
         self.offsets = ()
         self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
 
         if name == 'Maxipix':
-            nb_pixel_x = nb_pixel_x or 516
-            nb_pixel_y = nb_pixel_y or 516
-            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
+            self.nb_pixel_x = self.nb_pixel_x or 516
+            self.nb_pixel_y = self.nb_pixel_y or 516
+            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'mpx4inr'
         elif name == 'Eiger2M':
-            nb_pixel_x = nb_pixel_x or 1030
-            nb_pixel_y = nb_pixel_y or 2164
-            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
+            self.nb_pixel_x = self.nb_pixel_x or 1030
+            self.nb_pixel_y = self.nb_pixel_y or 2164
+            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = 'ei2minr'
         elif name == 'Eiger4M':
-            nb_pixel_x = nb_pixel_x or 2070
-            nb_pixel_y = nb_pixel_y or 2167
-            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
+            self.nb_pixel_x = self.nb_pixel_x or 2070
+            self.nb_pixel_y = self.nb_pixel_y or 2167
+            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 75e-06  # m
             self.pixelsize_y = 75e-06  # m
             self.counter = ''  # unused
         elif name == 'Timepix':
-            nb_pixel_x = nb_pixel_x or 256
-            nb_pixel_y = nb_pixel_y or 256
-            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
+            self.nb_pixel_x = self.nb_pixel_x or 256
+            self.nb_pixel_y = self.nb_pixel_y or 256
+            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = ''  # unused
         elif name == 'Merlin':
-            nb_pixel_x = nb_pixel_x or 515
-            nb_pixel_y = nb_pixel_y or 515
-            self.nb_pixel_x = nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = nb_pixel_y // self.previous_binning[1]
+            self.nb_pixel_x = self.nb_pixel_x or 515
+            self.nb_pixel_y = self.nb_pixel_y or 515
+            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
+            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
             self.pixelsize_x = 55e-06  # m
             self.pixelsize_y = 55e-06  # m
             self.counter = 'alba2'
