@@ -826,6 +826,7 @@ class Detector(object):
         self.is_series = is_series
         self.name = name  # string
         self.offsets = ()
+        self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
 
         if name == 'Maxipix':
             nb_pixel_x = nb_pixel_x or 516
@@ -870,6 +871,10 @@ class Detector(object):
         else:
             raise ValueError('Unknown detector name')
 
+        # correct the pixel sizes taking into account past and future binning
+        self.pixelsize_y = self.pixelsize_y * self.previous_binning[1] * self.binning[1]
+        self.pixelsize_x = self.pixelsize_x * self.previous_binning[2] * self.binning[2]
+        
         # define paths
         self.datadir = datadir
         self.savedir = savedir
@@ -889,11 +894,6 @@ class Detector(object):
             self.sum_roi = sum_roi
         else:
             raise ValueError("Incorrect value for parameter 'sum_roi'")
-
-        # define binning and correct the pixel sizes taking into account past and future binning
-        self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
-        self.pixelsize_y = self.pixelsize_y * self.previous_binning[1] * self.binning[1]
-        self.pixelsize_x = self.pixelsize_x * self.previous_binning[2] * self.binning[2]
 
     def __repr__(self):
         """
