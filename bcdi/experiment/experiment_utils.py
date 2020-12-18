@@ -474,7 +474,8 @@ class Setup(object):
 
         :param obj: real space object, in a non-orthogonal frame (output of phasing program)
         :param initial_shape: shape of the FFT used for phasing
-        :param voxel_size: user-defined voxel size, in nm
+        :param voxel_size: number or list of three user-defined voxel sizes for the interpolation, in nm.
+         If a single number is provided, the voxel size will be identical in all directions.
         :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
         :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
         :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
@@ -539,8 +540,10 @@ class Setup(object):
         if not voxel_size:
             voxel_size = dz_realspace, dy_realspace, dx_realspace  # in nm
         else:
+            if isinstance(voxel_size, Number):
+                voxel_size = (voxel_size, voxel_size, voxel_size)
             assert isinstance(voxel_size, (tuple, list)) and len(voxel_size) == 3 and\
-                all(val > 0 for val in voxel_size), 'voxel_size should be a lit/tuple of three positive numbers'
+                all(val > 0 for val in voxel_size), 'voxel_size should be a list/tuple of three positive numbers in nm'
 
         ortho_matrix = self.update_coords(array_shape=(nbz, nby, nbx), tilt_angle=tilt,
                                           pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
