@@ -1712,36 +1712,35 @@ def init_qconversion(setup):
     :return: qconv object and offsets for motors
     """
     beamline = setup.beamline
-    offset_inplane = setup.offset_inplane
-    beam_direction = setup.beam_direction
+    beam_direction = setup.beam_direction_xrutils
 
     if beamline == 'ID01':
-        offsets = (0, 0, 0, offset_inplane, 0)  # eta chi phi nu del
+        offsets = (0, 0, 0, setup.offset_inplane, 0)  # eta chi phi nu del
         qconv = xu.experiment.QConversion(['y-', 'x+', 'z-'], ['z-', 'y-'], r_i=beam_direction)  # for ID01
         # 3S+2D goniometer (ID01 goniometer, sample: eta, chi, phi      detector: nu,del
         # the vector beam_direction is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
-        offsets = (0, 0, 0, offset_inplane, 0)  # beta, mu, beta, gamma del
+        offsets = (0, 0, 0, setup.offset_inplane, 0)  # beta, mu, beta, gamma del
         qconv = xu.experiment.QConversion(['y-', 'z+'], ['y-', 'z+', 'y-'], r_i=beam_direction)  # for SIXS
         # 2S+3D goniometer (SIXS goniometer, sample: beta, mu     detector: beta, gamma, del
         # beta is below both sample and detector circles
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'CRISTAL':
-        offsets = (0, offset_inplane, 0)  # komega, gamma, delta
+        offsets = (0, setup.offset_inplane, 0)  # komega, gamma, delta
         qconv = xu.experiment.QConversion(['y-'], ['z+', 'y-'], r_i=beam_direction)  # for CRISTAL
         # 1S+2D goniometer (CRISTAL goniometer, sample: mgomega    detector: gamma, delta
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'P10':
-        offsets = (0, 0, 0, 0, offset_inplane, 0)  # mu, omega, chi, phi, gamma del
+        offsets = (0, 0, 0, 0, setup.offset_inplane, 0)  # mu, omega, chi, phi, gamma del
         qconv = xu.experiment.QConversion(['z+', 'y-', 'x+', 'z-'], ['z+', 'y-'], r_i=beam_direction)  # for P10
         # 4S+2D goniometer (P10 goniometer, sample: mu, omega, chi,phi   detector: gamma, delta
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == '34ID':
-        offsets = (0, 0, 0, 0, offset_inplane, 0)
+        offsets = (0, 0, 0, 0, setup.offset_inplane, 0)
         # mu, phi (incident angle), chi, theta (inplane), delta (inplane), gamma (outofplane)
         qconv = xu.experiment.QConversion(['z+', 'y+', 'x+', 'z+'], ['z+', 'y-'], r_i=beam_direction)  # for 34ID
         # TODO: check the motor directions for mu and chi
@@ -1749,7 +1748,7 @@ def init_qconversion(setup):
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'NANOMAX':
-        offsets = (0, 0, offset_inplane, 0)  # theta phi gamma delta
+        offsets = (0, 0, setup.offset_inplane, 0)  # theta phi gamma delta
         qconv = xu.experiment.QConversion(['y-', 'z-'], ['z-', 'y-'], r_i=beam_direction)  # for NANOMAX
         # 2S+2D goniometer (Nanomax goniometer, sample: theta, phi      detector: gamma,delta
         # the vector beam_direction is giving the direction of the primary beam
