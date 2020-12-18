@@ -23,6 +23,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
 from bcdi.utils import image_registration as reg
 import bcdi.utils.utilities as util
+import bcdi.experiment.experiment_utils as exp
 
 
 def align_diffpattern(reference_data, data, mask=None, method='registration', combining_method='rgi',
@@ -1121,12 +1122,70 @@ def get_motor_pos(logfile, scan_number, setup, motor_name):
         motor_pos = scan_motor_cristal(logfile=logfile, motor_name=motor_name)
     elif setup.beamline == 'NANOMAX':
         motor_pos = scan_motor_nanomax(logfile=logfile, motor_name=motor_name)
-    elif setup.beamline in ['SIXS_2018', 'SIXS_2019']:
+    elif setup.beamline in {'SIXS_2018', 'SIXS_2019'}:
         motor_pos = scan_motor_sixs(logfile=logfile, motor_name=motor_name)
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
 
     return motor_pos
+
+
+def grazing_angle(logfile, scan_number, setup):
+    """
+    Get the value(s) of the position(s) of goniometer circle(s) below the rocking circle.
+
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param setup: the experimental setup: Class Setup
+    :return: a tuple containing the value(s) of the position(s) of goniometer circle(s) below the rocking circle.
+    """
+    if not isinstance(setup, exp.Setup):
+        raise TypeError('setup should be of type experiment.experiment_utils.Setup')
+    if not isinstance(scan_number, int) or scan_number <= 0:
+        raise TypeError('scan_number should be a positive integer')
+    beamline = setup.beamline
+    rocking_angle = setup.rocking_angle
+
+    if beamline == 'ID01':
+        eta, chi, _, _, _, _, _ = motor_positions_id01(logfile, scan_number, setup)
+        if rocking_angle == 'outofplane':
+            return (chi,)  # no chi at ID01
+        elif rocking_angle == 'inplane':
+            return chi, eta  # no chi at ID01
+
+    elif beamline == 'P10':
+        om, phi, chi, _, _, _ = motor_positions_p10(logfile, setup)
+        if rocking_angle == 'outofplane':
+            return (chi,)
+        elif rocking_angle == 'inplane':
+            return chi, om
+
+    elif beamline == 'CRISTAL':
+        if rocking_angle == 'outofplane':
+            return (0,)  # no chi at CRISTAL
+        elif rocking_angle == 'inplane':
+            raise NotImplementedError('inplane rocking curve not implemented for CRISTAL')
+
+    elif beamline in {'SIXS_2018', 'SIXS_2019'}:
+        beta, _, _, _, _ = motor_positions_sixs(logfile, setup)
+        if rocking_angle == 'outofplane':
+            raise NotImplementedError('outofplane rocking curve not implemented for SIXS')
+        elif rocking_angle == 'inplane':
+            return 0, beta  # no chi at SIXS
+
+    elif beamline == 'NANOMAX':
+        theta, _, _, _, _, _ = motor_positions_nanomax(logfile, setup)
+        if rocking_angle == 'outofplane':
+            return (0,)  # no chi at NANOMAX
+        elif rocking_angle == 'inplane':
+            return 0, theta  # no chi at NANOMAX
+
+    elif beamline == '34ID':
+        mu, tilt, chi, theta, delta, gamma = motor_positions_34id(setup)
+        if rocking_angle == 'outofplane':
+            return (chi,)
+        elif rocking_angle == 'inplane':
+            return chi, tilt  # tilt is the incident angle at 34ID (theta is the rotation around the vertical axis)
 
 
 def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, correct_curvature=False,
@@ -2884,18 +2943,28 @@ def motor_positions_cristal(logfile, setup):
     return mgomega, gamma, delta
 
 
-def motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=False):
+def motor_positions_id01(logfile, scan_number, setup, **kwargs):
     """
     Load the scan data and extract motor positions.
 
-    :param follow_bragg: True when for energy scans the detector was also scanned to follow the Bragg peak
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param logfile: Silx SpecFile object containing the information about the scan and image numbers
     :param scan_number: the scan number to load
     :param setup: the experimental setup: Class SetupPreprocessing()
+    :param kwargs:
+     - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
+      equal to the number of measured frames. In case of data padding, the length changes.
+     - follow_bragg: boolean, True for energy scans where the detector position is changed during the scan to follow
+      the Bragg peak
     :return: (eta, chi, phi, nu, delta, energy) motor positions
     """
+    # check kwargs
+    follow_bragg = kwargs.get('follow_bragg', False)
+    assert isinstance(follow_bragg, bool), 'follow_bragg should be a boolean'
+    frames_logical = kwargs.get('frames_logical', None)
+    if frames_logical is not None:
+        assert isinstance(frames_logical, list) and all(val in {-1, 0, 1} for val in frames_logical),\
+            'frames_logical should be a list of values in {-1, 0, 1}'
+
     energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
     old_names = False
     if not setup.custom_scan:
@@ -2950,21 +3019,22 @@ def motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bra
 
             nb_overlap = 0
             energy = raw_energy[:]
+            frames_logical = frames_logical or np.ones(len(energy))
             for idx in range(len(raw_energy) - 1):
-                if raw_energy[idx + 1] == raw_energy[idx]:  # duplicate energy when undulator gap is changed
+                if raw_energy[idx + 1] == raw_energy[idx]:  # duplicated energy when undulator gap is changed
                     frames_logical[idx + 1] = 0
                     energy.pop(idx - nb_overlap)
-                    if follow_bragg == 1:
+                    if follow_bragg:
                         delta.pop(idx - nb_overlap)
                     nb_overlap = nb_overlap + 1
-            energy = np.array(energy) * 1000.0 - 6  # switch to eV, 6 eV of difference at ID01
+            energy = np.array(energy) * 1000.0  # switch to eV
 
         else:
             raise ValueError('Invalid rocking angle ', setup.rocking_angle, 'for ID01')
 
     else:
         eta = setup.custom_motors["eta"]
-        chi = 0
+        chi = setup.custom_motors["chi"]
         phi = setup.custom_motors["phi"]
         delta = setup.custom_motors["delta"]
         nu = setup.custom_motors["nu"]
@@ -3116,16 +3186,23 @@ def motor_positions_p10_saxs(logfile, setup):
     return phi
 
 
-def motor_positions_sixs(logfile, frames_logical, setup):
+def motor_positions_sixs(logfile, setup, **kwargs):
     """
     Load the scan data and extract motor positions.
 
     :param logfile: nxsReady Dataset object of SIXS .nxs scan file
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param setup: the experimental setup: Class SetupPreprocessing()
+    :param kwargs:
+     - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
+      equal to the number of measured frames. In case of data padding, the length changes.
     :return: (beta, mgomega, gamma, delta) motor positions and updated frames_logical
     """
+    # check kwargs
+    frames_logical = kwargs.get('frames_logical', None)
+    if frames_logical is not None:
+        assert isinstance(frames_logical, list) and all(val in {-1, 0, 1} for val in frames_logical),\
+            'frames_logical should be a list of values in {-1, 0, 1}'
+
     if not setup.custom_scan:
         delta = logfile.delta[0]  # not scanned
         gamma = logfile.gamma[0]  # not scanned
@@ -3138,7 +3215,7 @@ def motor_positions_sixs(logfile, frames_logical, setup):
                 beta = logfile.pitch[0]  # not scanned
 
         temp_mu = logfile.mu[:]
-
+        frames_logical = frames_logical or np.ones(len(temp_mu))
         mu = np.zeros((frames_logical != 0).sum())  # first frame is duplicated for SIXS_2018
         nb_overlap = 0
         for idx in range(len(frames_logical)):
