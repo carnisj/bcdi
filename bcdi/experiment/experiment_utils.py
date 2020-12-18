@@ -18,8 +18,15 @@ class Setup(object):
     """
     Class for defining the experimental geometry.
     """
-    def __init__(self, beamline, energy=None, distance=None, outofplane_angle=None, inplane_angle=None, tilt_angle=None,
-                 rocking_angle=None, pixel_x=None, pixel_y=None, **kwargs):
+    def __init__(self, beamline, beam_direction=(1, 0, 0), energy=None, distance=None, outofplane_angle=None,
+                 inplane_angle=None, tilt_angle=None, rocking_angle=None, pixel_x=None, pixel_y=None, **kwargs):
+
+        # test the validity of the kwargs:
+        for k in kwargs.keys():
+            if k not in {'direct_beam', 'filtered_data', 'is_orthogonal', 'custom_scan', 'custom_images',
+                         'custom_monitor', 'custom_motors', 'sample_inplane', 'sample_outofplane',
+                         'sample_offsets', 'offset_inplane'}:
+                raise Exception("unknown keyword argument given:", k)
 
         # kwargs for preprocessing forward CDI data
         self.direct_beam = kwargs.get('direct_beam', None)
@@ -43,7 +50,6 @@ class Setup(object):
         assert isinstance(self.custom_motors, dict), 'custom_motors should be a dictionnary'
 
         # kwargs for xrayutilities, delegate the test on their values to xrayutilities
-        self.beam_direction = kwargs.get('beam_direction', (1, 0, 0))
         self.sample_inplane = kwargs.get('sample_inplane', (1, 0, 0))
         self.sample_outofplane = kwargs.get('sample_outofplane', (0, 0, 1))
         self.sample_offsets = kwargs.get('sample_offsets', (0, 0, 0))
@@ -51,6 +57,7 @@ class Setup(object):
 
         # load positional arguments corresponding to instance properties
         self.beamline = beamline
+        self.beam_direction = beam_direction
         self.energy = energy
         self.distance = distance
         self.outofplane_angle = outofplane_angle
@@ -98,6 +105,31 @@ class Setup(object):
             return 'z-'
         else:
             return 'z+'
+
+    @property
+    def beam_direction(self):
+        """
+        Direction of the incident X-ray beam in the frame (z downstream, y vertical up, x outboard).
+        """
+        return self._beam_direction
+
+    @beam_direction.setter
+    def beam_direction(self, value):
+        if not isinstance(value, (tuple, list)) or len(value) != 3 or not \
+               all(isinstance(val, Number) for val in value):
+            raise ValueError('beam_direction should be a list/tuple of three numbers')
+        elif np.linalg.norm(value) == 0:
+            raise ValueError('At least of component of beam_direction should be non null.')
+        else:
+            self._beam_direction = value / np.linalg.norm(value)
+
+    @property
+    def beam_direction_xrutils(self):
+        """
+        Direction of the incident X-ray beam in the frame of xrayutilities (x downstream, y outboard, z vertical up).
+        """
+        u, v, w = self._beam_direction  # (u downstream, v vertical up, w outboard)
+        return u, w, v
 
     @property
     def energy(self):
