@@ -68,6 +68,31 @@ class Setup(object):
         self.pixel_y = pixel_y
 
     @property
+    def beam_direction(self):
+        """
+        Direction of the incident X-ray beam in the frame (z downstream, y vertical up, x outboard).
+        """
+        return self._beam_direction
+
+    @beam_direction.setter
+    def beam_direction(self, value):
+        if not isinstance(value, (tuple, list)) or len(value) != 3 or not \
+               all(isinstance(val, Number) for val in value):
+            raise ValueError('beam_direction should be a list/tuple of three numbers')
+        elif np.linalg.norm(value) == 0:
+            raise ValueError('At least of component of beam_direction should be non null.')
+        else:
+            self._beam_direction = value / np.linalg.norm(value)
+
+    @property
+    def beam_direction_xrutils(self):
+        """
+        Direction of the incident X-ray beam in the frame of xrayutilities (x downstream, y outboard, z vertical up).
+        """
+        u, v, w = self._beam_direction  # (u downstream, v vertical up, w outboard)
+        return u, w, v
+
+    @property
     def beamline(self):
         """
         Name of the beamline.
@@ -107,54 +132,6 @@ class Setup(object):
             return 'z+'
 
     @property
-    def beam_direction(self):
-        """
-        Direction of the incident X-ray beam in the frame (z downstream, y vertical up, x outboard).
-        """
-        return self._beam_direction
-
-    @beam_direction.setter
-    def beam_direction(self, value):
-        if not isinstance(value, (tuple, list)) or len(value) != 3 or not \
-               all(isinstance(val, Number) for val in value):
-            raise ValueError('beam_direction should be a list/tuple of three numbers')
-        elif np.linalg.norm(value) == 0:
-            raise ValueError('At least of component of beam_direction should be non null.')
-        else:
-            self._beam_direction = value / np.linalg.norm(value)
-
-    @property
-    def beam_direction_xrutils(self):
-        """
-        Direction of the incident X-ray beam in the frame of xrayutilities (x downstream, y outboard, z vertical up).
-        """
-        u, v, w = self._beam_direction  # (u downstream, v vertical up, w outboard)
-        return u, w, v
-
-    @property
-    def energy(self):
-        """
-        Energy setting of the beamline, in eV.
-        """
-        return self._energy
-
-    @energy.setter
-    def energy(self, value):
-        if value is None:
-            self._energy = value
-        elif not isinstance(value, Number):
-            raise TypeError('energy should be a number in eV')
-        elif value <= 0:
-            raise ValueError('energy should be a strictly positive number in eV')
-        else:
-            self._energy = value
-
-    @property
-    def wavelength(self):
-        if self.energy:
-            return 12.398 * 1e-7 / self.energy  # in m
-
-    @property
     def distance(self):
         """
         Distance setting of the beamline, in m.
@@ -173,100 +150,22 @@ class Setup(object):
             self._distance = value
 
     @property
-    def outofplane_angle(self):
+    def energy(self):
         """
-        Vertical detector angle, in degrees.
+        Energy setting of the beamline, in eV.
         """
-        return self._outofplane_angle
+        return self._energy
 
-    @outofplane_angle.setter
-    def outofplane_angle(self, value):
-        if not isinstance(value, Number) and value is not None:
-            raise TypeError('outofplane_angle should be a number in degrees')
-        else:
-            self._outofplane_angle = value
-
-    @property
-    def inplane_angle(self):
-        """
-        Horizontal detector angle, in degrees.
-        """
-        return self._inplane_angle
-
-    @inplane_angle.setter
-    def inplane_angle(self, value):
-        if not isinstance(value, Number) and value is not None:
-            raise TypeError('inplane_angle should be a number in degrees')
-        else:
-            self._inplane_angle = value
-
-    @property
-    def tilt_angle(self):
-        """
-        Angular step of the rocking curve, in degrees.
-        """
-        return self._tilt_angle
-
-    @tilt_angle.setter
-    def tilt_angle(self, value):
-        if not isinstance(value, Number) and value is not None:
-            raise TypeError('tilt_angle should be a number in degrees')
-        else:
-            self._tilt_angle = value
-
-    @property
-    def rocking_angle(self):
-        """
-        Name of the angle which is tilted during the rocking curve, 'outofplane' or 'inplane'
-        """
-        return self._rocking_angle
-
-    @rocking_angle.setter
-    def rocking_angle(self, value):
+    @energy.setter
+    def energy(self, value):
         if value is None:
-            self._rocking_angle = value
-        elif not isinstance(value, str):
-            raise TypeError('rocking_angle should be a str')
-        elif value not in {'outofplane', 'inplane'}:
-            raise ValueError('rocking_angle can take only the value "outofplane" or "inplane"')
-        else:
-            self._rocking_angle = value
-
-    @property
-    def pixel_x(self):
-        """
-        Detector horizontal pixel size, in meters.
-        """
-        return self._pixel_x
-
-    @pixel_x.setter
-    def pixel_x(self, value):
-        if value is None:
-            self._pixel_x = value
+            self._energy = value
         elif not isinstance(value, Number):
-            raise TypeError('pixel_x should be a number in m')
+            raise TypeError('energy should be a number in eV')
         elif value <= 0:
-            raise ValueError('pixel_x should be a strictly positive number in m')
+            raise ValueError('energy should be a strictly positive number in eV')
         else:
-            self._pixel_x = value
-
-    @property
-    def pixel_y(self):
-        """
-        Detector vertical pixel size, in meters.
-        """
-        return self._pixel_y
-
-    @pixel_y.setter
-    def pixel_y(self, value):
-        if value is None:
-            self._pixel_y = value
-        elif not isinstance(value, Number):
-            raise TypeError('pixel_y should be a number in m')
-        elif value <= 0:
-            raise ValueError('pixel_y should be a strictly positive number in m')
-        else:
-            self._pixel_y = value
+            self._energy = value
 
     @property
     def exit_wavevector(self):
@@ -317,6 +216,20 @@ class Setup(object):
         return kout
 
     @property
+    def inplane_angle(self):
+        """
+        Horizontal detector angle, in degrees.
+        """
+        return self._inplane_angle
+
+    @inplane_angle.setter
+    def inplane_angle(self, value):
+        if not isinstance(value, Number) and value is not None:
+            raise TypeError('inplane_angle should be a number in degrees')
+        else:
+            self._inplane_angle = value
+
+    @property
     def inplane_coeff(self):
         """
         Define a coefficient +/- 1 depending on the detector inplane rotation direction and the detector inplane
@@ -353,6 +266,20 @@ class Setup(object):
         return coeff_inplane
 
     @property
+    def outofplane_angle(self):
+        """
+        Vertical detector angle, in degrees.
+        """
+        return self._outofplane_angle
+
+    @outofplane_angle.setter
+    def outofplane_angle(self, value):
+        if not isinstance(value, Number) and value is not None:
+            raise TypeError('outofplane_angle should be a number in degrees')
+        else:
+            self._outofplane_angle = value
+
+    @property
     def outofplane_coeff(self):
         """
         Define a coefficient +/- 1 depending on the detector out of plane rotation direction and the detector out of
@@ -368,6 +295,79 @@ class Setup(object):
         # the out of plane detector rotation is clockwise for all beamlines
         coeff_outofplane = -1 * ver_coeff
         return coeff_outofplane
+
+    @property
+    def pixel_x(self):
+        """
+        Detector horizontal pixel size, in meters.
+        """
+        return self._pixel_x
+
+    @pixel_x.setter
+    def pixel_x(self, value):
+        if value is None:
+            self._pixel_x = value
+        elif not isinstance(value, Number):
+            raise TypeError('pixel_x should be a number in m')
+        elif value <= 0:
+            raise ValueError('pixel_x should be a strictly positive number in m')
+        else:
+            self._pixel_x = value
+
+    @property
+    def pixel_y(self):
+        """
+        Detector vertical pixel size, in meters.
+        """
+        return self._pixel_y
+
+    @pixel_y.setter
+    def pixel_y(self, value):
+        if value is None:
+            self._pixel_y = value
+        elif not isinstance(value, Number):
+            raise TypeError('pixel_y should be a number in m')
+        elif value <= 0:
+            raise ValueError('pixel_y should be a strictly positive number in m')
+        else:
+            self._pixel_y = value
+
+    @property
+    def rocking_angle(self):
+        """
+        Name of the angle which is tilted during the rocking curve, 'outofplane' or 'inplane'
+        """
+        return self._rocking_angle
+
+    @rocking_angle.setter
+    def rocking_angle(self, value):
+        if value is None:
+            self._rocking_angle = value
+        elif not isinstance(value, str):
+            raise TypeError('rocking_angle should be a str')
+        elif value not in {'outofplane', 'inplane'}:
+            raise ValueError('rocking_angle can take only the value "outofplane" or "inplane"')
+        else:
+            self._rocking_angle = value
+
+    @property
+    def tilt_angle(self):
+        """
+        Angular step of the rocking curve, in degrees.
+        """
+        return self._tilt_angle
+
+    @tilt_angle.setter
+    def tilt_angle(self, value):
+        if not isinstance(value, Number) and value is not None:
+            raise TypeError('tilt_angle should be a number in degrees')
+        else:
+            self._tilt_angle = value
+
+    @property
+    def wavelength(self):
+        if self.energy:
+            return 12.398 * 1e-7 / self.energy  # in m
 
     # TODO: how to deal with the grazing angle(s)?
 
