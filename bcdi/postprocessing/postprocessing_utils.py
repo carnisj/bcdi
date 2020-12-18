@@ -1236,29 +1236,32 @@ def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
     return modes[:nb_mode], eigenvectors, weights
 
 
-def regrid(array, voxel_zyx, voxel):
+def regrid(array, old_voxelsize, new_voxelsize):
     """
-    Interpolate real space data on a grid with cubic voxels.
+    Interpolate real space data on a grid with a different voxel size.
 
     :param array: 3D array, the object to be interpolated
-    :param voxel_zyx: tuple of actual voxel sizes in z, y, and x (CXI convention)
-    :param voxel: desired voxel size for the interpolation
-    :return: obj interpolated onto a grid with cubic voxels
+    :param old_voxelsize: tuple, actual voxel size in z, y, and x (CXI convention)
+    :param new_voxelsize: tuple, desired voxel size for the interpolation in z, y, and x (CXI convention)
+    :return: obj interpolated using the new voxel sizes
     """
-    from scipy.interpolate import RegularGridInterpolator
-
     if array.ndim != 3:
         raise ValueError('array should be a 3D array')
 
-    nbz, nby, nbx = array.shape
-    dz_realspace, dy_realspace, dx_realspace = voxel_zyx
-    old_z = np.arange(-nbz // 2, nbz // 2, 1) * dz_realspace
-    old_y = np.arange(-nby // 2, nby // 2, 1) * dy_realspace
-    old_x = np.arange(-nbx // 2, nbx // 2, 1) * dx_realspace
+    assert isinstance(old_voxelsize, (tuple, list)) and all(val > 0 for val in old_voxelsize), \
+        'old_voxelsize should be a tuple/list of three positive numbers'
+    assert isinstance(new_voxelsize, (tuple, list)) and all(val > 0 for val in new_voxelsize), \
+        'new_voxelsize should be a tuple/list of three positive numbers'
 
-    new_z, new_y, new_x = np.meshgrid(old_z * voxel / dz_realspace,
-                                      old_y * voxel / dy_realspace,
-                                      old_x * voxel / dx_realspace,
+    nbz, nby, nbx = array.shape
+
+    old_z = np.arange(-nbz // 2, nbz // 2, 1) * old_voxelsize[0]
+    old_y = np.arange(-nby // 2, nby // 2, 1) * old_voxelsize[1]
+    old_x = np.arange(-nbx // 2, nbx // 2, 1) * old_voxelsize[2]
+
+    new_z, new_y, new_x = np.meshgrid(old_z * new_voxelsize[0] / old_voxelsize[0],
+                                      old_y * new_voxelsize[1] / old_voxelsize[1],
+                                      old_x * new_voxelsize[2] / old_voxelsize[2],
                                       indexing='ij')
 
     rgi = RegularGridInterpolator((old_z, old_y, old_x), array, method='linear', bounds_error=False, fill_value=0)
