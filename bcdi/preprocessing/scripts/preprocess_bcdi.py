@@ -174,11 +174,11 @@ custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -
 # parameters for xrayutilities to orthogonalize the data before phasing #
 #########################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
-beam_direction = (1, 0, 0)  # beam along z
+beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 offset_inplane = 0  # outer detector angle offset, not important if you use raw data
-sample_offsets = (0, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
+sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # the sample offsets will be added to the motor values
 cch1 = 256  # direct beam vertical position in the full unbinned detector for xrayutilities 2D detector calibration
 cch2 = 256  # direct beam horizontal position in the full unbinned detector for xrayutilities 2D detector calibration
