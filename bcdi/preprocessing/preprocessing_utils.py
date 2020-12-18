@@ -6,7 +6,6 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
 import numpy as np
-import warnings
 import time
 import datetime
 import matplotlib.pyplot as plt
@@ -1147,14 +1146,14 @@ def grazing_angle(logfile, scan_number, setup):
     rocking_angle = setup.rocking_angle
 
     if beamline == 'ID01':
-        eta, chi, _, _, _, _, _ = motor_positions_id01(logfile, scan_number, setup)
+        eta, chi, _, _, _, _, _ = motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup)
         if rocking_angle == 'outofplane':
             return (chi,)  # no chi at ID01
         elif rocking_angle == 'inplane':
             return chi, eta  # no chi at ID01
 
     elif beamline == 'P10':
-        om, phi, chi, _, _, _ = motor_positions_p10(logfile, setup)
+        om, phi, chi, _, _, _ = motor_positions_p10(logfile=logfile, setup=setup)
         if rocking_angle == 'outofplane':
             return (chi,)
         elif rocking_angle == 'inplane':
@@ -1167,21 +1166,21 @@ def grazing_angle(logfile, scan_number, setup):
             raise NotImplementedError('inplane rocking curve not implemented for CRISTAL')
 
     elif beamline in {'SIXS_2018', 'SIXS_2019'}:
-        beta, _, _, _, _ = motor_positions_sixs(logfile, setup)
+        beta, _, _, _, _ = motor_positions_sixs(logfile=logfile, setup=setup)
         if rocking_angle == 'outofplane':
             raise NotImplementedError('outofplane rocking curve not implemented for SIXS')
         elif rocking_angle == 'inplane':
             return 0, beta  # no chi at SIXS
 
     elif beamline == 'NANOMAX':
-        theta, _, _, _, _, _ = motor_positions_nanomax(logfile, setup)
+        theta, _, _, _, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
         if rocking_angle == 'outofplane':
             return (0,)  # no chi at NANOMAX
         elif rocking_angle == 'inplane':
             return 0, theta  # no chi at NANOMAX
 
     elif beamline == '34ID':
-        mu, tilt, chi, theta, delta, gamma = motor_positions_34id(setup)
+        mu, tilt, chi, theta, delta, gamma = motor_positions_34id(setup=setup)
         if rocking_angle == 'outofplane':
             return (chi,)
         elif rocking_angle == 'inplane':
@@ -1350,7 +1349,7 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
             if setup.custom_scan:
                 cdi_angle = setup.custom_motors['hprz']
             else:
-                cdi_angle = motor_positions_p10_saxs(logfile, setup)
+                cdi_angle = motor_positions_p10_saxs(logfile=logfile, setup=setup)
         else:
             raise ValueError('out-of-plane rotation not yet implemented for forward CDI data')
     else:
@@ -3247,17 +3246,19 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
     if setup.beamline == 'ID01':  # eta, chi, phi, nu, delta, energy, frames_logical
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
             tilt, _, _, inplane, outofplane, _, _ = \
-                motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
+                motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
+                                     kwargs={'frames_logical': frames_logical, 'follow_bragg': follow_bragg})
             grazing = 0
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
             grazing, _, tilt, inplane, outofplane, _, _ = \
-                motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
+                motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
+                                     kwargs={'frames_logical': frames_logical, 'follow_bragg': follow_bragg})
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
         if setup.rocking_angle == 'inplane':  # mu rocking curve
-            grazing, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile, frames_logical, setup)
+            grazing, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile=logfile, setup=setup)
         else:
             raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
 
@@ -3272,19 +3273,19 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
 
     elif setup.beamline == 'P10':
         if setup.rocking_angle == 'outofplane':  # om rocking curve
-            tilt, _, _, _, inplane, outofplane = motor_positions_p10(logfile, setup)
+            tilt, _, _, _, inplane, outofplane = motor_positions_p10(logfile=logfile, setup=setup)
             grazing = 0
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile, setup)
+            grazing, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile=logfile, setup=setup)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
     elif setup.beamline == 'NANOMAX':  # theta, phi, gamma, delta, energy, radius
         if setup.rocking_angle == 'outofplane':  # theta rocking curve
-            tilt, _, inplane, outofplane, _, _ = motor_positions_nanomax(logfile, setup)
+            tilt, _, inplane, outofplane, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
             grazing = 0
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing, tilt, inplane, outofplane, _, _ = motor_positions_nanomax(logfile, setup)
+            grazing, tilt, inplane, outofplane, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -3446,7 +3447,8 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     if setup.beamline == 'ID01':
         eta, chi, phi, nu, delta, energy, frames_logical = \
-            motor_positions_id01(frames_logical, logfile, scan_number, setup, follow_bragg=follow_bragg)
+            motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
+                                 kwargs={'frames_logical': frames_logical, 'follow_bragg': follow_bragg})
         chi = chi + setup.sample_offsets[0]
         phi = phi + setup.sample_offsets[1]
         eta = eta + setup.sample_offsets[2]
@@ -3489,7 +3491,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
-        beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile, frames_logical, setup)
+        beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile=logfile, setup=setup)
         if setup.rocking_angle == 'inplane':  # mu rocking curve
             nb_steps = len(mu)
             tilt_angle = mu[1] - mu[0]
@@ -3531,7 +3533,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(mgomega, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'P10':
-        om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile, setup)
+        om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile=logfile, setup=setup)
         chi = chi + setup.sample_offsets[0]
         phi = phi + setup.sample_offsets[1]
         om = om + setup.sample_offsets[2]
@@ -3572,7 +3574,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'NANOMAX':
-        theta, phi, gamma, delta, energy, radius = motor_positions_nanomax(logfile, setup)
+        theta, phi, gamma, delta, energy, radius = motor_positions_nanomax(logfile=logfile, setup=setup)
         phi = phi + setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
         theta = theta + setup.sample_offsets[2]  # sample_offsets[1] is the rotation around the outboard axis
         if setup.rocking_angle == 'outofplane':  # theta rocking curve
@@ -3611,7 +3613,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(theta, phi, gamma, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == '34ID':
-        mu, phi, chi, theta, delta, gamma = motor_positions_34id(setup)
+        mu, phi, chi, theta, delta, gamma = motor_positions_34id(setup=setup)
         chi = chi + setup.sample_offsets[0]
         theta = theta + setup.sample_offsets[1]  # theta is the inplane rotation
         phi = phi + setup.sample_offsets[2]  # phi is the incident angle
