@@ -1596,6 +1596,9 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     import vtk
     from vtk.util import numpy_support
 
+    assert isinstance(voxel_size, (tuple, list)) and all(val > 0 for val in voxel_size), \
+        'voxel_size should be a tuple/list of three positive numbers'
+
     try:
         nb_fieldnames = len(tuple_fieldnames)
     except TypeError:  # it is a number
