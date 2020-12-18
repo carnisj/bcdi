@@ -1169,6 +1169,9 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
     numz, numy, numx = data.shape
     if not correct_curvature:
         print('Gridding the data using xrayutilities package')
+        if setup.filtered_data:
+            print('Trying to orthogonalize a filtered data, the corresponding detector ROI should be provided\n'
+                  'otherwise q values will be wrong.')
         qx, qz, qy, frames_logical = \
             regrid(logfile=logfile, nb_frames=numz, scan_number=scan_number, detector=detector,
                    setup=setup, hxrd=hxrd, frames_logical=frames_logical, follow_bragg=follow_bragg)
@@ -1555,118 +1558,6 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
     end = time.time()
     print('\nTime ellapsed for gridding data:', str(datetime.timedelta(seconds=int(end - start))))
     return interp_array
-
-
-def gridmap(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, orthogonalize=False, hxrd=None,
-            normalize=False, debugging=False, **kwargs):
-    """
-    Load the Bragg CDI data, apply filters and concatenate it for phasing.
-
-    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
-    :param orthogonalize: if True will interpolate the data and the mask on an orthogonal grid using xrayutilities
-    :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
-    :param normalize: set to True to normalize the diffracted intensity by the incident X-ray beam intensity
-    :param debugging: set to True to see plots
-    :param kwargs:
-     - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
-    :return:
-     - the 3D data array (in an orthonormal frame or in the detector frame) and the 3D mask array
-     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-     - the monitor values for normalization
-    """
-    warnings.warn("deprecated, use load_bcdi_data() and grid_bcdi() instead", DeprecationWarning)
-
-    # default values for kwargs
-    follow_bragg = False
-
-    for k in kwargs.keys():
-        if k in ['follow_bragg']:
-            follow_bragg = kwargs['follow_bragg']
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is 'follow_bragg'")
-
-    rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
-                                                          setup=setup, flatfield=flatfield, hotpixels=hotpixels,
-                                                          debugging=debugging)
-
-    print((rawdata < 0).sum(), ' negative data points set to 0')  # can happen when subtracting a background
-    rawdata[rawdata < 0] = 0
-
-    # normalize by the incident X-ray beam intensity
-    if normalize:
-        rawdata, monitor = normalize_dataset(array=rawdata, raw_monitor=monitor, frames_logical=frames_logical,
-                                             norm_to_min=True, savedir=detector.savedir, debugging=True)
-
-    # bin data and mask in the detector plane if needed
-    # binning in the stacking dimension is done at the very end of the data processing
-    if (detector.binning[1] != 1) or (detector.binning[2] != 1):
-        print('Binning the data')
-        rawdata = pu.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
-        rawmask = pu.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
-        rawmask[np.nonzero(rawmask)] = 1
-
-    if not orthogonalize:
-        return [], rawdata, [], rawmask, [], frames_logical, monitor
-
-    elif setup.is_orthogonal:
-        # load q values, the data is already orthogonalized
-        import tkinter as tk
-        from tkinter import filedialog
-
-        root = tk.Tk()
-        root.withdraw()
-        file_path = filedialog.askopenfilename(title="Select the file containing QxQzQy",
-                                               initialdir=detector.datadir, filetypes=[("NPZ", "*.npz")])
-        npzfile = np.load(file_path)
-        q_values = [npzfile['qx'], npzfile['qz'], npzfile['qy']]
-        return q_values, [], rawdata, [], rawmask, frames_logical, monitor
-
-    else:
-        if setup.filtered_data:
-            print('Trying to orthogonalize a filtered data, the corresponding detector ROI should be provided\n'
-                  'otherwise q values will be wrong.')
-        nbz, nby, nbx = rawdata.shape
-        qx, qz, qy, frames_logical = \
-            regrid(logfile=logfile, nb_frames=rawdata.shape[0], scan_number=scan_number, detector=detector,
-                   setup=setup, hxrd=hxrd, frames_logical=frames_logical, follow_bragg=follow_bragg)
-
-        if setup.beamline == 'ID01':
-            # below is specific to ID01 energy scans where frames are duplicated for undulator gap change
-            if setup.rocking_angle == 'energy':  # frames need to be removed
-                tempdata = np.zeros(((frames_logical != 0).sum(), nby, nbx))
-                offset_frame = 0
-                for idx in range(nbz):
-                    if frames_logical[idx] != 0:  # use frame
-                        tempdata[idx-offset_frame, :, :] = rawdata[idx, :, :]
-                    else:  # average with the precedent frame
-                        offset_frame = offset_frame + 1
-                        tempdata[idx-offset_frame, :, :] = (tempdata[idx-offset_frame, :, :] + rawdata[idx, :, :])/2
-                rawdata = tempdata
-                rawmask = rawmask[0:rawdata.shape[0], :, :]  # truncate the mask to have the correct size
-                nbz = rawdata.shape[0]
-        gridder = xu.FuzzyGridder3D(nbz, nby, nbx)
-        # convert mask to rectangular grid in reciprocal space
-        gridder(qx, qz, qy, rawmask)  # qx downstream, qz vertical up, qy outboard
-        mask = np.copy(gridder.data)
-        # convert data to rectangular grid in reciprocal space
-        gridder(qx, qz, qy, rawdata)  # qx downstream, qz vertical up, qy outboard
-
-        q_values = [gridder.xaxis, gridder.yaxis, gridder.zaxis]  # downstream, vertical up, outboard
-        fig, _, _ = gu.contour_slices(gridder.data, (gridder.xaxis, gridder.yaxis, gridder.zaxis), sum_frames=False,
-                                      title='Regridded data',
-                                      levels=np.linspace(0, int(np.log10(gridder.data.max())), 150, endpoint=False),
-                                      plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-        fig.savefig(detector.savedir + 'reciprocal_space_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '_' + '.png')
-        plt.close(fig)
-
-        return q_values, rawdata, gridder.data, rawmask, mask, frames_logical, monitor
 
 
 def higher_primes(number, maxprime=13, required_dividers=(4,)):
