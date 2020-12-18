@@ -165,7 +165,7 @@ energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
-# ID01: eta, phi, nu, delta
+# ID01: eta, chi, phi, nu, delta
 # CRISTAL: mgomega, gamma, delta
 # SIXS: beta, mu, gamma, delta
 # P10: om, phi, chi, mu, gamma, delta
