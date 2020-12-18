@@ -19,7 +19,8 @@ class Setup(object):
     Class for defining the experimental geometry.
     """
     def __init__(self, beamline, beam_direction=(1, 0, 0), energy=None, distance=None, outofplane_angle=None,
-                 inplane_angle=None, tilt_angle=None, rocking_angle=None, pixel_x=None, pixel_y=None, **kwargs):
+                 inplane_angle=None, tilt_angle=None, rocking_angle=None, grazing_angle=None, pixel_x=None,
+                 pixel_y=None, **kwargs):
 
         # test the validity of the kwargs:
         for k in kwargs.keys():
@@ -64,6 +65,7 @@ class Setup(object):
         self.inplane_angle = inplane_angle
         self.tilt_angle = tilt_angle
         self.rocking_angle = rocking_angle
+        self.grazing_angle = grazing_angle
         self.pixel_x = pixel_x
         self.pixel_y = pixel_y
 
@@ -214,6 +216,33 @@ class Setup(object):
         else:
             raise ValueError('setup parameter: ', self.beamline, 'not defined')
         return kout
+
+    @property
+    def grazing_angle(self):
+        """
+        Motor positions for the goniometer circles below the rocking angle. It should be a list/tuple of lenght 1 for
+         out-of-plane rocking curves (the chi motor value) and length 2 for inplane rocking curves
+         (the chi and omega/om/eta motor values).
+        """
+        return self._grazing_angle
+
+    @grazing_angle.setter
+    def grazing_angle(self, value):
+        if self.rocking_angle == 'outofplane':
+            # only the chi angle (rotation around z, below the rocking angle omega/om/eta) is needed
+            if isinstance(value, (tuple, list)) and len(value) != 1:
+                raise ValueError('Only 1 value expected for out-of-plane rocking curves (the chi motor position)')
+            elif not isinstance(value, Number):
+                raise ValueError('1 value expected for out-of-plane rocking curves (the chi motor position)')
+        elif self.rocking_angle == 'inplane':
+            # two values needed: the chi angle and the omega/om/eta angle (rotations respectively around z and x,
+            # below the rocking angle phi)
+            if isinstance(value, (tuple, list)) and len(value) != 2:
+                raise ValueError('Two values expected for inplane rocking curves (the chi and omega/om/eta positions)')
+            elif isinstance(value, Number):
+                raise ValueError('Two values expected for inplane rocking curves (the chi and omega/om/eta positions)')
+        else:
+            self._grazing_angle = value
 
     @property
     def inplane_angle(self):
@@ -368,8 +397,6 @@ class Setup(object):
     def wavelength(self):
         if self.energy:
             return 12.398 * 1e-7 / self.energy  # in m
-
-    # TODO: how to deal with the grazing angle(s)?
 
     def __repr__(self):
         """
