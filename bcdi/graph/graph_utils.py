@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
+from numbers import Number
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
@@ -111,7 +112,7 @@ def colorbar(mappable, scale='linear', numticks=10, label=None):
 
 
 def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, tuple_scale, tuple_sum_axis=None,
-                   cmap=my_cmap, tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
+                   cmap=my_cmap, tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=None,
                    tuple_width_v=None, tuple_width_h=None, tuple_vmin=np.nan, tuple_vmax=np.nan, is_orthogonal=False,
                    reciprocal_space=False, **kwargs):
     """
@@ -133,7 +134,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     :param tick_direction: 'out', 'in', 'inout'
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
-    :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm)
+    :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm). It can
+     be  a positive number or a tuple of array.ndim positive numbers
     :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :param kwargs:
@@ -239,6 +241,15 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         scale = tuple_scale[idx]
 
         nb_dim = array.ndim
+        if nb_dim in {2, 3}:
+            if pixel_spacing:
+                if isinstance(pixel_spacing, Number):
+                    pixel_spacing = (pixel_spacing,) * nb_dim
+                elif not isinstance(pixel_spacing, (tuple, list))\
+                        or not all(isinstance(val, Number) for val in pixel_spacing)\
+                        or not all(val > 0 for val in pixel_spacing):
+                    raise ValueError(f'pixel_spacing should be a list/tuple of {nb_dim} positive numbers')
+                assert len(pixel_spacing) == nb_dim, f'pixel_spacing should be a list/tuple of {nb_dim} numbers'
 
         if nb_dim == 0 or nb_dim > 3:
             print('array ', idx, ': wrong dimension')
@@ -267,7 +278,6 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             continue
 
         elif nb_dim == 3:  # 3D, needs to be reduced to 2D by slicing or projecting
-
             if reciprocal_space:
                 if is_orthogonal:
                     if sum_frames:
@@ -314,6 +324,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             if sum_axis == 0:
                 dim_v = nby
                 dim_h = nbx
+                pixel_spacing = (pixel_spacing[1], pixel_spacing[2])  # vertical, horizontal
                 if not sum_frames:
                     array = array[nbz // 2, :, :]
                 else:
@@ -323,6 +334,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             elif sum_axis == 1:
                 dim_v = nbz
                 dim_h = nbx
+                pixel_spacing = (pixel_spacing[0], pixel_spacing[2])  # vertical, horizontal
                 if not sum_frames:
                     array = array[:, nby // 2, :]
                 else:
@@ -332,6 +344,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             elif sum_axis == 2:
                 dim_v = nbz
                 dim_h = nby
+                pixel_spacing = (pixel_spacing[1], pixel_spacing[1])  # vertical, horizontal
                 if not sum_frames:
                     array = array[:, :, nbx // 2]
                 else:
@@ -405,9 +418,9 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         else:
             axis.set_ylabel(default_ylabel)
         plt.axis('scaled')
-        if not np.isnan(pixel_spacing):
-            axis.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-            axis.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        if pixel_spacing:
+            axis.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
+            axis.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
             axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                              length=tick_length, width=tick_width)
         if invert_yaxis:  # Y is axis 0, need to be flipped
@@ -715,7 +728,7 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes=N
 
 def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None, plot_colorbar=False,
                 vmin=np.nan, vmax=np.nan, cmap=my_cmap, title='', labels=None, scale='linear',
-                tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=np.nan,
+                tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=None,
                 is_orthogonal=False, reciprocal_space=False, **kwargs):
     """
     2D imshow plot of a 2D or 3D dataset using user-defined parameters.
@@ -735,7 +748,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     :param tick_direction: 'out', 'in', 'inout'
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
-    :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm)
+    :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm). It can
+     be  a positive number or a tuple of array.ndim positive numbers
     :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :param kwargs:
@@ -749,11 +763,21 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
             raise Exception("unknown keyword argument given:", k)
 
     nb_dim = array.ndim
-    array = array.astype(float)
-    plt.ion()
+
+    if pixel_spacing:
+        if isinstance(pixel_spacing, Number):
+            pixel_spacing = (pixel_spacing,) * nb_dim
+        elif not isinstance(pixel_spacing, (tuple, list)) \
+                or not all(isinstance(val, Number) for val in pixel_spacing) \
+                or not all(val > 0 for val in pixel_spacing):
+            raise ValueError(f'pixel_spacing should be a list/tuple of {nb_dim} positive numbers')
+        assert len(pixel_spacing) == nb_dim, f'pixel_spacing should be a list/tuple of {nb_dim} numbers'
 
     labels = labels or ('', '')
     assert len(labels) == 2, 'labels should be a tuple of two strings (vertical label, horizontal label)'
+
+    array = array.astype(float)
+    plt.ion()
 
     if nb_dim == 3:
         if reciprocal_space:
@@ -800,6 +824,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         if sum_axis == 0:
             dim_v = nby
             dim_h = nbx
+            pixel_spacing = (pixel_spacing[1], pixel_spacing[2])  # vertical, horizontal
             if not sum_frames:
                 array = array[nbz // 2, :, :]
             else:
@@ -807,6 +832,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         elif sum_axis == 1:
             dim_v = nbz
             dim_h = nbx
+            pixel_spacing = (pixel_spacing[0], pixel_spacing[2])  # vertical, horizontal
             if not sum_frames:
                 array = array[:, nby // 2, :]
             else:
@@ -814,6 +840,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         elif sum_axis == 2:
             dim_v = nbz
             dim_h = nby
+            pixel_spacing = (pixel_spacing[0], pixel_spacing[1])  # vertical, horizontal
             if not sum_frames:
                 array = array[:, :, nbx // 2]
             else:
@@ -887,9 +914,9 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     axis.set_ylabel(ver_label)
     plt.title(title + slice_name)
     plt.axis('scaled')
-    if not np.isnan(pixel_spacing):
-        axis.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-        axis.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+    if pixel_spacing:
+        axis.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
+        axis.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
         axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                          length=tick_length, width=tick_width)
     if plot_colorbar:
@@ -1286,7 +1313,8 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     :param tick_direction: 'out', 'in', 'inout'
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
-    :param pixel_spacing: pixel_spacing=desired tick_spacing (in nm)/voxel_size of the reconstruction(in nm)
+    :param pixel_spacing: pixel_spacing=desired tick_spacing (in nm)/voxel_size of the reconstruction(in nm). It can be
+     a positive number or a tuple of 3 positive numbers
     :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :param vmin: lower boundary for the colorbar. Float or tuple of 3 floats
@@ -1363,6 +1391,15 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     width_y = width_y or nby
     width_x = width_x or nbx
 
+    if pixel_spacing:
+        if isinstance(pixel_spacing, Number):
+            pixel_spacing = (pixel_spacing,) * nb_dim
+        elif not isinstance(pixel_spacing, (tuple, list)) \
+                or not all(isinstance(val, Number) for val in pixel_spacing) \
+                or not all(val > 0 for val in pixel_spacing):
+            raise ValueError(f'pixel_spacing should be a list/tuple of {nb_dim} positive numbers')
+        assert len(pixel_spacing) == nb_dim, f'pixel_spacing should be a list/tuple of {nb_dim} numbers'
+
     if ipynb_layout:
         fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(15, 4.5))
         ax3 = None
@@ -1425,8 +1462,8 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     if plot_colorbar:
         colorbar(plt0, numticks=5)
     if pixel_spacing is not None:
-        ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-        ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
+        ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
         ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
 
@@ -1476,8 +1513,8 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     if plot_colorbar:
         colorbar(plt1, numticks=5)
     if pixel_spacing is not None:
-        ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-        ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
+        ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
         ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
 
@@ -1528,8 +1565,8 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     if plot_colorbar:
         colorbar(plt2, numticks=5)
     if pixel_spacing is not None:
-        ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
-        ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
+        ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
+        ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
         ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
     if not ipynb_layout:
