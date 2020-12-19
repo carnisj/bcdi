@@ -1248,10 +1248,10 @@ def regrid(array, old_voxelsize, new_voxelsize):
     if array.ndim != 3:
         raise ValueError('array should be a 3D array')
 
-    assert isinstance(old_voxelsize, (tuple, list)) and all(val > 0 for val in old_voxelsize), \
-        'old_voxelsize should be a tuple/list of three positive numbers'
-    assert isinstance(new_voxelsize, (tuple, list)) and all(val > 0 for val in new_voxelsize), \
-        'new_voxelsize should be a tuple/list of three positive numbers'
+    assert isinstance(old_voxelsize, (tuple, list)) and all(val > 0 for val in old_voxelsize)\
+        and len(old_voxelsize) == 3, 'old_voxelsize should be a tuple/list of three positive numbers'
+    assert isinstance(new_voxelsize, (tuple, list)) and all(val > 0 for val in new_voxelsize)\
+        and len(new_voxelsize) == 3, 'new_voxelsize should be a tuple/list of three positive numbers'
 
     nbz, nby, nbx = array.shape
 
