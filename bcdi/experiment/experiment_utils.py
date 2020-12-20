@@ -402,8 +402,16 @@ class Setup(object):
         """
         Nicely formatted representation string for the Class.
         """
-        return f"{self.__class__.__name__}: beamline={self.beamline}, energy={self.energy}eV," \
-               f" sample to detector distance={self.distance}m, pixel size (VxH)=({self.pixel_y},{self.pixel_x})"
+        return (f"{self.__class__.__name__}(beamline={self.beamline}, beam_direction={self.beam_direction}, "
+                f"energy={self.energy}, distance={self.distance}, outofplane_angle={self.outofplane_angle},\n"
+                f"inplane_angle={self.inplane_angle}, tilt_angle={self.tilt_angle}, "
+                f" rocking_angle={self.rocking_angle}, grazing_angle={self.grazing_angle}, pixel_x={self.pixel_x},\n"
+                f" pixel_y={self.pixel_y}, direct_beam={self.direct_beam}, filtered_data={self.filtered_data}, "
+                f"is_orthogonal={self.is_orthogonal}, custom_scan={self.custom_scan},\n"
+                f"custom_images={self.custom_images}, custom_monitor={self.custom_monitor}, "
+                f"custom_motors={self.custom_motors}, sample_inplane={self.sample_inplane}, "
+                f"sample_outofplane={self.sample_outofplane},\nsample_offsets={self.sample_offsets}, "
+                f"offset_inplane={self.offset_inplane})")
 
     def detector_frame(self, obj, voxel_size, width_z=None, width_y=None, width_x=None,
                        debugging=False, **kwargs):
@@ -1899,6 +1907,5 @@ class Detector(object):
 
 
 if __name__ == "__main__":
-    my = SetupPostprocessing(beamline='ID01', energy=8800, outofplane_angle=0, inplane_angle=7.248, tilt_angle=0.01,
-                             rocking_angle='inplane', distance=7.25, grazing_angle=0, pixel_x=110e-6, pixel_y=110e-6)
-    print(my.voxel_sizes((41, 256, 256), tilt_angle=0.01, pixel_x=110e-6, pixel_y=110e-6, debug=True))
+    setup=Setup(beamline='ID01')
+    print(setup)
