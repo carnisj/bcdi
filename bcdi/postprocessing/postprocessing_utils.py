@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from numbers import Number
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 import scipy
@@ -1073,10 +1074,13 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_ph
 
     assert phase.ndim == 3, 'phase should be a 3D array'
     assert reference_axis in ('x', 'y', 'z'), "The reference axis should be 'x', 'y' or 'z'"
-    try:
-        assert len(voxel_size) == 3, 'voxel_size should be a tuple of three floats'
-    except TypeError:  # voxel_size is a number
-        voxel_size = (voxel_size, voxel_size, voxel_size)
+    if isinstance(voxel_size, Number):
+        voxel_size = (voxel_size,) * 3
+    elif not isinstance(voxel_size, (tuple, list)) \
+            or not all(isinstance(val, Number) for val in voxel_size) \
+            or not all(val > 0 for val in voxel_size):
+        raise ValueError('voxel_size should be a list/tuple of 3 positive numbers')
+    assert len(voxel_size) == 3, 'pixel_spacing should be a list/tuple of 3 numbers'
 
     strain = np.inf * np.ones(phase.shape)
     if method == 'defect':
