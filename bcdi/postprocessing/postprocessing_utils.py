@@ -1621,7 +1621,7 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
         return amp, phase, myrampy, myrampx
 
 
-def rotate_crystal(array, axis_to_align, reference_axis, width_z=None, width_y=None, width_x=None,
+def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, width_z=None, width_y=None, width_x=None,
                    is_orthogonal=False, reciprocal_space=False, debugging=False):
     """
     Rotate myobj to align axis_to_align onto reference_axis.
@@ -1631,6 +1631,7 @@ def rotate_crystal(array, axis_to_align, reference_axis, width_z=None, width_y=N
     :param array: 3D real array to be rotated
     :param axis_to_align: the axis of myobj (vector q) x y z
     :param reference_axis: will align axis_to_align onto this  x y z
+    :param voxel_size: tuple, actual voxel size in z, y, and x (CXI convention)
     :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
     :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
     :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
@@ -1643,6 +1644,13 @@ def rotate_crystal(array, axis_to_align, reference_axis, width_z=None, width_y=N
     if array.ndim != 3:
         raise ValueError('array should be 3D arrays')
 
+    voxel_size = voxel_size or (1, 1, 1)
+    if not isinstance(voxel_size, (tuple, list)) \
+            or not all(isinstance(val, Number) for val in voxel_size) \
+            or not all(val > 0 for val in voxel_size):
+        raise ValueError('voxel_size should be a list/tuple of 3 positive numbers')
+    assert len(voxel_size) == 3, 'voxel_size should be a list/tuple of 3 numbers'
+
     nbz, nby, nbx = array.shape
     if debugging:
         gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, title='Before rotating',
@@ -1653,9 +1661,10 @@ def rotate_crystal(array, axis_to_align, reference_axis, width_z=None, width_y=N
     my_rotation_matrix = np.identity(3) +\
         skew_sym_matrix + np.dot(skew_sym_matrix, skew_sym_matrix) / (1+np.dot(axis_to_align, reference_axis))
     transfer_matrix = my_rotation_matrix.transpose()
-    old_z = np.arange(-nbz // 2, nbz // 2, 1)
-    old_y = np.arange(-nby // 2, nby // 2, 1)
-    old_x = np.arange(-nbx // 2, nbx // 2, 1)
+    # TODO: check that this is working properly
+    old_z = np.arange(-nbz // 2, nbz // 2, 1) * voxel_size[0]
+    old_y = np.arange(-nby // 2, nby // 2, 1) * voxel_size[1]
+    old_x = np.arange(-nbx // 2, nbx // 2, 1) * voxel_size[2]
 
     myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing='ij')
 
