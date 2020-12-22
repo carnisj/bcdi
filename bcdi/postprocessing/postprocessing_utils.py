@@ -1712,7 +1712,6 @@ def rotate_vector(vector, axis_to_align, reference_axis):
     :param reference_axis: will align axis_to_align onto this  x y z
     :return: rotated vector in CXI convention z y x
     """
-    # TODO check this with anisotropic voxel sizes
     if vector.ndim != 1:
         raise ValueError('vector should be a 1D array')
     else:
