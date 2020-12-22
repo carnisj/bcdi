@@ -129,7 +129,6 @@ specfile_name = ''
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
-# nb_pixel_y = 1614  # use for the data measured with 1 tile broken on the Eiger2M
 x_bragg = 1300  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 y_bragg = 840  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 roi_detector = []  # [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200]
