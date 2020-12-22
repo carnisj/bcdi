@@ -46,9 +46,9 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
         if reference_data.shape != data.shape:
             raise ValueError('reference_data and data do not have the same shape')
 
-        if method is 'registration':
+        if method == 'registration':
             shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=100)
-        elif method is 'center_of_mass':
+        elif method == 'center_of_mass':
             ref_piz, ref_piy, ref_pix = center_of_mass(abs(reference_data))
             piz, piy, pix = center_of_mass(abs(data))
             shiftz = ref_piz - piz
@@ -65,7 +65,7 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
             else:
                 return data, mask, (0, 0, 0)
 
-        if combining_method is 'rgi':
+        if combining_method == 'rgi':
             # re-sample data on a new grid based on the shift
             old_z = np.arange(-nbz // 2, nbz // 2)
             old_y = np.arange(-nby // 2, nby // 2)
@@ -88,7 +88,7 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
                 mask = mask.reshape((nbz, nby, nbx)).astype(data.dtype)
                 mask = np.rint(mask)  # mask is integer 0 or 1
 
-        elif combining_method is 'subpixel':
+        elif combining_method == 'subpixel':
             data = abs(reg.subpixel_shift(data, shiftz, shifty, shiftx))  # data is a real number (intensity)
             if mask is not None:
                 mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
@@ -105,9 +105,9 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
         if reference_data.shape != data.shape:
             raise ValueError('reference_data and data do not have the same shape')
 
-        if method is 'registration':
+        if method == 'registration':
             shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=100)
-        elif method is 'center_of_mass':
+        elif method == 'center_of_mass':
             ref_piy, ref_pix = center_of_mass(abs(reference_data))
             piy, pix = center_of_mass(abs(data))
             shifty = ref_piy - piy
@@ -122,7 +122,7 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
             else:
                 return data, mask, (0, 0)
 
-        if combining_method is 'rgi':
+        if combining_method == 'rgi':
             # re-sample data on a new grid based on the shift
             old_y = np.arange(-nby // 2, nby // 2)
             old_x = np.arange(-nbx // 2, nbx // 2)
@@ -139,7 +139,7 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
                 mask = mask.reshape((nby, nbx)).astype(data.dtype)
                 mask = np.rint(mask)  # mask is integer 0 or 1
 
-        elif combining_method is 'subpixel':
+        elif combining_method == 'subpixel':
             data = abs(reg.subpixel_shift(data, shifty, shiftx))  # data is a real number (intensity)
             if mask is not None:
                 mask = np.rint(abs(reg.subpixel_shift(mask, shifty, shiftx)))  # mask is integer 0 or 1

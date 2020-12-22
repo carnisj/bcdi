@@ -187,7 +187,7 @@ class DataSet:
       
         if datafilter is not None:
             # filter values while looking at the condition on the filter
-            if datafilter.role is not "none" and datafilter.ifil > -1:
+            if datafilter.role != "none" and datafilter.ifil > -1:
                 if datafilter.irole == 1:
                     self.data = numpy.compress(self.data[datafilter.ifil] > datafilter.value, self.data, axis=1)
                 elif datafilter.irole == 2:
