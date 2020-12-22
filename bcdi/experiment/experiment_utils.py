@@ -1667,11 +1667,11 @@ class Detector(object):
     """
     Class to handle the configuration of the detector used for data acquisition.
     """
-    def __init__(self, name, datadir='', savedir='', template_imagefile='', roi=(), sum_roi=(), binning=(1, 1, 1),
-                 **kwargs):
+    def __init__(self, name, datadir='', savedir='', template_imagefile='', specfile='', roi=(), sum_roi=(),
+                 binning=(1, 1, 1), **kwargs):
         """
         Initialize parameters of the detector.
-
+        #todo: REFACTOR THE DOCSTRING
         :param name: name of the detector: 'Maxipix'or 'Eiger2M' or 'Eiger4M'
         :param datadir: directory where the data is saved
         :param savedir: directory where to save files if needed
@@ -1680,6 +1680,8 @@ class Detector(object):
          - SIXS: 'spare_ascan_mu_%05d.nxs'
          - Cristal: 'S%d.nxs'
          - P10: sample_name + str('{:05d}'.format(scans[scan_nb])) + '_data_%06d.h5'
+        :param specfile: template of the log file or data file depending on the beamline:
+         -
         :param roi: region of interest in the detector, use [] to use the full detector
         :param sum_roi: optional region of interest used for calculated an integrated intensity
         :param binning: binning of the 3D dataset (stacking dimension, detector vertical axis, detector horizontal axis)
@@ -1748,10 +1750,11 @@ class Detector(object):
         self.pixelsize_y = self.pixelsize_y * self.previous_binning[1] * self.binning[1]
         self.pixelsize_x = self.pixelsize_x * self.previous_binning[2] * self.binning[2]
         
-        # define paths
+        # define paths and log file
         self.datadir = datadir
         self.savedir = savedir
         self.template_imagefile = template_imagefile
+        self.specfile = specfile
 
         # define regions of interest
         if len(roi) == 0:
