@@ -159,6 +159,8 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 beam_direction = (1, 0, 0)  # beam direction in the frame (downstream, vertical up, outboard)
+sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+# the sample offsets will be added to the motor values
 sdd = 1.00  # in m, sample to detector distance in m
 energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
@@ -177,8 +179,6 @@ custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles in xrayutilities frame
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles in xrayutilities frame
 offset_inplane = 0  # outer detector angle offset as determined by xrayutilities area detector initialization
-sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
-# the sample offsets will be added to the motor values
 cch1 = 256  # direct beam vertical position in the full unbinned detector for xrayutilities 2D detector calibration
 cch2 = 256  # direct beam horizontal position in the full unbinned detector for xrayutilities 2D detector calibration
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
