@@ -37,6 +37,7 @@ class Setup(object):
                                                                              ' of two numbers'
 
         # kwargs for loading and preprocessing data
+        # TODO: write properties for the kwargs also
         self.filtered_data = kwargs.get('filtered_data', False)  # boolean
         assert isinstance(self.filtered_data, bool), 'filtered_data should be a boolean'
         self.is_orthogonal = kwargs.get('is_orthogonal', False)  # boolean
@@ -51,6 +52,7 @@ class Setup(object):
         assert isinstance(self.custom_motors, dict), 'custom_motors should be a dictionnary'
 
         # kwargs for xrayutilities, delegate the test on their values to xrayutilities
+        # TODO: write properties for the kwargs also
         self.sample_inplane = kwargs.get('sample_inplane', (1, 0, 0))
         self.sample_outofplane = kwargs.get('sample_outofplane', (0, 0, 1))
         self.sample_offsets = kwargs.get('sample_offsets', (0, 0, 0))
@@ -230,19 +232,30 @@ class Setup(object):
     def grazing_angle(self, value):
         if self.rocking_angle == 'outofplane':
             # only the chi angle (rotation around z, below the rocking angle omega/om/eta) is needed
-            if isinstance(value, (tuple, list)) and len(value) != 1:
-                raise ValueError('Only 1 value expected for out-of-plane rocking curves (the chi motor position)')
-            elif not isinstance(value, Number):
-                raise ValueError('1 value expected for out-of-plane rocking curves (the chi motor position)')
+            if isinstance(value, (tuple, list)):
+                if len(value) != 1:
+                    raise ValueError('1 value expected for out-of-plane rocking curves (chi motor position)')
+                else:
+                    self._grazing_angle = value
+            elif isinstance(value, Number) or value is None:
+                self._grazing_angle = value
+            else:
+                raise ValueError('1 value expected for out-of-plane rocking curves (chi motor position)')
         elif self.rocking_angle == 'inplane':
             # two values needed: the chi angle and the omega/om/eta angle (rotations respectively around z and x,
             # below the rocking angle phi)
-            if isinstance(value, (tuple, list)) and len(value) != 2:
-                raise ValueError('Two values expected for inplane rocking curves (the chi and omega/om/eta positions)')
-            elif isinstance(value, Number):
-                raise ValueError('Two values expected for inplane rocking curves (the chi and omega/om/eta positions)')
-        else:
-            self._grazing_angle = value
+            if isinstance(value, (tuple, list)):
+                if len(value) == 2:
+                    self._grazing_angle = value
+                else:
+                    raise ValueError('2 values expected for inplane rocking curves (chi and omega/om/eta positions)')
+            elif value is None:
+                self._grazing_angle = value
+            else:
+                raise ValueError('2 values expected for inplane rocking curves (chi and omega/om/eta positions)')
+        else:  # self.rocking_angle == 'energy'
+            # there is no sample rocking for energy scans, hence the grazing angle value do not matter
+            self._grazing_angle = None
 
     @property
     def inplane_angle(self):
