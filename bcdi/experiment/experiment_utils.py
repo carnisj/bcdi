@@ -1775,7 +1775,10 @@ class Detector(object):
         """
         :return: a nicely formatted representation string
         """
-        return f"{self.__class__.__name__}: {self.name}"
+        return (f"{self.__class__.__name__}(name={self.name}, datadir={self.datadir}, savedir={self.savedir},"
+                f" template_imagefile={self.template_imagefile}, specfile={self.specfile}, roi={self.roi},"
+                f" sum_roi={self.sum_roi}, binning={self.binning}, previous_binning={self.previous_binning},"
+                f"is_series={self.is_series}, nb_pixel_x={self.nb_pixel_x}, nb_pixel_y={self.nb_pixel_y})")
 
     def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
         """
