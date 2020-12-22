@@ -420,8 +420,9 @@ for scan_nb in range(len(scans)):
         specfile = specfile_name
         scan_template = sample_name[scan_nb] + '_' + str(scans[scan_nb]) + '/'  # used to create the folder
 
+    detector.specfile = specfile
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
-                                 root_folder=root_folder, filename=specfile)
+                                 root_folder=root_folder, filename=detector.specfile)
 
     print('\nScan', scans[scan_nb])
     print('Setup: ', setup.beamline)
@@ -431,7 +432,7 @@ for scan_nb in range(len(scans)):
         print('Detector ROI:', detector.roi)
     print('Horizontal pixel size with binning: ', detector.pixelsize_x, 'm')
     print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
-    print('Specfile: ', specfile)
+    print('Specfile: ', detector.specfile)
     print('Scan type: ', setup.rocking_angle)
     if save_dir:
         savedir = save_dir + scan_template
