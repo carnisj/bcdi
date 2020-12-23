@@ -45,7 +45,7 @@ Path structure:
 
 scan = 314
 sample_name = "PtNP1"  # "SN"  #
-root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # location of the .spec or log file
+root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # folder of the experiment, where all scans are stored
 savedir = "D:/data/P10_December2020_BCDI/data_nanolab/dataset_2/"  # PRTF will be saved here, leave it to '' otherwise
 comment = ""  # should start with _
 crop_roi = []  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
@@ -61,12 +61,9 @@ is_series = True  # specific to series measurement at P10
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ''
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
-# template for SIXS_2019: ''
-# template for P10: ''
-# template for CRISTAL: ''
+# template for all other beamlines: ''
 ######################################
 # define detector related parameters #
 ######################################
