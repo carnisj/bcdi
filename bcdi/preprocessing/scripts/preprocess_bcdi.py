@@ -52,7 +52,7 @@ sample_name = ["PtNP1"]  # "SN"  # list of sample names (string in front of the 
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 1, 1]  # binning that will be used for phasing
+binning = [1, 1, 1]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
@@ -337,7 +337,7 @@ plt.rcParams["keymap.fullscreen"] = [""]
 #######################
 kwargs = dict()  # create dictionnary
 kwargs['is_series'] = is_series
-kwargs['previous_binning'] = previous_binning
+kwargs['preprocessing_binning'] = previous_binning
 if nb_pixel_x:
     kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 if nb_pixel_y:
@@ -398,9 +398,9 @@ for scan_nb in range(len(scans)):
 
     comment = user_comment  # initialize comment
 
-    detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
-        setup.init_paths(sample_name=sample_name[scan_nb], scan_number=scans[scan_nb], root_folder=root_folder,
-                         save_dir=save_dir, specfile_name=specfile_name, template_imagefile=template_imagefile)
+    setup.init_paths(detector=detector, sample_name=sample_name[scan_nb], scan_number=scans[scan_nb],
+                     root_folder=root_folder, save_dir=save_dir, specfile_name=specfile_name,
+                     template_imagefile=template_imagefile)
 
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
                                  root_folder=root_folder, filename=detector.specfile)
@@ -433,7 +433,7 @@ for scan_nb in range(len(scans)):
     #############
     if reload_previous:  # resume previous masking
         print('Resuming previous masking')
-        file_path = filedialog.askopenfilename(initialdir=detector.datadir, title="Select data file",
+        file_path = filedialog.askopenfilename(initialdir=detector.scandir, title="Select data file",
                                                filetypes=[("NPZ", "*.npz")])
         data = np.load(file_path)
         npz_key = data.files
