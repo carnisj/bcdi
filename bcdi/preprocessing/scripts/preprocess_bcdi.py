@@ -46,7 +46,7 @@ scans = 128  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"
+root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # folder of the experiment, where all scans are stored
 save_dir = None  # images will be saved here, leave it to None otherwise (default to data directory's parent)
 sample_name = ["PtNP1"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
@@ -117,14 +117,9 @@ custom_monitor = np.ones(51)  # monitor values for normalization for the custom_
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ''
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
-# template for SIXS_2019: ''
-# template for P10: ''
-# template for NANOMAX: ''
-# template for CRISTAL: ''
-# template for 34ID: ''
+# template for all other beamlines: ''
 ###############################
 # detector related parameters #
 ###############################
@@ -402,58 +397,27 @@ for scan_nb in range(len(scans)):
     plt.ion()
 
     comment = user_comment  # initialize comment
-    if setup.beamline == 'P10':
-        specfile = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb])
-        homedir = root_folder + specfile + '/'
-        detector.datadir = homedir + 'e4m/'
-        imagefile = specfile + template_imagefile
-        detector.template_imagefile = imagefile
-        scan_template = sample_name[scan_nb] + '_{:05d}'.format(scans[scan_nb]) + '/'  # used to create the folder
-    elif setup.beamline == 'NANOMAX':
-        homedir = root_folder + sample_name[scan_nb] + '{:06d}'.format(scans[scan_nb]) + '/'
-        detector.datadir = homedir + 'data/'
-        specfile = specfile_name
-        scan_template = sample_name[scan_nb] + '_{:06d}'.format(scans[scan_nb]) + '/'  # used to create the folder
-    else:
-        homedir = root_folder + sample_name[scan_nb] + str(scans[scan_nb]) + '/'
-        detector.datadir = homedir + "data/"
-        specfile = specfile_name
-        scan_template = sample_name[scan_nb] + '_' + str(scans[scan_nb]) + '/'  # used to create the folder
 
-    detector.specfile = specfile
+    detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
+        setup.init_paths(sample_name=sample_name[scan_nb], scan_number=scans[scan_nb], root_folder=root_folder,
+                         save_dir=save_dir, specfile_name=specfile_name, template_imagefile=template_imagefile)
+
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
                                  root_folder=root_folder, filename=detector.specfile)
 
-    print('\nScan', scans[scan_nb])
-    print('Setup: ', setup.beamline)
-    print('Detector: ', detector.name)
-    print('Pixel number (VxH): ', detector.nb_pixel_y, detector.nb_pixel_x)
-    if not reload_previous:
-        print('Detector ROI:', detector.roi)
-    print('Horizontal pixel size with binning: ', detector.pixelsize_x, 'm')
-    print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
-    print('Specfile: ', detector.specfile)
-    print('Scan type: ', setup.rocking_angle)
-    if save_dir:
-        savedir = save_dir + scan_template
-    else:
-        savedir = homedir
-
     if not use_rawdata:
         comment = comment + '_ortho'
-        savedir = savedir + "pynx/"
-        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
+        detector.savedir = detector.savedir + "pynx/"
+        pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
         print('Output will be orthogonalized by xrayutilities')
         print('Energy:', setup.energy, 'ev')
         print('Sample to detector distance: ', setup.distance, 'm')
         plot_title = ['QzQx', 'QyQx', 'QyQz']
     else:
-        savedir = savedir + "pynxraw/"
-        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
+        detector.savedir = detector.savedir + "pynxraw/"
+        pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
         print('Output will be non orthogonal, in the detector frame')
         plot_title = ['YZ', 'XZ', 'XY']
-
-    detector.savedir = savedir
 
     if not fix_size:  # output_size not defined, default to actual size
         pass
@@ -469,7 +433,7 @@ for scan_nb in range(len(scans)):
     #############
     if reload_previous:  # resume previous masking
         print('Resuming previous masking')
-        file_path = filedialog.askopenfilename(initialdir=homedir, title="Select data file",
+        file_path = filedialog.askopenfilename(initialdir=detector.datadir, title="Select data file",
                                                filetypes=[("NPZ", "*.npz")])
         data = np.load(file_path)
         npz_key = data.files
@@ -481,7 +445,7 @@ for scan_nb in range(len(scans)):
         print('Detector ROI:', detector.roi)
         # update savedir to save the data in the same directory as the reloaded data
         detector.savedir = os.path.dirname(file_path) + '/'
-
+        print(f'Updated saving directory: {detector.savedir}')
         file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select mask file",
                                                filetypes=[("NPZ", "*.npz")])
         mask = np.load(file_path)
@@ -495,7 +459,7 @@ for scan_nb in range(len(scans)):
         if reload_orthogonal:  # the data is gridded in the orthonormal laboratory frame
             use_rawdata = False
             try:
-                file_path = filedialog.askopenfilename(initialdir=homedir, title="Select q values",
+                file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select q values",
                                                        filetypes=[("NPZ", "*.npz")])
                 reload_qvalues = np.load(file_path)
                 q_values = [reload_qvalues['qx'], reload_qvalues['qz'], reload_qvalues['qy']]
