@@ -239,8 +239,7 @@ class Setup(object):
                 raise TypeError('direct_beam should be a list/tuple of two real numbers')
             elif len(self.direct_beam) != 2 or not all(isinstance(val, Real) for val in value):
                 raise ValueError('direct_beam should be a list/tuple of two numbers')
-            else:
-                self._direct_beam = value
+        self._direct_beam = value
 
     @property
     def distance(self):
@@ -556,15 +555,16 @@ class Setup(object):
         """
         Representation string of the Setup instance.
         """
-        return (f"{self.__class__.__name__}(beamline={self.beamline}, beam_direction={self.beam_direction}, "
+        return (f"{self.__class__.__name__}(beamline='{self.beamline}', beam_direction={self.beam_direction}, "
                 f"energy={self.energy}, distance={self.distance}, outofplane_angle={self.outofplane_angle},\n"
                 f"inplane_angle={self.inplane_angle}, tilt_angle={self.tilt_angle}, "
-                f"rocking_angle={self.rocking_angle}, grazing_angle={self.grazing_angle}, pixel_x={self.pixel_x},\n"
-                f"pixel_y={self.pixel_y}, direct_beam={self.direct_beam}, filtered_data={self.filtered_data}, "
-                f"custom_scan={self.custom_scan},\ncustom_images={self.custom_images}, "
-                f"custom_monitor={self.custom_monitor}, custom_motors={self.custom_motors}, "
-                f"sample_inplane={self.sample_inplane}, sample_outofplane={self.sample_outofplane},\n"
-                f"sample_offsets={self.sample_offsets}, offset_inplane={self.offset_inplane})")
+                f"rocking_angle='{self.rocking_angle}', grazing_angle={self.grazing_angle}, pixel_x={self.pixel_x},\n"
+                f"pixel_y={self.pixel_y}, direct_beam={self.direct_beam}, sample_offsets={self.sample_offsets}, "
+                f"filtered_data={self.filtered_data}, custom_scan={self.custom_scan},\n"
+                f"custom_images={self.custom_images},\ncustom_monitor={self.custom_monitor},\n"
+                f"custom_motors={self.custom_motors},\n"
+                f"sample_inplane={self.sample_inplane}, sample_outofplane={self.sample_outofplane}, "
+                f"offset_inplane={self.offset_inplane})")
 
     def detector_frame(self, obj, voxel_size, width_z=None, width_y=None, width_x=None,
                        debugging=False, **kwargs):
@@ -628,7 +628,8 @@ class Setup(object):
 
         return detector_obj
 
-    def init_paths(self, detector, sample_name, scan_number, root_folder, save_dir, specfile_name, template_imagefile):
+    def init_paths(self, detector, sample_name, scan_number, root_folder, save_dir, specfile_name, template_imagefile,
+                   verbose=False):
         """
         Update the detector instance with initialized paths and template for filenames depending on the beamline
 
@@ -649,6 +650,7 @@ class Setup(object):
          - P10: '_master.h5'
          - NANOMAX: '%06d.h5'
          - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+        :param verbose: True to print the paths
         """
         if not isinstance(detector, Detector):
             raise TypeError('detector should be an instance of the Class Detector')
@@ -681,6 +683,9 @@ class Setup(object):
             savedir = homedir
         detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
             savedir, datadir, specfile, template_imagefile
+        if verbose:
+            print(f"datadir = '{datadir}'\nscandir = '{detector.scandir}'\nsavedir = '{savedir}'\n"
+                  f"specfile = '{specfile}'\ntemplate_imagefile = '{template_imagefile}'\n")
 
     def orthogonalize(self, obj, initial_shape=None, voxel_size=None, width_z=None, width_y=None,
                       width_x=None, verbose=True, debugging=False, **kwargs):
@@ -1902,6 +1907,9 @@ class Detector(object):
          - 'offsets': tuple or list, sample and detector offsets corresponding to the parameter delta
           in xrayutilities hxrd.Ang2Q.area method
         """
+        # the detector name should be initialized first, other properties are depending on it
+        self.name = name
+
         # test the validity of the kwargs:
         for k in kwargs.keys():
             if k not in {'is_series', 'nb_pixel_x', 'nb_pixel_y', 'preprocessing_binning', 'offsets'}:
@@ -1909,13 +1917,12 @@ class Detector(object):
 
         # load the kwargs
         self.is_series = kwargs.get('is_series', False)
+        self.preprocessing_binning = kwargs.get('preprocessing_binning', None) or (1, 1, 1)
         self.nb_pixel_x = kwargs.get('nb_pixel_x', None)
         self.nb_pixel_y = kwargs.get('nb_pixel_y', None)
-        self.preprocessing_binning = kwargs.get('preprocessing_binning', None) or (1, 1, 1)
         self.offsets = kwargs.get('offsets', None)  # delegate the test to xrayutilities
 
-        # load positional arguments
-        self.name = name
+        # load other positional arguments
         self.binning = binning
         self.roi = roi
         self.sum_roi = sum_roi
@@ -2127,10 +2134,10 @@ class Detector(object):
         """
         Representation string of the Detector instance.
         """
-        return (f"{self.__class__.__name__}(name={self.name}, unbinned_pixel={self.unbinned_pixel}, "
+        return (f"{self.__class__.__name__}(name='{self.name}', unbinned_pixel={self.unbinned_pixel}, "
                 f"nb_pixel_x={self.nb_pixel_x}, nb_pixel_y={self.nb_pixel_y}, binning={self.binning},\n"
-                f"datadir={self.datadir},\n scandir={self.scandir},\nsavedir={self.savedir},\n"
-                f"template_imagefile={self.template_imagefile}, specfile={self.specfile}\n,roi={self.roi}, "
+                f"datadir='{self.datadir}',\nscandir='{self.scandir}',\nsavedir='{self.savedir}',\n"
+                f"template_imagefile='{self.template_imagefile}', specfile='{self.specfile}',\nroi={self.roi}, "
                 f"sum_roi={self.sum_roi}, preprocessing_binning={self.preprocessing_binning}, "
                 f"is_series={self.is_series}")
 
