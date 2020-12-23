@@ -7,7 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-from numbers import Number
+from numbers import Real
 import warnings
 import bcdi.graph.graph_utils as gu
 from scipy.interpolate import RegularGridInterpolator
@@ -24,7 +24,7 @@ class Setup(object):
 
         # test the validity of the kwargs:
         for k in kwargs.keys():
-            if k not in {'direct_beam', 'filtered_data', 'is_orthogonal', 'custom_scan', 'custom_images',
+            if k not in {'direct_beam', 'filtered_data', 'custom_scan', 'custom_images',
                          'custom_monitor', 'custom_motors', 'sample_inplane', 'sample_outofplane',
                          'sample_offsets', 'offset_inplane'}:
                 raise Exception("unknown keyword argument given:", k)
@@ -33,29 +33,20 @@ class Setup(object):
         self.direct_beam = kwargs.get('direct_beam', None)
         if self.direct_beam:
             assert isinstance(self.direct_beam, (tuple, list)) and len(self.direct_beam) == 2 and \
-                   all(isinstance(val, Number) for val in self.direct_beam), 'direct_beam should be a list/tuple' \
-                                                                             ' of two numbers'
+                   all(isinstance(val, Real) for val in self.direct_beam), 'direct_beam should be a list/tuple' \
+                                                                           ' of two numbers'
 
         # kwargs for loading and preprocessing data
-        # TODO: write properties for the kwargs also
+        self.sample_offsets = kwargs.get('sample_offsets', (0, 0, 0))
         self.filtered_data = kwargs.get('filtered_data', False)  # boolean
-        assert isinstance(self.filtered_data, bool), 'filtered_data should be a boolean'
-        self.is_orthogonal = kwargs.get('is_orthogonal', False)  # boolean
-        assert isinstance(self.is_orthogonal, bool), 'is_orthogonal should be a boolean'
         self.custom_scan = kwargs.get('custom_scan', False)  # boolean
-        assert isinstance(self.custom_scan, bool), 'custom_scan should be a boolean'
-        self.custom_images = kwargs.get('custom_images', [])  # list or tuple
-        assert isinstance(self.custom_images, (tuple, list)), 'custom_images should be a list/tuple of image numbers'
-        self.custom_monitor = kwargs.get('custom_monitor', [])  # list or tuple
-        assert isinstance(self.custom_monitor, (tuple, list)), 'custom_monitor should be a list/tuple of monitor values'
-        self.custom_motors = kwargs.get('custom_motors', {})  # dictionnary
-        assert isinstance(self.custom_motors, dict), 'custom_motors should be a dictionnary'
+        self.custom_images = kwargs.get('custom_images', None)  # list or tuple
+        self.custom_monitor = kwargs.get('custom_monitor', None)  # list or tuple
+        self.custom_motors = kwargs.get('custom_motors', None)  # dictionnary
 
         # kwargs for xrayutilities, delegate the test on their values to xrayutilities
-        # TODO: write properties for the kwargs also
         self.sample_inplane = kwargs.get('sample_inplane', (1, 0, 0))
         self.sample_outofplane = kwargs.get('sample_outofplane', (0, 0, 1))
-        self.sample_offsets = kwargs.get('sample_offsets', (0, 0, 0))
         self.offset_inplane = kwargs.get('offset_inplane', 0)
 
         # load positional arguments corresponding to instance properties
@@ -81,7 +72,7 @@ class Setup(object):
     @beam_direction.setter
     def beam_direction(self, value):
         if not isinstance(value, (tuple, list)) or len(value) != 3 or not \
-               all(isinstance(val, Number) for val in value):
+               all(isinstance(val, Real) for val in value):
             raise ValueError('beam_direction should be a list/tuple of three numbers')
         elif np.linalg.norm(value) == 0:
             raise ValueError('At least of component of beam_direction should be non null.')
@@ -109,6 +100,76 @@ class Setup(object):
             raise ValueError(f'Beamline {value} not supported')
         else:
             self._beamline = value
+
+    @property
+    def custom_images(self):
+        """
+        List of images numbers when the scan does no follow the beamline's usual directory format
+        """
+        return self._custom_images
+
+    @custom_images.setter
+    def custom_images(self, value):
+        if not self._custom_scan:
+            self._custom_images = None
+        else:
+            if not isinstance(value, (tuple, list)):
+                raise TypeError('custom_images should be a should be a list/tuple of image numbers')
+            else:
+                self._custom_images = value
+
+    @property
+    def custom_monitor(self):
+        """
+        List of monitor values when the scan does no follow the beamline's usual directory format. The number of values
+         should be equal to the number of elements in custom_images
+        """
+        return self._custom_monitor
+
+    @custom_monitor.setter
+    def custom_monitor(self, value):
+        if not self._custom_scan:
+            self._custom_monitor = None
+        else:
+            if value is None:
+                self._custom_monitor = np.ones(len(self._custom_images))
+            elif not isinstance(value, (tuple, list)):
+                raise TypeError('custom_monitor should be a list/tuple of monitor values')
+            elif len(value) != len(self._custom_images):
+                raise ValueError('the length of custom_monitor should be equal to the length of custom_images')
+            else:
+                self._custom_images = value
+
+    @property
+    def custom_motors(self):
+        """
+        List of motor values when the scan does no follow the beamline's usual directory format.
+        """
+        return self._custom_motors
+
+    @custom_motors.setter
+    def custom_motors(self, value):
+        if not self._custom_scan:
+            self._custom_motors = None
+        else:
+            if not isinstance(value, dict):
+                raise TypeError('custom_monitor should be a dictionnary of "motor_name": motor_positions pairs')
+            else:
+                self._custom_motors = value
+
+    @property
+    def custom_scan(self):
+        """
+        Boolean, True is the scan does not follow the beamline's usual directory format
+        """
+        return self._custom_scan
+
+    @custom_scan.setter
+    def custom_scan(self, value):
+        if not isinstance(value, bool):
+            raise TypeError('custom_scan should be a boolean')
+        else:
+            self._custom_scan = value
 
     @property
     def detector_hor(self):
@@ -146,7 +207,7 @@ class Setup(object):
     def distance(self, value):
         if value is None:
             self._distance = value
-        elif not isinstance(value, Number):
+        elif not isinstance(value, Real):
             raise TypeError('distance should be a number in m')
         elif value <= 0:
             raise ValueError('distance should be a strictly positive number in m')
@@ -164,7 +225,7 @@ class Setup(object):
     def energy(self, value):
         if value is None:
             self._energy = value
-        elif not isinstance(value, Number):
+        elif not isinstance(value, Real):
             raise TypeError('energy should be a number in eV')
         elif value <= 0:
             raise ValueError('energy should be a strictly positive number in eV')
@@ -220,6 +281,20 @@ class Setup(object):
         return kout
 
     @property
+    def filtered_data(self):
+        """
+        Boolean, True if the data and the mask to be loaded were already preprocessed.
+        """
+        return self._filtered_data
+
+    @filtered_data.setter
+    def filtered_data(self, value):
+        if not isinstance(value, bool):
+            raise TypeError('filtered_data should be a boolean')
+        else:
+            self._filtered_data = value
+
+    @property
     def grazing_angle(self):
         """
         Motor positions for the goniometer circles below the rocking angle. It should be a list/tuple of lenght 1 for
@@ -237,7 +312,7 @@ class Setup(object):
                     raise ValueError('1 value expected for out-of-plane rocking curves (chi motor position)')
                 else:
                     self._grazing_angle = value
-            elif isinstance(value, Number) or value is None:
+            elif isinstance(value, Real) or value is None:
                 self._grazing_angle = value
             else:
                 raise ValueError('1 value expected for out-of-plane rocking curves (chi motor position)')
@@ -266,7 +341,7 @@ class Setup(object):
 
     @inplane_angle.setter
     def inplane_angle(self, value):
-        if not isinstance(value, Number) and value is not None:
+        if not isinstance(value, Real) and value is not None:
             raise TypeError('inplane_angle should be a number in degrees')
         else:
             self._inplane_angle = value
@@ -316,7 +391,7 @@ class Setup(object):
 
     @outofplane_angle.setter
     def outofplane_angle(self, value):
-        if not isinstance(value, Number) and value is not None:
+        if not isinstance(value, Real) and value is not None:
             raise TypeError('outofplane_angle should be a number in degrees')
         else:
             self._outofplane_angle = value
@@ -349,7 +424,7 @@ class Setup(object):
     def pixel_x(self, value):
         if value is None:
             self._pixel_x = value
-        elif not isinstance(value, Number):
+        elif not isinstance(value, Real):
             raise TypeError('pixel_x should be a number in m')
         elif value <= 0:
             raise ValueError('pixel_x should be a strictly positive number in m')
@@ -367,7 +442,7 @@ class Setup(object):
     def pixel_y(self, value):
         if value is None:
             self._pixel_y = value
-        elif not isinstance(value, Number):
+        elif not isinstance(value, Real):
             raise TypeError('pixel_y should be a number in m')
         elif value <= 0:
             raise ValueError('pixel_y should be a strictly positive number in m')
@@ -393,6 +468,23 @@ class Setup(object):
             self._rocking_angle = value
 
     @property
+    def sample_offsets(self):
+        """
+        List or tuple of three angles in degrees, corresponding to the offsets of the sample goniometers around
+         (downstream, vertical up, outboard). Convention: the sample offsets will be subtracted to the motor values
+        """
+        return self._sample_offsets
+
+    @sample_offsets.setter
+    def sample_offsets(self, value):
+        if not isinstance(value, (list, tuple)):
+            raise TypeError('sample_offsets should be list or a tuple of three angles in degrees')
+        elif len(value) != 3:
+            raise ValueError('sample_offsets should be list or a tuple of three angles in degrees')
+        else:
+            self._sample_offsets = value
+
+    @property
     def tilt_angle(self):
         """
         Angular step of the rocking curve, in degrees.
@@ -401,7 +493,7 @@ class Setup(object):
 
     @tilt_angle.setter
     def tilt_angle(self, value):
-        if not isinstance(value, Number) and value is not None:
+        if not isinstance(value, Real) and value is not None:
             raise TypeError('tilt_angle should be a number in degrees')
         else:
             self._tilt_angle = value
@@ -418,13 +510,12 @@ class Setup(object):
         return (f"{self.__class__.__name__}(beamline={self.beamline}, beam_direction={self.beam_direction}, "
                 f"energy={self.energy}, distance={self.distance}, outofplane_angle={self.outofplane_angle},\n"
                 f"inplane_angle={self.inplane_angle}, tilt_angle={self.tilt_angle}, "
-                f" rocking_angle={self.rocking_angle}, grazing_angle={self.grazing_angle}, pixel_x={self.pixel_x},\n"
-                f" pixel_y={self.pixel_y}, direct_beam={self.direct_beam}, filtered_data={self.filtered_data}, "
-                f"is_orthogonal={self.is_orthogonal}, custom_scan={self.custom_scan},\n"
-                f"custom_images={self.custom_images}, custom_monitor={self.custom_monitor}, "
-                f"custom_motors={self.custom_motors}, sample_inplane={self.sample_inplane}, "
-                f"sample_outofplane={self.sample_outofplane},\nsample_offsets={self.sample_offsets}, "
-                f"offset_inplane={self.offset_inplane})")
+                f"rocking_angle={self.rocking_angle}, grazing_angle={self.grazing_angle}, pixel_x={self.pixel_x},\n"
+                f"pixel_y={self.pixel_y}, direct_beam={self.direct_beam}, filtered_data={self.filtered_data}, "
+                f"custom_scan={self.custom_scan},\ncustom_images={self.custom_images}, "
+                f"custom_monitor={self.custom_monitor}, custom_motors={self.custom_motors}, "
+                f"sample_inplane={self.sample_inplane}, sample_outofplane={self.sample_outofplane},\n"
+                f"sample_offsets={self.sample_offsets}, offset_inplane={self.offset_inplane})")
 
     def detector_frame(self, obj, voxel_size, width_z=None, width_y=None, width_x=None,
                        debugging=False, **kwargs):
@@ -443,7 +534,7 @@ class Setup(object):
         """
         title = kwargs.get('title', 'Object')
 
-        if isinstance(voxel_size, Number):
+        if isinstance(voxel_size, Real):
             voxel_size = (voxel_size, voxel_size, voxel_size)
         else:
             assert isinstance(voxel_size, (tuple, list)) and len(voxel_size) == 3 and\
@@ -561,7 +652,7 @@ class Setup(object):
         if not voxel_size:
             voxel_size = dz_realspace, dy_realspace, dx_realspace  # in nm
         else:
-            if isinstance(voxel_size, Number):
+            if isinstance(voxel_size, Real):
                 voxel_size = (voxel_size, voxel_size, voxel_size)
             assert isinstance(voxel_size, (tuple, list)) and len(voxel_size) == 3 and\
                 all(val > 0 for val in voxel_size), 'voxel_size should be a list/tuple of three positive numbers in nm'
@@ -1680,21 +1771,23 @@ class Detector(object):
     """
     Class to handle the configuration of the detector used for data acquisition.
     """
-    def __init__(self, name, datadir='', savedir='', template_imagefile='', specfile='', roi=(), sum_roi=(),
+    def __init__(self, name, datadir=None, savedir=None, template_imagefile=None, specfile=None, roi=(), sum_roi=(),
                  binning=(1, 1, 1), **kwargs):
         """
         Initialize parameters of the detector.
-        #todo: REFACTOR THE DOCSTRING
+        #todo: REFACTOR THE class
         :param name: name of the detector: 'Maxipix'or 'Eiger2M' or 'Eiger4M'
         :param datadir: directory where the data is saved
         :param savedir: directory where to save files if needed
         :param template_imagefile: template for the name of image files
-         - ID01: 'data_mpx4_%05d.edf.gz'
-         - SIXS: 'spare_ascan_mu_%05d.nxs'
-         - Cristal: 'S%d.nxs'
-         - P10: sample_name + str('{:05d}'.format(scans[scan_nb])) + '_data_%06d.h5'
-        :param specfile: template of the log file or data file depending on the beamline:
-         -
+         - example for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+         - example for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+         - example for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+         - example for Cristal: 'S%d.nxs'
+         - example for P10: '_master.h5'
+         - example for NANOMAX: '%06d.h5'
+         - example for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+        :param specfile: template for the log file or the data file depending on the beamline
         :param roi: region of interest in the detector, use [] to use the full detector
         :param sum_roi: optional region of interest used for calculated an integrated intensity
         :param binning: binning of the 3D dataset (stacking dimension, detector vertical axis, detector horizontal axis)
@@ -1788,10 +1881,11 @@ class Detector(object):
         """
         :return: a nicely formatted representation string
         """
-        return (f"{self.__class__.__name__}(name={self.name}, datadir={self.datadir}, savedir={self.savedir},"
-                f" template_imagefile={self.template_imagefile}, specfile={self.specfile}, roi={self.roi},"
-                f" sum_roi={self.sum_roi}, binning={self.binning}, previous_binning={self.previous_binning},"
-                f"is_series={self.is_series}, nb_pixel_x={self.nb_pixel_x}, nb_pixel_y={self.nb_pixel_y})")
+        return (f"{self.__class__.__name__}(name={self.name}, datadir={self.datadir}\n,"
+                f"savedir={self.savedir}, template_imagefile={self.template_imagefile}, specfile={self.specfile}\n,"
+                f"roi={self.roi}, sum_roi={self.sum_roi}, binning={self.binning},"
+                f" previous_binning={self.previous_binning},\nis_series={self.is_series}, nb_pixel_x={self.nb_pixel_x},"
+                f" nb_pixel_y={self.nb_pixel_y})\n")
 
     def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
         """
