@@ -111,8 +111,8 @@ is_series = True  # specific to series measurement at P10
 
 custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available
-custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
-custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan
+custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan, None otherwise
+custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan, None otherwise
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
@@ -140,9 +140,9 @@ roi_detector = []  # [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200
 photon_threshold = 0  # data[data < photon_threshold] = 0
 photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon threshold should be applied
 # if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
-background_file = ''  # root_folder + 'background.npz'  #
-hotpixels_file = ''  # root_folder + 'hotpixels_HS4670.npz'  #
-flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
+background_file = None  # root_folder + 'background.npz'  # non empty file path or None
+hotpixels_file = None  # root_folder + 'hotpixels_HS4670.npz'  # non empty file path or None
+flatfield_file = None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
 template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
@@ -163,8 +163,8 @@ sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (
 # convention: the sample offsets will be subtracted to the motor values
 sdd = 1.00  # in m, sample to detector distance in m
 energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
-custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
-# use this to declare motor positions if there is not log file
+custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
+# use this to declare motor positions if there is not log file, None otherwise
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
 # ID01: eta, chi, phi, nu, delta
 # CRISTAL: mgomega, gamma, delta
