@@ -160,7 +160,7 @@ use_rawdata = True  # False for using data gridded in laboratory frame/ True for
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 beam_direction = (1, 0, 0)  # beam direction in the frame (downstream, vertical up, outboard)
 sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
-# the sample offsets will be added to the motor values
+# convention: the sample offsets will be subtracted to the motor values
 sdd = 1.00  # in m, sample to detector distance in m
 energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = {}  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
