@@ -52,7 +52,7 @@ sample_name = ["PtNP1"]  # "SN"  # list of sample names (string in front of the 
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 1, 1]  # binning to apply to the data
+binning = (1, 1, 1)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
@@ -92,7 +92,7 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 #################################################
 reload_previous = True  # True to resume a previous masking (load data and mask)
 reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
-previous_binning = [1, 1, 1]  # binning factors in each dimension of the binned data to be reloaded
+previous_binning = (1, 1, 1)  # binning factors in each dimension of the binned data to be reloaded
 save_previous = False  # if True, will save the previous data and mask
 ##################
 # saving options #
@@ -156,7 +156,7 @@ correct_curvature = False  # True to correcture q values for the curvature of Ew
 beam_direction = (1, 0, 0)  # beam direction in the frame (downstream, vertical up, outboard)
 sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
-sdd = 1.00  # in m, sample to detector distance in m
+sdd = 1.83  # in m, sample to detector distance in m
 energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
@@ -343,7 +343,7 @@ if nb_pixel_x:
 if nb_pixel_y:
     kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 
-detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
+detector = exp.Detector(name=detector, template_imagefile=template_imagefile, roi=roi_detector,
                         binning=binning, **kwargs)
 
 ####################
@@ -380,6 +380,12 @@ if not use_rawdata:
                          distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
     # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
+########################################
+# print the current setup and detector #
+########################################
+print(setup, '\n')
+print(detector, '\n')
+
 ############################################
 # Initialize values for callback functions #
 ############################################
@@ -400,18 +406,17 @@ for scan_nb in range(len(scans)):
 
     setup.init_paths(detector=detector, sample_name=sample_name[scan_nb], scan_number=scans[scan_nb],
                      root_folder=root_folder, save_dir=save_dir, specfile_name=specfile_name,
-                     template_imagefile=template_imagefile)
+                     template_imagefile=template_imagefile, verbose=True)
 
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
                                  root_folder=root_folder, filename=detector.specfile)
 
     if not use_rawdata:
+        setup.grazing_angle = pru.grazing_angle(logfile=logfile, scan_number=scans[scan_nb], setup=setup)
         comment = comment + '_ortho'
         detector.savedir = detector.savedir + "pynx/"
         pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
         print('Output will be orthogonalized by xrayutilities')
-        print('Energy:', setup.energy, 'ev')
-        print('Sample to detector distance: ', setup.distance, 'm')
         plot_title = ['QzQx', 'QyQx', 'QyQz']
     else:
         detector.savedir = detector.savedir + "pynxraw/"
