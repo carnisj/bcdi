@@ -1744,7 +1744,7 @@ def load_background(background_file):
     :param background_file: the path of the background file
     :return: a 2D background
     """
-    if background_file != "":
+    if background_file:
         background = np.load(background_file)
         npz_key = background.files
         background = background[npz_key[0]]
@@ -2254,7 +2254,7 @@ def load_flatfield(flatfield_file):
     :param flatfield_file: the path of the flatfield file
     :return: a 2D flatfield
     """
-    if flatfield_file != "":
+    if flatfield_file:
         flatfield = np.load(flatfield_file)
         npz_key = flatfield.files
         flatfield = flatfield[npz_key[0]]
@@ -2272,7 +2272,7 @@ def load_hotpixels(hotpixels_file):
     :param hotpixels_file: the path of the hotpixels file
     :return: a 2D array of hotpixels (1 for hotpixel, 0 for normal pixel)
     """
-    if hotpixels_file != "":
+    if hotpixels_file:
         hotpixels, _ = util.load_file(hotpixels_file)
         if hotpixels.ndim == 3:
             hotpixels = hotpixels.sum(axis=0)
