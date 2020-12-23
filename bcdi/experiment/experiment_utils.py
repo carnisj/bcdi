@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
+import os
 from numbers import Real
 import warnings
 import bcdi.graph.graph_utils as gu
@@ -21,7 +22,41 @@ class Setup(object):
     def __init__(self, beamline, beam_direction=(1, 0, 0), energy=None, distance=None, outofplane_angle=None,
                  inplane_angle=None, tilt_angle=None, rocking_angle=None, grazing_angle=None, pixel_x=None,
                  pixel_y=None, **kwargs):
+        """
+        Initialize the parameters related to the setup (not the detector, defined in a separate Class Detector).
 
+        :param beamline: name of the beamline, among {'ID01','SIXS_2018','SIXS_2019','34ID','P10','CRISTAL','NANOMAX'}
+        :param beam_direction: direction of the incident X-ray beam in the frame (z downstream, y vertical up, x outboard)
+        :param energy: energy setting of the beamline, in eV.
+        :param distance: sample to detector distance, in m.
+        :param outofplane_angle: vertical detector angle, in degrees.
+        :param inplane_angle: horizontal detector angle, in degrees.
+        :param tilt_angle: angular step of the rocking curve, in degrees.
+        :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
+        :param grazing_angle: motor positions for the goniometer circles below the rocking angle.
+         It should be a list/tuple of lenght 1 for out-of-plane rocking curves (the chi motor value) and length 2 for
+         inplane rocking curves (the chi and omega/om/eta motor values).
+        :param pixel_x: detector horizontal pixel size, in meters.
+        :param pixel_y: detector vertical pixel size, in meters.
+        :param kwargs:
+         - 'direct_beam': tuple of two real numbers indicating the position of the direct beam in pixels at zero
+          detector angles.
+         - 'filtered_data': boolean, True if the data and the mask to be loaded were already preprocessed.
+         - 'custom_scan': boolean, True is the scan does not follow the beamline's usual directory format.
+         - 'custom_images': list of images numbers when the scan does no follow the beamline's usual directory format.
+         - 'custom_monitor': list of monitor values when the scan does no follow the beamline's usual directory format.
+          The number of values should be equal to the number of elements in custom_images.
+         - 'custom_motors': list of motor values when the scan does no follow the beamline's usual directory format.
+         - 'sample_inplane': sample inplane reference direction along the beam at 0 angles in xrayutilities frame
+          (x is downstream, y outboard, and z vertical up at zero incident angle).
+         - 'sample_outofplane': surface normal of the sample at 0 angles in xrayutilities frame
+          (x is downstream, y outboard, and z vertical up at zero incident angle).
+         - 'sample_offsets': list or tuple of three angles in degrees, corresponding to the offsets of the sample
+          goniometers around (downstream, vertical up, outboard). Convention: the sample offsets will be subtracted to
+          the motor values.
+         - 'offset_inplane': inplane offset of the detector defined as the outer angle in xrayutilities area detector
+          calibration.
+        """
         # test the validity of the kwargs:
         for k in kwargs.keys():
             if k not in {'direct_beam', 'filtered_data', 'custom_scan', 'custom_images',
@@ -31,11 +66,6 @@ class Setup(object):
 
         # kwargs for preprocessing forward CDI data
         self.direct_beam = kwargs.get('direct_beam', None)
-        if self.direct_beam:
-            assert isinstance(self.direct_beam, (tuple, list)) and len(self.direct_beam) == 2 and \
-                   all(isinstance(val, Real) for val in self.direct_beam), 'direct_beam should be a list/tuple' \
-                                                                           ' of two numbers'
-
         # kwargs for loading and preprocessing data
         self.sample_offsets = kwargs.get('sample_offsets', (0, 0, 0))
         self.filtered_data = kwargs.get('filtered_data', False)  # boolean
@@ -43,7 +73,6 @@ class Setup(object):
         self.custom_images = kwargs.get('custom_images', None)  # list or tuple
         self.custom_monitor = kwargs.get('custom_monitor', None)  # list or tuple
         self.custom_motors = kwargs.get('custom_motors', None)  # dictionnary
-
         # kwargs for xrayutilities, delegate the test on their values to xrayutilities
         self.sample_inplane = kwargs.get('sample_inplane', (1, 0, 0))
         self.sample_outofplane = kwargs.get('sample_outofplane', (0, 0, 1))
@@ -104,7 +133,7 @@ class Setup(object):
     @property
     def custom_images(self):
         """
-        List of images numbers when the scan does no follow the beamline's usual directory format
+        List of images numbers when the scan does no follow the beamline's usual directory format.
         """
         return self._custom_images
 
@@ -122,7 +151,7 @@ class Setup(object):
     def custom_monitor(self):
         """
         List of monitor values when the scan does no follow the beamline's usual directory format. The number of values
-         should be equal to the number of elements in custom_images
+         should be equal to the number of elements in custom_images.
         """
         return self._custom_monitor
 
@@ -160,7 +189,7 @@ class Setup(object):
     @property
     def custom_scan(self):
         """
-        Boolean, True is the scan does not follow the beamline's usual directory format
+        Boolean, True is the scan does not follow the beamline's usual directory format.
         """
         return self._custom_scan
 
@@ -197,9 +226,26 @@ class Setup(object):
             return 'z+'
 
     @property
+    def direct_beam(self):
+        """
+        Tuple of two real numbers indicating the position of the direct beam in pixels at zero detector angles.
+        """
+        return self._direct_beam
+
+    @direct_beam.setter
+    def direct_beam(self, value):
+        if value is not None:
+            if not isinstance(self.direct_beam, (tuple, list)):
+                raise TypeError('direct_beam should be a list/tuple of two real numbers')
+            elif len(self.direct_beam) != 2 or not all(isinstance(val, Real) for val in value):
+                raise ValueError('direct_beam should be a list/tuple of two numbers')
+            else:
+                self._direct_beam = value
+
+    @property
     def distance(self):
         """
-        Distance setting of the beamline, in m.
+        Sample to detector distance, in m
         """
         return self._distance
 
@@ -452,7 +498,7 @@ class Setup(object):
     @property
     def rocking_angle(self):
         """
-        Name of the angle which is tilted during the rocking curve, 'outofplane' or 'inplane'
+        Angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
         """
         return self._rocking_angle
 
@@ -471,7 +517,7 @@ class Setup(object):
     def sample_offsets(self):
         """
         List or tuple of three angles in degrees, corresponding to the offsets of the sample goniometers around
-         (downstream, vertical up, outboard). Convention: the sample offsets will be subtracted to the motor values
+        (downstream, vertical up, outboard). Convention: the sample offsets will be subtracted to the motor values.
         """
         return self._sample_offsets
 
@@ -500,12 +546,15 @@ class Setup(object):
 
     @property
     def wavelength(self):
+        """
+        Wavelength in meters.
+        """
         if self.energy:
             return 12.398 * 1e-7 / self.energy  # in m
 
     def __repr__(self):
         """
-        Nicely formatted representation string for the Class.
+        Representation string of the Setup instance.
         """
         return (f"{self.__class__.__name__}(beamline={self.beamline}, beam_direction={self.beam_direction}, "
                 f"energy={self.energy}, distance={self.distance}, outofplane_angle={self.outofplane_angle},\n"
@@ -578,6 +627,60 @@ class Setup(object):
                                 title=title + ' interpolated in detector frame\n')
 
         return detector_obj
+
+    def init_paths(self, detector, sample_name, scan_number, root_folder, save_dir, specfile_name, template_imagefile):
+        """
+        Update the detector instance with initialized paths and template for filenames depending on the beamline
+
+        :param detector: instance of the Class Detector
+        :param sample_name: string in front of the scan number in the data folder name.
+        :param scan_number: the scan number
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param save_dir: directory where to save the analysis results
+        :param specfile_name: beamline-dependent string
+         - ID01: name of the spec file without '.spec'
+         - SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
+         - empty string for all other beamlines
+        :param template_imagefile: beamline-dependent template for the data files
+         - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+         - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+         - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+         - Cristal: 'S%d.nxs'
+         - P10: '_master.h5'
+         - NANOMAX: '%06d.h5'
+         - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+        """
+        if not isinstance(detector, Detector):
+            raise TypeError('detector should be an instance of the Class Detector')
+
+        if not isinstance(scan_number, int):
+            raise TypeError('scan_number should be an integer')
+
+        if not isinstance(sample_name, str):
+            raise TypeError('sample_name should be a string')
+
+        if self.beamline == 'P10':
+            specfile = sample_name + '_{:05d}'.format(scan_number)
+            homedir = root_folder + specfile + '/'
+            datadir = homedir + 'e4m/'
+            template_imagefile = specfile + template_imagefile
+            scan_template = sample_name + '_{:05d}'.format(scan_number) + '/'  # used to create the folder
+        elif self.beamline == 'NANOMAX':
+            homedir = root_folder + sample_name + '{:06d}'.format(scan_number) + '/'
+            datadir = homedir + 'data/'
+            specfile = specfile_name
+            scan_template = sample_name + '_{:06d}'.format(scan_number) + '/'  # used to create the folder
+        else:
+            homedir = root_folder + sample_name + str(scan_number) + '/'
+            datadir = homedir + "data/"
+            specfile = specfile_name
+            scan_template = sample_name + '_' + str(scan_number) + '/'  # used to create the folder
+        if save_dir:
+            savedir = save_dir + scan_template
+        else:
+            savedir = homedir
+        detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
+            savedir, datadir, specfile, template_imagefile
 
     def orthogonalize(self, obj, initial_shape=None, voxel_size=None, width_z=None, width_y=None,
                       width_x=None, verbose=True, debugging=False, **kwargs):
@@ -1771,121 +1874,265 @@ class Detector(object):
     """
     Class to handle the configuration of the detector used for data acquisition.
     """
-    def __init__(self, name, datadir=None, savedir=None, template_imagefile=None, specfile=None, roi=(), sum_roi=(),
-                 binning=(1, 1, 1), **kwargs):
+    def __init__(self, name, datadir=None, savedir=None, template_imagefile=None, specfile=None,
+                 roi=None, sum_roi=None, binning=(1, 1, 1), **kwargs):
         """
-        Initialize parameters of the detector.
-        #todo: REFACTOR THE class
-        :param name: name of the detector: 'Maxipix'or 'Eiger2M' or 'Eiger4M'
-        :param datadir: directory where the data is saved
-        :param savedir: directory where to save files if needed
-        :param template_imagefile: template for the name of image files
-         - example for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-         - example for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
-         - example for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
-         - example for Cristal: 'S%d.nxs'
-         - example for P10: '_master.h5'
-         - example for NANOMAX: '%06d.h5'
-         - example for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+        Initialize the parameters related to the detector.
+
+        :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}
+        :param datadir: directory where the data files are located
+        :param savedir: directory where to save the results
+        :param template_imagefile: beamline-dependent template for the data files
+         - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+         - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+         - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+         - Cristal: 'S%d.nxs'
+         - P10: '_master.h5'
+         - NANOMAX: '%06d.h5'
+         - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
         :param specfile: template for the log file or the data file depending on the beamline
-        :param roi: region of interest in the detector, use [] to use the full detector
-        :param sum_roi: optional region of interest used for calculated an integrated intensity
-        :param binning: binning of the 3D dataset (stacking dimension, detector vertical axis, detector horizontal axis)
+        :param roi: region of interest of the detector used for analysis
+        :param sum_roi: region of interest of the detector used for calculated an integrated intensity
+        :param binning: binning factor of the 3D dataset
+         (stacking dimension, detector vertical axis, detector horizontal axis)
         :param kwargs:
-         - 'is_series' = boolean, True is the measurement is a series at P10 beamline
+         - 'is_series' = boolean, True is the measurement is a series at PETRAIII P10 beamline
          - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
-         - 'previous_binning': tuple or list of the three binning factors for reloaded binned data
+         - 'preprocessing_binning': tuple of the three binning factors used in a previous preprocessing step
+         - 'offsets': tuple or list, sample and detector offsets corresponding to the parameter delta
+          in xrayutilities hxrd.Ang2Q.area method
         """
+        # test the validity of the kwargs:
+        for k in kwargs.keys():
+            if k not in {'is_series', 'nb_pixel_x', 'nb_pixel_y', 'preprocessing_binning', 'offsets'}:
+                raise Exception("unknown keyword argument given:", k)
+
+        # load the kwargs
         self.is_series = kwargs.get('is_series', False)
         self.nb_pixel_x = kwargs.get('nb_pixel_x', None)
         self.nb_pixel_y = kwargs.get('nb_pixel_y', None)
-        self.previous_binning = kwargs.get('previous_binning', None) or (1, 1, 1)
+        self.preprocessing_binning = kwargs.get('preprocessing_binning', None) or (1, 1, 1)
+        self.offsets = kwargs.get('offsets', None)  # delegate the test to xrayutilities
 
-        for k in kwargs.keys():
-            if k not in {'is_series', 'nb_pixel_x', 'nb_pixel_y', 'previous_binning'}:
-                raise Exception("unknown keyword argument given:", k)
-
-        self.name = name  # string
-        self.offsets = ()
-        self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
-
-        if name == 'Maxipix':
-            self.nb_pixel_x = self.nb_pixel_x or 516
-            self.nb_pixel_y = self.nb_pixel_y or 516
-            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
-            self.pixelsize_x = 55e-06  # m
-            self.pixelsize_y = 55e-06  # m
-            self.counter = 'mpx4inr'
-        elif name == 'Eiger2M':
-            self.nb_pixel_x = self.nb_pixel_x or 1030
-            self.nb_pixel_y = self.nb_pixel_y or 2164
-            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
-            self.pixelsize_x = 75e-06  # m
-            self.pixelsize_y = 75e-06  # m
-            self.counter = 'ei2minr'
-        elif name == 'Eiger4M':
-            self.nb_pixel_x = self.nb_pixel_x or 2070
-            self.nb_pixel_y = self.nb_pixel_y or 2167
-            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
-            self.pixelsize_x = 75e-06  # m
-            self.pixelsize_y = 75e-06  # m
-            self.counter = ''  # unused
-        elif name == 'Timepix':
-            self.nb_pixel_x = self.nb_pixel_x or 256
-            self.nb_pixel_y = self.nb_pixel_y or 256
-            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
-            self.pixelsize_x = 55e-06  # m
-            self.pixelsize_y = 55e-06  # m
-            self.counter = ''  # unused
-        elif name == 'Merlin':
-            self.nb_pixel_x = self.nb_pixel_x or 515
-            self.nb_pixel_y = self.nb_pixel_y or 515
-            self.nb_pixel_x = self.nb_pixel_x // self.previous_binning[2]
-            self.nb_pixel_y = self.nb_pixel_y // self.previous_binning[1]
-            self.pixelsize_x = 55e-06  # m
-            self.pixelsize_y = 55e-06  # m
-            self.counter = 'alba2'
-        else:
-            raise ValueError('Unknown detector name')
-
-        # correct the pixel sizes taking into account past and future binning
-        self.pixelsize_y = self.pixelsize_y * self.previous_binning[1] * self.binning[1]
-        self.pixelsize_x = self.pixelsize_x * self.previous_binning[2] * self.binning[2]
-        
-        # define paths and log file
+        # load positional arguments
+        self.name = name
+        self.binning = binning
+        self.roi = roi
+        self.sum_roi = sum_roi
+        # the tests on the following arguments were realized beforehand in the setup class instance
         self.datadir = datadir
         self.savedir = savedir
         self.template_imagefile = template_imagefile
         self.specfile = specfile
 
-        # define regions of interest
-        if len(roi) == 0:
-            self.roi = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-        elif len(roi) == 4:
-            self.roi = roi
-        else:
-            raise ValueError("Incorrect value for parameter 'roi'")
+    @property
+    def binning(self):
+        """
+        Tuple of three positive integers corresponding to the binning of the data used in phase retrieval
+         (stacking dimension, detector vertical axis, detector horizontal axis). To declare an additional binning factor
+         due to a previous preprocessing step, use the kwarg 'preprocessing_binning' instead.
+        """
+        return self._binning
 
-        if len(sum_roi) == 0:
-            self.sum_roi = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-        elif len(sum_roi) == 4:
-            self.sum_roi = sum_roi
+    @binning.setter
+    def binning(self, value):
+        if not isinstance(value, (tuple, list)):
+            raise TypeError('binning should be a tuple/list of three integers')
+        elif not all(isinstance(val, int) for val in value) or not all(val > 0 for val in value):
+            raise TypeError('binning should be a tuple/list of three positive integers')
         else:
-            raise ValueError("Incorrect value for parameter 'sum_roi'")
+            self._binning = value
+
+    @property
+    def counter(self):
+        """
+        Name of the counter for the image number.
+        """
+        counter_dict = {'Maxipix': 'mpx4inr', 'Eiger2M': 'ei2minr', 'Eiger4M': None, 'Timepix': None, 'Merlin': 'alba2'}
+        return counter_dict.get(self.name, None)
+
+    @property
+    def is_series(self):
+        """
+        Boolean, True for a series measurement at PETRAIII P10
+        """
+        return self._is_series
+
+    @is_series.setter
+    def is_series(self, value):
+        if not isinstance(value, bool):
+            raise TypeError('is_series should be a boolean')
+        else:
+            self._is_series = value
+
+    @property
+    def name(self):
+        """
+        Name of the detector: 'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'
+        """
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        if value not in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}:
+            raise ValueError("Name should be in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}")
+        else:
+            self._name = value
+
+    @property
+    def nb_pixel_x(self):
+        """
+        Horizontal number of pixels of the detector, taking into account an eventual preprocessing binning.
+        """
+        return self._nb_pixel_x
+
+    @nb_pixel_x.setter
+    def nb_pixel_x(self, value):
+        if value is None:
+            value = self.pix_number[1]
+        if not isinstance(value, int):
+            raise TypeError('nb_pixel_x should be a positive integer')
+        elif value <= 0:
+            raise ValueError('nb_pixel_x should be a positive integer')
+        else:
+            self._nb_pixel_x = value // self.preprocessing_binning[2]
+
+    @property
+    def nb_pixel_y(self):
+        """
+        Vertical number of pixels of the detector, taking into account an eventual preprocessing binning.
+        """
+        return self._nb_pixel_y
+
+    @nb_pixel_y.setter
+    def nb_pixel_y(self, value):
+        if value is None:
+            value = self.pix_number[0]
+        if not isinstance(value, int):
+            raise TypeError('nb_pixel_y should be a positive integer')
+        elif value <= 0:
+            raise ValueError('nb_pixel_y should be a positive integer')
+        else:
+            self._nb_pixel_y = value // self.preprocessing_binning[1]
+
+    @property
+    def pixelsize_x(self):
+        """
+        Horizontal pixel size of the detector after taking into account binning.
+        """
+        return self.unbinned_pixel[1] * self.preprocessing_binning[2] * self.binning[2]
+
+    @property
+    def pixelsize_y(self):
+        """
+        Vertical pixel size of the detector after taking into account binning.
+        """
+        return self.unbinned_pixel[0] * self.preprocessing_binning[1] * self.binning[1]
+
+    @property
+    def pix_number(self):
+        """
+        Number of pixels (vertical, horizontal) of the unbinned detector.
+        """
+        if self.name == 'Maxipix':
+            number = (516, 516)
+        elif self.name == 'Timepix':
+            number = (256, 256)
+        elif self.name == 'Merlin':
+            number = (515, 515)
+        elif self.name == 'Eiger2M':
+            number = (2164, 1030)
+        elif self.name == 'Eiger4M':
+            number = (2167, 2070)
+        else:
+            number = None
+        return number
+
+    @property
+    def preprocessing_binning(self):
+        """
+        Tuple of three positive integers corresponding to the binning factor of the data used in a previous
+         preprocessing step (stacking dimension, detector vertical axis, detector horizontal axis).
+        """
+        return self._preprocessing_binning
+
+    @preprocessing_binning.setter
+    def preprocessing_binning(self, value):
+        if not isinstance(value, (tuple, list)):
+            raise TypeError('preprocessing_binning should be a tuple/list of three integers')
+        elif not all(isinstance(val, int) for val in value) or not all(val > 0 for val in value):
+            raise TypeError('preprocessing_binning should be a tuple/list of three positive integers')
+        else:
+            self._preprocessing_binning = value
+
+    @property
+    def roi(self):
+        """
+        Region of interest of the detector to be used [y_start, y_stop, x_start, x_stop]
+        """
+        return self._roi
+
+    @roi.setter
+    def roi(self, value):
+        if not value:  # None or empty list/tuple
+            self._roi = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+        elif not isinstance(value, (tuple, list)):
+            raise TypeError('roi should be a tuple/list of 4 integers')
+        elif len(value) != 4 or not all(isinstance(val, int) for val in value):
+            raise ValueError('roi should be a tuple/list of 4 integers')
+        else:
+            self._roi = value
+
+    @property
+    def scandir(self):
+        """
+        Path of the scan, typically it is the parent folder of the data folder
+        """
+        if self.datadir:
+            dir_path = os.path.abspath(os.path.join(self.datadir, os.pardir)) + '/'
+            return dir_path.replace('\\', '/')
+
+    @property
+    def sum_roi(self):
+        """
+        Region of interest of the detector used for integrating the intensity [y_start, y_stop, x_start, x_stop]
+        """
+        return self._sum_roi
+
+    @sum_roi.setter
+    def sum_roi(self, value):
+        if not value:  # None or empty list/tuple
+            self._sum_roi = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+        elif not isinstance(value, (tuple, list)):
+            raise TypeError('sum_roi should be a tuple/list of 4 integers')
+        elif len(value) != 4 or not all(isinstance(val, int) for val in value):
+            raise ValueError('sum_roi should be a tuple/list of 4 integers')
+        else:
+            self._sum_roi = value
+
+    @property
+    def unbinned_pixel(self):
+        """
+        Pixel size (vertical, horizontal) of the unbinned detector in meters.
+        """
+        if self.name in {'Maxipix', 'Timepix', 'Merlin'}:
+            pix = (55e-06, 55e-06)
+        elif self.name in {'Eiger2M', 'Eiger4M'}:
+            pix = (75e-06, 75e-06)
+        else:
+            pix = None
+        return pix
 
     def __repr__(self):
         """
-        :return: a nicely formatted representation string
+        Representation string of the Detector instance.
         """
-        return (f"{self.__class__.__name__}(name={self.name}, datadir={self.datadir}\n,"
-                f"savedir={self.savedir}, template_imagefile={self.template_imagefile}, specfile={self.specfile}\n,"
-                f"roi={self.roi}, sum_roi={self.sum_roi}, binning={self.binning},"
-                f" previous_binning={self.previous_binning},\nis_series={self.is_series}, nb_pixel_x={self.nb_pixel_x},"
-                f" nb_pixel_y={self.nb_pixel_y})\n")
+        return (f"{self.__class__.__name__}(name={self.name}, unbinned_pixel={self.unbinned_pixel}, "
+                f"nb_pixel_x={self.nb_pixel_x}, nb_pixel_y={self.nb_pixel_y}, binning={self.binning},\n"
+                f"datadir={self.datadir},\n scandir={self.scandir},\nsavedir={self.savedir},\n"
+                f"template_imagefile={self.template_imagefile}, specfile={self.specfile}\n,roi={self.roi}, "
+                f"sum_roi={self.sum_roi}, preprocessing_binning={self.preprocessing_binning}, "
+                f"is_series={self.is_series}")
 
     def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
         """
@@ -2020,5 +2267,4 @@ class Detector(object):
 
 
 if __name__ == "__main__":
-    setup=Setup(beamline='ID01')
-    print(setup)
+    print(help(Detector))
