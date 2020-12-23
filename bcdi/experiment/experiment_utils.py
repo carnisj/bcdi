@@ -2136,8 +2136,8 @@ class Detector(object):
         """
         return (f"{self.__class__.__name__}(name='{self.name}', unbinned_pixel={self.unbinned_pixel}, "
                 f"nb_pixel_x={self.nb_pixel_x}, nb_pixel_y={self.nb_pixel_y}, binning={self.binning},\n"
-                f"datadir='{self.datadir}',\nscandir='{self.scandir}',\nsavedir='{self.savedir}',\n"
-                f"template_imagefile='{self.template_imagefile}', specfile='{self.specfile}',\nroi={self.roi}, "
+                f"datadir = {self.datadir},\nscandir = {self.scandir},\nsavedir = {self.savedir},\n"
+                f"template_imagefile = '{self.template_imagefile}', specfile = {self.specfile},\nroi={self.roi}, "
                 f"sum_roi={self.sum_roi}, preprocessing_binning={self.preprocessing_binning}, "
                 f"is_series={self.is_series}")
 
