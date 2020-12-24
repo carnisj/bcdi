@@ -2816,7 +2816,8 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
     :type debugging: bool
     :return: updated data and mask, number of pixels treated
     """
-    mask = mask or np.zeros(data.shape)
+    if mask is None:
+        mask = np.zeros(data.shape)
 
     assert data.shape == mask.shape, 'data and mask should have the same shape'
     assert np.isnan(target_val) or isinstance(target_val, int), 'target_val should be nan or an integer, cannot assess'\
