@@ -190,8 +190,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         tuple_scale = (tuple_scale,) * nb_subplots
 
     # load kwargs
-    xlabel = kwargs.get('xlabel', None)
-    ylabel = kwargs.get('ylabel', None)
+    xlabel = kwargs.get('xlabel', '')
+    ylabel = kwargs.get('ylabel', '')
     position = kwargs.get('position', None)
     invert_y = kwargs.get('invert_y', (None for _ in range(nb_subplots)))
     for k in kwargs.keys():
@@ -206,6 +206,10 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         assert len(ylabel) == nb_subplots, 'len(ylabel) incompatible with the numer of arrays'
     else:  # it is a string or a number
         ylabel = (ylabel,) * nb_subplots
+    if position is None:
+        nb_columns = nb_subplots // 2
+        nb_rows = nb_subplots // nb_columns + nb_subplots % nb_columns
+        position = [nb_rows*100 + nb_columns*10 + index for index in range(1, nb_subplots+1)]
     try:
         assert len(position) == nb_subplots, 'len(position) incompatible with the numer of arrays'
     except TypeError:  # it is a number
@@ -214,14 +218,6 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         assert len(invert_y) == nb_subplots, 'len(invert_y) incompatible with the numer of arrays'
     except TypeError:  # it is a boolean or number
         invert_y = (invert_y,) * nb_subplots
-
-    xlabel = xlabel or ['' for _ in range(nb_subplots)]
-    ylabel = ylabel or ['' for _ in range(nb_subplots)]
-
-    if position is None:
-        nb_columns = nb_subplots // 2
-        nb_rows = nb_subplots // nb_columns + nb_subplots % nb_columns
-        position = [nb_rows*100 + nb_columns*10 + index for index in range(1, nb_subplots+1)]
 
     plt.ion()
     fig = plt.figure(figsize=(12, 9))
