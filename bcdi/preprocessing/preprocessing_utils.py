@@ -902,8 +902,7 @@ def check_pixels(data, mask, debugging=False):
         mask = mask.sum(axis=0)
         mask[np.nonzero(mask)] = 1
 
-    print("\ncheck_pixels(): initial number of masked (gap) pixels = {:d} on a total of {:d}".format(int(mask.sum()),
-                                                                                                     nbx*nby))
+    print(f"\ncheck_pixels(): number of masked pixels due to detector gaps = {int(mask.sum())} on a total of {nbx*nby}")
     if data[0, :, :].shape != mask.shape:
         raise ValueError('Data and mask must have the same shape\n data slice is ',
                          data[0, :, :].shape, ' while mask is ', mask.shape)
