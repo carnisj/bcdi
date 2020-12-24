@@ -26,7 +26,7 @@ class Setup(object):
         Initialize the parameters related to the setup (not the detector, defined in a separate Class Detector).
 
         :param beamline: name of the beamline, among {'ID01','SIXS_2018','SIXS_2019','34ID','P10','CRISTAL','NANOMAX'}
-        :param beam_direction: direction of the incident X-ray beam in the frame (z downstream, y vertical up, x outboard)
+        :param beam_direction: direction of the incident X-ray beam in the frame (z downstream,y vertical up,x outboard)
         :param energy: energy setting of the beamline, in eV.
         :param distance: sample to detector distance, in m.
         :param outofplane_angle: vertical detector angle, in degrees.
