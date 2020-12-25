@@ -58,12 +58,11 @@ class Setup(object):
          - 'offset_inplane': inplane offset of the detector defined as the outer angle in xrayutilities area detector
           calibration.
         """
-        # test the validity of the kwargs:
-        for k in kwargs.keys():
-            if k not in {'direct_beam', 'filtered_data', 'custom_scan', 'custom_images',
-                         'custom_monitor', 'custom_motors', 'sample_inplane', 'sample_outofplane',
-                         'sample_offsets', 'offset_inplane'}:
-                raise Exception("unknown keyword argument given:", k)
+        valid.valid_kwargs(kwargs=kwargs,
+                           allowed_kwargs={'direct_beam', 'filtered_data', 'custom_scan', 'custom_images',
+                                           'custom_monitor', 'custom_motors', 'sample_inplane', 'sample_outofplane',
+                                           'sample_offsets', 'offset_inplane'},
+                           name='Setup.__init__')
 
         # kwargs for preprocessing forward CDI data
         self.direct_beam = kwargs.get('direct_beam', None)
@@ -101,7 +100,8 @@ class Setup(object):
 
     @beam_direction.setter
     def beam_direction(self, value):
-        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=Real, name='beam_direction')
+        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=Real,
+                              name='Setup.beam_direction')
         if np.linalg.norm(value) == 0:
             raise ValueError('At least of component of beam_direction should be non null.')
         else:
@@ -141,7 +141,7 @@ class Setup(object):
         if not self._custom_scan:
             self._custom_images = None
         else:
-            valid.valid_container(value, container_type=(tuple, list), name='custom_images')
+            valid.valid_container(value, container_type=(tuple, list), min_length=1, name='Setup.custom_images')
             self._custom_images = value
 
     @property
@@ -160,7 +160,7 @@ class Setup(object):
             if value is None:
                 value = np.ones(len(self._custom_images))
             valid.valid_container(value, container_type=(tuple, list), length=len(self._custom_images),
-                                  name='custom_monitor')
+                                  name='Setup.custom_monitor')
             self._custom_monitor = value
 
     @property
@@ -229,7 +229,8 @@ class Setup(object):
     @direct_beam.setter
     def direct_beam(self, value):
         if value is not None:
-            valid.valid_container(value, container_type=(tuple, list), length=2, item_type=Real, name='direct_beam')
+            valid.valid_container(value, container_type=(tuple, list), length=2, item_type=Real,
+                                  name='Setup.direct_beam')
         self._direct_beam = value
 
     @property
@@ -344,12 +345,12 @@ class Setup(object):
         if self.rocking_angle == 'outofplane':
             # only the chi angle (rotation around z, below the rocking angle omega/om/eta) is needed
             valid.valid_container(value, container_type=(tuple, list), length=1, item_type=Real, allow_none=True,
-                                  name='grazing_angle')
+                                  name='Setup.grazing_angle')
         elif self.rocking_angle == 'inplane':
             # two values needed: the chi angle and the omega/om/eta angle (rotations respectively around z and x,
             # below the rocking angle phi)
             valid.valid_container(value, container_type=(tuple, list), length=2, item_type=Real, allow_none=True,
-                                  name='grazing_angle')
+                                  name='Setup.grazing_angle')
         else:  # self.rocking_angle == 'energy'
             # there is no sample rocking for energy scans, hence the grazing angle value do not matter
             self._grazing_angle = None
@@ -499,7 +500,8 @@ class Setup(object):
 
     @sample_offsets.setter
     def sample_offsets(self, value):
-        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=Real, name='sample_offsets')
+        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=Real,
+                              name='Setup.sample_offsets')
         self._sample_offsets = value
 
     @property
@@ -554,17 +556,13 @@ class Setup(object):
          - 'title': title for the debugging plots
         :return: object interpolated on an orthogonal grid
         """
+        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'title'}, name='Setup.detector_frame')
         title = kwargs.get('title', 'Object')
 
         if isinstance(voxel_size, Real):
             voxel_size = (voxel_size, voxel_size, voxel_size)
-        else:
-            assert isinstance(voxel_size, (tuple, list)) and len(voxel_size) == 3 and\
-                all(val > 0 for val in voxel_size), 'voxel_size should be a lit/tuple of three positive numbers'
-
-        for k in kwargs.keys():
-            if k not in {'title'}:
-                raise Exception("unknown keyword argument given:", k)
+        valid.valid_container(obj=voxel_size, container_type=(tuple, list), length=3, strictly_positive=True,
+                              name='Setup.detector_frame')
 
         nbz, nby, nbx = obj.shape
 
@@ -678,17 +676,14 @@ class Setup(object):
          - 'title': title for the debugging plots
         :return: object interpolated on an orthogonal grid
         """
+        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'title'}, name='Setup.orthogonalize')
         title = kwargs.get('title', 'Object')
-
-        for k in kwargs.keys():
-            if k not in {'title'}:
-                raise Exception("unknown keyword argument given:", k)
 
         if not initial_shape:
             initial_shape = obj.shape
         else:
             valid.valid_container(initial_shape, container_type=(tuple, list), length=3, item_type=int,
-                                  strictly_positive=True, name='initial_shape')
+                                  strictly_positive=True, name='Setup.orthogonalize')
 
         if debugging:
             gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
@@ -783,7 +778,7 @@ class Setup(object):
         :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
         """
         valid.valid_container(array_shape, container_type=(tuple, list), length=3, item_type=int,
-                              strictly_positive=True, name='array_shape')
+                              strictly_positive=True, name='Setup.orthogonalize_vector')
 
         ortho_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
                                           pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
@@ -1078,7 +1073,7 @@ class Setup(object):
         :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
         """
         valid.valid_container(array_shape, container_type=(tuple, list), length=3, item_type=int,
-                              strictly_positive=True, name='array_shape')
+                              strictly_positive=True, name='Setup.voxel_sizes')
 
         transfer_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
                                              pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
@@ -1884,10 +1879,9 @@ class Detector(object):
         # the detector name should be initialized first, other properties are depending on it
         self.name = name
 
-        # test the validity of the kwargs:
-        for k in kwargs.keys():
-            if k not in {'is_series', 'nb_pixel_x', 'nb_pixel_y', 'preprocessing_binning', 'offsets'}:
-                raise Exception("unknown keyword argument given:", k)
+        valid.valid_kwargs(kwargs=kwargs,
+                           allowed_kwargs={'is_series', 'nb_pixel_x', 'nb_pixel_y', 'preprocessing_binning', 'offsets'},
+                           name='Detector.__init__')
 
         # load the kwargs
         self.is_series = kwargs.get('is_series', False)
@@ -1918,7 +1912,7 @@ class Detector(object):
     @binning.setter
     def binning(self, value):
         valid.valid_container(value, container_type=(tuple, list), length=3, item_type=int,
-                              strictly_positive=True, name='binning')
+                              strictly_positive=True, name='Detector.binning')
         self._binning = value
 
     @property
@@ -2037,7 +2031,7 @@ class Detector(object):
     @preprocessing_binning.setter
     def preprocessing_binning(self, value):
         valid.valid_container(value, container_type=(tuple, list), length=3, item_type=int,
-                              strictly_positive=True, name='preprocessing_binning')
+                              strictly_positive=True, name='Detector.preprocessing_binning')
         self._preprocessing_binning = value
 
     @property
@@ -2051,7 +2045,7 @@ class Detector(object):
     def roi(self, value):
         if not value:  # None or empty list/tuple
             value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-        valid.valid_container(value, container_type=(tuple, list), length=4, item_type=int, name='roi')
+        valid.valid_container(value, container_type=(tuple, list), length=4, item_type=int, name='Detector.roi')
         self._roi = value
 
     @property
@@ -2074,7 +2068,7 @@ class Detector(object):
     def sum_roi(self, value):
         if not value:  # None or empty list/tuple
             value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-        valid.valid_container(value, container_type=(tuple, list), length=4, item_type=int, name='sum_roi')
+        valid.valid_container(value, container_type=(tuple, list), length=4, item_type=int, name='Detector.sum_roi')
         self._sum_roi = value
 
     @property
