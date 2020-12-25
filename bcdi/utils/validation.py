@@ -9,18 +9,19 @@
 from numbers import Number, Real
 
 
-def valid_container(obj, container_type, length=None, item_type=None, allow_none=False, strictly_positive=False,
-                    name=None):
+def valid_container(obj, container_type, length=None, min_length=None, item_type=None, allow_none=False,
+                    strictly_positive=False, name=None):
     """
     Check that the input object as three elements fulfilling the defined requirements.
 
     :param obj: the object to be tested
     :param container_type: list of the allowed types for obj
     :param length: required length
+    :param min_length: mininum length (included)
     :param item_type: allowed type of the object values
     :param allow_none: True if the container items are allowed to be None
     :param strictly_positive: True is object values must all be strictly positive.
-    :param name: name of the object appearing in exception messages
+    :param name: name of the calling object appearing in exception messages
     """
     # check the validity of the requirements
     if container_type is None:
@@ -34,6 +35,10 @@ def valid_container(obj, container_type, length=None, item_type=None, allow_none
     if length is not None:
         if not isinstance(length, int) or length <= 0:
             raise ValueError('length should be a strictly positive integer')
+
+    if min_length is not None:
+        if not isinstance(min_length, int) or min_length < 0:
+            raise ValueError('min_length should be a positive integer')
 
     if item_type is not None:
         item_type = tuple(item_type)
@@ -63,6 +68,14 @@ def valid_container(obj, container_type, length=None, item_type=None, allow_none
         except TypeError as ex:
             raise TypeError(f'method __len__ not defined for the type(s) {container_type}') from ex
 
+    # check the min_length of obj
+    if min_length is not None:
+        try:
+            if len(obj) < min_length:
+                raise ValueError(f'{name} should be of length >= {min_length}')
+        except TypeError as ex:
+            raise TypeError(f'method __len__ not defined for the type(s) {container_type}') from ex
+
     # check the type of the items in obj
     if item_type is not None:
         if allow_none:
@@ -82,3 +95,23 @@ def valid_container(obj, container_type, length=None, item_type=None, allow_none
     if all(isinstance(val, Real) for val in obj) and strictly_positive:
         if not all(val > 0 for val in obj):
             raise ValueError(f'all items in {name} should be strictly positive')
+
+
+def valid_kwargs(kwargs, allowed_kwargs, name=None):
+    """
+    Check if the provided parameters belong to the set of allowed kwargs.
+
+    :param kwargs: dictionnary of kwargs to check
+    :param allowed_kwargs: set of allowed keys
+    :param name: name of the calling object appearing in exception messages
+    """
+    # check the validity of the parameters
+    if not isinstance(kwargs, dict):
+        raise TypeError('kwargs should be a dictionnary')
+
+    valid_container(obj=allowed_kwargs, container_type=(tuple, list, set), min_length=1, name='valid_kwargs')
+
+    # check the kwargs
+    for k in kwargs.keys():
+        if k not in allowed_kwargs:
+            raise Exception(f"{name}: unknown keyword argument given:", k)
