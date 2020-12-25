@@ -9,7 +9,8 @@
 from numbers import Number, Real
 
 
-def valid_container(obj, container_type, length=None, item_type=None, strictly_positive=False, name=None):
+def valid_container(obj, container_type, length=None, item_type=None, allow_none=False, strictly_positive=False,
+                    name=None):
     """
     Check that the input object as three elements fulfilling the defined requirements.
 
@@ -17,6 +18,7 @@ def valid_container(obj, container_type, length=None, item_type=None, strictly_p
     :param container_type: list of the allowed types for obj
     :param length: required length
     :param item_type: allowed type of the object values
+    :param allow_none: True if the container items are allowed to be None
     :param strictly_positive: True is object values must all be strictly positive.
     :param name: name of the object appearing in exception messages
     """
@@ -38,8 +40,14 @@ def valid_container(obj, container_type, length=None, item_type=None, strictly_p
         if not all(isinstance(val, type) for val in item_type):
             raise TypeError('type_elements should be a collection of valid types')
 
+    if not isinstance(allow_none, bool):
+        raise TypeError('allow_none should be a boolean')
+
     if not isinstance(strictly_positive, bool):
         raise TypeError('strictly_positive should be a boolean')
+
+    if allow_none and strictly_positive:
+        raise TypeError("'>' not supported between instances of 'NoneType' and 'Number'")
 
     name = name or 'obj'
 
@@ -57,8 +65,18 @@ def valid_container(obj, container_type, length=None, item_type=None, strictly_p
 
     # check the type of the items in obj
     if item_type is not None:
-        if not all(isinstance(val, item_type) for val in obj):
-            raise TypeError(f'{name}: wrong type for items, allowed is {item_type}')
+        if allow_none:
+            for val in obj:
+                if val is not None and not isinstance(val, item_type):
+                    raise TypeError(f'{name}: wrong type for items, allowed is {item_type} or None')
+        else:
+            if not all(isinstance(val, item_type) for val in obj):
+                raise TypeError(f'{name}: wrong type for items, allowed is {item_type}')
+
+    # check the presence of None in the items
+    if not allow_none:
+        if any(val is None for val in obj):
+            raise ValueError(f'{name}: None is not allowed')
 
     # check the positivity of the items in obj
     if all(isinstance(val, Real) for val in obj) and strictly_positive:
