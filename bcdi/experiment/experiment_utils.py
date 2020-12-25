@@ -11,6 +11,7 @@ import os
 from numbers import Real
 import warnings
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.validation as valid
 from scipy.interpolate import RegularGridInterpolator
 import gc
 
@@ -100,10 +101,8 @@ class Setup(object):
 
     @beam_direction.setter
     def beam_direction(self, value):
-        if not isinstance(value, (tuple, list)) or len(value) != 3 or not \
-               all(isinstance(val, Real) for val in value):
-            raise ValueError('beam_direction should be a list/tuple of three numbers')
-        elif np.linalg.norm(value) == 0:
+        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=Real, name='beam_direction')
+        if np.linalg.norm(value) == 0:
             raise ValueError('At least of component of beam_direction should be non null.')
         else:
             self._beam_direction = value / np.linalg.norm(value)
@@ -142,10 +141,8 @@ class Setup(object):
         if not self._custom_scan:
             self._custom_images = None
         else:
-            if not isinstance(value, (tuple, list)):
-                raise TypeError('custom_images should be a should be a list/tuple of image numbers')
-            else:
-                self._custom_images = value
+            valid.valid_container(value, container_type=(tuple, list), name='custom_images')
+            self._custom_images = value
 
     @property
     def custom_monitor(self):
@@ -161,13 +158,10 @@ class Setup(object):
             self._custom_monitor = None
         else:
             if value is None:
-                self._custom_monitor = np.ones(len(self._custom_images))
-            elif not isinstance(value, (tuple, list)):
-                raise TypeError('custom_monitor should be a list/tuple of monitor values')
-            elif len(value) != len(self._custom_images):
-                raise ValueError('the length of custom_monitor should be equal to the length of custom_images')
-            else:
-                self._custom_images = value
+                value = np.ones(len(self._custom_images))
+            valid.valid_container(value, container_type=(tuple, list), length=len(self._custom_images),
+                                  name='custom_monitor')
+            self._custom_monitor = value
 
     @property
     def custom_motors(self):
@@ -235,10 +229,7 @@ class Setup(object):
     @direct_beam.setter
     def direct_beam(self, value):
         if value is not None:
-            if not isinstance(self.direct_beam, (tuple, list)):
-                raise TypeError('direct_beam should be a list/tuple of two real numbers')
-            elif len(self.direct_beam) != 2 or not all(isinstance(val, Real) for val in value):
-                raise ValueError('direct_beam should be a list/tuple of two numbers')
+            valid.valid_container(value, container_type=(tuple, list), length=2, item_type=Real, name='direct_beam')
         self._direct_beam = value
 
     @property
@@ -352,27 +343,13 @@ class Setup(object):
     def grazing_angle(self, value):
         if self.rocking_angle == 'outofplane':
             # only the chi angle (rotation around z, below the rocking angle omega/om/eta) is needed
-            if isinstance(value, (tuple, list)):
-                if len(value) != 1:
-                    raise ValueError('1 value expected for out-of-plane rocking curves (chi motor position)')
-                else:
-                    self._grazing_angle = value
-            elif isinstance(value, Real) or value is None:
-                self._grazing_angle = value
-            else:
-                raise ValueError('1 value expected for out-of-plane rocking curves (chi motor position)')
+            valid.valid_container(value, container_type=(tuple, list), length=1, item_type=Real, allow_none=True,
+                                  name='grazing_angle')
         elif self.rocking_angle == 'inplane':
             # two values needed: the chi angle and the omega/om/eta angle (rotations respectively around z and x,
             # below the rocking angle phi)
-            if isinstance(value, (tuple, list)):
-                if len(value) == 2:
-                    self._grazing_angle = value
-                else:
-                    raise ValueError('2 values expected for inplane rocking curves (chi and omega/om/eta positions)')
-            elif value is None:
-                self._grazing_angle = value
-            else:
-                raise ValueError('2 values expected for inplane rocking curves (chi and omega/om/eta positions)')
+            valid.valid_container(value, container_type=(tuple, list), length=2, item_type=Real, allow_none=True,
+                                  name='grazing_angle')
         else:  # self.rocking_angle == 'energy'
             # there is no sample rocking for energy scans, hence the grazing angle value do not matter
             self._grazing_angle = None
@@ -522,12 +499,8 @@ class Setup(object):
 
     @sample_offsets.setter
     def sample_offsets(self, value):
-        if not isinstance(value, (list, tuple)):
-            raise TypeError('sample_offsets should be list or a tuple of three angles in degrees')
-        elif len(value) != 3:
-            raise ValueError('sample_offsets should be list or a tuple of three angles in degrees')
-        else:
-            self._sample_offsets = value
+        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=Real, name='sample_offsets')
+        self._sample_offsets = value
 
     @property
     def tilt_angle(self):
@@ -714,8 +687,8 @@ class Setup(object):
         if not initial_shape:
             initial_shape = obj.shape
         else:
-            assert isinstance(initial_shape, (tuple, list)) and len(initial_shape) == 3, \
-                'initial_shape should be a list/tuple of three positive integers'
+            valid.valid_container(initial_shape, container_type=(tuple, list), length=3, item_type=int,
+                                  strictly_positive=True, name='initial_shape')
 
         if debugging:
             gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
@@ -809,8 +782,9 @@ class Setup(object):
         :param verbose: True to have printed comments
         :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
         """
-        assert isinstance(array_shape, (tuple, list)) and len(array_shape) == 3,\
-            'array_shape should be a list/tuple of three positive integers'
+        valid.valid_container(array_shape, container_type=(tuple, list), length=3, item_type=int,
+                              strictly_positive=True, name='array_shape')
+
         ortho_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
                                           pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
         # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
@@ -1103,8 +1077,8 @@ class Setup(object):
         :param verbose: True to have printed comments
         :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
         """
-        assert isinstance(array_shape, (tuple, list)) and len(array_shape) == 3,\
-            'array_shape should be a list/tuple of three positive integers'
+        valid.valid_container(array_shape, container_type=(tuple, list), length=3, item_type=int,
+                              strictly_positive=True, name='array_shape')
 
         transfer_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
                                              pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
@@ -1943,12 +1917,9 @@ class Detector(object):
 
     @binning.setter
     def binning(self, value):
-        if not isinstance(value, (tuple, list)):
-            raise TypeError('binning should be a tuple/list of three integers')
-        elif not all(isinstance(val, int) for val in value) or not all(val > 0 for val in value):
-            raise TypeError('binning should be a tuple/list of three positive integers')
-        else:
-            self._binning = value
+        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=int,
+                              strictly_positive=True, name='binning')
+        self._binning = value
 
     @property
     def counter(self):
@@ -2065,12 +2036,9 @@ class Detector(object):
 
     @preprocessing_binning.setter
     def preprocessing_binning(self, value):
-        if not isinstance(value, (tuple, list)):
-            raise TypeError('preprocessing_binning should be a tuple/list of three integers')
-        elif not all(isinstance(val, int) for val in value) or not all(val > 0 for val in value):
-            raise TypeError('preprocessing_binning should be a tuple/list of three positive integers')
-        else:
-            self._preprocessing_binning = value
+        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=int,
+                              strictly_positive=True, name='preprocessing_binning')
+        self._preprocessing_binning = value
 
     @property
     def roi(self):
@@ -2082,13 +2050,9 @@ class Detector(object):
     @roi.setter
     def roi(self, value):
         if not value:  # None or empty list/tuple
-            self._roi = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-        elif not isinstance(value, (tuple, list)):
-            raise TypeError('roi should be a tuple/list of 4 integers')
-        elif len(value) != 4 or not all(isinstance(val, int) for val in value):
-            raise ValueError('roi should be a tuple/list of 4 integers')
-        else:
-            self._roi = value
+            value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+        valid.valid_container(value, container_type=(tuple, list), length=4, item_type=int, name='roi')
+        self._roi = value
 
     @property
     def scandir(self):
@@ -2109,13 +2073,9 @@ class Detector(object):
     @sum_roi.setter
     def sum_roi(self, value):
         if not value:  # None or empty list/tuple
-            self._sum_roi = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-        elif not isinstance(value, (tuple, list)):
-            raise TypeError('sum_roi should be a tuple/list of 4 integers')
-        elif len(value) != 4 or not all(isinstance(val, int) for val in value):
-            raise ValueError('sum_roi should be a tuple/list of 4 integers')
-        else:
-            self._sum_roi = value
+            value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+        valid.valid_container(value, container_type=(tuple, list), length=4, item_type=int, name='sum_roi')
+        self._sum_roi = value
 
     @property
     def unbinned_pixel(self):
