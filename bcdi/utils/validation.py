@@ -9,7 +9,7 @@
 from numbers import Number, Real
 
 
-def valid_container(obj, container_type, length, item_type=None, strictly_positive=False, name=None):
+def valid_container(obj, container_type, length=None, item_type=None, strictly_positive=False, name=None):
     """
     Check that the input object as three elements fulfilling the defined requirements.
 
@@ -21,7 +21,6 @@ def valid_container(obj, container_type, length, item_type=None, strictly_positi
     :param name: name of the object appearing in exception messages
     """
     # check the validity of the requirements
-    name = name or 'obj'
     if container_type is None:
         raise ValueError('at least one type must be specified for the container')
     container_type = tuple(container_type)
@@ -30,8 +29,9 @@ def valid_container(obj, container_type, length, item_type=None, strictly_positi
     if not all(isinstance(val, type) for val in container_type):
         raise TypeError('container_type should be a collection of valid types')
 
-    if not isinstance(length, int) or length <= 0:
-        raise ValueError('length should be a strictly positive integer')
+    if length is not None:
+        if not isinstance(length, int) or length <= 0:
+            raise ValueError('length should be a strictly positive integer')
 
     if item_type is not None:
         item_type = tuple(item_type)
@@ -41,16 +41,19 @@ def valid_container(obj, container_type, length, item_type=None, strictly_positi
     if not isinstance(strictly_positive, bool):
         raise TypeError('strictly_positive should be a boolean')
 
+    name = name or 'obj'
+
     # check the type of obj
     if not isinstance(obj, container_type):
         raise TypeError(f'type({name})={type(obj)}, allowed is {container_type}')
 
     # check the length of obj
-    try:
-        if len(obj) != length:
-            raise ValueError(f'{name} should be of length {length}')
-    except TypeError as ex:
-        raise TypeError(f'method __len__ not defined for the type(s) {container_type}') from ex
+    if length is not None:
+        try:
+            if len(obj) != length:
+                raise ValueError(f'{name} should be of length {length}')
+        except TypeError as ex:
+            raise TypeError(f'method __len__ not defined for the type(s) {container_type}') from ex
 
     # check the type of the items in obj
     if item_type is not None:
