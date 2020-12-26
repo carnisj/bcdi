@@ -9,8 +9,8 @@
 from numbers import Number, Real
 
 
-def valid_container(obj, container_types, length=None, min_length=None, item_types=None, allow_none=False,
-                    strictly_positive=False, name=None):
+def valid_container(obj, container_types, length=None, min_length=None, item_types=None, min_included=None,
+                    min_excluded=None, max_included=None, max_excluded=None, allow_none=False, name=None):
     """
     Check that the input object as three elements fulfilling the defined requirements.
 
@@ -19,8 +19,11 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
     :param length: required length
     :param min_length: mininum length (inclusive)
     :param item_types: list of the allowed types for the object items
+    :param min_included: minimum allowed value (inclusive)
+    :param min_excluded: minimum allowed value (exclusive)
+    :param max_included: maximum allowed value (inclusive)
+    :param max_excluded: maximum allowed value (exclusive)
     :param allow_none: True if the container items are allowed to be None
-    :param strictly_positive: True is object values must all be strictly positive.
     :param name: name of the calling object appearing in exception messages
     """
     # check the validity of the requirements
@@ -45,14 +48,24 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
         if not all(isinstance(val, type) for val in item_types):
             raise TypeError('type_elements should be a collection of valid types')
 
+    if min_included is not None:
+        if not isinstance(min_included, Real):
+            raise ValueError('min_included should be a real number')
+
+    if min_excluded is not None:
+        if not isinstance(min_excluded, Real):
+            raise ValueError('min_excluded should be a real number')
+
+    if max_included is not None:
+        if not isinstance(max_included, Real):
+            raise ValueError('max_included should be a real number')
+
+    if max_excluded is not None:
+        if not isinstance(max_excluded, Real):
+            raise ValueError('max_excluded should be a real number')
+
     if not isinstance(allow_none, bool):
         raise TypeError('allow_none should be a boolean')
-
-    if not isinstance(strictly_positive, bool):
-        raise TypeError('strictly_positive should be a boolean')
-
-    if allow_none and strictly_positive:
-        raise TypeError("'>' not supported between instances of 'NoneType' and 'Number'")
 
     name = name or 'obj'
 
@@ -81,16 +94,14 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
         if any(val is None for val in obj):
             raise ValueError(f'{name}: None is not allowed')
 
-    # check the type of the items in obj
+    # check the type and value of each items in obj
     if item_types is not None:
         for val in obj:
-            if val is not None and not isinstance(val, item_types):
-                raise TypeError(f'{name}: wrong type for items, allowed is {item_types} or None')
+            valid_item(value=val, allowed_types=item_types, min_included=min_included, min_excluded=min_excluded,
+                       max_included=max_included, max_excluded=max_excluded, allow_none=allow_none, name=name)
 
-    # check the positivity of the items in obj
-    if strictly_positive:
-        if all(isinstance(val, Real) for val in obj) and not all(val > 0 for val in obj):
-            raise ValueError(f'{name}: all items in the container should be strictly positive')
+    # every tests passed, return True
+    return True
 
 
 def valid_kwargs(kwargs, allowed_kwargs, name=None):
@@ -112,9 +123,12 @@ def valid_kwargs(kwargs, allowed_kwargs, name=None):
         if k not in allowed_kwargs:
             raise Exception(f"{name}: unknown keyword argument given:", k)
 
+    # every tests passed, return True
+    return True
 
-def valid_number(value, allowed_types, min_included=None, min_excluded=None, max_included=None, max_excluded=None,
-                 allow_none=False, name=None):
+
+def valid_item(value, allowed_types, min_included=None, min_excluded=None, max_included=None, max_excluded=None,
+               allow_none=False, name=None):
     """
     Check that the input object as three elements fulfilling the defined requirements.
 
@@ -166,21 +180,40 @@ def valid_number(value, allowed_types, min_included=None, min_excluded=None, max
         raise TypeError(f'{name}: wrong type for value, allowed is {allowed_types}')
 
     # check min_included
-    if min_included is not None:
-        if value < min_included:
-            raise ValueError(f'{name}: value should be larger or equal to {min_included}')
+    if min_included is not None and value is not None:
+        try:
+            if value < min_included:
+                raise ValueError(f'{name}: value should be larger or equal to {min_included}')
+        except TypeError as ex:
+            raise TypeError(f"{name}: '<' not supported between instances of "
+                            f"'{type(value)}' and '{type(min_included)}'") from ex
 
     # check min_excluded
-    if min_excluded is not None:
-        if value <= min_excluded:
-            raise ValueError(f'{name}: value should be strictly larger than {min_excluded}')
+    if min_excluded is not None and value is not None:
+        try:
+            if value <= min_excluded:
+                raise ValueError(f'{name}: value should be strictly larger than {min_excluded}')
+        except TypeError as ex:
+            raise TypeError(f"{name}: '<=' not supported between instances of "
+                            f"'{type(value)}' and '{type(min_excluded)}'") from ex
 
     # check max_included
-    if max_included is not None:
-        if value > max_included:
-            raise ValueError(f'{name}: value should be smaller or equal to {max_included}')
+    if max_included is not None and value is not None:
+        try:
+            if value > max_included:
+                raise ValueError(f'{name}: value should be smaller or equal to {max_included}')
+        except TypeError as ex:
+            raise TypeError(f"{name}: '>' not supported between instances of "
+                            f"'{type(value)}' and '{type(max_included)}'") from ex
 
     # check max_excluded
-    if max_excluded is not None:
-        if value >= max_excluded:
-            raise ValueError(f'{name}: value should be strictly smaller than {max_excluded}')
+    if max_excluded is not None and value is not None:
+        try:
+            if value >= max_excluded:
+                raise ValueError(f'{name}: value should be strictly smaller than {max_excluded}')
+        except TypeError as ex:
+            raise TypeError(f"{name}: '>=' not supported between instances of "
+                            f"'{type(value)}' and '{type(max_excluded)}'") from ex
+
+    # every tests passed, return True
+    return True
