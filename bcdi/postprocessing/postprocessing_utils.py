@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 from numbers import Number
+from math import pi
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 import scipy
@@ -1073,7 +1074,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
     return path
 
 
-def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_phase=2*np.pi,
+def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_phase=2*pi,
                method='default', debugging=False):
     """
     Calculate the 3D strain array.
