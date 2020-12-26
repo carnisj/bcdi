@@ -16,6 +16,389 @@ from scipy.interpolate import RegularGridInterpolator
 import gc
 
 
+class Detector(object):
+    """
+    Class to handle the configuration of the detector used for data acquisition.
+    """
+    def __init__(self, name, datadir=None, savedir=None, template_imagefile=None, specfile=None,
+                 roi=None, sum_roi=None, binning=(1, 1, 1), **kwargs):
+        """
+        Initialize the parameters related to the detector.
+
+        :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}
+        :param datadir: directory where the data files are located
+        :param savedir: directory where to save the results
+        :param template_imagefile: beamline-dependent template for the data files
+         - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+         - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+         - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+         - Cristal: 'S%d.nxs'
+         - P10: '_master.h5'
+         - NANOMAX: '%06d.h5'
+         - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+        :param specfile: template for the log file or the data file depending on the beamline
+        :param roi: region of interest of the detector used for analysis
+        :param sum_roi: region of interest of the detector used for calculated an integrated intensity
+        :param binning: binning factor of the 3D dataset
+         (stacking dimension, detector vertical axis, detector horizontal axis)
+        :param kwargs:
+         - 'is_series' = boolean, True is the measurement is a series at PETRAIII P10 beamline
+         - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
+         - 'preprocessing_binning': tuple of the three binning factors used in a previous preprocessing step
+         - 'offsets': tuple or list, sample and detector offsets corresponding to the parameter delta
+          in xrayutilities hxrd.Ang2Q.area method
+        """
+        # the detector name should be initialized first, other properties are depending on it
+        self.name = name
+
+        valid.valid_kwargs(kwargs=kwargs,
+                           allowed_kwargs={'is_series', 'nb_pixel_x', 'nb_pixel_y', 'preprocessing_binning', 'offsets'},
+                           name='Detector.__init__')
+
+        # load the kwargs
+        self.is_series = kwargs.get('is_series', False)
+        self.preprocessing_binning = kwargs.get('preprocessing_binning', None) or (1, 1, 1)
+        self.nb_pixel_x = kwargs.get('nb_pixel_x', None)
+        self.nb_pixel_y = kwargs.get('nb_pixel_y', None)
+        self.offsets = kwargs.get('offsets', None)  # delegate the test to xrayutilities
+
+        # load other positional arguments
+        self.binning = binning
+        self.roi = roi
+        self.sum_roi = sum_roi
+        # the tests on the following arguments were realized beforehand in the setup class instance
+        self.datadir = datadir
+        self.savedir = savedir
+        self.template_imagefile = template_imagefile
+        self.specfile = specfile
+
+    @property
+    def binning(self):
+        """
+        Tuple of three positive integers corresponding to the binning of the data used in phase retrieval
+         (stacking dimension, detector vertical axis, detector horizontal axis). To declare an additional binning factor
+         due to a previous preprocessing step, use the kwarg 'preprocessing_binning' instead.
+        """
+        return self._binning
+
+    @binning.setter
+    def binning(self, value):
+        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=int,
+                              strictly_positive=True, name='Detector.binning')
+        self._binning = value
+
+    @property
+    def counter(self):
+        """
+        Name of the counter for the image number.
+        """
+        counter_dict = {'Maxipix': 'mpx4inr', 'Eiger2M': 'ei2minr', 'Eiger4M': None, 'Timepix': None, 'Merlin': 'alba2'}
+        return counter_dict.get(self.name, None)
+
+    @property
+    def is_series(self):
+        """
+        Boolean, True for a series measurement at PETRAIII P10
+        """
+        return self._is_series
+
+    @is_series.setter
+    def is_series(self, value):
+        if not isinstance(value, bool):
+            raise TypeError('is_series should be a boolean')
+        else:
+            self._is_series = value
+
+    @property
+    def name(self):
+        """
+        Name of the detector: 'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'
+        """
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        if value not in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}:
+            raise ValueError("Name should be in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}")
+        else:
+            self._name = value
+
+    @property
+    def nb_pixel_x(self):
+        """
+        Horizontal number of pixels of the detector, taking into account an eventual preprocessing binning.
+        """
+        return self._nb_pixel_x
+
+    @nb_pixel_x.setter
+    def nb_pixel_x(self, value):
+        if value is None:
+            value = self.pix_number[1]
+        if not isinstance(value, int):
+            raise TypeError('nb_pixel_x should be a positive integer')
+        elif value <= 0:
+            raise ValueError('nb_pixel_x should be a positive integer')
+        else:
+            self._nb_pixel_x = value // self.preprocessing_binning[2]
+
+    @property
+    def nb_pixel_y(self):
+        """
+        Vertical number of pixels of the detector, taking into account an eventual preprocessing binning.
+        """
+        return self._nb_pixel_y
+
+    @nb_pixel_y.setter
+    def nb_pixel_y(self, value):
+        if value is None:
+            value = self.pix_number[0]
+        if not isinstance(value, int):
+            raise TypeError('nb_pixel_y should be a positive integer')
+        elif value <= 0:
+            raise ValueError('nb_pixel_y should be a positive integer')
+        else:
+            self._nb_pixel_y = value // self.preprocessing_binning[1]
+
+    @property
+    def pixelsize_x(self):
+        """
+        Horizontal pixel size of the detector after taking into account binning.
+        """
+        return self.unbinned_pixel[1] * self.preprocessing_binning[2] * self.binning[2]
+
+    @property
+    def pixelsize_y(self):
+        """
+        Vertical pixel size of the detector after taking into account binning.
+        """
+        return self.unbinned_pixel[0] * self.preprocessing_binning[1] * self.binning[1]
+
+    @property
+    def pix_number(self):
+        """
+        Number of pixels (vertical, horizontal) of the unbinned detector.
+        """
+        if self.name == 'Maxipix':
+            number = (516, 516)
+        elif self.name == 'Timepix':
+            number = (256, 256)
+        elif self.name == 'Merlin':
+            number = (515, 515)
+        elif self.name == 'Eiger2M':
+            number = (2164, 1030)
+        elif self.name == 'Eiger4M':
+            number = (2167, 2070)
+        else:
+            number = None
+        return number
+
+    @property
+    def preprocessing_binning(self):
+        """
+        Tuple of three positive integers corresponding to the binning factor of the data used in a previous
+         preprocessing step (stacking dimension, detector vertical axis, detector horizontal axis).
+        """
+        return self._preprocessing_binning
+
+    @preprocessing_binning.setter
+    def preprocessing_binning(self, value):
+        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=int,
+                              strictly_positive=True, name='Detector.preprocessing_binning')
+        self._preprocessing_binning = value
+
+    @property
+    def roi(self):
+        """
+        Region of interest of the detector to be used [y_start, y_stop, x_start, x_stop]
+        """
+        return self._roi
+
+    @roi.setter
+    def roi(self, value):
+        if not value:  # None or empty list/tuple
+            value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+        valid.valid_container(value, container_types=(tuple, list), length=4, item_types=int, name='Detector.roi')
+        self._roi = value
+
+    @property
+    def scandir(self):
+        """
+        Path of the scan, typically it is the parent folder of the data folder
+        """
+        if self.datadir:
+            dir_path = os.path.abspath(os.path.join(self.datadir, os.pardir)) + '/'
+            return dir_path.replace('\\', '/')
+
+    @property
+    def sum_roi(self):
+        """
+        Region of interest of the detector used for integrating the intensity [y_start, y_stop, x_start, x_stop]
+        """
+        return self._sum_roi
+
+    @sum_roi.setter
+    def sum_roi(self, value):
+        if not value:  # None or empty list/tuple
+            value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+        valid.valid_container(value, container_types=(tuple, list), length=4, item_types=int, name='Detector.sum_roi')
+        self._sum_roi = value
+
+    @property
+    def unbinned_pixel(self):
+        """
+        Pixel size (vertical, horizontal) of the unbinned detector in meters.
+        """
+        if self.name in {'Maxipix', 'Timepix', 'Merlin'}:
+            pix = (55e-06, 55e-06)
+        elif self.name in {'Eiger2M', 'Eiger4M'}:
+            pix = (75e-06, 75e-06)
+        else:
+            pix = None
+        return pix
+
+    def __repr__(self):
+        """
+        Representation string of the Detector instance.
+        """
+        return (f"{self.__class__.__name__}(name='{self.name}', unbinned_pixel={self.unbinned_pixel}, "
+                f"nb_pixel_x={self.nb_pixel_x}, nb_pixel_y={self.nb_pixel_y}, binning={self.binning},\n"
+                f"datadir = {self.datadir},\nscandir = {self.scandir},\nsavedir = {self.savedir},\n"
+                f"template_imagefile = '{self.template_imagefile}', specfile = {self.specfile},\nroi={self.roi}, "
+                f"sum_roi={self.sum_roi}, preprocessing_binning={self.preprocessing_binning}, "
+                f"is_series={self.is_series}")
+
+    def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
+        """
+        Mask data measured with a 2D detector (flatfield, background, hotpixels, gaps).
+
+        :param data: the 2D data to mask
+        :param mask: the 2D mask to be updated
+        :param nb_img: number of images summed to yield the 2D data (e.g. in a series measurement)
+        :param flatfield: the 2D flatfield array to be multiplied with the data
+        :param background: a 2D array to be subtracted to the data
+        :param hotpixels: a 2D array with hotpixels to be masked (1=hotpixel, 0=normal pixel)
+        :return: the masked data and the updated mask
+        """
+
+        assert isinstance(data, np.ndarray) and isinstance(mask, np.ndarray), 'data and mask should be numpy arrays'
+        if data.ndim != 2 or mask.ndim != 2:
+            raise ValueError('data and mask should be 2D arrays')
+
+        if data.shape != mask.shape:
+            raise ValueError('data and mask must have the same shape\n data is ', data.shape,
+                             ' while mask is ', mask.shape)
+
+        # flatfield correction
+        if flatfield is not None:
+            if flatfield.shape != data.shape:
+                raise ValueError('flatfield and data must have the same shape\n data is ', flatfield.shape,
+                                 ' while data is ', data.shape)
+            data = np.multiply(flatfield, data)
+
+        # remove the background
+        if background is not None:
+            if background.shape != data.shape:
+                raise ValueError('background and data must have the same shape\n data is ', background.shape,
+                                 ' while data is ', data.shape)
+            data = data - background
+
+        # mask hotpixels
+        if hotpixels is not None:
+            if hotpixels.shape != data.shape:
+                raise ValueError('hotpixels and data must have the same shape\n data is ', hotpixels.shape,
+                                 ' while data is ', data.shape)
+            data[hotpixels == 1] = 0
+            mask[hotpixels == 1] = 1
+
+        if self.name == 'Eiger2M':
+            data[:, 255: 259] = 0
+            data[:, 513: 517] = 0
+            data[:, 771: 775] = 0
+            data[0: 257, 72: 80] = 0
+            data[255: 259, :] = 0
+            data[511: 552, :0] = 0
+            data[804: 809, :] = 0
+            data[1061: 1102, :] = 0
+            data[1355: 1359, :] = 0
+            data[1611: 1652, :] = 0
+            data[1905: 1909, :] = 0
+            data[1248:1290, 478] = 0
+            data[1214:1298, 481] = 0
+            data[1649:1910, 620:628] = 0
+
+            mask[:, 255: 259] = 1
+            mask[:, 513: 517] = 1
+            mask[:, 771: 775] = 1
+            mask[0: 257, 72: 80] = 1
+            mask[255: 259, :] = 1
+            mask[511: 552, :] = 1
+            mask[804: 809, :] = 1
+            mask[1061: 1102, :] = 1
+            mask[1355: 1359, :] = 1
+            mask[1611: 1652, :] = 1
+            mask[1905: 1909, :] = 1
+            mask[1248:1290, 478] = 1
+            mask[1214:1298, 481] = 1
+            mask[1649:1910, 620:628] = 1
+
+            # mask hot pixels
+            mask[data > 1e6 * nb_img] = 1
+            data[data > 1e6 * nb_img] = 0
+
+        elif self.name == 'Eiger4M':
+            data[:, 0:1] = 0
+            data[:, -1:] = 0
+            data[0:1, :] = 0
+            data[-1:, :] = 0
+            data[:, 1030:1040] = 0
+            data[514:551, :] = 0
+            data[1065:1102, :] = 0
+            data[1616:1653, :] = 0
+
+            mask[:, 0:1] = 1
+            mask[:, -1:] = 1
+            mask[0:1, :] = 1
+            mask[-1:, :] = 1
+            mask[:, 1030:1040] = 1
+            mask[514:551, :] = 1
+            mask[1065:1102, :] = 1
+            mask[1616:1653, :] = 1
+
+            # mask hot pixels, 4000000000 for the Eiger4M
+            mask[data > 4000000000 * nb_img] = 1
+            data[data > 4000000000 * nb_img] = 0
+
+        elif self.name == 'Maxipix':
+            data[:, 255:261] = 0
+            data[255:261, :] = 0
+
+            mask[:, 255:261] = 1
+            mask[255:261, :] = 1
+
+            # mask hot pixels
+            mask[data > 1e6 * nb_img] = 1
+            data[data > 1e6 * nb_img] = 0
+
+        elif self.name == 'Merlin':
+            data[:, 255:260] = 0
+            data[255:260, :] = 0
+
+            mask[:, 255:260] = 1
+            mask[255:260, :] = 1
+
+            # mask hot pixels
+            mask[data > 1e6 * nb_img] = 1
+            data[data > 1e6 * nb_img] = 0
+
+        elif self.name == 'Timepix':
+            pass  # no gaps
+
+        else:
+            raise NotImplementedError('Detector not implemented')
+
+        return data, mask
+    
+    
 class Setup(object):
     """
     Class for defining the experimental geometry.
@@ -100,7 +483,7 @@ class Setup(object):
 
     @beam_direction.setter
     def beam_direction(self, value):
-        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=Real,
+        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=Real,
                               name='Setup.beam_direction')
         if np.linalg.norm(value) == 0:
             raise ValueError('At least of component of beam_direction should be non null.')
@@ -141,7 +524,8 @@ class Setup(object):
         if not self._custom_scan:
             self._custom_images = None
         else:
-            valid.valid_container(value, container_type=(tuple, list), min_length=1, name='Setup.custom_images')
+            valid.valid_container(value, container_types=(tuple, list), min_length=1, item_types=int,
+                                  name='Setup.custom_images')
             self._custom_images = value
 
     @property
@@ -159,7 +543,7 @@ class Setup(object):
         else:
             if value is None:
                 value = np.ones(len(self._custom_images))
-            valid.valid_container(value, container_type=(tuple, list), length=len(self._custom_images),
+            valid.valid_container(value, container_types=(tuple, list), length=len(self._custom_images), item_types=Real,
                                   name='Setup.custom_monitor')
             self._custom_monitor = value
 
@@ -229,7 +613,7 @@ class Setup(object):
     @direct_beam.setter
     def direct_beam(self, value):
         if value is not None:
-            valid.valid_container(value, container_type=(tuple, list), length=2, item_type=Real,
+            valid.valid_container(value, container_types=(tuple, list), length=2, item_types=Real,
                                   name='Setup.direct_beam')
         self._direct_beam = value
 
@@ -344,12 +728,12 @@ class Setup(object):
     def grazing_angle(self, value):
         if self.rocking_angle == 'outofplane':
             # only the chi angle (rotation around z, below the rocking angle omega/om/eta) is needed
-            valid.valid_container(value, container_type=(tuple, list), length=1, item_type=Real, allow_none=True,
+            valid.valid_container(value, container_types=(tuple, list), length=1, item_types=Real, allow_none=True,
                                   name='Setup.grazing_angle')
         elif self.rocking_angle == 'inplane':
             # two values needed: the chi angle and the omega/om/eta angle (rotations respectively around z and x,
             # below the rocking angle phi)
-            valid.valid_container(value, container_type=(tuple, list), length=2, item_type=Real, allow_none=True,
+            valid.valid_container(value, container_types=(tuple, list), length=2, item_types=Real, allow_none=True,
                                   name='Setup.grazing_angle')
         else:  # self.rocking_angle == 'energy'
             # there is no sample rocking for energy scans, hence the grazing angle value do not matter
@@ -500,7 +884,7 @@ class Setup(object):
 
     @sample_offsets.setter
     def sample_offsets(self, value):
-        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=Real,
+        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=Real,
                               name='Setup.sample_offsets')
         self._sample_offsets = value
 
@@ -561,8 +945,8 @@ class Setup(object):
 
         if isinstance(voxel_size, Real):
             voxel_size = (voxel_size, voxel_size, voxel_size)
-        valid.valid_container(obj=voxel_size, container_type=(tuple, list), length=3, strictly_positive=True,
-                              name='Setup.detector_frame')
+        valid.valid_container(obj=voxel_size, container_types=(tuple, list), length=3, item_types=Real,
+                              strictly_positive=True, name='Setup.detector_frame')
 
         nbz, nby, nbx = obj.shape
 
@@ -682,7 +1066,7 @@ class Setup(object):
         if not initial_shape:
             initial_shape = obj.shape
         else:
-            valid.valid_container(initial_shape, container_type=(tuple, list), length=3, item_type=int,
+            valid.valid_container(initial_shape, container_types=(tuple, list), length=3, item_types=int,
                                   strictly_positive=True, name='Setup.orthogonalize')
 
         if debugging:
@@ -777,7 +1161,7 @@ class Setup(object):
         :param verbose: True to have printed comments
         :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
         """
-        valid.valid_container(array_shape, container_type=(tuple, list), length=3, item_type=int,
+        valid.valid_container(array_shape, container_types=(tuple, list), length=3, item_types=int,
                               strictly_positive=True, name='Setup.orthogonalize_vector')
 
         ortho_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
@@ -1072,7 +1456,7 @@ class Setup(object):
         :param verbose: True to have printed comments
         :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
         """
-        valid.valid_container(array_shape, container_type=(tuple, list), length=3, item_type=int,
+        valid.valid_container(array_shape, container_types=(tuple, list), length=3, item_types=int,
                               strictly_positive=True, name='Setup.voxel_sizes')
 
         transfer_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
@@ -1842,389 +2226,6 @@ class SetupPreprocessing(object):
         """
         return f"{self.__class__.__name__}: beamline={self.beamline}, energy={self.energy}eV," \
                f" sample to detector distance={self.distance}m"
-
-
-class Detector(object):
-    """
-    Class to handle the configuration of the detector used for data acquisition.
-    """
-    def __init__(self, name, datadir=None, savedir=None, template_imagefile=None, specfile=None,
-                 roi=None, sum_roi=None, binning=(1, 1, 1), **kwargs):
-        """
-        Initialize the parameters related to the detector.
-
-        :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}
-        :param datadir: directory where the data files are located
-        :param savedir: directory where to save the results
-        :param template_imagefile: beamline-dependent template for the data files
-         - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-         - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
-         - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
-         - Cristal: 'S%d.nxs'
-         - P10: '_master.h5'
-         - NANOMAX: '%06d.h5'
-         - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-        :param specfile: template for the log file or the data file depending on the beamline
-        :param roi: region of interest of the detector used for analysis
-        :param sum_roi: region of interest of the detector used for calculated an integrated intensity
-        :param binning: binning factor of the 3D dataset
-         (stacking dimension, detector vertical axis, detector horizontal axis)
-        :param kwargs:
-         - 'is_series' = boolean, True is the measurement is a series at PETRAIII P10 beamline
-         - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
-         - 'preprocessing_binning': tuple of the three binning factors used in a previous preprocessing step
-         - 'offsets': tuple or list, sample and detector offsets corresponding to the parameter delta
-          in xrayutilities hxrd.Ang2Q.area method
-        """
-        # the detector name should be initialized first, other properties are depending on it
-        self.name = name
-
-        valid.valid_kwargs(kwargs=kwargs,
-                           allowed_kwargs={'is_series', 'nb_pixel_x', 'nb_pixel_y', 'preprocessing_binning', 'offsets'},
-                           name='Detector.__init__')
-
-        # load the kwargs
-        self.is_series = kwargs.get('is_series', False)
-        self.preprocessing_binning = kwargs.get('preprocessing_binning', None) or (1, 1, 1)
-        self.nb_pixel_x = kwargs.get('nb_pixel_x', None)
-        self.nb_pixel_y = kwargs.get('nb_pixel_y', None)
-        self.offsets = kwargs.get('offsets', None)  # delegate the test to xrayutilities
-
-        # load other positional arguments
-        self.binning = binning
-        self.roi = roi
-        self.sum_roi = sum_roi
-        # the tests on the following arguments were realized beforehand in the setup class instance
-        self.datadir = datadir
-        self.savedir = savedir
-        self.template_imagefile = template_imagefile
-        self.specfile = specfile
-
-    @property
-    def binning(self):
-        """
-        Tuple of three positive integers corresponding to the binning of the data used in phase retrieval
-         (stacking dimension, detector vertical axis, detector horizontal axis). To declare an additional binning factor
-         due to a previous preprocessing step, use the kwarg 'preprocessing_binning' instead.
-        """
-        return self._binning
-
-    @binning.setter
-    def binning(self, value):
-        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=int,
-                              strictly_positive=True, name='Detector.binning')
-        self._binning = value
-
-    @property
-    def counter(self):
-        """
-        Name of the counter for the image number.
-        """
-        counter_dict = {'Maxipix': 'mpx4inr', 'Eiger2M': 'ei2minr', 'Eiger4M': None, 'Timepix': None, 'Merlin': 'alba2'}
-        return counter_dict.get(self.name, None)
-
-    @property
-    def is_series(self):
-        """
-        Boolean, True for a series measurement at PETRAIII P10
-        """
-        return self._is_series
-
-    @is_series.setter
-    def is_series(self, value):
-        if not isinstance(value, bool):
-            raise TypeError('is_series should be a boolean')
-        else:
-            self._is_series = value
-
-    @property
-    def name(self):
-        """
-        Name of the detector: 'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'
-        """
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        if value not in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}:
-            raise ValueError("Name should be in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}")
-        else:
-            self._name = value
-
-    @property
-    def nb_pixel_x(self):
-        """
-        Horizontal number of pixels of the detector, taking into account an eventual preprocessing binning.
-        """
-        return self._nb_pixel_x
-
-    @nb_pixel_x.setter
-    def nb_pixel_x(self, value):
-        if value is None:
-            value = self.pix_number[1]
-        if not isinstance(value, int):
-            raise TypeError('nb_pixel_x should be a positive integer')
-        elif value <= 0:
-            raise ValueError('nb_pixel_x should be a positive integer')
-        else:
-            self._nb_pixel_x = value // self.preprocessing_binning[2]
-
-    @property
-    def nb_pixel_y(self):
-        """
-        Vertical number of pixels of the detector, taking into account an eventual preprocessing binning.
-        """
-        return self._nb_pixel_y
-
-    @nb_pixel_y.setter
-    def nb_pixel_y(self, value):
-        if value is None:
-            value = self.pix_number[0]
-        if not isinstance(value, int):
-            raise TypeError('nb_pixel_y should be a positive integer')
-        elif value <= 0:
-            raise ValueError('nb_pixel_y should be a positive integer')
-        else:
-            self._nb_pixel_y = value // self.preprocessing_binning[1]
-
-    @property
-    def pixelsize_x(self):
-        """
-        Horizontal pixel size of the detector after taking into account binning.
-        """
-        return self.unbinned_pixel[1] * self.preprocessing_binning[2] * self.binning[2]
-
-    @property
-    def pixelsize_y(self):
-        """
-        Vertical pixel size of the detector after taking into account binning.
-        """
-        return self.unbinned_pixel[0] * self.preprocessing_binning[1] * self.binning[1]
-
-    @property
-    def pix_number(self):
-        """
-        Number of pixels (vertical, horizontal) of the unbinned detector.
-        """
-        if self.name == 'Maxipix':
-            number = (516, 516)
-        elif self.name == 'Timepix':
-            number = (256, 256)
-        elif self.name == 'Merlin':
-            number = (515, 515)
-        elif self.name == 'Eiger2M':
-            number = (2164, 1030)
-        elif self.name == 'Eiger4M':
-            number = (2167, 2070)
-        else:
-            number = None
-        return number
-
-    @property
-    def preprocessing_binning(self):
-        """
-        Tuple of three positive integers corresponding to the binning factor of the data used in a previous
-         preprocessing step (stacking dimension, detector vertical axis, detector horizontal axis).
-        """
-        return self._preprocessing_binning
-
-    @preprocessing_binning.setter
-    def preprocessing_binning(self, value):
-        valid.valid_container(value, container_type=(tuple, list), length=3, item_type=int,
-                              strictly_positive=True, name='Detector.preprocessing_binning')
-        self._preprocessing_binning = value
-
-    @property
-    def roi(self):
-        """
-        Region of interest of the detector to be used [y_start, y_stop, x_start, x_stop]
-        """
-        return self._roi
-
-    @roi.setter
-    def roi(self, value):
-        if not value:  # None or empty list/tuple
-            value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-        valid.valid_container(value, container_type=(tuple, list), length=4, item_type=int, name='Detector.roi')
-        self._roi = value
-
-    @property
-    def scandir(self):
-        """
-        Path of the scan, typically it is the parent folder of the data folder
-        """
-        if self.datadir:
-            dir_path = os.path.abspath(os.path.join(self.datadir, os.pardir)) + '/'
-            return dir_path.replace('\\', '/')
-
-    @property
-    def sum_roi(self):
-        """
-        Region of interest of the detector used for integrating the intensity [y_start, y_stop, x_start, x_stop]
-        """
-        return self._sum_roi
-
-    @sum_roi.setter
-    def sum_roi(self, value):
-        if not value:  # None or empty list/tuple
-            value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-        valid.valid_container(value, container_type=(tuple, list), length=4, item_type=int, name='Detector.sum_roi')
-        self._sum_roi = value
-
-    @property
-    def unbinned_pixel(self):
-        """
-        Pixel size (vertical, horizontal) of the unbinned detector in meters.
-        """
-        if self.name in {'Maxipix', 'Timepix', 'Merlin'}:
-            pix = (55e-06, 55e-06)
-        elif self.name in {'Eiger2M', 'Eiger4M'}:
-            pix = (75e-06, 75e-06)
-        else:
-            pix = None
-        return pix
-
-    def __repr__(self):
-        """
-        Representation string of the Detector instance.
-        """
-        return (f"{self.__class__.__name__}(name='{self.name}', unbinned_pixel={self.unbinned_pixel}, "
-                f"nb_pixel_x={self.nb_pixel_x}, nb_pixel_y={self.nb_pixel_y}, binning={self.binning},\n"
-                f"datadir = {self.datadir},\nscandir = {self.scandir},\nsavedir = {self.savedir},\n"
-                f"template_imagefile = '{self.template_imagefile}', specfile = {self.specfile},\nroi={self.roi}, "
-                f"sum_roi={self.sum_roi}, preprocessing_binning={self.preprocessing_binning}, "
-                f"is_series={self.is_series}")
-
-    def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
-        """
-        Mask data measured with a 2D detector (flatfield, background, hotpixels, gaps).
-
-        :param data: the 2D data to mask
-        :param mask: the 2D mask to be updated
-        :param nb_img: number of images summed to yield the 2D data (e.g. in a series measurement)
-        :param flatfield: the 2D flatfield array to be multiplied with the data
-        :param background: a 2D array to be subtracted to the data
-        :param hotpixels: a 2D array with hotpixels to be masked (1=hotpixel, 0=normal pixel)
-        :return: the masked data and the updated mask
-        """
-
-        assert isinstance(data, np.ndarray) and isinstance(mask, np.ndarray), 'data and mask should be numpy arrays'
-        if data.ndim != 2 or mask.ndim != 2:
-            raise ValueError('data and mask should be 2D arrays')
-
-        if data.shape != mask.shape:
-            raise ValueError('data and mask must have the same shape\n data is ', data.shape,
-                             ' while mask is ', mask.shape)
-
-        # flatfield correction
-        if flatfield is not None:
-            if flatfield.shape != data.shape:
-                raise ValueError('flatfield and data must have the same shape\n data is ', flatfield.shape,
-                                 ' while data is ', data.shape)
-            data = np.multiply(flatfield, data)
-
-        # remove the background
-        if background is not None:
-            if background.shape != data.shape:
-                raise ValueError('background and data must have the same shape\n data is ', background.shape,
-                                 ' while data is ', data.shape)
-            data = data - background
-
-        # mask hotpixels
-        if hotpixels is not None:
-            if hotpixels.shape != data.shape:
-                raise ValueError('hotpixels and data must have the same shape\n data is ', hotpixels.shape,
-                                 ' while data is ', data.shape)
-            data[hotpixels == 1] = 0
-            mask[hotpixels == 1] = 1
-
-        if self.name == 'Eiger2M':
-            data[:, 255: 259] = 0
-            data[:, 513: 517] = 0
-            data[:, 771: 775] = 0
-            data[0: 257, 72: 80] = 0
-            data[255: 259, :] = 0
-            data[511: 552, :0] = 0
-            data[804: 809, :] = 0
-            data[1061: 1102, :] = 0
-            data[1355: 1359, :] = 0
-            data[1611: 1652, :] = 0
-            data[1905: 1909, :] = 0
-            data[1248:1290, 478] = 0
-            data[1214:1298, 481] = 0
-            data[1649:1910, 620:628] = 0
-
-            mask[:, 255: 259] = 1
-            mask[:, 513: 517] = 1
-            mask[:, 771: 775] = 1
-            mask[0: 257, 72: 80] = 1
-            mask[255: 259, :] = 1
-            mask[511: 552, :] = 1
-            mask[804: 809, :] = 1
-            mask[1061: 1102, :] = 1
-            mask[1355: 1359, :] = 1
-            mask[1611: 1652, :] = 1
-            mask[1905: 1909, :] = 1
-            mask[1248:1290, 478] = 1
-            mask[1214:1298, 481] = 1
-            mask[1649:1910, 620:628] = 1
-
-            # mask hot pixels
-            mask[data > 1e6 * nb_img] = 1
-            data[data > 1e6 * nb_img] = 0
-
-        elif self.name == 'Eiger4M':
-            data[:, 0:1] = 0
-            data[:, -1:] = 0
-            data[0:1, :] = 0
-            data[-1:, :] = 0
-            data[:, 1030:1040] = 0
-            data[514:551, :] = 0
-            data[1065:1102, :] = 0
-            data[1616:1653, :] = 0
-
-            mask[:, 0:1] = 1
-            mask[:, -1:] = 1
-            mask[0:1, :] = 1
-            mask[-1:, :] = 1
-            mask[:, 1030:1040] = 1
-            mask[514:551, :] = 1
-            mask[1065:1102, :] = 1
-            mask[1616:1653, :] = 1
-
-            # mask hot pixels, 4000000000 for the Eiger4M
-            mask[data > 4000000000 * nb_img] = 1
-            data[data > 4000000000 * nb_img] = 0
-
-        elif self.name == 'Maxipix':
-            data[:, 255:261] = 0
-            data[255:261, :] = 0
-
-            mask[:, 255:261] = 1
-            mask[255:261, :] = 1
-
-            # mask hot pixels
-            mask[data > 1e6 * nb_img] = 1
-            data[data > 1e6 * nb_img] = 0
-
-        elif self.name == 'Merlin':
-            data[:, 255:260] = 0
-            data[255:260, :] = 0
-
-            mask[:, 255:260] = 1
-            mask[255:260, :] = 1
-
-            # mask hot pixels
-            mask[data > 1e6 * nb_img] = 1
-            data[data > 1e6 * nb_img] = 0
-
-        elif self.name == 'Timepix':
-            pass  # no gaps
-
-        else:
-            raise NotImplementedError('Detector not implemented')
-
-        return data, mask
 
 
 if __name__ == "__main__":
