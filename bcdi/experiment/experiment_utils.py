@@ -83,8 +83,8 @@ class Detector(object):
 
     @binning.setter
     def binning(self, value):
-        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=int,
-                              strictly_positive=True, name='Detector.binning')
+        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=int, min_excluded=0,
+                              name='Detector.binning')
         self._binning = value
 
     @property
@@ -202,8 +202,8 @@ class Detector(object):
 
     @preprocessing_binning.setter
     def preprocessing_binning(self, value):
-        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=int,
-                              strictly_positive=True, name='Detector.preprocessing_binning')
+        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=int, min_excluded=0,
+                              name='Detector.preprocessing_binning')
         self._preprocessing_binning = value
 
     @property
@@ -543,8 +543,8 @@ class Setup(object):
         else:
             if value is None:
                 value = np.ones(len(self._custom_images))
-            valid.valid_container(value, container_types=(tuple, list), length=len(self._custom_images), item_types=Real,
-                                  name='Setup.custom_monitor')
+            valid.valid_container(value, container_types=(tuple, list), length=len(self._custom_images),
+                                  item_types=Real, name='Setup.custom_monitor')
             self._custom_monitor = value
 
     @property
@@ -946,7 +946,7 @@ class Setup(object):
         if isinstance(voxel_size, Real):
             voxel_size = (voxel_size, voxel_size, voxel_size)
         valid.valid_container(obj=voxel_size, container_types=(tuple, list), length=3, item_types=Real,
-                              strictly_positive=True, name='Setup.detector_frame')
+                              min_excluded=0, name='Setup.detector_frame')
 
         nbz, nby, nbx = obj.shape
 
@@ -1067,7 +1067,7 @@ class Setup(object):
             initial_shape = obj.shape
         else:
             valid.valid_container(initial_shape, container_types=(tuple, list), length=3, item_types=int,
-                                  strictly_positive=True, name='Setup.orthogonalize')
+                                  min_excluded=0, name='Setup.orthogonalize')
 
         if debugging:
             gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
@@ -1162,7 +1162,7 @@ class Setup(object):
         :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
         """
         valid.valid_container(array_shape, container_types=(tuple, list), length=3, item_types=int,
-                              strictly_positive=True, name='Setup.orthogonalize_vector')
+                              min_excluded=0, name='Setup.orthogonalize_vector')
 
         ortho_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
                                           pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
@@ -1457,7 +1457,7 @@ class Setup(object):
         :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
         """
         valid.valid_container(array_shape, container_types=(tuple, list), length=3, item_types=int,
-                              strictly_positive=True, name='Setup.voxel_sizes')
+                              min_excluded=0, name='Setup.voxel_sizes')
 
         transfer_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
                                              pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
