@@ -19,35 +19,34 @@ import gc
 class Detector(object):
     """
     Class to handle the configuration of the detector used for data acquisition.
+
+    :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}
+    :param datadir: directory where the data files are located
+    :param savedir: directory where to save the results
+    :param template_imagefile: beamline-dependent template for the data files
+
+     - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+     - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+     - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+     - Cristal: 'S%d.nxs'
+     - P10: '_master.h5'
+     - NANOMAX: '%06d.h5'
+     - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+    :param specfile: template for the log file or the data file depending on the beamline
+    :param roi: region of interest of the detector used for analysis
+    :param sum_roi: region of interest of the detector used for calculated an integrated intensity
+    :param binning: binning factor of the 3D dataset
+     (stacking dimension, detector vertical axis, detector horizontal axis)
+    :param kwargs:
+
+     - 'is_series': boolean, True is the measurement is a series at PETRAIII P10 beamline
+     - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
+     - 'preprocessing_binning': tuple of the three binning factors used in a previous preprocessing step
+     - 'offsets': tuple or list, sample and detector offsets corresponding to the parameter delta
+       in xrayutilities hxrd.Ang2Q.area method
     """
     def __init__(self, name, datadir=None, savedir=None, template_imagefile=None, specfile=None,
                  roi=None, sum_roi=None, binning=(1, 1, 1), **kwargs):
-        """
-        Initialize the parameters related to the detector.
-
-        :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}
-        :param datadir: directory where the data files are located
-        :param savedir: directory where to save the results
-        :param template_imagefile: beamline-dependent template for the data files
-         - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-         - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
-         - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
-         - Cristal: 'S%d.nxs'
-         - P10: '_master.h5'
-         - NANOMAX: '%06d.h5'
-         - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-        :param specfile: template for the log file or the data file depending on the beamline
-        :param roi: region of interest of the detector used for analysis
-        :param sum_roi: region of interest of the detector used for calculated an integrated intensity
-        :param binning: binning factor of the 3D dataset
-         (stacking dimension, detector vertical axis, detector horizontal axis)
-        :param kwargs:
-         - 'is_series' = boolean, True is the measurement is a series at PETRAIII P10 beamline
-         - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
-         - 'preprocessing_binning': tuple of the three binning factors used in a previous preprocessing step
-         - 'offsets': tuple or list, sample and detector offsets corresponding to the parameter delta
-          in xrayutilities hxrd.Ang2Q.area method
-        """
         # the detector name should be initialized first, other properties are depending on it
         self.name = name
 
@@ -402,45 +401,44 @@ class Detector(object):
 class Setup(object):
     """
     Class for defining the experimental geometry.
+
+    :param beamline: name of the beamline, among {'ID01','SIXS_2018','SIXS_2019','34ID','P10','CRISTAL','NANOMAX'}
+    :param beam_direction: direction of the incident X-ray beam in the frame (z downstream,y vertical up,x outboard)
+    :param energy: energy setting of the beamline, in eV.
+    :param distance: sample to detector distance, in m.
+    :param outofplane_angle: vertical detector angle, in degrees.
+    :param inplane_angle: horizontal detector angle, in degrees.
+    :param tilt_angle: angular step of the rocking curve, in degrees.
+    :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
+    :param grazing_angle: motor positions for the goniometer circles below the rocking angle. It should be a
+     list/tuple of lenght 1 for out-of-plane rocking curves (the chi motor value) and length 2 for inplane rocking
+     curves (the chi and omega/om/eta motor values).
+    :param pixel_x: detector horizontal pixel size, in meters.
+    :param pixel_y: detector vertical pixel size, in meters.
+    :param kwargs:
+
+     - 'direct_beam': tuple of two real numbers indicating the position of the direct beam in pixels at zero
+       detector angles.
+     - 'filtered_data': boolean, True if the data and the mask to be loaded were already preprocessed.
+     - 'custom_scan': boolean, True is the scan does not follow the beamline's usual directory format.
+     - 'custom_images': list of images numbers when the scan does no follow the beamline's usual directory format.
+     - 'custom_monitor': list of monitor values when the scan does no follow the beamline's usual directory format.
+       The number of values should be equal to the number of elements in custom_images.
+     - 'custom_motors': list of motor values when the scan does no follow the beamline's usual directory format.
+     - 'sample_inplane': sample inplane reference direction along the beam at 0 angles in xrayutilities frame
+       (x is downstream, y outboard, and z vertical up at zero incident angle).
+     - 'sample_outofplane': surface normal of the sample at 0 angles in xrayutilities frame
+       (x is downstream, y outboard, and z vertical up at zero incident angle).
+     - 'sample_offsets': list or tuple of three angles in degrees, corresponding to the offsets of the sample
+       goniometers around (downstream, vertical up, outboard). Convention: the sample offsets will be subtracted to
+       the motor values.
+     - 'offset_inplane': inplane offset of the detector defined as the outer angle in xrayutilities area detector
+       calibration.
     """
     def __init__(self, beamline, beam_direction=(1, 0, 0), energy=None, distance=None, outofplane_angle=None,
                  inplane_angle=None, tilt_angle=None, rocking_angle=None, grazing_angle=None, pixel_x=None,
                  pixel_y=None, **kwargs):
-        """
-        Initialize the parameters related to the setup (not the detector, defined in a separate Class Detector).
 
-        :param beamline: name of the beamline, among {'ID01','SIXS_2018','SIXS_2019','34ID','P10','CRISTAL','NANOMAX'}
-        :param beam_direction: direction of the incident X-ray beam in the frame (z downstream,y vertical up,x outboard)
-        :param energy: energy setting of the beamline, in eV.
-        :param distance: sample to detector distance, in m.
-        :param outofplane_angle: vertical detector angle, in degrees.
-        :param inplane_angle: horizontal detector angle, in degrees.
-        :param tilt_angle: angular step of the rocking curve, in degrees.
-        :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
-        :param grazing_angle: motor positions for the goniometer circles below the rocking angle.
-         It should be a list/tuple of lenght 1 for out-of-plane rocking curves (the chi motor value) and length 2 for
-         inplane rocking curves (the chi and omega/om/eta motor values).
-        :param pixel_x: detector horizontal pixel size, in meters.
-        :param pixel_y: detector vertical pixel size, in meters.
-        :param kwargs:
-         - 'direct_beam': tuple of two real numbers indicating the position of the direct beam in pixels at zero
-          detector angles.
-         - 'filtered_data': boolean, True if the data and the mask to be loaded were already preprocessed.
-         - 'custom_scan': boolean, True is the scan does not follow the beamline's usual directory format.
-         - 'custom_images': list of images numbers when the scan does no follow the beamline's usual directory format.
-         - 'custom_monitor': list of monitor values when the scan does no follow the beamline's usual directory format.
-          The number of values should be equal to the number of elements in custom_images.
-         - 'custom_motors': list of motor values when the scan does no follow the beamline's usual directory format.
-         - 'sample_inplane': sample inplane reference direction along the beam at 0 angles in xrayutilities frame
-          (x is downstream, y outboard, and z vertical up at zero incident angle).
-         - 'sample_outofplane': surface normal of the sample at 0 angles in xrayutilities frame
-          (x is downstream, y outboard, and z vertical up at zero incident angle).
-         - 'sample_offsets': list or tuple of three angles in degrees, corresponding to the offsets of the sample
-          goniometers around (downstream, vertical up, outboard). Convention: the sample offsets will be subtracted to
-          the motor values.
-         - 'offset_inplane': inplane offset of the detector defined as the outer angle in xrayutilities area detector
-          calibration.
-        """
         valid.valid_kwargs(kwargs=kwargs,
                            allowed_kwargs={'direct_beam', 'filtered_data', 'custom_scan', 'custom_images',
                                            'custom_monitor', 'custom_motors', 'sample_inplane', 'sample_outofplane',
