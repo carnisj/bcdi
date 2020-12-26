@@ -2816,6 +2816,7 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
     :type debugging: bool
     :return: updated data and mask, number of pixels treated
     """
+    # TODO: try to improve the speed of this function
     if mask is None:
         mask = np.zeros(data.shape)
 
@@ -2953,10 +2954,10 @@ def motor_positions_id01(logfile, scan_number, setup, **kwargs):
     :param scan_number: the scan number to load
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param kwargs:
-     - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
-      equal to the number of measured frames. In case of data padding, the length changes.
-     - follow_bragg: boolean, True for energy scans where the detector position is changed during the scan to follow
-      the Bragg peak
+     - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
+       equal to the number of measured frames. In case of data padding, the length changes.
+     - 'follow_bragg': boolean, True for energy scans where the detector position is changed during the scan to follow
+       the Bragg peak.
     :return: (eta, chi, phi, nu, delta, energy) motor positions
     """
     # check kwargs
@@ -3196,7 +3197,7 @@ def motor_positions_sixs(logfile, setup, **kwargs):
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param kwargs:
      - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
-      equal to the number of measured frames. In case of data padding, the length changes.
+       equal to the number of measured frames. In case of data padding, the length changes.
     :return: (beta, mgomega, gamma, delta) motor positions and updated frames_logical
     """
     # check kwargs
