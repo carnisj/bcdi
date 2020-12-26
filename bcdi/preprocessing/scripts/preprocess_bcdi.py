@@ -57,7 +57,7 @@ binning = (1, 1, 1)  # binning to apply to the data
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = False  # True to interact with plots, False to close it automatically
+flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
@@ -90,7 +90,7 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 #################################################
 # parameters used when reloading processed data #
 #################################################
-reload_previous = True  # True to resume a previous masking (load data and mask)
+reload_previous = False  # True to resume a previous masking (load data and mask)
 reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
 previous_binning = (1, 1, 1)  # binning factors in each dimension of the binned data to be reloaded
 save_previous = False  # if True, will save the previous data and mask
@@ -126,12 +126,12 @@ specfile_name = ''
 detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 x_bragg = 1300  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 y_bragg = 840  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = []  # [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200]
+roi_detector = [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
 # [Vstart, Vstop, Hstart, Hstop]
-# leave it as [] to use the full detector. Use with center_fft='skip' if you want this exact size.
+# leave None to use the full detector. Use with center_fft='skip' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
 photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon threshold should be applied
 # if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
@@ -403,7 +403,7 @@ for scan_nb in range(len(scans)):
     plt.ion()
 
     comment = user_comment  # initialize comment
-
+    print(f'\nScan 1/{len(scans)}: S{scans[scan_nb]}\n')
     setup.init_paths(detector=detector, sample_name=sample_name[scan_nb], scan_number=scans[scan_nb],
                      root_folder=root_folder, save_dir=save_dir, specfile_name=specfile_name,
                      template_imagefile=template_imagefile, verbose=True)
