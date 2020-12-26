@@ -84,6 +84,8 @@ The following third-party packages are required:
 
 * lmfit: for scripts performing fits
 
+* pytest if you want to execute the tests
+
 * pytables: when loading the dictionnary for SIXS data
 
 * moviepy, imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/) for creating movies
@@ -159,14 +161,17 @@ This module provides a class and methods for the definition of the experimental 
 The geometry of the following beamlines is implemented:
 
  * ID01 (ESRF)
- * P10 (PETRAIII)
- * 34ID-C (APS): only for postprocessing
+ * P10 (PETRA III)
  * CRISTAL (SOLEIL)
- * SIXS (SOLEIL) 
+ * SIXS (SOLEIL)
+ * NANOMAX (MAX IV)
+ * 34ID-C (APS): only for postprocessing
 
 The following detectors are implemented:
 
  * Maxipix
+ * Timepix
+ * Merlin
  * Eiger2M
  * Eiger4M
 
