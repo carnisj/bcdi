@@ -29,7 +29,8 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
     # check the validity of the requirements
     if container_types is None:
         raise ValueError('at least one type must be specified for the container')
-    container_types = tuple(container_types)
+    if type(container_types) == type:
+        container_types = (container_types,)
     if not len(container_types):
         raise ValueError('at least one type must be specified for the container')
     if not all(isinstance(val, type) for val in container_types):
@@ -44,7 +45,8 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
             raise ValueError('min_length should be a positive integer')
 
     if item_types is not None:
-        item_types = tuple(item_types)
+        if type(item_types) == type:
+            item_types = (item_types,)
         if not all(isinstance(val, type) for val in item_types):
             raise TypeError('type_elements should be a collection of valid types')
 
@@ -144,7 +146,8 @@ def valid_item(value, allowed_types, min_included=None, min_excluded=None, max_i
     # check the validity of the requirements
     if allowed_types is None:
         raise ValueError('at least one allowed type must be specified for the value')
-    allowed_types = tuple(allowed_types)
+    if type(allowed_types) == type:
+        allowed_types = (allowed_types,)
     if not len(allowed_types):
         raise ValueError('at least one allowed type must be specified for the value')
     if not all(isinstance(val, type) for val in allowed_types):
