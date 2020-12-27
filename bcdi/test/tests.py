@@ -17,22 +17,89 @@ def run_tests(test_class):
 
 
 class TestValidation(unittest.TestCase):
-    def setUp(self):
-        print('Running setup...')
+    # def setUp(self):
+    #     print('Running setup...')
+    #
+    # def tearDown(self):
+    #     print('Running tear down...')
 
-    def tearDown(self):
-        print('Running tear down...')
+    ############################
+    # tests on valid.container #
+    ############################
+    def test_container_type(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=1)
 
-    def test_list(self):
+    def test_container_list(self):
         self.assertTrue(valid.valid_container(list(), container_types=list))
 
-    def test_tuple(self):
+    def test_container_tuple(self):
         self.assertTrue(valid.valid_container(tuple(), container_types=tuple))
 
-    def test_set(self):
+    def test_container_set(self):
         self.assertTrue(valid.valid_container(set(), container_types=set))
 
-    # self.assertNotEqual(tz, test_tz)
+    def test_container_none(self):
+        self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=None)
+
+    def test_container_dict(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=dict)
+
+    def test_container_types(self):
+        self.assertTrue(valid.valid_container(obj=list(), container_types=list, item_types=(list, tuple)))
+
+    def test_container_length_1(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, length=2.3)
+
+    def test_container_length_2(self):
+        self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=list, length=-2)
+
+    def test_container_length_3(self):
+        self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=list, length=0)
+
+    def test_container_minlength_1(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, min_length=2.3)
+
+    def test_container_minlength_2(self):
+        self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=list, length=-2)
+
+    def test_container_itemtype_1(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, item_types=2)
+
+    def test_container_itemtype_2(self):
+        self.assertTrue(valid.valid_container(obj=list(), container_types=list, item_types=int))
+
+    def test_container_itemtype_3(self):
+        self.assertTrue(valid.valid_container(obj=list(), container_types=list, item_types=(int, float)))
+
+    def test_container_min_included_1(self):
+        self.assertTrue(valid.valid_container(obj=list(), container_types=list, min_included=0))
+
+    def test_container_min_included_2(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, min_included=1+1j)
+
+    def test_container_min_excluded_1(self):
+        self.assertTrue(valid.valid_container(obj=list(), container_types=list, min_excluded=0))
+
+    def test_container_min_excluded_2(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, min_excluded=1+1j)
+
+    def test_container_max_included_1(self):
+        self.assertTrue(valid.valid_container(obj=list(), container_types=list, max_included=0))
+
+    def test_container_max_included_2(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, max_included=1+1j)
+
+    def test_container_max_excluded_1(self):
+        self.assertTrue(valid.valid_container(obj=list(), container_types=list, max_excluded=0))
+
+    def test_container_max_excluded_2(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, max_excluded=1+1j)
+
+    def test_container_allownone_1(self):
+        self.assertTrue(valid.valid_container(obj=list(), container_types=list, allow_none=True))
+
+    def test_container_allownone_2(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, allow_none=0)
 
 
 if __name__ == 'main':
