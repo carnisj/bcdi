@@ -39,11 +39,15 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
         raise TypeError('container_types should be a collection of types inheriting from {tuple, list, set}')
 
     if length is not None:
-        if not isinstance(length, int) or length <= 0:
+        if not isinstance(length, int):
+            raise TypeError('length should be an integer')
+        if length <= 0:
             raise ValueError('length should be a strictly positive integer')
 
     if min_length is not None:
-        if not isinstance(min_length, int) or min_length < 0:
+        if not isinstance(min_length, int):
+            raise TypeError('min_length should be an integer')
+        if min_length < 0:
             raise ValueError('min_length should be a positive integer')
 
     if item_types is not None:
@@ -54,19 +58,19 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
 
     if min_included is not None:
         if not isinstance(min_included, Real):
-            raise ValueError('min_included should be a real number')
+            raise TypeError('min_included should be a real number')
 
     if min_excluded is not None:
         if not isinstance(min_excluded, Real):
-            raise ValueError('min_excluded should be a real number')
+            raise TypeError('min_excluded should be a real number')
 
     if max_included is not None:
         if not isinstance(max_included, Real):
-            raise ValueError('max_included should be a real number')
+            raise TypeError('max_included should be a real number')
 
     if max_excluded is not None:
         if not isinstance(max_excluded, Real):
-            raise ValueError('max_excluded should be a real number')
+            raise TypeError('max_excluded should be a real number')
 
     if not isinstance(allow_none, bool):
         raise TypeError('allow_none should be a boolean')
@@ -157,19 +161,19 @@ def valid_item(value, allowed_types, min_included=None, min_excluded=None, max_i
 
     if min_included is not None:
         if not isinstance(min_included, Real):
-            raise ValueError('min_included should be a real number')
+            raise TypeError('min_included should be a real number')
 
     if min_excluded is not None:
         if not isinstance(min_excluded, Real):
-            raise ValueError('min_excluded should be a real number')
+            raise TypeError('min_excluded should be a real number')
 
     if max_included is not None:
         if not isinstance(max_included, Real):
-            raise ValueError('max_included should be a real number')
+            raise TypeError('max_included should be a real number')
 
     if max_excluded is not None:
         if not isinstance(max_excluded, Real):
-            raise ValueError('max_excluded should be a real number')
+            raise TypeError('max_excluded should be a real number')
 
     if not isinstance(allow_none, bool):
         raise TypeError('allow_none should be a boolean')
