@@ -31,8 +31,6 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
         raise ValueError('at least one type must be specified for the container')
     if type(container_types) == type:
         container_types = (container_types,)
-    if not len(container_types):
-        raise ValueError('at least one type must be specified for the container')
     if not all(isinstance(val, type) for val in container_types):
         raise TypeError('container_types should be a collection of valid types')
     if not all(val in {list, tuple, set} for val in container_types):
