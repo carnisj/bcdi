@@ -137,7 +137,7 @@ def valid_kwargs(kwargs, allowed_kwargs, name=None):
     # check the kwargs
     for k in kwargs.keys():
         if k not in allowed_kwargs:
-            raise Exception(f"{name}: unknown keyword argument given:", k)
+            raise KeyError(f"{name}: unknown keyword argument given:", k)
 
     # every tests passed, return True
     return True
