@@ -160,10 +160,8 @@ def valid_item(value, allowed_types, min_included=None, min_excluded=None, max_i
     # check the validity of the requirements
     if allowed_types is None:
         raise ValueError('at least one allowed type must be specified for the value')
-    if type(allowed_types) == type:
+    if isinstance(allowed_types, type):
         allowed_types = (allowed_types,)
-    if not len(allowed_types):
-        raise ValueError('at least one allowed type must be specified for the value')
     if not all(isinstance(val, type) for val in allowed_types):
         raise TypeError('allowed_types should be a collection of valid types')
 
@@ -234,3 +232,8 @@ def valid_item(value, allowed_types, min_included=None, min_excluded=None, max_i
 
     # every tests passed, return True
     return True
+
+
+if __name__ == "__main__":
+    result = valid_item(value=1+1j, allowed_types=Real, allow_none=True)
+    print(result is None)
