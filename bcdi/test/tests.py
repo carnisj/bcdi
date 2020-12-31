@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
+from numbers import Real
 import bcdi.utils.validation as valid
 
 
@@ -163,6 +164,51 @@ class TestValidation(unittest.TestCase):
     def test_validkwargs_invalid_kwargs(self):
         self.assertRaises(KeyError, valid.valid_kwargs, kwargs={'test': 0, 'red': None},
                           allowed_kwargs={'test', 'blue'})
+
+    #######################
+    # tests on valid_item #
+    #######################
+    # valid_item(value, allowed_types, min_included=None, min_excluded=None, max_included=None, max_excluded=None,
+    #            allow_none=False, name=None)
+
+    def test_validitem_allowedtypes_none(self):
+        self.assertRaises(ValueError, valid.valid_item, value=0, allowed_types=None)
+
+    def test_validitem_allowedtypes_not_type(self):
+        self.assertRaises(TypeError, valid.valid_item, value=0, allowed_types=(list, 0))
+
+    def test_validitem_min_included(self):
+        self.assertTrue(valid.valid_item(value=0, allowed_types=Real, min_included=0))
+
+    def test_validitem_min_included_complex(self):
+        self.assertRaises(TypeError, valid.valid_item, value=0, allowed_types=Real, min_included=1+1j)
+
+    def test_validitem_min_excluded(self):
+        self.assertTrue(valid.valid_item(value=1, allowed_types=Real, min_excluded=0))
+
+    def test_validitem_min_excluded_complex(self):
+        self.assertRaises(TypeError, valid.valid_item, value=0, allowed_types=Real, min_excluded=1+1j)
+
+    def test_validitem_max_included(self):
+        self.assertTrue(valid.valid_item(value=0, allowed_types=Real, max_included=0))
+
+    def test_validitem_max_included_complex(self):
+        self.assertRaises(TypeError, valid.valid_container, value=0, allowed_types=Real, max_included=1+1j)
+
+    def test_validitem_max_excluded(self):
+        self.assertTrue(valid.valid_item(value=-1, allowed_types=Real, max_excluded=0))
+
+    def test_validitem_max_excluded_complex(self):
+        self.assertRaises(TypeError, valid.valid_item, value=0, allowed_types=Real, max_excluded=1+1j)
+
+    def test_validitem_allownone(self):
+        self.assertTrue(valid.valid_item(value=None, allowed_types=Real, allow_none=True))
+
+    def test_validitem_allownone_int(self):
+        self.assertRaises(TypeError, valid.valid_item, value=0, allowed_types=Real, allow_none=0)
+
+    def test_validitem_allownone_none(self):
+        self.assertRaises(TypeError, valid.valid_item, value=0, allowed_types=Real, allow_none=None)
 
 
 if __name__ == 'main':
