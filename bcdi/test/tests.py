@@ -183,6 +183,9 @@ class TestValidation(unittest.TestCase):
     def test_validitem_min_included_complex(self):
         self.assertRaises(TypeError, valid.valid_item, value=0, allowed_types=Real, min_included=1+1j)
 
+    def test_validitem_min_included_string(self):
+        self.assertRaises(TypeError, valid.valid_item, value='c', allowed_types=str, min_included='a')
+
     def test_validitem_min_excluded(self):
         self.assertTrue(valid.valid_item(value=1, allowed_types=Real, min_excluded=0))
 
@@ -210,6 +213,47 @@ class TestValidation(unittest.TestCase):
     def test_validitem_allownone_none(self):
         self.assertRaises(TypeError, valid.valid_item, value=0, allowed_types=Real, allow_none=None)
 
+    def test_validitem_allownone_false(self):
+        self.assertRaises(ValueError, valid.valid_item, value=None, allowed_types=Real, allow_none=False)
+
+    def test_validitem_allownone_true(self):
+        self.assertTrue(valid.valid_item(value=None, allowed_types=Real, allow_none=True))
+
+    def test_validitem_min_included_valid(self):
+        self.assertTrue(valid.valid_item(value=1, allowed_types=Real, min_included=0))
+
+    def test_validitem_min_included_equal(self):
+        self.assertTrue(valid.valid_item(value=0, allowed_types=Real, min_included=0))
+
+    def test_validitem_min_included_invalid(self):
+        self.assertRaises(ValueError, valid.valid_item, value=-1, allowed_types=Real, min_included=0)
+
+    def test_validitem_min_excluded_valid(self):
+        self.assertTrue(valid.valid_item(value=1, allowed_types=Real, min_excluded=0))
+
+    def test_validitem_min_excluded_equal(self):
+        self.assertRaises(ValueError, valid.valid_item, value=0, allowed_types=Real, min_excluded=0)
+
+    def test_validitem_min_excluded_invalid(self):
+        self.assertRaises(ValueError, valid.valid_item, value=-1, allowed_types=Real, min_excluded=0)
+
+    def test_validitem_max_included_valid(self):
+        self.assertTrue(valid.valid_item(value=1, allowed_types=Real, max_included=2))
+
+    def test_validitem_max_included_equal(self):
+        self.assertTrue(valid.valid_item(value=0, allowed_types=Real, max_included=0))
+
+    def test_validitem_max_included_invalid(self):
+        self.assertRaises(ValueError, valid.valid_item, value=1, allowed_types=Real, max_included=0)
+
+    def test_validitem_max_excluded_valid(self):
+        self.assertTrue(valid.valid_item(value=1, allowed_types=Real, max_excluded=2))
+
+    def test_validitem_max_excluded_equal(self):
+        self.assertRaises(ValueError, valid.valid_item, value=0, allowed_types=Real, max_excluded=0)
+
+    def test_validitem_max_excluded_invalid(self):
+        self.assertRaises(ValueError, valid.valid_item, value=1, allowed_types=Real, max_excluded=0)
 
 if __name__ == 'main':
     result = run_tests(TestValidation)
