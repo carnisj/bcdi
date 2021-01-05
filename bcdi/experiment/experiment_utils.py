@@ -728,11 +728,13 @@ class Setup(object):
             # only the chi angle (rotation around z, below the rocking angle omega/om/eta) is needed
             valid.valid_container(value, container_types=(tuple, list), length=1, item_types=Real, allow_none=True,
                                   name='Setup.grazing_angle')
+            self._grazing_angle = value
         elif self.rocking_angle == 'inplane':
             # two values needed: the chi angle and the omega/om/eta angle (rotations respectively around z and x,
             # below the rocking angle phi)
             valid.valid_container(value, container_types=(tuple, list), length=2, item_types=Real, allow_none=True,
                                   name='Setup.grazing_angle')
+            self._grazing_angle = value
         else:  # self.rocking_angle == 'energy'
             # there is no sample rocking for energy scans, hence the grazing angle value do not matter
             self._grazing_angle = None
