@@ -1647,10 +1647,11 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, width_
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
     (CXI convention).
 
-    :param array: 3D real array to be rotated
-    :param axis_to_align: the axis of myobj (vector q) x y z
-    :param reference_axis: will align axis_to_align onto this  x y z
-    :param voxel_size: tuple, actual voxel size in z, y, and x (CXI convention)
+    :param array: 3D real array, the center of mass of the object to be rotated is assumed to be located in the middle
+     of the array
+    :param axis_to_align: the axis to be aligned (e.g. vector q), expressed in an orthonormal frame x y z
+    :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame  x y z
+    :param voxel_size: tuple, voxel size of the 3D array in z, y, and x (CXI convention)
     :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
     :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
     :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
@@ -1670,6 +1671,10 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, width_
         raise ValueError('voxel_size should be a list/tuple of 3 positive numbers')
     assert len(voxel_size) == 3, 'voxel_size should be a list/tuple of 3 numbers'
 
+    # normalize the vectors
+    axis_to_align = axis_to_align / np.linalg.norm(axis_to_align)
+    reference_axis = reference_axis / np.linalg.norm(reference_axis)
+
     nbz, nby, nbx = array.shape
     if debugging:
         gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, title='Before rotating',
@@ -1680,7 +1685,7 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, width_
     my_rotation_matrix = np.identity(3) +\
         skew_sym_matrix + np.dot(skew_sym_matrix, skew_sym_matrix) / (1+np.dot(axis_to_align, reference_axis))
     transfer_matrix = my_rotation_matrix.transpose()
-    # TODO: check that this is working properly
+
     old_z = np.arange(-nbz // 2, nbz // 2, 1) * voxel_size[0]
     old_y = np.arange(-nby // 2, nby // 2, 1) * voxel_size[1]
     old_x = np.arange(-nbx // 2, nbx // 2, 1) * voxel_size[2]
@@ -1704,13 +1709,13 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, width_
 
 def rotate_vector(vector, axis_to_align, reference_axis):
     """
-    Calculate vector components in the basis where axis_to_align and reference_axis are aligned.
+    Calculate the vector components in the basis where axis_to_align and reference_axis are aligned.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
     (CXI convention).
 
-    :param vector: the vector to be rotated  x y z
-    :param axis_to_align: the axis of myobj (vector q) x y z
-    :param reference_axis: will align axis_to_align onto this  x y z
+    :param vector: the vector to be rotated, expressed in an orthonormal frame x y z
+    :param axis_to_align: the axis of myobj (vector q), expressed in an orthonormal frame x y z
+    :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame x y z
     :return: rotated vector in CXI convention z y x
     """
     if vector.ndim != 1:
@@ -1718,6 +1723,10 @@ def rotate_vector(vector, axis_to_align, reference_axis):
     else:
         if len(vector) != 3:
             raise ValueError('vector should have 3 elements')
+
+    # normalize the vectors
+    axis_to_align = axis_to_align / np.linalg.norm(axis_to_align)
+    reference_axis = reference_axis / np.linalg.norm(reference_axis)
 
     v = np.cross(axis_to_align, reference_axis)
     skew_sym_matrix = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
@@ -1844,4 +1853,11 @@ def unwrap(obj, support_threshold, seed=0, debugging=True):
     return phase_unwrapped, extent_phase
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
+    siz = 100
+    obj = np.zeros((siz, siz, siz))
+    obj[siz//2-10:siz//2+11, siz//2-10:siz//2+11, siz//2-10:siz//2+11] = 1
+    # gu.multislices_plot(obj)
+    obj_rot = rotate_crystal(array=obj, axis_to_align=(2,2,0), reference_axis=(0,1,0), voxel_size=(10,10,10),
+                             debugging=True)
+    plt.show()
