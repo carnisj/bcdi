@@ -48,6 +48,9 @@ class TestValidation(unittest.TestCase):
     def test_validcontainer_container_wrong_type(self):
         self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types={dict, tuple})
 
+    def test_validcontainer_container_wrong_type_real(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=Real)
+        
     def test_validcontainer_container_length_float(self):
         self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, length=2.3)
 
