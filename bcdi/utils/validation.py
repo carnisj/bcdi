@@ -75,12 +75,16 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
 
     name = name or 'obj'
 
+    # check if the object is None
+    if not allow_none and obj is None:
+        raise ValueError(f'{name}: None for the container is not allowed')
+
     # check the type of obj
-    if not isinstance(obj, container_types):
+    if obj is not None and not isinstance(obj, container_types):
         raise TypeError(f'type({name})={type(obj)}, allowed is {container_types}')
 
     # check the length of obj
-    if length is not None:
+    if obj is not None and length is not None:
         try:
             if len(obj) != length:
                 raise ValueError(f'{name} should be of length {length}')
@@ -88,7 +92,7 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
             raise TypeError(f'method __len__ not defined for the type(s) {container_types}') from ex
 
     # check the min_length of obj
-    if min_length is not None:
+    if obj is not None and min_length is not None:
         try:
             if len(obj) < min_length:
                 raise ValueError(f'{name}: the container should be of length >= {min_length}')
@@ -96,12 +100,12 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
             raise TypeError(f'method __len__ not defined for the type(s) {container_types}') from ex
 
     # check the presence of None in the items
-    if not allow_none:
+    if not allow_none and obj is not None:
         if any(val is None for val in obj):
-            raise ValueError(f'{name}: None is not allowed')
+            raise ValueError(f'{name}: None for the items is not allowed')
 
     # check the type and value of each items in obj
-    if item_types is not None:
+    if obj is not None and item_types is not None:
         for val in obj:
             valid_item(value=val, allowed_types=item_types, min_included=min_included, min_excluded=min_excluded,
                        max_included=max_included, max_excluded=max_excluded, allow_none=allow_none, name=name)

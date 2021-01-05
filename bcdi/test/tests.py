@@ -42,15 +42,21 @@ class TestValidation(unittest.TestCase):
     def test_validcontainer_container_set(self):
         self.assertTrue(valid.valid_container(set(), container_types=set))
 
-    def test_validcontainer_container_none(self):
+    def test_validcontainer_container_types_none(self):
         self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=None)
+
+    def test_validcontainer_container_none_not_allowed(self):
+        self.assertRaises(ValueError, valid.valid_container, obj=None, container_types={list, tuple}, allow_none=False)
+
+    def test_validcontainer_container_none_allowed(self):
+        self.assertTrue(valid.valid_container(obj=None, container_types={list, tuple}, allow_none=True))
 
     def test_validcontainer_container_wrong_type(self):
         self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types={dict, tuple})
 
     def test_validcontainer_container_wrong_type_real(self):
         self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=Real)
-        
+
     def test_validcontainer_container_length_float(self):
         self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, length=2.3)
 
