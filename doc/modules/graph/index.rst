@@ -15,6 +15,5 @@ API Reference
 
 graph_utils
 ^^^^^^^^^^^
-
 .. automodule:: bcdi.graph.graph_utils
    :members:

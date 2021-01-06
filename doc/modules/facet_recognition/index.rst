@@ -15,7 +15,6 @@ API Reference
 
 facet_utils
 ^^^^^^^^^^^
-
 .. automodule:: bcdi.facet_recognition.facet_utils
    :members:
 
