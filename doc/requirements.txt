@@ -1,0 +1,2 @@
+# doc/requirements.txt
+sphinx==3.4.2
