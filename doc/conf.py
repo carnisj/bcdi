@@ -77,7 +77,7 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 autodoc_mock_imports = ['numpy', 'scipy', 'skimage', 'matplotlib', 'hdf5plugin', 'h5py', 'vtk', 'mayavi',
-                        'xrayutilities', 'fabio', 'silx', 'lmfit', 'moviepy', ]
+                        'xrayutilities', 'fabio', 'silx', 'lmfit', 'moviepy', 'mpl_toolkits', ]
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
