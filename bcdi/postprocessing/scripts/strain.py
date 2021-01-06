@@ -425,12 +425,12 @@ gc.collect()
 ######################
 # centering of array #
 ######################
-if centering_method is 'max':
+if centering_method == 'max':
     avg_obj = pu.center_max(avg_obj)
     # shift based on max value, required if it spans across the edge of the array before COM
-elif centering_method is 'com':
+elif centering_method == 'com':
     avg_obj = pu.center_com(avg_obj)
-elif centering_method is 'max_com':
+elif centering_method == 'max_com':
     avg_obj = pu.center_max(avg_obj)
     avg_obj = pu.center_com(avg_obj)
 

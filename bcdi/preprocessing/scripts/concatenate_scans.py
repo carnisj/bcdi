@@ -131,7 +131,7 @@ if not 0 <= corr_roi[0] < corr_roi[1] <= nbz\
     sys.exit()
 
 # crop the data directly to output_shape if no alignment is required, update corr_roi accordingly
-if alignement_method is 'skip':
+if alignement_method == 'skip':
     refmask = pu.crop_pad(array=refmask, output_shape=output_shape, crop_center=crop_center)
     refdata = pu.crop_pad(array=refdata, output_shape=output_shape, crop_center=crop_center)
     # correct for the offset due to cropping
@@ -195,7 +195,7 @@ for idx in range(len(scans)):
     ##################
     # align datasets #
     ##################
-    if alignement_method is not 'skip':
+    if alignement_method != 'skip':
         data, mask, shifts = pru.align_diffpattern(reference_data=refdata, data=data, mask=mask,
                                                    method=alignement_method, combining_method=combining_method,
                                                    return_shift=True)
@@ -235,7 +235,7 @@ for idx in range(len(scans)):
 ###################################################################################
 # process boundaries, where some voxels can be undefined after aligning a dataset #
 ###################################################################################
-if alignement_method is not 'skip':
+if alignement_method != 'skip':
     shift_min = [int(np.ceil(abs(shift_min[axis]))) for axis in range(3)]
     # shift_min is the number of pixels to remove at the end along each axis
     shift_max = [int(np.ceil(shift_max[axis])) for axis in range(3)]
@@ -321,7 +321,7 @@ if alignement_method is not 'skip':
 # normalize sumdata using the counter in summask #
 ##################################################
 mean_data = sumdata
-if partially_masked is 'unmask':
+if partially_masked == 'unmask':
     unmask_ind = (summask != len(combined_list))  # summask will be = len(combined_list) for pixels totally masked
     mean_data[unmask_ind] = np.divide(mean_data[unmask_ind], len(combined_list) - summask[unmask_ind])
     summask[summask != len(combined_list)] = 0  # unmask voxels which are partially masked
