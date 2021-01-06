@@ -1,6 +1,12 @@
 Version 1.0.0
 -------------
 
+* Feature: allow different voxel sizes in each dimension in strain.py (NOT BACK COMPATIBLE)
+
+* Feature: implement validation functions in utils.validation.py for commonly used parameters, implement related unit tests
+
+* Refactor: merge the class SetupPostprocessing and SetupPreprocessing in a single one
+
 * Feature: implement linecut_diffpattern.py, a GUI to get a linecut of a 3D diffraction pattern along a desired direction
 
 * Feature: add a GUI to prtf_bcdi.py, to get a linecut of the 3D PRTF along a desired direction
