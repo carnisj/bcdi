@@ -17,6 +17,10 @@ sphinx:
 formats:
   - pdf
 
+# Optionally set the version of Python and requirements required to build your docs
+python:
+  version: 3.6
+  
 # Configuration for Conda support
-conda:
-  environment: conda_environment.yml
+#conda:
+#  environment: conda_environment.yml
