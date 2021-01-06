@@ -6,13 +6,17 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-from matplotlib import pyplot as plt
-import os
-import tkinter as tk
-from tkinter import filedialog
+
+from functools import reduce
 import gc
+from matplotlib import pyplot as plt
+from numbers import Real
+import numpy as np
+import os
+import pathlib
+import tkinter as tk
 import sys
+from tkinter import filedialog
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
@@ -42,29 +46,34 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 15  # spec scan number
-
-datadir = "D:/data/P10_isosurface/data/p15_2_000" + str(scan) + "/pynx/"
-
+scan = 128  # spec scan number
+root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # folder of the experiment, where all scans are stored
+save_dir = "D:/data/P10_December2020_BCDI/data_nanolab/test/"  # images will be saved here, leave it to None otherwise (default to data directory's parent)
+sample_name = "PtNP1"  # "S"  # string in front of the scan number in the folder name.
+comment = ''  # comment in filenames, should start with _
+#########################################################
+# parameters used when averaging several reconstruction #
+#########################################################
 sort_method = 'variance/mean'  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [200, 350, 250]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [168, 1024, 800]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-phasing_binning = (1, 1, 1)  # binning factor applied during phase retrieval
+phasing_binning = (1, 2, 2)  # binning factor applied during phase retrieval
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension used in preprocessing (not phase retrieval)
-output_size = (200, 200, 200)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
+output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
-fix_voxel = 3  # voxel size in nm for the interpolation during the geometrical transformation
-# put np.nan to use the default voxel size (mean of the voxel sizes in 3 directions)
+fix_voxel = (2, 4, 2)  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
+# provided, the voxel size will be identical is all 3 directions. Set it to None to use the default voxel size
+# (calculated from q values, it will be different in each dimension).
 plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the support in each direction when cropping,
 # it can be negative. It is useful in order to avoid cutting the object during the orthogonalization.
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-isosurface_strain = 0.5  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.2  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 strain_method = 'default'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
 # magnitude value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
@@ -73,24 +82,42 @@ offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
-comment = '_gap_iso' + str(isosurface_strain)  # should start with _
-#################################
-# define the experimental setup #
-#################################
+######################################
+# define beamline related parameters #
+######################################
 beamline = "P10"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 0.50678  # 1.26  # sample to detector distance in m
-detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+sdd = 1.83  # 1.26  # sample to detector distance in m
+energy = 8170  # x-ray energy in eV, 6eV offset at ID01
+beam_direction = np.array([1, 0, 0])  # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
+outofplane_angle = 39.0870  # detector delta ID01, delta SIXS, gamma 34ID
+inplane_angle = -1.0270  # detector nu ID01, gamma SIXS, tth 34ID
+tilt_angle = 0.00783  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+# the sample offsets will be subtracted to the motor values
+specfile_name = ''
+# template for ID01: name of the spec file without '.spec'
+# template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
+# template for all other beamlines: ''
+###############################
+# detector related parameters #
+###############################
+detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
-energy = 9000  # x-ray energy in eV, 6eV offset at ID01
-beam_direction = np.array([1, 0, 0])  # incident beam along z
-outofplane_angle = 36.7975  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = -1.8465  # detector nu ID01, gamma SIXS, tth 34ID
-grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-tilt_angle = 0.01  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+template_imagefile = '_master.h5'
+# template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+# template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+# template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+# template for Cristal: 'S%d.nxs'
+# template for P10: '_master.h5'
+# template for NANOMAX: '%06d.h5'
+# template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+###################################################
+# parameters related to the refraction correction #
+###################################################
 correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 optical_path_method = 'threshold'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
@@ -110,16 +137,16 @@ threshold_unwrap_refraction = 0.05  # threshold used to calculate the optical pa
 ###########
 simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
-flip_reconstruction = True  # True if you want to get the conjugate object
+flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient = 1.0  # upper threshold of the gradient of the phase, use for ramp removal
-xrayutils_ortho = True  # True if the data is already orthogonalized
+xrayutils_ortho = False  # True if the data is already orthogonalized
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
 save_support = False  # True to save the non-orthogonal support for later phase retrieval
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (0, -1, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
@@ -168,10 +195,19 @@ if simu_flag:
     invert_phase = False
     correct_absorption = 0
     correct_refraction = 0
+
 if invert_phase:
     phase_fieldname = 'disp'
 else:
     phase_fieldname = 'phase'
+
+if fix_voxel:
+    if isinstance(fix_voxel, Real):
+        fix_voxel = (fix_voxel, fix_voxel, fix_voxel)
+    assert isinstance(fix_voxel, (tuple, list)) and all(val > 0 for val in fix_voxel),\
+        'fix_voxel should be a positive number or a tuple/list of three positive numbers'
+
+comment = comment + '_' + str(isosurface_strain)
 
 ###################
 # define colormap #
@@ -187,49 +223,67 @@ my_cmap = colormap.cmap
 # Initialize detector #
 #######################
 kwargs = dict()  # create dictionnary
-kwargs['previous_binning'] = preprocessing_binning
+kwargs['preprocessing_binning'] = preprocessing_binning
 if nb_pixel_x:
     kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 if nb_pixel_y:
     kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 
-detector = exp.Detector(name=detector, datadir='', binning=phasing_binning, **kwargs)
+detector = exp.Detector(name=detector, template_imagefile=template_imagefile, binning=phasing_binning, **kwargs)
 
 ####################################
 # define the experimental geometry #
 ####################################
 # correct the tilt_angle for binning
 tilt_angle = tilt_angle * preprocessing_binning[0] * phasing_binning[0]
+setup = exp.Setup(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle, inplane_angle=inplane_angle,
+                  tilt_angle=tilt_angle, rocking_angle=rocking_angle, distance=sdd, pixel_x=detector.pixelsize_x,
+                  pixel_y=detector.pixelsize_y, **{'sample_offsets': sample_offsets})
 
-setup = exp.SetupPostprocessing(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle,
-                                inplane_angle=inplane_angle, tilt_angle=tilt_angle, rocking_angle=rocking_angle,
-                                grazing_angle=grazing_angle, distance=sdd, pixel_x=detector.pixelsize_x,
-                                pixel_y=detector.pixelsize_y)
+########################################
+# Initialize the paths and the logfile #
+########################################
+setup.init_paths(detector=detector, sample_name=sample_name, scan_number=scan, root_folder=root_folder,
+                 save_dir=save_dir, specfile_name=specfile_name, template_imagefile=template_imagefile)
+pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
+
+logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
+                             filename=detector.specfile)
+
+############################################################################################################
+# get the motor position of goniometer circles which are below the rocking angle (e.g., chi for eta/omega) #
+############################################################################################################
+setup.grazing_angle = pru.grazing_angle(logfile=logfile, scan_number=scan, setup=setup)
+
+print(f'{"#"*(5+len(str(scan)))}\nScan {scan}\n{"#"*(5+len(str(scan)))}')
+print('\n##############\nSetup instance\n##############')
+print(setup)
+print('\n#################\nDetector instance\n#################')
+print(detector)
 
 ################
 # preload data #
 ################
 root = tk.Tk()
 root.withdraw()
-file_path = filedialog.askopenfilenames(initialdir=datadir,
-                                        filetypes=[("NPZ", "*.npz"),
-                                                   ("NPY", "*.npy"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
+file_path = filedialog.askopenfilenames(initialdir=detector.scandir,
+                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
+                                                   ("CXI", "*.cxi"), ("HDF5", "*.h5")])
 nbfiles = len(file_path)
 plt.ion()
 
 obj, extension = util.load_file(file_path[0])
-# obj[0:40,:,:] = 0
-# obj[65:,:,:] = 0
 if extension == '.h5':
     comment = comment + '_mode'
 
+print('\n###############\nProcessing data\n###############')
 nz, ny, nx = obj.shape
 print("Initial data size: (", nz, ',', ny, ',', nx, ')')
 if len(original_size) == 0:
     original_size = obj.shape
 print("FFT size before accounting for phasing_binning", original_size)
 original_size = tuple([original_size[index] // phasing_binning[index] for index in range(len(phasing_binning))])
-print("Binning used during phasing:", phasing_binning)
+print("Binning used during phasing:", detector.binning)
 print("Padding back to original FFT size", original_size)
 obj = pu.crop_pad(array=obj, output_shape=original_size)
 nz, ny, nx = obj.shape
@@ -356,7 +410,7 @@ if apodize_flag:
 ####################################################################################################################
 # save the phase with the ramp for PRTF calculations, otherwise the object will be misaligned with the measurement #
 ####################################################################################################################
-np.savez_compressed(datadir + 'S' + str(scan) + '_avg_obj_prtf' + comment, obj=amp * np.exp(1j * phase))
+np.savez_compressed(detector.savedir + 'S' + str(scan) + '_avg_obj_prtf' + comment, obj=amp * np.exp(1j * phase))
 
 ####################################################
 # remove again phase ramp before orthogonalization #
@@ -398,12 +452,12 @@ if save_support:  # to be used as starting support in phasing, hence still in th
     support = np.zeros((numz, numy, numx))
     support[abs(avg_obj)/abs(avg_obj).max() > 0.01] = 1
     # low threshold because support will be cropped by shrinkwrap during phasing
-    np.savez_compressed(datadir + 'S' + str(scan) + '_support' + comment, obj=support)
+    np.savez_compressed(detector.savedir + 'S' + str(scan) + '_support' + comment, obj=support)
     del support
     gc.collect()
 
 if save_raw:
-    np.savez_compressed(datadir + 'S' + str(scan) + '_raw_amp-phase' + comment,
+    np.savez_compressed(detector.savedir + 'S' + str(scan) + '_raw_amp-phase' + comment,
                         amp=abs(avg_obj), phase=np.angle(avg_obj))
 
     # voxel sizes in the detector frame
@@ -412,7 +466,7 @@ if save_raw:
                                                            verbose=True)
     # save raw amp & phase to VTK
     # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
-    gu.save_to_vti(filename=os.path.join(datadir, "S" + str(scan) + "_raw_amp-phase" + comment + ".vti"),
+    gu.save_to_vti(filename=os.path.join(detector.savedir, "S" + str(scan) + "_raw_amp-phase" + comment + ".vti"),
                    voxel_size=(voxel_z, voxel_y, voxel_x), tuple_array=(abs(avg_obj), np.angle(avg_obj)),
                    tuple_fieldnames=('amp', 'phase'), amplitude_threshold=0.01)
 
@@ -422,7 +476,7 @@ if save_raw:
 print('\nShape before orthogonalization', avg_obj.shape)
 if not xrayutils_ortho:
     obj_ortho, voxel_size = setup.orthogonalize(obj=avg_obj, initial_shape=original_size, voxel_size=fix_voxel)
-    print("VTK spacing :", str('{:.2f}'.format(voxel_size)), "nm")
+    print(f"VTK spacing : {voxel_size} (nm)")
 
     gu.multislices_plot(abs(obj_ortho), width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
                         sum_frames=False, plot_colorbar=True, vmin=0, vmax=abs(obj_ortho).max(),
@@ -433,7 +487,7 @@ else:  # data already orthogonalized using xrayutilities, will be in crystal fra
     try:
         print("Select the file containing QxQzQy")
         file_path = filedialog.askopenfilename(title="Select the file containing QxQzQy",
-                                               initialdir=datadir, filetypes=[("NPZ", "*.npz")])
+                                               initialdir=detector.savedir, filetypes=[("NPZ", "*.npz")])
         npzfile = np.load(file_path)
         qx = npzfile['qx']
         qy = npzfile['qy']
@@ -445,13 +499,14 @@ else:  # data already orthogonalized using xrayutilities, will be in crystal fra
     dx_real = 2 * np.pi / abs(qy.max() - qy.min()) / 10  # in nm qy=x in nexus convention
     dz_real = 2 * np.pi / abs(qx.max() - qx.min()) / 10  # in nm qx=z in nexus convention
     print(f'direct space voxel size from q values: {dz_real:.2f}nm, {dy_real:.2f}nm, {dx_real:.2f}nm')
-    if fix_voxel != 0:
+    if fix_voxel:
         voxel_size = fix_voxel
+        print(f'Direct space pixel size for the interpolation: {voxel_size} (nm)')
+        print('Interpolating...\n')
+        obj_ortho = pu.regrid(array=obj_ortho, old_voxelsize=(dz_real, dy_real, dx_real), new_voxelsize=voxel_size)
     else:
-        voxel_size = np.mean([dz_real, dy_real, dx_real])  # in nm
-    print('Direct space pixel size for the interpolation: ', str('{:.2f}'.format(voxel_size)), 'nm')
-    print('Interpolating...\n')
-    obj_ortho = pu.regrid(obj_ortho, (dz_real, dy_real, dx_real), voxel_size)
+        # no need to interpolate
+        voxel_size = dz_real, dy_real, dx_real  # in nm
 del avg_obj
 gc.collect()
 
@@ -468,17 +523,17 @@ else:
     ref_axis_q = "y"
     myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
 
-kin = 2*np.pi/setup.wavelength * beam_direction  # in laboratory frame z downstream, y vertical, x outboard
-kout = setup.exit_wavevector()  # in laboratory frame z downstream, y vertical, x outboard
+kin = 2*np.pi/setup.wavelength * setup.beam_direction  # in laboratory frame z downstream, y vertical, x outboard
+kout = setup.exit_wavevector  # in laboratory frame z downstream, y vertical, x outboard
 
-q = kout - kin
+q = kout - kin  # in laboratory frame z downstream, y vertical, x outboard
 Qnorm = np.linalg.norm(q)
 q = q / Qnorm
 angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=myaxis)
-print("Angle between q and", ref_axis_q, "=", angle, "deg")
-print("Angle with y in zy plane", np.arctan(q[0]/q[1])*180/np.pi, "deg")
-print("Angle with y in xy plane", np.arctan(-q[2]/q[1])*180/np.pi, "deg")
-print("Angle with z in xz plane", 180+np.arctan(q[2]/q[0])*180/np.pi, "deg")
+print(f"\nAngle between q and {ref_axis_q} = {angle:.2f} deg")
+print(f"Angle with y in zy plane = {np.arctan(q[0]/q[1])*180/np.pi:.2f} deg")
+print(f"Angle with y in xy plane = {np.arctan(-q[2]/q[1])*180/np.pi:.2f} deg")
+print(f"Angle with z in xz plane = {180+np.arctan(q[2]/q[0])*180/np.pi:.2f} deg\n")
 
 if xrayutils_ortho:  # transform kin and kout back into the crystal frame (xrayutilities output in crystal frame)
     kin = pu.rotate_vector(vector=np.array([kin[2], kin[1], kin[0]]), axis_to_align=myaxis,
@@ -529,18 +584,14 @@ if invert_phase:
 if correct_refraction or correct_absorption:
     bulk = pu.find_bulk(amp=amp, support_threshold=threshold_unwrap_refraction, method=optical_path_method,
                         debugging=debug)
+    # calculate the optical path of the incoming wavevector
+    path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=True)  # path_in already in nm
 
-    # calculate the optical path of the incoming wavevector: it may be aligned with orthogonalized axis 0
-    path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=True)
+    # calculate the optical path of the outgoing wavevector
+    path_out = pu.get_opticalpath(support=bulk, direction="out", k=kout, debugging=True)  # path_our already in nm
 
-    # calculate the optical path of the outgoing wavevector: it is not aligned with any orthogonalized axis
-    path_out = pu.get_opticalpath(support=bulk, direction="out", k=kout, debugging=True)
-
-    del bulk
-    gc.collect()
-
-    optical_path = voxel_size * (path_in + path_out)  # in nm, in the laboratory frame
-    del path_in, path_out
+    optical_path = path_in + path_out
+    del bulk, path_in, path_out
     gc.collect()
 
     if correct_refraction:
@@ -586,18 +637,18 @@ phase = pru.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_ph
 ################################
 if save_labframe:
     if invert_phase:
-        np.savez_compressed(datadir + 'S' + str(scan) + "_amp" + phase_fieldname + comment + '_LAB',
+        np.savez_compressed(detector.savedir + 'S' + str(scan) + "_amp" + phase_fieldname + comment + '_LAB',
                             amp=amp, displacement=phase)
     else:
-        np.savez_compressed(datadir + 'S' + str(scan) + "_amp" + phase_fieldname + comment + '_LAB',
+        np.savez_compressed(detector.savedir + 'S' + str(scan) + "_amp" + phase_fieldname + comment + '_LAB',
                             amp=amp, phase=phase)
 
-    print("VTK spacing :", str('{:.2f}'.format(voxel_size)), "nm")
+    print(f'VTK spacing : {voxel_size} (nm)')
     # save amp & phase to VTK before rotation in crystal frame
     # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
-    gu.save_to_vti(filename=os.path.join(datadir, "S"+str(scan)+"_amp-"+phase_fieldname+"_LAB"+comment+".vti"),
-                   voxel_size=(voxel_size, voxel_size, voxel_size), tuple_array=(amp, phase),
-                   tuple_fieldnames=('amp', phase_fieldname), amplitude_threshold=0.01)
+    gu.save_to_vti(filename=os.path.join(detector.savedir, "S"+str(scan)+"_amp-"+phase_fieldname+"_LAB"+comment+".vti"),
+                   voxel_size=voxel_size, tuple_array=(amp, phase), tuple_fieldnames=('amp', phase_fieldname),
+                   amplitude_threshold=0.01)
     
 ############################################################################
 # put back the crystal in its frame, by aligning q onto the reference axis #
@@ -605,9 +656,9 @@ if save_labframe:
 if not xrayutils_ortho:
     print('\nAligning Q along ', ref_axis_q, ":", myaxis)
     amp = pu.rotate_crystal(array=amp, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
-                            reference_axis=myaxis, debugging=True)
+                            reference_axis=myaxis, voxel_size=voxel_size, debugging=True)
     phase = pu.rotate_crystal(array=phase, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
-                              reference_axis=myaxis, debugging=False)
+                              reference_axis=myaxis, voxel_size=voxel_size, debugging=False)
 
 ################################################################
 # calculate the strain depending on which axis q is aligned on #
@@ -627,25 +678,25 @@ if not xrayutils_ortho:
         else:  # ref_axis = "z"
             myaxis_inplane = np.array([0, 0, 1])  # must be in [x, y, z] order
         amp = pu.rotate_crystal(array=amp, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                                reference_axis=myaxis_inplane, debugging=True)
+                                reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=True)
         phase = pu.rotate_crystal(array=phase, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                                  reference_axis=myaxis_inplane, debugging=False)
+                                  reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False)
         strain = pu.rotate_crystal(array=strain, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                                   reference_axis=myaxis_inplane, debugging=False)
+                                   reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False)
 
     if align_q:
         comment = comment + '_crystal-frame'
     else:
         comment = comment + '_lab-frame'
         print('Rotating back the crystal in laboratory frame')
-        amp = pu.rotate_crystal(array=amp, axis_to_align=myaxis,
+        amp = pu.rotate_crystal(array=amp, axis_to_align=myaxis, voxel_size=voxel_size,
                                 reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=True)
-        phase = pu.rotate_crystal(array=phase, axis_to_align=myaxis,
+        phase = pu.rotate_crystal(array=phase, axis_to_align=myaxis, voxel_size=voxel_size,
                                   reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False)
-        strain = pu.rotate_crystal(array=strain, axis_to_align=myaxis,
+        strain = pu.rotate_crystal(array=strain, axis_to_align=myaxis, voxel_size=voxel_size,
                                    reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False)
 
-    print('Voxel size: ', str('{:.2f}'.format(voxel_size)), "nm")
+    print(f'Voxel size: {voxel_size} (nm)')
 
 ##############################################
 # pad array to fit the output_size parameter #
@@ -665,16 +716,17 @@ print("Final data shape:", numz, numy, numx)
 bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method='threshold')
 if save:
     if invert_phase:
-        np.savez_compressed(datadir + 'S' + str(scan) + "_amp" + phase_fieldname + "strain" + comment,
+        np.savez_compressed(detector.savedir + 'S' + str(scan) + "_amp" + phase_fieldname + "strain" + comment,
                             amp=amp, displacement=phase, bulk=bulk, strain=strain)
     else:
-        np.savez_compressed(datadir + 'S' + str(scan) + "_amp" + phase_fieldname + "strain" + comment,
+        np.savez_compressed(detector.savedir + 'S' + str(scan) + "_amp" + phase_fieldname + "strain" + comment,
                             amp=amp, phase=phase, bulk=bulk, strain=strain)
 
     # save amp & phase to VTK
     # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
-    gu.save_to_vti(filename=os.path.join(datadir, "S"+str(scan)+"_amp-"+phase_fieldname+"-strain"+comment+".vti"),
-                   voxel_size=(voxel_size, voxel_size, voxel_size), tuple_array=(amp, bulk, phase, strain),
+    gu.save_to_vti(filename=os.path.join(detector.savedir,
+                                         "S"+str(scan)+"_amp-"+phase_fieldname+"-strain"+comment+".vti"),
+                   voxel_size=voxel_size, tuple_array=(amp, bulk, phase, strain),
                    tuple_fieldnames=('amp', 'bulk', phase_fieldname, 'strain'), amplitude_threshold=0.01)
 
 
@@ -685,15 +737,14 @@ amp = amp / amp.max()
 temp_amp = np.copy(amp)
 temp_amp[amp < isosurface_strain] = 0
 temp_amp[np.nonzero(temp_amp)] = 1
-volume = temp_amp.sum()*voxel_size**3  # in nm3
+volume = temp_amp.sum()*reduce(lambda x, y: x*y, voxel_size)  # in nm3
 del temp_amp
 gc.collect()
 
 #######################
 # plot phase & strain #
 #######################
-pixel_spacing = tick_spacing / voxel_size
-
+pixel_spacing = [tick_spacing / vox for vox in voxel_size]
 print('Phase extent before and after thresholding:', phase.max()-phase.min(),
       phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min())
 piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
@@ -712,11 +763,9 @@ fig, _, _ = gu.multislices_plot(bulk, sum_frames=False, title='Orthogonal bulk',
                                 is_orthogonal=True, reciprocal_space=False)
 fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
 fig.text(0.60, 0.40, "Bulk - isosurface=" + str('{:.2f}'.format(isosurface_strain)), size=20)
-fig.text(0.60, 0.35, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
 plt.pause(0.1)
 if save:
-    plt.savefig(
-        datadir + 'S' + str(scan) + '_bulk' + comment + '.png')
+    plt.savefig(detector.savedir + 'S' + str(scan) + '_bulk' + comment + '.png')
 
 # amplitude
 fig, _, _ = gu.multislices_plot(amp, sum_frames=False, title='Normalized orthogonal amp', vmin=0,
@@ -724,7 +773,7 @@ fig, _, _ = gu.multislices_plot(amp, sum_frames=False, title='Normalized orthogo
                                 pixel_spacing=pixel_spacing, plot_colorbar=True, is_orthogonal=True,
                                 reciprocal_space=False)
 fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
-fig.text(0.60, 0.40, "Voxel size=" + str('{:.2f}'.format(voxel_size)) + "nm", size=20)
+fig.text(0.60, 0.40, f'Voxel size={voxel_size} (nm)', size=20)
 fig.text(0.60, 0.35, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
 fig.text(0.60, 0.30, "Volume=" + str(int(volume)) + "nm3", size=20)
 fig.text(0.60, 0.25, "Sorted by " + sort_method, size=20)
@@ -734,7 +783,7 @@ fig.text(0.60, 0.10, "Planar distance=" + str('{:.5f}'.format(planar_dist)) + "n
 if get_temperature:
     fig.text(0.60, 0.05, "Estimated T=" + str(temperature) + "C", size=20)
 if save:
-    plt.savefig(datadir + 'S' + str(scan) + '_amp' + comment + '.png')
+    plt.savefig(detector.savedir + 'S' + str(scan) + '_amp' + comment + '.png')
 
 # amplitude histogram
 fig, ax = plt.subplots(1, 1)
@@ -745,7 +794,7 @@ ax.spines['right'].set_linewidth(1.5)
 ax.spines['left'].set_linewidth(1.5)
 ax.spines['top'].set_linewidth(1.5)
 ax.spines['bottom'].set_linewidth(1.5)
-fig.savefig(datadir + 'S' + str(scan) + '_histo_amp' + comment + '.png')
+fig.savefig(detector.savedir + 'S' + str(scan) + '_histo_amp' + comment + '.png')
 
 # phase
 fig, _, _ = gu.multislices_plot(phase, sum_frames=False, title='Orthogonal displacement',
@@ -753,7 +802,7 @@ fig, _, _ = gu.multislices_plot(phase, sum_frames=False, title='Orthogonal displ
                                 tick_width=tick_width, tick_length=tick_length, pixel_spacing=pixel_spacing,
                                 plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
 fig.text(0.60, 0.30, "Scan " + str(scan), size=20)
-fig.text(0.60, 0.25, "Voxel size=" + str('{:.2f}'.format(voxel_size)) + "nm", size=20)
+fig.text(0.60, 0.25, f'Voxel size={voxel_size} (nm)', size=20)
 fig.text(0.60, 0.20, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
 fig.text(0.60, 0.15, "Average over " + str(avg_counter) + " reconstruction(s)", size=20)
 if hwidth > 0:
@@ -761,7 +810,7 @@ if hwidth > 0:
 else:
     fig.text(0.60, 0.10, "No phase averaging", size=20)
 if save:
-    plt.savefig(datadir + 'S' + str(scan) + '_displacement' + comment + '.png')
+    plt.savefig(detector.savedir + 'S' + str(scan) + '_displacement' + comment + '.png')
 
 # strain
 fig, _, _ = gu.multislices_plot(strain, sum_frames=False, title='Orthogonal strain',
@@ -769,7 +818,7 @@ fig, _, _ = gu.multislices_plot(strain, sum_frames=False, title='Orthogonal stra
                                 tick_width=tick_width, tick_length=tick_length, plot_colorbar=True, cmap=my_cmap,
                                 pixel_spacing=pixel_spacing, is_orthogonal=True, reciprocal_space=False)
 fig.text(0.60, 0.30, "Scan " + str(scan), size=20)
-fig.text(0.60, 0.25, "Voxel size=" + str('{:.2f}'.format(voxel_size)) + "nm", size=20)
+fig.text(0.60, 0.25, f'Voxel size={voxel_size} (nm)', size=20)
 fig.text(0.60, 0.20, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
 fig.text(0.60, 0.15, "Average over " + str(avg_counter) + " reconstruction(s)", size=20)
 if hwidth > 0:
@@ -777,7 +826,7 @@ if hwidth > 0:
 else:
     fig.text(0.60, 0.10, "No phase averaging", size=20)
 if save:
-    plt.savefig(datadir + 'S' + str(scan) + '_strain' + comment + '.png')
+    plt.savefig(detector.savedir + 'S' + str(scan) + '_strain' + comment + '.png')
 
 
 print('End of script')
