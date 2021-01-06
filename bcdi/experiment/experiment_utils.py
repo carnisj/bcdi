@@ -6,14 +6,17 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import gc
+from math import isclose
+from numbers import Real
 import numpy as np
 import os
-from numbers import Real
+from scipy.interpolate import RegularGridInterpolator
+import sys
 import warnings
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.validation as valid
-from scipy.interpolate import RegularGridInterpolator
-import gc
 
 
 class Detector(object):
@@ -1196,13 +1199,14 @@ class Setup(object):
         lambdaz = wavelength * distance
         mymatrix = np.zeros((3, 3))
         tilt = np.radians(tilt_angle)
-        # TODO: implement calculations with grazing_angle[0] (chi)
+
+        grazing_angle[0] = 0  # TODO: implement calculations with grazing_angle[0] (chi)
         nbz, nby, nbx = array_shape
 
         if self.beamline == 'ID01':
             if verbose:
                 print('using ESRF ID01 PSIC geometry')
-            if self.rocking_angle == "outofplane" and grazing_angle[0] == 0:
+            if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is eta')
                 # rocking eta angle clockwise around x (phi does not matter, above eta)
@@ -1216,7 +1220,8 @@ class Setup(object):
                                                                        tilt * distance * (1 - np.cos(inplane) * np.cos(
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
-            elif self.rocking_angle == "inplane" and grazing_angle[1] == 0:
+
+            elif self.rocking_angle == "inplane" and isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is phi, eta=0')
                 # rocking phi angle clockwise around y, assuming incident angle eta is zero (eta below phi)
@@ -1230,7 +1235,8 @@ class Setup(object):
                     [-tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
                      0,
                      tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-            elif self.rocking_angle == "inplane" and grazing_angle[1] != 0:
+
+            elif self.rocking_angle == "inplane" and not isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is phi, with eta non zero')
                 # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
@@ -1245,10 +1251,11 @@ class Setup(object):
                              np.cos(grazing_angle[1]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
                              np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
                              np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
+
         if self.beamline == 'P10':
             if verbose:
                 print('using PETRAIII P10 geometry')
-            if self.rocking_angle == "outofplane" and grazing_angle[0] == 0:
+            if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is omega')
                 # rocking omega angle clockwise around x at mu=0 (phi does not matter, above eta)
@@ -1262,7 +1269,8 @@ class Setup(object):
                                                                        tilt * distance * (1 - np.cos(inplane) * np.cos(
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
-            elif self.rocking_angle == "inplane" and grazing_angle[1] == 0:
+
+            elif self.rocking_angle == "inplane" and isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is phi, omega=0')
                 # rocking phi angle clockwise around y, incident angle omega is zero (omega below phi)
@@ -1277,7 +1285,7 @@ class Setup(object):
                      0,
                      - tilt * distance * np.sin(inplane) * np.cos(outofplane)])
 
-            elif self.rocking_angle == "inplane" and grazing_angle[1] != 0:
+            elif self.rocking_angle == "inplane" and not isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is phi, with omega non zero')
                 # rocking phi angle clockwise around y, incident angle omega is non zero (omega below phi)
@@ -1296,7 +1304,7 @@ class Setup(object):
         if self.beamline == 'NANOMAX':
             if verbose:
                 print('using NANOMAX geometry')
-            if self.rocking_angle == "outofplane" and grazing_angle[0] == 0:
+            if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is theta')
                 # rocking eta angle clockwise around x (phi does not matter, above eta)
@@ -1310,7 +1318,8 @@ class Setup(object):
                                                                        tilt * distance * (1 - np.cos(inplane) * np.cos(
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
-            elif self.rocking_angle == "inplane" and grazing_angle[1] == 0:
+
+            elif self.rocking_angle == "inplane" and isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is phi, theta=0')
                 # rocking phi angle clockwise around y, assuming incident angle eta is zero (eta below phi)
@@ -1324,7 +1333,8 @@ class Setup(object):
                     [-tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
                      0,
                      tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-            elif self.rocking_angle == "inplane" and grazing_angle[1] != 0:
+
+            elif self.rocking_angle == "inplane" and not isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is phi, with theta non zero')
                 # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
@@ -1343,7 +1353,7 @@ class Setup(object):
         if self.beamline == '34ID':
             if verbose:
                 print('using APS 34ID geometry')
-            if self.rocking_angle == "outofplane" and grazing_angle[0] == 0:
+            if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is phi')
                 # rocking phi angle anti-clockwise around x (theta does not matter, above phi)
@@ -1358,7 +1368,22 @@ class Setup(object):
                                                                            outofplane)),
                                                                        -tilt * distance * np.sin(outofplane)])
 
-            elif self.rocking_angle == "inplane" and grazing_angle[1] != 0:
+            elif self.rocking_angle == "inplane" and isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
+                if verbose:
+                    print('rocking angle is theta, phi=0')
+                # rocking theta angle anti-clockwise around y, assuming incident angle is zero (theta is above phi)
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
+                                                                       0,
+                                                                       -pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       -pixel_y * np.cos(outofplane),
+                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
+                    [tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
+                     0,
+                     tilt * distance * np.sin(inplane) * np.cos(outofplane)])
+
+            elif self.rocking_angle == "inplane" and not isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is theta, with phi non zero')
                 # rocking theta angle anti-clockwise around y, incident angle is non zero (theta is above phi)
@@ -1374,10 +1399,13 @@ class Setup(object):
                               -np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
                               np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
 
-            elif self.rocking_angle == "inplane" and grazing_angle[1] == 0:
+        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+            if verbose:
+                print('using SIXS geometry')
+            if self.rocking_angle == "inplane" and isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
-                    print('rocking angle is theta, phi=0')
-                # rocking theta angle anti-clockwise around y, assuming incident angle is zero (theta is above phi)
+                    print('rocking angle is mu, beta=0')
+                # rocking th angle anti-clockwise around y, assuming incident angle is zero (th above tilt)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
                                                                        -pixel_x * np.sin(inplane)])
@@ -1388,10 +1416,8 @@ class Setup(object):
                     [tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
                      0,
                      tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
-            if verbose:
-                print('using SIXS geometry')
-            if self.rocking_angle == "inplane" and grazing_angle[1] != 0:
+
+            elif self.rocking_angle == "inplane" and not isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is mu, with beta non zero')
                 # rocking mu angle anti-clockwise around y
@@ -1410,24 +1436,10 @@ class Setup(object):
                                 np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
                                 np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
 
-            elif self.rocking_angle == "inplane" and grazing_angle[1] == 0:
-                if verbose:
-                    print('rocking angle is mu, beta=0')
-                # rocking th angle anti-clockwise around y, assuming incident angle is zero (th above tilt)
-                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
-                                                                       0,
-                                                                       -pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                                                                       -pixel_y * np.cos(outofplane),
-                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
-                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
-                    [tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
-                     0,
-                     tilt * distance * np.sin(inplane) * np.cos(outofplane)])
         if self.beamline == 'CRISTAL':
             if verbose:
                 print('using CRISTAL geometry')
-            if self.rocking_angle == "outofplane" and grazing_angle[0] == 0:
+            if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is komega')
                 # rocking tilt angle clockwise around x
@@ -1442,8 +1454,7 @@ class Setup(object):
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
 
-        transfer_matrix = 2 * np.pi * np.linalg.inv(mymatrix).transpose()
-        return transfer_matrix
+        return 2 * np.pi * np.linalg.inv(mymatrix).transpose()
 
     def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
