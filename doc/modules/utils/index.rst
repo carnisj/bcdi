@@ -15,15 +15,18 @@ API Reference
 
 image_registration 
 ^^^^^^^^^^^^^^^^^^
+
 .. automodule:: bcdi.utils.image_registration
    :members:
 
 utilities 
 ^^^^^^^^^
+
 .. automodule:: bcdi.utils.utilities
    :members:
 
 validation 
 ^^^^^^^^^^
+
 .. automodule:: bcdi.utils.validation
    :members:

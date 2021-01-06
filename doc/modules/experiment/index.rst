@@ -15,6 +15,7 @@ API Reference
 
 experiment_utils
 ^^^^^^^^^^^^^^^^
+
 .. autoclass:: bcdi.experiment.experiment_utils.Detector
    :members:
 
