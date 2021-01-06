@@ -3,8 +3,8 @@
 .. toctree::
    :maxdepth: 2
 
-:mod:`bcdi.graph`: Plot and save data using templates
-=====================================================
+:mod:`bcdi.graph`: Templates for plotting and saving data
+=========================================================
 
 .. include:: ../../../README.rst
    :start-after: bcdi.graph section
@@ -12,6 +12,9 @@
 
 API Reference
 -------------
+
+graph_utils
+^^^^^^^^^^^
 
 .. automodule:: bcdi.graph.graph_utils
    :members:
