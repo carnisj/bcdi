@@ -76,7 +76,8 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
-autodoc_mock_imports = ['numpy', 'h5py', 'scipy', 'matplotlib', 'xrayutilities', 'fabio', 'silx', 'hdf5plugin', 'skimage']
+autodoc_mock_imports = ['numpy', 'scipy', 'skimage', 'matplotlib', 'hdf5plugin', 'h5py', 'vtk', 'mayavi',
+                        'xrayutilities', 'fabio', 'silx', 'lmfit', 'moviepy', ]
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
