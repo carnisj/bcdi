@@ -677,9 +677,10 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     :param comment_fig: string, comment for the filename when saving figures
     :param debugging: show plots for debugging
     :return:
+
      - labels_south and labels_north as 2D arrays for each projection from South and North
      - a (Nx4) array: projected coordinates of normals from South (u column 0, v column 1)
-      and North (u column2 , v column 3). The coordinates are in degrees, not indices.
+       and North (u column2 , v column 3). The coordinates are in degrees, not indices.
      - the list of rows to remove
     """
     def mouse_move(event):
