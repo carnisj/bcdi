@@ -6,7 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from numbers import Number, Real
+from numbers import Real
 
 
 def valid_container(obj, container_types, length=None, min_length=None, item_types=None, min_included=None,
