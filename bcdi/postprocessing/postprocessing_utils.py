@@ -6,7 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from numbers import Number
+from numbers import Number, Real
 from math import pi
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
@@ -22,6 +22,7 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 from bcdi.utils import image_registration as reg
+import bcdi.utils.validation as valid
 
 
 def align_obj(reference_obj, obj, method='modulus', support_threshold=None, precision=1000, debugging=False):
@@ -90,25 +91,16 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     :param debugging: set to True to see plots
     :type debugging: bool
     :param kwargs:
-     - if 'normal': sigma and mu of the 3d multivariate normal distribution, tuples of 3 floats
-     - if 'tukey': alpha (shape parameter) of the 3d Tukey window, tuple of 3 floats
+     - for the normal distribution: 'sigma' and 'mu' of the 3d multivariate normal distribution, tuples of 3 floats
+     - for the Tuckey window: 'alpha' (shape parameter) of the 3d Tukey window, tuple of 3 floats
     :return: filtered amplitude, phase of the same shape as myamp
     """
-    # default values for kwargs
-    sigma = None
-    mu = None
-    alpha = None
-
-    for k in kwargs.keys():
-        if k in ['sigma']:
-            sigma = kwargs['sigma']
-        elif k in ['mu']:
-            mu = kwargs['mu']
-        elif k in ['alpha']:
-            alpha = kwargs['alpha']
-        else:
-            raise Exception("unknown keyword argument given: allowed is"
-                            "'fix_bragg', 'fix_size', 'pad_size' and 'q_values'")
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma', 'mu', 'alpha'},
+                       name='postprocessing_utils.apodize')
+    sigma = kwargs.get('sigma', None)
+    mu = kwargs.get('mu', None)
+    alpha = kwargs.get('alpha', None)
 
     if amp.ndim != 3 or phase.ndim != 3:
         raise ValueError('amp and phase should be 3D arrays')
@@ -676,14 +668,10 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
     """
     from scipy.signal import convolve
 
-    # default values for kwargs
-    sigma = None
-
-    for k in kwargs.keys():
-        if k in ['sigma']:
-            sigma = kwargs['sigma']
-        else:
-            raise Exception("unknown keyword argument given: allowed is 'sigma'")
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma'},
+                       name='postprocessing_utils.filter_3d')
+    sigma = kwargs.get('sigma', None)
 
     ndim = array.ndim
     assert ndim in {2, 3}, 'data should be a 2D or a 3D array'
@@ -989,11 +977,10 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
         raise ValueError('support should be a 3D array')
 
     voxel_size = voxel_size or (1, 1, 1)
-    if not isinstance(voxel_size, (tuple, list)) \
-            or not all(isinstance(val, Number) for val in voxel_size) \
-            or not all(val > 0 for val in voxel_size):
-        raise ValueError('voxel_size should be a list/tuple of 3 positive numbers')
-    assert len(voxel_size) == 3, 'voxel_size should be a list/tuple of 3 numbers'
+    if isinstance(voxel_size, Number):
+        voxel_size = (voxel_size,) * 3
+    valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real,
+                          name='postprocessing_utils.get_opticalpath', min_excluded=0)
 
     # correct k for the different voxel size in each dimension (k is expressed in an orthonormal basis)
     k = [k[i] * voxel_size[i] for i in range(3)]
@@ -1079,11 +1066,8 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_ph
     assert reference_axis in ('x', 'y', 'z'), "The reference axis should be 'x', 'y' or 'z'"
     if isinstance(voxel_size, Number):
         voxel_size = (voxel_size,) * 3
-    elif not isinstance(voxel_size, (tuple, list)) \
-            or not all(isinstance(val, Number) for val in voxel_size) \
-            or not all(val > 0 for val in voxel_size):
-        raise ValueError('voxel_size should be a list/tuple of 3 positive numbers')
-    assert len(voxel_size) == 3, 'pixel_spacing should be a list/tuple of 3 numbers'
+    valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real,
+                          name='postprocessing_utils.get_strain', min_excluded=0)
 
     strain = np.inf * np.ones(phase.shape)
     if method == 'defect':
@@ -1255,10 +1239,15 @@ def regrid(array, old_voxelsize, new_voxelsize):
     if array.ndim != 3:
         raise ValueError('array should be a 3D array')
 
-    assert isinstance(old_voxelsize, (tuple, list)) and all(val > 0 for val in old_voxelsize)\
-        and len(old_voxelsize) == 3, 'old_voxelsize should be a tuple/list of three positive numbers'
-    assert isinstance(new_voxelsize, (tuple, list)) and all(val > 0 for val in new_voxelsize)\
-        and len(new_voxelsize) == 3, 'new_voxelsize should be a tuple/list of three positive numbers'
+    if isinstance(old_voxelsize, Number):
+        old_voxelsize = (old_voxelsize,) * 3
+    valid.valid_container(old_voxelsize, container_types=(tuple, list), length=3, item_types=Real,
+                          name='postprocessing_utils.regrid', min_excluded=0)
+
+    if isinstance(new_voxelsize, Number):
+        new_voxelsize = (new_voxelsize,) * 3
+    valid.valid_container(new_voxelsize, container_types=(tuple, list), length=3, item_types=Real,
+                          name='postprocessing_utils.regrid', min_excluded=0)
 
     nbz, nby, nbx = array.shape
 
@@ -1649,11 +1638,10 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, width_
         raise ValueError('array should be 3D arrays')
 
     voxel_size = voxel_size or (1, 1, 1)
-    if not isinstance(voxel_size, (tuple, list)) \
-            or not all(isinstance(val, Number) for val in voxel_size) \
-            or not all(val > 0 for val in voxel_size):
-        raise ValueError('voxel_size should be a list/tuple of 3 positive numbers')
-    assert len(voxel_size) == 3, 'voxel_size should be a list/tuple of 3 numbers'
+    if isinstance(voxel_size, Number):
+        voxel_size = (voxel_size,) * 3
+    valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real,
+                          name='postprocessing_utils.rotate_crystal', min_excluded=0)
 
     # normalize the vectors
     axis_to_align = axis_to_align / np.linalg.norm(axis_to_align)
@@ -1704,9 +1692,8 @@ def rotate_vector(vector, axis_to_align, reference_axis):
     """
     if vector.ndim != 1:
         raise ValueError('vector should be a 1D array')
-    else:
-        if len(vector) != 3:
-            raise ValueError('vector should have 3 elements')
+    elif len(vector) != 3:
+        raise ValueError('vector should have 3 elements')
 
     # normalize the vectors
     axis_to_align = axis_to_align / np.linalg.norm(axis_to_align)
