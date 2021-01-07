@@ -16,6 +16,7 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.validation as valid
 
 helptext = """
 Open a series of rocking curve data and track the position of the Bragg peak over the series.
@@ -30,8 +31,8 @@ scans = np.concatenate((scans, np.arange(1638, 1680+1, 3)))
 root_folder = "D:/data/P10_OER/data/"
 sample_name = "dewet2_2"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
-savedir = "D:/data/P10_OER/analysis/candidate_12/"
-# images will be saved here, leave it to '' otherwise (default to root_folder)
+save_dir = "D:/data/P10_OER/analysis/candidate_12/"
+# images will be saved here, leave it to None otherwise (default to root_folder)
 x_axis = []
 [x_axis.append(0.740) for _ in range(16)]
 [x_axis.append(0.80) for _ in range(10)]
@@ -40,7 +41,7 @@ x_axis = []
 [x_axis.append(0.8) for _ in range(15)]
 # values against which the Bragg peak center of mass evolution will be plotted, leave [] otherwise
 x_label = 'voltage (V)'  # label for the X axis in plots, leave '' otherwise
-comment = '_BCDI_RC'  # comment for the saving filename, should start with _
+user_comment = '_BCDI_RC'  # comment for the saving filename, should start with _
 strain_range = 0.00005  # range for the plot of the q value
 peak_method = 'max_com'  # Bragg peak determination: 'max', 'com', 'max_com' (max then com)
 debug = False  # set to True to see more plots
@@ -62,12 +63,9 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 is_series = False  # specific to series measurement at P10
 specfile_name = ''
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
-# template for SIXS_2019: ''
-# template for P10: ''
-# template for CRISTAL: ''
+# template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
+# template for all other beamlines: ''
 ###############################
 # detector related parameters #
 ###############################
@@ -75,16 +73,20 @@ detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = 1387  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 y_bragg = 809  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 roi_detector = [y_bragg-200, y_bragg+200, x_bragg-400, x_bragg+400]  # [Vstart, Vstop, Hstart, Hstop]
-# leave it as [] to use the full detector. Use with center_fft='skip' if you want this exact size.
+# leave it as None to use the full detector. Use with center_fft='skip' if you want this exact size.
 debug_pix = 40  # half-width in pixels of the ROI centered on the Bragg peak
-hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
-flatfield_file = ''  # root_folder + "flatfield_8.5kev.npz"  #
+hotpixels_file = None  # root_folder + 'hotpixels.npz'  # non empty file path or None
+flatfield_file = None  # root_folder + "flatfield_8.5kev.npz"  # non empty file path or None
 template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_master.h5'
+# template for NANOMAX: '%06d.h5'
+# template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 ####################################
 # q calculation related parameters #
 ####################################
@@ -117,15 +119,10 @@ if len(x_axis) == 0:
     x_axis = np.arange(len(scans))
 assert len(x_axis) == len(scans), 'the length of x_axis should be equal to the number of scans'
 
-if type(sample_name) is list:
-    if len(sample_name) == 1:
-        sample_name = [sample_name[0] for idx in range(len(scans))]
-    assert len(sample_name) == len(scans), 'sample_name and scan_list should have the same length'
-elif type(sample_name) is str:
+if isinstance(sample_name, str):
     sample_name = [sample_name for idx in range(len(scans))]
-else:
-    print('sample_name should be either a string or a list of strings')
-    sys.exit()
+valid.valid_container(sample_name, container_types=(tuple, list), length=len(scans), item_types=str,
+                      name='preprocess_bcdi')
 assert peak_method in ['max', 'com', 'max_com'], 'invalid value for "peak_method" parameter'
 
 int_sum = []  # integrated intensity in the detector ROI
@@ -138,62 +135,58 @@ q_com = []  # q value of the center of mass
 check_roi = []  # a small ROI around the Bragg peak will be stored for each scan, to see if the peak is indeed
 # captured by the rocking curve
 
-#################################
-# Initialize detector and setup #
-#################################
+#######################
+# Initialize detector #
+#######################
 kwargs = dict()  # create dictionnary
 kwargs['is_series'] = is_series
-detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector, **kwargs)
+kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+detector = exp.Detector(name=detector, template_imagefile=template_imagefile, roi=roi_detector, **kwargs)
 
-setup_pre = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle,
-                                   custom_scan=custom_scan, custom_images=custom_images, custom_monitor=custom_monitor,
-                                   custom_motors=custom_motors)
+####################
+# Initialize setup #
+####################
+setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+                  beam_direction=beam_direction, custom_scan=custom_scan, custom_images=custom_images,
+                  custom_monitor=custom_monitor, custom_motors=custom_motors, pixel_x=detector.pixelsize_x,
+                  pixel_y=detector.pixelsize_y)
 
-flatfield = pru.load_flatfield(flatfield_file)
-hotpix_array = pru.load_hotpixels(hotpixels_file)
-
-print('Setup: ', setup_pre.beamline)
-print('Detector: ', detector.name)
-print('Pixel number (VxH): ', detector.nb_pixel_y, detector.nb_pixel_x)
-print('Detector ROI:', roi_detector)
-print('Horizontal pixel size with binning: ', detector.pixelsize_x, 'm')
-print('Vertical pixel size with binning: ', detector.pixelsize_y, 'm')
-print('Scan type: ', setup_pre.rocking_angle)
-
-if savedir == '':
-    savedir = root_folder
-detector.savedir = savedir
-print('savedir: ', detector.savedir)
+########################################
+# print the current setup and detector #
+########################################
+print('\n##############\nSetup instance\n##############')
+print(setup)
+print('\n#################\nDetector instance\n#################')
+print(detector)
 
 ###############################################
 # load recursively the scans and update lists #
 ###############################################
-for scan_id in range(len(scans)):
+flatfield = pru.load_flatfield(flatfield_file)
+hotpix_array = pru.load_hotpixels(hotpixels_file)
 
-    if setup_pre.beamline != 'P10':
-        homedir = root_folder + sample_name[scan_id] + str(scans[scan_id]) + '/'
-        detector.datadir = homedir + "data/"
-        specfile = specfile_name
-    else:
-        specfile = sample_name[scan_id] + '_{:05d}'.format(scans[scan_id])
-        homedir = root_folder + specfile + '/'
-        detector.datadir = homedir + 'e4m/'
-        imagefile = specfile + template_imagefile
-        detector.template_imagefile = imagefile
+for scan_idx, scan_nb in enumerate(scans, start=1):
 
-    logfile = pru.create_logfile(setup=setup_pre, detector=detector, scan_number=scans[scan_id],
-                                 root_folder=root_folder, filename=specfile)
+    comment = user_comment  # re-initialize comment
+    tmp_str = f'Scan {scan_idx}/{len(scans)}: S{scan_nb}'
+    print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
 
-    print('\nScan', scans[scan_id])
-    print('Specfile: ', specfile)
+    # initialize the paths
+    setup.init_paths(detector=detector, sample_name=sample_name[scan_idx-1], scan_number=scan_nb,
+                     root_folder=root_folder, save_dir=save_dir, verbose=True, create_savedir=True,
+                     specfile_name=specfile_name, template_imagefile=template_imagefile)
 
-    data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scans[scan_id],
-                                                             detector=detector, setup=setup_pre,
+    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan_nb,
+                                 root_folder=root_folder, filename=detector.specfile)
+
+    data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scan_nb,
+                                                             detector=detector, setup=setup,
                                                              flatfield=flatfield, hotpixels=hotpix_array,
                                                              normalize=True, debugging=debug)
 
     tilt, grazing, inplane, outofplane = pru.motor_values(frames_logical=frames_logical, logfile=logfile,
-                                                          scan_number=scan_id, setup=setup_pre)
+                                                          scan_number=scan_nb, setup=setup)
 
     nbz, nby, nbx = data.shape
     if peak_method == 'max':
@@ -211,7 +204,7 @@ for scan_id in range(len(scans)):
 
     if debug:
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, plot_colorbar=True, cmap=my_cmap,
-                                        title='scan'+str(scans[scan_id]), scale='log', is_orthogonal=False,
+                                        title='scan'+str(scan_nb), scale='log', is_orthogonal=False,
                                         reciprocal_space=True)
         fig.text(0.60, 0.30, "(piz, piy, pix) = ({:.1f}, {:.1f}, {:.1f})".format(piz, piy, pix), size=12)
         plt.draw()
@@ -219,7 +212,7 @@ for scan_id in range(len(scans)):
         if peak_method == 'max_com':
             fig, _, _ = gu.multislices_plot(data[:, int(max_y) - debug_pix:int(max_y) + debug_pix,
                                                  int(max_x) - debug_pix:int(max_x) + debug_pix], sum_frames=True,
-                                            plot_colorbar=True, cmap=my_cmap, title='scan'+str(scans[scan_id]),
+                                            plot_colorbar=True, cmap=my_cmap, title='scan'+str(scan_nb),
                                             scale='log', is_orthogonal=False, reciprocal_space=True)
             fig.text(0.60, 0.30, "(com_z, com_y, com_x) = ({:.1f}, {:.1f}, {:.1f})".format(com_z, com_y, com_x),
                      size=12)
@@ -238,45 +231,41 @@ for scan_id in range(len(scans)):
     # convert pixels to q values #
     ##############################
     if convert_to_q:
-        setup_post = exp.SetupPostprocessing(beamline=setup_pre.beamline, energy=setup_pre.energy,
-                                             outofplane_angle=outofplane, inplane_angle=inplane, tilt_angle=tilt,
-                                             rocking_angle=setup_pre.rocking_angle, grazing_angle=grazing,
-                                             distance=setup_pre.distance, pixel_x=detector.pixelsize_x,
-                                             pixel_y=detector.pixelsize_y)
+        setup.outofplane_angle, setup.inplane_angle, setup.tilt_angle, setup.grazing_angle = \
+            outofplane, inplane, tilt, grazing
 
         # calculate the position of the Bragg peak in full detector pixels
         bragg_x = detector.roi[2] + pix
         bragg_y = detector.roi[0] + piy
 
         # calculate the position of the direct beam at 0 detector angles
-        x_direct_0 = directbeam_x + setup_post.rotation_direction() * \
-            (direct_inplane * np.pi / 180 * sdd / detector.pixelsize_x)  # rotation_direction is +1 or -1
-        y_direct_0 = directbeam_y - direct_outofplane * np.pi / 180 * sdd / detector.pixelsize_y
-        # outofplane is always clockwise
+        x_direct_0 = directbeam_x + setup.inplane_coeff * \
+            (direct_inplane * np.pi / 180 * sdd / detector.pixelsize_x)  # inplane_coeff is +1 or -1
+        y_direct_0 = directbeam_y - setup.outofplane_coeff * \
+            direct_outofplane * np.pi / 180 * sdd / detector.pixelsize_y  # outofplane_coeff is +1 or -1
 
-        # claculate corrected detector angles for the Bragg peak
-        bragg_inplane = inplane + setup_post.rotation_direction() * \
-            (detector.pixelsize_x * (bragg_x - x_direct_0) / sdd * 180 / np.pi)  # rotation_direction is +1 or -1
-        bragg_outofplane = outofplane - detector.pixelsize_y * (bragg_y - y_direct_0) / sdd * 180 / np.pi
-        # outofplane always clockwise
-        print("Bragg angles before correction = (gam, del): ", str('{:.4f}'.format(inplane)),
-              str('{:.4f}'.format(outofplane)))
-        print("Bragg angles after correction = (gam, del): ", str('{:.4f}'.format(bragg_inplane)),
-              str('{:.4f}'.format(bragg_outofplane)))
+        # calculate corrected detector angles for the Bragg peak
+        bragg_inplane = setup.inplane_angle + setup.inplane_coeff * \
+            (detector.pixelsize_x * (bragg_x - x_direct_0) / sdd * 180 / np.pi)  # inplane_coeff is +1 or -1
+        bragg_outofplane = setup.outofplane_angle - setup.outofplane_coeff * \
+            detector.pixelsize_y * (bragg_y - y_direct_0) / sdd * 180 / np.pi  # outofplane_coeff is +1 or -1
 
-        # update setup_post with the corrected detector angles
-        setup_post.inplane_angle = bragg_inplane
-        setup_post.outofplane_angle = bragg_outofplane
+        print(f'\nBragg angles before correction (gam, del): ({setup.inplane_angle:.4f}, {setup.outofplane_angle:.4f})')
+        print(f'Bragg angles after correction (gam, del): ({bragg_inplane:.4f}, {bragg_outofplane:.4f})')
+
+        # update setup with the corrected detector angles
+        setup.inplane_angle = bragg_inplane
+        setup.outofplane_angle = bragg_outofplane
 
         ##############################################################
         # wavevector transfer calculations (in the laboratory frame) #
         ##############################################################
-        kin = 2 * np.pi / setup_post.wavelength * np.asarray(beam_direction)
+        kin = 2 * np.pi / setup.wavelength * np.asarray(beam_direction)
         # in lab frame z downstream, y vertical, x outboard
-        kout = setup_post.exit_wavevector()  # in lab.frame z downstream, y vertical, x outboard
+        kout = setup.exit_wavevector  # in lab.frame z downstream, y vertical, x outboard
         q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
         q_com.append(np.linalg.norm(q))
-        print("Wavevector transfer of Bragg peak: ", q, str('{:.4f}'.format(np.linalg.norm(q))))
+        print(f'Wavevector transfer of Bragg peak: {q}, Qnorm={np.linalg.norm(q):.4f}')
 
 ##########################################################
 # plot the ROI centered on the Bragg peak for each scan  #
@@ -302,7 +291,7 @@ for fig_idx in range(nb_fig):
         scan_counter = scan_counter + 1
     plt.tight_layout()
     plt.pause(0.1)
-    fig.savefig(savedir + 'check-roi' + str(fig_idx+1) + comment + '.png')
+    fig.savefig(detector.savedir + 'check-roi' + str(fig_idx+1) + comment + '.png')
 
 ##########################################################
 # plot the evolution of the center of mass and intensity #
@@ -343,7 +332,7 @@ else:  # 'max'
 ax5.set_facecolor(bckg_color)
 plt.tight_layout()
 plt.pause(0.1)
-fig.savefig(savedir + 'summary' + comment + '.png')
+fig.savefig(detector.savedir + 'summary' + comment + '.png')
 
 ############################################
 # plot the evolution of the incident angle #
@@ -372,7 +361,7 @@ ax2.set_ylabel('Bragg angle (deg)')
 ax2.set_facecolor(bckg_color)
 plt.tight_layout()
 plt.pause(0.1)
-fig.savefig(savedir + 'Bragg angle' + comment + '.png')
+fig.savefig(detector.savedir + 'Bragg angle' + comment + '.png')
 
 ##############################################
 # plot the evolution of the diffusion vector #
@@ -401,7 +390,7 @@ if convert_to_q:
     ax2.set_facecolor(bckg_color)
     plt.tight_layout()
     plt.pause(0.1)
-    fig.savefig(savedir + 'diffusion vector' + comment + '.png')
+    fig.savefig(detector.savedir + 'diffusion vector' + comment + '.png')
 
 plt.ioff()
 plt.show()
