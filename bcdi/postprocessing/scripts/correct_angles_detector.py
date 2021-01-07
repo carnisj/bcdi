@@ -55,11 +55,9 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 specfile_name = 'l5'
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
-# template for P10: ''
-# template for CRISTAL: ''
+# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
+# template for all other beamlines: ''
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
@@ -72,12 +70,14 @@ roi_detector = None  # [y_bragg-290, y_bragg+290, x_bragg-290, x_bragg+290]
 high_threshold = 1000000  # everything above will be considered as hotpixel
 hotpixels_file = None  # root_folder + 'hotpixels_HS4670.npz'  # non empty file path or None
 flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_master.h5'
+# template for NANOMAX: '%06d.h5'
+# template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
 ###################################
 # define setup related parameters #
 ###################################
