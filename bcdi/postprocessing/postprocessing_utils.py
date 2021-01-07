@@ -1016,35 +1016,16 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
 
     if direction == "in":
         k_norm = -1 * k / np.linalg.norm(k)  # we will work with -k_in
-        if np.array_equal(k_norm, np.array([-1, 0, 0])):  # data orthogonalized in laboratory frame, k_in along axis 0
-            for idz in range(min_z, max_z, 1):
-                path[idz, :, :] = support[0:idz+1, :, :].sum(axis=0) * voxel_size[0]  # include also the pixel
-            path = np.multiply(path, support)
-
-        else:  # the data was orthogonalized in the crystal frame using xrayutilities, k_in is not along any array axis
-            for idz in range(min_z, max_z, 1):
-                for idy in range(min_y, max_y, 1):
-                    for idx in range(min_x, max_x, 1):
-                        if support[idz, idy, idx] == 1:
-                            stop_flag = False
-                            counter = 1
-                            pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
-                            # beware, the support could be 0 at some voxel inside the object also, but the loop should
-                            # continue until it reaches the end of the box (min_z, max_z, min_y, max_y, min_x, max_x)
-                            while not stop_flag:
-                                pixel = pixel + k_norm  # add unitary translation in -k_in direction
-                                coords = np.rint(pixel)
-                                stop_flag = True
-                                if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and\
-                                        (min_x <= coords[2] <= max_x):
-                                    counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
-                                    stop_flag = False
-                            path[idz, idy, idx] = counter
-                        else:  # point outside of the support, optical path = 0
-                            path[idz, idy, idx] = 0
-
-    if direction == "out":
+    else:  # "out"
         k_norm = k / np.linalg.norm(k)
+
+    if direction == "in" and np.allclose(k_norm, np.array([-1, 0, 0]), rtol=1e-08, atol=1e-08):
+        # data orthogonalized in laboratory frame, k_in along axis 0
+        for idz in range(min_z, max_z, 1):
+            path[idz, :, :] = support[0:idz+1, :, :].sum(axis=0) * voxel_size[0]  # include also the pixel
+        path = np.multiply(path, support)
+
+    else:  # k is not along any array axis
         for idz in range(min_z, max_z, 1):
             for idy in range(min_y, max_y, 1):
                 for idx in range(min_x, max_x, 1):
@@ -1052,11 +1033,13 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
                         stop_flag = False
                         counter = 1
                         pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
+                        # beware, the support could be 0 at some voxel inside the object also, but the loop should
+                        # continue until it reaches the end of the box (min_z, max_z, min_y, max_y, min_x, max_x)
                         while not stop_flag:
-                            pixel = pixel + k_norm  # add unitary translation in k_out direction
+                            pixel = pixel + k_norm  # add unitary translation in -k_in direction
                             coords = np.rint(pixel)
                             stop_flag = True
-                            if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and \
+                            if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and\
                                     (min_x <= coords[2] <= max_x):
                                 counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
                                 stop_flag = False
