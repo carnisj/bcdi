@@ -307,6 +307,11 @@ if correct_curvature:
     raise NotImplementedError('correction of the curvature of Ewalt sphere not yet implemented, defaulting to False')
     # TODO: implement this
 
+if photon_filter == 'loading':
+    loading_threshold = photon_threshold
+else:
+    loading_threshold = 0
+
 if reload_previous:
     create_savedir = False
 else:
@@ -488,17 +493,11 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     qy = qy[:numx - (numx % binning[2]):binning[2]]  # along x outboard
                     del numz, numy, numx
         else:  # the data is in the detector frame
-            if photon_filter == 'loading':
-                data, mask, frames_logical, monitor = pru.reload_bcdi_data(logfile=logfile, scan_number=scan_nb,
-                                                                           data=data, mask=mask, detector=detector,
-                                                                           setup=setup, debugging=debug,
-                                                                           normalize=normalize_flux,
-                                                                           photon_threshold=photon_threshold)
-            else:  # photon_filter = 'postprocessing'
-                data, mask, frames_logical, monitor = pru.reload_bcdi_data(logfile=logfile, scan_number=scan_nb,
-                                                                           data=data, mask=mask, detector=detector,
-                                                                           setup=setup, debugging=debug,
-                                                                           normalize=normalize_flux)
+            data, mask, frames_logical, monitor = pru.reload_bcdi_data(logfile=logfile, scan_number=scan_nb,
+                                                                       data=data, mask=mask, detector=detector,
+                                                                       setup=setup, debugging=debug,
+                                                                       normalize=normalize_flux,
+                                                                       photon_threshold=loading_threshold)
 
     else:  # new masking process
         reload_orthogonal = False  # the data is in the detector plane
@@ -506,18 +505,11 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         hotpix_array = pru.load_hotpixels(hotpixels_file)
         background = pru.load_background(background_file)
 
-        if photon_filter == 'loading':
-            data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scan_nb,
-                                                                     detector=detector, setup=setup,
-                                                                     flatfield=flatfield, hotpixels=hotpix_array,
-                                                                     background=background, normalize=normalize_flux,
-                                                                     debugging=debug, photon_threshold=photon_threshold)
-        else:  # photon_filter = 'postprocessing'
-            data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scan_nb,
-                                                                     detector=detector, setup=setup,
-                                                                     flatfield=flatfield, hotpixels=hotpix_array,
-                                                                     background=background, normalize=normalize_flux,
-                                                                     debugging=debug)
+        data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scan_nb,
+                                                                 detector=detector, setup=setup,
+                                                                 flatfield=flatfield, hotpixels=hotpix_array,
+                                                                 background=background, normalize=normalize_flux,
+                                                                 debugging=debug, photon_threshold=loading_threshold)
 
     nz, ny, nx = np.shape(data)
     print('\nInput data shape:', nz, ny, nx)
