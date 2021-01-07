@@ -66,12 +66,12 @@ specfile_name = 'l5'
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 x_bragg = None  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 y_bragg = None  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = []  # [y_bragg-290, y_bragg+290, x_bragg-290, x_bragg+290]
+roi_detector = None  # [y_bragg-290, y_bragg+290, x_bragg-290, x_bragg+290]
 # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430
-# leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
+# leave it as None to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 high_threshold = 1000000  # everything above will be considered as hotpixel
-hotpixels_file = ''  # root_folder + 'hotpixels_HS4670.npz'  #
-flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  #
+hotpixels_file = None  # root_folder + 'hotpixels_HS4670.npz'  # non empty file path or None
+flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
 template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
