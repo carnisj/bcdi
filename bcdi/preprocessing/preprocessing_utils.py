@@ -5,24 +5,26 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
-import numpy as np
-import time
 import datetime
+import fabio
 import matplotlib.pyplot as plt
 import multiprocessing as mp
+from numbers import Real
+import numpy as np
+import os
+import sys
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
 from scipy.interpolate import griddata
+import time
 import xrayutilities as xu
-import fabio
-import os
-import sys
 sys.path.append('D:/myscripts/bcdi/')
+import bcdi.experiment.experiment_utils as exp
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
 from bcdi.utils import image_registration as reg
 import bcdi.utils.utilities as util
-import bcdi.experiment.experiment_utils as exp
+import bcdi.utils.validation as valid
 
 
 def align_diffpattern(reference_data, data, mask=None, method='registration', combining_method='rgi',
@@ -467,25 +469,13 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
      - pad_width = [z0, z1, y0, y1, x0, x1] number of pixels added at each end of the original data
      - updated frames_logical
     """
-    # default values for kwargs
-    fix_bragg = []
-    fix_size = []
-    pad_size = []
-    q_values = []
-
-    for k in kwargs.keys():
-        if k in ['fix_bragg']:
-            fix_bragg = kwargs['fix_bragg']
-        elif k in ['fix_size']:
-            fix_size = kwargs['fix_size']
-        elif k in ['pad_size']:
-            pad_size = kwargs['pad_size']
-        elif k in ['q_values']:
-            q_values = kwargs['q_values']
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is"
-                            "'fix_bragg', 'fix_size', 'pad_size' and 'q_values'")
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'fix_bragg', 'fix_size', 'pad_size', 'q_values'},
+                       name='preprocessing_utils.center_fft')
+    fix_bragg = kwargs.get('fix_bragg', list())
+    fix_size = kwargs.get('fix_size', list())
+    pad_size = kwargs.get('pad_size', list())
+    q_values = kwargs.get('q_values', list())
 
     if q_values:  # len(q_values) != 0
         qx = q_values[0]  # axis=0, z downstream, qx in reciprocal space
@@ -1209,15 +1199,13 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
     :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard)
     """
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg'}, name='preprocessing_utils.grid_bcdi')
+    follow_bragg = kwargs.get('follow_bragg', False)
+    valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.grid_bcdi')
+
     # default values for kwargs
     follow_bragg = False
-
-    for k in kwargs.keys():
-        if k in ['follow_bragg']:
-            follow_bragg = kwargs['follow_bragg']
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is 'follow_bragg'")
 
     if data.ndim != 3:
         raise ValueError('data is expected to be a 3D array')
@@ -1777,15 +1765,10 @@ def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpix
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values used for the intensity normalization
     """
-    # default values for kwargs
-    photon_threshold = 0
-
-    for k in kwargs.keys():
-        if k in ['photon_threshold']:
-            photon_threshold = kwargs['photon_threshold']
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'photon_threshold'}, name='preprocessing_utils.load_bcdi_data')
+    photon_threshold = kwargs.get('photon_threshold', 0)
+    valid.valid_item(photon_threshold, allowed_types=Real, min_included=0, name='preprocessing_utils.load_bcdi_data')
 
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
@@ -1865,15 +1848,10 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values used for the intensity normalization
     """
-    # default values for kwargs
-    photon_threshold = 0
-
-    for k in kwargs.keys():
-        if k in ['photon_threshold']:
-            photon_threshold = kwargs['photon_threshold']
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'photon_threshold'}, name='preprocessing_utils.load_cdi_data')
+    photon_threshold = kwargs.get('photon_threshold', 0)
+    valid.valid_item(photon_threshold, allowed_types=Real, min_included=0, name='preprocessing_utils.load_cdi_data')
 
     rawdata, rawmask, monitor, frames_logical = load_data(logfile=logfile, scan_number=scan_number, detector=detector,
                                                           setup=setup, flatfield=flatfield, hotpixels=hotpixels,
@@ -2960,10 +2938,12 @@ def motor_positions_id01(logfile, scan_number, setup, **kwargs):
        the Bragg peak.
     :return: (eta, chi, phi, nu, delta, energy) motor positions
     """
-    # check kwargs
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
+                       name='preprocessing_utils.motor_positions_id01')
     follow_bragg = kwargs.get('follow_bragg', False)
-    assert isinstance(follow_bragg, bool), 'follow_bragg should be a boolean'
     frames_logical = kwargs.get('frames_logical', None)
+    valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.motor_positions_id01')
     if frames_logical is not None:
         assert isinstance(frames_logical, list) and all(val in {-1, 0, 1} for val in frames_logical),\
             'frames_logical should be a list of values in {-1, 0, 1}'
@@ -3200,7 +3180,9 @@ def motor_positions_sixs(logfile, setup, **kwargs):
        equal to the number of measured frames. In case of data padding, the length changes.
     :return: (beta, mgomega, gamma, delta) motor positions and updated frames_logical
     """
-    # check kwargs
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'frames_logical'},
+                       name='preprocessing_utils.motor_positions_sixs')
     frames_logical = kwargs.get('frames_logical', None)
     if frames_logical is not None:
         assert isinstance(frames_logical, list) and all(val in {-1, 0, 1} for val in frames_logical),\
@@ -3681,15 +3663,10 @@ def reload_bcdi_data(data, mask, logfile, scan_number, detector, setup, normaliz
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
     """
-    # default values for kwargs
-    photon_threshold = 0
-
-    for k in kwargs.keys():
-        if k in ['photon_threshold']:
-            photon_threshold = kwargs['photon_threshold']
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'photon_threshold'}, name='preprocessing_utils.reload_bcdi_data')
+    photon_threshold = kwargs.get('photon_threshold', 0)
+    valid.valid_item(photon_threshold, allowed_types=Real, min_included=0, name='preprocessing_utils.reload_bcdi_data')
 
     if normalize:
         normalize_method = 'monitor'
@@ -3766,15 +3743,10 @@ def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
     """
-    # default values for kwargs
-    photon_threshold = 0
-
-    for k in kwargs.keys():
-        if k in ['photon_threshold']:
-            photon_threshold = kwargs['photon_threshold']
-        else:
-            print(k)
-            raise Exception("unknown keyword argument given: allowed is 'photon_threshold'")
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'photon_threshold'}, name='preprocessing_utils.reload_cdi_data')
+    photon_threshold = kwargs.get('photon_threshold', 0)
+    valid.valid_item(photon_threshold, allowed_types=Real, min_included=0, name='preprocessing_utils.reload_cdi_data')
 
     if data.ndim != 3 or mask.ndim != 3:
         raise ValueError('data and mask should be 3D arrays')
