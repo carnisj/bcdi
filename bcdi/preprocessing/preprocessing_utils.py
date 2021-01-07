@@ -7,6 +7,8 @@
 
 import datetime
 import fabio
+import hdf5plugin  # should be imported before h5py
+import h5py
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 from numbers import Real
@@ -17,6 +19,8 @@ from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
 from scipy.interpolate import griddata
 import time
+import tkinter as tk
+from tkinter import filedialog
 import xrayutilities as xu
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.experiment.experiment_utils as exp
@@ -359,8 +363,11 @@ def cartesian2cylind(grid_shape, pivot, offset_angle, debugging=False):
     :return: the corresponding 1D array of angular coordinates, 1D array of height coordinates,
      1D array of radial coordinates
     """
-    assert len(grid_shape) == 3, 'grid_shape should be a tuple of three numbers'
-    assert len(pivot) == 2, 'pivot should be a tuple of two pixel numbers'
+    valid.valid_container(grid_shape, container_types=(list, tuple), length=3, item_types=int,
+                          name='preprocessing_utils.cartesian2cylind')
+    valid.valid_container(pivot, container_types=(list, tuple), length=2, item_types=Real,
+                          name='preprocessing_utils.cartesian2cylind')
+
     _, numy, numx = grid_shape  # numz = numx by construction
     pivot_y, pivot_x = pivot
     z_interp, y_interp, x_interp = np.meshgrid(np.linspace(-pivot_x, -pivot_x + numx, num=numx, endpoint=False),
@@ -962,7 +969,6 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
     if setup.custom_scan:  # no log file in that case
         logfile = ''
     elif setup.beamline == 'CRISTAL':  # no specfile, load directly the dataset
-        import h5py
         ccdfiletmp = os.path.join(detector.datadir + detector.template_imagefile % scan_number)
         logfile = h5py.File(ccdfiletmp, 'r')
 
@@ -986,8 +992,6 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
         logfile = SpecFile(root_folder + filename + '.spec')
 
     elif setup.beamline == 'NANOMAX':
-        import hdf5plugin  # should be imported before h5py
-        import h5py
         ccdfiletmp = os.path.join(detector.datadir + detector.template_imagefile % scan_number)
         logfile = h5py.File(ccdfiletmp, 'r')
 
@@ -1064,7 +1068,7 @@ def find_bragg(data, peak_method):
      for the other axes.
     :return: the centered data
     """
-    if peak_method != 'max' and peak_method != 'com' and peak_method != 'maxcom':
+    if all((peak_method != val for val in {'max', 'com', 'maxcom'})):
         raise ValueError('Incorrect value for "centering_method" parameter')
 
     if data.ndim == 2:
@@ -1683,7 +1687,7 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
     :param required_dividers: a list of required dividers for the returned integer.
     :return: the integer (or list/array of integers) fulfilling the requirements
     """
-    if (type(number) is list) or (type(number) is tuple) or (type(number) is np.ndarray):
+    if isinstance(number, (list, tuple, np.ndarray)):
         vn = []
         for i in number:
             limit = i
@@ -2086,8 +2090,6 @@ def load_custom_data(custom_images, custom_monitor, normalize, beamline, detecto
     :param debugging: set to True to see plots
     :return:
     """
-    import hdf5plugin  # should be imported before h5py
-    import h5py
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
     nb_frames = None
@@ -2267,9 +2269,6 @@ def load_filtered_data(detector):
     :param detector: the detector object: Class experiment_utils.Detector()
     :return: the data and the mask array
     """
-    import tkinter as tk
-    from tkinter import filedialog
-
     root = tk.Tk()
     root.withdraw()
 
@@ -2587,8 +2586,6 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     """
-    import hdf5plugin  # should be imported before h5py
-    import h5py
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
@@ -3386,11 +3383,8 @@ def primes(number):
     :param number: the integer to be decomposed
     :return: the list of prime dividers of number
     """
-    if not isinstance(number, int):
-        raise TypeError('Number should be an integer')
-
+    valid.valid_item(number, allowed_types=int, min_excluded=0, name='preprocessing_utils.primes')
     list_primes = [1]
-    assert (number > 0)
     i = 2
     while i * i <= number:
         while number % i == 0:
@@ -3937,7 +3931,7 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
     :param required_dividers: a list of required dividers for the returned integer.
     :return: the integer (or list/array of integers) fulfilling the requirements
     """
-    if (type(number) is list) or (type(number) is tuple) or (type(number) is np.ndarray):
+    if isinstance(number, (list, tuple, np.ndarray)):
         vn = []
         for i in number:
             assert (i > 1 and maxprime <= i), "Number is < " + str(maxprime)
@@ -3987,11 +3981,10 @@ def wrap(obj, start_angle, range_angle):
     :param range_angle: range
     :return: wrapped angle in [start_angle, start_angle+range[
     """
-    obj = (obj - start_angle + range_angle) % range_angle + start_angle
-    return obj
+    return (obj - start_angle + range_angle) % range_angle + start_angle
 
 
-def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False, debugging=False):
+def zero_pad(array, padding_width=np.zeros(6), mask_flag=False, debugging=False):
     """
     Pad obj with zeros.
 
@@ -4007,26 +4000,29 @@ def zero_pad(array, padding_width=np.array([0, 0, 0, 0, 0, 0]), mask_flag=False,
         raise ValueError('3D Array expected, got ', array.ndim, 'D')
 
     nbz, nby, nbx = array.shape
-    padding_z0 = padding_width[0]
-    padding_z1 = padding_width[1]
-    padding_y0 = padding_width[2]
-    padding_y1 = padding_width[3]
-    padding_x0 = padding_width[4]
-    padding_x1 = padding_width[5]
+
     if debugging:
         gu.multislices_plot(array=array, sum_frames=False, plot_colorbar=True, vmin=0, vmax=1,
                             title='Array before padding')
 
     if mask_flag:
-        newobj = np.ones((nbz + padding_z0 + padding_z1, nby + padding_y0 + padding_y1, nbx + padding_x0 + padding_x1))
+        newobj = np.ones((nbz + padding_width[0] + padding_width[1],
+                          nby + padding_width[2] + padding_width[3],
+                          nbx + padding_width[4] + padding_width[5]))
     else:
-        newobj = np.zeros((nbz + padding_z0 + padding_z1, nby + padding_y0 + padding_y1, nbx + padding_x0 + padding_x1))
-    newobj[padding_z0:padding_z0 + nbz, padding_y0:padding_y0 + nby, padding_x0:padding_x0 + nbx] = array
+        newobj = np.zeros((nbz + padding_width[0] + padding_width[1],
+                           nby + padding_width[2] + padding_width[3],
+                           nbx + padding_width[4] + padding_width[5]))
+
+    newobj[padding_width[0]:padding_width[0] + nbz,
+           padding_width[2]:padding_width[2] + nby,
+           padding_width[4]:padding_width[4] + nbx] = array
+
     if debugging:
         gu.multislices_plot(array=newobj, sum_frames=False, plot_colorbar=True, vmin=0, vmax=1,
                             title='Array after padding')
     return newobj
 
 
-if __name__ == "__main__":
-    print(smaller_primes(299, maxprime=7, required_dividers=(2,)))
+# if __name__ == "__main__":
+#     print(smaller_primes(299, maxprime=7, required_dividers=(2,)))
