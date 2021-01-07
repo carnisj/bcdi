@@ -1041,7 +1041,8 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
 
     if debugging:
         gu.multislices_plot(path, width_z=width_z, width_y=width_y, width_x=width_x, plot_colorbar=True, vmin=0,
-                            title='Optical path (nm)' + direction, is_orthogonal=True, reciprocal_space=False)
+                            title=f'Optical path {direction} (nm)' + direction, is_orthogonal=True,
+                            reciprocal_space=False)
     return path
 
 
