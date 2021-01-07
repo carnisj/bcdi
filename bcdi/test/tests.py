@@ -186,6 +186,12 @@ class TestValidation(unittest.TestCase):
     def test_validitem_allowedtypes_not_type(self):
         self.assertRaises(TypeError, valid.valid_item, value=0, allowed_types=(list, 0))
 
+    def test_validitem_allowedtypes_bool(self):
+        self.assertTrue(valid.valid_item(value=True, allowed_types=bool))
+
+    def test_validitem_allowedtypes_bool_wrongtype(self):
+        self.assertRaises(TypeError, valid.valid_item, value=0, allowed_types=bool)
+
     def test_validitem_min_included(self):
         self.assertTrue(valid.valid_item(value=0, allowed_types=Real, min_included=0))
 
