@@ -29,7 +29,7 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 15
+scan = 11
 root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
 sample_name = "S"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
@@ -54,7 +54,7 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # SIXS: beta, mu, gamma, delta
 
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = 'alignment'
+specfile_name = 'l5'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS, not used for CRISTAL
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -82,6 +82,8 @@ template_imagefile = 'data_mpx4_%05d.edf.gz'
 # define setup related parameters #
 ###################################
 beam_direction = (1, 0, 0)  # beam along z
+sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+# convention: the sample offsets will be subtracted to the motor values
 directbeam_x = 154  # x horizontal,  cch2 in xrayutilities
 directbeam_y = 208  # y vertical,  cch1 in xrayutilities
 direct_inplane = 0.0  # outer angle in xrayutilities
@@ -103,64 +105,51 @@ plt.ion()
 #######################
 # Initialize detector #
 #######################
-detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, roi=roi_detector,
+detector = exp.Detector(name=detector, template_imagefile=template_imagefile, roi=roi_detector,
                         is_series=is_series)
 
 ####################
 # Initialize setup #
 ####################
-setup_pre = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, distance=sdd, energy=energy,
-                                   beam_direction=beam_direction, custom_scan=custom_scan, custom_images=custom_images,
-                                   custom_monitor=custom_monitor, custom_motors=custom_motors)
+setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+                  beam_direction=beam_direction, custom_scan=custom_scan, custom_images=custom_images,
+                  custom_monitor=custom_monitor, custom_motors=custom_motors, pixel_x=detector.pixelsize_x,
+                  pixel_y=detector.pixelsize_y, sample_offsets=sample_offsets)
 
-if setup_pre.beamline != 'P10':
-    homedir = root_folder + sample_name + str(scan) + '/'
-    detector.datadir = homedir + "data/"
-    specfile = specfile_name
-else:
-    specfile = sample_name + '_{:05d}'.format(scan)
-    homedir = root_folder + specfile + '/'
-    detector.datadir = homedir + 'e4m/'
-    imagefile = specfile + template_imagefile
-    detector.template_imagefile = imagefile
+########################################
+# Initialize the paths and the logfile #
+########################################
+# initialize the paths
+setup.init_paths(detector=detector, sample_name=sample_name, scan_number=scan, root_folder=root_folder, save_dir=None,
+                 create_savedir=False, specfile_name=specfile_name, template_imagefile=template_imagefile, verbose=True)
 
-print('\nScan', scan)
-print('Setup: ', setup_pre.beamline)
-print('Detector: ', detector.name)
-print('Horizontal pixel size: ', detector.pixelsize_x, 'm')
-print('Vertical pixel size: ', detector.pixelsize_y, 'm')
-print('Scan type: ', setup_pre.rocking_angle)
-print('Sample to detector distance: ', setup_pre.distance, 'm')
-print('Energy:', setup_pre.energy, 'ev')
-print('Specfile: ', specfile)
+logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
+                             filename=detector.specfile)
 
-##############
-# load files #
-##############
+#################
+# load the data #
+#################
 flatfield = pru.load_flatfield(flatfield_file)
 hotpix_array = pru.load_hotpixels(hotpixels_file)
 
-logfile = pru.create_logfile(setup=setup_pre, detector=detector, scan_number=scan,
-                             root_folder=root_folder, filename=specfile)
-
 if not filtered_data:
     data, _, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number=scan, detector=detector,
-                                                     setup=setup_pre, flatfield=flatfield, hotpixels=hotpix_array,
+                                                     setup=setup, flatfield=flatfield, hotpixels=hotpix_array,
                                                      normalize=normalize_flux, debugging=debug)
     if normalize_flux == 'skip':
         print('Skip intensity normalization')
     else:
         print('Intensity normalization using ' + normalize_flux)
         data, monitor = pru.normalize_dataset(array=data, raw_monitor=monitor, frames_logical=frames_logical,
-                                              savedir=homedir, norm_to_min=True, debugging=debug)
+                                              norm_to_min=True, debugging=debug)
 else:
     root = tk.Tk()
     root.withdraw()
-    file_path = filedialog.askopenfilename(initialdir=homedir + "pynxraw/",
+    file_path = filedialog.askopenfilename(initialdir=detector.scandir + "pynxraw/",
                                            title="Select 3D data", filetypes=[("NPZ", "*.npz")])
     data = np.load(file_path)['data']
     data = data[detector.roi[0]:detector.roi[1], detector.roi[2]:detector.roi[3]]
-    frames_logical = np.ones(data.shape[0])  # use all frames from the filtered data
+    frames_logical = np.ones(data.shape[0]).astype(int)  # use all frames from the filtered data
 numz, numy, numx = data.shape
 print("Shape of dataset: ", numz, numy, numx)
 
@@ -170,20 +159,16 @@ print("Shape of dataset: ", numz, numy, numx)
 if high_threshold != 0:
     nb_thresholded = (data > high_threshold).sum()
     data[data > high_threshold] = 0
-    print("Applying photon threshold, {:d} high intensity pixels masked".format(nb_thresholded))
+    print(f'Applying photon threshold, {nb_thresholded} high intensity pixels masked')
 
 ###############################
 # load releavant motor values #
 ###############################
-tilt, grazing, inplane, outofplane = pru.motor_values(frames_logical, logfile, scan, setup_pre, follow_bragg=False)
+tilt_values, setup.grazing_angle, setup.inplane_angle, setup.outofplane_angle = \
+    pru.motor_values(frames_logical, logfile, scan, setup=setup, follow_bragg=False)
+setup.tilt_angle = tilt_values[1] - tilt_values[0]
 
-setup_post = exp.SetupPostprocessing(beamline=setup_pre.beamline, energy=setup_pre.energy,
-                                     outofplane_angle=outofplane, inplane_angle=inplane, tilt_angle=tilt,
-                                     rocking_angle=setup_pre.rocking_angle, grazing_angle=grazing,
-                                     distance=setup_pre.distance, pixel_x=detector.pixelsize_x,
-                                     pixel_y=detector.pixelsize_y)
-
-nb_frames = len(tilt)
+nb_frames = len(tilt_values)
 if numz != nb_frames:
     print('The loaded data has not the same shape as the raw data')
     sys.exit()
@@ -196,8 +181,8 @@ z0 = np.rint(z0).astype(int)
 y0 = np.rint(y0).astype(int)
 x0 = np.rint(x0).astype(int)
 
-print("Bragg peak at (z, y, x): ", z0, y0, x0)
-print("Bragg peak (full detector) at (z, y, x): ", z0, y0+detector.roi[0], x0+detector.roi[2])
+print(f'Bragg peak at (z, y, x): {z0}, {y0}, {x0}')
+print(f'Bragg peak (full detector) at (z, y, x): {z0}, {y0+detector.roi[0]}, {x0+detector.roi[2]}')
 
 ######################################################
 # calculate rocking curve and fit it to get the FWHM #
@@ -213,22 +198,21 @@ else:  # take the whole detector
     plot_title = "Rocking curve (full detector)"
 z0 = np.unravel_index(rocking_curve.argmax(), rocking_curve.shape)[0]
 
-
-interpolation = interp1d(tilt, rocking_curve, kind='cubic')
+interpolation = interp1d(tilt_values, rocking_curve, kind='cubic')
 interp_points = 5*nb_frames
-interp_tilt = np.linspace(tilt.min(), tilt.max(), interp_points)
+interp_tilt = np.linspace(tilt_values.min(), tilt_values.max(), interp_points)
 interp_curve = interpolation(interp_tilt)
 interp_fwhm = len(np.argwhere(interp_curve >= interp_curve.max()/2)) * \
-              (tilt.max()-tilt.min())/(interp_points-1)
+              (tilt_values.max()-tilt_values.min())/(interp_points-1)
 print('FWHM by interpolation', str('{:.3f}'.format(interp_fwhm)), 'deg')
 
 fig, (ax0, ax1) = plt.subplots(2, 1, sharex='col', figsize=(10, 5))
-ax0.plot(tilt, rocking_curve, '.')
+ax0.plot(tilt_values, rocking_curve, '.')
 ax0.plot(interp_tilt, interp_curve)
 ax0.set_ylabel('Integrated intensity')
 ax0.legend(('data', 'interpolation'))
 ax0.set_title(plot_title)
-ax1.plot(tilt, np.log10(rocking_curve), '.')
+ax1.plot(tilt_values, np.log10(rocking_curve), '.')
 ax1.plot(interp_tilt, np.log10(interp_curve))
 ax1.set_xlabel('Rocking angle (deg)')
 ax1.set_ylabel('Log(integrated intensity)')
@@ -241,47 +225,40 @@ plt.pause(0.1)
 bragg_x = detector.roi[2] + x0  # convert it in full detector pixel
 bragg_y = detector.roi[0] + y0  # convert it in full detector pixel
 
-x_direct_0 = directbeam_x + setup_post.inplane_coeff() *\
+x_direct_0 = directbeam_x + setup.inplane_coeff *\
              (direct_inplane*np.pi/180*sdd/detector.pixelsize_x)  # inplane_coeff is +1 or -1
-y_direct_0 = directbeam_y - setup_post.outofplane_coeff() *\
+y_direct_0 = directbeam_y - setup.outofplane_coeff *\
              direct_outofplane*np.pi/180*sdd/detector.pixelsize_y   # outofplane_coeff is +1 or -1
 
-print("\nDirect beam at (gam=", str(direct_inplane), "del=", str(direct_outofplane),
-      ") = (X, Y): ", directbeam_x, directbeam_y)
-print("Direct beam at (gam= 0, del= 0) = (X, Y): ", str('{:.2f}'.format(x_direct_0)), str('{:.2f}'.format(y_direct_0)))
-print("Bragg peak at (gam=", str(inplane), "del=", str(outofplane), ") = (X, Y): ",
-      str('{:.2f}'.format(bragg_x)), str('{:.2f}'.format(bragg_y)))
+print(f'\nDirect beam at (gam={direct_inplane}, del={direct_outofplane}) (X, Y): {directbeam_x}, {directbeam_y}')
+print(f'Direct beam at (gam=0, del=0) (X, Y): ({x_direct_0:.2f}, {y_direct_0:.2f})')
+print(f'\nBragg peak at (gam={setup.inplane_angle}, del={setup.outofplane_angle}) (X, Y): ({bragg_x:.2f}, {bragg_y:.2f})')
 
-bragg_inplane = inplane + setup_post.inplane_coeff() *\
+bragg_inplane = setup.inplane_angle + setup.inplane_coeff *\
                 (detector.pixelsize_x*(bragg_x-x_direct_0)/sdd*180/np.pi)  # inplane_coeff is +1 or -1
-bragg_outofplane = outofplane - setup_post.outofplane_coeff() *\
+bragg_outofplane = setup.outofplane_angle - setup.outofplane_coeff *\
                    detector.pixelsize_y*(bragg_y-y_direct_0)/sdd*180/np.pi   # outofplane_coeff is +1 or -1
 
-print("\nBragg angles before correction = (gam, del): ", str('{:.4f}'.format(inplane)),
-      str('{:.4f}'.format(outofplane)))
-print("\nBragg angles after correction = (gam, del): ", str('{:.4f}'.format(bragg_inplane)),
-      str('{:.4f}'.format(bragg_outofplane)))
+print(f'\nBragg angles before correction (gam, del): ({setup.inplane_angle:.4f}, {setup.outofplane_angle:.4f})')
+print(f'Bragg angles after correction (gam, del): ({bragg_inplane:.4f}, {bragg_outofplane:.4f})')
 
-# update setup_post with the corrected detector angles
-setup_post.inplane_angle = bragg_inplane
-setup_post.outofplane_angle = bragg_outofplane
+# update setup with the corrected detector angles
+setup.inplane_angle = bragg_inplane
+setup.outofplane_angle = bragg_outofplane
 
-rocking_step = tilt[1] - tilt[0]
-
-print("\nGrazing angle=", str('{:.4f}'.format(grazing)), 'deg')
-
-print("\nRocking step=", str('{:.5f}'.format(rocking_step)), 'deg')
+print(f'\nGrazing angle(s) = {setup.grazing_angle} deg')
+print(f'Rocking step = {setup.tilt_angle:.5f} deg')
 
 ####################################
 # wavevector transfer calculations #
 ####################################
-kin = 2*np.pi/setup_post.wavelength * np.asarray(beam_direction)  # in lab frame z downstream, y vertical, x outboard
-kout = setup_post.exit_wavevector()  # in lab.frame z downstream, y vertical, x outboard
+kin = 2*np.pi/setup.wavelength * np.asarray(beam_direction)  # in lab frame z downstream, y vertical, x outboard
+kout = setup.exit_wavevector  # in lab.frame z downstream, y vertical, x outboard
 q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
-Qnorm = np.linalg.norm(q)
-dist_plane = 2 * np.pi / Qnorm
-print("\nWavevector transfer of Bragg peak: ", q, str('{:.4f}'.format(Qnorm)))
-print("Interplanar distance: ", str('{:.6f}'.format(dist_plane)), "angstroms")
+qnorm = np.linalg.norm(q)
+dist_plane = 2 * np.pi / qnorm
+print(f'\nWavevector transfer of Bragg peak: {q}, Qnorm={qnorm:.4f}')
+print(f'Interplanar distance: {dist_plane:.6f} angstroms')
 
 if get_temperature:
     print('\nEstimating the temperature:')
@@ -291,22 +268,20 @@ if get_temperature:
 #########################
 # calculate voxel sizes #
 #########################
-#  update the detector angles in setup_post
-setup_post.inplane_angle = bragg_inplane
-setup_post.outofplane_angle = bragg_outofplane
-dz_realspace, dy_realspace, dx_realspace = setup_post.voxel_sizes((nb_frames, numy, numx), tilt_angle=rocking_step,
-                                                                  pixel_x=detector.pixelsize_x,
-                                                                  pixel_y=detector.pixelsize_y)
-
-print('\nReal space voxel size (z, y, x): ', str('{:.2f}'.format(dz_realspace)), 'nm',
-      str('{:.2f}'.format(dy_realspace)), 'nm', str('{:.2f}'.format(dx_realspace)), 'nm')
+#  update the detector angles in setup
+setup.inplane_angle = bragg_inplane
+setup.outofplane_angle = bragg_outofplane
+dz_realspace, dy_realspace, dx_realspace = setup.voxel_sizes((nb_frames, numy, numx), tilt_angle=setup.tilt_angle,
+                                                             pixel_x=detector.pixelsize_x,
+                                                             pixel_y=detector.pixelsize_y)
+print(f'Real space voxel size (z, y, x): ({dz_realspace:.2f}, {dy_realspace:.2f}, {dx_realspace:.2f}) (nm)')
 
 #################################
 # plot image at Bragg condition #
 #################################
 plt.figure()
 plt.imshow(np.log10(abs(data[int(round(z0)), :, :])), vmin=0, vmax=5)
-plt.title('Central slice at frame '+str(int(np.rint(z0))))
+plt.title(f'Central slice at frame {int(np.rint(z0))}')
 plt.colorbar()
 plt.ioff()
 plt.show()
