@@ -514,8 +514,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     nz, ny, nx = np.shape(data)
     print('\nInput data shape:', nz, ny, nx)
 
-    binning_comment = '_' + str(previous_binning[0] * binning[0]) + '_' + str(previous_binning[1] * binning[1]) +\
-                      '_' + str(previous_binning[2] * binning[2])
+    binning_comment = f'_{previous_binning[0]*binning[0]}' \
+                      f'_{previous_binning[1]*binning[1]}_{previous_binning[2]*binning[2]}'
 
     if not reload_orthogonal:
         if save_rawdata:
@@ -868,7 +868,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             del numz
     nz, ny, nx = data.shape
     print('\nData size after binning the stacking dimension:', data.shape)
-    comment = comment + "_" + str(nz) + "_" + str(ny) + "_" + str(nx) + binning_comment
+    comment = f'{comment}_{nz}_{ny}_{nx}' + binning_comment
 
     ############################
     # save final data and mask #
