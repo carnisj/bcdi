@@ -1071,21 +1071,23 @@ def find_bragg(data, peak_method):
         z0 = 0
         if peak_method == 'max':
             y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
-            print("Max at (y, x): ", y0, x0, ' Max = ', int(data[y0, x0]))
+            print(f'Max at (y, x): ({y0}, {x0})  Max = {int(data[y0, x0])}')
         else:  # 'com'
             y0, x0 = center_of_mass(data)
-            print("Center of mass at (y, x): ", y0, x0, ' COM = ', int(data[int(y0), int(x0)]))
+            print(f'Center of mass at (y, x): ({y0:.1f}, {x0:.1f})  COM = {int(data[int(y0), int(x0)])}')
     elif data.ndim == 3:
         if peak_method == 'max':
             z0, y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
-            print("Max at (z, y, x): ", z0, y0, x0, ' Max = ', int(data[z0, y0, x0]))
+            print(f'Max at (z, y, x): ({z0}, {y0}, {x0})  Max = {int(data[z0, y0, x0])}')
         elif peak_method == 'com':
             z0, y0, x0 = center_of_mass(data)
-            print("Center of mass at (z, y, x): ", z0, y0, x0, ' COM = ', int(data[int(z0), int(y0), int(x0)]))
-        else:
+            print(f'Center of mass at (z, y, x): ({z0:.1f}, {y0:.1f}, {x0:.1f})  '
+                  f'COM = {int(data[int(z0), int(y0), int(x0)])}')
+        else:  # 'maxcom'
             z0, _, _ = np.unravel_index(abs(data).argmax(), data.shape)
             y0, x0 = center_of_mass(data[z0, :, :])
-            print("MaxCom at (z, y, x): ", z0, y0, x0, ' Max = ', int(data[int(z0), int(y0), int(x0)]))
+            print(f'MaxCom at (z, y, x): ({z0:.1f}, {y0:.1f}, {x0:.1f})  '
+                  f'COM = {int(data[int(z0), int(y0), int(x0)])}')
     else:
         raise ValueError('Data should be 2D or 3D')
 
@@ -2191,7 +2193,7 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
         else:
             nb_overlap = nb_overlap + 1
 
-    return newdata, newmask, monitor, frames_logical
+    return newdata, newmask, monitor, frames_logical.astype(int)
 
 
 def load_filtered_data(detector):
@@ -2945,7 +2947,7 @@ def motor_positions_id01(logfile, scan_number, setup, **kwargs):
     frames_logical = kwargs.get('frames_logical', None)
     valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.motor_positions_id01')
     if frames_logical is not None:
-        assert isinstance(frames_logical, list) and all(val in {-1, 0, 1} for val in frames_logical),\
+        assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
             'frames_logical should be a list of values in {-1, 0, 1}'
 
     energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
@@ -3233,25 +3235,24 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
             tilt, _, _, inplane, outofplane, _, _ = \
                 motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
-                                     kwargs={'frames_logical': frames_logical, 'follow_bragg': follow_bragg})
-            grazing = 0
+                                     frames_logical=frames_logical, follow_bragg=follow_bragg)
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing, _, tilt, inplane, outofplane, _, _ = \
+            _, _, tilt, inplane, outofplane, _, _ = \
                 motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
-                                     kwargs={'frames_logical': frames_logical, 'follow_bragg': follow_bragg})
+                                     frames_logical=frames_logical, follow_bragg=follow_bragg)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
         if setup.rocking_angle == 'inplane':  # mu rocking curve
-            grazing, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile=logfile, setup=setup)
+            _, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile=logfile, setup=setup,
+                                                                   frames_logical=frames_logical)
         else:
             raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
 
     elif setup.beamline == 'CRISTAL':
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             tilt, inplane, outofplane = motor_positions_cristal(logfile, setup)
-            grazing = 0
             inplane = inplane[0]
             outofplane = outofplane[0]
         else:
@@ -3260,24 +3261,23 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
     elif setup.beamline == 'P10':
         if setup.rocking_angle == 'outofplane':  # om rocking curve
             tilt, _, _, _, inplane, outofplane = motor_positions_p10(logfile=logfile, setup=setup)
-            grazing = 0
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile=logfile, setup=setup)
+            _, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile=logfile, setup=setup)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
     elif setup.beamline == 'NANOMAX':  # theta, phi, gamma, delta, energy, radius
         if setup.rocking_angle == 'outofplane':  # theta rocking curve
             tilt, _, inplane, outofplane, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
-            grazing = 0
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing, tilt, inplane, outofplane, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
+            _, tilt, inplane, outofplane, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
 
+    grazing = grazing_angle(logfile, scan_number, setup)
     return tilt, grazing, inplane, outofplane
 
 
