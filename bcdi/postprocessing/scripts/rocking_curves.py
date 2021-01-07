@@ -41,7 +41,7 @@ x_axis = []
 [x_axis.append(0.8) for _ in range(15)]
 # values against which the Bragg peak center of mass evolution will be plotted, leave [] otherwise
 x_label = 'voltage (V)'  # label for the X axis in plots, leave '' otherwise
-user_comment = '_BCDI_RC'  # comment for the saving filename, should start with _
+comment = '_BCDI_RC'  # comment for the saving filename, should start with _
 strain_range = 0.00005  # range for the plot of the q value
 peak_method = 'max_com'  # Bragg peak determination: 'max', 'com', 'max_com' (max then com)
 debug = False  # set to True to see more plots
@@ -113,8 +113,8 @@ my_cmap = colormap.cmap
 ########################################
 # check and initialize some parameters #
 ########################################
-print('\n{:d} scans:'.format(len(scans)), scans)
-print('\n {:d} x_axis values provided:'.format(len(x_axis)))
+print(f'\n{len(scans)} scans: {scans}')
+print(f'\n {len(x_axis)} x_axis values provided:')
 if len(x_axis) == 0:
     x_axis = np.arange(len(scans))
 assert len(x_axis) == len(scans), 'the length of x_axis should be equal to the number of scans'
@@ -168,7 +168,6 @@ hotpix_array = pru.load_hotpixels(hotpixels_file)
 
 for scan_idx, scan_nb in enumerate(scans, start=1):
 
-    comment = user_comment  # re-initialize comment
     tmp_str = f'Scan {scan_idx}/{len(scans)}: S{scan_nb}'
     print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
 
@@ -176,6 +175,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     setup.init_paths(detector=detector, sample_name=sample_name[scan_idx-1], scan_number=scan_nb,
                      root_folder=root_folder, save_dir=save_dir, verbose=True, create_savedir=True,
                      specfile_name=specfile_name, template_imagefile=template_imagefile)
+
+    # override the saving directory, we want to save results at the same place
+    detector.savedir = save_dir
 
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan_nb,
                                  root_folder=root_folder, filename=detector.specfile)
@@ -206,7 +208,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, plot_colorbar=True, cmap=my_cmap,
                                         title='scan'+str(scan_nb), scale='log', is_orthogonal=False,
                                         reciprocal_space=True)
-        fig.text(0.60, 0.30, "(piz, piy, pix) = ({:.1f}, {:.1f}, {:.1f})".format(piz, piy, pix), size=12)
+        fig.text(0.60, 0.30, f"(piz, piy, pix) = ({piz:.1f}, {piy:.1f}, {pix:.1f})", size=12)
         plt.draw()
 
         if peak_method == 'max_com':
@@ -214,7 +216,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                                  int(max_x) - debug_pix:int(max_x) + debug_pix], sum_frames=True,
                                             plot_colorbar=True, cmap=my_cmap, title='scan'+str(scan_nb),
                                             scale='log', is_orthogonal=False, reciprocal_space=True)
-            fig.text(0.60, 0.30, "(com_z, com_y, com_x) = ({:.1f}, {:.1f}, {:.1f})".format(com_z, com_y, com_x),
+            fig.text(0.60, 0.30, f"(com_z, com_y, com_x) = ({com_z:.1f}, {com_y:.1f}, {com_x:.1f})",
                      size=12)
             plt.draw()
         print('')
@@ -291,7 +293,7 @@ for fig_idx in range(nb_fig):
         scan_counter = scan_counter + 1
     plt.tight_layout()
     plt.pause(0.1)
-    fig.savefig(detector.savedir + 'check-roi' + str(fig_idx+1) + comment + '.png')
+    fig.savefig(detector.savedir + f'check-roi{fig_idx+1}' + comment + '.png')
 
 ##########################################################
 # plot the evolution of the center of mass and intensity #
