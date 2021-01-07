@@ -118,8 +118,8 @@ template_imagefile = '_master.h5'
 ###################################################
 # parameters related to the refraction correction #
 ###################################################
-correct_refraction = False  # True for correcting the phase shift due to refraction
-correct_absorption = False  # True for correcting the amplitude for absorption
+correct_refraction = True  # True for correcting the phase shift due to refraction
+correct_absorption = True  # True for correcting the amplitude for absorption
 optical_path_method = 'threshold'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove only outer layers even if
 # the amplitude is lower than isosurface_strain inside the crystal
@@ -585,32 +585,32 @@ if correct_refraction or correct_absorption:
     bulk = pu.find_bulk(amp=amp, support_threshold=threshold_unwrap_refraction, method=optical_path_method,
                         debugging=debug)
     # calculate the optical path of the incoming wavevector
-    path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=True)  # path_in already in nm
+    path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=debug)  # path_in already in nm
 
     # calculate the optical path of the outgoing wavevector
-    path_out = pu.get_opticalpath(support=bulk, direction="out", k=kout, debugging=True)  # path_our already in nm
+    path_out = pu.get_opticalpath(support=bulk, direction="out", k=kout, debugging=debug)  # path_our already in nm
 
     optical_path = path_in + path_out
-    del bulk, path_in, path_out
+    del path_in, path_out
     gc.collect()
 
     if correct_refraction:
         phase_correction = 2 * np.pi / (1e9 * setup.wavelength) * dispersion * optical_path
         phase = phase + phase_correction
 
-        gu.multislices_plot(phase_correction, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                            sum_frames=False, plot_colorbar=True, vmin=0, vmax=np.pi/2,
-                            title='Refraction correction')
+        gu.multislices_plot(np.multiply(phase_correction, bulk), width_z=2 * zrange, width_y=2 * yrange,
+                            width_x=2 * xrange, sum_frames=False, plot_colorbar=True, vmin=0, vmax=np.pi/2,
+                            title='Refraction correction on the support', is_orthogonal=True, reciprocal_space=False)
 
     if correct_absorption:
         amp_correction = np.exp(2 * np.pi / (1e9 * setup.wavelength) * absorption * optical_path)
         amp = amp * amp_correction
 
-        gu.multislices_plot(amp_correction, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                            sum_frames=False, plot_colorbar=True, vmin=1, vmax=1.1,
-                            title='Absorption correction')
+        gu.multislices_plot(np.multiply(amp_correction, bulk), width_z=2 * zrange, width_y=2 * yrange,
+                            width_x=2 * xrange, sum_frames=False, plot_colorbar=True, vmin=1, vmax=1.1,
+                            title='Absorption correction on the support', is_orthogonal=True, reciprocal_space=False)
 
-    del optical_path
+    del bulk, optical_path
     gc.collect()
 
 ##############################################
