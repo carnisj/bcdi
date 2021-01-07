@@ -987,7 +987,7 @@ class Setup(object):
         return detector_obj
 
     def init_paths(self, detector, sample_name, scan_number, root_folder, save_dir, specfile_name, template_imagefile,
-                   verbose=False):
+                   save_dirname='result', verbose=False):
         """
         Update the detector instance with initialized paths and template for filenames depending on the beamline
 
@@ -995,7 +995,7 @@ class Setup(object):
         :param sample_name: string in front of the scan number in the data folder name.
         :param scan_number: the scan number
         :param root_folder: folder of the experiment, where all scans are stored
-        :param save_dir: directory where to save the analysis results
+        :param save_dir: path of the directory where to save the analysis results
         :param specfile_name: beamline-dependent string
          - ID01: name of the spec file without '.spec'
          - SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -1008,6 +1008,7 @@ class Setup(object):
          - P10: '_master.h5'
          - NANOMAX: '%06d.h5'
          - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+        :param save_dirname: name of the saving folder, by default 'save_dir/result/' will be created
         :param verbose: True to print the paths
         """
         if not isinstance(detector, Detector):
@@ -1036,9 +1037,9 @@ class Setup(object):
             specfile = specfile_name
             scan_template = sample_name + '_' + str(scan_number) + '/'  # used to create the folder
         if save_dir:
-            savedir = save_dir + scan_template + 'result/'
+            savedir = save_dir + scan_template + save_dirname + '/'
         else:
-            savedir = homedir + 'result/'
+            savedir = homedir + save_dirname + '/'
         detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
             savedir, datadir, specfile, template_imagefile
         if verbose:
