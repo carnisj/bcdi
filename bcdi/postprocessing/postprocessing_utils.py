@@ -1002,7 +1002,8 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
     path = np.zeros((nbz, nby, nbx))
     if debugging:
         gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x, vmin=0, vmax=1,
-                            sum_frames=False, title='Support for optical path')
+                            sum_frames=False, title='Support for optical path', is_orthogonal=True,
+                            reciprocal_space=False)
 
     indices_support = np.nonzero(support)
     min_z = indices_support[0].min()
@@ -1011,17 +1012,17 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
     max_y = indices_support[1].max() + 1  # last point not included in range()
     min_x = indices_support[2].min()
     max_x = indices_support[2].max() + 1  # last point not included in range()
-    print("Support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):(",
-          min_z, ',', max_z, ',', min_y, ',', max_y, ',', min_x, ',', max_x, ')')
+    print(f"Support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):{min_z}, {max_z}, {min_y}, {max_y},"
+          f" {min_x}, {max_x}")
 
     # normalize k, now it is in units of voxels
     if direction == "in":
-        k_norm = -1 * k / np.linalg.norm(k)  # we will work with -k_in
+        k_norm = -1 / np.linalg.norm(k) * np.asarray(k)  # we will work with -k_in
     else:  # "out"
-        k_norm = k / np.linalg.norm(k)
+        k_norm = 1 / np.linalg.norm(k) * np.asarray(k)
 
     if direction == "in" and np.allclose(k_norm, np.array([-1, 0, 0]), rtol=1e-08, atol=1e-08):
-        # data orthogonalized in laboratory frame, k_in along axis 0
+        # data orthogonalized in the laboratory frame, k_in along axis 0
         for idz in range(min_z, max_z, 1):
             path[idz, :, :] = support[0:idz+1, :, :].sum(axis=0) * voxel_size[0]  # include also the pixel
         path = np.multiply(path, support)
@@ -1053,8 +1054,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
 
     if debugging:
         gu.multislices_plot(path, width_z=width_z, width_y=width_y, width_x=width_x,
-                            title='Optical path ' + direction)
-
+                            title='Optical path ' + direction, is_orthogonal=True, reciprocal_space=False)
     return path
 
 
@@ -1837,11 +1837,11 @@ def unwrap(obj, support_threshold, seed=0, debugging=True):
     return phase_unwrapped, extent_phase
 
 
-if __name__ == "__main__":
-    siz = 100
-    obj = np.zeros((siz, siz, siz))
-    obj[siz//2-10:siz//2+11, siz//2-10:siz//2+11, siz//2-10:siz//2+11] = 1
-    # gu.multislices_plot(obj)
-    obj_rot = rotate_crystal(array=obj, axis_to_align=(2,2,0), reference_axis=(0,1,0), voxel_size=(10,10,10),
-                             debugging=True)
-    plt.show()
+# if __name__ == "__main__":
+#     siz = 100
+#     obj = np.zeros((siz, siz, siz))
+#     obj[siz//2-10:siz//2+11, siz//2-10:siz//2+11, siz//2-10:siz//2+11] = 1
+#     # gu.multislices_plot(obj)
+#     obj_rot = rotate_crystal(array=obj, axis_to_align=(2,2,0), reference_axis=(0,1,0), voxel_size=(10,10,10),
+#                              debugging=True)
+#     plt.show()
