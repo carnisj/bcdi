@@ -1035,13 +1035,13 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
                     # For each voxel, counter is the number of steps along the unitary k vector where the support is
                     # non zero. Now we need to convert this into nm using the voxel size, different in each dimension
                     endpoint = np.array([idz, idy, idx]) + counter * k_norm  # indices of the final voxel
-                    path[idz, idy, idx] = np.sqrt(((np.rint(endpoint[0])-idz) * voxel_size[0])**2
-                                                  + ((np.rint(endpoint[1])-idy)*voxel_size[1])**2
-                                                  + ((np.rint(endpoint[2])-idx)*voxel_size[2])**2)
+                    path[idz, idy, idx] = np.sqrt(((np.rint(endpoint[0])-idz) * voxel_size[0])**2 +
+                                                  ((np.rint(endpoint[1])-idy) * voxel_size[1])**2 +
+                                                  ((np.rint(endpoint[2])-idx) * voxel_size[2])**2)
 
     if debugging:
-        gu.multislices_plot(path, width_z=width_z, width_y=width_y, width_x=width_x,
-                            title='Optical path ' + direction, is_orthogonal=True, reciprocal_space=False)
+        gu.multislices_plot(path, width_z=width_z, width_y=width_y, width_x=width_x, plot_colorbar=True, vmin=0,
+                            title='Optical path (nm)' + direction, is_orthogonal=True, reciprocal_space=False)
     return path
 
 
