@@ -996,7 +996,7 @@ class Setup(object):
         :param sample_name: string in front of the scan number in the data folder name.
         :param scan_number: the scan number
         :param root_folder: folder of the experiment, where all scans are stored
-        :param save_dir: path of the directory where to save the analysis results
+        :param save_dir: path of the directory where to save the analysis results, can be None
         :param specfile_name: beamline-dependent string
          - ID01: name of the spec file without '.spec'
          - SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
