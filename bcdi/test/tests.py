@@ -42,6 +42,9 @@ class TestValidation(unittest.TestCase):
     def test_validcontainer_container_set(self):
         self.assertTrue(valid.valid_container(set(), container_types=set))
 
+    def test_validcontainer_container_string(self):
+        self.assertTrue(valid.valid_container('test', container_types=str))
+
     def test_validcontainer_container_types_none(self):
         self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=None)
 
@@ -65,6 +68,12 @@ class TestValidation(unittest.TestCase):
 
     def test_validcontainer_container_length_null(self):
         self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=list, length=0)
+
+    def test_validcontainer_container_string_length(self):
+        self.assertTrue(valid.valid_container('test', container_types=str, length=4))
+
+    def test_validcontainer_container_string_wrong_length(self):
+        self.assertRaises(ValueError, valid.valid_container, obj='test', container_types=str, length=2)
 
     def test_validcontainer_container_minlength_float(self):
         self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, min_length=2.3)

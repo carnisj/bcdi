@@ -33,7 +33,7 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
         container_types = (container_types,)
     if not all(isinstance(val, type) for val in container_types):
         raise TypeError('container_types should be a collection of valid types')
-    if not all(val in {list, tuple, set} for val in container_types):
+    if not all(val in {list, tuple, set, str} for val in container_types):
         raise TypeError('container_types should be a collection of types inheriting from {tuple, list, set}')
 
     if length is not None:
