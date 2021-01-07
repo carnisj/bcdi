@@ -3281,7 +3281,7 @@ def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False
     return tilt, grazing, inplane, outofplane
 
 
-def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_min=True, debugging=False):
+def normalize_dataset(array, raw_monitor, frames_logical, savedir=None, norm_to_min=True, debugging=False):
     """
     Normalize array using the monitor values.
 
@@ -3369,7 +3369,10 @@ def normalize_dataset(array, raw_monitor, frames_logical, savedir='', norm_to_mi
                                 xlabel=('Frame number', 'Detector X', 'Detector X'), is_orthogonal=False,
                                 ylabel=('Counts (a.u.)', 'Frame number', 'Frame number'),
                                 position=(211, 223, 224), reciprocal_space=True)
-        fig.savefig(savedir + 'monitor_' + str(nbz) + '_' + str(nby) + '_' + str(nbx) + '.png')
+        if savedir is not None:
+            fig.savefig(savedir + f'monitor_{nbz}_{nby}_{nbx}.png')
+        else:
+            print('normalize_dataset(): savedir not provided, cannot save the normalization plot')
         plt.close(fig)
 
     return array, monitor
