@@ -995,14 +995,15 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
         raise ValueError('voxel_size should be a list/tuple of 3 positive numbers')
     assert len(voxel_size) == 3, 'voxel_size should be a list/tuple of 3 numbers'
 
-    # correct k for the different voxel size in each dimension, k is expressed in the unit of nanometers now
+    # correct k for the different voxel size in each dimension since we will use unitary translations along k
     k = [k[i] * voxel_size[i] for i in range(3)]
 
     nbz, nby, nbx = support.shape
     path = np.zeros((nbz, nby, nbx))
     if debugging:
         gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x, vmin=0, vmax=1,
-                            sum_frames=False, title='Support for optical path')
+                            sum_frames=False, title='Support for optical path', is_orthogonal=True,
+                            reciprocal_space=False)
 
     indices_support = np.nonzero(support)
     min_z = indices_support[0].min()
@@ -1015,7 +1016,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
           min_z, ',', max_z, ',', min_y, ',', max_y, ',', min_x, ',', max_x, ')')
 
     if direction == "in":
-        k_norm = -1 * k / np.linalg.norm(k)  # we will work with -k_in
+        k_norm = -1 / np.linalg.norm(k) * np.asarray(k)  # we will work with -k_in
         if np.array_equal(k_norm, np.array([-1, 0, 0])):  # data orthogonalized in laboratory frame, k_in along axis 0
             for idz in range(min_z, max_z, 1):
                 path[idz, :, :] = support[0:idz+1, :, :].sum(axis=0) * voxel_size[0]  # include also the pixel
@@ -1044,7 +1045,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
                             path[idz, idy, idx] = 0
 
     if direction == "out":
-        k_norm = k / np.linalg.norm(k)
+        k_norm = 1 / np.linalg.norm(k) * np.asarray(k)
         for idz in range(min_z, max_z, 1):
             for idy in range(min_y, max_y, 1):
                 for idx in range(min_x, max_x, 1):
@@ -1066,11 +1067,11 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
 
     if debugging:
         gu.multislices_plot(path, width_z=width_z, width_y=width_y, width_x=width_x,
-                            title='Optical path ' + direction)
+                            title='Optical path ' + direction, is_orthogonal=True, reciprocal_space=False)
 
-    # For each voxel, counter is the number of steps along the unitary k vector where the support is non zero.
-    # Since k was already expressed in units of nm taking into account different voxel sizes in each dimension, the
-    # counter itself is also in unit of nm and no further calculation is needed
+    # For each voxel, counter is the number of steps along the unitary k_norm vector where the support is non zero.
+    # Since k_norm was already expressed in units of nm taking into account different voxel sizes in each dimension,
+    # the counter itself is also in unit of nm and no further calculation is needed
     return path
 
 
