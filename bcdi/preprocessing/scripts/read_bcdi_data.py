@@ -148,8 +148,8 @@ if high_threshold != 0:
 # calculate rocking curve and fit it to get the FWHM #
 ######################################################
 if data.ndim == 3:
-    tilt, _, _, _ = pru.motor_values(frames_logical=frames_logical, logfile=logfile, scan_number=scan, setup=setup,
-                                     follow_bragg=False)
+    tilt, _, _, _ = pru.goniometer_values(frames_logical=frames_logical, logfile=logfile, scan_number=scan,
+                                          setup=setup)
     rocking_curve = np.zeros(numz)
 
     z0, y0, x0 = pru.find_bragg(data, peak_method=peak_method)

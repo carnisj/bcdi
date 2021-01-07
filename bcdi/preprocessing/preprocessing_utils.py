@@ -1120,6 +1120,69 @@ def get_motor_pos(logfile, scan_number, setup, motor_name):
     return motor_pos
 
 
+def goniometer_values(frames_logical, logfile, scan_number, setup, follow_bragg=False):
+    """
+    Extract goniometer motor positions for a BCDI rocking scan.
+
+    :param follow_bragg: True when for energy scans the detector was also scanned to follow the Bragg peak
+    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param scan_number: the scan number to load
+    :param setup: the experimental setup: Class Setup
+    :return: (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
+     corrected values
+    """
+    if setup.beamline == 'ID01':  # eta, chi, phi, nu, delta, energy, frames_logical
+        if setup.rocking_angle == 'outofplane':  # eta rocking curve
+            tilt, _, _, inplane, outofplane, _, _ = \
+                motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
+                                     frames_logical=frames_logical, follow_bragg=follow_bragg)
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            _, _, tilt, inplane, outofplane, _, _ = \
+                motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
+                                     frames_logical=frames_logical, follow_bragg=follow_bragg)
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+    elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
+        if setup.rocking_angle == 'inplane':  # mu rocking curve
+            _, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile=logfile, setup=setup,
+                                                                   frames_logical=frames_logical)
+        else:
+            raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
+
+    elif setup.beamline == 'CRISTAL':
+        if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
+            tilt, inplane, outofplane = motor_positions_cristal(logfile, setup)
+            inplane = inplane[0]
+            outofplane = outofplane[0]
+        else:
+            raise ValueError('Inplane rocking curve not implemented for CRISTAL')
+
+    elif setup.beamline == 'P10':
+        if setup.rocking_angle == 'outofplane':  # om rocking curve
+            tilt, _, _, _, inplane, outofplane = motor_positions_p10(logfile=logfile, setup=setup)
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            _, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile=logfile, setup=setup)
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+    elif setup.beamline == 'NANOMAX':  # theta, phi, gamma, delta, energy, radius
+        if setup.rocking_angle == 'outofplane':  # theta rocking curve
+            tilt, _, inplane, outofplane, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            _, tilt, inplane, outofplane, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+    else:
+        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
+
+    grazing = grazing_angle(logfile, scan_number, setup)
+    return tilt, grazing, inplane, outofplane
+
+
 def grazing_angle(logfile, scan_number, setup):
     """
     Get the value(s) of the position(s) of goniometer circle(s) below the rocking circle.
@@ -1129,6 +1192,7 @@ def grazing_angle(logfile, scan_number, setup):
     :param setup: the experimental setup: Class Setup
     :return: a tuple containing the value(s) of the position(s) of goniometer circle(s) below the rocking circle.
     """
+    # TODO: merge this into goniometer_values
     if not isinstance(setup, exp.Setup):
         raise TypeError('setup should be of type experiment.experiment_utils.Setup')
     if not isinstance(scan_number, int) or scan_number <= 0:
@@ -3216,69 +3280,6 @@ def motor_positions_sixs(logfile, setup, **kwargs):
         gamma = setup.custom_motors["gamma"]
         mu = setup.custom_motors["mu"]
     return beta, mu, gamma, delta, frames_logical
-
-
-def motor_values(frames_logical, logfile, scan_number, setup, follow_bragg=False):
-    """
-    Load the Bragg CDI scan data and extract goniometer motor positions.
-
-    :param follow_bragg: True when for energy scans the detector was also scanned to follow the Bragg peak
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
-    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param scan_number: the scan number to load
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
-     corrected values
-    """
-    if setup.beamline == 'ID01':  # eta, chi, phi, nu, delta, energy, frames_logical
-        if setup.rocking_angle == 'outofplane':  # eta rocking curve
-            tilt, _, _, inplane, outofplane, _, _ = \
-                motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
-                                     frames_logical=frames_logical, follow_bragg=follow_bragg)
-        elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            _, _, tilt, inplane, outofplane, _, _ = \
-                motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
-                                     frames_logical=frames_logical, follow_bragg=follow_bragg)
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
-        if setup.rocking_angle == 'inplane':  # mu rocking curve
-            _, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile=logfile, setup=setup,
-                                                                   frames_logical=frames_logical)
-        else:
-            raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
-
-    elif setup.beamline == 'CRISTAL':
-        if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
-            tilt, inplane, outofplane = motor_positions_cristal(logfile, setup)
-            inplane = inplane[0]
-            outofplane = outofplane[0]
-        else:
-            raise ValueError('Inplane rocking curve not implemented for CRISTAL')
-
-    elif setup.beamline == 'P10':
-        if setup.rocking_angle == 'outofplane':  # om rocking curve
-            tilt, _, _, _, inplane, outofplane = motor_positions_p10(logfile=logfile, setup=setup)
-        elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            _, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile=logfile, setup=setup)
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    elif setup.beamline == 'NANOMAX':  # theta, phi, gamma, delta, energy, radius
-        if setup.rocking_angle == 'outofplane':  # theta rocking curve
-            tilt, _, inplane, outofplane, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
-        elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            _, tilt, inplane, outofplane, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    else:
-        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
-
-    grazing = grazing_angle(logfile, scan_number, setup)
-    return tilt, grazing, inplane, outofplane
 
 
 def normalize_dataset(array, raw_monitor, frames_logical, savedir=None, norm_to_min=True, debugging=False):
