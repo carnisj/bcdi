@@ -59,7 +59,7 @@ binning = (1, 1, 1)  # binning to apply to the data
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = True  # True to interact with plots, False to close it automatically
+flag_interact = False  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
@@ -83,7 +83,7 @@ normalize_flux = 'skip'  # 'monitor' to normalize the intensity by the default m
 # parameters for data filtering #
 #################################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
-flag_medianfilter = 'interp_isolated'
+flag_medianfilter = 'skip'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -300,24 +300,36 @@ if len(scans) > 1:
 if len(fix_size) != 0:
     print('"fix_size" parameter provided, roi_detector will be set to []')
     roi_detector = []
+    print("'fix_size' parameter provided, defaulting 'center_fft' to 'skip'")
+    center_fft = 'skip'
 
 if correct_curvature:
     raise NotImplementedError('correction of the curvature of Ewalt sphere not yet implemented, defaulting to False')
     # TODO: implement this
 
-if not reload_previous:
+if reload_previous:
+    create_savedir = False
+else:
+    create_savedir = True
     previous_binning = (1, 1, 1)
     reload_orthogonal = False
 
 if reload_orthogonal:
     use_rawdata = False
 
-if not use_rawdata and not reload_orthogonal and previous_binning[0] != 1:
-    raise ValueError('previous_binning along axis 0 should be 1 when gridding reloaded data (angles will not match)')
+if use_rawdata:
+    save_dirname = 'pynxraw'
+    print('Output will be non orthogonal, in the detector frame')
+    plot_title = ['YZ', 'XZ', 'XY']
+else:
+    save_dirname = 'pynx'
+    print('Output will be orthogonalized by xrayutilities')
+    plot_title = ['QzQx', 'QyQx', 'QyQz']
+    if not reload_orthogonal and previous_binning[0] != 1:
+        raise ValueError('previous_binning along axis 0 should be 1 when gridding reloaded data (angles won\'t match)')
 
 if isinstance(sample_name, str):
     sample_name = [sample_name for idx in range(len(scans))]
-
 valid.valid_container(sample_name, container_types=(tuple, list), length=len(scans), item_types=str,
                       name='preprocess_bcdi')
 
@@ -398,12 +410,14 @@ root.withdraw()
 for scan_idx, scan_nb in enumerate(scans, start=1):
     plt.ion()
 
-    comment = user_comment  # initialize comment
+    comment = user_comment  # re-initialize comment
     tmp_str = f'Scan {scan_idx}/{len(scans)}: S{scan_nb}'
     print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
+
+    # initialize the paths
     setup.init_paths(detector=detector, sample_name=sample_name[scan_idx-1], scan_number=scan_nb,
-                     root_folder=root_folder, save_dir=save_dir, specfile_name=specfile_name,
-                     template_imagefile=template_imagefile, verbose=True)
+                     root_folder=root_folder, save_dir=save_dir, save_dirname=save_dirname, verbose=True,
+                     create_savedir=create_savedir, specfile_name=specfile_name, template_imagefile=template_imagefile)
 
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan_nb,
                                  root_folder=root_folder, filename=detector.specfile)
@@ -411,21 +425,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     if not use_rawdata:
         setup.grazing_angle = pru.grazing_angle(logfile=logfile, scan_number=scan_nb, setup=setup)
         comment = comment + '_ortho'
-        detector.savedir = detector.savedir + "pynx/"
-        pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
-        print('Output will be orthogonalized by xrayutilities')
-        plot_title = ['QzQx', 'QyQx', 'QyQz']
-    else:
-        detector.savedir = detector.savedir + "pynxraw/"
-        pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
-        print('Output will be non orthogonal, in the detector frame')
-        plot_title = ['YZ', 'XZ', 'XY']
-
-    if not fix_size:  # output_size not defined, default to actual size
-        pass
-    else:
-        print("'fix_size' parameter provided, defaulting 'center_fft' to 'skip'")
-        center_fft = 'skip'
 
     if normalize_flux:
         comment = comment + '_norm'

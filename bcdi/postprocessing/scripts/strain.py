@@ -244,8 +244,8 @@ setup = exp.Setup(beamline=beamline, energy=energy, outofplane_angle=outofplane_
 # Initialize the paths and the logfile #
 ########################################
 setup.init_paths(detector=detector, sample_name=sample_name, scan_number=scan, root_folder=root_folder,
-                 save_dir=save_dir, specfile_name=specfile_name, template_imagefile=template_imagefile)
-pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
+                 save_dir=save_dir, specfile_name=specfile_name, template_imagefile=template_imagefile,
+                 create_savedir=True)
 
 logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
                              filename=detector.specfile)
