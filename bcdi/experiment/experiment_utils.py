@@ -11,6 +11,7 @@ from math import isclose
 from numbers import Real
 import numpy as np
 import os
+import pathlib
 from scipy.interpolate import RegularGridInterpolator
 import sys
 import warnings
@@ -987,7 +988,7 @@ class Setup(object):
         return detector_obj
 
     def init_paths(self, detector, sample_name, scan_number, root_folder, save_dir, specfile_name, template_imagefile,
-                   save_dirname='result', verbose=False):
+                   save_dirname='result', create_savedir=False, verbose=False):
         """
         Update the detector instance with initialized paths and template for filenames depending on the beamline
 
@@ -1009,6 +1010,7 @@ class Setup(object):
          - NANOMAX: '%06d.h5'
          - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
         :param save_dirname: name of the saving folder, by default 'save_dir/result/' will be created
+        :param create_savedir: boolean, True to create the saving folder if it does not exist
         :param verbose: True to print the paths
         """
         if not isinstance(detector, Detector):
@@ -1042,6 +1044,8 @@ class Setup(object):
             savedir = homedir + save_dirname + '/'
         detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
             savedir, datadir, specfile, template_imagefile
+        if create_savedir:
+            pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
         if verbose:
             print(f"datadir = '{datadir}'\nscandir = '{detector.scandir}'\nsavedir = '{savedir}'\n"
                   f"specfile = '{specfile}'\ntemplate_imagefile = '{template_imagefile}'\n")
