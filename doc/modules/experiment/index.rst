@@ -16,5 +16,8 @@ API Reference
 experiment_utils
 ^^^^^^^^^^^^^^^^
 
-.. automodule:: bcdi.experiment.experiment_utils
+.. autoclass:: bcdi.experiment.experiment_utils.Detector
+   :members:
+
+.. autoclass:: bcdi.experiment.experiment_utils.Setup
    :members:

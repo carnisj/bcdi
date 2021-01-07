@@ -339,12 +339,12 @@ gc.collect()
 ######################
 # centering of array #
 ######################
-if centering_method is 'max':
+if centering_method == 'max':
     avg_obj = pu.center_max(avg_obj)
     # shift based on max value, required if it spans across the edge of the array before COM
-elif centering_method is 'com':
+elif centering_method == 'com':
     avg_obj = pu.center_com(avg_obj)
-elif centering_method is 'max_com':
+elif centering_method == 'max_com':
     avg_obj = pu.center_max(avg_obj)
     avg_obj = pu.center_com(avg_obj)
 
@@ -472,7 +472,7 @@ else:  # calculate the strain in the detector frame
     voxel_sizes = setup.voxel_sizes_detector(array_shape=original_size, tilt_angle=tilt_angle, pixel_x=pixel_size,
                                              pixel_y=pixel_size, debug=debug)
 
-    if strain_method is not 'defect':  # need to unwrap the phase in this case
+    if strain_method != 'defect':  # need to unwrap the phase in this case
         print('strain_method=', strain_method, ' - Unwrapping the phase before calculating the strain')
         phase, extent_phase = pu.unwrap(amp * np.exp(1j * phase), support_threshold=threshold_unwrap_refraction,
                                         debugging=debug)

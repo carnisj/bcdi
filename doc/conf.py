@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.abspath('..'))
 extensions = ['sphinx.ext.autodoc']  # , 'sphinxcontrib.napoleon']
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -76,7 +76,8 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
-autodoc_mock_imports = ['numpy', 'h5py', 'scipy', 'matplotlib', 'xrayutilities', 'fabio', 'silx', 'hdf5plugin', 'skimage']
+autodoc_mock_imports = ['numpy', 'scipy', 'skimage', 'matplotlib', 'hdf5plugin', 'h5py', 'vtk', 'mayavi',
+                        'xrayutilities', 'fabio', 'silx', 'lmfit', 'moviepy', 'mpl_toolkits', ]
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -93,7 +94,7 @@ html_theme = 'nature'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

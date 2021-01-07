@@ -19,7 +19,6 @@ image_registration
 .. automodule:: bcdi.utils.image_registration
    :members:
 
-
 utilities 
 ^^^^^^^^^
 

@@ -18,4 +18,3 @@ xcca_utils
 
 .. automodule:: bcdi.xcca.xcca_utils
    :members:
-

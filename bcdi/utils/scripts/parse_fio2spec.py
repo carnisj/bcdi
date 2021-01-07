@@ -44,7 +44,7 @@ def open_log(fn="SPOCK/spock_output_e1.log"):
 
         if myrow.count('Scan #') > 0:
             print(myrow)
-            scanno = re.findall("Scan #\d+", myrow)[0].split('#')[1]
+            scanno = re.findall(r"Scan #\d+", myrow)[0].split('#')[1]
             print(scanno)
             try:
                 print(int(scanno))

@@ -49,9 +49,9 @@ def align_obj(reference_obj, obj, method='modulus', support_threshold=None, prec
         obj = crop_pad(array=obj, output_shape=reference_obj.shape)
 
     # calculate the shift between the two arrays
-    if method is 'modulus':
+    if method == 'modulus':
         shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(obj), precision=precision)
-    elif method is 'support':
+    elif method == 'support':
         ref_support = np.zeros(reference_obj.shape)
         ref_support[abs(reference_obj) > support_threshold * abs(reference_obj).max()] = 1
         support = np.zeros(reference_obj.shape)
@@ -228,7 +228,7 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
         offset_x = avg_pix - pix
         print("center of mass offset with reference object: (", str('{:.2f}'.format(offset_z)), ',',
               str('{:.2f}'.format(offset_y)), ',', str('{:.2f}'.format(offset_x)), ') pixels')
-        if aligning_option is 'com':
+        if aligning_option == 'com':
             # re-sample data on a new grid based on COM shift of support
             old_z = np.arange(-nbz // 2, nbz // 2)
             old_y = np.arange(-nby // 2, nby // 2)
@@ -1759,16 +1759,16 @@ def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method=
         gc.collect()
 
         # order reconstructions by minimizing the quality factor
-    if sort_method is 'mean_amplitude':    # sort by quality_array[:, 0] first
+    if sort_method == 'mean_amplitude':    # sort by quality_array[:, 0] first
         sorted_obj = np.lexsort((quality_array[:, 3], quality_array[:, 2], quality_array[:, 1], quality_array[:, 0]))
 
-    elif sort_method is 'variance':        # sort by quality_array[:, 1] first
+    elif sort_method == 'variance':        # sort by quality_array[:, 1] first
         sorted_obj = np.lexsort((quality_array[:, 0], quality_array[:, 3], quality_array[:, 2], quality_array[:, 1]))
 
-    elif sort_method is 'variance/mean':   # sort by quality_array[:, 2] first
+    elif sort_method == 'variance/mean':   # sort by quality_array[:, 2] first
         sorted_obj = np.lexsort((quality_array[:, 1], quality_array[:, 0], quality_array[:, 3], quality_array[:, 2]))
 
-    elif sort_method is 'volume':          # sort by quality_array[:, 3] first
+    elif sort_method == 'volume':          # sort by quality_array[:, 3] first
         sorted_obj = np.lexsort((quality_array[:, 2], quality_array[:, 1], quality_array[:, 0], quality_array[:, 3]))
 
     else:  # default case, use the index of dispersion
