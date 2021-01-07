@@ -995,7 +995,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
         raise ValueError('voxel_size should be a list/tuple of 3 positive numbers')
     assert len(voxel_size) == 3, 'voxel_size should be a list/tuple of 3 numbers'
 
-    # correct k for the different voxel size in each dimension, k is expressed in the unit of nanometers now
+    # correct k for the different voxel size in each dimension (k is expressed in an orthonormal basis)
     k = [k[i] * voxel_size[i] for i in range(3)]
 
     nbz, nby, nbx = support.shape
@@ -1014,6 +1014,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
     print("Support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):(",
           min_z, ',', max_z, ',', min_y, ',', max_y, ',', min_x, ',', max_x, ')')
 
+    # normalize k, now it is in units of voxels
     if direction == "in":
         k_norm = -1 * k / np.linalg.norm(k)  # we will work with -k_in
     else:  # "out"
@@ -1029,31 +1030,31 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
         for idz in range(min_z, max_z, 1):
             for idy in range(min_y, max_y, 1):
                 for idx in range(min_x, max_x, 1):
-                    if support[idz, idy, idx] == 1:
-                        stop_flag = False
-                        counter = 1
-                        pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
-                        # beware, the support could be 0 at some voxel inside the object also, but the loop should
-                        # continue until it reaches the end of the box (min_z, max_z, min_y, max_y, min_x, max_x)
-                        while not stop_flag:
-                            pixel = pixel + k_norm  # add unitary translation in -k_in direction
-                            coords = np.rint(pixel)
-                            stop_flag = True
-                            if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and\
-                                    (min_x <= coords[2] <= max_x):
-                                counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
-                                stop_flag = False
-                        path[idz, idy, idx] = counter
-                    else:  # point outside of the support, optical path = 0
-                        path[idz, idy, idx] = 0
+                    stop_flag = False
+                    counter = support[idz, idy, idx]  # include also the pixel if it belongs to the support
+                    pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
+                    # beware, the support could be 0 at some voxel inside the object also, but the loop should
+                    # continue until it reaches the end of the box (min_z, max_z, min_y, max_y, min_x, max_x)
+                    while not stop_flag:
+                        pixel = pixel + k_norm  # add unitary translation in -k_in direction
+                        coords = np.rint(pixel)
+                        stop_flag = True
+                        if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and\
+                                (min_x <= coords[2] <= max_x):
+                            counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
+                            stop_flag = False
+
+                    # For each voxel, counter is the number of steps along the unitary k vector where the support is
+                    # non zero. Now we need to convert this into nm using the voxel size, different in each dimension
+                    endpoint = np.array([idz, idy, idx]) + counter * k_norm  # indices of the final voxel
+                    path[idz, idy, idx] = np.sqrt(((np.rint(endpoint[0])-idz) * voxel_size[0])**2
+                                                  + ((np.rint(endpoint[1])-idy)*voxel_size[1])**2
+                                                  + ((np.rint(endpoint[2])-idx)*voxel_size[2])**2)
 
     if debugging:
         gu.multislices_plot(path, width_z=width_z, width_y=width_y, width_x=width_x,
                             title='Optical path ' + direction)
 
-    # For each voxel, counter is the number of steps along the unitary k vector where the support is non zero.
-    # Since k was already expressed in units of nm taking into account different voxel sizes in each dimension, the
-    # counter itself is also in unit of nm and no further calculation is needed
     return path
 
 
