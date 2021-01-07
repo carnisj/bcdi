@@ -25,6 +25,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.utils.validation as valid
 
 
 helptext = """
@@ -41,14 +42,15 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 128  # np.arange(1401, 1419+1, 3)  # list or array of scan numbers
+scans = 128  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
 root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = None  # images will be saved here, leave it to None otherwise (default to data directory's parent)
-sample_name = ["PtNP1"]  # "SN"  # list of sample names (string in front of the scan number in the folder name).
+save_dir = "D:/data/P10_December2020_BCDI/data_nanolab/test/"  # images will be saved here, leave it to None otherwise
+# (default to data directory's parent)
+sample_name = "PtNP1"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -124,8 +126,8 @@ specfile_name = ''
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
-x_bragg = 1300  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 840  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+x_bragg = 1350  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 850  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 roi_detector = [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
@@ -287,10 +289,8 @@ def press_key(event):
 #########################
 # check some parameters #
 #########################
-try:
-    len(scans)
-except TypeError:  # a single number was provided, not a list
-    scans = [scans]
+if isinstance(scans, int):
+    scans = (scans,)
 
 if len(scans) > 1:
     if center_fft not in ['crop_asymmetric_ZYX', 'pad_Z', 'pad_asymmetric_ZYX']:
@@ -306,7 +306,7 @@ if correct_curvature:
     # TODO: implement this
 
 if not reload_previous:
-    previous_binning = [1, 1, 1]
+    previous_binning = (1, 1, 1)
     reload_orthogonal = False
 
 if reload_orthogonal:
@@ -315,15 +315,11 @@ if reload_orthogonal:
 if not use_rawdata and not reload_orthogonal and previous_binning[0] != 1:
     raise ValueError('previous_binning along axis 0 should be 1 when gridding reloaded data (angles will not match)')
 
-if type(sample_name) is list:
-    if len(sample_name) == 1:
-        assert type(sample_name[0]) == str, 'sample_name should be either a string or a list of strings'
-        sample_name = [sample_name[0] for idx in range(len(scans))]
-    assert len(sample_name) == len(scans), 'sample_name and scan_list should have the same length'
-elif type(sample_name) is str:
+if isinstance(sample_name, str):
     sample_name = [sample_name for idx in range(len(scans))]
-else:
-    raise ValueError('sample_name should be either a string or a list of strings')
+
+valid.valid_container(sample_name, container_types=(tuple, list), length=len(scans), item_types=str,
+                      name='preprocess_bcdi')
 
 ###################
 # define colormap #
@@ -338,10 +334,8 @@ plt.rcParams["keymap.fullscreen"] = [""]
 kwargs = dict()  # create dictionnary
 kwargs['is_series'] = is_series
 kwargs['preprocessing_binning'] = previous_binning
-if nb_pixel_x:
-    kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
-if nb_pixel_y:
-    kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 
 detector = exp.Detector(name=detector, template_imagefile=template_imagefile, roi=roi_detector,
                         binning=binning, **kwargs)
@@ -383,8 +377,10 @@ if not use_rawdata:
 ########################################
 # print the current setup and detector #
 ########################################
-print(setup, '\n')
-print(detector, '\n')
+print('\n##############\nSetup instance\n##############')
+print(setup)
+print('\n#################\nDetector instance\n#################')
+print(detector)
 
 ############################################
 # Initialize values for callback functions #
@@ -399,20 +395,21 @@ plt.rcParams["keymap.quit"] = ["ctrl+w", "cmd+w"]  # this one to avoid that q cl
 root = tk.Tk()
 root.withdraw()
 
-for scan_nb in range(len(scans)):
+for scan_idx, scan_nb in enumerate(scans, start=1):
     plt.ion()
 
     comment = user_comment  # initialize comment
-    print(f'\nScan 1/{len(scans)}: S{scans[scan_nb]}\n')
-    setup.init_paths(detector=detector, sample_name=sample_name[scan_nb], scan_number=scans[scan_nb],
+    tmp_str = f'Scan {scan_idx}/{len(scans)}: S{scan_nb}'
+    print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
+    setup.init_paths(detector=detector, sample_name=sample_name[scan_idx-1], scan_number=scan_nb,
                      root_folder=root_folder, save_dir=save_dir, specfile_name=specfile_name,
                      template_imagefile=template_imagefile, verbose=True)
 
-    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scans[scan_nb],
+    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan_nb,
                                  root_folder=root_folder, filename=detector.specfile)
 
     if not use_rawdata:
-        setup.grazing_angle = pru.grazing_angle(logfile=logfile, scan_number=scans[scan_nb], setup=setup)
+        setup.grazing_angle = pru.grazing_angle(logfile=logfile, scan_number=scan_nb, setup=setup)
         comment = comment + '_ortho'
         detector.savedir = detector.savedir + "pynx/"
         pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
@@ -458,8 +455,8 @@ for scan_nb in range(len(scans)):
         mask = mask[npz_key[0]]
 
         if save_previous:
-            np.savez_compressed(detector.savedir + 'S' + str(scans[scan_nb]) + '_pynx_previous' + comment, data=data)
-            np.savez_compressed(detector.savedir + 'S' + str(scans[scan_nb]) + '_maskpynx_previous', mask=mask)
+            np.savez_compressed(detector.savedir + 'S' + str(scan_nb) + '_pynx_previous' + comment, data=data)
+            np.savez_compressed(detector.savedir + 'S' + str(scan_nb) + '_maskpynx_previous', mask=mask)
 
         if reload_orthogonal:  # the data is gridded in the orthonormal laboratory frame
             use_rawdata = False
@@ -493,13 +490,13 @@ for scan_nb in range(len(scans)):
                     del numz, numy, numx
         else:  # the data is in the detector frame
             if photon_filter == 'loading':
-                data, mask, frames_logical, monitor = pru.reload_bcdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                data, mask, frames_logical, monitor = pru.reload_bcdi_data(logfile=logfile, scan_number=scan_nb,
                                                                            data=data, mask=mask, detector=detector,
                                                                            setup=setup, debugging=debug,
                                                                            normalize=normalize_flux,
                                                                            photon_threshold=photon_threshold)
             else:  # photon_filter = 'postprocessing'
-                data, mask, frames_logical, monitor = pru.reload_bcdi_data(logfile=logfile, scan_number=scans[scan_nb],
+                data, mask, frames_logical, monitor = pru.reload_bcdi_data(logfile=logfile, scan_number=scan_nb,
                                                                            data=data, mask=mask, detector=detector,
                                                                            setup=setup, debugging=debug,
                                                                            normalize=normalize_flux)
@@ -511,13 +508,13 @@ for scan_nb in range(len(scans)):
         background = pru.load_background(background_file)
 
         if photon_filter == 'loading':
-            data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scans[scan_nb],
+            data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scan_nb,
                                                                      detector=detector, setup=setup,
                                                                      flatfield=flatfield, hotpixels=hotpix_array,
                                                                      background=background, normalize=normalize_flux,
                                                                      debugging=debug, photon_threshold=photon_threshold)
         else:  # photon_filter = 'postprocessing'
-            data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scans[scan_nb],
+            data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scan_nb,
                                                                      detector=detector, setup=setup,
                                                                      flatfield=flatfield, hotpixels=hotpix_array,
                                                                      background=background, normalize=normalize_flux,
@@ -531,10 +528,10 @@ for scan_nb in range(len(scans)):
 
     if not reload_orthogonal:
         if save_rawdata:
-            np.savez_compressed(detector.savedir+'S'+str(scans[scan_nb])+'_data_before_masking_stack', data=data)
+            np.savez_compressed(detector.savedir+'S'+str(scan_nb)+'_data_before_masking_stack', data=data)
             if save_to_mat:
                 # save to .mat, the new order is x y z (outboard, vertical up, downstream)
-                savemat(detector.savedir+'S'+str(scans[scan_nb])+'_data_before_masking_stack.mat',
+                savemat(detector.savedir+'S'+str(scan_nb)+'_data_before_masking_stack.mat',
                         {'data': np.moveaxis(data, [0, 1, 2], [-1, -2, -3])})
 
         if use_rawdata:
@@ -546,7 +543,7 @@ for scan_nb in range(len(scans)):
             tmp_data[mask == 1] = 0
             fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                             title='Data before gridding\n', is_orthogonal=False, reciprocal_space=True)
-            plt.savefig(detector.savedir + 'data_before_gridding_S' + str(scans[scan_nb]) + '_' + str(nz) + '_' + str(ny) + '_' +
+            plt.savefig(detector.savedir + 'data_before_gridding_S' + str(scan_nb) + '_' + str(nz) + '_' + str(ny) + '_' +
                         str(nx) + binning_comment + '.png')
             plt.close(fig)
             del tmp_data
@@ -554,7 +551,7 @@ for scan_nb in range(len(scans)):
 
             print('\nGridding the data in the orthonormal laboratory frame')
             data, mask, q_values, frames_logical = \
-                pru.grid_bcdi(data=data, mask=mask, scan_number=scans[scan_nb], logfile=logfile, detector=detector,
+                pru.grid_bcdi(data=data, mask=mask, scan_number=scan_nb, logfile=logfile, detector=detector,
                               setup=setup, frames_logical=frames_logical, hxrd=hxrd, follow_bragg=follow_bragg,
                               correct_curvature=correct_curvature, debugging=debug)
 
@@ -573,7 +570,7 @@ for scan_nb in range(len(scans)):
                                         ylabel=('Counts (a.u.)', "Q$_x$"), position=(323, 122),
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
 
-                fig.savefig(detector.savedir + f'monitor_gridded_S{scans[scan_nb]}_{nz}_{ny}_{nx}' +
+                fig.savefig(detector.savedir + f'monitor_gridded_S{scan_nb}_{nz}_{ny}_{nx}' +
                             binning_comment + '.png')
                 if flag_interact:
                     fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -615,7 +612,7 @@ for scan_nb in range(len(scans)):
                                     title='Data before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     if debug:
-        plt.savefig(detector.savedir + f'data_before_masking_sum_S{scans[scan_nb]}_{nz}_{ny}_{nx}_{binning[0]}_'
+        plt.savefig(detector.savedir + f'data_before_masking_sum_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
                                        f'{binning[1]}_{binning[2]}.png')
     if flag_interact:
         fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -631,7 +628,7 @@ for scan_nb in range(len(scans)):
                             tuple_title=('data at max in xy', 'data at max in xz', 'data at max in yz'),
                             is_orthogonal=not use_rawdata, reciprocal_space=False)
     if debug:
-        plt.savefig(detector.savedir + f'data_before_masking_S{scans[scan_nb]}_{nz}_{ny}_{nx}_{binning[0]}_'
+        plt.savefig(detector.savedir + f'data_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
                                        f'{binning[1]}_{binning[2]}.png')
     if flag_interact:
         fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -644,7 +641,7 @@ for scan_nb in range(len(scans)):
                                     vmax=(nz, ny, nx), title='Mask before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     if debug:
-        plt.savefig(detector.savedir + f'mask_before_masking_S{scans[scan_nb]}_{nz}_{ny}_{nx}_{binning[0]}_'
+        plt.savefig(detector.savedir + f'mask_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
                                        f'{binning[1]}_{binning[2]}.png')
 
     if flag_interact:
@@ -674,7 +671,7 @@ for scan_nb in range(len(scans)):
             qz0 = qz.min()
             dqz = (qz.max() - qz0) / nqz
 
-            gu.save_to_vti(filename=os.path.join(detector.savedir, "S"+str(scans[scan_nb])+"_ortho_int"+comment+".vti"),
+            gu.save_to_vti(filename=os.path.join(detector.savedir, "S"+str(scan_nb)+"_ortho_int"+comment+".vti"),
                            voxel_size=(dqx, dqz, dqy), tuple_array=data, tuple_fieldnames='int', origin=(qx0, qz0, qy0))
 
     if flag_interact:
@@ -847,14 +844,14 @@ for scan_nb in range(len(scans)):
         fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                         title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
-        plt.savefig(detector.savedir + f'middle_frame_S{scans[scan_nb]}_{nz}_{ny}_{nx}_{binning[0]}_'
+        plt.savefig(detector.savedir + f'middle_frame_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
                                        f'{binning[1]}_{binning[2]}' + comment + '.png')
         if not flag_interact:
             plt.close(fig)
 
         fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
-        plt.savefig(detector.savedir + f'sum_S{scans[scan_nb]}_{nz}_{ny}_{nx}_{binning[0]}_'
+        plt.savefig(detector.savedir + f'sum_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
                                        f'{binning[1]}_{binning[2]}' + comment + '.png')
         if not flag_interact:
             plt.close(fig)
@@ -862,7 +859,7 @@ for scan_nb in range(len(scans)):
         fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                         vmax=(nz, ny, nx), title='Mask', is_orthogonal=not use_rawdata,
                                         reciprocal_space=True)
-        plt.savefig(detector.savedir + f'mask_S{scans[scan_nb]}_{nz}_{ny}_{nx}_{binning[0]}_'
+        plt.savefig(detector.savedir + f'mask_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
                                        f'{binning[1]}_{binning[2]}' + comment + '.png')
         if not flag_interact:
             plt.close(fig)
@@ -890,29 +887,29 @@ for scan_nb in range(len(scans)):
     print('Mask type before saving:', mask.dtype)
     if not use_rawdata and len(q_values) != 0:
         if save_to_npz:
-            np.savez_compressed(detector.savedir + 'QxQzQy_S' + str(scans[scan_nb]) + comment,
+            np.savez_compressed(detector.savedir + 'QxQzQy_S' + str(scan_nb) + comment,
                                 qx=q_values[0], qz=q_values[1], qy=q_values[2])
         if save_to_mat:
-            savemat(detector.savedir + 'S' + str(scans[scan_nb]) + '_qx.mat', {'qx': q_values[0]})
-            savemat(detector.savedir + 'S' + str(scans[scan_nb]) + '_qy.mat', {'qy': q_values[1]})
-            savemat(detector.savedir + 'S' + str(scans[scan_nb]) + '_qz.mat', {'qz': q_values[2]})
+            savemat(detector.savedir + 'S' + str(scan_nb) + '_qx.mat', {'qx': q_values[0]})
+            savemat(detector.savedir + 'S' + str(scan_nb) + '_qy.mat', {'qy': q_values[1]})
+            savemat(detector.savedir + 'S' + str(scan_nb) + '_qz.mat', {'qz': q_values[2]})
 
         fig, _, _ = gu.contour_slices(data, (q_values[0], q_values[1], q_values[2]), sum_frames=True,
                                       title='Final data', plot_colorbar=True, scale='log', is_orthogonal=True,
                                       levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
                                       reciprocal_space=True)
-        fig.savefig(detector.savedir + 'final_reciprocal_space_S' + str(scans[scan_nb]) + comment + '.png')
+        fig.savefig(detector.savedir + 'final_reciprocal_space_S' + str(scan_nb) + comment + '.png')
         plt.close(fig)
 
     if save_to_npz:
-        np.savez_compressed(detector.savedir + 'S' + str(scans[scan_nb]) + '_pynx' + comment, data=data)
-        np.savez_compressed(detector.savedir + 'S' + str(scans[scan_nb]) + '_maskpynx' + comment, mask=mask)
+        np.savez_compressed(detector.savedir + 'S' + str(scan_nb) + '_pynx' + comment, data=data)
+        np.savez_compressed(detector.savedir + 'S' + str(scan_nb) + '_maskpynx' + comment, mask=mask)
 
     if save_to_mat:
         # save to .mat, the new order is x y z (outboard, vertical up, downstream)
-        savemat(detector.savedir + 'S' + str(scans[scan_nb]) + '_data.mat',
+        savemat(detector.savedir + 'S' + str(scan_nb) + '_data.mat',
                 {'data': np.moveaxis(data.astype(np.float32), [0, 1, 2], [-1, -2, -3])})
-        savemat(detector.savedir + 'S' + str(scans[scan_nb]) + '_mask.mat',
+        savemat(detector.savedir + 'S' + str(scan_nb) + '_mask.mat',
                 {'data': np.moveaxis(mask.astype(np.int8), [0, 1, 2], [-1, -2, -3])})
 
     ############################
@@ -922,14 +919,14 @@ for scan_nb in range(len(scans)):
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Final data', is_orthogonal=not use_rawdata,
                                     reciprocal_space=True)
-    plt.savefig(detector.savedir + 'finalsum_S' + str(scans[scan_nb]) + comment + '.png')
+    plt.savefig(detector.savedir + 'finalsum_S' + str(scan_nb) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     vmax=(nz, ny, nx), title='Final mask',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(detector.savedir + 'finalmask_S' + str(scans[scan_nb]) + comment + '.png')
+    plt.savefig(detector.savedir + 'finalmask_S' + str(scan_nb) + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
