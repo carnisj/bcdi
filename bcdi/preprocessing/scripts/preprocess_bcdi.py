@@ -459,8 +459,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         mask = mask[npz_key[0]]
 
         if save_previous:
-            np.savez_compressed(detector.savedir + 'S' + str(scan_nb) + '_pynx_previous' + comment, data=data)
-            np.savez_compressed(detector.savedir + 'S' + str(scan_nb) + '_maskpynx_previous', mask=mask)
+            np.savez_compressed(detector.savedir + f'S{scan_nb}_pynx_previous' + comment, data=data)
+            np.savez_compressed(detector.savedir + f'S{scan_nb}_maskpynx_previous', mask=mask)
 
         if reload_orthogonal:  # the data is gridded in the orthonormal laboratory frame
             use_rawdata = False
@@ -534,8 +534,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             tmp_data[mask == 1] = 0
             fig, _, _ = gu.multislices_plot(tmp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                             title='Data before gridding\n', is_orthogonal=False, reciprocal_space=True)
-            plt.savefig(detector.savedir + 'data_before_gridding_S' + str(scan_nb) + '_' + str(nz) + '_' + str(ny) + '_' +
-                        str(nx) + binning_comment + '.png')
+            plt.savefig(detector.savedir + f'data_before_gridding_S{scan_nb}_{nz}_{ny}_{nx}' + binning_comment + '.png')
             plt.close(fig)
             del tmp_data
             gc.collect()
@@ -662,7 +661,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             qz0 = qz.min()
             dqz = (qz.max() - qz0) / nqz
 
-            gu.save_to_vti(filename=os.path.join(detector.savedir, "S"+str(scan_nb)+"_ortho_int"+comment+".vti"),
+            gu.save_to_vti(filename=os.path.join(detector.savedir, f'S{scan_nb}_ortho_int' + comment + ".vti"),
                            voxel_size=(dqx, dqz, dqy), tuple_array=data, tuple_fieldnames='int', origin=(qx0, qz0, qy0))
 
     if flag_interact:
@@ -690,9 +689,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         ax2.axis('scaled')
         if not use_rawdata:
             ax0.invert_yaxis()  # detector Y is vertical down
-        ax0.set_title("XY - Frame " + str(frame_index[0] + 1) + "/" + str(nz))
-        ax1.set_title("XZ - Frame " + str(frame_index[1] + 1) + "/" + str(ny))
-        ax2.set_title("YZ - Frame " + str(frame_index[2] + 1) + "/" + str(nx))
+        ax0.set_title(f'XY - Frame {frame_index[0] + 1} / {nz}')
+        ax1.set_title(f'XZ - Frame {frame_index[1] + 1} / {ny}')
+        ax2.set_title(f'YZ - Frame {frame_index[2] + 1} / {nx}')
         fig_mask.text(0.60, 0.30, "m mask ; b unmask ; u next frame ; d previous frame", size=12)
         fig_mask.text(0.60, 0.25, "up larger ; down smaller ; right darker ; left brighter", size=12)
         fig_mask.text(0.60, 0.20, "p plot full image ; q quit", size=12)
@@ -878,29 +877,29 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     print('Mask type before saving:', mask.dtype)
     if not use_rawdata and len(q_values) != 0:
         if save_to_npz:
-            np.savez_compressed(detector.savedir + 'QxQzQy_S' + str(scan_nb) + comment,
+            np.savez_compressed(detector.savedir + f'QxQzQy_S{scan_nb}' + comment,
                                 qx=q_values[0], qz=q_values[1], qy=q_values[2])
         if save_to_mat:
-            savemat(detector.savedir + 'S' + str(scan_nb) + '_qx.mat', {'qx': q_values[0]})
-            savemat(detector.savedir + 'S' + str(scan_nb) + '_qy.mat', {'qy': q_values[1]})
-            savemat(detector.savedir + 'S' + str(scan_nb) + '_qz.mat', {'qz': q_values[2]})
+            savemat(detector.savedir + f'S{scan_nb}_qx.mat', {'qx': q_values[0]})
+            savemat(detector.savedir + f'S{scan_nb}_qy.mat', {'qy': q_values[1]})
+            savemat(detector.savedir + f'S{scan_nb}_qz.mat', {'qz': q_values[2]})
 
         fig, _, _ = gu.contour_slices(data, (q_values[0], q_values[1], q_values[2]), sum_frames=True,
                                       title='Final data', plot_colorbar=True, scale='log', is_orthogonal=True,
                                       levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
                                       reciprocal_space=True)
-        fig.savefig(detector.savedir + 'final_reciprocal_space_S' + str(scan_nb) + comment + '.png')
+        fig.savefig(detector.savedir + f'final_reciprocal_space_S{scan_nb}' + comment + '.png')
         plt.close(fig)
 
     if save_to_npz:
-        np.savez_compressed(detector.savedir + 'S' + str(scan_nb) + '_pynx' + comment, data=data)
-        np.savez_compressed(detector.savedir + 'S' + str(scan_nb) + '_maskpynx' + comment, mask=mask)
+        np.savez_compressed(detector.savedir + f'S{scan_nb}_pynx' + comment, data=data)
+        np.savez_compressed(detector.savedir + f'S{scan_nb}_maskpynx' + comment, mask=mask)
 
     if save_to_mat:
         # save to .mat, the new order is x y z (outboard, vertical up, downstream)
-        savemat(detector.savedir + 'S' + str(scan_nb) + '_data.mat',
+        savemat(detector.savedir + f'S{scan_nb}_data.mat',
                 {'data': np.moveaxis(data.astype(np.float32), [0, 1, 2], [-1, -2, -3])})
-        savemat(detector.savedir + 'S' + str(scan_nb) + '_mask.mat',
+        savemat(detector.savedir + f'S{scan_nb}_mask.mat',
                 {'data': np.moveaxis(mask.astype(np.int8), [0, 1, 2], [-1, -2, -3])})
 
     ############################
@@ -910,14 +909,14 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Final data', is_orthogonal=not use_rawdata,
                                     reciprocal_space=True)
-    plt.savefig(detector.savedir + 'finalsum_S' + str(scan_nb) + comment + '.png')
+    plt.savefig(detector.savedir + f'finalsum_S{scan_nb}' + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     vmax=(nz, ny, nx), title='Final mask',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
-    plt.savefig(detector.savedir + 'finalmask_S' + str(scan_nb) + comment + '.png')
+    plt.savefig(detector.savedir + f'finalmask_S{scan_nb}' + comment + '.png')
     if not flag_interact:
         plt.close(fig)
 
