@@ -1314,9 +1314,9 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
     interp_data[np.nonzero(interp_mask)] = 0
 
     # plot the gridded data
-    final_binning = (detector.previous_binning[0] * detector.binning[0],
-                     detector.previous_binning[1] * detector.binning[1],
-                     detector.previous_binning[2] * detector.binning[2])
+    final_binning = (detector.preprocessing_binning[0] * detector.binning[0],
+                     detector.preprocessing_binning[1] * detector.binning[1],
+                     detector.preprocessing_binning[2] * detector.binning[2])
 
     plot_comment = '_' + str(numz) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
                    str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
@@ -1530,9 +1530,9 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
           + '\n')
 
     # plot the gridded data
-    final_binning = (detector.previous_binning[2] * detector.binning[2],
-                     detector.previous_binning[1] * detector.binning[1],
-                     detector.previous_binning[2] * detector.binning[2])
+    final_binning = (detector.preprocessing_binning[2] * detector.binning[2],
+                     detector.preprocessing_binning[1] * detector.binning[1],
+                     detector.preprocessing_binning[2] * detector.binning[2])
     plot_comment = '_' + str(numx) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
                    str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
     # sample rotation around the vertical direction at P10: the effective binning in axis 0 is binning[2]
