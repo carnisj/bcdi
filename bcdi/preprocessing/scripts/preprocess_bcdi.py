@@ -94,7 +94,7 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 #################################################
 reload_previous = False  # True to resume a previous masking (load data and mask)
 reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
-previous_binning = (1, 1, 1)  # binning factors in each dimension of the binned data to be reloaded
+preprocessing_binning = (1, 1, 1)  # binning factors in each dimension of the binned data to be reloaded
 save_previous = False  # if True, will save the previous data and mask
 ##################
 # saving options #
@@ -316,7 +316,7 @@ if reload_previous:
     create_savedir = False
 else:
     create_savedir = True
-    previous_binning = (1, 1, 1)
+    preprocessing_binning = (1, 1, 1)
     reload_orthogonal = False
 
 if reload_orthogonal:
@@ -330,8 +330,9 @@ else:
     save_dirname = 'pynx'
     print('Output will be orthogonalized by xrayutilities')
     plot_title = ['QzQx', 'QyQx', 'QyQz']
-    if not reload_orthogonal and previous_binning[0] != 1:
-        raise ValueError('previous_binning along axis 0 should be 1 when gridding reloaded data (angles won\'t match)')
+    if not reload_orthogonal and preprocessing_binning[0] != 1:
+        raise ValueError('preprocessing_binning along axis 0 should be 1 when gridding reloaded data'
+                         ' (angles won\'t match)')
 
 if isinstance(sample_name, str):
     sample_name = [sample_name for idx in range(len(scans))]
@@ -350,7 +351,7 @@ plt.rcParams["keymap.fullscreen"] = [""]
 #######################
 kwargs = dict()  # create dictionnary
 kwargs['is_series'] = is_series
-kwargs['preprocessing_binning'] = previous_binning
+kwargs['preprocessing_binning'] = preprocessing_binning
 kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 
@@ -381,10 +382,10 @@ if not use_rawdata:
     cch1 = cch1 - detector.roi[0]  # Vertical direct beam position, take into account the roi if the image is cropped
     cch2 = cch2 - detector.roi[2]  # Horizontal direct beam position, take into account the roi if the image is cropped
     # number of pixels after taking into account the roi and binning
-    nch1 = (detector.roi[1] - detector.roi[0]) // (previous_binning[1] * binning[1]) +\
-        (detector.roi[1] - detector.roi[0]) % (previous_binning[1] * binning[1])
-    nch2 = (detector.roi[3] - detector.roi[2]) // (previous_binning[2] * binning[2]) +\
-        (detector.roi[3] - detector.roi[2]) % (previous_binning[2] * binning[2])
+    nch1 = (detector.roi[1] - detector.roi[0]) // (detector.preprocessing_binning[1] * detector.binning[1]) +\
+        (detector.roi[1] - detector.roi[0]) % (detector.preprocessing_binning[1] * detector.binning[1])
+    nch2 = (detector.roi[3] - detector.roi[2]) // (detector.preprocessing_binning[2] * detector.binning[2]) +\
+        (detector.roi[3] - detector.roi[2]) % (detector.preprocessing_binning[2] * detector.binning[2])
     # detector init_area method, pixel sizes are the binned ones
     hxrd.Ang2Q.init_area(setup.detector_ver, setup.detector_hor, cch1=cch1, cch2=cch2,
                          Nch1=nch1, Nch2=nch2, pwidth1=detector.pixelsize_y, pwidth2=detector.pixelsize_x,
@@ -489,9 +490,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     qz = q_values[1]
                     qy = q_values[2]
                     numz, numy, numx = len(qx), len(qz), len(qy)
-                    qx = qx[:numz - (numz % binning[0]):binning[0]]  # along z downstream
-                    qz = qz[:numy - (numy % binning[1]):binning[1]]  # along y vertical
-                    qy = qy[:numx - (numx % binning[2]):binning[2]]  # along x outboard
+                    qx = qx[:numz - (numz % detector.binning[0]):detector.binning[0]]  # along z downstream
+                    qz = qz[:numy - (numy % detector.binning[1]):detector.binning[1]]  # along y vertical
+                    qy = qy[:numx - (numx % detector.binning[2]):detector.binning[2]]  # along x outboard
                     del numz, numy, numx
         else:  # the data is in the detector frame
             data, mask, frames_logical, monitor = pru.reload_bcdi_data(logfile=logfile, scan_number=scan_nb,
@@ -515,8 +516,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     nz, ny, nx = np.shape(data)
     print('\nInput data shape:', nz, ny, nx)
 
-    binning_comment = f'_{previous_binning[0]*binning[0]}' \
-                      f'_{previous_binning[1]*binning[1]}_{previous_binning[2]*binning[2]}'
+    binning_comment = (f'_{detector.preprocessing_binning[0]*detector.binning[0]}'
+                       f'_{detector.preprocessing_binning[1]*detector.binning[1]}'
+                       f'_{detector.preprocessing_binning[2]*detector.binning[2]}')
 
     if not reload_orthogonal:
         if save_rawdata:
@@ -603,8 +605,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                     title='Data before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     if debug:
-        plt.savefig(detector.savedir + f'data_before_masking_sum_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
-                                       f'{binning[1]}_{binning[2]}.png')
+        plt.savefig(detector.savedir + f'data_before_masking_sum_S{scan_nb}_{nz}_{ny}_{nx}_{detector.binning[0]}_'
+                                       f'{detector.binning[1]}_{detector.binning[2]}.png')
     if flag_interact:
         fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
         cid = plt.connect('close_event', close_event)
@@ -619,8 +621,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                             tuple_title=('data at max in xy', 'data at max in xz', 'data at max in yz'),
                             is_orthogonal=not use_rawdata, reciprocal_space=False)
     if debug:
-        plt.savefig(detector.savedir + f'data_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
-                                       f'{binning[1]}_{binning[2]}.png')
+        plt.savefig(detector.savedir + f'data_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_{detector.binning[0]}_'
+                                       f'{detector.binning[1]}_{detector.binning[2]}.png')
     if flag_interact:
         fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
         cid = plt.connect('close_event', close_event)
@@ -632,8 +634,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                     vmax=(nz, ny, nx), title='Mask before aliens removal\n',
                                     is_orthogonal=not use_rawdata, reciprocal_space=True)
     if debug:
-        plt.savefig(detector.savedir + f'mask_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
-                                       f'{binning[1]}_{binning[2]}.png')
+        plt.savefig(detector.savedir + f'mask_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_{detector.binning[0]}_'
+                                       f'{detector.binning[1]}_{detector.binning[2]}.png')
 
     if flag_interact:
         fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -835,23 +837,23 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         fig, _, _ = gu.multislices_plot(data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                         title='Masked data', slice_position=[int(z0), int(y0), int(x0)],
                                         is_orthogonal=not use_rawdata, reciprocal_space=True)
-        plt.savefig(detector.savedir + f'middle_frame_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
-                                       f'{binning[1]}_{binning[2]}' + comment + '.png')
+        plt.savefig(detector.savedir + f'middle_frame_S{scan_nb}_{nz}_{ny}_{nx}_{detector.binning[0]}_'
+                                       f'{detector.binning[1]}_{detector.binning[2]}' + comment + '.png')
         if not flag_interact:
             plt.close(fig)
 
-        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0, title='Masked data',
-                                        is_orthogonal=not use_rawdata, reciprocal_space=True)
-        plt.savefig(detector.savedir + f'sum_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
-                                       f'{binning[1]}_{binning[2]}' + comment + '.png')
+        fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                        title='Masked data', is_orthogonal=not use_rawdata, reciprocal_space=True)
+        plt.savefig(detector.savedir + f'sum_S{scan_nb}_{nz}_{ny}_{nx}_{detector.binning[0]}_'
+                                       f'{detector.binning[1]}_{detector.binning[2]}' + comment + '.png')
         if not flag_interact:
             plt.close(fig)
 
         fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                         vmax=(nz, ny, nx), title='Mask', is_orthogonal=not use_rawdata,
                                         reciprocal_space=True)
-        plt.savefig(detector.savedir + f'mask_S{scan_nb}_{nz}_{ny}_{nx}_{binning[0]}_'
-                                       f'{binning[1]}_{binning[2]}' + comment + '.png')
+        plt.savefig(detector.savedir + f'mask_S{scan_nb}_{nz}_{ny}_{nx}_{detector.binning[0]}_'
+                                       f'{detector.binning[1]}_{detector.binning[2]}' + comment + '.png')
         if not flag_interact:
             plt.close(fig)
 
@@ -864,7 +866,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         mask[np.nonzero(mask)] = 1
         if not use_rawdata and len(q_values) != 0:
             numz = len(qx)
-            qx = qx[:numz - (numz % binning[0]):binning[0]]  # along Z
+            qx = qx[:numz - (numz % detector.binning[0]):detector.binning[0]]  # along Z
             del numz
     nz, ny, nx = data.shape
     print('\nData size after binning the stacking dimension:', data.shape)
