@@ -1209,7 +1209,8 @@ def goniometer_values(frames_logical, logfile, scan_number, setup, follow_bragg=
         elif rocking_angle == 'inplane':
             grazing = (chi-offsets[0], tilt-offsets[2])  # tilt is the incident angle at 34ID
             tilt, inplane, outofplane = theta, delta, gamma  # theta is the rotation around the vertical axis
-
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
     else:
         raise ValueError(f'{setup.beamline} not supported')
 
