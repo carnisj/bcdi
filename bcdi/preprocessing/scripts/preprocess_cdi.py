@@ -78,7 +78,6 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 reload_previous = True  # True to resume a previous masking (load data and mask)
 reload_orthogonal = True  # True if the reloaded data is already intepolated in an orthonormal frame
 preprocessing_binning = [2, 2, 2]  # binning factors in each dimension of the binned data to be reloaded
-save_previous = False  # if True, will save the previous data and mask
 ##################
 # saving options #
 ##################
@@ -387,10 +386,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select mask file",
                                                filetypes=[("NPZ", "*.npz")])
         mask, _ = util.load_file(file_path)
-
-        if save_previous:
-            np.savez_compressed(detector.savedir + f'S{scan_nb}_pynx_previous', data=data)
-            np.savez_compressed(detector.savedir + f'S{scan_nb}_maskpynx_previous', mask=mask)
 
         if reload_orthogonal:  # the data is gridded in the orthonormal laboratory frame
             use_rawdata = False
