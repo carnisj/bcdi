@@ -10,7 +10,6 @@ import hdf5plugin  # for P10, should be imported before h5py or PyTables
 import numpy as np
 import matplotlib.pyplot as plt
 plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
-import pathlib
 import os
 import scipy.signal  # for medfilt2d
 from scipy.ndimage.measurements import center_of_mass
@@ -41,11 +40,11 @@ data in:                                                       /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = [32]  # list or array of scan numbers
-root_folder = "D:/data/P10_March2020_CDI/data/"
-save_dir = "D:/data/P10_March2020_CDI/test/"  # images will be saved here, leave it to None otherwise
+scans = [22]  # list or array of scan numbers
+root_folder = "D:/data/P10_August2019_CDI/data/"
+save_dir = "D:/data/P10_August2019_CDI/test/"  # images will be saved here, leave it to None otherwise
 # (default to data directory's parent)
-sample_name = ['ht_pillar3']  # "S"  # # list of sample names. If only one name is indicated,
+sample_name = ['gold_2_2_2']  # "S"  # # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -61,7 +60,7 @@ background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual c
 ##############################################
 normalize_method = 'skip'  # 'skip' for no normalization, 'monitor' to use the default monitor, 'sum_roi' to normalize
 # by the intensity summed in normalize_roi
-normalize_roi = [0, 250, 500, 1500]  # roi for the integration of intensity used as a monitor for data normalization
+normalize_roi = None  # roi for the integration of intensity used as a monitor for data normalization
 # [Vstart, Vstop, Hstart, Hstop]
 #################################
 # parameters for data filtering #
@@ -77,8 +76,8 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 # parameters used when reloading processed data #
 #################################################
 reload_previous = True  # True to resume a previous masking (load data and mask)
-reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
-previous_binning = [1, 2, 2]  # binning factors in each dimension of the binned data to be reloaded
+reload_orthogonal = True  # True if the reloaded data is already intepolated in an orthonormal frame
+preprocessing_binning = [2, 2, 2]  # binning factors in each dimension of the binned data to be reloaded
 save_previous = False  # if True, will save the previous data and mask
 ##################
 # saving options #
@@ -103,33 +102,32 @@ custom_images = None  # [10*i+929+j for i in range(92) for j in range(8)]
 custom_monitor = None  # np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 
 specfile_name = ''
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
-# template for SIXS_2019: ''
-# template for P10: ''
-# template for CRISTAL: ''
+# template for all other beamlines: ''
 ###############################
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-direct_beam = (1255, 1161)  # tuple of int (vertical, horizontal): position of the direct beam in pixels, in the
+direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels, in the
 # unbinned detector. This parameter is important for gridding the data onto the laboratory frame.
-roi_detector = []  # [direct_beam[0] - 150, direct_beam[0] + 150, direct_beam[1] - 213, direct_beam[1] + 213]
+roi_detector = [direct_beam[0] - 150, direct_beam[0] + 150, direct_beam[1] - 213, direct_beam[1] + 213]
 # [Vstart, Vstop, Hstart, Hstop]
-# leave it as [] to use the full detector.
+# leave it as None to use the full detector.
 photon_threshold = 0  # data[data < photon_threshold] = 0
 photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon threshold should be applied
 # if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
-background_file = ''  # root_folder + 'background.npz'  #
-hotpixels_file = ''  # root_folder + 'hotpixels.npz'  #
-flatfield_file = ''  # root_folder + "flatfield_eiger.npz"  #
+background_file = None  # root_folder + 'background.npz'  # non empty file path or None
+hotpixels_file = None  # root_folder + 'hotpixels_HS4670.npz'  # non empty file path or None
+flatfield_file = None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
 template_imagefile = '_master.h5'  # ''_data_%06d.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
-# template for P10: '_master.h5' for normal scan,
+# template for P10: '_master.h5'
+# template for NANOMAX: '%06d.h5'
+# template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
 nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 ######################################################################
@@ -139,8 +137,8 @@ use_rawdata = False  # False for using data gridded in laboratory frame/ True fo
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
 fit_datarange = False  # if True, crop the final array within data range, avoiding areas at the corners of the window
 # viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
-sdd = 5.0  # sample to detector distance in m, used only if use_rawdata is False
-energy = 10000  # x-ray energy in eV, used only if use_rawdata is False
+sdd = 4.95  # sample to detector distance in m, used only if use_rawdata is False
+energy = 8700  # x-ray energy in eV, used only if use_rawdata is False
 custom_motors = None  # {"hprz": np.linspace(0, 184, num=737, endpoint=True)}
 # use this to declare motor positions if there is not log file
 # example: {"hprz": np.linspace(16.989, 18.989, num=100, endpoint=False)}
@@ -272,11 +270,12 @@ else:
 
 if reload_previous:
     create_savedir = False
-    print('\nReloading... update the direct beam position taking into account previous_binning')
-    direct_beam = (direct_beam[0] // previous_binning[1], direct_beam[1] // previous_binning[2])
+    user_comment += '_reloaded'
+    print('\nReloading... update the direct beam position taking into account preprocessing_binning')
+    direct_beam = (direct_beam[0] // preprocessing_binning[1], direct_beam[1] // preprocessing_binning[2])
 else:
     create_savedir = True
-    previous_binning = [1, 1, 1]
+    preprocessing_binning = (1, 1, 1)
     reload_orthogonal = False
 
 if reload_orthogonal:
@@ -296,8 +295,8 @@ else:
         print('\nuse_rawdata=False: defaulting the binning factor along the stacking dimension to 1')
         # the vertical axis y being the rotation axis, binning along z downstream and x outboard will be the same
         binning[0] = 1
-        if previous_binning[0] != 1:
-            print('previous_binning along axis 0 should be 1 for reloaded data to be gridded'
+        if preprocessing_binning[0] != 1:
+            print('preprocessing_binning along axis 0 should be 1 for reloaded data to be gridded'
                   ' (angles will not match)')
             sys.exit()
 
@@ -318,7 +317,7 @@ plt.rcParams["keymap.fullscreen"] = [""]
 #######################
 kwargs = dict()  # create dictionnary
 kwargs['is_series'] = is_series
-kwargs['previous_binning'] = previous_binning
+kwargs['preprocessing_binning'] = preprocessing_binning
 kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 
@@ -420,9 +419,12 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     qz = q_values[1]
                     qy = q_values[2]
                     numz, numy, numx = len(qx), len(qz), len(qy)
-                    qx = qx[:numz - (numz % binning[2]):binning[2]]  # along z downstream, same binning as along x
-                    qz = qz[:numy - (numy % binning[1]):binning[1]]  # along y vertical, the axis of rotation
-                    qy = qy[:numx - (numx % binning[2]):binning[2]]  # along x outboard
+                    qx = qx[:numz - (numz % detector.binning[2]):detector.binning[2]]
+                    # along z downstream, same binning as along x
+                    qz = qz[:numy - (numy % detector.binning[1]):detector.binning[1]]
+                    # along y vertical, the axis of rotation
+                    qy = qy[:numx - (numx % detector.binning[2]):detector.binning[2]]
+                    # along x outboard
                     del numz, numy, numx
         else:  # the data is in the detector frame
             data, mask, frames_logical, monitor = pru.reload_cdi_data(logfile=logfile,
@@ -513,15 +515,17 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
 
         if use_rawdata:
             q_values = []
-            binning_comment = f'_{previous_binning[0]*binning[0]}' \
-                              f'_{previous_binning[1]*binning[1]}_{previous_binning[2]*binning[2]}'
+            binning_comment = (f'_{detector.preprocessing_binning[0]*detector.binning[0]}'
+                               f'_{detector.preprocessing_binning[1]*detector.binning[1]}'
+                               f'_{detector.preprocessing_binning[2]*detector.binning[2]}')
             # binning along axis 0 is done after masking
             data[np.nonzero(mask)] = 0
         else:  # the data will be gridded, binning[0] is already set to 1
             # sample rotation around the vertical direction at P10:
-            # the effective binning in axis 0 is previous_binning[2]*binning[2]
-            binning_comment = f'_{previous_binning[2]*binning[2]}' \
-                              f'_{previous_binning[1]*binning[1]}_{previous_binning[2]*binning[2]}'
+            # the effective binning in axis 0 is preprocessing_binning[2]*binning[2]
+            binning_comment = (f'_{detector.preprocessing_binning[2]*detector.binning[2]}'
+                               f'_{detector.preprocessing_binning[1]*detector.binning[1]}'
+                               f'_{detector.preprocessing_binning[2]*detector.binning[2]}')
 
             tmp_data = np.copy(data)  # do not modify the raw data before the interpolation
             tmp_data[mask == 1] = 0
@@ -566,8 +570,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 gc.collect()
 
     else:  # reload_orthogonal=True, the data is already gridded, binning was realized along each axis
-        binning_comment = f'_{previous_binning[0]*binning[0]}' \
-                          f'_{previous_binning[1]*binning[1]}_{previous_binning[2]*binning[2]}'
+        binning_comment = (f'_{detector.preprocessing_binning[0]*detector.binning[0]}'
+                           f'_{detector.preprocessing_binning[1]*detector.binning[1]}'
+                           f'_{detector.preprocessing_binning[2]*detector.binning[2]}')
 
     nz, ny, nx = np.shape(data)
     plt.ioff()
