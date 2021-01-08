@@ -1021,6 +1021,8 @@ class Setup(object):
 
         if not isinstance(sample_name, str):
             raise TypeError('sample_name should be a string')
+        # check that the name is not an empty string
+        valid.valid_container(save_dirname, container_types=str, min_length=1, name='Setup.init_paths')
 
         if self.beamline == 'P10':
             specfile = sample_name + '_{:05d}'.format(scan_number)
