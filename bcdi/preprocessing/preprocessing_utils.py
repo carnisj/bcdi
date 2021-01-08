@@ -852,8 +852,8 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
 
     wrap_angle = wrap(obj=detector_angle, start_angle=detector_angle.min(), range_angle=180)
     for idx in range(len(wrap_angle)):
-        # TODO: refactor the line below, use isclose instead of == for float comparison
-        duplicate = (wrap_angle[:idx] == wrap_angle[idx]).sum()  # will be different from 0 if duplicated
+        duplicate = np.isclose(wrap_angle[:idx], wrap_angle[idx], rtol=1e-06, atol=1e-06).sum()
+        # duplicate will be different from 0 if there is a duplicated angle
         frames_logical[idx] = frames_logical[idx] * (duplicate == 0)  # set frames_logical to 0 if duplicated angle
 
     if debugging:
