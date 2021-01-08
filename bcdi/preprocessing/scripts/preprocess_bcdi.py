@@ -428,7 +428,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                  root_folder=root_folder, filename=detector.specfile)
 
     if not use_rawdata:
-        setup.grazing_angle = pru.grazing_angle(logfile=logfile, scan_number=scan_nb, setup=setup)
+        setup.grazing_angle = pru.goniometer_values(logfile=logfile, scan_number=scan_nb, setup=setup,
+                                                    follow_bragg=follow_bragg)
         comment = comment + '_ortho'
 
     if normalize_flux:
