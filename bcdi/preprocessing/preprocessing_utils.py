@@ -1138,114 +1138,82 @@ def goniometer_values(frames_logical, logfile, scan_number, setup, follow_bragg=
     :return: (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
      corrected values
     """
-    if setup.beamline == 'ID01':  # eta, chi, phi, nu, delta, energy, frames_logical
-        if setup.rocking_angle == 'outofplane':  # eta rocking curve
-            tilt, _, _, inplane, outofplane, _, _ = \
-                motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
-                                     frames_logical=frames_logical, follow_bragg=follow_bragg)
-        elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            _, _, tilt, inplane, outofplane, _, _ = \
-                motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
-                                     frames_logical=frames_logical, follow_bragg=follow_bragg)
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
-        if setup.rocking_angle == 'inplane':  # mu rocking curve
-            _, tilt, inplane, outofplane, _ = motor_positions_sixs(logfile=logfile, setup=setup,
-                                                                   frames_logical=frames_logical)
-        else:
-            raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
-
-    elif setup.beamline == 'CRISTAL':
-        if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
-            tilt, inplane, outofplane = motor_positions_cristal(logfile, setup)
-            inplane = inplane[0]
-            outofplane = outofplane[0]
-        else:
-            raise ValueError('Inplane rocking curve not implemented for CRISTAL')
-
-    elif setup.beamline == 'P10':
-        if setup.rocking_angle == 'outofplane':  # om rocking curve
-            tilt, _, _, _, inplane, outofplane = motor_positions_p10(logfile=logfile, setup=setup)
-        elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            _, tilt, _, _, inplane, outofplane = motor_positions_p10(logfile=logfile, setup=setup)
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    elif setup.beamline == 'NANOMAX':  # theta, phi, gamma, delta, energy, radius
-        if setup.rocking_angle == 'outofplane':  # theta rocking curve
-            tilt, _, inplane, outofplane, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
-        elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            _, tilt, inplane, outofplane, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    else:
-        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
-
-    grazing = grazing_angle(logfile, scan_number, setup)
-    return tilt, grazing, inplane, outofplane
-
-
-def grazing_angle(logfile, scan_number, setup):
-    """
-    Get the value(s) of the position(s) of goniometer circle(s) below the rocking circle.
-
-    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param scan_number: the scan number to load
-    :param setup: the experimental setup: Class Setup
-    :return: a tuple containing the value(s) of the position(s) of goniometer circle(s) below the rocking circle.
-    """
-    # TODO: merge this into goniometer_values
     if not isinstance(setup, exp.Setup):
         raise TypeError('setup should be of type experiment.experiment_utils.Setup')
-    if not isinstance(scan_number, int) or scan_number <= 0:
-        raise TypeError('scan_number should be a positive integer')
+    valid.valid_item(scan_number, allowed_types=int, min_excluded=0, name='preprocessing_utils.goniometer_values')
     beamline = setup.beamline
     rocking_angle = setup.rocking_angle
     offsets = setup.sample_offsets  # sample offsets around downstream (chi), vertical up (phi), outboard(eta/omega)
-    if beamline == 'ID01':
-        eta, chi, _, _, _, _, _ = motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup)
-        if rocking_angle == 'outofplane':
-            return (0,)  # no chi at ID01
-        elif rocking_angle == 'inplane':
-            return 0, eta-offsets[2]  # no chi at ID01
 
-    elif beamline == 'P10':
-        om, phi, chi, _, _, _ = motor_positions_p10(logfile=logfile, setup=setup)
-        if rocking_angle == 'outofplane':
-            return (chi-offsets[0],)
-        elif rocking_angle == 'inplane':
-            return chi-offsets[0], om-offsets[2]
+    if setup.beamline == 'ID01':
+        eta, chi, phi, nu, delta, energy, frames_logical = \
+            motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
+                                 frames_logical=frames_logical, follow_bragg=follow_bragg)
+        if setup.rocking_angle == 'outofplane':  # eta rocking curve
+            grazing = (0,)  # no chi at ID01
+            tilt, inplane, outofplane = eta, nu, delta
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            grazing = (0, eta-offsets[2])  # no chi at ID01
+            tilt, inplane, outofplane = phi, nu, delta
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
 
-    elif beamline == 'CRISTAL':
-        if rocking_angle == 'outofplane':
-            return (0,)  # no chi at CRISTAL
+    elif setup.beamline == 'P10':
+        om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile=logfile, setup=setup)
+        if setup.rocking_angle == 'outofplane':  # om rocking curve
+            grazing = (chi-offsets[0],)
+            tilt, inplane, outofplane = om, gamma, delta
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            grazing = (chi-offsets[0], om-offsets[2])
+            tilt, inplane, outofplane = phi, gamma, delta
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+    elif setup.beamline == 'CRISTAL':
+        mgomega, gamma, delta = motor_positions_cristal(logfile, setup)
+        if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
+            grazing = (0,)  # no chi at CRISTAL
+            tilt, inplane, outofplane = mgomega, gamma[0], delta[0]
         elif rocking_angle == 'inplane':
             raise NotImplementedError('inplane rocking curve not implemented for CRISTAL')
+        else:
+            raise ValueError('Inplane rocking curve not implemented for CRISTAL')
 
-    elif beamline in {'SIXS_2018', 'SIXS_2019'}:
-        beta, _, _, _, _ = motor_positions_sixs(logfile=logfile, setup=setup)
-        if rocking_angle == 'outofplane':
+    elif setup.beamline in {'SIXS_2018', 'SIXS_2019'}:
+        beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile=logfile, setup=setup,
+                                                                      frames_logical=frames_logical)
+        if setup.rocking_angle == 'inplane':  # mu rocking curve
+            grazing = (0, beta-offsets[2])  # no chi at SIXS
+            tilt, inplane, outofplane = mu, gamma, delta
+        elif rocking_angle == 'outofplane':
             raise NotImplementedError('outofplane rocking curve not implemented for SIXS')
-        elif rocking_angle == 'inplane':
-            return 0, beta-offsets[2]  # no chi at SIXS
+        else:
+            raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
 
-    elif beamline == 'NANOMAX':
-        theta, _, _, _, _, _ = motor_positions_nanomax(logfile=logfile, setup=setup)
-        if rocking_angle == 'outofplane':
-            return (0,)  # no chi at NANOMAX
-        elif rocking_angle == 'inplane':
-            return 0, theta-offsets[2]  # no chi at NANOMAX
+    elif setup.beamline == 'NANOMAX':
+        theta, phi, gamma, delta, energy, radius = motor_positions_nanomax(logfile=logfile, setup=setup)
+        if setup.rocking_angle == 'outofplane':  # theta rocking curve
+            grazing = (0,)  # no chi at NANOMAX
+            tilt, inplane, outofplane = theta, gamma, delta
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            grazing = (0, theta-offsets[2])  # no chi at NANOMAX
+            tilt, inplane, outofplane = phi, gamma, delta
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
 
     elif beamline == '34ID':
         mu, tilt, chi, theta, delta, gamma = motor_positions_34id(setup=setup)
         if rocking_angle == 'outofplane':
-            return (chi-offsets[0],)
+            grazing = (chi-offsets[0],)
+            tilt, inplane, outofplane = tilt, delta, gamma  # tilt is the incident angle at 34ID
         elif rocking_angle == 'inplane':
-            return chi-offsets[0], tilt-offsets[2]  # tilt is the incident angle at 34ID
-            # and theta is the rotation around the vertical axis
+            grazing = (chi-offsets[0], tilt-offsets[2])  # tilt is the incident angle at 34ID
+            tilt, inplane, outofplane = theta, delta, gamma  # theta is the rotation around the vertical axis
+
+    else:
+        raise ValueError(f'{setup.beamline} not supported')
+
+    return tilt, grazing, inplane, outofplane
 
 
 def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, correct_curvature=False,
