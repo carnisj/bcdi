@@ -320,7 +320,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             if sum_axis == 0:
                 dim_v = nby
                 dim_h = nbx
-                pixel_spacing = (pixel_spacing[1], pixel_spacing[2])  # vertical, horizontal
+                if pixel_spacing is not None:
+                    pixel_spacing = (pixel_spacing[1], pixel_spacing[2])  # vertical, horizontal
                 if not sum_frames:
                     array = array[nbz // 2, :, :]
                 else:
@@ -330,7 +331,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             elif sum_axis == 1:
                 dim_v = nbz
                 dim_h = nbx
-                pixel_spacing = (pixel_spacing[0], pixel_spacing[2])  # vertical, horizontal
+                if pixel_spacing is not None:
+                    pixel_spacing = (pixel_spacing[0], pixel_spacing[2])  # vertical, horizontal
                 if not sum_frames:
                     array = array[:, nby // 2, :]
                 else:
@@ -340,7 +342,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             elif sum_axis == 2:
                 dim_v = nbz
                 dim_h = nby
-                pixel_spacing = (pixel_spacing[1], pixel_spacing[1])  # vertical, horizontal
+                if pixel_spacing is not None:
+                    pixel_spacing = (pixel_spacing[1], pixel_spacing[1])  # vertical, horizontal
                 if not sum_frames:
                     array = array[:, :, nbx // 2]
                 else:
