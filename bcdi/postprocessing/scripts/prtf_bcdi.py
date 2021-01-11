@@ -26,6 +26,7 @@ import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.utilities as util
+import bcdi.utils.validation as valid
 
 helptext = """
 Calculate the resolution of a BCDI reconstruction using the phase retrieval transfer function (PRTF).
@@ -46,9 +47,9 @@ Path structure:
 scan = 314
 sample_name = "PtNP1"  # "SN"  #
 root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # folder of the experiment, where all scans are stored
-savedir = "D:/data/P10_December2020_BCDI/data_nanolab/dataset_2/"  # PRTF will be saved here, leave it to '' otherwise
+save_dir = "D:/data/P10_December2020_BCDI/data_nanolab/dataset_2/"  # PRTF will be saved here, leave it to '' otherwise
 comment = ""  # should start with _
-crop_roi = []  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
+crop_roi = None  # list of 6 integers, ROI used if 'center_auto' was True in PyNX, leave None otherwise
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
 align_pattern = False  # if True, will align the retrieved diffraction amplitude with the measured one
 flag_interact = True  # True to calculate interactively the PRTF along particular directions of reciprocal space
@@ -74,6 +75,8 @@ template_imagefile = '_master.h5'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_master.h5'
+# template for NANOMAX: '%06d.h5'
+# template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
@@ -88,8 +91,8 @@ phasing_binning = (1, 2, 2)  # binning factor applied during phasing: rocking cu
 # horizontal axis.
 # If the reconstructed object was further cropped after phasing, it will be automatically padded back to the FFT window
 # shape used during phasing (after binning) before calculating the Fourier transform.
-sample_offsets = (-90, 0, 0)  # tuple of offsets in degree of the sample around z (downstream), y (vertical up) and x
-# the sample offsets will be added to the motor values
+sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+# convention: the sample offsets will be subtracted to the motor values
 ###############################
 # only needed for simulations #
 ###############################
@@ -182,56 +185,47 @@ def press_key(event):
         pass
 
 
-#################################################
-# Initialize paths, detector, setup and logfile #
-#################################################
+#######################
+# Initialize detector #
+#######################
 kwargs = dict()  # create dictionnary
-try:
-    kwargs['is_series'] = is_series
-except NameError:  # is_series not declared
-    pass
+kwargs['is_series'] = is_series
 
-detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, binning=pre_binning, **kwargs)
+# phasing_binning will be taken into account after the optional data cropping (crop_roi parameter)
+detector = exp.Detector(name=detector, template_imagefile=template_imagefile, binning=(1, 1, 1),
+                        preprocessing_binning=pre_binning)
 
-setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, distance=sdd, energy=energy,
-                               beam_direction=beam_direction, sample_inplane=sample_inplane,
-                               sample_outofplane=sample_outofplane, sample_offsets=sample_offsets)
+####################
+# Initialize setup #
+####################
+setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+                  beam_direction=beam_direction, sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
+                  sample_offsets=sample_offsets)
 
-print('\nScan', scan)
-print('Setup: ', setup.beamline)
-print('Detector: ', detector.name)
-print('Pixel sizes after pre_binning (vertical, horizontal): ', detector.pixelsize_y, detector.pixelsize_x, '(m)')
-print('Scan type: ', setup.rocking_angle)
-print('Sample to detector distance: ', setup.distance, 'm')
-print('Energy:', setup.energy, 'ev')
+########################################
+# Initialize the paths and the logfile #
+########################################
+setup.init_paths(detector=detector, sample_name=sample_name, scan_number=scan, root_folder=root_folder,
+                 save_dir=save_dir, specfile_name=specfile_name, template_imagefile=template_imagefile,
+                 create_savedir=True)
+
+logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
+                             filename=detector.specfile)
+
+###################
+# print instances #
+###################
+print(f'{"#"*(5+len(str(scan)))}\nScan {scan}\n{"#"*(5+len(str(scan)))}')
+print('\n##############\nSetup instance\n##############')
+print(setup)
+print('\n#################\nDetector instance\n#################')
+print(detector)
 
 if simulation:
-    detector.datadir = root_folder
-    detector.savedir = root_folder
-else:
-    if setup.beamline == 'P10':
-        specfile = sample_name + '_{:05d}'.format(scan)
-        homedir = root_folder + specfile + '/'
-        detector.datadir = homedir + 'e4m/'
-        imagefile = specfile + template_imagefile
-        detector.template_imagefile = imagefile
-    elif setup.beamline == 'NANOMAX':
-        homedir = root_folder + sample_name + '{:06d}'.format(scan) + '/'
-        detector.datadir = homedir + 'data/'
-        specfile = specfile_name
-    else:
-        homedir = root_folder + sample_name + str(scan) + '/'
-        detector.datadir = homedir + "data/"
-        specfile = specfile_name
+    detector.datadir, detector.datadir, detector.savedir = (root_folder,) * 3
 
-    if savedir == '':
-        detector.savedir = os.path.abspath(os.path.join(detector.datadir, os.pardir)) + '/'
-    else:
-        detector.savedir = savedir
-    print('Datadir:', detector.datadir)
-    print('Savedir:', detector.savedir)
-    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
-                                 filename=specfile)
+logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
+                             filename=detector.specfile)
 
 #############################################
 # Initialize geometry for orthogonalization #
@@ -253,30 +247,30 @@ my_cmap = colormap.cmap
 plt.ion()
 root = tk.Tk()
 root.withdraw()
-file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select diffraction pattern",
+file_path = filedialog.askopenfilename(initialdir=detector.scandir, title="Select diffraction pattern",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
 diff_pattern, _ = util.load_file(file_path)
 diff_pattern = diff_pattern.astype(float)
 
-file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select mask",
+file_path = filedialog.askopenfilename(initialdir=detector.scandir, title="Select mask",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
 mask, _ = util.load_file(file_path)
 
-# crop the diffraction pattern and the mask to compensate the "auto_center_resize" option used in PyNX.
+########################################################################################################
+# crop the diffraction pattern and the mask to compensate the "auto_center_resize" option used in PyNX #
+########################################################################################################
 # The shape will be equal to 'roi_final' parameter of the .cxi file
-if len(crop_roi) == 6:
+valid.valid_container(obj=crop_roi, container_types=(list, tuple), length=6, item_types=int, allow_none=True,
+                      name='prtf_bcdi.py')
+if crop_roi is not None:
     diff_pattern = diff_pattern[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
     mask = mask[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3], crop_roi[4]:crop_roi[5]]
-elif len(crop_roi) != 0:
-    print('Crop_roi should be a list of 6 integers or a blank list!')
-    sys.exit()
 
-# bin the diffraction pattern and the mask to compensate the "rebin" option used in PyNX.
+##########################################################################################
+# bin the diffraction pattern and the mask to compensate the "rebin" option used in PyNX #
+##########################################################################################
 # update also the detector pixel sizes to take into account the binning
-detector.pixelsize_y = detector.pixelsize_y * phasing_binning[1]
-detector.pixelsize_x = detector.pixelsize_x * phasing_binning[2]
-final_binning = np.multiply(pre_binning, phasing_binning)
-detector.binning = final_binning
+detector.binning = phasing_binning
 print('Pixel sizes after phasing_binning (vertical, horizontal): ', detector.pixelsize_y, detector.pixelsize_x, '(m)')
 diff_pattern = pu.bin_data(array=diff_pattern, binning=phasing_binning, debugging=False)
 mask = pu.bin_data(array=mask, binning=phasing_binning, debugging=False)
@@ -285,6 +279,9 @@ numz, numy, numx = diff_pattern.shape  # this shape will be used for the calcula
 print(f'\nMeasured data shape = {numz}, {numy}, {numx}, Max(measured amplitude)={np.sqrt(diff_pattern).max():.1f}')
 diff_pattern[np.nonzero(mask)] = 0
 
+######################################################
+# find the center of mass of the diffraction pattern #
+######################################################
 z0, y0, x0 = center_of_mass(diff_pattern)
 print(f'COM of measured pattern after masking: {z0:.2f}, {y0:.2f}, {x0:.2f}')
 # refine the COM in a small ROI centered on the approximate COM, to avoid detector gaps
@@ -498,19 +495,20 @@ idx_resolution = [i for i, x in enumerate(prtf_interp) if x < 1/np.e]  # indices
 fit_q = interp1d(arc_length, defined_q, kind='linear')
 q_interp = fit_q(arc_length_interp)
 
-plt.figure()
-plt.plot(prtf_avg[~np.isnan(prtf_avg)], defined_q, 'o', prtf_interp, q_interp, '.r')
-plt.xlabel('PRTF')
-plt.ylabel('q (1/nm)')
+if debug:
+    plt.figure()
+    plt.plot(prtf_avg[~np.isnan(prtf_avg)], defined_q, 'o', prtf_interp, q_interp, '.r')
+    plt.xlabel('PRTF')
+    plt.ylabel('q (1/nm)')
 
 try:
     q_resolution = q_interp[min(idx_resolution)]
 except ValueError:
     print('Resolution limited by the 1 photon counts only (min(prtf)>1/e)')
-    print('min(PRTF) = ', prtf_avg[~np.isnan(prtf_avg)].min())
+    print(f'min(PRTF) = {prtf_avg[~np.isnan(prtf_avg)].min()}')
     q_resolution = 10 * q_axis[len(prtf_avg[~np.isnan(prtf_avg)])-1]
-print('q resolution =', str('{:.5f}'.format(q_resolution)), ' (1/nm)')
-print('resolution d= ' + str('{:.1f}'.format(2*np.pi / q_resolution)) + 'nm')
+print(f'q resolution ={q_resolution:.5f} (1/nm)')
+print(f'resolution d = {2*np.pi / q_resolution:.1f} nm')
 
 fig, ax = plt.subplots(1, 1)
 ax.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
@@ -528,9 +526,9 @@ ax.set_title('PRTF')
 ax.set_xlabel('q (1/nm)')
 ax.tick_params(labelbottom=True, labelleft=True)
 fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
-fig.text(0.15, 0.20, "q at PRTF=1/e: " + str('{:.5f}'.format(q_resolution)) + '(1/nm)', size=14)
-fig.text(0.15, 0.15, "resolution d= " + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm', size=14)
+fig.text(0.15, 0.20, f"q at PRTF=1/e: {q_resolution:.5f} (1/nm)", size=14)
+fig.text(0.15, 0.15, f"resolution d = {2*np.pi / q_resolution:.3f} nm", size=14)
 if save:
-    fig.savefig(detector.savedir + 'S' + str(scan) + '_prtf_comments' + comment + '.png')
+    fig.savefig(detector.savedir + f'S{scan}_prtf' + comment + '.png')
 plt.ioff()
 plt.show()
