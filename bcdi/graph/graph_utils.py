@@ -9,12 +9,15 @@
 import numpy as np
 from numbers import Real
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import matplotlib.patches as patches
 import matplotlib.ticker as ticker
 import matplotlib.colors as colors
 from matplotlib.colors import LinearSegmentedColormap
+from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
 from operator import itemgetter
 import sys
@@ -149,6 +152,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         tuple_sum_axis = (tuple_sum_axis,) * nb_subplots
     valid.valid_container(obj=tuple_sum_axis, container_types=(tuple, list), length=nb_subplots, item_types=int,
                           allow_none=True, min_included=0, name='graph_utils.combined_plots')
+    assert all(sum_axis in {0, 1, 2} for sum_axis in tuple_sum_axis), 'sum_axis should be either 0, 1 or 2'
+
     if isinstance(tuple_width_v, int):
         tuple_width_v = (tuple_width_v,) * nb_subplots
     valid.valid_container(obj=tuple_width_v, container_types=(tuple, list), length=nb_subplots, item_types=int,
@@ -264,45 +269,13 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             continue
 
         elif nb_dim == 3:  # 3D, needs to be reduced to 2D by slicing or projecting
-            if reciprocal_space:
-                if is_orthogonal:
-                    if sum_frames:
-                        slice_names = (' sum along Q$_x$', ' sum along Q$_z$', ' sum along Q$_y$')
-                    else:
-                        slice_names = (' slice in Q$_x$', ' slice in Q$_z$', ' slice in Q$_y$')
-                    ver_labels = ("Q$_z$", "Q$_x$", "Q$_x$")
-                    hor_labels = ("Q$_y$", "Q$_y$", "Q$_z$")
-                    if sum_axis == 0:  # detector Y is axis 0, need to be flipped
-                        invert_yaxis = True
-                    else:
-                        invert_yaxis = False
-                else:  # detector frame
-                    if sum_frames:
-                        slice_names = (' sum along Z', ' sum along Y', ' sum along X')
-                    else:
-                        slice_names = (' slice in Z', ' slice in Y', ' slice in X')
-                    ver_labels = ('Y', 'rocking angle', 'rocking angle')
-                    hor_labels = ('X', 'X', 'Y')
+            if is_orthogonal and sum_axis == 0:  # detector Y is axis 0, need to be flipped
+                invert_yaxis = True
             else:
-                if is_orthogonal:
-                    if sum_frames:
-                        slice_names = (' sum along z', ' sum along y', ' sum along x')
-                    else:
-                        slice_names = (' slice in z', ' slice in y', ' slice in x')
-                    ver_labels = ('y', 'z', 'z')
-                    hor_labels = ('x', 'x', 'y')
-                    if sum_axis == 0:  # detector Y is axis 0, need to be flipped
-                        invert_yaxis = True
-                    else:
-                        invert_yaxis = False
-                else:  # detector frame
-                    if sum_frames:
-                        slice_names = (' sum along Z', ' sum along Y', ' sum along X')
-                    else:
-                        slice_names = (' slice in Z', ' slice in Y', ' slice in X')
-                    ver_labels = ('Y', 'rocking angle', 'rocking angle')
-                    hor_labels = ('X', 'X', 'Y')
+                invert_yaxis = False
 
+            slice_names, ver_labels, hor_labels = define_labels(reciprocal_space=reciprocal_space,
+                                                                is_orthogonal=is_orthogonal, sum_frames=sum_frames)
             nbz, nby, nbx = array.shape
             width_v = width_v or max(nbz, nby, nbx)
             width_h = width_h or max(nbz, nby, nbx)
@@ -329,7 +302,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                     array = array.sum(axis=sum_axis)
                 default_xlabel = hor_labels[1]
                 default_ylabel = ver_labels[1]
-            elif sum_axis == 2:
+            else:  # sum_axis == 2:
                 dim_v = nbz
                 dim_h = nby
                 if pixel_spacing is not None:
@@ -340,9 +313,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                     array = array.sum(axis=sum_axis)
                 default_xlabel = hor_labels[2]
                 default_ylabel = ver_labels[2]
-            else:
-                print('sum_axis should be only equal to 0, 1 or 2')
-                return
+
             slice_name = slice_names[sum_axis]
 
         else:  # 2D
@@ -380,7 +351,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                 vmax = tmp_array.max(initial=None)
 
             plot = axis.imshow(array, vmin=vmin, vmax=vmax, cmap=cmap)
-        elif scale == 'log':
+        else:  # 'log'
             if np.isnan(vmin):
                 tmp_array = np.copy(array)
                 tmp_array[np.isnan(array)] = np.inf
@@ -394,8 +365,6 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                 tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
                 vmax = np.log10(abs(tmp_array).max())
             plot = axis.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax, cmap=cmap)
-        else:
-            raise ValueError('Wrong value for scale')
 
         axis.set_title(title + slice_name)
         if len(xlabel[idx]) != 0:
@@ -446,143 +415,118 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :return: fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) instances
     """
+    #########################
+    # check some parameters #
+    #########################
     nb_dim = array.ndim
+    assert nb_dim == 3, 'array should be 3D'
+    assert scale in {'linear', 'log'}, 'scale should be either "linear" or "log"'
+    assert all(len(qval) == shape for qval, shape in zip(q_coordinates, array.shape)), \
+        'Coordinates shape is not compatible with data shape'
+
+    nbz, nby, nbx = array.shape
+    qx, qz, qy = q_coordinates
+
+    width_z = width_z or nbz
+    width_y = width_y or nby
+    width_x = width_x or nbx
+
+    if not sum_frames:
+        slice_position = slice_position or (int(nbz//2), int(nby//2), int(nbx//2))
+        valid.valid_container(obj=slice_position, container_types=(tuple, list), length=3, item_types=int,
+                              min_included=0, name='graph_utils.contour_slices')
+
+    #######################################
+    # create the figure and plot subplots #
+    #######################################
+    slice_names, ver_labels, hor_labels = define_labels(reciprocal_space=reciprocal_space,
+                                                        is_orthogonal=is_orthogonal, sum_frames=sum_frames)
     plt.ion()
+    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 9))
 
-    if reciprocal_space:
-        if is_orthogonal:
-            if sum_frames:
-                slice_names = (' sum along Q$_x$', ' sum along Q$_z$', ' sum along Q$_y$')
-            else:
-                slice_names = (' slice in Q$_x$', ' slice in Q$_z$', ' slice in Q$_y$')
-            ver_labels = ("Q$_z$", "Q$_x$", "Q$_x$")
-            hor_labels = ("Q$_y$", "Q$_y$", "Q$_z$")
-        else:  # detector frame
-            if sum_frames:
-                slice_names = (' sum along Z', ' sum along Y', ' sum along X')
-            else:
-                slice_names = (' slice in Z', ' slice in Y', ' slice in X')
-            ver_labels = ('Y', 'rocking angle', 'rocking angle')
-            hor_labels = ('X', 'X', 'Y')
+    ##########
+    # axis 0 #
+    ##########
+    temp_array = np.copy(array)
+    if not sum_frames:
+        temp_array = temp_array[slice_position[0], :, :]
     else:
-        if is_orthogonal:
-            if sum_frames:
-                slice_names = (' sum along z', ' sum along y', ' sum along x')
-            else:
-                slice_names = (' slice in z', ' slice in y', ' slice in x')
-            ver_labels = ('y', 'z', 'z')
-            hor_labels = ('x', 'x', 'y')
-        else:  # detector frame
-            if sum_frames:
-                slice_names = (' sum along Z', ' sum along Y', ' sum along X')
-            else:
-                slice_names = (' slice in Z', ' slice in Y', ' slice in X')
-            ver_labels = ('Y', 'rocking angle', 'rocking angle')
-            hor_labels = ('X', 'X', 'Y')
+        temp_array = temp_array.sum(axis=0)
+    # now array is 2D
+    temp_array = temp_array[int(np.rint(nby / 2 - min(width_y, nby) / 2)):
+                            int(np.rint(nby / 2 - min(width_y, nby) / 2)) + min(width_y, nby),
+                            int(np.rint(nbx // 2 - min(width_x, nbx) // 2)):
+                            int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
 
-    if nb_dim != 3:  # wrong array dimension
-        print('multislices_plot() needs a 3D array')
-        return
+    if scale == 'linear':
+        plt0 = ax0.contourf(qy, qz, temp_array, levels, cmap=cmap)
+    else:  # 'log'
+        plt0 = ax0.contourf(qy, qz, np.log10(abs(temp_array)), levels, cmap=cmap)
+
+    ax0.set_aspect("equal")
+    ax0.set_xlabel(hor_labels[0])
+    ax0.set_ylabel(ver_labels[0])
+    ax0.set_title(title + slice_names[0])
+    if plot_colorbar:
+        colorbar(plt0, numticks=5)
+
+    ##########
+    # axis 1 #
+    ##########
+    temp_array = np.copy(array)
+    if not sum_frames:
+        temp_array = temp_array[:, slice_position[1], :]
     else:
-        nbz, nby, nbx = array.shape
-        qx, qz, qy = q_coordinates
-        if len(qx) != nbz or len(qz) != nby or len(qy) != nbx:
-            print('Coordinates shape is not compatible with data shape')
+        temp_array = temp_array.sum(axis=1)
+    # now array is 2D
+    temp_array = temp_array[int(np.rint(nbz / 2 - min(width_z, nbz) / 2)):
+                            int(np.rint(nbz / 2 - min(width_z, nbz) / 2)) + min(width_z, nbz),
+                            int(np.rint(nbx // 2 - min(width_x, nbx) // 2)):
+                            int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
 
-        width_z = width_z or nbz
-        width_y = width_y or nby
-        width_x = width_x or nbx
+    if scale == 'linear':
+        plt1 = ax1.contourf(qy, qx, temp_array, levels, cmap=cmap)
+    else:  # 'log'
+        plt1 = ax1.contourf(qy, qx, np.log10(abs(temp_array)), levels, cmap=cmap)
 
-        if not sum_frames:
-            slice_position = slice_position or [nbz // 2, nby // 2, nbx // 2]
-            try:
-                assert len(slice_position) == 3, 'len(slice_position) should be 3'
-            except TypeError:  # it is a number
-                raise ValueError('len(slice_position) should be 3')
-            slice_position = [int(position) for position in slice_position]
+    ax1.set_aspect("equal")
+    ax1.set_xlabel(hor_labels[1])
+    ax1.set_ylabel(ver_labels[1])
+    ax1.set_title(title + slice_names[1])
+    if plot_colorbar:
+        colorbar(plt1, numticks=5)
 
-        fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 9))
+    ##########
+    # axis 2 #
+    ##########
+    temp_array = np.copy(array)
+    if not sum_frames:
+        temp_array = temp_array[:, :, slice_position[2]]
+    else:
+        temp_array = temp_array.sum(axis=2)
+    # now array is 2D
+    temp_array = temp_array[int(np.rint(nbz / 2 - min(width_z, nbz) / 2)):
+                            int(np.rint(nbz / 2 - min(width_z, nbz) / 2)) + min(width_z, nbz),
+                            int(np.rint(nby // 2 - min(width_y, nby) // 2)):
+                            int(np.rint(nby // 2 - min(width_y, nby) // 2)) + min(width_y, nby)]
 
-        # axis 0
-        temp_array = np.copy(array)
-        if not sum_frames:
-            temp_array = temp_array[slice_position[0], :, :]
-        else:
-            temp_array = temp_array.sum(axis=0)
-        # now array is 2D
-        temp_array = temp_array[int(np.rint(nby / 2 - min(width_y, nby) / 2)):
-                                int(np.rint(nby / 2 - min(width_y, nby) / 2)) + min(width_y, nby),
-                                int(np.rint(nbx // 2 - min(width_x, nbx) // 2)):
-                                int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
+    if scale == 'linear':
+        plt2 = ax2.contourf(qz, qx, temp_array, levels, cmap=cmap)
+    else:  # 'log'
+        plt2 = ax2.contourf(qz, qx, np.log10(abs(temp_array)), levels, cmap=cmap)
 
-        if scale == 'linear':
-            plt0 = ax0.contourf(qy, qz, temp_array, levels, cmap=cmap)
-        elif scale == 'log':
-            plt0 = ax0.contourf(qy, qz, np.log10(abs(temp_array)), levels, cmap=cmap)
-        else:
-            raise ValueError('Wrong value for scale')
+    ax2.set_aspect("equal")
+    ax2.set_xlabel(hor_labels[2])
+    ax2.set_ylabel(ver_labels[2])
+    ax2.set_title(title + slice_names[2])
+    if plot_colorbar:
+        colorbar(plt2, numticks=5)
 
-        ax0.set_aspect("equal")
-        ax0.set_xlabel(hor_labels[0])
-        ax0.set_ylabel(ver_labels[0])
-        ax0.set_title(title + slice_names[0])
-        if plot_colorbar:
-            colorbar(plt0, numticks=5)
+    ##########
+    # axis 3 #
+    ##########
+    ax3.set_visible(False)
 
-        # axis 1
-        temp_array = np.copy(array)
-        if not sum_frames:
-            temp_array = temp_array[:, slice_position[1], :]
-        else:
-            temp_array = temp_array.sum(axis=1)
-        # now array is 2D
-        temp_array = temp_array[int(np.rint(nbz / 2 - min(width_z, nbz) / 2)):
-                                int(np.rint(nbz / 2 - min(width_z, nbz) / 2)) + min(width_z, nbz),
-                                int(np.rint(nbx // 2 - min(width_x, nbx) // 2)):
-                                int(np.rint(nbx // 2 - min(width_x, nbx) // 2)) + min(width_x, nbx)]
-
-        if scale == 'linear':
-            plt1 = ax1.contourf(qy, qx, temp_array, levels, cmap=cmap)
-        elif scale == 'log':
-            plt1 = ax1.contourf(qy, qx, np.log10(abs(temp_array)), levels, cmap=cmap)
-        else:
-            raise ValueError('Wrong value for scale')
-
-        ax1.set_aspect("equal")
-        ax1.set_xlabel(hor_labels[1])
-        ax1.set_ylabel(ver_labels[1])
-        ax1.set_title(title + slice_names[1])
-        if plot_colorbar:
-            colorbar(plt1, numticks=5)
-
-        # axis 2
-        temp_array = np.copy(array)
-        if not sum_frames:
-            temp_array = temp_array[:, :, slice_position[2]]
-        else:
-            temp_array = temp_array.sum(axis=2)
-        # now array is 2D
-        temp_array = temp_array[int(np.rint(nbz / 2 - min(width_z, nbz) / 2)):
-                                int(np.rint(nbz / 2 - min(width_z, nbz) / 2)) + min(width_z, nbz),
-                                int(np.rint(nby // 2 - min(width_y, nby) // 2)):
-                                int(np.rint(nby // 2 - min(width_y, nby) // 2)) + min(width_y, nby)]
-
-        if scale == 'linear':
-            plt2 = ax2.contourf(qz, qx, temp_array, levels, cmap=cmap)
-        elif scale == 'log':
-            plt2 = ax2.contourf(qz, qx, np.log10(abs(temp_array)), levels, cmap=cmap)
-        else:
-            raise ValueError('Wrong value for scale')
-
-        ax2.set_aspect("equal")
-        ax2.set_xlabel(hor_labels[2])
-        ax2.set_ylabel(ver_labels[2])
-        ax2.set_title(title + slice_names[2])
-        if plot_colorbar:
-            colorbar(plt2, numticks=5)
-
-        # axis 3
-        ax3.set_visible(False)
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.5)
     plt.ioff()
@@ -611,7 +555,12 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes=N
     :param debugging: True to see the scatter plot of euclidian coordinates
     :return: figure and axe instances
     """
-    from scipy.interpolate import griddata
+    assert scale in {'linear', 'log'}, 'scale should be either "linear" or "log"'
+    if contour_range is None:
+        if scale == 'linear':
+            contour_range = range(0, 10001, 250)
+        else:  # 'log'
+            contour_range = np.logspace(0, 4, num=20, endpoint=True, base=10.0)
 
     if debugging:
         color2 = np.copy(color)
@@ -638,15 +587,9 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes=N
     # normalize the intensity for easier plotting
     intensity_grid = intensity_grid / abs(intensity_grid[~nan_indices]).max() * 10000
 
-    if contour_range is None:
-        if scale == 'linear':
-            contour_range = range(0, 10001, 250)
-        elif scale == 'log':
-            contour_range = np.logspace(0, 4, num=20, endpoint=True, base=10.0)
-        else:
-            raise ValueError('Incorrect value for scale parameter')
-
-    # plot the stereographic projection
+    #####################################
+    # plot the stereographic projection #
+    #####################################
     plt.ion()
     fig, ax0 = plt.subplots(nrows=1, ncols=1, figsize=(12, 9), facecolor='w', edgecolor='k')
     if scale == 'linear':
@@ -715,6 +658,55 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes=N
     return fig, ax0
 
 
+def define_labels(reciprocal_space, is_orthogonal, sum_frames, labels=None):
+    """
+    Define default labels for plots.
+
+    :param reciprocal_space: True if the data is in reciprocal space, False otherwise
+    :param is_orthogonal: True is the frame is orthogonal, False otherwise (detector frame)
+    :param sum_frames: True if the the data is summed along some axis
+    :param labels: tuple of two strings (vertical label, horizontal label)
+    :return: three tuples of three elements: slice_names, vertical labels, horizontal labels. The first element in the
+     tuple corresponds to the first subplot and so on.
+    """
+    labels = labels or ('',)*2
+
+    if reciprocal_space:
+        if is_orthogonal:
+            if sum_frames:
+                slice_names = (' sum along Q$_x$', ' sum along Q$_z$', ' sum along Q$_y$')
+            else:
+                slice_names = (' slice in Q$_x$', ' slice in Q$_z$', ' slice in Q$_y$')
+            ver_labels = (labels[0] + r" Q$_z$", labels[0] + r" Q$_x$",
+                          labels[0] + r" Q$_x$")
+            hor_labels = (labels[1] + r" Q$_y$", labels[1] + r" Q$_y$",
+                          labels[1] + r" Q$_z$")
+        else:  # detector frame
+            if sum_frames:
+                slice_names = (' sum along Z', ' sum along Y', ' sum along X')
+            else:
+                slice_names = (' slice in Z', ' slice in Y', ' slice in X')
+            ver_labels = (labels[0] + ' Y', labels[0] + ' rocking angle', labels[0] + ' rocking angle')
+            hor_labels = (labels[1] + ' X', labels[1] + ' X', labels[1] + ' Y')
+    else:
+        if is_orthogonal:
+            if sum_frames:
+                slice_names = (' sum along z', ' sum along y', ' sum along x')
+            else:
+                slice_names = (' slice in z', ' slice in y', ' slice in x')
+            ver_labels = (labels[0] + ' y', labels[0] + ' z', labels[0] + ' z')
+            hor_labels = (labels[1] + ' x', labels[1] + ' x', labels[1] + ' y')
+        else:  # detector frame
+            if sum_frames:
+                slice_names = (' sum along Z', ' sum along Y', ' sum along X')
+            else:
+                slice_names = (' slice in Z', ' slice in Y', ' slice in X')
+            ver_labels = (labels[0] + ' Y', labels[0] + ' rocking angle', labels[0] + ' rocking angle')
+            hor_labels = (labels[1] + ' X', labels[1] + ' X', labels[1] + ' Y')
+
+    return slice_names, ver_labels, hor_labels
+
+
 def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None, plot_colorbar=False,
                 vmin=np.nan, vmax=np.nan, cmap=my_cmap, title='', labels=None, scale='linear',
                 tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=None,
@@ -739,17 +731,21 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     :param tick_length: length of tickes in plots
     :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm). It can
      be  a positive number or a tuple of array.ndim positive numbers
-    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
+    :param is_orthogonal: True is the array is in an orthogonal basis, False otherwise (detector frame).
+     Used for plot labels.
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :param kwargs:
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  fig, axis, plot instances
     """
+    assert sum_axis in {0, 1, 2}, 'sum_axis should be either 0, 1 or 2'
+    assert isinstance(sum_frames, bool), 'sum_frames should be a boolean'
+    assert scale in {'linear', 'log'}, 'scale should be either "linear" or "log"'
+
     # load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'invert_y', 'ylabel', 'position', 'invert_y'},
+                       name='graph_utils.imshow_plot')
     invert_y = kwargs.get('invert_y', None)
-    for k in kwargs.keys():
-        if k not in {'invert_y'}:
-            raise Exception("unknown keyword argument given:", k)
 
     nb_dim = array.ndim
 
@@ -758,49 +754,21 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         valid.valid_container(obj=pixel_spacing, container_types=(tuple, list), length=nb_dim, item_types=Real,
                               min_excluded=0, allow_none=True, name='graph_utils.imshow_plot')
 
-    labels = labels or ('', '')
-    assert len(labels) == 2, 'labels should be a tuple of two strings (vertical label, horizontal label)'
+    labels = labels or ('',)*2
+    valid.valid_container(obj=labels, container_types=(tuple, list), length=2, item_types=str,
+                          name='graph_utils.imshow_plot')
 
     array = array.astype(float)
     plt.ion()
 
     if nb_dim == 3:
-        if reciprocal_space:
-            if is_orthogonal:
-                invert_yaxis = True
-                if sum_frames:
-                    slice_names = (' sum along Q$_x$', ' sum along Q$_z$', ' sum along Q$_y$')
-                else:
-                    slice_names = (' slice in Q$_x$', ' slice in Q$_z$', ' slice in Q$_y$')
-                ver_labels = (labels[0] + r" Q$_z$", labels[0] + r" Q$_x$",
-                              labels[0] + r" Q$_x$")
-                hor_labels = (labels[1] + r" Q$_y$", labels[1] + r" Q$_y$",
-                              labels[1] + r" Q$_z$")
-            else:  # detector frame
-                invert_yaxis = False
-                if sum_frames:
-                    slice_names = (' sum along Z', ' sum along Y', ' sum along X')
-                else:
-                    slice_names = (' slice in Z', ' slice in Y', ' slice in X')
-                ver_labels = (labels[0] + ' Y', labels[0] + ' rocking angle', labels[0] + ' rocking angle')
-                hor_labels = (labels[1] + ' X', labels[1] + ' X', labels[1] + ' Y')
+        if is_orthogonal:
+            invert_yaxis = True
         else:
-            if is_orthogonal:
-                invert_yaxis = True
-                if sum_frames:
-                    slice_names = (' sum along z', ' sum along y', ' sum along x')
-                else:
-                    slice_names = (' slice in z', ' slice in y', ' slice in x')
-                ver_labels = (labels[0] + ' y', labels[0] + ' z', labels[0] + ' z')
-                hor_labels = (labels[1] + ' x', labels[1] + ' x', labels[1] + ' y')
-            else:  # detector frame
-                invert_yaxis = False
-                if sum_frames:
-                    slice_names = (' sum along Z', ' sum along Y', ' sum along X')
-                else:
-                    slice_names = (' slice in Z', ' slice in Y', ' slice in X')
-                ver_labels = (labels[0] + ' Y', labels[0] + ' rocking angle', labels[0] + ' rocking angle')
-                hor_labels = (labels[1] + ' X', labels[1] + ' X', labels[1] + ' Y')
+            invert_yaxis = False
+
+        slice_names, ver_labels, hor_labels = define_labels(reciprocal_space=reciprocal_space, labels=labels,
+                                                            is_orthogonal=is_orthogonal, sum_frames=sum_frames)
 
         nbz, nby, nbx = array.shape
         width_v = width_v or max(nbz, nby, nbx)
@@ -822,7 +790,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                 array = array[:, nby // 2, :]
             else:
                 array = array.sum(axis=sum_axis)
-        elif sum_axis == 2:
+        else:  # 2
             dim_v = nbz
             dim_h = nby
             pixel_spacing = (pixel_spacing[0], pixel_spacing[1])  # vertical, horizontal
@@ -830,9 +798,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
                 array = array[:, :, nbx // 2]
             else:
                 array = array.sum(axis=sum_axis)
-        else:
-            print('sum_axis should be only equal to 0, 1 or 2')
-            return
+
         slice_name = slice_names[sum_axis]
         ver_label = ver_labels[sum_axis]
         hor_label = hor_labels[sum_axis]
@@ -848,8 +814,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         slice_name, ver_label, hor_label = '', labels[0], labels[1]
 
     else:  # wrong array dimension
-        print('imshow_plot() needs a 2D or 3D array')
-        return
+        raise ValueError('imshow_plot() needs a 2D or 3D array')
 
     ############################
     # now array is 2D, plot it #
@@ -875,7 +840,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
             tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
             vmax = tmp_array.max(initial=None)
         plot = axis.imshow(array, vmin=vmin, vmax=vmax, cmap=cmap)
-    elif scale == 'log':
+    else:  # 'log'
         if np.isnan(vmin):
             tmp_array = np.copy(array)
             tmp_array[np.isnan(array)] = np.inf
@@ -889,8 +854,6 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
             tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
             vmax = np.log10(abs(tmp_array).max())
         plot = axis.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax, cmap=cmap)
-    else:
-        raise ValueError('Wrong value for scale')
 
     if invert_yaxis and sum_axis == 0:  # detector Y is axis 0, need to be flipped
         axis = plt.gca()
@@ -1309,93 +1272,72 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return: fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) instances
     """
+    ###############
+    # load kwargs #
+    ###############
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'invert_y'}, name='graph_utils.multislices_plot')
+    invert_y = kwargs.get('invert_y', None)
+
+    #########################
+    # check some parameters #
+    #########################
+    assert isinstance(sum_frames, bool), 'sum_frames should be a boolean'
+    assert scale in {'linear', 'log'}, 'scale should be either "linear" or "log"'
     nb_dim = array.ndim
     if nb_dim != 3:
         raise ValueError('multislices_plot() expects a 3D array')
 
     nbz, nby, nbx = array.shape
 
-    try:
-        assert len(vmin) == 3, 'len(vmin) should be 3'
-    except TypeError:  # it is a number
+    if isinstance(vmin, Real):
         vmin = [vmin, vmin, vmin]
+    valid.valid_container(obj=vmin, container_types=(tuple, list), length=3, item_types=Real,
+                          name='graph_utils.multislices_plot')
     min_value = vmin
 
-    try:
-        assert len(vmax) == 3, 'len(vmax) should be 3'
-    except TypeError:  # it is a number
+    if isinstance(vmax, Real):
         vmax = [vmax, vmax, vmax]
+    valid.valid_container(obj=vmax, container_types=(tuple, list), length=3, item_types=Real,
+                          name='graph_utils.multislices_plot')
     max_value = vmax
+    assert all(v_min < v_max for v_min, v_max in zip(min_value, max_value)), 'vmin should be strictly smaller than vmax'
 
     if not sum_frames:
-        slice_position = slice_position or [nbz // 2, nby // 2, nbx // 2]
-        try:
-            assert len(slice_position) == 3, 'len(slice_position) should be 3'
-        except TypeError:  # it is a number
-            raise ValueError('len(slice_position) should be 3')
-        slice_position = [int(position) for position in slice_position]
-
-    plt.ion()
-
-    if reciprocal_space:
-        if is_orthogonal:
-            invert_yaxis = True
-            if sum_frames:
-                slice_names = (' sum along Q$_x$', ' sum along Q$_z$', ' sum along Q$_y$')
-            else:
-                slice_names = (' slice in Q$_x$', ' slice in Q$_z$', ' slice in Q$_y$')
-            ver_labels = ("Q$_z$", "Q$_x$", "Q$_x$")
-            hor_labels = ("Q$_y$", "Q$_y$", "Q$_z$")
-        else:  # detector frame
-            invert_yaxis = False
-            if sum_frames:
-                slice_names = (' sum along Z', ' sum along Y', ' sum along X')
-            else:
-                slice_names = (' slice in Z', ' slice in Y', ' slice in X')
-            ver_labels = ('Y', 'rocking angle', 'rocking angle')
-            hor_labels = ('X', 'X', 'Y')
-    else:
-        if is_orthogonal:
-            invert_yaxis = True
-            if sum_frames:
-                slice_names = (' sum along z', ' sum along y', ' sum along x')
-            else:
-                slice_names = (' slice in z', ' slice in y', ' slice in x')
-            ver_labels = ('y', 'z', 'z')
-            hor_labels = ('x', 'x', 'y')
-        else:  # detector frame
-            invert_yaxis = False
-            if sum_frames:
-                slice_names = (' sum along Z', ' sum along Y', ' sum along X')
-            else:
-                slice_names = (' slice in Z', ' slice in Y', ' slice in X')
-            ver_labels = ('Y', 'rocking angle', 'rocking angle')
-            hor_labels = ('X', 'X', 'Y')
-
-    width_z = width_z or nbz
-    width_y = width_y or nby
-    width_x = width_x or nbx
+        slice_position = slice_position or (int(nbz//2), int(nby//2), int(nbx//2))
+        valid.valid_container(obj=slice_position, container_types=(tuple, list), length=3, item_types=int,
+                              min_included=0, name='graph_utils.multislices_plot')
 
     if isinstance(pixel_spacing, Real):
         pixel_spacing = (pixel_spacing,) * nb_dim
         valid.valid_container(obj=pixel_spacing, container_types=(tuple, list), length=nb_dim, item_types=Real,
                               min_excluded=0, allow_none=True, name='graph_utils.multislices_plot')
+    width_z = width_z or nbz
+    width_y = width_y or nby
+    width_x = width_x or nbx
 
+    if is_orthogonal:
+        invert_yaxis = True
+    else:
+        invert_yaxis = False
+    if invert_y is not None:  # override the default behavior for invert_yaxis
+        invert_yaxis = invert_y
+
+    ####################################
+    # create the labels and the figure #
+    ####################################
+    slice_names, ver_labels, hor_labels = define_labels(reciprocal_space=reciprocal_space,
+                                                        is_orthogonal=is_orthogonal, sum_frames=sum_frames)
+
+    plt.ion()
     if ipynb_layout:
         fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(15, 4.5))
         ax3 = None
     else:
         fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 9))
 
-    # load kwargs
-    invert_y = kwargs.get('invert_y', None)
-    if invert_y is not None:  # override the default behavior for inver_yaxis
-        invert_yaxis = invert_y
-    for k in kwargs.keys():
-        if k not in {'invert_y'}:
-            raise Exception("unknown keyword argument given:", k)
-
-    # axis 0
+    ##########
+    # axis 0 #
+    ##########
     temp_array = np.copy(array)
     if not sum_frames:
         temp_array = temp_array[slice_position[0], :, :]
@@ -1418,7 +1360,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             except ValueError:
                 max_value[0] = 1
         plt0 = ax0.imshow(temp_array, vmin=min_value[0], vmax=max_value[0], cmap=cmap)
-    elif scale == 'log':
+    else:  # 'log'
         if np.isnan(min_value[0]):
             try:
                 min_value[0] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
@@ -1432,8 +1374,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             except ValueError:
                 max_value[0] = 1
         plt0 = ax0.imshow(np.log10(abs(temp_array)), vmin=min_value[0], vmax=max_value[0], cmap=cmap)
-    else:
-        raise ValueError('Wrong value for scale')
+
     ax0.set_xlabel(hor_labels[0])
     ax0.set_ylabel(ver_labels[0])
     ax0.set_title(title + slice_names[0])
@@ -1448,7 +1389,9 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
 
-    # axis 1
+    ##########
+    # axis 1 #
+    ##########
     temp_array = np.copy(array)
     if not sum_frames:
         temp_array = temp_array[:, slice_position[1], :]
@@ -1471,7 +1414,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             except ValueError:
                 max_value[1] = 1
         plt1 = ax1.imshow(temp_array, vmin=min_value[1], vmax=max_value[1], cmap=cmap)
-    elif scale == 'log':
+    else:  # 'log'
         if np.isnan(min_value[1]):
             try:
                 min_value[1] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
@@ -1485,8 +1428,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             except ValueError:
                 max_value[1] = 1
         plt1 = ax1.imshow(np.log10(abs(temp_array)), vmin=min_value[1], vmax=max_value[1], cmap=cmap)
-    else:
-        raise ValueError('Wrong value for scale')
+
     ax1.set_xlabel(hor_labels[1])
     ax1.set_ylabel(ver_labels[1])
     ax1.set_title(title + slice_names[1])
@@ -1499,7 +1441,9 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
 
-    # axis 2
+    ##########
+    # axis 2 #
+    ##########
     temp_array = np.copy(array)
     if not sum_frames:
         temp_array = temp_array[:, :, slice_position[2]]
@@ -1522,7 +1466,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             except ValueError:
                 max_value[2] = 1
         plt2 = ax2.imshow(temp_array, vmin=min_value[2], vmax=max_value[2], cmap=cmap)
-    elif scale == 'log':
+    else:  # 'log'
         if np.isnan(min_value[2]):
             try:
                 min_value[2] = np.log10(abs(temp_array[~np.isnan(temp_array)]).min())
@@ -1536,8 +1480,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
             except ValueError:
                 max_value[2] = 1
         plt2 = ax2.imshow(np.log10(abs(temp_array)), vmin=min_value[2], vmax=max_value[2], cmap=cmap)
-    else:
-        raise ValueError('Wrong value for scale')
+
     ax2.set_xlabel(hor_labels[2])
     ax2.set_ylabel(ver_labels[2])
     ax2.set_title(title + slice_names[2])
@@ -1550,6 +1493,10 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
         ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                         length=tick_length, width=tick_width)
+
+    ##########
+    # axis 3 #
+    ##########
     if not ipynb_layout:
         # hide axis 3
         ax3.set_visible(False)
@@ -1574,9 +1521,6 @@ def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped becaus
     :param title: title for the plot
     :return: figure and axe instances
     """
-    from mpl_toolkits.mplot3d import Axes3D
-    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-
     plt.ion()
     fig = plt.figure(figsize=(10, 10))
     ax0 = Axes3D(fig)
@@ -1606,7 +1550,7 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     :param filename: the file name of the vti file
     :param voxel_size: tuple (voxel_size_axis0, voxel_size_axis1, voxel_size_axis2)
     :param tuple_array: tuple of arrays of the same dimension
-    :param tuple_fieldnames: tuple of name containing the same number of elements as tuple_array
+    :param tuple_fieldnames: tuple of strings for the field names, same number of elements as tuple_array
     :param origin: tuple of points for vtk SetOrigin()
     :param amplitude_threshold: lower threshold for saving the reconstruction modulus (save memory space)
     :return: nothing
@@ -1614,31 +1558,29 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     import vtk
     from vtk.util import numpy_support
 
-    assert isinstance(voxel_size, (tuple, list)) and all(val > 0 for val in voxel_size), \
-        'voxel_size should be a tuple/list of three positive numbers'
+    #########################
+    # check some parameters #
+    #########################
+    valid.valid_container(obj=voxel_size, container_types=(tuple, list), length=3, item_types=Real, min_excluded=0,
+                          name='graph_utils.save_to_vti')
 
-    try:
-        nb_fieldnames = len(tuple_fieldnames)
-    except TypeError:  # it is a number
-        nb_fieldnames = 1
+    if isinstance(tuple_array, np.ndarray):
+        tuple_array = (tuple_array,)
+    valid.valid_container(obj=tuple_array, container_types=(tuple, list), item_types=np.ndarray,
+                          name='graph_utils.save_to_vti')  # TODO add a test for this
+    nb_arrays = len(tuple_array)
+    assert all(arr.ndim == 3 for arr in tuple_array), 'expecting only 3D arrays'
+    assert all(arr.shape == tuple_array[0].shape for arr in tuple_array), 'all arrays should have the same shape'
+    nbz, nby, nbx = tuple_array[0].shape
 
-    if isinstance(tuple_array, tuple):
-        nb_arrays = len(tuple_array)
-        nb_dim = tuple_array[0].ndim
-        if nb_dim != 3:  # wrong array dimension
-            raise ValueError('save_to_vti() needs a 3D array')
-        nbz, nby, nbx = tuple_array[0].shape
-    elif isinstance(tuple_array, np.ndarray):
-        nb_arrays = 1
-        nb_dim = tuple_array.ndim
-        if nb_dim != 3:  # wrong array dimension
-            raise ValueError('save_to_vti() needs a 3D array')
-        nbz, nby, nbx = tuple_array.shape
-    else:
-        raise TypeError('Invalid input for tuple_array')
+    if isinstance(tuple_fieldnames, str):
+        tuple_fieldnames = (tuple_fieldnames,)
+    valid.valid_container(obj=tuple_fieldnames, container_types=(tuple, list), length=nb_arrays, item_types=str,
+                          name='graph_utils.save_to_vti')
 
-    assert nb_arrays == nb_fieldnames, 'Different number of arrays and field names'
-
+    #############################
+    # initialize the VTK object #
+    #############################
     image_data = vtk.vtkImageData()
     image_data.SetOrigin(origin[0], origin[1], origin[2])
     image_data.SetSpacing(voxel_size[0], voxel_size[1], voxel_size[2])
