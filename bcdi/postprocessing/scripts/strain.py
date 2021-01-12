@@ -255,6 +255,9 @@ logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, r
 ############################################################################################################
 setup.grazing_angle = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup)
 
+###################
+# print instances #
+###################
 print(f'{"#"*(5+len(str(scan)))}\nScan {scan}\n{"#"*(5+len(str(scan)))}')
 print('\n##############\nSetup instance\n##############')
 print(setup)

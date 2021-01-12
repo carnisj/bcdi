@@ -7,7 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-from numbers import Number
+from numbers import Real
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
@@ -17,6 +17,9 @@ import matplotlib.colors as colors
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.ndimage import map_coordinates
 from operator import itemgetter
+import sys
+sys.path.append('D:/myscripts/bcdi/')
+import bcdi.utils.validation as valid
 
 # define a colormap
 color_dict = {'red':  ((0.0, 1.0, 1.0),
@@ -223,16 +226,13 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         nb_dim = array.ndim
         if nb_dim in {2, 3}:
             if pixel_spacing:
-                if isinstance(pixel_spacing, Number):
+                if isinstance(pixel_spacing, Real):
                     pixel_spacing = (pixel_spacing,) * nb_dim
-                elif not isinstance(pixel_spacing, (tuple, list))\
-                        or not all(isinstance(val, Number) for val in pixel_spacing)\
-                        or not all(val > 0 for val in pixel_spacing):
-                    raise ValueError(f'pixel_spacing should be a list/tuple of {nb_dim} positive numbers')
-                assert len(pixel_spacing) == nb_dim, f'pixel_spacing should be a list/tuple of {nb_dim} numbers'
+                valid.valid_container(obj=pixel_spacing, container_types=(tuple, list), length=nb_dim, item_types=Real,
+                                      min_excluded=0, name='graph_utils.combined_plots')
 
-        if nb_dim == 0 or nb_dim > 3:
-            print('array ', idx, ': wrong dimension')
+        if nb_dim not in {1, 2, 3}:
+            print('array ', idx, ': wrong number of dimensions')
             continue
 
         elif nb_dim == 1:
@@ -304,7 +304,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             if sum_axis == 0:
                 dim_v = nby
                 dim_h = nbx
-                pixel_spacing = (pixel_spacing[1], pixel_spacing[2])  # vertical, horizontal
+                if pixel_spacing is not None:
+                    pixel_spacing = (pixel_spacing[1], pixel_spacing[2])  # vertical, horizontal
                 if not sum_frames:
                     array = array[nbz // 2, :, :]
                 else:
@@ -314,7 +315,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             elif sum_axis == 1:
                 dim_v = nbz
                 dim_h = nbx
-                pixel_spacing = (pixel_spacing[0], pixel_spacing[2])  # vertical, horizontal
+                if pixel_spacing is not None:
+                    pixel_spacing = (pixel_spacing[0], pixel_spacing[2])  # vertical, horizontal
                 if not sum_frames:
                     array = array[:, nby // 2, :]
                 else:
@@ -324,7 +326,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             elif sum_axis == 2:
                 dim_v = nbz
                 dim_h = nby
-                pixel_spacing = (pixel_spacing[1], pixel_spacing[1])  # vertical, horizontal
+                if pixel_spacing is not None:
+                    pixel_spacing = (pixel_spacing[1], pixel_spacing[1])  # vertical, horizontal
                 if not sum_frames:
                     array = array[:, :, nbx // 2]
                 else:
@@ -745,13 +748,10 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     nb_dim = array.ndim
 
     if pixel_spacing:
-        if isinstance(pixel_spacing, Number):
+        if isinstance(pixel_spacing, Real):
             pixel_spacing = (pixel_spacing,) * nb_dim
-        elif not isinstance(pixel_spacing, (tuple, list)) \
-                or not all(isinstance(val, Number) for val in pixel_spacing) \
-                or not all(val > 0 for val in pixel_spacing):
-            raise ValueError(f'pixel_spacing should be a list/tuple of {nb_dim} positive numbers')
-        assert len(pixel_spacing) == nb_dim, f'pixel_spacing should be a list/tuple of {nb_dim} numbers'
+            valid.valid_container(obj=pixel_spacing, container_types=(tuple, list), length=nb_dim, item_types=Real,
+                                  min_excluded=0, name='graph_utils.imshow_plot')
 
     labels = labels or ('', '')
     assert len(labels) == 2, 'labels should be a tuple of two strings (vertical label, horizontal label)'
@@ -1372,13 +1372,10 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     width_x = width_x or nbx
 
     if pixel_spacing:
-        if isinstance(pixel_spacing, Number):
+        if isinstance(pixel_spacing, Real):
             pixel_spacing = (pixel_spacing,) * nb_dim
-        elif not isinstance(pixel_spacing, (tuple, list)) \
-                or not all(isinstance(val, Number) for val in pixel_spacing) \
-                or not all(val > 0 for val in pixel_spacing):
-            raise ValueError(f'pixel_spacing should be a list/tuple of {nb_dim} positive numbers')
-        assert len(pixel_spacing) == nb_dim, f'pixel_spacing should be a list/tuple of {nb_dim} numbers'
+            valid.valid_container(obj=pixel_spacing, container_types=(tuple, list), length=nb_dim, item_types=Real,
+                                  min_excluded=0, name='graph_utils.multislices_plot')
 
     if ipynb_layout:
         fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(15, 4.5))
