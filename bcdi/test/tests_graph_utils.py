@@ -24,14 +24,15 @@ class TestGraphUtils(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super(TestGraphUtils, self).__init__(*args, **kwargs)
-        pathlib.Path(os.getcwd() + '/test_output/').mkdir(parents=True, exist_ok=True)
+        self.saving_dir = os.getcwd() + '/test_output/'
+        pathlib.Path(self.saving_dir).mkdir(parents=True, exist_ok=True)
 
     def setUp(self):
         # executed before each test
-        amp = np.zeros((5, 5, 5))
-        amp[1:4, 1:4, 1:4] = 1
-        phase = np.zeros((5, 5, 5))
-        phase[:4, :4, :4] = 1
+        self.amp = np.zeros((5, 5, 5))
+        self.amp[1:4, 1:4, 1:4] = 1
+        self.phase = np.zeros((5, 5, 5))
+        self.phase[:4, :4, :4] = 1
 
     # def tearDown(self):
     #     executed after each test
@@ -40,8 +41,8 @@ class TestGraphUtils(unittest.TestCase):
     # tests on save_to_vti #
     ########################
     def test_savetovti_voxelsize(self):
-        pass
-        # self.assertTrue(gu.save_to_vti(filename='', allowed_types=Real, max_included=0))
+        self.assertIsNone(gu.save_to_vti(filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
+                                         tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase')))
 
 
 if __name__ == 'main':
