@@ -287,6 +287,7 @@ class TestValidation(unittest.TestCase):
     def test_validitem_max_excluded_invalid(self):
         self.assertRaises(ValueError, valid.valid_item, value=1, allowed_types=Real, max_excluded=0)
 
+
 if __name__ == 'main':
     result = run_tests(TestValidation)
     print(result)
