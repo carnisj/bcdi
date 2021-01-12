@@ -1587,52 +1587,35 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     image_data.SetExtent(0, nbz - 1, 0, nby - 1, 0, nbx - 1)
 
     try:
-        amp_index = tuple_fieldnames.index('amp')  # look for the substring 'amp'
-        if nb_arrays > 1:
-            amp_array = tuple_array[amp_index]
-        else:
-            amp_array = tuple_array
-        amp_array = amp_array / amp_array.max(initial=None)
-        amp_array[amp_array < amplitude_threshold] = 0  # save disk space
-        amp_array = np.transpose(np.flip(amp_array, 2)).reshape(amp_array.size)
-        amp_array = numpy_support.numpy_to_vtk(amp_array)
-        pd = image_data.GetPointData()
-        pd.SetScalars(amp_array)
-        pd.GetArray(0).SetName("amp")
-        counter = 1
-        if nb_arrays > 1:
-            for idx in range(nb_arrays):
-                if idx == amp_index:
-                    continue
-                temp_array = tuple_array[idx]
-                temp_array[amp_array == 0] = 0
-                temp_array = np.transpose(np.flip(temp_array, 2)).reshape(temp_array.size)
-                temp_array = numpy_support.numpy_to_vtk(temp_array)
-                pd.AddArray(temp_array)
-                pd.GetArray(counter).SetName(tuple_fieldnames[idx])
-                pd.Update()
-                counter = counter + 1
+        index_first = tuple_fieldnames.index('amp')
+        first_array = tuple_array[index_first]
+        first_array = first_array / first_array.max(initial=None)
+        first_array[first_array < amplitude_threshold] = 0  # theshold low amplitude values in order to save disk space
+        is_amp = True
     except ValueError:
-        print('amp not in fieldnames, will save arrays without thresholding')
-        if nb_arrays > 1:
-            temp_array = tuple_array[0]
-        else:
-            temp_array = tuple_array
+        print('"amp" not in fieldnames, will save arrays without thresholding')
+        index_first = 0
+        first_array = tuple_array[0]
+        is_amp = False
+
+    first_arr = np.transpose(np.flip(first_array, 2)).reshape(first_array.size)
+    first_arr = numpy_support.numpy_to_vtk(first_arr)
+    pd = image_data.GetPointData()
+    pd.SetScalars(first_arr)
+    pd.GetArray(0).SetName(tuple_fieldnames[index_first])
+    counter = 1
+    for idx in range(nb_arrays):
+        if idx == index_first:
+            continue
+        temp_array = tuple_array[idx]
+        if is_amp:
+            temp_array[first_array == 0] = 0  # use the thresholded amplitude as a support in order to save disk space
         temp_array = np.transpose(np.flip(temp_array, 2)).reshape(temp_array.size)
         temp_array = numpy_support.numpy_to_vtk(temp_array)
-        pd = image_data.GetPointData()
-        pd.SetScalars(temp_array)
-        if nb_arrays > 1:
-            pd.GetArray(0).SetName(tuple_fieldnames[0])
-            for idx in range(1, nb_arrays):
-                temp_array = tuple_array[idx]
-                temp_array = np.transpose(np.flip(temp_array, 2)).reshape(temp_array.size)
-                temp_array = numpy_support.numpy_to_vtk(temp_array)
-                pd.AddArray(temp_array)
-                pd.GetArray(idx).SetName(tuple_fieldnames[idx])
-                pd.Update()
-        else:
-            pd.GetArray(0).SetName(tuple_fieldnames)
+        pd.AddArray(temp_array)
+        pd.GetArray(counter).SetName(tuple_fieldnames[idx])
+        pd.Update()
+        counter = counter + 1
 
     # export data to file
     writer = vtk.vtkXMLImageDataWriter()
