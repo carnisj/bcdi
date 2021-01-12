@@ -19,25 +19,25 @@ from scipy.ndimage import map_coordinates
 from operator import itemgetter
 
 # define a colormap
-cdict = {'red':  ((0.0, 1.0, 1.0),
-                  (0.11, 0.0, 0.0),
-                  (0.36, 0.0, 0.0),
-                  (0.62, 1.0, 1.0),
-                  (0.87, 1.0, 1.0),
-                  (1.0, 0.0, 0.0)),
-         'green': ((0.0, 1.0, 1.0),
-                   (0.11, 0.0, 0.0),
-                   (0.36, 1.0, 1.0),
-                   (0.62, 1.0, 1.0),
-                   (0.87, 0.0, 0.0),
-                   (1.0, 0.0, 0.0)),
-         'blue': ((0.0, 1.0, 1.0),
-                  (0.11, 1.0, 1.0),
-                  (0.36, 1.0, 1.0),
-                  (0.62, 0.0, 0.0),
-                  (0.87, 0.0, 0.0),
-                  (1.0, 0.0, 0.0))}
-my_cmap = LinearSegmentedColormap('my_colormap', cdict, 256)
+color_dict = {'red':  ((0.0, 1.0, 1.0),
+                       (0.11, 0.0, 0.0),
+                       (0.36, 0.0, 0.0),
+                       (0.62, 1.0, 1.0),
+                       (0.87, 1.0, 1.0),
+                       (1.0, 0.0, 0.0)),
+              'green': ((0.0, 1.0, 1.0),
+                        (0.11, 0.0, 0.0),
+                        (0.36, 1.0, 1.0),
+                        (0.62, 1.0, 1.0),
+                        (0.87, 0.0, 0.0),
+                        (1.0, 0.0, 0.0)),
+              'blue': ((0.0, 1.0, 1.0),
+                       (0.11, 1.0, 1.0),
+                       (0.36, 1.0, 1.0),
+                       (0.62, 0.0, 0.0),
+                       (0.87, 0.0, 0.0),
+                       (1.0, 0.0, 0.0))}
+my_cmap = LinearSegmentedColormap('my_colormap', color_dict, 256)
 my_cmap.set_bad(color='0.7')
 
 
@@ -52,31 +52,14 @@ class Colormap(object):
         :param colormap: a colormap string. Available choices at the moment: 'default'
         :param bad_color: a string which defines the grey level for nan pixels. example: '0.7'
         """
-        if colormap == 'default':
-            color_dict = {'red':  ((0.0, 1.0, 1.0),
-                                   (0.11, 0.0, 0.0),
-                                   (0.36, 0.0, 0.0),
-                                   (0.62, 1.0, 1.0),
-                                   (0.87, 1.0, 1.0),
-                                   (1.0, 0.0, 0.0)),
-                          'green': ((0.0, 1.0, 1.0),
-                                    (0.11, 0.0, 0.0),
-                                    (0.36, 1.0, 1.0),
-                                    (0.62, 1.0, 1.0),
-                                    (0.87, 0.0, 0.0),
-                                    (1.0, 0.0, 0.0)),
-                          'blue': ((0.0, 1.0, 1.0),
-                                   (0.11, 1.0, 1.0),
-                                   (0.36, 1.0, 1.0),
-                                   (0.62, 0.0, 0.0),
-                                   (0.87, 0.0, 0.0),
-                                   (1.0, 0.0, 0.0))}
+        if colormap != 'default':
+            cdict = color_dict
         else:
             raise ValueError('Only available colormaps: "default"')
-        self.cdict = color_dict
+        self.cdict = cdict
         self.bad_color = bad_color
-        self.cmap = LinearSegmentedColormap('my_colormap', color_dict, 256)
-        self.cmap.set_bad(color=bad_color)
+        self.cmap = LinearSegmentedColormap('my_colormap', self.cdict, 256)
+        self.cmap.set_bad(color=self.bad_color)
 
 
 def colorbar(mappable, scale='linear', numticks=10, label=None):
@@ -197,6 +180,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     for k in kwargs.keys():
         if k not in {'xlabel', 'ylabel', 'position', 'invert_y'}:
             raise Exception("unknown keyword argument given:", k)
+
 
     if isinstance(xlabel, tuple):
         assert len(xlabel) == nb_subplots, 'len(xlabel) incompatible with the numer of arrays'
