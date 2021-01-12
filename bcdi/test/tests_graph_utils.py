@@ -44,7 +44,15 @@ class TestGraphUtils(unittest.TestCase):
         self.assertIsNone(gu.save_to_vti(filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
                                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase')))
 
+    def test_savetovti_voxelsize_wrong_shape(self):
+        self.assertRaises(ValueError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1),
+                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase'))
 
+    def test_savetovti_voxelsize_negative(self):
+        self.assertRaises(ValueError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, -1),
+                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase'))
+
+        
 if __name__ == 'main':
     result = run_tests(TestGraphUtils)
     print(result)
