@@ -1586,6 +1586,10 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     image_data.SetSpacing(voxel_size[0], voxel_size[1], voxel_size[2])
     image_data.SetExtent(0, nbz - 1, 0, nby - 1, 0, nbx - 1)
 
+    #######################################
+    # check if one of the fields in 'amp' #
+    #######################################
+    # it will use the thresholded normalized 'amp' as support when saving other fields, in order to save disk space
     try:
         index_first = tuple_fieldnames.index('amp')
         first_array = tuple_array[index_first]
