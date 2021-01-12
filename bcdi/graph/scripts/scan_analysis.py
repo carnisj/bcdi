@@ -11,7 +11,10 @@ Open 1Dscans and plot interactively the integrated intensity vs. motor positions
 region of interest.
 """
 
-import hdf5plugin  # for lz4 filter
+try:
+    import hdf5plugin  # for P10, should be imported before h5py or PyTables
+except ModuleNotFoundError:
+    pass
 import h5py
 import numpy as np
 import matplotlib

@@ -7,7 +7,10 @@
 
 import datetime
 import fabio
-import hdf5plugin  # should be imported before h5py
+try:
+    import hdf5plugin  # for P10, should be imported before h5py or PyTables
+except ModuleNotFoundError:
+    pass
 import h5py
 import matplotlib.pyplot as plt
 import multiprocessing as mp

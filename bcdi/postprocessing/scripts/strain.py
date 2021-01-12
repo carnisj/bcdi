@@ -13,7 +13,6 @@ from matplotlib import pyplot as plt
 from numbers import Real
 import numpy as np
 import os
-import pathlib
 import tkinter as tk
 import sys
 from tkinter import filedialog

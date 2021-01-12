@@ -6,19 +6,20 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import hdf5plugin  # for P10, should be imported before h5py or PyTables
+try:
+    import hdf5plugin  # for P10, should be imported before h5py or PyTables
+except ModuleNotFoundError:
+    pass
 import numpy as np
 from numpy.fft import fftn, fftshift
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
-from scipy.ndimage import median_filter
 import tkinter as tk
 from tkinter import filedialog
 import xrayutilities as xu
 from scipy.interpolate import interp1d
 import gc
 import sys
-import os
 sys.path.append('D:/myscripts/bcdi/')
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
