@@ -8,6 +8,7 @@
 
 import unittest
 from numbers import Real
+import numpy as np
 import bcdi.utils.validation as valid
 
 
@@ -89,6 +90,10 @@ class TestValidation(unittest.TestCase):
 
     def test_validcontainer_container_itemtype_int(self):
         self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, item_types=2)
+
+    def test_validcontainer_container_itemtype_ndarray(self):
+        self.assertTrue(valid.valid_container(obj=(np.ones(3), np.zeros(4)), container_types=(tuple, list),
+                                              item_types=np.ndarray))
 
     def test_validcontainer_container_itemtype_collection(self):
         self.assertTrue(valid.valid_container(obj=list(), container_types=list, item_types=(int, float)))
@@ -197,6 +202,9 @@ class TestValidation(unittest.TestCase):
 
     def test_validitem_allowedtypes_bool(self):
         self.assertTrue(valid.valid_item(value=True, allowed_types=bool))
+
+    def test_validitem_allowedtypes_ndarray(self):
+        self.assertTrue(valid.valid_item(value=np.zeros(4), allowed_types=np.ndarray))
 
     def test_validitem_allowedtypes_bool_wrongtype(self):
         self.assertRaises(TypeError, valid.valid_item, value=0, allowed_types=bool)
