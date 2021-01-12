@@ -104,7 +104,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     """
     Subplots of a 1D, 2D or 3D datasets using user-defined parameters.
 
-    :param tuple_array: 2D or 3D array of real numbers
+    :param tuple_array: tuple of 1D, 2D or 3D arrays of real numbers
     :param tuple_sum_frames: boolean or tuple of boolean values. If True, will sum the data along sum_axis
     :param tuple_sum_axis: tuple of axis along which to sum or to take the middle slice
     :param tuple_width_v: int or tuple of user-defined zoom vertical width, should be smaller than the actual data
@@ -131,81 +131,88 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  the figure instance
     """
+    ####################
+    # check parameters #
+    ####################
     tuple_sum_axis = tuple_sum_axis or 0
     invert_yaxis = False
 
-    try:
-        nb_subplots = len(tuple_array)
-    except TypeError:
-        raise TypeError('Expected "tuple_array" to be a tuple')
-    try:
-        assert len(tuple_sum_frames) == nb_subplots, 'len(tuple_sum_frames) incompatible with the numer of arrays'
-    except TypeError:  # it is a boolean or a number
-        tuple_sum_frames = (tuple_sum_frames,) * nb_subplots
-    try:
-        assert len(tuple_sum_axis) == nb_subplots, 'len(tuple_sum_axis) incompatible with the numer of arrays'
-    except TypeError:  # it is a number
-        tuple_sum_axis = (tuple_sum_axis,) * nb_subplots
-    try:
-        assert len(tuple_width_v) == nb_subplots, 'len(tuple_width_v) incompatible with the numer of arrays'
-    except TypeError:  # it is a number
-        tuple_width_v = (tuple_width_v,) * nb_subplots
-    try:
-        assert len(tuple_width_h) == nb_subplots, 'len(tuple_width_h) incompatible with the numer of arrays'
-    except TypeError:  # it is a number
-        tuple_width_h = (tuple_width_h,) * nb_subplots
-    try:
-        assert len(tuple_colorbar) == nb_subplots, 'len(tuple_colorbar) incompatible with the numer of arrays'
-    except TypeError:  # it is a boolean or a number
-        tuple_colorbar = (tuple_colorbar,) * nb_subplots
-    try:
-        assert len(tuple_vmin) == nb_subplots, 'len(tuple_vmin) incompatible with the numer of arrays'
-    except TypeError:  # it is a number
-        tuple_vmin = (tuple_vmin,) * nb_subplots
-    try:
-        assert len(tuple_vmax) == nb_subplots, 'len(tuple_vmax) incompatible with the numer of arrays'
-    except TypeError:  # it is a number
-        tuple_vmax = (tuple_vmax,) * nb_subplots
-    if isinstance(tuple_title, tuple):
-        assert len(tuple_title) == nb_subplots, 'len(tuple_title) incompatible with the numer of arrays'
-    else:  # it is a string or a number
-        tuple_title = (tuple_title,) * nb_subplots
-    if isinstance(tuple_scale, tuple):
-        assert len(tuple_scale) == nb_subplots, 'len(tuple_scale) incompatible with the numer of arrays'
-    else:  # it is a string or a number
-        tuple_scale = (tuple_scale,) * nb_subplots
+    if not isinstance(tuple_array, (tuple, list)):
+        raise TypeError('tuple_array should be a tuple or a list of data arrays')
+    nb_subplots = len(tuple_array)
 
-    # load kwargs
+    if isinstance(tuple_sum_frames, bool):
+        tuple_sum_frames = (tuple_sum_frames,) * nb_subplots
+    valid.valid_container(obj=tuple_sum_frames, container_types=(tuple, list), length=nb_subplots, item_types=bool,
+                          name='graph_utils.combined_plots')
+    if isinstance(tuple_sum_axis, int):
+        tuple_sum_axis = (tuple_sum_axis,) * nb_subplots
+    valid.valid_container(obj=tuple_sum_axis, container_types=(tuple, list), length=nb_subplots, item_types=int,
+                          allow_none=True, min_included=0, name='graph_utils.combined_plots')
+    if isinstance(tuple_width_v, int):
+        tuple_width_v = (tuple_width_v,) * nb_subplots
+    valid.valid_container(obj=tuple_width_v, container_types=(tuple, list), length=nb_subplots, item_types=int,
+                          allow_none=True, min_excluded=0, name='graph_utils.combined_plots')
+    if isinstance(tuple_width_h, int):
+        tuple_width_h = (tuple_width_h,) * nb_subplots
+    valid.valid_container(obj=tuple_width_h, container_types=(tuple, list), length=nb_subplots, item_types=int,
+                          allow_none=True, min_excluded=0, name='graph_utils.combined_plots')
+    if isinstance(tuple_colorbar, bool):
+        tuple_colorbar = (tuple_colorbar,) * nb_subplots
+    valid.valid_container(obj=tuple_colorbar, container_types=(tuple, list), length=nb_subplots, item_types=bool,
+                          name='graph_utils.combined_plots')
+    if isinstance(tuple_vmin, Real):
+        tuple_vmin = (tuple_vmin,) * nb_subplots
+    valid.valid_container(obj=tuple_vmin, container_types=(tuple, list), length=nb_subplots, item_types=Real,
+                          name='graph_utils.combined_plots')
+    if isinstance(tuple_vmax, Real):
+        tuple_vmax = (tuple_vmax,) * nb_subplots
+    valid.valid_container(obj=tuple_vmax, container_types=(tuple, list), length=nb_subplots, item_types=Real,
+                          name='graph_utils.combined_plots')
+    assert all(vmin < vmax for vmin, vmax in zip(tuple_vmin, tuple_vmax)), 'vmin should be strictly smaller than vmax'
+
+    if isinstance(tuple_title, str):
+        tuple_title = (tuple_title,) * nb_subplots
+    valid.valid_container(obj=tuple_title, container_types=(tuple, list), length=nb_subplots, item_types=str,
+                          name='graph_utils.combined_plots')
+    if isinstance(tuple_scale, str):
+        tuple_scale = (tuple_scale,) * nb_subplots
+    valid.valid_container(obj=tuple_scale, container_types=(tuple, list), length=nb_subplots, item_types=str,
+                          name='graph_utils.combined_plots')
+    assert all(scale in {'linear', 'log'} for scale in tuple_scale), 'scale should be either "linear" or "log"'
+
+    #########################
+    # load and check kwargs #
+    #########################
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'xlabel', 'ylabel', 'position', 'invert_y'},
+                       name='graph_utils.combined_plots')
     xlabel = kwargs.get('xlabel', '')
     ylabel = kwargs.get('ylabel', '')
     position = kwargs.get('position', None)
     invert_y = kwargs.get('invert_y', (None for _ in range(nb_subplots)))
-    for k in kwargs.keys():
-        if k not in {'xlabel', 'ylabel', 'position', 'invert_y'}:
-            raise Exception("unknown keyword argument given:", k)
 
-
-    if isinstance(xlabel, tuple):
-        assert len(xlabel) == nb_subplots, 'len(xlabel) incompatible with the numer of arrays'
-    else:  # it is a string or a number
+    if isinstance(xlabel, str):
         xlabel = (xlabel,) * nb_subplots
-    if isinstance(ylabel, tuple):
-        assert len(ylabel) == nb_subplots, 'len(ylabel) incompatible with the numer of arrays'
-    else:  # it is a string or a number
+    valid.valid_container(obj=xlabel, container_types=(tuple, list), length=nb_subplots, item_types=str,
+                          name='graph_utils.combined_plots')
+    if isinstance(ylabel, str):
         ylabel = (ylabel,) * nb_subplots
+    valid.valid_container(obj=ylabel, container_types=(tuple, list), length=nb_subplots, item_types=str,
+                          name='graph_utils.combined_plots')
     if position is None:
         nb_columns = nb_subplots // 2
         nb_rows = nb_subplots // nb_columns + nb_subplots % nb_columns
         position = [nb_rows*100 + nb_columns*10 + index for index in range(1, nb_subplots+1)]
-    try:
-        assert len(position) == nb_subplots, 'len(position) incompatible with the numer of arrays'
-    except TypeError:  # it is a number
-        raise ValueError('"position" should be a tuple of subplot positions')
-    try:
-        assert len(invert_y) == nb_subplots, 'len(invert_y) incompatible with the numer of arrays'
-    except TypeError:  # it is a boolean or number
+    valid.valid_container(obj=position, container_types=(tuple, list), length=nb_subplots, item_types=int,
+                          name='graph_utils.combined_plots')
+    if isinstance(invert_y, bool):
         invert_y = (invert_y,) * nb_subplots
+    valid.valid_container(obj=invert_y, container_types=(tuple, list), length=nb_subplots, item_types=bool,
+                          allow_none=True, name='graph_utils.combined_plots')
 
+    ##############################
+    # plot subplots sequentially #
+    ##############################
     plt.ion()
     fig = plt.figure(figsize=(12, 9))
     for idx in range(nb_subplots):
@@ -225,11 +232,10 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
 
         nb_dim = array.ndim
         if nb_dim in {2, 3}:
-            if pixel_spacing:
-                if isinstance(pixel_spacing, Real):
-                    pixel_spacing = (pixel_spacing,) * nb_dim
-                valid.valid_container(obj=pixel_spacing, container_types=(tuple, list), length=nb_dim, item_types=Real,
-                                      min_excluded=0, name='graph_utils.combined_plots')
+            if isinstance(pixel_spacing, Real):
+                pixel_spacing = (pixel_spacing,) * nb_dim
+            valid.valid_container(obj=pixel_spacing, container_types=(tuple, list), length=nb_dim, item_types=Real,
+                                  min_excluded=0, allow_none=True, name='graph_utils.combined_plots')
 
         if nb_dim not in {1, 2, 3}:
             print('array ', idx, ': wrong number of dimensions')
@@ -747,11 +753,10 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
 
     nb_dim = array.ndim
 
-    if pixel_spacing:
-        if isinstance(pixel_spacing, Real):
-            pixel_spacing = (pixel_spacing,) * nb_dim
-            valid.valid_container(obj=pixel_spacing, container_types=(tuple, list), length=nb_dim, item_types=Real,
-                                  min_excluded=0, name='graph_utils.imshow_plot')
+    if isinstance(pixel_spacing, Real):
+        pixel_spacing = (pixel_spacing,) * nb_dim
+        valid.valid_container(obj=pixel_spacing, container_types=(tuple, list), length=nb_dim, item_types=Real,
+                              min_excluded=0, allow_none=True, name='graph_utils.imshow_plot')
 
     labels = labels or ('', '')
     assert len(labels) == 2, 'labels should be a tuple of two strings (vertical label, horizontal label)'
@@ -1371,11 +1376,10 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     width_y = width_y or nby
     width_x = width_x or nbx
 
-    if pixel_spacing:
-        if isinstance(pixel_spacing, Real):
-            pixel_spacing = (pixel_spacing,) * nb_dim
-            valid.valid_container(obj=pixel_spacing, container_types=(tuple, list), length=nb_dim, item_types=Real,
-                                  min_excluded=0, name='graph_utils.multislices_plot')
+    if isinstance(pixel_spacing, Real):
+        pixel_spacing = (pixel_spacing,) * nb_dim
+        valid.valid_container(obj=pixel_spacing, container_types=(tuple, list), length=nb_dim, item_types=Real,
+                              min_excluded=0, allow_none=True, name='graph_utils.multislices_plot')
 
     if ipynb_layout:
         fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(15, 4.5))
