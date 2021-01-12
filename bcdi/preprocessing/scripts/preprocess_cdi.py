@@ -6,7 +6,10 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import hdf5plugin  # for P10, should be imported before h5py or PyTables
+try:
+    import hdf5plugin  # for P10, should be imported before h5py or PyTables
+except ModuleNotFoundError:
+    pass
 import numpy as np
 import matplotlib.pyplot as plt
 plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk

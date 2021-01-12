@@ -6,12 +6,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import hdf5plugin  # for P10, should be imported before h5py or PyTables
+try:
+    import hdf5plugin  # for P10, should be imported before h5py or PyTables
+except ModuleNotFoundError:
+    pass
 import xrayutilities as xu
 import numpy as np
 import matplotlib.pyplot as plt
 plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
-import pathlib
 import os
 import scipy.signal  # for medfilt2d
 from scipy.ndimage.measurements import center_of_mass

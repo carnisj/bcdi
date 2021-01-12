@@ -6,12 +6,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import hdf5plugin  # for P10, should be imported before h5py or PyTables
+try:
+    import hdf5plugin  # for P10, should be imported before h5py or PyTables
+except ModuleNotFoundError:
+    pass
 import numpy as np
 import xrayutilities as xu
 import scipy.signal  # for medfilt
 import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
 from scipy.interpolate import RegularGridInterpolator
 import sys
 import tkinter as tk
