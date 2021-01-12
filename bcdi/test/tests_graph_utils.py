@@ -9,7 +9,9 @@
 import unittest
 from numbers import Real
 import numpy as np
-import bcdi.utils.validation as valid
+import os
+import pathlib
+import bcdi.graph.graph_utils as gu
 
 
 def run_tests(test_class):
@@ -19,16 +21,27 @@ def run_tests(test_class):
 
 
 class TestGraphUtils(unittest.TestCase):
-    # def setUp(self):
-    #     executed before each test
-    #
+
+    def __init__(self, *args, **kwargs):
+        super(TestGraphUtils, self).__init__(*args, **kwargs)
+        pathlib.Path(os.getcwd() + '/test_output/').mkdir(parents=True, exist_ok=True)
+
+    def setUp(self):
+        # executed before each test
+        amp = np.zeros((5, 5, 5))
+        amp[1:4, 1:4, 1:4] = 1
+        phase = np.zeros((5, 5, 5))
+        phase[:4, :4, :4] = 1
+
     # def tearDown(self):
     #     executed after each test
 
     ########################
     # tests on save_to_vti #
     ########################
-    pass
+    def test_savetovti_voxelsize(self):
+        pass
+        # self.assertTrue(gu.save_to_vti(filename='', allowed_types=Real, max_included=0))
 
 
 if __name__ == 'main':
