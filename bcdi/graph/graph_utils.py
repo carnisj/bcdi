@@ -174,7 +174,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         tuple_vmax = (tuple_vmax,) * nb_subplots
     valid.valid_container(obj=tuple_vmax, container_types=(tuple, list), length=nb_subplots, item_types=Real,
                           name='graph_utils.combined_plots')
-    assert all(vmin < vmax for vmin, vmax in zip(tuple_vmin, tuple_vmax)), 'vmin should be strictly smaller than vmax'
+    assert all(vmin < vmax for vmin, vmax in zip(tuple_vmin, tuple_vmax) if not np.isnan(vmin) and not np.isnan(vmax)),\
+        'vmin should be strictly smaller than vmax'
 
     if isinstance(tuple_title, str):
         tuple_title = (tuple_title,) * nb_subplots
@@ -741,7 +742,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     assert sum_axis in {0, 1, 2}, 'sum_axis should be either 0, 1 or 2'
     assert isinstance(sum_frames, bool), 'sum_frames should be a boolean'
     assert scale in {'linear', 'log'}, 'scale should be either "linear" or "log"'
-
+    if not np.isnan(vmin) and not np.isnan(vmax):
+        assert vmin < vmax, 'vmin should be strictly smaller than vmax'
     # load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'invert_y', 'ylabel', 'position', 'invert_y'},
                        name='graph_utils.imshow_plot')
@@ -1300,7 +1302,8 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     valid.valid_container(obj=vmax, container_types=(tuple, list), length=3, item_types=Real,
                           name='graph_utils.multislices_plot')
     max_value = vmax
-    assert all(v_min < v_max for v_min, v_max in zip(min_value, max_value)), 'vmin should be strictly smaller than vmax'
+    assert all(v_min < v_max for v_min, v_max in zip(min_value, max_value) \
+               if not np.isnan(v_min) and not np.isnan(v_max)), 'vmin should be strictly smaller than vmax'
 
     if not sum_frames:
         slice_position = slice_position or (int(nbz//2), int(nby//2), int(nbx//2))
