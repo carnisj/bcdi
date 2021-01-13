@@ -1275,7 +1275,7 @@ def remove_offset(array, support, offset_method='COM', user_offset=0, offset_ori
     Remove the offset in a 3D array based on a 3D support.
 
     :param array: a 3D array
-    :param support: A 3D suuport of the same shape as array, defining the object
+    :param support: A 3D support of the same shape as array, defining the object
     :param offset_method: 'COM' or 'mean'. If 'COM', the value of array at the center of mass of the support will be
      subtracted to the array. If 'mean', the mean value of array on the support will be subtracted to the array.
     :param user_offset: value to add to the array
