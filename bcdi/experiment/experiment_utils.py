@@ -1264,7 +1264,7 @@ class Setup(object):
                 print('using PETRAIII P10 geometry')
             if self.rocking_angle == "outofplane":
                 if verbose:
-                    print(f'rocking angle is omega, chi={grazing_angle[0]}deg')
+                    print(f'rocking angle is omega, chi={grazing_angle[0]*180/np.pi}deg')
                 # rocking omega angle clockwise around x at mu=0 (phi does not matter, above eta)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([-pixel_x * np.cos(inplane),
                                                                        0,
