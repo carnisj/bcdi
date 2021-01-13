@@ -1302,7 +1302,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     valid.valid_container(obj=vmax, container_types=(tuple, list), length=3, item_types=Real,
                           name='graph_utils.multislices_plot')
     max_value = vmax
-    assert all(v_min < v_max for v_min, v_max in zip(min_value, max_value) \
+    assert all(v_min < v_max for v_min, v_max in zip(min_value, max_value)
                if not np.isnan(v_min) and not np.isnan(v_max)), 'vmin should be strictly smaller than vmax'
 
     if not sum_frames:
