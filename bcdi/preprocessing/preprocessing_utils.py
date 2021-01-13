@@ -1128,22 +1128,35 @@ def get_motor_pos(logfile, scan_number, setup, motor_name):
     return motor_pos
 
 
-def goniometer_values(frames_logical, logfile, scan_number, setup, follow_bragg=False):
+def goniometer_values(logfile, scan_number, setup, **kwargs):
     """
     Extract goniometer motor positions for a BCDI rocking scan.
 
-    :param follow_bragg: True when for energy scans the detector was also scanned to follow the Bragg peak
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param scan_number: the scan number to load
     :param setup: the experimental setup: Class Setup
+    :param kwargs:
+     - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
+       equal to the number of measured frames. In case of data padding, the length changes.
+     - 'follow_bragg': boolean, True for energy scans where the detector position is changed during the scan to follow
+       the Bragg peak.
     :return: (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
      corrected values
     """
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
+                       name='preprocessing_utils.goniometer_values')
+    follow_bragg = kwargs.get('follow_bragg', False)
+    frames_logical = kwargs.get('frames_logical', None)
+    valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.goniometer_values')
+    if frames_logical is not None:
+        assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
+            'frames_logical should be a list of values in {-1, 0, 1}'
+
     if not isinstance(setup, exp.Setup):
         raise TypeError('setup should be of type experiment.experiment_utils.Setup')
     valid.valid_item(scan_number, allowed_types=int, min_excluded=0, name='preprocessing_utils.goniometer_values')
+
     beamline = setup.beamline
     rocking_angle = setup.rocking_angle
     offsets = setup.sample_offsets  # sample offsets around downstream (chi), vertical up (phi), outboard(eta/omega)
