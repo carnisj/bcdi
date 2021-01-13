@@ -9,6 +9,10 @@
 
 from functools import reduce
 import gc
+try:
+    import hdf5plugin  # for P10, should be imported before h5py or PyTables
+except ModuleNotFoundError:
+    pass
 from matplotlib import pyplot as plt
 from numbers import Real
 import numpy as np
@@ -252,7 +256,7 @@ logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, r
 ############################################################################################################
 # get the motor position of goniometer circles which are below the rocking angle (e.g., chi for eta/omega) #
 ############################################################################################################
-setup.grazing_angle = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup)
+_, setup.grazing_angle, _, _  = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup)
 
 ###################
 # print instances #
