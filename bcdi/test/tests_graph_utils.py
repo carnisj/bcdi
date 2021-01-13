@@ -40,9 +40,13 @@ class TestGraphUtils(unittest.TestCase):
     ########################
     # tests on save_to_vti #
     ########################
-    def test_savetovti_voxelsize(self):
+    def test_savetovti_amp(self):
         self.assertIsNone(gu.save_to_vti(filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
                                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase')))
+
+    def test_savetovti_no_amp(self):
+        self.assertIsNone(gu.save_to_vti(filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
+                                         tuple_array=(self.amp, self.phase), tuple_fieldnames=('other', 'phase')))
 
     def test_savetovti_voxelsize_wrong_shape(self):
         self.assertRaises(ValueError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1),
@@ -52,7 +56,20 @@ class TestGraphUtils(unittest.TestCase):
         self.assertRaises(ValueError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, -1),
                           tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase'))
 
-        
+    def test_savetovti_array_dim(self):
+        self.amp = np.ones((2, 2))
+        self.assertRaises(AssertionError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
+                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase'))
+
+    def test_savetovti_array_shape(self):
+        self.amp = np.ones((2, 2, 2))
+        self.assertRaises(AssertionError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
+                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase'))
+
+    def test_savetovti_fieldnames_wrongtype(self):
+        self.assertRaises(TypeError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
+                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 0))
+
 if __name__ == 'main':
     result = run_tests(TestGraphUtils)
     print(result)
