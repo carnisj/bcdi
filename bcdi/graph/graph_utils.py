@@ -154,11 +154,11 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                           allow_none=True, min_included=0, name='graph_utils.combined_plots')
     assert all(sum_axis in {0, 1, 2} for sum_axis in tuple_sum_axis), 'sum_axis should be either 0, 1 or 2'
 
-    if isinstance(tuple_width_v, int):
+    if isinstance(tuple_width_v, int) or tuple_width_v is None:
         tuple_width_v = (tuple_width_v,) * nb_subplots
     valid.valid_container(obj=tuple_width_v, container_types=(tuple, list), length=nb_subplots, item_types=int,
                           allow_none=True, min_excluded=0, name='graph_utils.combined_plots')
-    if isinstance(tuple_width_h, int):
+    if isinstance(tuple_width_h, int) or tuple_width_h is None:
         tuple_width_h = (tuple_width_h,) * nb_subplots
     valid.valid_container(obj=tuple_width_h, container_types=(tuple, list), length=nb_subplots, item_types=int,
                           allow_none=True, min_excluded=0, name='graph_utils.combined_plots')
@@ -195,7 +195,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
     xlabel = kwargs.get('xlabel', '')
     ylabel = kwargs.get('ylabel', '')
     position = kwargs.get('position', None)
-    invert_y = kwargs.get('invert_y', (None for _ in range(nb_subplots)))
+    invert_y = kwargs.get('invert_y', [None for _ in range(nb_subplots)])
 
     if isinstance(xlabel, str):
         xlabel = (xlabel,) * nb_subplots
