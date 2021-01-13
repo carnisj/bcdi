@@ -58,7 +58,7 @@ class Colormap(object):
         :param colormap: a colormap string. Available choices at the moment: 'default'
         :param bad_color: a string which defines the grey level for nan pixels. example: '0.7'
         """
-        if colormap != 'default':
+        if colormap == 'default':
             cdict = color_dict
         else:
             raise ValueError('Only available colormaps: "default"')
