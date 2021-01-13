@@ -256,7 +256,7 @@ logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, r
 ############################################################################################################
 # get the motor position of goniometer circles which are below the rocking angle (e.g., chi for eta/omega) #
 ############################################################################################################
-_, setup.grazing_angle, _, _  = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup)
+_, setup.grazing_angle, _, _ = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup)
 
 ###################
 # print instances #
