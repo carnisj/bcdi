@@ -27,6 +27,11 @@ comment = '_binning2x2x2'  # should start with _
 width = 30  # the psf will be plotted for +/- this number of pixels from center of the array
 vmin = -6  # min of the colorbar for plots (log scale). Use np.nan for default.
 vmax = 1  # max of the colorbar for plots (log scale). Use np.nan for default.
+save_slices = True  # True to save individual 2D slices (in z, y, x)
+tick_direction = 'out'  # 'out', 'in', 'inout'
+tick_length = 8  # in plots
+tick_width = 2  # in plots
+linewidth = 2  # linewidth for the plot frame
 ###################
 # define colormap #
 ###################
@@ -70,25 +75,39 @@ fig, _, _ = gu.multislices_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen
                                 reciprocal_space=False, is_orthogonal=is_orthogonal, plot_colorbar=True)
 fig.savefig(save_dir + 'psf_centralslice' + comment + '.png')
 
-fig, axs, _ = gu.imshow_plot(dataset[cen_z, cen_y-width:cen_y+width, cen_x-width:cen_x+width], sum_frames=False,
-                             scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
-                             plot_colorbar=False)
-axs.tick_params(labelbottom=False, labelleft=False)
-fig.savefig(save_dir + 'psf_centralslice_z' + comment + '.png')
+if save_slices:
+    fig, axs, _ = gu.imshow_plot(dataset[cen_z, cen_y-width:cen_y+width, cen_x-width:cen_x+width], sum_frames=False,
+                                 scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
+                                 plot_colorbar=False)
+    axs.tick_params(labelbottom=False, labelleft=False, direction=tick_direction, length=tick_length, width=tick_width)
+    axs.spines['right'].set_linewidth(linewidth)
+    axs.spines['left'].set_linewidth(linewidth)
+    axs.spines['top'].set_linewidth(linewidth)
+    axs.spines['bottom'].set_linewidth(linewidth)
+    fig.savefig(save_dir + 'psf_centralslice_z' + comment + '.png')
 
+    fig, axs, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y, cen_x-width:cen_x+width], sum_frames=False,
+                                 scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
+                                 plot_colorbar=False)
+    axs.tick_params(labelbottom=False, labelleft=False, direction=tick_direction, length=tick_length, width=tick_width)
+    axs.spines['right'].set_linewidth(linewidth)
+    axs.spines['left'].set_linewidth(linewidth)
+    axs.spines['top'].set_linewidth(linewidth)
+    axs.spines['bottom'].set_linewidth(linewidth)
+    fig.savefig(save_dir + 'psf_centralslice_y' + comment + '.png')
 
-fig, axs, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y, cen_x-width:cen_x+width], sum_frames=False,
-                             scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
-                             plot_colorbar=False)
-axs.tick_params(labelbottom=False, labelleft=False)
-fig.savefig(save_dir + 'psf_centralslice_y' + comment + '.png')
-
-fig, axs, plot = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen_y+width, cen_x], sum_frames=False,
-                                scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
-                                plot_colorbar=False)
-axs.tick_params(labelbottom=False, labelleft=False)
-fig.savefig(save_dir + 'psf_centralslice_x' + comment + '.png')
-axs.tick_params(labelbottom=True, labelleft=True)
-plt.colorbar(plot, ax=axs)
-fig.savefig(save_dir + 'psf_centralslice_x_labels_colorbar' + comment + '.png')
+    fig, axs, plot = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen_y+width, cen_x], sum_frames=False,
+                                    scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False,
+                                    is_orthogonal=is_orthogonal, plot_colorbar=False)
+    axs.tick_params(labelbottom=False, labelleft=False, direction=tick_direction, length=tick_length, width=tick_width)
+    axs.spines['right'].set_linewidth(linewidth)
+    axs.spines['left'].set_linewidth(linewidth)
+    axs.spines['top'].set_linewidth(linewidth)
+    axs.spines['bottom'].set_linewidth(linewidth)
+    fig.savefig(save_dir + 'psf_centralslice_x' + comment + '.png')
+    axs.tick_params(labelbottom=True, labelleft=True)
+    cbar = plt.colorbar(plot, ax=axs)
+    cbar.outline.set_linewidth(linewidth)
+    cbar.ax.tick_params(length=tick_length, width=tick_width)
+    fig.savefig(save_dir + 'psf_centralslice_x_labels_colorbar' + comment + '.png')
 plt.show()
