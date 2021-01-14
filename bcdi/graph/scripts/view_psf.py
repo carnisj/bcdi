@@ -70,19 +70,25 @@ fig, _, _ = gu.multislices_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen
                                 reciprocal_space=False, is_orthogonal=is_orthogonal, plot_colorbar=True)
 fig.savefig(save_dir + 'psf_centralslice' + comment + '.png')
 
-fig, _, _ = gu.imshow_plot(dataset[cen_z, cen_y-width:cen_y+width, cen_x-width:cen_x+width], sum_frames=False,
-                           scale='log', vmin=vmin, vmax=vmax, title='log(psf) slice in z',
-                           reciprocal_space=False, is_orthogonal=is_orthogonal, plot_colorbar=True)
+fig, axs, _ = gu.imshow_plot(dataset[cen_z, cen_y-width:cen_y+width, cen_x-width:cen_x+width], sum_frames=False,
+                             scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
+                             plot_colorbar=False)
+axs.tick_params(labelbottom=False, labelleft=False)
 fig.savefig(save_dir + 'psf_centralslice_z' + comment + '.png')
 
 
-fig, _, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y, cen_x-width:cen_x+width], sum_frames=False,
-                           scale='log', vmin=vmin, vmax=vmax, title='log(psf) slice in y',
-                           reciprocal_space=False, is_orthogonal=is_orthogonal, plot_colorbar=True)
+fig, axs, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y, cen_x-width:cen_x+width], sum_frames=False,
+                             scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
+                             plot_colorbar=False)
+axs.tick_params(labelbottom=False, labelleft=False)
 fig.savefig(save_dir + 'psf_centralslice_y' + comment + '.png')
 
-fig, _, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen_y+width, cen_x], sum_frames=False,
-                           scale='log', vmin=vmin, vmax=vmax, title='log(psf) slice in x',
-                           reciprocal_space=False, is_orthogonal=is_orthogonal, plot_colorbar=True)
+fig, axs, plot = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen_y+width, cen_x], sum_frames=False,
+                                scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
+                                plot_colorbar=False)
+axs.tick_params(labelbottom=False, labelleft=False)
 fig.savefig(save_dir + 'psf_centralslice_x' + comment + '.png')
+axs.tick_params(labelbottom=True, labelleft=True)
+plt.colorbar(plot, ax=axs)
+fig.savefig(save_dir + 'psf_centralslice_x_labels_colorbar' + comment + '.png')
 plt.show()
