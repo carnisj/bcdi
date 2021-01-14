@@ -19,6 +19,7 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import os
+from scipy.io import savemat
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
@@ -29,20 +30,21 @@ helptext = """
 Open images or series data at P10 beamline.
 """
 
-scan_nb = 15  # scan number as it appears in the folder name
-sample_name = "p15_2"  # without _ at the end
-root_directory = "D:/data/P10_isosurface/data/"
-file_list = np.arange(1, 201+1)
+scan_nb = 370  # scan number as it appears in the folder name
+sample_name = "gold2_2"  # without _ at the end
+root_directory = "D:/data/P10_August2019_CDI/data/"  # parent directory of the scan
+file_list = np.arange(1, 25+1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
 detector_name = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 counter_roi = []  # plot the integrated intensity in this region of interest. Leave it to [] to use the full detector
 # [Vstart, Vstop, Hstart, Hstop]
 # if data is a series, the condition becomes log10(data.sum(axis=0)) > high_threshold * nb_frames
 save_directory = None
-# images will be saved here, leave it to None otherwise (default to data directory's parent)
-is_scan = True  # set to True is the measurement is a scan or a time series, False for a single image
+# images will be saved here, leave it to None otherwise (default to the scan directory)
+is_scan = False  # set to True is the measurement is a scan or a time series, False for a single image
 compare_ends = False  # set to True to plot the difference between the last frame and the first frame
 save_mask = False  # True to save the mask as 'hotpixels.npz'
+save_to_mat = True  # True to save the 2D summed data to a .mat file
 multiprocessing = True  # True to use multiprocessing
 #######################################
 # parameters related to visualization #
@@ -170,16 +172,16 @@ def main(parameters):
         multiproc = False
 
     if load_scan:  # scan or time series
-        datadir = rootdir + samplename + '_' + str('{:05d}'.format(scan)) + '/e4m/'
-        template_file = datadir + samplename + '_' + str('{:05d}'.format(scan)) + "_data_"
+        detector.datadir = rootdir + samplename + '_' + str('{:05d}'.format(scan)) + '/e4m/'
+        template_file = detector.datadir + samplename + '_' + str('{:05d}'.format(scan)) + "_data_"
     else:  # single image
-        datadir = rootdir + samplename + '/e4m/'
-        template_file = datadir + samplename + '_take_' + str('{:05d}'.format(scan)) + "_data_"
+        detector.datadir = rootdir + samplename + '/e4m/'
+        template_file = detector.datadir + samplename + '_take_' + str('{:05d}'.format(scan)) + "_data_"
         compare_end = False
 
-    savedir = savedir or os.path.abspath(os.path.join(datadir, os.pardir)) + '/'
-    print(f'datadir: {datadir}')
-    print(f'savedir: {savedir}')
+    detector.savedir = savedir or os.path.abspath(os.path.join(detector.datadir, os.pardir)) + '/'
+    print(f'datadir: {detector.datadir}')
+    print(f'savedir: {detector.savedir}')
 
     #############
     # Load data #
@@ -247,11 +249,15 @@ def main(parameters):
 
     if savemask:
         fig, _, _ = gu.imshow_plot(mask, plot_colorbar=False, title='mask')
-        np.savez_compressed(savedir+'hotpixels.npz', mask=mask)
-        fig.savefig(savedir + 'mask.png')
+        np.savez_compressed(detector.savedir+'hotpixels.npz', mask=mask)
+        fig.savefig(detector.savedir + 'mask.png')
 
     y0, x0 = np.unravel_index(abs(sumdata).argmax(), sumdata.shape)
     print("Max at (y, x): ", y0, x0, ' Max = ', int(sumdata[y0, x0]))
+
+    np.savez_compressed(detector.savedir + f'{sample_name}_{scan_nb:05d}_sumdata.npz', data=sumdata)
+    if save_to_mat:
+        savemat(detector.savedir + f'{sample_name}_{scan_nb:05d}_sumdata.mat', {'data': sumdata})
 
     if len(roi_counter[0][0]) > 1:  # roi_counter[0][0] is the list of counter intensities in a series
         int_roi = []
@@ -266,8 +272,8 @@ def main(parameters):
 
     fig, _, _ = gu.imshow_plot(sumdata, plot_colorbar=True, title=plot_title, vmin=cb_min, vmax=cb_max, scale='log',
                                cmap=my_cmap)
-    np.savez_compressed(savedir + 'hotpixels.npz', mask=mask)
-    fig.savefig(savedir + filename)
+    np.savez_compressed(detector.savedir + 'hotpixels.npz', mask=mask)
+    fig.savefig(detector.savedir + filename)
     plt.show()
 
 
