@@ -1229,24 +1229,9 @@ class Setup(object):
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
 
-            elif self.rocking_angle == "inplane" and isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
+            elif self.rocking_angle == "inplane":
                 if verbose:
-                    print('rocking angle is phi, eta=0')
-                # rocking phi angle clockwise around y, assuming incident angle eta is zero (eta below phi)
-                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
-                                                                       0,
-                                                                       pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
-                                                                       -pixel_y * np.cos(outofplane),
-                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
-                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
-                    [-tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
-                     0,
-                     tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-
-            elif self.rocking_angle == "inplane" and not isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
-                if verbose:
-                    print('rocking angle is phi, with eta non zero')
+                    print(f'rocking angle is phi, eta={grazing_angle[1]*180/np.pi}')
                 # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -1323,24 +1308,9 @@ class Setup(object):
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
 
-            elif self.rocking_angle == "inplane" and isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
+            elif self.rocking_angle == "inplane":
                 if verbose:
-                    print('rocking angle is phi, theta=0')
-                # rocking phi angle clockwise around y, assuming incident angle eta is zero (eta below phi)
-                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
-                                                                       0,
-                                                                       pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                                                                       pixel_y * np.cos(outofplane),
-                                                                       -pixel_y * np.cos(inplane) * np.sin(outofplane)])
-                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
-                    [-tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
-                     0,
-                     tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-
-            elif self.rocking_angle == "inplane" and not isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
-                if verbose:
-                    print('rocking angle is phi, with theta non zero')
+                    print(f'rocking angle is phi, eta={grazing_angle[1]*180/np.pi}')
                 # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -1375,24 +1345,10 @@ class Setup(object):
                                                                            outofplane)),
                                                                        -tilt * distance * np.sin(outofplane)])
 
-            elif self.rocking_angle == "inplane" and isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
+            elif self.rocking_angle == "inplane":
+                # TODO: implement non-zero chi for 34ID
                 if verbose:
-                    print('rocking angle is theta, phi=0')
-                # rocking theta angle anti-clockwise around y, assuming incident angle is zero (theta is above phi)
-                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
-                                                                       0,
-                                                                       -pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                                                                       -pixel_y * np.cos(outofplane),
-                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
-                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
-                    [tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
-                     0,
-                     tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-
-            elif self.rocking_angle == "inplane" and not isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
-                if verbose:
-                    print('rocking angle is theta, with phi non zero')
+                    print(f'rocking angle is theta, phi={grazing_angle[1] * 180 / np.pi}')
                 # rocking theta angle anti-clockwise around y, incident angle is non zero (theta is above phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -1428,7 +1384,8 @@ class Setup(object):
 
             elif self.rocking_angle == "inplane" and not isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
-                    print('rocking angle is mu, with beta non zero')
+                    print(f'rocking angle is mu, beta={grazing_angle[1] * 180 / np.pi}')
+                    #TODO: check the (1-cos cos) at the end, it is not consistent with the beta=0 case
                 # rocking mu angle anti-clockwise around y
                 mymatrix[:, 0] = 2 * np.pi * nbx / \
                     lambdaz * pixel_x * np.array([np.cos(inplane),
