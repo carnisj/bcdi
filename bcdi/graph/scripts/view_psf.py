@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 from numpy.fft import fftshift
+import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 import tkinter as tk
@@ -19,10 +20,13 @@ helptext = """
 Open and plot the psf from a .cxi reconstruction file (from PyNX). The psf has to be fftshifted.
 """
 
-datadir = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/current_paper/"
+datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/current_paper/"
 save_dir = None
 is_orthogonal = True  # True if the data was orthogonalized before phasing
 comment = '_binning2x2x2'  # should start with _
+width = 30  # the psf will be plotted for +/- this number of pixels from center of the array
+vmin = -6  # min of the colorbar for plots (log scale). Use np.nan for default.
+vmax = 1  # max of the colorbar for plots (log scale). Use np.nan for default.
 ###################
 # define colormap #
 ###################
@@ -48,14 +52,30 @@ except KeyError as ex:
 # plot and optionally save the psf #
 ####################################
 save_dir = save_dir or datadir
-fig, _, _ = gu.multislices_plot(dataset[215:285, 215:285, 215:285], scale='log', sum_frames=True,
-                                title='log(psf) in detector frame', reciprocal_space=False,
-                                vmin=-5, is_orthogonal=is_orthogonal, plot_colorbar=True)
-fig.savefig(save_dir + 'psf_sum' + comment + '.png')
+nbz, nby, nbx = dataset.shape
+print(f'psf shape = {dataset.shape}')
+cen_z, cen_y, cen_x = nbz // 2, nby // 2, nbx // 2
+if any((cen_z-width < 0, cen_z+width > nbz, cen_y-width < 0, cen_y+width > nby, cen_x-width < 0, cen_x+width > nbx)):
+    raise ValueError('width is not compatible with the psf shape')
 
-fig, _, _ = gu.multislices_plot(dataset[215:285, 215:285, 215:285], scale='log', sum_frames=False,
-                                title='log(psf) in detector frame', reciprocal_space=False,
-                                vmin=-5, is_orthogonal=is_orthogonal, plot_colorbar=True)
+fig, _, _ = gu.multislices_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen_y+width, cen_x-width:cen_x+width],
+                                scale='log', sum_frames=False, title='log(psf) in detector frame', vmin=vmin, vmax=vmax,
+                                reciprocal_space=False, is_orthogonal=is_orthogonal, plot_colorbar=True)
 fig.savefig(save_dir + 'psf_centralslice' + comment + '.png')
 
+fig, _, _ = gu.imshow_plot(dataset[cen_z, cen_y-width:cen_y+width, cen_x-width:cen_x+width], sum_frames=False,
+                           scale='log', vmin=vmin, vmax=vmax, title='log(psf) slice in z',
+                           reciprocal_space=False, is_orthogonal=is_orthogonal, plot_colorbar=True)
+fig.savefig(save_dir + 'psf_centralslice_z' + comment + '.png')
+
+
+fig, _, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y, cen_x-width:cen_x+width], sum_frames=False,
+                           scale='log', vmin=vmin, vmax=vmax, title='log(psf) slice in y',
+                           reciprocal_space=False, is_orthogonal=is_orthogonal, plot_colorbar=True)
+fig.savefig(save_dir + 'psf_centralslice_z' + comment + '.png')
+
+fig, _, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen_y+width, cen_x], sum_frames=False,
+                           scale='log', vmin=vmin, vmax=vmax, title='log(psf) slice in x',
+                           reciprocal_space=False, is_orthogonal=is_orthogonal, plot_colorbar=True)
+fig.savefig(save_dir + 'psf_centralslice_z' + comment + '.png')
 plt.show()
