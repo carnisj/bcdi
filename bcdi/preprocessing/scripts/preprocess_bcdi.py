@@ -51,7 +51,7 @@ scans = 128  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 
 root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # folder of the experiment, where all scans are stored
 save_dir = "D:/data/P10_December2020_BCDI/data_nanolab/test/"  # images will be saved here, leave it to None otherwise
-# (default to data directory's parent)
+# (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
 sample_name = "PtNP1"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
@@ -431,8 +431,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                  root_folder=root_folder, filename=detector.specfile)
 
     if not use_rawdata:
-        setup.grazing_angle = pru.goniometer_values(logfile=logfile, scan_number=scan_nb, setup=setup,
-                                                    follow_bragg=follow_bragg)
+        _, setup.grazing_angle, _, _ = pru.goniometer_values(logfile=logfile, scan_number=scan_nb, setup=setup,
+                                                             follow_bragg=follow_bragg)
         comment = comment + '_ortho'
 
     if normalize_flux:
