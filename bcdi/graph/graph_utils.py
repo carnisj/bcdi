@@ -307,7 +307,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                 dim_v = nbz
                 dim_h = nby
                 if pixel_spacing is not None:
-                    pixel_spacing = (pixel_spacing[1], pixel_spacing[1])  # vertical, horizontal
+                    pixel_spacing = (pixel_spacing[0], pixel_spacing[1])  # vertical, horizontal
                 if not sum_frames:
                     array = array[:, :, nbx // 2]
                 else:
@@ -377,7 +377,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         else:
             axis.set_ylabel(default_ylabel)
         plt.axis('scaled')
-        if pixel_spacing:
+        if pixel_spacing is not None:
             axis.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
             axis.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
             axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
@@ -779,7 +779,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         if sum_axis == 0:
             dim_v = nby
             dim_h = nbx
-            pixel_spacing = (pixel_spacing[1], pixel_spacing[2])  # vertical, horizontal
+            if pixel_spacing is not None:
+                pixel_spacing = (pixel_spacing[1], pixel_spacing[2])  # vertical, horizontal
             if not sum_frames:
                 array = array[nbz // 2, :, :]
             else:
@@ -787,7 +788,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         elif sum_axis == 1:
             dim_v = nbz
             dim_h = nbx
-            pixel_spacing = (pixel_spacing[0], pixel_spacing[2])  # vertical, horizontal
+            if pixel_spacing is not None:
+                pixel_spacing = (pixel_spacing[0], pixel_spacing[2])  # vertical, horizontal
             if not sum_frames:
                 array = array[:, nby // 2, :]
             else:
@@ -795,7 +797,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
         else:  # 2
             dim_v = nbz
             dim_h = nby
-            pixel_spacing = (pixel_spacing[0], pixel_spacing[1])  # vertical, horizontal
+            if pixel_spacing is not None:
+                pixel_spacing = (pixel_spacing[0], pixel_spacing[1])  # vertical, horizontal
             if not sum_frames:
                 array = array[:, :, nbx // 2]
             else:
@@ -864,7 +867,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     axis.set_ylabel(ver_label)
     plt.title(title + slice_name)
     plt.axis('scaled')
-    if pixel_spacing:
+    if pixel_spacing is not None:
         axis.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
         axis.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
         axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
