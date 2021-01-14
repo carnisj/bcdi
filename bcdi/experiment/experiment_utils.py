@@ -1370,7 +1370,7 @@ class Setup(object):
             if self.rocking_angle == "inplane" and isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is mu, beta=0')
-                # rocking th angle anti-clockwise around y, assuming incident angle is zero (th above tilt)
+                # rocking mu angle anti-clockwise around y, assuming incident angle beta is zero
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
                                                                        -pixel_x * np.sin(inplane)])
