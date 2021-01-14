@@ -48,18 +48,25 @@ except KeyError as ex:
     print('The PSF was not saved in the CXI file')
     raise KeyError from ex
 
-####################################
-# plot and optionally save the psf #
-####################################
+#########################
+# check some parameters #
+#########################
 save_dir = save_dir or datadir
 nbz, nby, nbx = dataset.shape
 print(f'psf shape = {dataset.shape}')
 cen_z, cen_y, cen_x = nbz // 2, nby // 2, nbx // 2
 if any((cen_z-width < 0, cen_z+width > nbz, cen_y-width < 0, cen_y+width > nby, cen_x-width < 0, cen_x+width > nbx)):
     raise ValueError('width is not compatible with the psf shape')
+if is_orthogonal:
+    title = 'log(psf) in laboratory frame'
+else:
+    title = 'log(psf) in detector frame'
 
+#########################
+# plot and save the psf #
+#########################
 fig, _, _ = gu.multislices_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen_y+width, cen_x-width:cen_x+width],
-                                scale='log', sum_frames=False, title='log(psf) in detector frame', vmin=vmin, vmax=vmax,
+                                scale='log', sum_frames=False, title=title, vmin=vmin, vmax=vmax,
                                 reciprocal_space=False, is_orthogonal=is_orthogonal, plot_colorbar=True)
 fig.savefig(save_dir + 'psf_centralslice' + comment + '.png')
 
