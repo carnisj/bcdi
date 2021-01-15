@@ -1330,9 +1330,9 @@ class Setup(object):
             if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 raise NotImplementedError('Non-zero chi is not yet implemented for 34ID')
             # TODO: implement non-zero chi for 34ID
-            if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+            if self.rocking_angle == "outofplane":
                 if verbose:
-                    print('rocking angle is phi')
+                    print(f'rocking angle is phi, chi={grazing_angle[0] * 180 / np.pi}')
                 # rocking phi angle anti-clockwise around x (theta does not matter, above phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -1346,9 +1346,8 @@ class Setup(object):
                                                                        -tilt * distance * np.sin(outofplane)])
 
             elif self.rocking_angle == "inplane":
-                # TODO: implement non-zero chi for 34ID
                 if verbose:
-                    print(f'rocking angle is theta, phi={grazing_angle[1] * 180 / np.pi}')
+                    print(f'rocking angle is theta, phi={grazing_angle[1]*180/np.pi}, chi={grazing_angle[0]*180/np.pi}')
                 # rocking theta angle anti-clockwise around y, incident angle is non zero (theta is above phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
