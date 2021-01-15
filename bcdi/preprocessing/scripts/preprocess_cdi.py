@@ -861,6 +861,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     ############################
     print('\nSaving directory:', detector.savedir)
     print('Data type before saving:', data.dtype)
+    mask[np.nonzero(mask)] = 1
+    mask = mask.astype(int)
     print('Mask type before saving:', mask.dtype)
     if not use_rawdata and len(q_values) != 0:
         if save_to_npz:

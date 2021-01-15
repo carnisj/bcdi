@@ -44,15 +44,15 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 128  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
+scans = 1301  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = "D:/data/P10_December2020_BCDI/data_nanolab/test/"  # images will be saved here, leave it to None otherwise
+root_folder = "D:/data/SIXS_2019_Ni/"  # folder of the experiment, where all scans are stored
+save_dir = "D:/data/SIXS_2019_Ni/test/"  # images will be saved here, leave it to None otherwise
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
-sample_name = "PtNP1"  # str or list of str of sample names (string in front of the scan number in the folder name).
+sample_name = "S"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -61,7 +61,7 @@ binning = (1, 1, 1)  # binning to apply to the data
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = False  # True to interact with plots, False to close it automatically
+flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
@@ -108,40 +108,40 @@ save_asint = False  # if True, the result will be saved as an array of integers 
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'SIXS_2019'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX', '34ID'
-is_series = True  # specific to series measurement at P10
+is_series = False  # specific to series measurement at P10
 
 custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available
 custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan, None otherwise
 custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan, None otherwise
 
-rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
+rocking_angle = "inplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = ''
+specfile_name = root_folder + 'alias_dict_2020.txt'
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary, typically root_folder + 'alias_dict_2020.txt'
 # template for all other beamlines: ''
 ###############################
 # detector related parameters #
 ###############################
-detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 x_bragg = 1350  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 y_bragg = 850  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200]
+roi_detector = None  # [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
 # [Vstart, Vstop, Hstart, Hstop]
 # leave None to use the full detector. Use with center_fft='skip' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
-photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon threshold should be applied
+photon_filter = 'postprocessing'  # 'loading' or 'postprocessing', when the photon threshold should be applied
 # if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
 background_file = None  # root_folder + 'background.npz'  # non empty file path or None
 hotpixels_file = None  # root_folder + 'hotpixels_HS4670.npz'  # non empty file path or None
 flatfield_file = None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
-template_imagefile = '_master.h5'
+template_imagefile = 'Pt_ascan_mu_%05d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -159,8 +159,8 @@ correct_curvature = False  # True to correcture q values for the curvature of Ew
 beam_direction = (1, 0, 0)  # beam direction in the frame (downstream, vertical up, outboard)
 sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
-sdd = 1.83  # in m, sample to detector distance in m
-energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+sdd = 1.45  # in m, sample to detector distance in m
+energy = 8300  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
@@ -875,6 +875,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     ############################
     print('\nSaving directory:', detector.savedir)
     print('Data type before saving:', data.dtype)
+    mask[np.nonzero(mask)] = 1
+    mask = mask.astype(int)
     print('Mask type before saving:', mask.dtype)
     if not use_rawdata and len(q_values) != 0:
         if save_to_npz:
