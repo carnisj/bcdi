@@ -3419,9 +3419,9 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         eta, chi, phi, nu, delta, energy, frames_logical = \
             motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
                                  kwargs={'frames_logical': frames_logical, 'follow_bragg': follow_bragg})
-        chi = chi - setup.sample_offsets[0]
-        phi = phi - setup.sample_offsets[1]
-        eta = eta - setup.sample_offsets[2]
+        chi = chi - setup.sample_offsets[0]  # sample_offsets[0] is the rotation around the downstream axis
+        phi = phi - setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
+        eta = eta - setup.sample_offsets[2]  # sample_offsets[2] is the rotation around the outboard axis
         print('chi', chi)
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
             print('phi', phi)
@@ -3462,6 +3462,9 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
         beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile=logfile, setup=setup)
+        mu = mu - setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
+        beta = beta - setup.sample_offsets[2]  # sample_offsets[2] is the rotation around the outboard axis
+        print('beta', beta)
         if setup.rocking_angle == 'inplane':  # mu rocking curve
             nb_steps = len(mu)
             tilt_angle = mu[1] - mu[0]
@@ -3483,7 +3486,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     elif setup.beamline == 'CRISTAL':
         mgomega, gamma, delta = motor_positions_cristal(logfile, setup)
-        mgomega = mgomega - setup.sample_offsets[2]
+        mgomega = mgomega - setup.sample_offsets[2]  # sample_offsets[2] is the rotation around the outboard axis
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             nb_steps = len(mgomega)
             tilt_angle = mgomega[1] - mgomega[0]
@@ -3504,9 +3507,9 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     elif setup.beamline == 'P10':
         om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile=logfile, setup=setup)
-        chi = chi - setup.sample_offsets[0]
-        phi = phi - setup.sample_offsets[1]
-        om = om - setup.sample_offsets[2]
+        chi = chi - setup.sample_offsets[0]  # sample_offsets[0] is the rotation around the downstream axis
+        phi = phi - setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
+        om = om - setup.sample_offsets[2]  # sample_offsets[2] is the rotation around the outboard axis
         print('chi', chi)
         print('mu', mu)
         if setup.rocking_angle == 'outofplane':  # om rocking curve
@@ -3584,7 +3587,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     elif setup.beamline == '34ID':
         mu, phi, chi, theta, delta, gamma = motor_positions_34id(setup=setup)
-        chi = chi - setup.sample_offsets[0]
+        chi = chi - setup.sample_offsets[0]  # sample_offsets[0] is the rotation around the downstream axis
         theta = theta - setup.sample_offsets[1]  # theta is the inplane rotation at 34ID
         phi = phi - setup.sample_offsets[2]  # phi is the incident angle at 34ID
         if setup.rocking_angle == 'outofplane':  # phi rocking curve
