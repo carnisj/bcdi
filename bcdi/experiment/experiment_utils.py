@@ -1195,7 +1195,8 @@ class Setup(object):
         :param pixel_y: vertical pixel size, in meters
         :param direct_space: True in order to return the transformation matrix in direct space
         :param verbose: True to have printed comments
-        :return: the transfer matrix from the detector frame to the laboratory frame
+        :return: the transformation matrix from the detector frame to the laboratory frame, and the q offset (3D vector)
+         if direct_space is False
         """
         wavelength = self.wavelength * 1e9  # convert to nm
         distance = self.distance * 1e9  # convert to nm
