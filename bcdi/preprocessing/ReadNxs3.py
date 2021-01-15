@@ -40,7 +40,7 @@ class DataSet(object):
     ROI extraction, attenuation correction and plotting.
     Meant to be used on the data produced after the 11/03/2019 data of the 
     upgrade of the datarecorder''' 
-    def __init__(self,filename, directory = '', Nxs2Spec = False):
+    def __init__(self, filename, directory='', Nxs2Spec = False, alias_dict=None):
         
         self.directory = directory 
         self.filename = filename
@@ -51,11 +51,10 @@ class DataSet(object):
         self._SpecNaNs = Nxs2Spec  # Remove the NaNs if the spec file need to be generated
         attlist = []  # used for self generated file attribute list 
         aliases = [] # used for SBS imported with alias_dict file
-        
-        try:
-            self._alias_dict = pickle.load(open('/home/andrea/MyPy3/alias_dict.txt','rb'))
-            #self._alias_dict = pickle.load(open('/home/experiences/sixs/com-sixs/python/alias_dict.txt','rb'))
-        except :#FileNotFoundError:
+
+        if alias_dict is not None:
+            self._alias_dict = pickle.load(open(alias_dict, 'rb'))
+        else:  # FileNotFoundError:
             print('NO ALIAS FILE')
             self._alias_dict = None
             
