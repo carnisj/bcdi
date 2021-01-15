@@ -225,8 +225,11 @@ diff_pattern = pu.bin_data(array=diff_pattern, binning=phasing_binning, debuggin
 numz, numy, numx = diff_pattern.shape
 print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
 z0, y0, x0 = center_of_mass(diff_pattern)
-z0, y0, x0 = [int(z0), int(y0), int(x0)]
-print("COM of the measured 3D diffraction pattern: ", z0, y0, x0)
+print(f'COM of measured pattern after masking: {z0:.2f}, {y0:.2f}, {x0:.2f}')
+# refine the COM in a small ROI centered on the approximate COM, to avoid detector gaps
+fine_com = center_of_mass(diff_pattern[int(z0)-20:int(z0)+21, int(y0)-20:int(y0)+21, int(x0)-20:int(x0)+21])
+z0, y0, x0 = [int(np.rint(z0-20+fine_com[0])), int(np.rint(y0-20+fine_com[1])), int(np.rint(x0-20+fine_com[2]))]
+print(f'refined COM: {z0}, {y0}, {x0}, Number of unmasked photons = {diff_pattern.sum():.0f}\n')
 
 fig, _, _ = gu.multislices_plot(np.sqrt(diff_pattern), sum_frames=False, title='3D diffraction amplitude', vmin=0,
                                 vmax=3.5, is_orthogonal=False, reciprocal_space=True, slice_position=[z0, y0, x0],
@@ -253,7 +256,7 @@ if debug:
 qxCOM = qx[z0, y0, x0]
 qyCOM = qy[z0, y0, x0]
 qzCOM = qz[z0, y0, x0]
-print('COM[qx, qy, qz] = ', qxCOM, qyCOM, qzCOM)
+print(f'COM[qx, qz, qy] = {qxCOM:.2f}, {qzCOM:.2f}, {qyCOM:.2f}')
 distances_q = np.sqrt((qx - qxCOM)**2 + (qy - qyCOM)**2 + (qz - qzCOM)**2)  # if reconstructions are centered
 #  and of the same shape q values will be identical
 del qx, qy, qz
@@ -306,7 +309,7 @@ if extension == '.h5':
 # check if the shape of the real space object is the same as the measured 2D diffraction pattern
 # the real space object may have been further cropped to a tight support, to save memory space.
 if obj.shape != slice_2D.shape:
-    print('Reconstructed object shape = ', obj.shape, 'different from the 2D diffraction slice: crop/pad')
+    print(f'Reconstructed object shape = {obj.shape}, different from the 2D diffraction slice: crop/pad')
     obj = pu.crop_pad_2d(array=obj, output_shape=slice_2D.shape, debugging=False)
 
 plt.figure()
@@ -340,8 +343,9 @@ plt.colorbar()
 plt.pause(0.1)
 
 phased_fft[np.nonzero(mask_2D)] = 0  # do not take mask voxels into account
-print('Max(retrieved amplitude) =', abs(phased_fft).max())
-print('COM of the retrieved diffraction pattern after masking: ', center_of_mass(abs(phased_fft)))
+print(f'Max(retrieved amplitude) = {abs(phased_fft).max():.1f}')
+phased_com_y, phased_com_x = center_of_mass(abs(phased_fft))
+print(f'COM of the retrieved diffraction pattern after masking: {phased_com_y:.2f}, {phased_com_x:.2f}\n')
 del mask_2D
 gc.collect()
 
@@ -363,7 +367,8 @@ plt.pause(0.1)
 #######################
 # average over shells #
 #######################
-print('Distance max:', distances_q.max(), ' (1/A) at: ', np.unravel_index(abs(distances_q).argmax(), distances_q.shape))
+print(f'Distance max: {distances_q.max():.6f}  (1/A) '
+      f'at: {np.unravel_index(abs(distances_q).argmax(), distances_q.shape)}')
 nb_bins = numy // 3
 prtf_avg = np.zeros(nb_bins)
 dq = distances_q.max() / nb_bins  # in 1/A
@@ -407,8 +412,8 @@ except ValueError:
     print('Resolution limited by the 1 photon counts only (min(prtf)>1/e)')
     print('min(PRTF) = ', prtf_avg[~np.isnan(prtf_avg)].min())
     q_resolution = 10 * q_axis[len(prtf_avg[~np.isnan(prtf_avg)])-1]
-print('q resolution =', str('{:.5f}'.format(q_resolution)), ' (1/nm)')
-print('resolution d= ' + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm')
+print(f'q resolution = {q_resolution:.5f} (1/nm)')
+print(f'resolution d = {2*np.pi / q_resolution:.3f} nm')
 
 fig = plt.figure()
 plt.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
@@ -420,9 +425,9 @@ plt.ylim(0, 1.1)
 if save:
     plt.savefig(detector.savedir + 'S' + str(scan) + '_prtf' + comment + '.png')
 fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
-fig.text(0.15, 0.20, "q at PRTF=1/e: " + str('{:.5f}'.format(q_resolution)) + '(1/nm)', size=14)
-fig.text(0.15, 0.15, "resolution d= " + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm', size=14)
+fig.text(0.15, 0.20, f"q at PRTF=1/e: {q_resolution:.5f} (1/nm)", size=14)
+fig.text(0.15, 0.15, f"resolution d = {2*np.pi / q_resolution:.3f} nm", size=14)
 if save:
-    plt.savefig(detector.savedir + 'S' + str(scan) + '_prtf_comments' + comment + '.png')
+    plt.savefig(detector.savedir + f'S{scan}_prtf_comments' + comment + '.png')
 plt.ioff()
 plt.show()
