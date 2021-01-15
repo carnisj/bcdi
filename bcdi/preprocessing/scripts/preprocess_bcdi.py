@@ -121,7 +121,7 @@ rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ''
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
+# template for SIXS: full path of the alias dictionnary, typically root_folder + 'alias_dict_2020.txt'
 # template for all other beamlines: ''
 ###############################
 # detector related parameters #
