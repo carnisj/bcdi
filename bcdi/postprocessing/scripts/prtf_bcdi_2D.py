@@ -46,8 +46,8 @@ Path structure:
 """
 
 scan = 279
-root_folder = 'D:/data/DATA_exp/'  # location of the .spec or log file
-savedir = 'D:/data/DATA_exp/'  # PRTF will be saved here, leave it to '' otherwise
+root_folder = 'D:/data/DATA_exp/'  # folder of the experiment, where all scans are stored
+save_dir = None  # PRTF will be saved here, leave None otherwise
 sample_name = "S"  # "SN"  #
 comment = ""  # should start with _
 crop_roi = [3, 255, 3, 387]  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
@@ -66,9 +66,7 @@ specfile_name = 'alignment'
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
-# template for SIXS_2019: ''
-# template for P10: sample_name + '_%05d'
-# template for CRISTAL: ''
+# template for all other beamlines: ''
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
@@ -79,6 +77,8 @@ template_imagefile = 'alignment_12_%04d.edf.gz'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_master.h5'
+# template for NANOMAX: '%06d.h5'
+# template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
@@ -93,6 +93,8 @@ phasing_binning = (1, 2, 2)  # binning factor applied during phasing: rocking cu
 # horizontal axis. Use (1, binning_Y, binning_X) for 2D data.
 # If the reconstructed object was further cropped after phasing, it will be automatically padded back to the FFT window
 # shape used during phasing (after binning) before calculating the Fourier transform.
+sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+# convention: the sample offsets will be subtracted to the motor values
 ###############################
 # only needed for simulations #
 ###############################
@@ -111,51 +113,40 @@ save = True  # True to save the prtf figure
 # end of user parameters #
 ##########################
 
-#################################################
-# Initialize paths, detector, setup and logfile #
-#################################################
+#######################
+# Initialize detector #
+#######################
 kwargs = dict()  # create dictionnary
-try:
-    kwargs['is_series'] = is_series
-except NameError:  # is_series not declared
-    pass
+kwargs['is_series'] = is_series
 
-detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, binning=pre_binning, **kwargs)
+detector = exp.Detector(name=detector, template_imagefile=template_imagefile, binning=(1, 1, 1),
+                        preprocessing_binning=pre_binning)
 
-setup = exp.SetupPreprocessing(beamline=beamline, rocking_angle=rocking_angle, distance=sdd, energy=energy,
-                               beam_direction=beam_direction, sample_inplane=sample_inplane,
-                               sample_outofplane=sample_outofplane,
-                               offset_inplane=0)  # no need to worry about offsets, work relatively to the Bragg peak
+####################
+# Initialize setup #
+####################
+setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+                  beam_direction=beam_direction, sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
+                  sample_offsets=sample_offsets)
 
-print('\nScan', scan)
-print('Setup: ', setup.beamline)
-print('Detector: ', detector.name)
-print('Pixel Size: ', detector.pixelsize_x, 'm')
-print('Scan type: ', setup.rocking_angle)
-print('Sample to detector distance: ', setup.distance, 'm')
-print('Energy:', setup.energy, 'ev')
+########################################
+# Initialize the paths and the logfile #
+########################################
+setup.init_paths(detector=detector, sample_name=sample_name, scan_number=scan, root_folder=root_folder,
+                 save_dir=save_dir, specfile_name=specfile_name, template_imagefile=template_imagefile,
+                 create_savedir=True)
 
-if simulation:
-    detector.datadir = root_folder
-    detector.savedir = root_folder
-else:
-    if setup.beamline != 'P10':
-        homedir = root_folder + sample_name + str(scan) + '/'
-        detector.datadir = homedir + "data/"
-    else:
-        specfile_name = specfile_name % scan
-        homedir = root_folder + specfile_name + '/'
-        detector.datadir = homedir + 'e4m/'
-        template_imagefile = specfile_name + template_imagefile
-        detector.template_imagefile = template_imagefile
-    if savedir == '':
-        detector.savedir = os.path.abspath(os.path.join(detector.datadir, os.pardir))
-    else:
-        detector.savedir = savedir
-    print('Datadir:', detector.datadir)
-    print('Savedir:', detector.savedir)
-    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
-                                 filename=specfile_name)
+logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
+                             filename=detector.specfile)
+
+###################
+# print instances #
+###################
+print(f'{"#"*(5+len(str(scan)))}\nScan {scan}\n{"#"*(5+len(str(scan)))}')
+print('\n##############\nSetup instance\n##############')
+print(setup)
+print('\n#################\nDetector instance\n#################')
+print(detector)
 
 #############################################
 # Initialize geometry for orthogonalization #
@@ -187,7 +178,9 @@ file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Selec
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
 mask_2D, _ = util.load_file(file_path)
 
-# crop the diffraction pattern and the mask to compensate the "auto_center_resize" option used in PyNX.
+########################################################################################################
+# crop the diffraction pattern and the mask to compensate the "auto_center_resize" option used in PyNX #
+########################################################################################################
 # The shape will be equal to 'roi_final' parameter of the .cxi file
 if len(crop_roi) == 4:
     slice_2D = slice_2D[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
@@ -196,12 +189,11 @@ elif len(crop_roi) != 0:
     print('Crop_roi should be a list of 6 integers or a blank list!')
     sys.exit()
 
-# bin the diffraction pattern and the mask to compensate the "rebin" option used in PyNX.
+##########################################################################################
+# bin the diffraction pattern and the mask to compensate the "rebin" option used in PyNX #
+##########################################################################################
 # update also the detector pixel sizes to take into account the binning
-detector.pixelsize_y = detector.pixelsize_y * phasing_binning[1]
-detector.pixelsize_x = detector.pixelsize_x * phasing_binning[2]
-final_binning = np.multiply(pre_binning, phasing_binning)
-detector.binning = final_binning
+detector.binning = phasing_binning
 print('Pixel sizes after phasing_binning (vertical, horizontal): ', detector.pixelsize_y, detector.pixelsize_x, '(m)')
 slice_2D = pu.bin_data(array=slice_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False)
 mask_2D = pu.bin_data(array=mask_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False)
@@ -214,9 +206,9 @@ plt.title('2D diffraction amplitude')
 plt.colorbar()
 plt.pause(0.1)
 
-######################
-# calculate q values #
-######################
+##########################################################
+# load the 3D dataset in order to calculate the q values #
+##########################################################
 file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select the 3D diffraction pattern",
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
 diff_pattern, _ = util.load_file(file_path)
