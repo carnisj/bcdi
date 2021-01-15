@@ -1367,25 +1367,10 @@ class Setup(object):
                 print('using SIXS geometry')
             if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 raise NotImplementedError('Non-zero chi is not implemented for SIXS')
-            if self.rocking_angle == "inplane" and isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
-                if verbose:
-                    print('rocking angle is mu, beta=0')
-                # rocking mu angle anti-clockwise around y, assuming incident angle beta is zero
-                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
-                                                                       0,
-                                                                       -pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                                                                       -pixel_y * np.cos(outofplane),
-                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
-                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
-                    [tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
-                     0,
-                     tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-
-            elif self.rocking_angle == "inplane" and not isclose(grazing_angle[1], 0, rel_tol=1e-09, abs_tol=1e-09):
+            if self.rocking_angle == "inplane":
                 if verbose:
                     print(f'rocking angle is mu, beta={grazing_angle[1] * 180 / np.pi}')
-                    #TODO: check the (1-cos cos) at the end, it is not consistent with the beta=0 case
+
                 # rocking mu angle anti-clockwise around y
                 mymatrix[:, 0] = 2 * np.pi * nbx / \
                     lambdaz * pixel_x * np.array([np.cos(inplane),
@@ -1401,6 +1386,8 @@ class Setup(object):
                     * np.array([np.cos(grazing_angle[1]) - np.cos(inplane) * np.cos(outofplane),
                                 np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
                                 np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
+            else:
+                raise NotImplementedError('out of plane rocking curve not implemented for SIXS')
 
         if self.beamline == 'CRISTAL':
             if verbose:
@@ -1421,6 +1408,8 @@ class Setup(object):
                                                                        tilt * distance * (1 - np.cos(inplane) * np.cos(
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
+            else:
+                raise NotImplementedError('inplane rocking curve not implemented for CRISTAL')
 
         return 2 * np.pi * np.linalg.inv(mymatrix).transpose()
 
