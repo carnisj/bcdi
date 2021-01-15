@@ -48,7 +48,7 @@ Path structure:
 scan = 314
 sample_name = "PtNP1"  # "SN"  #
 root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = "D:/data/P10_December2020_BCDI/data_nanolab/dataset_2/"  # PRTF will be saved here, leave it to '' otherwise
+save_dir = "D:/data/P10_December2020_BCDI/data_nanolab/dataset_2/"  # PRTF will be saved here, leave None otherwise
 comment = ""  # should start with _
 crop_roi = None  # list of 6 integers, ROI used if 'center_auto' was True in PyNX, leave None otherwise
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
@@ -203,15 +203,12 @@ setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle,
                   beam_direction=beam_direction, sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
                   sample_offsets=sample_offsets)
 
-########################################
-# Initialize the paths and the logfile #
-########################################
+########################
+# Initialize the paths #
+########################
 setup.init_paths(detector=detector, sample_name=sample_name, scan_number=scan, root_folder=root_folder,
                  save_dir=save_dir, specfile_name=specfile_name, template_imagefile=template_imagefile,
                  create_savedir=True)
-
-logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
-                             filename=detector.specfile)
 
 ###################
 # print instances #
@@ -222,6 +219,9 @@ print(setup)
 print('\n#################\nDetector instance\n#################')
 print(detector)
 
+##########################
+# Initialize the logfile #
+##########################
 if simulation:
     detector.datadir, detector.datadir, detector.savedir = (root_folder,) * 3
 
