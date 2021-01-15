@@ -52,7 +52,7 @@ class DataSet(object):
         attlist = []  # used for self generated file attribute list 
         aliases = [] # used for SBS imported with alias_dict file
 
-        if alias_dict is not None:
+        if alias_dict:
             self._alias_dict = pickle.load(open(alias_dict, 'rb'))
         else:  # FileNotFoundError:
             print('NO ALIAS FILE')
