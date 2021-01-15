@@ -1060,8 +1060,8 @@ def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vm
     return vmax, idx, exit_flag
 
 
-def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400, 350), azimuth=150, elevation=70,
-                   distance='auto', roll=0, vmin=None, vmax=None, opacity=1, color=None, colormap='jet', title='',
+def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400, 350), azimuth=(150,), elevation=70,
+                   roll=0, distance='auto', vmin=None, vmax=None, opacity=1, color=None, colormap='jet', title='',
                    savedir=None):
     """
     3D scatter plot using mayavi. The frame convention is (x,y,z) right-handed.
@@ -1096,34 +1096,39 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     """
     from mayavi import mlab
 
-    # check input parameters
-    vmin = vmin or scalars.min()
-    vmax = vmax or scalars.max()
+    ##########################
+    # check input parameters #
+    ##########################
+    if vmin is None:
+        vmin = scalars.min()
+    if vmax is None:
+        vmax = scalars.max()
 
-    assert len(fig_size) == 2, 'fig_size should be a tuple of 2 pixel numbers'
+    valid.valid_container(fig_size, container_types=(tuple, list), length=2, item_types=int, min_excluded=0,
+                          name='graph_utils.mlab_contour3d')
 
-    azimuth = azimuth or [150]
     nb_plots = len(azimuth)
-    elevation = elevation or [70 for _ in range(nb_plots)]
-    try:
-        assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimuth'
-    except TypeError:  # it is a number
-        elevation = [elevation for _ in range(nb_plots)]
-    roll = roll or [0 for _ in range(nb_plots)]
-    try:
-        assert len(roll) == nb_plots, 'roll should have the same number of elements as azimuth'
-    except TypeError:  # it is a number
-        roll = [roll for _ in range(nb_plots)]
-    try:
-        assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
-    except TypeError:  # it is a number or a string
-        distance = [distance for _ in range(nb_plots)]
-    if isinstance(title, (tuple, list)):
-        assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
-    else:  # it is a string or a number
-        title = [title + '_' + str(idx) for idx in range(nb_plots)]
 
-    # plot the contour3d figure
+    if isinstance(elevation, Real):
+        elevation = (elevation,) * nb_plots
+    valid.valid_container(elevation, container_types=(tuple, list), length=nb_plots, item_types=Real,
+                          name='graph_utils.mlab_contour3d')
+    if isinstance(roll, Real):
+        roll = (roll,) * nb_plots
+    valid.valid_container(roll, container_types=(tuple, list), length=nb_plots, item_types=Real,
+                          name='graph_utils.mlab_contour3d')
+    if isinstance(distance, Real):
+        distance = (distance,) * nb_plots
+    valid.valid_container(distance, container_types=(tuple, list), length=nb_plots, item_types=Real,
+                          name='graph_utils.mlab_contour3d')
+    if isinstance(title, str):
+        title = tuple(title + '_' + str(idx) for idx in range(nb_plots))
+    valid.valid_container(title, container_types=(tuple, list), length=nb_plots, item_types=str,
+                          name='graph_utils.mlab_contour3d')
+
+    ###############################
+    # create the contour3d figure #
+    ###############################
     ax = None
     cbar = None
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
@@ -1132,7 +1137,9 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     else:
         mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax, color=color)
 
-    # loop over the different views
+    #################################
+    # loop over the different views #
+    #################################
     for idx in range(nb_plots):
         mlab.view(azimuth=azimuth[idx], elevation=elevation[idx], distance=distance[idx])
         # azimuth is the rotation around z axis of mayavi
@@ -1155,7 +1162,7 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     return fig, ax, cbar
 
 
-def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azimuth=None, elevation=None, roll=None,
+def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azimuth=(150,), elevation=70, roll=0,
                   distance='auto', mode='cube', vmin=None, vmax=None, opacity=1, colormap='jet', title='',
                   savedir=None):
     """
@@ -1190,40 +1197,47 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
     """
     from mayavi import mlab
 
-    # check input parameters
-    vmin = vmin or scalars.min()
-    vmax = vmax or scalars.max()
+    ##########################
+    # check input parameters #
+    ##########################
+    if vmin is None:
+        vmin = scalars.min()
+    if vmax is None:
+        vmax = scalars.max()
 
-    assert len(fig_size) == 2, 'fig_size should be a tuple of 2 pixel numbers'
+    valid.valid_container(fig_size, container_types=(tuple, list), length=2, item_types=int, min_excluded=0,
+                          name='graph_utils.mlab_contour3d')
 
-    azimuth = azimuth or [150]
     nb_plots = len(azimuth)
-    elevation = elevation or [70 for _ in range(nb_plots)]
-    try:
-        assert len(elevation) == nb_plots, 'elevation should have the same number of elements as azimuth'
-    except TypeError:  # it is a number
-        elevation = [elevation for _ in range(nb_plots)]
-    roll = roll or [0 for _ in range(nb_plots)]
-    try:
-        assert len(roll) == nb_plots, 'roll should have the same number of elements as azimuth'
-    except TypeError:  # it is a number
-        roll = [roll for _ in range(nb_plots)]
-    try:
-        assert len(distance) == nb_plots, 'distance should have the same number of elements as azimuth'
-    except TypeError:  # it is a number
-        distance = [distance for _ in range(nb_plots)]
-    if isinstance(title, (tuple, list)):
-        assert len(title) == nb_plots, 'title should have the same number of elements as azimuth'
-    else:  # it is a string or a number
-        title = [title + '_' + str(idx) for idx in range(nb_plots)]
 
-    # plot the points3d figure
+    if isinstance(elevation, Real):
+        elevation = (elevation,) * nb_plots
+    valid.valid_container(elevation, container_types=(tuple, list), length=nb_plots, item_types=Real,
+                          name='graph_utils.mlab_contour3d')
+    if isinstance(roll, Real):
+        roll = (roll,) * nb_plots
+    valid.valid_container(roll, container_types=(tuple, list), length=nb_plots, item_types=Real,
+                          name='graph_utils.mlab_contour3d')
+    if isinstance(distance, Real):
+        distance = (distance,) * nb_plots
+    valid.valid_container(distance, container_types=(tuple, list), length=nb_plots, item_types=Real,
+                          name='graph_utils.mlab_contour3d')
+    if isinstance(title, str):
+        title = tuple(title + '_' + str(idx) for idx in range(nb_plots))
+    valid.valid_container(title, container_types=(tuple, list), length=nb_plots, item_types=str,
+                          name='graph_utils.mlab_contour3d')
+
+    ##############################
+    # create the points3d figure #
+    ##############################
     ax = None
     cbar = None
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     mlab.points3d(x, y, z, scalars, mode=mode, opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
 
-    # loop over the different views
+    #################################
+    # loop over the different views #
+    #################################
     for idx in range(nb_plots):
         mlab.view(azimuth=azimuth[idx], elevation=elevation[idx], distance=distance[idx])
         # azimuth is the rotation around z axis of mayavi
