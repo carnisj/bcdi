@@ -958,8 +958,8 @@ class Setup(object):
             gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
                                 title=title + ' before interpolation\n')
 
-        ortho_matrix = self.update_coords(array_shape=(nbz, nby, nbx), tilt_angle=self.tilt_angle,
-                                          pixel_x=self.pixel_x, pixel_y=self.pixel_y)
+        ortho_matrix = self.transformation_matrix(array_shape=(nbz, nby, nbx), tilt_angle=self.tilt_angle,
+                                                  pixel_x=self.pixel_x, pixel_y=self.pixel_y)
 
         ################################################
         # interpolate the data into the detector frame #
@@ -1127,8 +1127,8 @@ class Setup(object):
             assert isinstance(voxel_size, (tuple, list)) and len(voxel_size) == 3 and\
                 all(val > 0 for val in voxel_size), 'voxel_size should be a list/tuple of three positive numbers in nm'
 
-        ortho_matrix = self.update_coords(array_shape=(nbz, nby, nbx), tilt_angle=tilt,
-                                          pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
+        ortho_matrix = self.transformation_matrix(array_shape=(nbz, nby, nbx), tilt_angle=tilt,
+                                                  pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
 
         ###############################################################
         # Vincent Favre-Nicolin's method using inverse transformation #
@@ -1174,8 +1174,8 @@ class Setup(object):
         valid.valid_container(array_shape, container_types=(tuple, list), length=3, item_types=int,
                               min_excluded=0, name='Setup.orthogonalize_vector')
 
-        ortho_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
-                                          pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
+        ortho_matrix = self.transformation_matrix(array_shape=array_shape, tilt_angle=tilt_angle,
+                                                  pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
         # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
         # Here, we want to calculate the coordinates that would have a vector of the laboratory frame expressed in the
         # detector frame, i.e. one has to inverse the transformation matrix.
@@ -1185,7 +1185,7 @@ class Setup(object):
         new_z = ortho_imatrix[2, 0] * vector[2] + ortho_imatrix[2, 1] * vector[1] + ortho_imatrix[2, 2] * vector[0]
         return new_z, new_y, new_x
 
-    def update_coords(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=True):
+    def transformation_matrix(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=True):
         """
         Calculate the pixel non-orthogonal coordinates in the orthogonal reference frame.
 
@@ -1426,8 +1426,8 @@ class Setup(object):
         valid.valid_container(array_shape, container_types=(tuple, list), length=3, item_types=int,
                               min_excluded=0, name='Setup.voxel_sizes')
 
-        transfer_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
-                                             pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
+        transfer_matrix = self.transformation_matrix(array_shape=array_shape, tilt_angle=tilt_angle,
+                                                     pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
         rec_matrix = 2 * np.pi * np.linalg.inv(transfer_matrix).transpose()
         qx_range = np.linalg.norm(rec_matrix[0, :])
         qy_range = np.linalg.norm(rec_matrix[1, :])
