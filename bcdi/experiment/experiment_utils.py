@@ -1185,7 +1185,7 @@ class Setup(object):
         new_z = ortho_imatrix[2, 0] * vector[2] + ortho_imatrix[2, 1] * vector[1] + ortho_imatrix[2, 2] * vector[0]
         return new_z, new_y, new_x
 
-    def transformation_matrix(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=True):
+    def transformation_matrix(self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space=True, verbose=True):
         """
         Calculate the pixel non-orthogonal coordinates in the orthogonal reference frame.
 
@@ -1193,6 +1193,7 @@ class Setup(object):
         :param tilt_angle: angular step during the rocking curve, in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
+        :param direct_space: True in order to return the transformation matrix in direct space
         :param verbose: True to have printed comments
         :return: the transfer matrix from the detector frame to the laboratory frame
         """
@@ -1410,7 +1411,11 @@ class Setup(object):
             else:
                 raise NotImplementedError('inplane rocking curve not implemented for CRISTAL')
 
-        return 2 * np.pi * np.linalg.inv(mymatrix).transpose()
+        if direct_space:
+            return 2 * np.pi * np.linalg.inv(mymatrix).transpose()
+        else:
+            offset = None
+            return mymatrix, offset
 
     def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
