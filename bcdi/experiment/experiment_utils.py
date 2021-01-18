@@ -1208,7 +1208,7 @@ class Setup(object):
         lambdaz = wavelength * distance
         mymatrix = np.zeros((3, 3))
         tilt = np.radians(tilt_angle)
-
+        q_offset = None  # TODO: calculate the q offset for all geometries
         nbz, nby, nbx = array_shape
 
         if self.beamline == 'ID01':
@@ -1415,8 +1415,7 @@ class Setup(object):
         if direct_space:
             return 2 * np.pi * np.linalg.inv(mymatrix).transpose()
         else:
-            offset = None
-            return mymatrix, offset
+            return mymatrix, q_offset
 
     def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
