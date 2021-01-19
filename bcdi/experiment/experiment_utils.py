@@ -413,7 +413,7 @@ class Setup(object):
     :param outofplane_angle: vertical detector angle, in degrees.
     :param inplane_angle: horizontal detector angle, in degrees.
     :param tilt_angle: angular step of the rocking curve, in degrees.
-    :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
+    :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane', 'energy'}
     :param grazing_angle: motor positions for the goniometer circles below the rocking angle. It should be a
      list/tuple of lenght 1 for out-of-plane rocking curves (the chi motor value) and length 2 for inplane rocking
      curves (the chi and omega/om/eta motor values).
@@ -873,8 +873,8 @@ class Setup(object):
             self._rocking_angle = value
         elif not isinstance(value, str):
             raise TypeError('rocking_angle should be a str')
-        elif value not in {'outofplane', 'inplane'}:
-            raise ValueError('rocking_angle can take only the value "outofplane" or "inplane"')
+        elif value not in {'outofplane', 'inplane', 'energy'}:
+            raise ValueError('rocking_angle can take only the value "outofplane", "inplane" or "energy"')
         else:
             self._rocking_angle = value
 
