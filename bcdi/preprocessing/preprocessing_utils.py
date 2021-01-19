@@ -1236,23 +1236,24 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
 def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, debugging=False,
                        **kwargs):
     """
-    Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in cartesian coordinates.
-     Note that it is based on PetraIII P10 beamline (counterclockwise rotation, detector seen from the front).
+    Interpolate BCDI reciprocal space data using xrayutilities package. The resulting (qx, qy, qz) are in the cristal
+     frame (qz vertical).
 
     :param data: the 3D data, already binned in the detector frame
     :param mask: the corresponding 3D mask
-        :param scan_number: the scan number to load
+    :param scan_number: the scan number to load
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param detector: the detector object: Class experiment_utils.Detector(). The detector orientation is supposed to
+    :param detector: instance of the Class experiment_utils.Detector(). The detector orientation is supposed to
      follow the CXI convention: (z downstream, y vertical up, x outboard) Y opposite to y, X opposite to x
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param setup: instance of the Class experiment_utils.Setup()
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
     :param debugging: set to True to see plots
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
-    :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard)
+    :return: the data and mask interpolated in the cristal frame, q values (downstream, vertical up, outboard). q values
+     are in inverse angstroms.
     """
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg'}, name='preprocessing_utils.grid_bcdi')
