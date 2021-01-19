@@ -155,7 +155,7 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
 use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
-correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
+interp_method = 'xrayutilities'  # 'xrayutilities' or 'linearization'
 beam_direction = (1, 0, 0)  # beam direction in the frame (downstream, vertical up, outboard)
 sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
@@ -304,10 +304,6 @@ if len(fix_size) != 0:
     print("'fix_size' parameter provided, defaulting 'center_fft' to 'skip'")
     center_fft = 'skip'
 
-if correct_curvature:
-    raise NotImplementedError('correction of the curvature of Ewalt sphere not yet implemented, defaulting to False')
-    # TODO: implement this
-
 if photon_filter == 'loading':
     loading_threshold = photon_threshold
 else:
@@ -332,6 +328,11 @@ else:
     save_dirname = 'pynx'
     print('Output will be orthogonalized by xrayutilities')
     plot_title = ['QzQx', 'QyQx', 'QyQz']
+    if interp_method not in {'xrayutilities', 'linearization'}:
+        raise ValueError('Incorrect value for interp_method, allowed values are "xrayutilities" and "linearization"')
+    if rocking_angle == 'energy':
+        interp_method = 'xrayutilities'
+        print(f'Defaulting interp_method to {interp_method}')
     if not reload_orthogonal and preprocessing_binning[0] != 1:
         raise ValueError('preprocessing_binning along axis 0 should be 1 when gridding reloaded data'
                          ' (angles won\'t match)')
@@ -376,23 +377,24 @@ if rocking_angle == "energy":
     use_rawdata = False  # you need to interpolate the data in QxQyQz for energy scans
     print("Energy scan: defaulting use_rawdata to False, the data will be interpolated using xrayutilities")
 if not use_rawdata:
-    qconv, offsets = pru.init_qconversion(setup)
-    detector.offsets = offsets
-    hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane,  en=energy, qconv=qconv)
-    # x downstream, y outboard, z vertical
-    # first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
-    cch1 = cch1 - detector.roi[0]  # Vertical direct beam position, take into account the roi if the image is cropped
-    cch2 = cch2 - detector.roi[2]  # Horizontal direct beam position, take into account the roi if the image is cropped
-    # number of pixels after taking into account the roi and binning
-    nch1 = (detector.roi[1] - detector.roi[0]) // (detector.preprocessing_binning[1] * detector.binning[1]) +\
-        (detector.roi[1] - detector.roi[0]) % (detector.preprocessing_binning[1] * detector.binning[1])
-    nch2 = (detector.roi[3] - detector.roi[2]) // (detector.preprocessing_binning[2] * detector.binning[2]) +\
-        (detector.roi[3] - detector.roi[2]) % (detector.preprocessing_binning[2] * detector.binning[2])
-    # detector init_area method, pixel sizes are the binned ones
-    hxrd.Ang2Q.init_area(setup.detector_ver, setup.detector_hor, cch1=cch1, cch2=cch2,
-                         Nch1=nch1, Nch2=nch2, pwidth1=detector.pixelsize_y, pwidth2=detector.pixelsize_x,
-                         distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
-    # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
+    if interp_method == 'xrayutilities':
+        qconv, offsets = pru.init_qconversion(setup)
+        detector.offsets = offsets
+        hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane,  en=energy, qconv=qconv)
+        # x downstream, y outboard, z vertical
+        # first 2 arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
+        cch1 = cch1 - detector.roi[0]  # Ver. direct beam position, take into account the roi if the image is cropped
+        cch2 = cch2 - detector.roi[2]  # Hor. direct beam position, take into account the roi if the image is cropped
+        # number of pixels after taking into account the roi and binning
+        nch1 = (detector.roi[1] - detector.roi[0]) // (detector.preprocessing_binning[1] * detector.binning[1]) +\
+            (detector.roi[1] - detector.roi[0]) % (detector.preprocessing_binning[1] * detector.binning[1])
+        nch2 = (detector.roi[3] - detector.roi[2]) // (detector.preprocessing_binning[2] * detector.binning[2]) +\
+            (detector.roi[3] - detector.roi[2]) % (detector.preprocessing_binning[2] * detector.binning[2])
+        # detector init_area method, pixel sizes are the binned ones
+        hxrd.Ang2Q.init_area(setup.detector_ver, setup.detector_hor, cch1=cch1, cch2=cch2,
+                             Nch1=nch1, Nch2=nch2, pwidth1=detector.pixelsize_y, pwidth2=detector.pixelsize_x,
+                             distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
+        # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
 ########################################
 # print the current setup and detector #
@@ -540,11 +542,16 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             del tmp_data
             gc.collect()
 
-            print('\nGridding the data in the orthonormal laboratory frame')
-            data, mask, q_values, frames_logical = \
-                pru.grid_bcdi(data=data, mask=mask, scan_number=scan_nb, logfile=logfile, detector=detector,
-                              setup=setup, frames_logical=frames_logical, hxrd=hxrd, follow_bragg=follow_bragg,
-                              correct_curvature=correct_curvature, debugging=debug)
+            if interp_method == 'xrayutilities':
+                data, mask, q_values, frames_logical = \
+                    pru.grid_bcdi_xrayutil(data=data, mask=mask, scan_number=scan_nb, logfile=logfile,
+                                           detector=detector, setup=setup, frames_logical=frames_logical, hxrd=hxrd,
+                                           follow_bragg=follow_bragg, debugging=debug)
+            else:  # 'linearization'
+                data, mask, q_values, frames_logical = \
+                    pru.grid_bcdi_labframe(data=data, mask=mask, scan_number=scan_nb, logfile=logfile,
+                                           detector=detector, setup=setup, frames_logical=frames_logical,
+                                           follow_bragg=follow_bragg, debugging=debug)
 
             # plot normalization by incident monitor for the gridded data
             if normalize_flux:
