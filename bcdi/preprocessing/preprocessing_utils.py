@@ -1233,8 +1233,8 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
     return tilt, grazing, inplane, outofplane
 
 
-def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, correct_curvature=False,
-              debugging=False, **kwargs):
+def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, debugging=False,
+                       **kwargs):
     """
     Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in cartesian coordinates.
      Note that it is based on PetraIII P10 beamline (counterclockwise rotation, detector seen from the front).
@@ -1249,7 +1249,6 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization of the dataset
-    :param correct_curvature: if True, will correct for the curvature of the Ewald sphere
     :param debugging: set to True to see plots
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
@@ -1269,56 +1268,51 @@ def grid_bcdi(data, mask, scan_number, logfile, detector, setup, frames_logical,
         raise ValueError('mask is expected to be a 3D array')
 
     numz, numy, numx = data.shape
-    if not correct_curvature:
-        print('Gridding the data using xrayutilities package')
-        if setup.filtered_data:
-            print('Trying to orthogonalize a filtered data, the corresponding detector ROI should be provided\n'
-                  'otherwise q values will be wrong.')
-        qx, qz, qy, frames_logical = \
-            regrid(logfile=logfile, nb_frames=numz, scan_number=scan_number, detector=detector,
-                   setup=setup, hxrd=hxrd, frames_logical=frames_logical, follow_bragg=follow_bragg)
+    print('Gridding the data using xrayutilities package')
+    if setup.filtered_data:
+        print('Trying to orthogonalize a filtered data, the corresponding detector ROI should be provided\n'
+              'otherwise q values will be wrong.')
+    qx, qz, qy, frames_logical = \
+        regrid(logfile=logfile, nb_frames=numz, scan_number=scan_number, detector=detector,
+               setup=setup, hxrd=hxrd, frames_logical=frames_logical, follow_bragg=follow_bragg)
 
-        if setup.beamline == 'ID01':
-            # below is specific to ID01 energy scans where frames are duplicated for undulator gap change
-            if setup.rocking_angle == 'energy':  # frames need to be removed
-                tempdata = np.zeros(((frames_logical != 0).sum(), numy, numx))
-                offset_frame = 0
-                for idx in range(numz):
-                    if frames_logical[idx] != 0:  # use frame
-                        tempdata[idx - offset_frame, :, :] = data[idx, :, :]
-                    else:  # average with the precedent frame
-                        offset_frame = offset_frame + 1
-                        tempdata[idx - offset_frame, :, :] = (tempdata[idx - offset_frame, :, :] + data[idx, :, :]) / 2
-                data = tempdata
-                mask = mask[0:data.shape[0], :, :]  # truncate the mask to have the correct size
-                numz = data.shape[0]
+    # below is specific to ID01 energy scans where frames are duplicated for undulator gap change
+    if setup.beamline == 'ID01':
+        if setup.rocking_angle == 'energy':  # frames need to be removed
+            tempdata = np.zeros(((frames_logical != 0).sum(), numy, numx))
+            offset_frame = 0
+            for idx in range(numz):
+                if frames_logical[idx] != 0:  # use frame
+                    tempdata[idx - offset_frame, :, :] = data[idx, :, :]
+                else:  # average with the precedent frame
+                    offset_frame = offset_frame + 1
+                    tempdata[idx - offset_frame, :, :] = (tempdata[idx - offset_frame, :, :] + data[idx, :, :]) / 2
+            data = tempdata
+            mask = mask[0:data.shape[0], :, :]  # truncate the mask to have the correct size
+            numz = data.shape[0]
 
-        maxbins = []
-        for dim in (qx, qy, qz):
-            maxstep = max((abs(np.diff(dim, axis=j)).max() for j in range(3)))
-            maxbins.append(int(abs(dim.max() - dim.min()) / maxstep))
-        print(f'Maximum number of bins based on the sampling in q: {maxbins}')
+    maxbins = []
+    for dim in (qx, qy, qz):
+        maxstep = max((abs(np.diff(dim, axis=j)).max() for j in range(3)))
+        maxbins.append(int(abs(dim.max() - dim.min()) / maxstep))
+    print(f'Maximum number of bins based on the sampling in q: {maxbins}')
 
-        # only rectangular cuboidal voxels are supported in xrayutilities FuzzyGridder3D
-        gridder = xu.FuzzyGridder3D(*maxbins)
-        #
-        # define the width of data points (rectangular datapoints, xrayutilities use half of these values but there are
-        # artefacts sometimes)
-        wx = (qx.max()-qx.min()) / maxbins[0]
-        wz = (qz.max()-qz.min()) / maxbins[1]
-        wy = (qy.max()-qy.min()) / maxbins[2]
-        # convert mask to rectangular grid in reciprocal space
-        gridder(qx, qz, qy, mask, width=(wx, wz, wy))  # qx downstream, qz vertical up, qy outboard
-        interp_mask = np.copy(gridder.data)
-        # convert data to rectangular grid in reciprocal space
-        gridder(qx, qz, qy, data, width=(wx, wz, wy))  # qx downstream, qz vertical up, qy outboard
-        interp_data = gridder.data
+    # only rectangular cuboidal voxels are supported in xrayutilities FuzzyGridder3D
+    gridder = xu.FuzzyGridder3D(*maxbins)
+    #
+    # define the width of data points (rectangular datapoints, xrayutilities use half of these values but there are
+    # artefacts sometimes)
+    wx = (qx.max()-qx.min()) / maxbins[0]
+    wz = (qz.max()-qz.min()) / maxbins[1]
+    wy = (qy.max()-qy.min()) / maxbins[2]
+    # convert mask to rectangular grid in reciprocal space
+    gridder(qx, qz, qy, mask, width=(wx, wz, wy))  # qx downstream, qz vertical up, qy outboard
+    interp_mask = np.copy(gridder.data)
+    # convert data to rectangular grid in reciprocal space
+    gridder(qx, qz, qy, data, width=(wx, wz, wy))  # qx downstream, qz vertical up, qy outboard
+    interp_data = gridder.data
 
-        qx, qz, qy = [gridder.xaxis, gridder.yaxis, gridder.zaxis]  # downstream, vertical up, outboard
-
-    else:
-        raise NotImplementedError('#TODO check Ewald sphere curvature correction')
-        # TODO check Ewald sphere curvature correction
+    qx, qz, qy = [gridder.xaxis, gridder.yaxis, gridder.zaxis]  # downstream, vertical up, outboard
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
