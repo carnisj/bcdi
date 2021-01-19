@@ -440,8 +440,12 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                  root_folder=root_folder, filename=detector.specfile)
 
     if not use_rawdata:
-        _, setup.grazing_angle, _, _ = pru.goniometer_values(logfile=logfile, scan_number=scan_nb, setup=setup,
-                                                             follow_bragg=follow_bragg)
+        _, setup.grazing_angle, inplane, outofplane = pru.goniometer_values(logfile=logfile, scan_number=scan_nb,
+                                                                            setup=setup, follow_bragg=follow_bragg)
+        # override detector motor positions if the corrected values (taking into account the direct beam position)
+        # are provided by the user
+        setup.inplane_angle = inplane_angle if inplane_angle is not None else inplane
+        setup.outofplane_angle = outofplane_angle if outofplane_angle is not None else outofplane
         comment = comment + '_ortho'
 
     if normalize_flux:
@@ -558,8 +562,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 data, mask, q_values, frames_logical = \
                     pru.grid_bcdi_labframe(data=data, mask=mask, scan_number=scan_nb, logfile=logfile,
                                            detector=detector, setup=setup, frames_logical=frames_logical,
-                                           follow_bragg=follow_bragg, debugging=debug, inplane_angle=inplane_angle,
-                                           outofplane=outofplane_angle)
+                                           follow_bragg=follow_bragg, debugging=debug)
 
             # plot normalization by incident monitor for the gridded data
             if normalize_flux:
