@@ -50,8 +50,8 @@ or data[z, y, x] for real space
 """
 
 scan = 128  # spec scan number
-root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = "D:/data/P10_December2020_BCDI/data_nanolab/test/"  # images will be saved here, leave it to None otherwise (default to data directory's parent)
+root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
+save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/test/"  # images will be saved here, leave it to None otherwise (default to data directory's parent)
 sample_name = "PtNP1"  # "S"  # string in front of the scan number in the folder name.
 comment = ''  # comment in filenames, should start with _
 #########################################################
@@ -499,8 +499,7 @@ else:  # data already orthogonalized using xrayutilities, will be in crystal fra
         qy = npzfile['qy']
         qz = npzfile['qz']
     except FileNotFoundError:
-        print('Voxel size unknown')
-        sys.exit()
+        raise FileNotFoundError('Voxel sizes not provided')
     dy_real = 2 * np.pi / abs(qz.max() - qz.min()) / 10  # in nm qz=y in nexus convention
     dx_real = 2 * np.pi / abs(qy.max() - qy.min()) / 10  # in nm qy=x in nexus convention
     dz_real = 2 * np.pi / abs(qx.max() - qx.min()) / 10  # in nm qx=z in nexus convention
