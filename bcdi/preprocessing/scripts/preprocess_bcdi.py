@@ -170,6 +170,13 @@ custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta":
 # P10: om, phi, chi, mu, gamma, delta
 # NANOMAX: theta, phi, gamma, delta, energy, radius
 # 34ID: mu, phi (incident angle), chi, theta (inplane), delta (inplane), gamma (outofplane)
+#######################################################################################################
+# parameters when orthogonalizing the data before phasing  using the linearized transformation matrix #
+#######################################################################################################
+outofplane_angle = None  # out of plane detector angle (typically delta) in deg, corrected for the direct beam position.
+# Leave None to use the uncorrected position.
+inplane_angle = None  # inplane detector angle (typically gamma) in deg, corrected for the direct beam position.
+# Leave None to use the uncorrected position.
 #########################################################################
 # parameters for xrayutilities to orthogonalize the data before phasing #
 #########################################################################
@@ -551,7 +558,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 data, mask, q_values, frames_logical = \
                     pru.grid_bcdi_labframe(data=data, mask=mask, scan_number=scan_nb, logfile=logfile,
                                            detector=detector, setup=setup, frames_logical=frames_logical,
-                                           follow_bragg=follow_bragg, debugging=debug)
+                                           follow_bragg=follow_bragg, debugging=debug, inplane_angle=inplane_angle,
+                                           outofplane=outofplane_angle)
 
             # plot normalization by incident monitor for the gridded data
             if normalize_flux:
