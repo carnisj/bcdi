@@ -1208,7 +1208,7 @@ class Setup(object):
         lambdaz = wavelength * distance
         mymatrix = np.zeros((3, 3))
         tilt = np.radians(tilt_angle)
-        q_offset = None  # TODO: calculate the q offset for all geometries
+        q_offset = np.zeros(3)  # TODO: calculate the q offset for all geometries
         nbz, nby, nbx = array_shape
 
         if self.beamline == 'ID01':
@@ -1268,6 +1268,9 @@ class Setup(object):
                               tilt * distance * np.cos(grazing_angle[0]) * (1 - np.cos(inplane) * np.cos(outofplane)),
                               tilt * distance * (np.sin(outofplane) * np.cos(grazing_angle[0]) -
                                                  np.cos(outofplane) * np.sin(inplane) * np.sin(grazing_angle[0]))])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
             elif self.rocking_angle == "inplane":
                 if verbose:
