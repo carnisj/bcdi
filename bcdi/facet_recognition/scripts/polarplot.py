@@ -232,8 +232,8 @@ if not reconstructed_data:  # load reciprocal space data
                                                              setup=setup, flatfield=flatfield, hotpixels=hotpix_array,
                                                              normalize=normalize_flux, debugging=debug)
     data, _, q_values, _ = \
-        pru.grid_bcdi(data=data, mask=mask, scan_number=scan, logfile=logfile, detector=detector, setup=setup,
-                      frames_logical=frames_logical, hxrd=hxrd, debugging=debug, follow_bragg=follow_bragg)
+        pru.grid_bcdi_xrayutil(data=data, mask=mask, scan_number=scan, logfile=logfile, detector=detector, setup=setup,
+                               frames_logical=frames_logical, hxrd=hxrd, debugging=debug, follow_bragg=follow_bragg)
 
     nz, ny, nx = data.shape  # CXI convention: z downstream, y vertical up, x outboard
     print('Diffraction data shape', data.shape)
