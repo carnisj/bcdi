@@ -1221,10 +1221,9 @@ class Setup(object):
             q_range_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
             # here the convention for q values is qx downstream, qz vertical up, qy outboard
-            dqx, dqz, dqy = q_range_z / nbz, q_range_y / nby, q_range_x / nbx
-            myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * dqx,
-                                        np.arange(-nby // 2, nby // 2, 1) * dqz,
-                                        np.arange(-nbx // 2, nbx // 2, 1) * dqy, indexing='ij')
+            myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * q_range_z,
+                                        np.arange(-nby // 2, nby // 2, 1) * q_range_y,
+                                        np.arange(-nbx // 2, nbx // 2, 1) * q_range_x, indexing='ij')
 
             # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
             # in RGI, we want to calculate the coordinates that would have a grid of the laboratory frame expressed in
@@ -1248,9 +1247,9 @@ class Setup(object):
             raise NotImplementedError('need to calculate the shape when keeping the sampling constant')
 
         # calculate qx qz qy vectors in 1/A
-        qx = (np.arange(-nbz // 2, nbz // 2, 1) * dqx + q_offset[0]) / 10  # along z downstream
-        qz = (np.arange(-nby // 2, nby // 2, 1) * dqz + q_offset[1]) / 10  # along y vertical up
-        qy = (np.arange(-nbx // 2, nbx // 2, 1) * dqy + q_offset[2]) / 10  # along x outboard
+        qx = (q_range_z + q_offset[0]) / 10  # along z downstream
+        qz = (q_range_y+ q_offset[1]) / 10  # along y vertical up
+        qy = (q_range_x + q_offset[2]) / 10  # along x outboard
 
         if debugging:
             gu.multislices_plot(abs(ortho_obj), sum_frames=True, scale='log', plot_colorbar=True, width_z=width_z,
