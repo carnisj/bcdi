@@ -1263,7 +1263,7 @@ def grid_bcdi_labframe(data, mask, detector, setup, frames_logical, debugging=Fa
 
     numz, numy, numx = data.shape
     print('Gridding the data using the linearized matrix, the result will be in the laboratory frame')
-
+    string = 'linmat_reciprocal_space_'
     interp_data, q_values = \
         setup.ortho_reciprocal(obj=data, detector=detector, method_shape='fix_shape', verbose=True, debugging=True)
     qx, qz, qy = q_values
@@ -1294,23 +1294,23 @@ def grid_bcdi_labframe(data, mask, detector, setup, frames_logical, debugging=Fa
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
                                   levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space_sum' + plot_comment)
+    fig.savefig(detector.savedir + string + 'sum' + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data',
                                   levels=np.linspace(0, np.ceil(np.log10(interp_data.max())), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
+    fig.savefig(detector.savedir + string + 'central' + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space_sum_pix' + plot_comment)
+    fig.savefig(detector.savedir + string + 'sum_pix' + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
+    fig.savefig(detector.savedir + string + 'central_pix' + plot_comment)
     plt.close(fig)
     if debugging:
         gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
@@ -1352,6 +1352,7 @@ def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames
 
     numz, numy, numx = data.shape
     print('Gridding the data using xrayutilities package, the result will be in the crystal frame')
+    string = 'xrutil_reciprocal_space_'
     if setup.filtered_data:
         print('Trying to orthogonalize a filtered data, the corresponding detector ROI should be provided\n'
               'otherwise q values will be wrong.')
@@ -1418,23 +1419,23 @@ def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
                                   levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space_sum' + plot_comment)
+    fig.savefig(detector.savedir + string + 'sum' + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data',
                                   levels=np.linspace(0, np.ceil(np.log10(interp_data.max())), 150, endpoint=True),
                                   plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
+    fig.savefig(detector.savedir + string + 'central' + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space_sum_pix' + plot_comment)
+    fig.savefig(detector.savedir + string + 'sum_pix' + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
                                     title='Regridded data', is_orthogonal=True, reciprocal_space=True)
-    fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
+    fig.savefig(detector.savedir + string + 'central_pix' + plot_comment)
     plt.close(fig)
     if debugging:
         gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
