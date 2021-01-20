@@ -440,13 +440,16 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                  root_folder=root_folder, filename=detector.specfile)
 
     if not use_rawdata:
-        _, setup.grazing_angle, inplane, outofplane = pru.goniometer_values(logfile=logfile, scan_number=scan_nb,
-                                                                            setup=setup, follow_bragg=follow_bragg)
-        # override detector motor positions if the corrected values (taking into account the direct beam position)
-        # are provided by the user
-        setup.inplane_angle = inplane_angle if inplane_angle is not None else inplane
-        setup.outofplane_angle = outofplane_angle if outofplane_angle is not None else outofplane
         comment = comment + '_ortho'
+        if interp_method == 'linearization':
+            # load the goniometer positions needed in the calculation of the transformation matrix
+            tilt_angle, setup.grazing_angle, inplane, outofplane =\
+                pru.goniometer_values(logfile=logfile, scan_number=scan_nb, setup=setup, follow_bragg=follow_bragg)
+            setup.tilt_angle = tilt_angle[1] - tilt_angle[0]
+            # override detector motor positions if the corrected values (taking into account the direct beam position)
+            # are provided by the user
+            setup.inplane_angle = inplane_angle if inplane_angle is not None else inplane
+            setup.outofplane_angle = outofplane_angle if outofplane_angle is not None else outofplane
 
     if normalize_flux:
         comment = comment + '_norm'
@@ -563,6 +566,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     pru.grid_bcdi_labframe(data=data, mask=mask, scan_number=scan_nb, logfile=logfile,
                                            detector=detector, setup=setup, frames_logical=frames_logical,
                                            follow_bragg=follow_bragg, debugging=debug)
+            nz, ny, nx = data.shape
+            print('\nData size after interpolation into an orthonormal frame:', nz, ny, nx)
 
             # plot normalization by incident monitor for the gridded data
             if normalize_flux:
