@@ -1130,9 +1130,8 @@ class Setup(object):
         ortho_matrix = self.transformation_matrix(array_shape=(nbz, nby, nbx), tilt_angle=tilt,
                                                   pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
 
-        ###############################################################
-        # Vincent Favre-Nicolin's method using inverse transformation #
-        ###############################################################
+        # this assumes that the direct beam was at the center of the array
+        # TODO : correct this if the position of the direct beam is provided
         myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * voxel_size[0],
                                     np.arange(-nby // 2, nby // 2, 1) * voxel_size[1],
                                     np.arange(-nbx // 2, nbx // 2, 1) * voxel_size[2], indexing='ij')
@@ -1158,6 +1157,94 @@ class Setup(object):
             gu.multislices_plot(abs(ortho_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
                                 title=title+' in the orthogonal laboratory frame')
         return ortho_obj, voxel_size
+
+    def ortho_reciprocal(self, obj, detector, method_shape='fix_sampling', verbose=True, debugging=False, **kwargs):
+        """
+        Interpolate obj in the orthogonal laboratory frame (z/qx downstream, y/qz vertical up, x/qy outboard).
+
+        :param obj: reciprocal space diffraction pattern, in the detector frame
+        :param detector: instance of the Class experiment_utils.Detector()
+        :param method_shape: if 'fix_shape', the output array will have the same shape as the input array.
+         If 'fix_sampling', the ouput shape will be increased in order to keep the sampling in q in each direction.
+        :param verbose: True to have printed comments
+        :param debugging: True to show plots before and after interpolation
+        :param kwargs:
+         - 'title': title for the debugging plots
+         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :return: object interpolated on an orthogonal grid, q values as a tuple of three 1D vectors (qx, qz, qy)
+        """
+        # check and load kwargs
+        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'title', 'width_z', 'width_y', 'width_x'},
+                           name='Setup.orthogonalize')
+        title = kwargs.get('title', 'Object')
+        valid.valid_item(value=title, allowed_types=str, name='Setup.ortho_reciprocal')
+        width_z = kwargs.get('width_z', None)
+        valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, name='Setup.ortho_reciprocal')
+        width_y = kwargs.get('width_y', None)
+        valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, name='Setup.ortho_reciprocal')
+        width_x = kwargs.get('width_x', None)
+        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, name='Setup.ortho_reciprocal')
+
+        # check some parameters
+        if method_shape not in {'fix_sampling', 'fix_shape'}:
+            raise ValueError('method_shape should be either "fix_sampling" or "fix_shape"')
+
+        if not isinstance(obj, np.ndarray) or obj.ndim != 3:
+            raise ValueError('obj should be a 3D numpy array')
+
+        # plot the original data
+        if debugging:
+            gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                title=title+' in detector frame')
+
+        # calculate the transformation matrix
+        ortho_matrix, q_offset = self.transformation_matrix(array_shape=obj.shape, tilt_angle=self.tilt_angle,
+                                                            pixel_x=detector.pixelsize_x, pixel_y=detector.pixelsize_y,
+                                                            direct_space=False, verbose=verbose)
+
+        # calculate the shape of the output array
+        if method_shape == 'fix_shape':
+            nbz, nby, nbx = obj.shape
+
+            # this assumes that the direct beam was at the center of the array
+            # TODO : correct this if the position of the direct beam is provided
+            dqx, dqy, dqz = 0, 0, 0
+            myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * dqx,
+                                        np.arange(-nby // 2, nby // 2, 1) * dqz,
+                                        np.arange(-nbx // 2, nbx // 2, 1) * dqy, indexing='ij')
+
+            # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
+            # in RGI, we want to calculate the coordinates that would have a grid of the laboratory frame expressed in
+            # the detector frame, i.e. one has to inverse the transformation matrix.
+            ortho_imatrix = np.linalg.inv(ortho_matrix)
+            new_x = ortho_imatrix[0, 0] * myx + ortho_imatrix[0, 1] * myy + ortho_imatrix[0, 2] * myz
+            new_y = ortho_imatrix[1, 0] * myx + ortho_imatrix[1, 1] * myy + ortho_imatrix[1, 2] * myz
+            new_z = ortho_imatrix[2, 0] * myx + ortho_imatrix[2, 1] * myy + ortho_imatrix[2, 2] * myz
+            del myx, myy, myz
+            gc.collect()
+
+            rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
+                                           np.arange(-nbx // 2, nbx // 2)), obj, method='linear',
+                                          bounds_error=False, fill_value=0)
+            ortho_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                            new_x.reshape((1, new_z.size)))).transpose())
+            ortho_obj = ortho_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
+
+        else:  # 'fix_sampling'
+            # need to calculate the sampling in each dimension
+            raise NotImplementedError('need to calculate the shape when keeping the sampling constant')
+
+        # calculate qx qz qy vectors
+        qx = np.arange(-nbz // 2, nbz // 2, 1) * dqx + q_offset[0]
+        qz = np.arange(-nby // 2, nby // 2, 1) * dqz + q_offset[1]
+        qy = np.arange(-nbx // 2, nbx // 2, 1) * dqy + q_offset[2]
+
+        if debugging:
+            gu.multislices_plot(abs(ortho_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                title=title+' in the orthogonal laboratory frame')
+        return ortho_obj, (qx, qz, qy)
 
     def orthogonalize_vector(self, vector, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
@@ -1437,18 +1524,17 @@ class Setup(object):
         valid.valid_container(array_shape, container_types=(tuple, list), length=3, item_types=int,
                               min_excluded=0, name='Setup.voxel_sizes')
 
-        transfer_matrix = self.transformation_matrix(array_shape=array_shape, tilt_angle=tilt_angle,
-                                                     pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
-        rec_matrix = 2 * np.pi * np.linalg.inv(transfer_matrix).transpose()
-        qx_range = np.linalg.norm(rec_matrix[0, :])
-        qy_range = np.linalg.norm(rec_matrix[1, :])
-        qz_range = np.linalg.norm(rec_matrix[2, :])
+        transfer_matrix, _ = self.transformation_matrix(array_shape=array_shape, tilt_angle=tilt_angle,
+                                                        direct_space=False, pixel_x=pixel_x, pixel_y=pixel_y,
+                                                        verbose=verbose)
+
+        qx_range = np.linalg.norm(transfer_matrix[0, :])
+        qy_range = np.linalg.norm(transfer_matrix[1, :])
+        qz_range = np.linalg.norm(transfer_matrix[2, :])
         if verbose:
-            print('q_range_z, q_range_y, q_range_x=({0:.5f}, {1:.5f}, {2:.5f}) (1/nm)'.format(qz_range, qy_range,
-                                                                                              qx_range))
-            print('voxelsize_z, voxelsize_y, voxelsize_x='
-                  '({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)'.format(2 * np.pi / qz_range, 2 * np.pi / qy_range,
-                                                              2 * np.pi / qx_range))
+            print(f'q_range_z, q_range_y, q_range_x = ({qz_range:.5f}, {qy_range:.5f}, {qx_range:.5f}) (1/nm)')
+            print(f'Direct space voxel size (z, y, x) = '
+                  f'({2 * np.pi / qz_range:.2f}, {2 * np.pi / qy_range:.2f}, {2 * np.pi / qx_range:.2f}) (nm)')
         return 2 * np.pi / qz_range, 2 * np.pi / qy_range, 2 * np.pi / qx_range
 
     def voxel_sizes_detector(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
