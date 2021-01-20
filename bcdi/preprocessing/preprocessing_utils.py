@@ -1316,7 +1316,7 @@ def grid_bcdi_labframe(data, mask, detector, setup, frames_logical, debugging=Fa
         gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                             title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
 
-    return interp_data, interp_mask, [qx, qz, qy], frames_logical
+    return interp_data, interp_mask, (qx, qz, qy), frames_logical
 
 
 def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, debugging=False,
@@ -1440,7 +1440,7 @@ def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames
         gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                             title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
 
-    return interp_data, interp_mask, [qx, qz, qy], frames_logical
+    return interp_data, interp_mask, (qx, qz, qy), frames_logical
 
 
 def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curvature=False, debugging=False):
