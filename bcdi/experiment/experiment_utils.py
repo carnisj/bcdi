@@ -1221,7 +1221,7 @@ class Setup(object):
             q_range_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
             # here the convention for q values is qx downstream, qz vertical up, qy outboard
-            dqx, dqy, dqz = q_range_z / nbz, q_range_y / nby, q_range_x / nbx
+            dqx, dqz, dqy = q_range_z / nbz, q_range_y / nby, q_range_x / nbx
             myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * dqx,
                                         np.arange(-nby // 2, nby // 2, 1) * dqz,
                                         np.arange(-nbx // 2, nbx // 2, 1) * dqy, indexing='ij')
