@@ -155,7 +155,7 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
-interp_method = 'xrayutilities'  # 'xrayutilities' or 'linearization'
+interp_method = 'linearization'  # 'xrayutilities' or 'linearization'
 beam_direction = (1, 0, 0)  # beam direction in the frame (downstream, vertical up, outboard)
 sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
@@ -564,10 +564,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                            detector=detector, setup=setup, frames_logical=frames_logical, hxrd=hxrd,
                                            follow_bragg=follow_bragg, debugging=debug)
             else:  # 'linearization'
-                data, mask, q_values, frames_logical = \
-                    pru.grid_bcdi_labframe(data=data, mask=mask, scan_number=scan_nb, logfile=logfile,
-                                           detector=detector, setup=setup, frames_logical=frames_logical,
-                                           follow_bragg=follow_bragg, debugging=debug)
+                data, mask, q_values = \
+                    pru.grid_bcdi_labframe(data=data, mask=mask, detector=detector, setup=setup,
+                                           debugging=debug, follow_bragg=follow_bragg)
             nz, ny, nx = data.shape
             print('\nData size after interpolation into an orthonormal frame:', nz, ny, nx)
 
