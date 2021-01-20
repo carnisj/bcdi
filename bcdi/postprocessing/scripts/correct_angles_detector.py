@@ -73,7 +73,7 @@ roi_detector = None  # [y_bragg-290, y_bragg+290, x_bragg-290, x_bragg+290]
 high_threshold = 1000000  # everything above will be considered as hotpixel
 hotpixels_file = None  # root_folder + 'hotpixels_HS4670.npz'  # non empty file path or None
 flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
-template_imagefile = '_master.h5'
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -168,7 +168,7 @@ if high_threshold != 0:
 # load releavant motor values #
 ###############################
 tilt_values, setup.grazing_angle, setup.inplane_angle, setup.outofplane_angle = \
-    pru.goniometer_values(frames_logical, logfile, scan, setup=setup)
+    pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup, frames_logical=frames_logical)
 setup.tilt_angle = tilt_values[1] - tilt_values[0]
 
 nb_frames = len(tilt_values)
