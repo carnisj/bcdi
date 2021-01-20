@@ -1233,18 +1233,103 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
     return tilt, grazing, inplane, outofplane
 
 
+def grid_bcdi_labframe(data, mask, detector, setup, frames_logical, debugging=False, **kwargs):
+    """
+    Interpolate BCDI reciprocal space data using a linearized transformation matrix. The resulting (qx, qy, qz) are in
+     the laboratory frame (qx downstrean, qz vertical up, qy outboard).
+
+    :param data: the 3D data, already binned in the detector frame
+    :param mask: the corresponding 3D mask
+    :param detector: instance of the Class experiment_utils.Detector()
+    :param setup: instance of the Class experiment_utils.Setup()
+    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
+     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+    :param debugging: set to True to see plots
+    :param kwargs:
+     - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
+    :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard).
+     q values are in inverse angstroms.
+    """
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg'}, name='preprocessing_utils.grid_bcdi')
+    follow_bragg = kwargs.get('follow_bragg', False)
+    valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.grid_bcdi')
+    if setup.rocking_angle == 'energy':
+        raise NotImplementedError('Geometric transformation not yet implemented for energy scans')
+    if data.ndim != 3:
+        raise ValueError('data is expected to be a 3D array')
+    if mask.ndim != 3:
+        raise ValueError('mask is expected to be a 3D array')
+
+    numz, numy, numx = data.shape
+    print('Gridding the data using the linearized matrix, the result will be in the laboratory frame')
+
+    interp_data, q_values = \
+        setup.ortho_reciprocal(obj=data, detector=detector, method_shape='fix_shape', verbose=True, debugging=True)
+    qx, qz, qy = q_values
+
+    interp_mask, _ = \
+        setup.ortho_reciprocal(obj=data, detector=detector, method_shape='fix_shape', verbose=True, debugging=True)
+
+    # check for Nan
+    interp_mask[np.isnan(interp_data)] = 1
+    interp_data[np.isnan(interp_data)] = 0
+    interp_mask[np.isnan(interp_mask)] = 1
+    # set the mask as an array of integers, 0 or 1
+    interp_mask[np.nonzero(interp_mask)] = 1
+    interp_mask = interp_mask.astype(int)
+
+    # apply the mask to the data
+    interp_data[np.nonzero(interp_mask)] = 0
+
+    # plot the gridded data
+    final_binning = (detector.preprocessing_binning[0] * detector.binning[0],
+                     detector.preprocessing_binning[1] * detector.binning[1],
+                     detector.preprocessing_binning[2] * detector.binning[2])
+
+    plot_comment = '_' + str(numz) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
+                   str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
+
+    max_z = interp_data.sum(axis=0).max()
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=True, title='Regridded data',
+                                  levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=True),
+                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space_sum' + plot_comment)
+    plt.close(fig)
+
+    fig, _, _ = gu.contour_slices(interp_data, (qx, qz, qy), sum_frames=False, title='Regridded data',
+                                  levels=np.linspace(0, np.ceil(np.log10(interp_data.max())), 150, endpoint=True),
+                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space_central' + plot_comment)
+    plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(interp_data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Regridded data', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space_sum_pix' + plot_comment)
+    plt.close(fig)
+
+    fig, _, _ = gu.multislices_plot(interp_data, sum_frames=False, scale='log', plot_colorbar=True, vmin=0,
+                                    title='Regridded data', is_orthogonal=True, reciprocal_space=True)
+    fig.savefig(detector.savedir + 'reciprocal_space_central_pix' + plot_comment)
+    plt.close(fig)
+    if debugging:
+        gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
+                            title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
+
+    return interp_data, interp_mask, [qx, qz, qy], frames_logical
+
+
 def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, debugging=False,
                        **kwargs):
     """
-    Interpolate BCDI reciprocal space data using xrayutilities package. The resulting (qx, qy, qz) are in the cristal
+    Interpolate BCDI reciprocal space data using xrayutilities package. The resulting (qx, qy, qz) are in the crystal
      frame (qz vertical).
 
     :param data: the 3D data, already binned in the detector frame
     :param mask: the corresponding 3D mask
     :param scan_number: the scan number to load
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
-    :param detector: instance of the Class experiment_utils.Detector(). The detector orientation is supposed to
-     follow the CXI convention: (z downstream, y vertical up, x outboard) Y opposite to y, X opposite to x
+    :param detector: instance of the Class experiment_utils.Detector()
     :param setup: instance of the Class experiment_utils.Setup()
     :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
      A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
@@ -1252,16 +1337,13 @@ def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames
     :param debugging: set to True to see plots
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
-    :return: the data and mask interpolated in the cristal frame, q values (downstream, vertical up, outboard). q values
-     are in inverse angstroms.
+    :return: the data and mask interpolated in the crystal frame, q values (downstream, vertical up, outboard).
+     q values are in inverse angstroms.
     """
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg'}, name='preprocessing_utils.grid_bcdi')
     follow_bragg = kwargs.get('follow_bragg', False)
     valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.grid_bcdi')
-
-    # default values for kwargs
-    follow_bragg = False
 
     if data.ndim != 3:
         raise ValueError('data is expected to be a 3D array')
@@ -1269,7 +1351,7 @@ def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames
         raise ValueError('mask is expected to be a 3D array')
 
     numz, numy, numx = data.shape
-    print('Gridding the data using xrayutilities package')
+    print('Gridding the data using xrayutilities package, the result will be in the crystal frame')
     if setup.filtered_data:
         print('Trying to orthogonalize a filtered data, the corresponding detector ROI should be provided\n'
               'otherwise q values will be wrong.')
