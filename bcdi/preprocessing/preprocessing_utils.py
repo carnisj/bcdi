@@ -1233,7 +1233,7 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
     return tilt, grazing, inplane, outofplane
 
 
-def grid_bcdi_labframe(data, mask, detector, setup, frames_logical, debugging=False, **kwargs):
+def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
     """
     Interpolate BCDI reciprocal space data using a linearized transformation matrix. The resulting (qx, qy, qz) are in
      the laboratory frame (qx downstrean, qz vertical up, qy outboard).
@@ -1242,8 +1242,6 @@ def grid_bcdi_labframe(data, mask, detector, setup, frames_logical, debugging=Fa
     :param mask: the corresponding 3D mask
     :param detector: instance of the Class experiment_utils.Detector()
     :param setup: instance of the Class experiment_utils.Setup()
-    :param frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-     A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     :param debugging: set to True to see plots
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
@@ -1316,7 +1314,7 @@ def grid_bcdi_labframe(data, mask, detector, setup, frames_logical, debugging=Fa
         gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                             title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
 
-    return interp_data, interp_mask, (qx, qz, qy), frames_logical
+    return interp_data, interp_mask, (qx, qz, qy)
 
 
 def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, debugging=False,
