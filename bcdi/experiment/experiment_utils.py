@@ -1203,7 +1203,7 @@ class Setup(object):
                                 width_y=width_y, width_x=width_x, is_orthogonal=False, reciprocal_space=True, vmin=0,
                                 title=title+' in detector frame')
 
-        # calculate the transformation matrix
+        # calculate the transformation matrix (the unit is 1/nm)
         transfer_matrix, q_offset = self.transformation_matrix(array_shape=obj.shape, tilt_angle=self.tilt_angle,
                                                                direct_space=False, pixel_x=detector.pixelsize_x,
                                                                pixel_y=detector.pixelsize_y, verbose=verbose)
@@ -1215,7 +1215,7 @@ class Setup(object):
             # this assumes that the direct beam was at the center of the array
             # TODO : correct this if the position of the direct beam is provided
 
-            # the span in q in given by the lines of the transformation matrix
+            # the span in q in given by the lines of the transformation matrix (the unit is 1/nm)
             q_range_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
             q_range_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
             q_range_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
@@ -1247,10 +1247,10 @@ class Setup(object):
             # need to calculate the sampling in each dimension
             raise NotImplementedError('need to calculate the shape when keeping the sampling constant')
 
-        # calculate qx qz qy vectors
-        qx = np.arange(-nbz // 2, nbz // 2, 1) * dqx + q_offset[0]  # along z downstream
-        qz = np.arange(-nby // 2, nby // 2, 1) * dqz + q_offset[1]  # along y vertical up
-        qy = np.arange(-nbx // 2, nbx // 2, 1) * dqy + q_offset[2]  # along x outboard
+        # calculate qx qz qy vectors in 1/A
+        qx = (np.arange(-nbz // 2, nbz // 2, 1) * dqx + q_offset[0]) / 10  # along z downstream
+        qz = (np.arange(-nby // 2, nby // 2, 1) * dqz + q_offset[1]) / 10  # along y vertical up
+        qy = (np.arange(-nbx // 2, nbx // 2, 1) * dqy + q_offset[2]) / 10  # along x outboard
 
         if debugging:
             gu.multislices_plot(abs(ortho_obj), sum_frames=True, scale='log', plot_colorbar=True, width_z=width_z,
