@@ -1187,8 +1187,8 @@ class Setup(object):
         valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
                          name='Setup.ortho_reciprocal')
         width_x = kwargs.get('width_x', None)
-        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0,
-                         allow_none=True, name='Setup.ortho_reciprocal')
+        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                         name='Setup.ortho_reciprocal')
 
         # check some parameters
         if method_shape not in {'fix_sampling', 'fix_shape'}:
@@ -1199,7 +1199,8 @@ class Setup(object):
 
         # plot the original data
         if debugging:
-            gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+            gu.multislices_plot(abs(obj), sum_frames=True, scale='log', plot_colorbar=True, width_z=width_z,
+                                width_y=width_y, width_x=width_x, is_orthogonal=False, reciprocal_space=True, vmin=0,
                                 title=title+' in detector frame')
 
         # calculate the transformation matrix
@@ -1252,7 +1253,8 @@ class Setup(object):
         qy = np.arange(-nbx // 2, nbx // 2, 1) * dqy + q_offset[2]  # along x outboard
 
         if debugging:
-            gu.multislices_plot(abs(ortho_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+            gu.multislices_plot(abs(ortho_obj), sum_frames=True, scale='log', plot_colorbar=True, width_z=width_z,
+                                width_y=width_y, width_x=width_x, is_orthogonal=True, reciprocal_space=True, vmin=0,
                                 title=title+' in the orthogonal laboratory frame')
         return ortho_obj, (qx, qz, qy)
 
