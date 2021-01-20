@@ -275,9 +275,8 @@ if get_temperature:
 setup.inplane_angle = bragg_inplane
 setup.outofplane_angle = bragg_outofplane
 dz_realspace, dy_realspace, dx_realspace = setup.voxel_sizes((nb_frames, numy, numx), tilt_angle=setup.tilt_angle,
-                                                             pixel_x=detector.pixelsize_x,
-                                                             pixel_y=detector.pixelsize_y)
-print(f'Real space voxel size (z, y, x): ({dz_realspace:.2f}, {dy_realspace:.2f}, {dx_realspace:.2f}) (nm)')
+                                                             pixel_x=detector.pixelsize_x, pixel_y=detector.pixelsize_y,
+                                                             verbose=True)
 
 #################################
 # plot image at Bragg condition #
