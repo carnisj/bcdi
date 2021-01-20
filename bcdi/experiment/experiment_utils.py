@@ -1181,11 +1181,14 @@ class Setup(object):
         title = kwargs.get('title', 'Object')
         valid.valid_item(value=title, allowed_types=str, name='Setup.ortho_reciprocal')
         width_z = kwargs.get('width_z', None)
-        valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, name='Setup.ortho_reciprocal')
+        valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                         name='Setup.ortho_reciprocal')
         width_y = kwargs.get('width_y', None)
-        valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, name='Setup.ortho_reciprocal')
+        valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                         name='Setup.ortho_reciprocal')
         width_x = kwargs.get('width_x', None)
-        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, name='Setup.ortho_reciprocal')
+        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0,
+                         allow_none=True, name='Setup.ortho_reciprocal')
 
         # check some parameters
         if method_shape not in {'fix_sampling', 'fix_shape'}:
