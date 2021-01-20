@@ -1200,9 +1200,9 @@ class Setup(object):
                                 title=title+' in detector frame')
 
         # calculate the transformation matrix
-        ortho_matrix, q_offset = self.transformation_matrix(array_shape=obj.shape, tilt_angle=self.tilt_angle,
-                                                            pixel_x=detector.pixelsize_x, pixel_y=detector.pixelsize_y,
-                                                            direct_space=False, verbose=verbose)
+        transfer_matrix, q_offset = self.transformation_matrix(array_shape=obj.shape, tilt_angle=self.tilt_angle,
+                                                               direct_space=False, pixel_x=detector.pixelsize_x,
+                                                               pixel_y=detector.pixelsize_y, verbose=verbose)
 
         # calculate the shape of the output array
         if method_shape == 'fix_shape':
@@ -1210,7 +1210,14 @@ class Setup(object):
 
             # this assumes that the direct beam was at the center of the array
             # TODO : correct this if the position of the direct beam is provided
-            dqx, dqy, dqz = 0, 0, 0
+
+            # the span in q in given by the lines of the transformation matrix
+            q_range_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
+            q_range_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
+            q_range_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
+
+            # here the convention for q values is qx downstream, qz vertical up, qy outboard
+            dqx, dqy, dqz = q_range_z / nbz, q_range_y / nby, q_range_x / nbx
             myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * dqx,
                                         np.arange(-nby // 2, nby // 2, 1) * dqz,
                                         np.arange(-nbx // 2, nbx // 2, 1) * dqy, indexing='ij')
@@ -1218,10 +1225,10 @@ class Setup(object):
             # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
             # in RGI, we want to calculate the coordinates that would have a grid of the laboratory frame expressed in
             # the detector frame, i.e. one has to inverse the transformation matrix.
-            ortho_imatrix = np.linalg.inv(ortho_matrix)
-            new_x = ortho_imatrix[0, 0] * myx + ortho_imatrix[0, 1] * myy + ortho_imatrix[0, 2] * myz
-            new_y = ortho_imatrix[1, 0] * myx + ortho_imatrix[1, 1] * myy + ortho_imatrix[1, 2] * myz
-            new_z = ortho_imatrix[2, 0] * myx + ortho_imatrix[2, 1] * myy + ortho_imatrix[2, 2] * myz
+            transfer_imatrix = np.linalg.inv(transfer_matrix)
+            new_x = transfer_imatrix[0, 0] * myx + transfer_imatrix[0, 1] * myy + transfer_imatrix[0, 2] * myz
+            new_y = transfer_imatrix[1, 0] * myx + transfer_imatrix[1, 1] * myy + transfer_imatrix[1, 2] * myz
+            new_z = transfer_imatrix[2, 0] * myx + transfer_imatrix[2, 1] * myy + transfer_imatrix[2, 2] * myz
             del myx, myy, myz
             gc.collect()
 
@@ -1237,9 +1244,9 @@ class Setup(object):
             raise NotImplementedError('need to calculate the shape when keeping the sampling constant')
 
         # calculate qx qz qy vectors
-        qx = np.arange(-nbz // 2, nbz // 2, 1) * dqx + q_offset[0]
-        qz = np.arange(-nby // 2, nby // 2, 1) * dqz + q_offset[1]
-        qy = np.arange(-nbx // 2, nbx // 2, 1) * dqy + q_offset[2]
+        qx = np.arange(-nbz // 2, nbz // 2, 1) * dqx + q_offset[0]  # along z downstream
+        qz = np.arange(-nby // 2, nby // 2, 1) * dqz + q_offset[1]  # along y vertical up
+        qy = np.arange(-nbx // 2, nbx // 2, 1) * dqy + q_offset[2]  # along x outboard
 
         if debugging:
             gu.multislices_plot(abs(ortho_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
@@ -1528,14 +1535,14 @@ class Setup(object):
                                                         direct_space=False, pixel_x=pixel_x, pixel_y=pixel_y,
                                                         verbose=verbose)
 
-        qx_range = np.linalg.norm(transfer_matrix[0, :])
-        qy_range = np.linalg.norm(transfer_matrix[1, :])
-        qz_range = np.linalg.norm(transfer_matrix[2, :])
+        q_range_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
+        q_range_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
+        q_range_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
         if verbose:
-            print(f'q_range_z, q_range_y, q_range_x = ({qz_range:.5f}, {qy_range:.5f}, {qx_range:.5f}) (1/nm)')
+            print(f'q_range_z, q_range_y, q_range_x = ({q_range_z:.5f}, {q_range_y:.5f}, {q_range_x:.5f}) (1/nm)')
             print(f'Direct space voxel size (z, y, x) = '
-                  f'({2 * np.pi / qz_range:.2f}, {2 * np.pi / qy_range:.2f}, {2 * np.pi / qx_range:.2f}) (nm)')
-        return 2 * np.pi / qz_range, 2 * np.pi / qy_range, 2 * np.pi / qx_range
+                  f'({2 * np.pi / q_range_z:.2f}, {2 * np.pi / q_range_y:.2f}, {2 * np.pi / q_range_x:.2f}) (nm)')
+        return 2 * np.pi / q_range_z, 2 * np.pi / q_range_y, 2 * np.pi / q_range_x
 
     def voxel_sizes_detector(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
