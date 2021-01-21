@@ -1244,14 +1244,19 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
     :param setup: instance of the Class experiment_utils.Setup()
     :param debugging: set to True to see plots
     :param kwargs:
-     - follow_bragg (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
+     - 'method_shape': if 'fix_shape', the output array will have the same shape as the input array.
+       If 'fix_sampling', the ouput shape will be increased in order to keep the sampling in q in each direction.
+     - 'follow_bragg' (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
     :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard).
      q values are in inverse angstroms.
     """
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg'}, name='preprocessing_utils.grid_bcdi')
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'method_shape', 'follow_bragg'},
+                       name='preprocessing_utils.grid_bcdi_labframe')
+    method_shape = kwargs.get('method_shape', 'fix_shape')
+    valid.valid_item(value=method_shape, allowed_types=str, name='preprocessing_utils.grid_bcdi_labframe')
     follow_bragg = kwargs.get('follow_bragg', False)
-    valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.grid_bcdi')
+    valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.grid_bcdi_labframe')
     if setup.rocking_angle == 'energy':
         raise NotImplementedError('Geometric transformation not yet implemented for energy scans')
     if data.ndim != 3:
@@ -1267,7 +1272,8 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
     qx, qz, qy = q_values
 
     interp_mask, _ = \
-        setup.ortho_reciprocal(obj=data, detector=detector, method_shape='fix_shape', verbose=True, debugging=True)
+        setup.ortho_reciprocal(obj=mask, detector=detector, method_shape='fix_shape', verbose=False, debugging=True,
+                               scale='linear')
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
@@ -1339,9 +1345,10 @@ def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames
      q values are in inverse angstroms.
     """
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg'}, name='preprocessing_utils.grid_bcdi')
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg'},
+                       name='preprocessing_utils.grid_bcdi_xrayutil')
     follow_bragg = kwargs.get('follow_bragg', False)
-    valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.grid_bcdi')
+    valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.grid_bcdi_xrayutil')
 
     if data.ndim != 3:
         raise ValueError('data is expected to be a 3D array')
@@ -1395,6 +1402,7 @@ def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames
     interp_data = gridder.data
 
     qx, qz, qy = [gridder.xaxis, gridder.yaxis, gridder.zaxis]  # downstream, vertical up, outboard
+    # q values are 1D arrays
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
