@@ -1394,7 +1394,10 @@ class Setup(object):
                         np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
                               (-np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(inplane)*np.cos(outofplane) -
                                np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(outofplane))])
-
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+                
         if self.beamline == 'NANOMAX':
             if verbose:
                 print('using NANOMAX geometry')
