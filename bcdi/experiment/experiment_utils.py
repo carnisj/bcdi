@@ -1170,16 +1170,19 @@ class Setup(object):
         :param debugging: True to show plots before and after interpolation
         :param kwargs:
          - 'title': title for the debugging plots
+         - 'scale': 'linear' or 'log', scale for the debugging plots
          - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
          - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
          - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
         :return: object interpolated on an orthogonal grid, q values as a tuple of three 1D vectors (qx, qz, qy)
         """
         # check and load kwargs
-        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'title', 'width_z', 'width_y', 'width_x'},
+        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'title', 'scale', 'width_z', 'width_y', 'width_x'},
                            name='Setup.orthogonalize')
         title = kwargs.get('title', 'Object')
         valid.valid_item(value=title, allowed_types=str, name='Setup.ortho_reciprocal')
+        scale = kwargs.get('scale', 'log')
+        valid.valid_item(value=scale, allowed_types=str, name='Setup.ortho_reciprocal')
         width_z = kwargs.get('width_z', None)
         valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
                          name='Setup.ortho_reciprocal')
@@ -1199,7 +1202,7 @@ class Setup(object):
 
         # plot the original data
         if debugging:
-            gu.multislices_plot(abs(obj), sum_frames=True, scale='log', plot_colorbar=True, width_z=width_z,
+            gu.multislices_plot(abs(obj), sum_frames=True, scale=scale, plot_colorbar=True, width_z=width_z,
                                 width_y=width_y, width_x=width_x, is_orthogonal=False, reciprocal_space=True, vmin=0,
                                 title=title+' in detector frame')
 
@@ -1247,12 +1250,12 @@ class Setup(object):
             raise NotImplementedError('need to calculate the shape when keeping the sampling constant')
 
         # calculate qx qz qy vectors in 1/A
-        qx = (q_range_z + q_offset[0]) / 10  # along z downstream
-        qz = (q_range_y+ q_offset[1]) / 10  # along y vertical up
-        qy = (q_range_x + q_offset[2]) / 10  # along x outboard
+        qx = (np.arange(-nbz // 2, nbz // 2, 1) * q_range_z / nbz + q_offset[0]) / 10  # along z downstream
+        qz = (np.arange(-nby // 2, nby // 2, 1) * q_range_y / nby + q_offset[1]) / 10  # along y vertical up
+        qy = (np.arange(-nbx // 2, nbx // 2, 1) * q_range_x / nbx + q_offset[2]) / 10  # along x outboard
 
         if debugging:
-            gu.multislices_plot(abs(ortho_obj), sum_frames=True, scale='log', plot_colorbar=True, width_z=width_z,
+            gu.multislices_plot(abs(ortho_obj), sum_frames=True, scale=scale, plot_colorbar=True, width_z=width_z,
                                 width_y=width_y, width_x=width_x, is_orthogonal=True, reciprocal_space=True, vmin=0,
                                 title=title+' in the orthogonal laboratory frame')
         return ortho_obj, (qx, qz, qy)
