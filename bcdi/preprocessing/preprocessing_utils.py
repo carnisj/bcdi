@@ -828,6 +828,7 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
         raise ValueError("Incorrect value for 'fft_option'")
 
     if len(q_values) != 0:
+        q_values = list(q_values)
         q_values[0] = qx
         q_values[1] = qz
         q_values[2] = qy
@@ -1320,7 +1321,7 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
         gu.multislices_plot(interp_mask, sum_frames=False, scale='linear', plot_colorbar=True, vmin=0,
                             title='Regridded mask', is_orthogonal=True, reciprocal_space=True)
 
-    return interp_data, interp_mask, (qx, qz, qy)
+    return interp_data, interp_mask, q_values
 
 
 def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames_logical, hxrd, debugging=False,
