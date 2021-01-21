@@ -1332,6 +1332,9 @@ class Setup(object):
                                                                        tilt * distance * (1 - np.cos(inplane) * np.cos(
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
+                q_offset[0] = -2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
             elif self.rocking_angle == "inplane":
                 if verbose:
@@ -1348,7 +1351,9 @@ class Setup(object):
                              np.cos(grazing_angle[1]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
                              np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
                              np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
-
+                q_offset[0] = -2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
         if self.beamline == 'P10':
             if verbose:
                 print('using PETRAIII P10 geometry')
