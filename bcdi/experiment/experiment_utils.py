@@ -1548,6 +1548,9 @@ class Setup(object):
                     np.array([0,
                               tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
                               tilt * distance * np.sin(outofplane)])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
             else:
                 raise NotImplementedError('inplane rocking curve not implemented for CRISTAL')
 
