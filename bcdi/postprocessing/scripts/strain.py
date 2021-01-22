@@ -781,7 +781,7 @@ fig, _, _ = gu.multislices_plot(amp, sum_frames=False, title='Normalized orthogo
                                 pixel_spacing=pixel_spacing, plot_colorbar=True, is_orthogonal=True,
                                 reciprocal_space=False)
 fig.text(0.60, 0.45, f'Scan {scan}', size=20)
-fig.text(0.60, 0.40, f'Voxel size=({voxel_size[0]:.2f}, {voxel_size[1]:.2f}, {voxel_size[2]:.2f}) (nm)', size=20)
+fig.text(0.60, 0.40, f'Voxel size=({voxel_size[0]:.1f}, {voxel_size[1]:.1f}, {voxel_size[2]:.1f}) (nm)', size=20)
 fig.text(0.60, 0.35, f'Ticks spacing={tick_spacing} nm', size=20)
 fig.text(0.60, 0.30, f'Volume={int(volume)} nm3', size=20)
 fig.text(0.60, 0.25, 'Sorted by ' + sort_method, size=20)
@@ -810,7 +810,7 @@ fig, _, _ = gu.multislices_plot(phase, sum_frames=False, title='Orthogonal displ
                                 tick_width=tick_width, tick_length=tick_length, pixel_spacing=pixel_spacing,
                                 plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
 fig.text(0.60, 0.30, f'Scan {scan}', size=20)
-fig.text(0.60, 0.25, f'Voxel size=({voxel_size[0]:.2f}, {voxel_size[1]:.2f}, {voxel_size[2]:.2f}) (nm)', size=20)
+fig.text(0.60, 0.25, f'Voxel size=({voxel_size[0]:.1f}, {voxel_size[1]:.1f}, {voxel_size[2]:.1f}) (nm)', size=20)
 fig.text(0.60, 0.20, f'Ticks spacing={tick_spacing} nm', size=20)
 fig.text(0.60, 0.15, f'average over {avg_counter} reconstruction(s)', size=20)
 if hwidth > 0:
@@ -826,7 +826,7 @@ fig, _, _ = gu.multislices_plot(strain, sum_frames=False, title='Orthogonal stra
                                 tick_width=tick_width, tick_length=tick_length, plot_colorbar=True, cmap=my_cmap,
                                 pixel_spacing=pixel_spacing, is_orthogonal=True, reciprocal_space=False)
 fig.text(0.60, 0.30, f'Scan {scan}', size=20)
-fig.text(0.60, 0.25, f'Voxel size=({voxel_size[0]:.2f}, {voxel_size[1]:.2f}, {voxel_size[2]:.2f}) (nm)', size=20)
+fig.text(0.60, 0.25, f'Voxel size=({voxel_size[0]:.1f}, {voxel_size[1]:.1f}, {voxel_size[2]:.1f}) (nm)', size=20)
 fig.text(0.60, 0.20, f'Ticks spacing={tick_spacing} nm', size=20)
 fig.text(0.60, 0.15, f'average over {avg_counter} reconstruction(s)', size=20)
 if hwidth > 0:
