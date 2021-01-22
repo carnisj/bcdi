@@ -1218,15 +1218,16 @@ class Setup(object):
             # this assumes that the direct beam was at the center of the array
             # TODO : correct this if the position of the direct beam is provided
 
-            # the span in q in given by the lines of the transformation matrix (the unit is 1/nm)
-            q_range_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
-            q_range_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
-            q_range_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
+            # the voxel size in q in given by the lines of the transformation matrix (the unit is 1/nm)
+            dq_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
+            dq_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
+            dq_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
             # calculate qx qz qy vectors in 1/nm, the reference being the center of the array
-            qx = np.arange(-nbz // 2, nbz // 2, 1) * q_range_z / nbz  # along z downstream
-            qz = np.arange(-nby // 2, nby // 2, 1) * q_range_y / nby  # along y vertical up
-            qy = np.arange(-nbx // 2, nbx // 2, 1) * q_range_x / nbx  # along x outboard
+            # the usual frame is used for q values: qx downstream, qz vertical up, qy outboard
+            qx = np.arange(-nbz // 2, nbz // 2, 1) * dq_z  # along z downstream
+            qz = np.arange(-nby // 2, nby // 2, 1) * dq_y  # along y vertical up
+            qy = np.arange(-nbx // 2, nbx // 2, 1) * dq_x  # along x outboard
 
             myz, myy, myx = np.meshgrid(qx, qz, qy, indexing='ij')
 
@@ -1515,6 +1516,13 @@ class Setup(object):
                     np.array([np.cos(grazing_angle[1]) - np.cos(inplane) * np.cos(outofplane),
                               np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
                               np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance *\
+                    (np.cos(grazing_angle[1]) * np.sin(outofplane) +
+                     np.sin(grazing_angle[1]) * np.cos(inplane) * np.cos(outofplane))
+                q_offset[2] = 2 * np.pi / lambdaz * distance *\
+                    (np.cos(grazing_angle[1]) * np.cos(inplane) * np.cos(outofplane) -
+                     np.sin(grazing_angle[1]) * np.sin(outofplane) - 1)
             else:
                 raise NotImplementedError('out of plane rocking curve not implemented for SIXS')
 
