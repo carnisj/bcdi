@@ -61,7 +61,7 @@ binning = (1, 1, 1)  # binning to apply to the data
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = True  # True to interact with plots, False to close it automatically
+flag_interact = False  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
@@ -129,7 +129,7 @@ specfile_name = ''
 detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 x_bragg = 1355  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 y_bragg = 796  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200]
+roi_detector = [y_bragg - 400, y_bragg + 400, x_bragg - 400, x_bragg + 400]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -910,10 +910,10 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             savemat(detector.savedir + f'S{scan_nb}_qx.mat', {'qx': q_values[0]})
             savemat(detector.savedir + f'S{scan_nb}_qy.mat', {'qy': q_values[1]})
             savemat(detector.savedir + f'S{scan_nb}_qz.mat', {'qz': q_values[2]})
-
+        max_z = data.sum(axis=0).max()
         fig, _, _ = gu.contour_slices(data, (q_values[0], q_values[1], q_values[2]), sum_frames=True,
                                       title='Final data', plot_colorbar=True, scale='log', is_orthogonal=True,
-                                      levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
+                                      levels=np.linspace(0, int(np.log10(max_z)), 150, endpoint=False),
                                       reciprocal_space=True)
         fig.savefig(detector.savedir + f'final_reciprocal_space_S{scan_nb}' + comment + '.png')
         plt.close(fig)
