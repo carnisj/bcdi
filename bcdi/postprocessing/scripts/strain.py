@@ -50,8 +50,8 @@ or data[z, y, x] for real space
 """
 
 scan = 128  # spec scan number
-root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/test/"  # images will be saved here, leave it to None otherwise (default to data directory's parent)
+root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/test/"  # folder of the experiment, where all scans are stored
+save_dir = None  # images will be saved here, leave it to None otherwise (default to data directory's parent)
 sample_name = "PtNP1"  # "S"  # string in front of the scan number in the folder name.
 comment = ''  # comment in filenames, should start with _
 #########################################################
@@ -62,13 +62,13 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [168, 1024, 800]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [180, 800, 800]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 phasing_binning = (1, 2, 2)  # binning factor applied during phase retrieval
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension used in preprocessing (not phase retrieval)
-output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
+output_size = (50, 50, 50)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
-fix_voxel = (2, 4, 2)  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
+fix_voxel = 5  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
 # provided, the voxel size will be identical is all 3 directions. Set it to None to use the default voxel size
 # (calculated from q values, it will be different in each dimension).
 plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the support in each direction when cropping,
@@ -76,6 +76,9 @@ plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the sup
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
+data_frame = 'laboratory'  # 'crystal' if the data was interpolated into the crystal frame using xrayutilities
+# 'laboratory' if the data was interpolated into the laboratory frame using the linearized transformation matrix
+# 'detector' if the data is still in the detector frame
 isosurface_strain = 0.2  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 strain_method = 'default'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
 # magnitude value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
@@ -122,7 +125,7 @@ template_imagefile = '_master.h5'
 # parameters related to the refraction correction #
 ###################################################
 correct_refraction = True  # True for correcting the phase shift due to refraction
-correct_absorption = True  # True for correcting the amplitude for absorption
+correct_absorption = False  # True for correcting the amplitude for absorption
 optical_path_method = 'threshold'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove only outer layers even if
 # the amplitude is lower than isosurface_strain inside the crystal
@@ -143,13 +146,12 @@ invert_phase = True  # True for the displacement to have the right sign (FFT con
 flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient = 1.0  # upper threshold of the gradient of the phase, use for ramp removal
-xrayutils_ortho = False  # True if the data is already orthogonalized
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
 save_support = False  # True to save the non-orthogonal support for later phase retrieval
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, -1, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (0, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
@@ -480,7 +482,7 @@ if save_raw:
 #  orthogonalize data #
 #######################
 print('\nShape before orthogonalization', avg_obj.shape)
-if not xrayutils_ortho:
+if data_frame == 'detector':
     obj_ortho, voxel_size = setup.orthogonalize(obj=avg_obj, initial_shape=original_size, voxel_size=fix_voxel)
     print(f"VTK spacing : {voxel_size} (nm)")
 
@@ -488,7 +490,7 @@ if not xrayutils_ortho:
                         sum_frames=False, plot_colorbar=True, vmin=0, vmax=abs(obj_ortho).max(),
                         title='Amp after orthogonalization')
 
-else:  # data already orthogonalized using xrayutilities, will be in crystal frame
+else:  # data already orthogonalized using xrayutilities or the linearized transformation matrix
     obj_ortho = avg_obj
     try:
         print("Select the file containing QxQzQy")
@@ -540,7 +542,7 @@ print(f"Angle with y in zy plane = {np.arctan(q[0]/q[1])*180/np.pi:.2f} deg")
 print(f"Angle with y in xy plane = {np.arctan(-q[2]/q[1])*180/np.pi:.2f} deg")
 print(f"Angle with z in xz plane = {180+np.arctan(q[2]/q[0])*180/np.pi:.2f} deg\n")
 
-if xrayutils_ortho:  # transform kin and kout back into the crystal frame (xrayutilities output in crystal frame)
+if data_frame == 'crystal':  # transform kin and kout into the crystal frame (xrayutilities output in crystal frame)
     kin = pu.rotate_vector(vector=np.array([kin[2], kin[1], kin[0]]), axis_to_align=myaxis,
                            reference_axis=np.array([q[2], q[1], q[0]]))
     kout = pu.rotate_vector(vector=np.array([kout[2], kout[1], kout[0]]), axis_to_align=myaxis,
@@ -608,6 +610,7 @@ if correct_refraction or correct_absorption:
                             title='Refraction correction on the support', is_orthogonal=True, reciprocal_space=False)
 
     if correct_absorption:
+        # TODO: it is correct to compensate also the X-ray absorption in the reconstructed modulus?
         amp_correction = np.exp(2 * np.pi / (1e9 * setup.wavelength) * absorption * optical_path)
         amp = amp * amp_correction
 
@@ -658,7 +661,7 @@ if save_labframe:
 ############################################################################
 # put back the crystal in its frame, by aligning q onto the reference axis #
 ############################################################################
-if not xrayutils_ortho:
+if data_frame != 'crystal':
     print('\nAligning Q along ', ref_axis_q, ":", myaxis)
     amp = pu.rotate_crystal(array=amp, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
                             reference_axis=myaxis, voxel_size=voxel_size, debugging=True)
@@ -674,7 +677,7 @@ strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxe
 ################################################################
 # rotates the crystal inplane for easier slicing of the result #
 ################################################################
-if not xrayutils_ortho:
+if data_frame != 'crystal':
     if align_axis:
         if ref_axis == "x":
             myaxis_inplane = np.array([1, 0, 0])  # must be in [x, y, z] order
