@@ -1253,9 +1253,10 @@ class Setup(object):
             raise NotImplementedError('need to calculate the shape when keeping the sampling constant')
 
         # add the offset due to the detector angles to qx qz qy vectors, convert them to 1/A
-        qx = (qx + q_offset[0]) / 10  # along z downstream
+        # the offset components are in the order (x/qy, y/qz, z/qx)
+        qx = (qx + q_offset[2]) / 10  # along z downstream
         qz = (qz + q_offset[1]) / 10  # along y vertical up
-        qy = (qy + q_offset[2]) / 10  # along x outboard
+        qy = (qy + q_offset[0]) / 10  # along x outboard
 
         if debugging:
             gu.multislices_plot(abs(ortho_obj), sum_frames=True, scale=scale, plot_colorbar=True, width_z=width_z,
