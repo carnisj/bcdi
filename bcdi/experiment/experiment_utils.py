@@ -1426,13 +1426,16 @@ class Setup(object):
                               0,
                               pixel_x * np.sin(inplane)])
                 mymatrix[:, 1] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                              pixel_y * np.cos(outofplane),
-                              -pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                    np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
+                              -pixel_y * np.cos(outofplane),
+                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz *\
                     np.array([0,
                               tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
                               tilt * distance * np.sin(outofplane)])
+                q_offset[0] = -2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
             elif self.rocking_angle == "inplane":
                 if verbose:
@@ -1443,15 +1446,17 @@ class Setup(object):
                               0,
                               pixel_x * np.sin(inplane)])
                 mymatrix[:, 1] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                              pixel_y * np.cos(outofplane),
-                              -pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                    np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
+                              -pixel_y * np.cos(outofplane),
+                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
                     np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) +
                                np.cos(grazing_angle[1]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
                               np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
                               np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
-
+                q_offset[0] = -2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
         if self.beamline == '34ID':
             if verbose:
                 print('using APS 34ID geometry')
