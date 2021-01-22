@@ -704,7 +704,7 @@ if data_frame != 'crystal':
         strain = pu.rotate_crystal(array=strain, axis_to_align=myaxis, voxel_size=voxel_size,
                                    reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False)
 
-    print(f'Voxel size: {voxel_size} (nm)')
+    print(f'Voxel size: ({voxel_size[0]:.2f}, {voxel_size[1]:.2f}, {voxel_size[2]:.2f}) (nm)')
 
 ##############################################
 # pad array to fit the output_size parameter #
@@ -753,10 +753,10 @@ gc.collect()
 # plot phase & strain #
 #######################
 pixel_spacing = [tick_spacing / vox for vox in voxel_size]
-print('Phase extent before and after thresholding:', phase.max()-phase.min(),
-      phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min())
+print(f'Phase extent before and after thresholding: {phase.max()-phase.min():.2f},'
+      f'{phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min()}:.2f')
 piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
-print('phase.max() = ', phase[np.nonzero(bulk)].max(), ', at coordinates ', piz, piy, pix)
+print(f'phase.max() = {phase[np.nonzero(bulk)].max():.2f} at voxel ({piz}, {piy}, {pix})')
 strain[bulk == 0] = np.nan
 phase[bulk == 0] = np.nan
 
@@ -780,18 +780,18 @@ fig, _, _ = gu.multislices_plot(amp, sum_frames=False, title='Normalized orthogo
                                 vmax=1, tick_direction=tick_direction, tick_width=tick_width, tick_length=tick_length,
                                 pixel_spacing=pixel_spacing, plot_colorbar=True, is_orthogonal=True,
                                 reciprocal_space=False)
-fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
-fig.text(0.60, 0.40, f'Voxel size={voxel_size} (nm)', size=20)
-fig.text(0.60, 0.35, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
-fig.text(0.60, 0.30, "Volume=" + str(int(volume)) + "nm3", size=20)
-fig.text(0.60, 0.25, "Sorted by " + sort_method, size=20)
-fig.text(0.60, 0.20, 'correlation threshold=' + str(correlation_threshold), size=20)
-fig.text(0.60, 0.15, "Average over " + str(avg_counter) + " reconstruction(s)", size=20)
-fig.text(0.60, 0.10, "Planar distance=" + str('{:.5f}'.format(planar_dist)) + "nm", size=20)
+fig.text(0.60, 0.45, f'Scan {scan}', size=20)
+fig.text(0.60, 0.40, f'Voxel size=({voxel_size[0]:.2f}, {voxel_size[1]:.2f}, {voxel_size[2]:.2f}) (nm)', size=20)
+fig.text(0.60, 0.35, f'Ticks spacing={tick_spacing} nm', size=20)
+fig.text(0.60, 0.30, f'Volume={int(volume)} nm3', size=20)
+fig.text(0.60, 0.25, 'Sorted by ' + sort_method, size=20)
+fig.text(0.60, 0.20, f'correlation threshold={correlation_threshold}', size=20)
+fig.text(0.60, 0.15, f'average over {avg_counter} reconstruction(s)', size=20)
+fig.text(0.60, 0.10, f'Planar distance={planar_dist:.5f} nm', size=20)
 if get_temperature:
-    fig.text(0.60, 0.05, "Estimated T=" + str(temperature) + "C", size=20)
+    fig.text(0.60, 0.05, f'Estimated T={temperature} C', size=20)
 if save:
-    plt.savefig(detector.savedir + 'S' + str(scan) + '_amp' + comment + '.png')
+    plt.savefig(detector.savedir + f'S{scan}_amp' + comment + '.png')
 
 # amplitude histogram
 fig, ax = plt.subplots(1, 1)
@@ -802,39 +802,39 @@ ax.spines['right'].set_linewidth(1.5)
 ax.spines['left'].set_linewidth(1.5)
 ax.spines['top'].set_linewidth(1.5)
 ax.spines['bottom'].set_linewidth(1.5)
-fig.savefig(detector.savedir + 'S' + str(scan) + '_histo_amp' + comment + '.png')
+fig.savefig(detector.savedir + f'S{scan}_histo_amp' + comment + '.png')
 
 # phase
 fig, _, _ = gu.multislices_plot(phase, sum_frames=False, title='Orthogonal displacement',
                                 vmin=-phase_range, vmax=phase_range, tick_direction=tick_direction, cmap=my_cmap,
                                 tick_width=tick_width, tick_length=tick_length, pixel_spacing=pixel_spacing,
                                 plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
-fig.text(0.60, 0.30, "Scan " + str(scan), size=20)
-fig.text(0.60, 0.25, f'Voxel size={voxel_size} (nm)', size=20)
-fig.text(0.60, 0.20, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
-fig.text(0.60, 0.15, "Average over " + str(avg_counter) + " reconstruction(s)", size=20)
+fig.text(0.60, 0.30, f'Scan {scan}', size=20)
+fig.text(0.60, 0.25, f'Voxel size=({voxel_size[0]:.2f}, {voxel_size[1]:.2f}, {voxel_size[2]:.2f}) (nm)', size=20)
+fig.text(0.60, 0.20, f'Ticks spacing={tick_spacing} nm', size=20)
+fig.text(0.60, 0.15, f'average over {avg_counter} reconstruction(s)', size=20)
 if hwidth > 0:
-    fig.text(0.60, 0.10, "Averaging over " + str(2*hwidth+1) + " pixels", size=20)
+    fig.text(0.60, 0.10, f'Averaging over {2*hwidth+1} pixels', size=20)
 else:
     fig.text(0.60, 0.10, "No phase averaging", size=20)
 if save:
-    plt.savefig(detector.savedir + 'S' + str(scan) + '_displacement' + comment + '.png')
+    plt.savefig(detector.savedir + f'S{scan}_displacement' + comment + '.png')
 
 # strain
 fig, _, _ = gu.multislices_plot(strain, sum_frames=False, title='Orthogonal strain',
                                 vmin=-strain_range, vmax=strain_range, tick_direction=tick_direction,
                                 tick_width=tick_width, tick_length=tick_length, plot_colorbar=True, cmap=my_cmap,
                                 pixel_spacing=pixel_spacing, is_orthogonal=True, reciprocal_space=False)
-fig.text(0.60, 0.30, "Scan " + str(scan), size=20)
-fig.text(0.60, 0.25, f'Voxel size={voxel_size} (nm)', size=20)
-fig.text(0.60, 0.20, "Ticks spacing=" + str(tick_spacing) + "nm", size=20)
-fig.text(0.60, 0.15, "Average over " + str(avg_counter) + " reconstruction(s)", size=20)
+fig.text(0.60, 0.30, f'Scan {scan}', size=20)
+fig.text(0.60, 0.25, f'Voxel size=({voxel_size[0]:.2f}, {voxel_size[1]:.2f}, {voxel_size[2]:.2f}) (nm)', size=20)
+fig.text(0.60, 0.20, f'Ticks spacing={tick_spacing} nm', size=20)
+fig.text(0.60, 0.15, f'average over {avg_counter} reconstruction(s)', size=20)
 if hwidth > 0:
-    fig.text(0.60, 0.10, "Averaging over " + str(2*hwidth+1) + " pixels", size=20)
+    fig.text(0.60, 0.10, f'Averaging over {2*hwidth+1} pixels', size=20)
 else:
     fig.text(0.60, 0.10, "No phase averaging", size=20)
 if save:
-    plt.savefig(detector.savedir + 'S' + str(scan) + '_strain' + comment + '.png')
+    plt.savefig(detector.savedir + f'S{scan}_strain' + comment + '.png')
 
 
 print('End of script')
