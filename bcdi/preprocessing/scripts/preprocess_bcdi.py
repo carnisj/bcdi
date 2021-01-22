@@ -913,7 +913,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         max_z = data.sum(axis=0).max()
         fig, _, _ = gu.contour_slices(data, (q_values[0], q_values[1], q_values[2]), sum_frames=True,
                                       title='Final data', plot_colorbar=True, scale='log', is_orthogonal=True,
-                                      levels=np.linspace(0, int(np.log10(max_z)), 150, endpoint=False),
+                                      levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=False),
                                       reciprocal_space=True)
         fig.savefig(detector.savedir + f'final_reciprocal_space_S{scan_nb}' + comment + '.png')
         plt.close(fig)
