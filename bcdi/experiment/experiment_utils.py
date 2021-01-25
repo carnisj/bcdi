@@ -1460,43 +1460,49 @@ class Setup(object):
         if self.beamline == '34ID':
             if verbose:
                 print('using APS 34ID geometry')
-            if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
-                raise NotImplementedError('Non-zero chi is not yet implemented for 34ID')
-            # TODO: implement non-zero chi for 34ID
             if self.rocking_angle == "outofplane":
                 if verbose:
                     print(f'rocking angle is phi, chi={grazing_angle[0] * 180 / np.pi}')
                 # rocking phi angle anti-clockwise around x (theta does not matter, above phi)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_x * np.cos(inplane),
+                    np.array([-pixel_x * np.cos(inplane),
                               0,
-                              -pixel_x * np.sin(inplane)])
+                              pixel_x * np.sin(inplane)])
                 mymatrix[:, 1] = 2 * np.pi / lambdaz *\
                     np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
                               -pixel_y * np.cos(outofplane),
                               pixel_y * np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz *\
-                    np.array([0,
-                              -tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
-                              -tilt * distance * np.sin(outofplane)])
+                    np.array([tilt * distance * np.sin(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
+                              tilt * distance * np.cos(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
+                              -tilt * distance * (np.sin(outofplane) * np.cos(grazing_angle[0]) +
+                                                  np.cos(outofplane) * np.sin(inplane) * np.sin(grazing_angle[0]))])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
             elif self.rocking_angle == "inplane":
                 if verbose:
                     print(f'rocking angle is theta, phi={grazing_angle[1]*180/np.pi}, chi={grazing_angle[0]*180/np.pi}')
                 # rocking theta angle anti-clockwise around y, incident angle is non zero (theta is above phi)
-                mymatrix[:, 0] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * \
+                    np.array([-pixel_x * np.cos(inplane),
                               0,
-                              -pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz *\
+                              pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * \
                     np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
                               -pixel_y * np.cos(outofplane),
                               pixel_y * np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
-                    np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) +
-                              np.cos(grazing_angle[1]) * (1 - np.cos(inplane) * np.cos(outofplane))),
-                              -np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
-                              np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
+                    np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) -
+                              np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
+                              (-np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane) +
+                              np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
+                              (np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(inplane)*np.cos(outofplane) -
+                               np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(outofplane))])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
         if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
             if verbose:
