@@ -3038,12 +3038,12 @@ def motor_positions_cristal(logfile, setup):
 
     :param logfile: h5py File object of CRISTAL .nxs scan file
     :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: (mgomega, gamma, delta) motor positions
+    :return: (mgomega, phi, gamma, delta) motor positions
     """
     if not setup.custom_scan:
         group_key = list(logfile.keys())[0]
         if setup.rocking_angle == 'outofplane':
-            mgomega = logfile['/' + group_key + '/scan_data/actuator_1_1'][:] / 1e6  # mgomega is scanned
+            mgomega = logfile['/' + group_key + '/scan_data/actuator_1_1'][:]  # mgomega is scanned
             try:
                 phi = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-PHI/position'][:]
             except KeyError:
@@ -3063,7 +3063,7 @@ def motor_positions_cristal(logfile, setup):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
     else:
-        mgomega = setup.custom_motors["mgomega"] / 1e6
+        mgomega = setup.custom_motors["mgomega"]
         delta = setup.custom_motors["delta"]
         gamma = setup.custom_motors["gamma"]
         phi = setup.custom_motors.get("phi", None)
