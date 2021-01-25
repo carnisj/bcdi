@@ -259,6 +259,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                 tmp_array[np.isnan(array)] = -1 * np.inf
                 tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
                 vmax = tmp_array.max(initial=None)
+                if np.isclose(vmax, vmin):
+                    vmax = vmin + 1
 
             axis.plot(array)
             axis.set_title(title)
@@ -350,7 +352,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                 tmp_array[np.isnan(array)] = -1 * np.inf
                 tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
                 vmax = tmp_array.max(initial=None)
-
+                if np.isclose(vmax, vmin):
+                    vmax = vmin + 1
             plot = axis.imshow(array, vmin=vmin, vmax=vmax, cmap=cmap)
         else:  # 'log'
             if np.isnan(vmin):
@@ -365,6 +368,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                 tmp_array[np.isnan(array)] = -1 * np.inf
                 tmp_array[np.isinf(tmp_array)] = -1 * np.inf  # set +inf to -inf to find the max
                 vmax = np.log10(abs(tmp_array).max())
+                if np.isclose(vmax, vmin):
+                    vmax = vmin + 1
             plot = axis.imshow(np.log10(abs(array)), vmin=vmin, vmax=vmax, cmap=cmap)
 
         axis.set_title(title + slice_name)
