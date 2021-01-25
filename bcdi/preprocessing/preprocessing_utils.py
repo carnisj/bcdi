@@ -3338,7 +3338,7 @@ def motor_positions_sixs(logfile, setup, **kwargs):
                        name='preprocessing_utils.motor_positions_sixs')
     frames_logical = kwargs.get('frames_logical', None)
     if frames_logical is not None:
-        assert isinstance(frames_logical, list) and all(val in {-1, 0, 1} for val in frames_logical),\
+        assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
             'frames_logical should be a list of values in {-1, 0, 1}'
 
     if not setup.custom_scan:
