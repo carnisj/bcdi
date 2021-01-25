@@ -3353,7 +3353,8 @@ def motor_positions_sixs(logfile, setup, **kwargs):
                 beta = logfile.pitch[0]  # not scanned
 
         temp_mu = logfile.mu[:]
-        frames_logical = frames_logical or np.ones(len(temp_mu))
+        if frames_logical is None:
+            frames_logical = np.ones(len(temp_mu))
         mu = np.zeros((frames_logical != 0).sum())  # first frame is duplicated for SIXS_2018
         nb_overlap = 0
         for idx in range(len(frames_logical)):
