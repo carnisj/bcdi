@@ -1810,7 +1810,7 @@ def init_qconversion(setup):
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'CRISTAL':
-        offsets = (0, setup.offset_inplane, 0)  # mgomega, phi, gamma, delta
+        offsets = (0, 0, setup.offset_inplane, 0)  # mgomega, phi, gamma, delta
         qconv = xu.experiment.QConversion(['y-', 'z+'], ['z+', 'y-'], r_i=beam_direction)  # for CRISTAL
         # 2S+2D goniometer (CRISTAL goniometer, sample: mgomega, phi    detector: gamma, delta
         # the vector is giving the direction of the primary beam
