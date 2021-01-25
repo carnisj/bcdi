@@ -1823,8 +1823,7 @@ def init_qconversion(setup):
     elif beamline == '34ID':
         offsets = (0, 0, 0, 0, setup.offset_inplane, 0)
         # mu, phi (incident angle), chi, theta (inplane), delta (inplane), gamma (outofplane)
-        qconv = xu.experiment.QConversion(['z+', 'y+', 'x+', 'z+'], ['z+', 'y-'], r_i=beam_direction)  # for 34ID
-        # TODO: check the motor directions for mu and chi
+        qconv = xu.experiment.QConversion(['z+', 'y+', 'x-', 'z+'], ['z+', 'y-'], r_i=beam_direction)  # for 34ID
         # 4S+2D goniometer (34ID goniometer, sample: mu, phi, chi, theta (inplane)   detector: delta (inplane), gamma
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
