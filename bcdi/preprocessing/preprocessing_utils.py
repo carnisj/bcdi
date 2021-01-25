@@ -3331,7 +3331,7 @@ def motor_positions_sixs(logfile, setup, **kwargs):
     :param kwargs:
      - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
        equal to the number of measured frames. In case of data padding, the length changes.
-    :return: (beta, mgomega, gamma, delta) motor positions and updated frames_logical
+    :return: (beta, mu, gamma, delta) motor positions and updated frames_logical
     """
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'frames_logical'},
