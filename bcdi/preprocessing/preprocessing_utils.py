@@ -1187,14 +1187,15 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
     elif setup.beamline == 'CRISTAL':
-        mgomega, gamma, delta = motor_positions_cristal(logfile, setup)
+        mgomega, phi, gamma, delta = motor_positions_cristal(logfile, setup)
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             grazing = (0,)  # no chi at CRISTAL
             tilt, inplane, outofplane = mgomega, gamma[0], delta[0]
-        elif rocking_angle == 'inplane':
-            raise NotImplementedError('inplane rocking curve not implemented for CRISTAL')
+        elif rocking_angle == 'inplane':  # phi rocking curve
+            grazing = (0, mgomega-offsets[2])  # no chi at CRISTAL
+            tilt, inplane, outofplane = phi, gamma[0], delta[0]
         else:
-            raise ValueError('Inplane rocking curve not implemented for CRISTAL')
+            raise ValueError('Wrong value for "rocking_angle" parameter')
 
     elif setup.beamline in {'SIXS_2018', 'SIXS_2019'}:
         beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile=logfile, setup=setup,
@@ -1809,9 +1810,9 @@ def init_qconversion(setup):
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'CRISTAL':
-        offsets = (0, setup.offset_inplane, 0)  # komega, gamma, delta
-        qconv = xu.experiment.QConversion(['y-'], ['z+', 'y-'], r_i=beam_direction)  # for CRISTAL
-        # 1S+2D goniometer (CRISTAL goniometer, sample: mgomega    detector: gamma, delta
+        offsets = (0, setup.offset_inplane, 0)  # mgomega, phi, gamma, delta
+        qconv = xu.experiment.QConversion(['y-', 'z+'], ['z+', 'y-'], r_i=beam_direction)  # for CRISTAL
+        # 2S+2D goniometer (CRISTAL goniometer, sample: mgomega, phi    detector: gamma, delta
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'P10':
@@ -3039,23 +3040,41 @@ def motor_positions_cristal(logfile, setup):
     :param setup: the experimental setup: Class SetupPreprocessing()
     :return: (mgomega, gamma, delta) motor positions
     """
-    if setup.rocking_angle != 'outofplane':
-        raise ValueError('Only out of plane rocking curve implemented for CRISTAL')
-
     if not setup.custom_scan:
         group_key = list(logfile.keys())[0]
-
-        mgomega = logfile['/' + group_key + '/scan_data/actuator_1_1'][:] / 1e6  # mgomega is scanned
-
-        delta = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-DELTA/position'][:]
-
-        gamma = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-GAMMA/position'][:]
+        if setup.rocking_angle == 'outofplane':
+            mgomega = logfile['/' + group_key + '/scan_data/actuator_1_1'][:] / 1e6  # mgomega is scanned
+            try:
+                phi = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-PHI/position'][:]
+            except KeyError:
+                # data taken before the installation of the phi circle
+                phi = 0
+            delta = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-DELTA/position'][:]
+            gamma = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-GAMMA/position'][:]
+        elif setup.rocking_angle == 'inplane':
+            # TODO: check the motor names in the data file
+            try:
+                phi = logfile['/' + group_key + '/scan_data/actuator_1_1'][:]  # phi is scanned
+            except KeyError as ex:
+                raise KeyError('Phi not available in the data file') from ex
+            mgomega = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-MGOMEGA/position'][:]
+            delta = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-DELTA/position'][:]
+            gamma = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-GAMMA/position'][:]
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
     else:
         mgomega = setup.custom_motors["mgomega"] / 1e6
         delta = setup.custom_motors["delta"]
         gamma = setup.custom_motors["gamma"]
+        phi = setup.custom_motors.get("phi", None)
 
-    return mgomega, gamma, delta
+    # check if mgomega needs to be divided by 1e6 (data taken before the implementation of the correction)
+    if isinstance(mgomega, Real) and abs(mgomega) > 360:
+        mgomega = mgomega / 1e6
+    elif isinstance(mgomega, (tuple, list, np.ndarray)) and any(abs(val) > 360 for val in mgomega):
+        mgomega = mgomega / 1e6
+
+    return mgomega, phi, gamma, delta
 
 
 def motor_positions_id01(logfile, scan_number, setup, **kwargs):
@@ -3570,8 +3589,9 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(beta, mu, beta, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'CRISTAL':
-        mgomega, gamma, delta = motor_positions_cristal(logfile, setup)
+        mgomega, phi, gamma, delta = motor_positions_cristal(logfile, setup)
         mgomega = mgomega - setup.sample_offsets[2]  # sample_offsets[2] is the rotation around the outboard axis
+        phi = phi - setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             nb_steps = len(mgomega)
             tilt_angle = mgomega[1] - mgomega[0]
@@ -3585,10 +3605,25 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
             if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
                 mgomega = mgomega[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
 
+        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+            print('mgomega', mgomega)
+            nb_steps = len(phi)
+            tilt_angle = phi[1] - phi[0]
+
+            if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
+                phi = np.concatenate((phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                      phi,
+                                      phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+            if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
+                phi = phi[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+
         else:
-            raise ValueError('Inplane rocking curve not implemented for CRISTAL')
-        mgomega, gamma, delta = bin_parameters(binning=binning[0], nb_frames=nb_frames, params=[mgomega, gamma, delta])
-        qx, qy, qz = hxrd.Ang2Q.area(mgomega, gamma, delta, en=setup.energy, delta=detector.offsets)
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+        mgomega, phi,  gamma, delta = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                     params=[mgomega, phi, gamma, delta])
+        qx, qy, qz = hxrd.Ang2Q.area(mgomega, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'P10':
         om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile=logfile, setup=setup)
