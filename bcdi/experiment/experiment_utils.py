@@ -1246,7 +1246,7 @@ class Setup(object):
                                           bounds_error=False, fill_value=0)
             ortho_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                             new_x.reshape((1, new_z.size)))).transpose())
-            ortho_obj = ortho_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
+            ortho_obj = ortho_obj.reshape((len(qx), len(qz), len(qy))).astype(obj.dtype)
 
         else:  # 'fix_sampling'
             # need to calculate the sampling in each dimension
@@ -1537,7 +1537,7 @@ class Setup(object):
                 print('using CRISTAL geometry')
             if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 raise NotImplementedError('Non-zero chi is not implemented for CRISTAL')
-            if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+            if self.rocking_angle == "outofplane":
                 if verbose:
                     print('rocking angle is komega')
                 # rocking tilt angle clockwise around x
@@ -1556,8 +1556,26 @@ class Setup(object):
                 q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
-            else:
-                raise NotImplementedError('inplane rocking curve not implemented for CRISTAL')
+            elif self.rocking_angle == "inplane":
+                if verbose:
+                    print(f'rocking angle is phi, eta={grazing_angle[1]*180/np.pi}')
+                # rocking phi angle anti-clockwise around y, incident angle eta is non zero (eta below phi)
+                mymatrix[:, 0] = 2 * np.pi / lambdaz *\
+                    np.array([pixel_x * np.cos(inplane),
+                              0,
+                              -pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz *\
+                    np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
+                              -pixel_y * np.cos(outofplane),
+                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
+                    np.array([(-np.sin(grazing_angle[1]) * np.sin(outofplane) -
+                               np.cos(grazing_angle[1]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
+                              np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
+                              np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
         if direct_space:  # length scale in nm
             # for a discrete FT, the dimensions of the basis vectors after the transformation are related to the total
