@@ -174,6 +174,14 @@ concatenate_scans.py
    :end-before: """
    :language: rst
 
+interpolate_cdi.py
+^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/preprocessing/scripts/interpolate_cdi.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 preprocess_bcdi.py
 ^^^^^^^^^^^^^^^^^^
 
