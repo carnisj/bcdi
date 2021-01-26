@@ -187,6 +187,22 @@ def gaussian(x_axis, amp, cen, sig):
     return amp*np.exp(-(x_axis-cen)**2/(2.*sig**2))
 
 
+def in_range(point, extent):
+    """
+    Return a boolean depending on whether point is in the indices range defined by extent or not.
+
+    :param point: tuple of three integers (z, y, x) representing the voxel indices to be tested
+    :param extent: tuple of six integers (z_start, z_stop, y_start, y_stop, x_tart, x_stop) representing the range of
+     valid indices
+    :return: True if point belongs to extent, False otherwise
+    """
+    if (extent[0] <= point[0] <= extent[1]) and\
+       (extent[2] <= point[1] <= extent[3]) and\
+       (extent[4] <= point[2] <= extent[5]):
+        return True
+    return False
+
+
 def is_numeric(string):
     """
     Return True is the string represents a number.
