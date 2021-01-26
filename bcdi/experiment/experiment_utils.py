@@ -1304,6 +1304,9 @@ class Setup(object):
          (3D vector) if direct_space is False. For direct space, the length scale is in nm, for reciprocal space,
          it is in 1/nm.
         """
+        if verbose:
+            print(f'out-of plane detector angle={self.outofplane_angle:.3f} deg,'
+                  f' inplane_angle={self.inplane_angle:.3f} deg')
         wavelength = self.wavelength * 1e9  # convert to nm
         distance = self.distance * 1e9  # convert to nm
         pixel_x = pixel_x * 1e9  # convert to nm
@@ -1344,7 +1347,7 @@ class Setup(object):
 
             elif self.rocking_angle == "inplane":
                 if verbose:
-                    print(f'rocking angle is phi, eta={grazing_angle[1]*180/np.pi:.3f}')
+                    print(f'rocking angle is phi, eta={grazing_angle[1]*180/np.pi:.3f} deg')
                 # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz *\
                     np.array([pixel_x * np.cos(inplane),
@@ -1368,7 +1371,7 @@ class Setup(object):
                 print('using PETRAIII P10 geometry')
             if self.rocking_angle == "outofplane":
                 if verbose:
-                    print(f'rocking angle is omega, chi={grazing_angle[0]*180/np.pi:.3f}deg')
+                    print(f'rocking angle is omega, chi={grazing_angle[0]*180/np.pi:.3f} deg')
                 # rocking omega angle clockwise around x at mu=0, chi potentially non zero (chi below omega)
                 # (phi does not matter, above eta)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz *\
@@ -1390,8 +1393,8 @@ class Setup(object):
 
             elif self.rocking_angle == "inplane":
                 if verbose:
-                    print(f'rocking angle is phi, omega={grazing_angle[1]*180/np.pi:.3f},'
-                          f' chi={grazing_angle[0]*180/np.pi:.3f}')
+                    print(f'rocking angle is phi, omega={grazing_angle[1]*180/np.pi:.3f} deg,'
+                          f' chi={grazing_angle[0]*180/np.pi:.3f} deg')
 
                 # rocking phi angle clockwise around y, omega and chi potentially non zero (chi below omega below phi)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz *\
@@ -1421,7 +1424,7 @@ class Setup(object):
             if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 if verbose:
                     print('rocking angle is theta')
-                # rocking eta angle clockwise around x (phi does not matter, above eta)
+                # rocking theta angle clockwise around x (phi does not matter, above eta)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz *\
                     np.array([pixel_x * np.cos(inplane),
                               0,
@@ -1440,8 +1443,8 @@ class Setup(object):
 
             elif self.rocking_angle == "inplane":
                 if verbose:
-                    print(f'rocking angle is phi, eta={grazing_angle[1]*180/np.pi:.3f}')
-                # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
+                    print(f'rocking angle is phi, theta={grazing_angle[1]*180/np.pi:.3f} deg')
+                # rocking phi angle clockwise around y, incident angle theta is non zero (theta below phi)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz *\
                     np.array([pixel_x * np.cos(inplane),
                               0,
@@ -1458,12 +1461,13 @@ class Setup(object):
                 q_offset[0] = -2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
         if self.beamline == '34ID':
             if verbose:
                 print('using APS 34ID geometry')
             if self.rocking_angle == "outofplane":
                 if verbose:
-                    print(f'rocking angle is phi, chi={grazing_angle[0] * 180 / np.pi:.3f}')
+                    print(f'rocking angle is phi, chi={grazing_angle[0] * 180 / np.pi:.3f} deg')
                 # rocking phi angle anti-clockwise around x (theta does not matter, above phi)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz *\
                     np.array([-pixel_x * np.cos(inplane),
@@ -1484,8 +1488,8 @@ class Setup(object):
 
             elif self.rocking_angle == "inplane":
                 if verbose:
-                    print(f'rocking angle is theta, phi={grazing_angle[1]*180/np.pi:.3f},'
-                          f' chi={grazing_angle[0]*180/np.pi:.3f}')
+                    print(f'rocking angle is theta, phi={grazing_angle[1]*180/np.pi:.3f} deg,'
+                          f' chi={grazing_angle[0]*180/np.pi:.3f} deg')
                 # rocking theta angle anti-clockwise around y, incident angle is non zero (theta is above phi)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz * \
                     np.array([-pixel_x * np.cos(inplane),
@@ -1513,7 +1517,7 @@ class Setup(object):
                 raise NotImplementedError('Non-zero chi is not implemented for SIXS')
             if self.rocking_angle == "inplane":
                 if verbose:
-                    print(f'rocking angle is mu, beta={grazing_angle[1] * 180 / np.pi:.3f}')
+                    print(f'rocking angle is mu, beta={grazing_angle[1] * 180 / np.pi:.3f} deg')
 
                 # rocking mu angle anti-clockwise around y
                 mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x *\
@@ -1548,7 +1552,7 @@ class Setup(object):
             if self.rocking_angle == "outofplane":
                 if verbose:
                     print('rocking angle is mgomega')
-                # rocking tilt angle clockwise around x
+                # rocking mgomega angle clockwise around x
                 mymatrix[:, 0] = 2 * np.pi / lambdaz *\
                     np.array([pixel_x * np.cos(inplane),
                               0,
@@ -1566,7 +1570,7 @@ class Setup(object):
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
             elif self.rocking_angle == "inplane":
                 if verbose:
-                    print(f'rocking angle is phi, mgomega={grazing_angle[1]*180/np.pi:.3f}')
+                    print(f'rocking angle is phi, mgomega={grazing_angle[1]*180/np.pi:.3f} deg')
                 # rocking phi angle anti-clockwise around y, incident angle mgomega is non zero (mgomega below phi)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz *\
                     np.array([pixel_x * np.cos(inplane),
