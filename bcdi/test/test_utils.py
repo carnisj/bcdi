@@ -34,17 +34,41 @@ class TestUtils(unittest.TestCase):
     def test_inrange_in_range(self):
         self.assertTrue(util.in_range(point=(0, 0, 20), extent=self.extent))
 
-    def test_inrange_not_in_range_low(self):
+    def test_inrange_not_in_range_low_z(self):
         self.assertFalse(util.in_range(point=(-11, 0, 20), extent=self.extent))
 
-    def test_inrange_not_in_range_high(self):
+    def test_inrange_not_in_range_high_z(self):
         self.assertFalse(util.in_range(point=(100, 0, 20), extent=self.extent))
 
-    def test_inrange_lower_edge(self):
-        self.assertTrue(util.in_range(point=(-10, -20, 10), extent=self.extent))
+    def test_inrange_not_in_range_low_y(self):
+        self.assertFalse(util.in_range(point=(0, -21, 20), extent=self.extent))
 
-    def test_inrange_larger_edge(self):
-        self.assertTrue(util.in_range(point=(99, 89, 119), extent=self.extent))
+    def test_inrange_not_in_range_high_y(self):
+        self.assertFalse(util.in_range(point=(0, 90, 20), extent=self.extent))
+
+    def test_inrange_not_in_range_low_x(self):
+        self.assertFalse(util.in_range(point=(0, 0, 9), extent=self.extent))
+
+    def test_inrange_not_in_range_high_x(self):
+        self.assertFalse(util.in_range(point=(0, 0, 120), extent=self.extent))
+
+    def test_inrange_lower_edge_z(self):
+        self.assertTrue(util.in_range(point=(-10, 0, 20), extent=self.extent))
+
+    def test_inrange_larger_edge_z(self):
+        self.assertTrue(util.in_range(point=(99, 0, 20), extent=self.extent))
+
+    def test_inrange_lower_edge_y(self):
+        self.assertTrue(util.in_range(point=(0, -20, 20), extent=self.extent))
+
+    def test_inrange_larger_edge_y(self):
+        self.assertTrue(util.in_range(point=(0, 89, 20), extent=self.extent))
+
+    def test_inrange_lower_edge_x(self):
+        self.assertTrue(util.in_range(point=(0, 0, 10), extent=self.extent))
+
+    def test_inrange_larger_edge_x(self):
+        self.assertTrue(util.in_range(point=(0, 0, 119), extent=self.extent))
 
 
 if __name__ == 'main':
