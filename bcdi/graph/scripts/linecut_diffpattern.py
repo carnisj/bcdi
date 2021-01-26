@@ -17,6 +17,7 @@ sys.path.append('D:/myscripts/bcdi/')
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+import bcdi.utils.validation as valid
 
 helptext = """
 Graphical user interface for plotting linecuts along particular direction of a 3D array.
@@ -25,7 +26,7 @@ For the laboratory frame, the CXI convention is used: z downstream, y vertical, 
 For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 """
 
-datadir = 'D:/data/P10_isosurface/data/p21_00054/pynx/'  # data directory
+datadir = 'D:/data/P10_1st_test_isosurface/data/p21_00054/pynx/'  # data directory
 savedir = None  # if None, it will default to the data directory
 load_qvalues = True  # True to load the q values (a NPZ file with the fields 'qx', 'qy', 'qz', each one containing
 # a 1D or 3D array)
@@ -33,6 +34,8 @@ load_mask = False  # True to load a mask (same shape than the diffraction patter
 #######################################
 # parameters related to visualization #
 #######################################
+starting_point = None  # list of three indices (integers) for the starting point of the linecut. Leave None for default
+endpoint = None  # list of three indices (integers) for the endpoint point of the linecut. Leave None for default
 threshold = 0  # every voxel <= threshold will be set to 0
 vmin = 0  # vmin for the plots, None for default
 vmax = 5  # vmax for the plots, should be larger than vmin, None for default
@@ -169,6 +172,11 @@ if vmin and vmax:
 
 savedir = savedir or datadir
 
+valid.valid_container(obj=starting_point, container_types=list, allow_none=True, item_types=int,
+                      name='linecut_diffpattern.py')
+valid.valid_container(obj=endpoint, container_types=list, allow_none=True, item_types=int,
+                      name='linecut_diffpattern.py')
+
 ###################
 # define colormap #
 ###################
@@ -256,8 +264,8 @@ else:
 # interactive plot #
 ####################
 plt.ioff()
-starting_point = [nz//2, 0, nx//2]
-endpoint = [nz//2, ny-1, nx//2]
+starting_point = starting_point or [nz//2, 0, nx//2]
+endpoint = endpoint or [nz//2, ny-1, nx//2]
 cut = gu.linecut(diff_pattern, start_indices=starting_point, stop_indices=endpoint, interp_order=1, debugging=False)
 if qx.ndim == 1:
     distance = np.sqrt((qx[endpoint[0]]-qx[starting_point[0]])**2 +
