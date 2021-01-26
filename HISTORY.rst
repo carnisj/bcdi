@@ -1,11 +1,15 @@
 Version 1.0.0
 -------------
 
+* Feature: implement the interpolation of the reciprocal space data in the laboratory frame using the linearized transformation matrix
+
+* Refactor: update the calculation of the transformation matrices when chi is non-zero
+
 * Feature: allow different voxel sizes in each dimension in strain.py (NOT BACK COMPATIBLE)
 
 * Feature: implement validation functions in utils.validation.py for commonly used parameters, implement related unit tests
 
-* Refactor: merge the class SetupPostprocessing and SetupPreprocessing in a single one
+* Refactor: merge the class SetupPostprocessing and SetupPreprocessing in a single one due to code redundances
 
 * Feature: implement linecut_diffpattern.py, a GUI to get a linecut of a 3D diffraction pattern along a desired direction
 
