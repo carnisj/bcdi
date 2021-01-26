@@ -1219,15 +1219,15 @@ class Setup(object):
             # TODO : correct this if the position of the direct beam is provided
 
             # the voxel size in q in given by the lines of the transformation matrix (the unit is 1/nm)
-            dq_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
-            dq_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
-            dq_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
+            dq_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
+            dq_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
+            dq_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
             # calculate qx qz qy vectors in 1/nm, the reference being the center of the array
             # the usual frame is used for q values: qx downstream, qz vertical up, qy outboard
-            qx = np.arange(-nbz // 2, nbz // 2, 1) * dq_z  # along z downstream
-            qz = np.arange(-nby // 2, nby // 2, 1) * dq_y  # along y vertical up
-            qy = np.arange(-nbx // 2, nbx // 2, 1) * dq_x  # along x outboard
+            qx = np.arange(-nbz // 2, nbz // 2, 1) * dq_along_z  # along z downstream
+            qz = np.arange(-nby // 2, nby // 2, 1) * dq_along_y  # along y vertical up
+            qy = np.arange(-nbx // 2, nbx // 2, 1) * dq_along_x  # along x outboard
 
             myz, myy, myx = np.meshgrid(qx, qz, qy, indexing='ij')
 
