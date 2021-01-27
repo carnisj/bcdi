@@ -293,7 +293,10 @@ class Detector(object):
     @sum_roi.setter
     def sum_roi(self, value):
         if not value:  # None or empty list/tuple
-            value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+            if not self.roi:
+                value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+            else:
+                value = self.roi
         valid.valid_container(value, container_types=(tuple, list), length=4, item_types=int, name='Detector.sum_roi')
         self._sum_roi = value
 
