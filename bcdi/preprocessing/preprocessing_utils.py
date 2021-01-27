@@ -2209,11 +2209,8 @@ def load_custom_data(custom_images, custom_monitor, normalize, beamline, detecto
                 ccdraw = e.data
                 nb_frames = 1  # no series measurement at ID01
             elif beamline == 'P10':  # consider a time series
-                # datadir is root_folder + sample_name
-                datadir = os.path.normpath(detector.datadir)
-                sample_name = datadir.split(os.sep)[-1]
-                ccdfiletmp = detector.datadir + '_{:05d}'.format(i) + '/e4m/' +\
-                    sample_name + '_{:05d}'.format(i) + detector.template_imagefile
+                ccdfiletmp = detector.rootdir + detector.sample_name + '_{:05d}'.format(i) + '/e4m/' +\
+                    detector.sample_name + '_{:05d}'.format(i) + detector.template_imagefile
                 h5file = h5py.File(ccdfiletmp, 'r')  # load the _master.h5 file
                 nb_frames = h5file['entry']['data']['data_000001'].shape[0]
                 ccdraw = h5file['entry']['data']['data_000001'][:].sum(axis=0)
