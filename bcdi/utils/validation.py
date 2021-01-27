@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 from numbers import Real
+import numpy as np
 
 
 def valid_container(obj, container_types, length=None, min_length=None, item_types=None, min_included=None,
@@ -33,8 +34,8 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
         container_types = (container_types,)
     if not all(isinstance(val, type) for val in container_types):
         raise TypeError('container_types should be a collection of valid types')
-    if not all(val in {list, tuple, set, str} for val in container_types):
-        raise TypeError('container_types should be a collection of types inheriting from {tuple, list, set}')
+    if not all(val in {list, tuple, set, str, np.ndarray} for val in container_types):
+        raise TypeError(f'non supported container type {container_types}')
 
     if length is not None:
         if not isinstance(length, int):
