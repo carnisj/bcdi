@@ -127,7 +127,7 @@ def main(parameters):
 
     nbz, nby, nbx = data.shape
     # calculate the range of pixels indices covered by the data, taking into account the origin of reciprocal space
-    data_extent = (-origin[0], nbz-origin[0]-1, -origin[1], nby-origin[1]-1, -origin[2], nbx-origin[2]-1)
+    data_extent = (0, nbz-1, 0, nby-1, 0, nbx-1)
     print(f'data shape: {data.shape}')
     print(f'origin of reciprocal space: {origin}')
     print(f'data extent: {data_extent}')
