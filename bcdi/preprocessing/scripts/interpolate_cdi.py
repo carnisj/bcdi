@@ -146,6 +146,7 @@ def main(parameters):
     nonzero_mask = np.nonzero(mask)  # tuple of three 1D arrays (ind_z, ind_y, ind_x)
     current_point = 0
     nb_points = len(nonzero_mask[0])
+    print(f'\nnumber of masked points before interpolation: {nb_points}')
 
     print(f'\nNumber of processors used: {mp.cpu_count()}')
     mp.freeze_support()
@@ -156,6 +157,7 @@ def main(parameters):
 
     pool.close()
     pool.join()  # postpones the execution of next line of code until all processes in the queue are done.
+    print(f'\nnumber of masked points after interpolation: {len(np.nonzero(mask)[0])}')
 
     ##################################################
     # plot the data and mask after the interpolation #
