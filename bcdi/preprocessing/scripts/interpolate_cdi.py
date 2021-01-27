@@ -169,8 +169,11 @@ def main(parameters):
     ##################################
     # save the updated data and mask #
     ##################################
+    print('\nSaving directory:', savedir)
+    print('Data type before saving:', data.dtype)
+    print('Mask type before saving:', mask.dtype)
     np.savez_compressed(savedir + 'centrosym_data' + comment, data=data)
-    np.savez_compressed(savedir + 'centrosym_data' + comment, mask=mask)
+    np.savez_compressed(savedir + 'centrosym_mask' + comment, mask=mask)
     plt.ioff()
     plt.show()
 
