@@ -49,8 +49,8 @@ class Detector(object):
      - 'offsets': tuple or list, sample and detector offsets corresponding to the parameter delta
        in xrayutilities hxrd.Ang2Q.area method
     """
-    def __init__(self, name, datadir=None, savedir=None, template_imagefile=None, specfile=None,
-                 roi=None, sum_roi=None, binning=(1, 1, 1), **kwargs):
+    def __init__(self, name, rootdir=None, datadir=None, savedir=None, template_file=None, template_imagefile=None,
+                 specfile=None, sample_name=None, roi=None, sum_roi=None, binning=(1, 1, 1), **kwargs):
         # the detector name should be initialized first, other properties are depending on it
         self.name = name
 
@@ -69,9 +69,12 @@ class Detector(object):
         self.binning = binning
         self.roi = roi
         self.sum_roi = sum_roi
-        # the tests on the following arguments were realized beforehand in the setup class instance
+        # parameters related to data path
+        self.rootdir = rootdir
         self.datadir = datadir
         self.savedir = savedir
+        self.sample_name = sample_name
+        self.template_file = template_file
         self.template_imagefile = template_imagefile
         self.specfile = specfile
 
@@ -97,6 +100,18 @@ class Detector(object):
         """
         counter_dict = {'Maxipix': 'mpx4inr', 'Eiger2M': 'ei2minr', 'Eiger4M': None, 'Timepix': None, 'Merlin': 'alba2'}
         return counter_dict.get(self.name, None)
+
+    @ property
+    def datadir(self):
+        """
+        Name of the data directory
+        """
+        return self._datadir
+
+    @datadir.setter
+    def datadir(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.datadir')
+        self._datadir = value
 
     @property
     def is_series(self):
@@ -224,6 +239,42 @@ class Detector(object):
         self._roi = value
 
     @property
+    def rootdir(self):
+        """
+        Name of the root directory, which englobes all scans
+        """
+        return self._rootdir
+
+    @rootdir.setter
+    def rootdir(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.rootdir')
+        self._rootdir = value
+
+    @property
+    def sample_name(self):
+        """
+        Name of the sample
+        """
+        return self._sample_name
+
+    @sample_name.setter
+    def sample_name(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.sample_name')
+        self._sample_name = value
+
+    @property
+    def savedir(self):
+        """
+        Name of the saving directory
+        """
+        return self._savedir
+
+    @savedir.setter
+    def savedir(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.savedir')
+        self._savedir = value
+
+    @property
     def scandir(self):
         """
         Path of the scan, typically it is the parent folder of the data folder
@@ -247,6 +298,30 @@ class Detector(object):
         self._sum_roi = value
 
     @property
+    def template_file(self):
+        """
+        Template that can be used to generate template_imagefile.
+        """
+        return self._template_file
+
+    @template_file.setter
+    def template_file(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.template_file')
+        self._template_file = value
+
+    @property
+    def template_imagefile(self):
+        """
+        Name of the data file.
+        """
+        return self._template_imagefile
+
+    @template_imagefile.setter
+    def template_imagefile(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.imagefile')
+        self._template_imagefile = value
+
+    @property
     def unbinned_pixel(self):
         """
         Pixel size (vertical, horizontal) of the unbinned detector in meters.
@@ -265,10 +340,11 @@ class Detector(object):
         """
         return (f"{self.__class__.__name__}(name='{self.name}', unbinned_pixel={self.unbinned_pixel}, "
                 f"nb_pixel_x={self.nb_pixel_x}, nb_pixel_y={self.nb_pixel_y}, binning={self.binning},\n"
-                f"datadir = {self.datadir},\nscandir = {self.scandir},\nsavedir = {self.savedir},\n"
-                f"template_imagefile = '{self.template_imagefile}', specfile = {self.specfile},\nroi={self.roi}, "
-                f"sum_roi={self.sum_roi}, preprocessing_binning={self.preprocessing_binning}, "
-                f"is_series={self.is_series}")
+                f"roi={self.roi}, sum_roi={self.sum_roi}, preprocessing_binning={self.preprocessing_binning}, "
+                f"is_series={self.is_series}\nrootdir = {self.rootdir},\ndatadir = {self.datadir},\n"
+                f"scandir = {self.scandir},\nsavedir = {self.savedir},\nsample_name = '{self.sample_name}',"
+                f" template_file = '{self.template_file}', " f"template_imagefile = '{self.template_imagefile}',"
+                f" specfile = {self.specfile},\n")
 
     def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
         """
