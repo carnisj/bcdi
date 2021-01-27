@@ -1044,13 +1044,13 @@ class Setup(object):
             savedir = save_dir + scan_template + save_dirname + '/'
         else:
             savedir = homedir + save_dirname + '/'
-        detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
-            savedir, datadir, specfile, template_imagefile
+        detector.rootdir, detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
+            root_folder, savedir, datadir, specfile, template_imagefile
         if create_savedir:
             pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
         if verbose:
-            print(f"datadir = '{datadir}'\nscandir = '{detector.scandir}'\nsavedir = '{savedir}'\n"
-                  f"specfile = '{specfile}'\ntemplate_imagefile = '{template_imagefile}'\n")
+            print(f"rootdir = '{root_folder}'\ndatadir = '{datadir}'\nscandir = '{detector.scandir}'\n"
+                  f"savedir = '{savedir}'\nspecfile = '{specfile}'\ntemplate_imagefile = '{template_imagefile}'\n")
 
     def orthogonalize(self, obj, initial_shape=None, voxel_size=None, width_z=None, width_y=None,
                       width_x=None, verbose=True, debugging=False, **kwargs):
