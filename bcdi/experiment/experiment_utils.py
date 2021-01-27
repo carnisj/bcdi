@@ -1126,8 +1126,11 @@ class Setup(object):
         if create_savedir:
             pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
         if verbose:
-            print(f"rootdir = '{root_folder}'\ndatadir = '{datadir}'\n"
-                  f"savedir = '{savedir}'\ntemplate_imagefile = '{template_imagefile}'\n")
+            if not self.custom_scan:
+                print(f"datadir = '{datadir}'\nsavedir = '{savedir}'\ntemplate_imagefile = '{template_imagefile}'\n")
+            else:
+                print(f"rootdir = '{root_folder}'\nsavedir = '{savedir}'\nsample_name = '{detector.sample_name}'\n"
+                      f"template_imagefile = '{detector.template_file}'\n")
 
     def orthogonalize(self, obj, initial_shape=None, voxel_size=None, width_z=None, width_y=None,
                       width_x=None, verbose=True, debugging=False, **kwargs):
