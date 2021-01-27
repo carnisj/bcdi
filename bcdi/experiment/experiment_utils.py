@@ -400,8 +400,8 @@ class Detector(object):
             raise NotImplementedError('Detector not implemented')
 
         return data, mask
-    
-    
+
+
 class Setup(object):
     """
     Class for defining the experimental geometry.
@@ -1023,8 +1023,8 @@ class Setup(object):
             raise TypeError('sample_name should be a string')
         # check that the name is not an empty string
         valid.valid_container(save_dirname, container_types=str, min_length=1, name='Setup.init_paths')
-        detector.rootdir, detector.sample_name = root_folder, sample_name
-        
+        detector.rootdir, detector.sample_name, detector.template_file = root_folder, sample_name, template_imagefile
+
         if self.beamline == 'P10':
             specfile = sample_name + '_{:05d}'.format(scan_number)
             homedir = root_folder + specfile + '/'
@@ -1050,9 +1050,8 @@ class Setup(object):
         if create_savedir:
             pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
         if verbose:
-            print(f"rootdir = '{root_folder}'\ndatadir = '{datadir}'\nscandir = '{detector.scandir}'\n"
-                  f"savedir = '{savedir}'\nsample_name = '{sample_name}'\nspecfile = '{specfile}'\n"
-                  f"template_imagefile = '{template_imagefile}'\n")
+            print(f"rootdir = '{root_folder}'\ndatadir = '{datadir}'\n"
+                  f"savedir = '{savedir}'\ntemplate_imagefile = '{template_imagefile}'\n")
 
     def orthogonalize(self, obj, initial_shape=None, voxel_size=None, width_z=None, width_y=None,
                       width_x=None, verbose=True, debugging=False, **kwargs):
@@ -1417,7 +1416,7 @@ class Setup(object):
                 q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
-                
+
         if self.beamline == 'NANOMAX':
             if verbose:
                 print('using NANOMAX geometry')
