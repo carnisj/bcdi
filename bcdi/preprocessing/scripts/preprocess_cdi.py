@@ -78,9 +78,9 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 #################################################
 # parameters used when reloading processed data #
 #################################################
-reload_previous = True  # True to resume a previous masking (load data and mask)
-reload_orthogonal = True  # True if the reloaded data is already intepolated in an orthonormal frame
-preprocessing_binning = [2, 2, 2]  # binning factors in each dimension of the binned data to be reloaded
+reload_previous = False  # True to resume a previous masking (load data and mask)
+reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
+preprocessing_binning = [1, 1, 1]  # binning factors in each dimension of the binned data to be reloaded
 ##################
 # saving options #
 ##################
@@ -113,7 +113,7 @@ specfile_name = ''
 detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
 direct_beam = (1349, 1321)  # tuple of int (vertical, horizontal): position of the direct beam in pixels, in the
 # unbinned detector. This parameter is important for gridding the data onto the laboratory frame.
-roi_detector = [direct_beam[0] - 150, direct_beam[0] + 150, direct_beam[1] - 213, direct_beam[1] + 213]
+roi_detector = [direct_beam[0] - 250, direct_beam[0] + 250, direct_beam[1] - 354, direct_beam[1] + 354]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as None to use the full detector.
 photon_threshold = 0  # data[data < photon_threshold] = 0
@@ -137,7 +137,7 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ######################################################################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = False  # True to correcture q values for the curvature of Ewald sphere
-fit_datarange = False  # if True, crop the final array within data range, avoiding areas at the corners of the window
+fit_datarange = True  # if True, crop the final array within data range, avoiding areas at the corners of the window
 # viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
 sdd = 4.95  # sample to detector distance in m, used only if use_rawdata is False
 energy = 8700  # x-ray energy in eV, used only if use_rawdata is False
@@ -323,8 +323,7 @@ kwargs['preprocessing_binning'] = preprocessing_binning
 kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 
-detector = exp.Detector(name=detector, template_imagefile=template_imagefile, roi=roi_detector,
-                        sum_roi=normalize_roi, binning=binning, **kwargs)
+detector = exp.Detector(name=detector, roi=roi_detector, sum_roi=normalize_roi, binning=binning, **kwargs)
 
 ####################
 # Initialize setup #
