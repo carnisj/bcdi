@@ -26,7 +26,7 @@ diffraction pattern.
 
 data_dir = 'D:/data/P10_August2019_CDI/test/gold_2_2_2_00022/pynx/'  # location of the data and mask
 save_dir = None  # path where to save the result, will default to datadir if None
-user_comment = '_interp_500_500_500_1_1_1'  # comment for the file name when saving, should start with _
+user_comment = '_500_500_500_1_1_1'  # comment for the file name when saving, should start with _
 origin_voxel = (250, 250, 250)  # tuple of three integers, position in pixels of the origin of reciprocal space
 plot_data = True  # True to show plots of the data and mask, before and after the interpolation
 ##################################
@@ -128,6 +128,9 @@ def main(parameters):
     nbz, nby, nbx = data.shape
     # calculate the range of pixels indices covered by the data, taking into account the origin of reciprocal space
     data_extent = (-origin[0], nbz-origin[0]-1, -origin[1], nby-origin[1]-1, -origin[2], nbx-origin[2]-1)
+    print(f'data shape: {data.shape}')
+    print(f'origin of reciprocal space: {origin}')
+    print(f'data extent: {data_extent}')
 
     ###################################################
     # plot the data and mask before the interpolation #
