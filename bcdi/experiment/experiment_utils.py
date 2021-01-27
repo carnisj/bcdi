@@ -1023,7 +1023,8 @@ class Setup(object):
             raise TypeError('sample_name should be a string')
         # check that the name is not an empty string
         valid.valid_container(save_dirname, container_types=str, min_length=1, name='Setup.init_paths')
-
+        detector.rootdir, detector.sample_name = root_folder, sample_name
+        
         if self.beamline == 'P10':
             specfile = sample_name + '_{:05d}'.format(scan_number)
             homedir = root_folder + specfile + '/'
@@ -1044,13 +1045,14 @@ class Setup(object):
             savedir = save_dir + scan_template + save_dirname + '/'
         else:
             savedir = homedir + save_dirname + '/'
-        detector.rootdir, detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
-            root_folder, savedir, datadir, specfile, template_imagefile
+        detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
+            savedir, datadir, specfile, template_imagefile
         if create_savedir:
             pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
         if verbose:
             print(f"rootdir = '{root_folder}'\ndatadir = '{datadir}'\nscandir = '{detector.scandir}'\n"
-                  f"savedir = '{savedir}'\nspecfile = '{specfile}'\ntemplate_imagefile = '{template_imagefile}'\n")
+                  f"savedir = '{savedir}'\nsample_name = '{sample_name}'\nspecfile = '{specfile}'\n"
+                  f"template_imagefile = '{template_imagefile}'\n")
 
     def orthogonalize(self, obj, initial_shape=None, voxel_size=None, width_z=None, width_y=None,
                       width_x=None, verbose=True, debugging=False, **kwargs):
