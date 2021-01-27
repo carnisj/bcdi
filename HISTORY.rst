@@ -1,6 +1,8 @@
 Version 1.0.0
 -------------
 
+* Feature: implement interpolate_cdi.py, to interpolate the intensity of masked voxels using the centrosymmetry property
+
 * Feature: implement the interpolation of the reciprocal space data in the laboratory frame using the linearized transformation matrix
 
 * Refactor: update the calculation of the transformation matrices when chi is non-zero
