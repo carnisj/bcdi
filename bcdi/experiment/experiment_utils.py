@@ -342,8 +342,8 @@ class Detector(object):
                 f"nb_pixel_x={self.nb_pixel_x}, nb_pixel_y={self.nb_pixel_y}, binning={self.binning},\n"
                 f"roi={self.roi}, sum_roi={self.sum_roi}, preprocessing_binning={self.preprocessing_binning}, "
                 f"is_series={self.is_series}\nrootdir = {self.rootdir},\ndatadir = {self.datadir},\n"
-                f"scandir = {self.scandir},\nsavedir = {self.savedir},\nsample_name = '{self.sample_name}',"
-                f" template_file = '{self.template_file}', " f"template_imagefile = '{self.template_imagefile}',"
+                f"scandir = {self.scandir},\nsavedir = {self.savedir},\nsample_name = {self.sample_name},"
+                f" template_file = {self.template_file}, template_imagefile = {self.template_imagefile},"
                 f" specfile = {self.specfile},\n")
 
     def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
