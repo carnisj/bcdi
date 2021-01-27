@@ -545,7 +545,7 @@ class Setup(object):
         else:
             if value is None:
                 value = np.ones(len(self._custom_images))
-            valid.valid_container(value, container_types=(tuple, list), length=len(self._custom_images),
+            valid.valid_container(value, container_types=(tuple, list, np.ndarray), length=len(self._custom_images),
                                   item_types=Real, name='Setup.custom_monitor')
             self._custom_monitor = value
 
