@@ -24,10 +24,10 @@ identical voxel sizes in all directions. The mask should be an array of integers
 diffraction pattern. 
 """
 
-data_dir = ''  # location of the data and mask
+data_dir = 'D:/data/P10_August2019_CDI/test/gold_2_2_2_00022/pynx/'  # location of the data and mask
 save_dir = None  # path where to save the result, will default to datadir if None
-user_comment = ''  # comment for the file name when saving, should start with _
-origin_voxel = (12, 23, 15)  # tuple of three integers, position in pixels of the origin of reciprocal space
+user_comment = '_interp_500_500_500_1_1_1'  # comment for the file name when saving, should start with _
+origin_voxel = (250, 250, 250)  # tuple of three integers, position in pixels of the origin of reciprocal space
 plot_data = True  # True to show plots of the data and mask, before and after the interpolation
 ##################################
 # end of user-defined parameters #
@@ -36,31 +36,29 @@ plot_data = True  # True to show plots of the data and mask, before and after th
 ##############################################
 # create the dictionnary of input parameters #
 ##############################################
-params = {'datadir': data_dir, 'savedir': save_dir, 'user_comment': user_comment, 'origin': origin_voxel,
+params = {'datadir': data_dir, 'savedir': save_dir, 'comment': user_comment, 'origin': origin_voxel,
           'plot': plot_data}
 
 
-def check_voxel(index, mask_array, masked_voxels, ref_voxel, datarange):
+def check_voxel(mask_index, ref_voxel, datarange):
     """
+    Check if the voxel centrosymmetric to ref_voxel belongs also to the datarange.
 
-
-    :param index:
-    :param mask_array:
-    :param masked_voxels:
-    :param ref_voxel:
-    :param datarange:
-    :return:
+    :param mask_index: tuple of three integers, indices of the masked voxel
+    :param ref_voxel: tuple of three integers, indices of the origin of reciprocal space
+    :param datarange: tuple of six integers (z_start, z_stop, y_start, y_stop, x_tart, x_stop) representing the range of
+     valid indices
+    :return: tuple (boolean, mask_index, sym_index) where boolean is True if the centrosymmetric voxel belongs to the
+     datarange and sym_index is a tuple of three integers representing it's indices.
     """
-    # position of the masked voxel
-    pos_z, pos_y, pos_x = masked_voxels[0][index], masked_voxels[1][index], masked_voxels[2][index]
     # calculate the position of the centrosymmetric voxel
-    sym_z, sym_y, sym_x = (2 * ref_voxel[0] - pos_z,
-                           2 * ref_voxel[1] - pos_y,
-                           2 * ref_voxel[2] - pos_x)
+    sym_z, sym_y, sym_x = (2 * ref_voxel[0] - mask_index[0],
+                           2 * ref_voxel[1] - mask_index[1],
+                           2 * ref_voxel[2] - mask_index[2])
 
     # check if this voxel is masked. Copy its intensity if not.
-    if util.in_range(point=(sym_z, sym_y, sym_x), extent=datarange) and not mask_array[sym_z, sym_y, sym_x]:
-        return True, (pos_z, pos_y, pos_x), (sym_z, sym_y, sym_x)
+    if util.in_range(point=(sym_z, sym_y, sym_x), extent=datarange):
+        return True, mask_index, (sym_z, sym_y, sym_x)
     return False, None, None
 
 
@@ -81,10 +79,11 @@ def main(parameters):
         nonlocal data, mask, current_point, nb_points
         current_point += 1
         if result[0]:  # True
-            data[result[1][0], result[1][1], result[1][2]] = data[result[2][0], result[2][1], result[2][2]]
-            mask[result[1][0], result[1][1], result[1][2]] = 0
+            if not mask[result[2][0], result[2][1], result[2][2]]:
+                data[result[1][0], result[1][1], result[1][2]] = data[result[2][0], result[2][1], result[2][2]]
+                mask[result[1][0], result[1][1], result[1][2]] = 0
         if (current_point % 10000) == 0:
-            sys.stdout.write('\rPoint {:d} / {:d}'.format(current_point, nb_points))
+            sys.stdout.write(f'\rPoint {current_point:d} / {nb_points:d},')
             sys.stdout.flush()
 
     ######################################
@@ -134,26 +133,25 @@ def main(parameters):
     # plot the data and mask before the interpolation #
     ###################################################
     if plot:
-        gu.multislices_plot(array=data, sum_frames=False, plot_colorbar=True, scale='log', slice_position=origin,
+        gu.multislices_plot(array=data, sum_frames=True, plot_colorbar=True, scale='log', slice_position=origin,
                             is_orthogonal=True, reciprocal_space=True, vmin=0, title='data before interpolation')
-        gu.multislices_plot(array=mask, sum_frames=False, plot_colorbar=False, scale='linear', slice_position=origin,
-                            is_orthogonal=True, reciprocal_space=True, vmin=0, vmax=1,
-                            title='mask before interpolation')
+        gu.multislices_plot(array=mask, sum_frames=True, plot_colorbar=False, scale='linear', slice_position=origin,
+                            is_orthogonal=True, reciprocal_space=True, vmin=0, title='mask before interpolation')
 
     ####################################################################################################################
     # loop over masked points to see if the centrosymmetric voxel is also masked, if not copy its intensity and unmask #
     ####################################################################################################################
-    nonzero_mask = np.nonzero(mask)  # tuple of three 1D arrays (ind_z, ind_y, ind_x)
+    ind_z, ind_y, ind_x = np.nonzero(mask)  # np.nonzero returns a tuple of three 1D arrays
     current_point = 0
-    nb_points = len(nonzero_mask[0])
+    nb_points = len(ind_z)
     print(f'\nnumber of masked points before interpolation: {nb_points}')
 
-    print(f'\nNumber of processors used: {mp.cpu_count()}')
+    print(f'number of processors used: {mp.cpu_count()}')
     mp.freeze_support()
     pool = mp.Pool(processes=mp.cpu_count())  # use this number of processes
     for idx in range(nb_points):
-        pool.apply_async(check_voxel, args=(idx, nonzero_mask, origin, data_extent), callback=collect_result,
-                         error_callback=util.catch_error)
+        pool.apply_async(check_voxel, args=((ind_z[idx], ind_y[idx], ind_x[idx]), origin, data_extent),
+                         callback=collect_result, error_callback=util.catch_error)
 
     pool.close()
     pool.join()  # postpones the execution of next line of code until all processes in the queue are done.
@@ -163,10 +161,10 @@ def main(parameters):
     # plot the data and mask after the interpolation #
     ##################################################
     if plot:
-        gu.multislices_plot(array=data, sum_frames=False, plot_colorbar=True, scale='log', slice_position=origin,
+        gu.multislices_plot(array=data, sum_frames=True, plot_colorbar=True, scale='log', slice_position=origin,
                             is_orthogonal=True, reciprocal_space=True, vmin=0, title='data after interpolation')
-        gu.multislices_plot(array=mask, sum_frames=False, plot_colorbar=False, scale='linear', slice_position=origin,
-                            is_orthogonal=True, reciprocal_space=True, vmin=0, vmax=1, title='mask after interpolation')
+        gu.multislices_plot(array=mask, sum_frames=True, plot_colorbar=False, scale='linear', slice_position=origin,
+                            is_orthogonal=True, reciprocal_space=True, vmin=0, title='mask after interpolation')
 
     ##################################
     # save the updated data and mask #
@@ -175,3 +173,7 @@ def main(parameters):
     np.savez_compressed(savedir + 'centrosym_data' + comment, mask=mask)
     plt.ioff()
     plt.show()
+
+
+if __name__ == "__main__":
+    main(parameters=params)
