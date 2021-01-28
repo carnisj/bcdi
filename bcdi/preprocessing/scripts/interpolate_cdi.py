@@ -163,13 +163,13 @@ def main(parameters):
     ##################################################
     # plot the data and mask after the interpolation #
     ##################################################
-    if plot:
-        gu.multislices_plot(array=data, sum_frames=True, plot_colorbar=True, scale='log', slice_position=origin,
-                            is_orthogonal=True, reciprocal_space=True, vmin=0, title='data after interpolation')
-        plt.savefig(savedir + 'centrosym_finalsum' + comment + '.png')
-        gu.multislices_plot(array=mask, sum_frames=True, plot_colorbar=False, scale='linear', slice_position=origin,
-                            is_orthogonal=True, reciprocal_space=True, vmin=0, title='mask after interpolation')
-        plt.savefig(savedir + 'centrosym_finalmask' + comment + '.png')
+    gu.multislices_plot(array=data, sum_frames=True, plot_colorbar=True, scale='log', slice_position=origin,
+                        is_orthogonal=True, reciprocal_space=True, vmin=0, title='data after interpolation')
+    plt.savefig(savedir + 'centrosym_finalsum' + comment + '.png')
+    gu.multislices_plot(array=mask, sum_frames=True, plot_colorbar=False, scale='linear', slice_position=origin,
+                        is_orthogonal=True, reciprocal_space=True, vmin=0, title='mask after interpolation')
+    plt.savefig(savedir + 'centrosym_finalmask' + comment + '.png')
+    
     ##################################
     # save the updated data and mask #
     ##################################
