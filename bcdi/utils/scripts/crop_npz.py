@@ -81,6 +81,7 @@ if load_mask:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the mask file",
                                            filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
     mask, _ = util.load_file(file_path)
+    mask = mask.astype(float)
     mask = pu.crop_pad(mask, output_shape=roi_size, crop_center=crop_center, debugging=debug)
     mask = pu.bin_data(mask, binning=binning, debugging=debug)
 
@@ -110,7 +111,7 @@ if load_qvalues:
     qz = qz[:numy - (numy % binning[1]):binning[1]]  # along y vertical
     qy = qy[:numx - (numx % binning[2]):binning[2]]  # along x outboard
 
-    np.savez_compressed(datadir + 'S' + str(scan) + '_cropped_qvalues_' + comment + '.npz', qx=qx, qz=qz, qy=qy)
+    np.savez_compressed(datadir + 'S' + str(scan) + '_qvalues_' + comment + '.npz', qx=qx, qz=qz, qy=qy)
 
 print('End of script')
 plt.ioff()
