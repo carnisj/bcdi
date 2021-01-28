@@ -831,9 +831,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         data[data < photon_threshold] = 0
         print("\nApplying photon threshold < ", photon_threshold)
 
-    #############################################
-    # save prepared data and mask
-    #############################################
+    ################################################
+    # check for nans and infs in the data and mask #
+    ################################################
     plt.ion()
     nz, ny, nx = np.shape(data)
     print('\nData size after masking:', nz, ny, nx)
