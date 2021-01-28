@@ -27,7 +27,8 @@ homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11009357/raw/mag_3_concat/"
 # parent folder of scans folders
 datadir = homedir  #  + 'ht_pillar3_combined/'
 crop_center = [580, 456, 580]  # center of the region of interest
-output_shape = [900, 972, 768]  # shape of the output file
+output_shape = (900, 972, 768)  # size of the region of interest to crop around crop_center, before binning
+binning = (1, 1, 1)  # binning to apply further to the cropped data
 load_mask = True  # True to load the mask and crop it
 load_qvalues = True  # True to load the q values and crop it
 is_orthogonal = True  # True if the data is in an orthogonal frame, only used for plots
@@ -52,6 +53,7 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the data file",
                                        filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
 data, _ = util.load_file(file_path)
+data = data.astype(float)
 nbz, nby, nbx = data.shape
 
 #################################################################
@@ -67,13 +69,14 @@ assert crop_center[0]+output_shape[0]//2 <= nbz and crop_center[1]+output_shape[
 # crop the data, and optionally the mask and q values #
 #######################################################
 data = pu.crop_pad(data, output_shape=output_shape, crop_center=crop_center, debugging=debug)
-comment = str(output_shape[0]) + '_' + str(output_shape[1]) + '_' + str(output_shape[2]) + comment
-np.savez_compressed(datadir + 'S' + str(scan) + '_pynx_cropped_' + comment + '.npz', data=data)
+data = pu.bin_data(data, binning=binning, debugging=debug)
+comment = f'{data.shape}_{binning}' + comment
+np.savez_compressed(datadir + 'S' + str(scan) + '_pynx' + comment + '.npz', data=data)
 
 fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
                                 title='Cropped data', is_orthogonal=is_orthogonal,
                                 reciprocal_space=reciprocal_space)
-fig.savefig(datadir + 'S' + str(scan) + '_pynx_cropped_' + comment + '.png')
+fig.savefig(datadir + 'S' + str(scan) + '_pynx' + comment + '.png')
 del data
 gc.collect()
 
@@ -81,12 +84,16 @@ if load_mask:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the mask file",
                                            filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
     mask, _ = util.load_file(file_path)
-    mask = pu.crop_pad(mask, output_shape=output_shape, crop_center=crop_center, debugging=False)
-    np.savez_compressed(datadir + 'S' + str(scan) + '_maskpynx_cropped_' + comment + '.npz', mask=mask)
+    mask = pu.crop_pad(mask, output_shape=output_shape, crop_center=crop_center, debugging=debug)
+    mask = pu.bin_data(mask, binning=binning, debugging=debug)
+
+    mask[np.nonzero(mask)] = 1
+    mask = mask.astype(int)
+    np.savez_compressed(datadir + 'S' + str(scan) + '_maskpynx' + comment + '.npz', mask=mask)
     fig, _, _ = gu.multislices_plot(mask, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     title='Cropped mask', is_orthogonal=is_orthogonal,
                                     reciprocal_space=reciprocal_space)
-    fig.savefig(datadir + 'S' + str(scan) + '_maskpynx_cropped_' + comment + '.png')
+    fig.savefig(datadir + 'S' + str(scan) + '_maskpynx' + comment + '.png')
     del mask
     gc.collect()
     
@@ -100,6 +107,12 @@ if load_qvalues:
     qx = pu.crop_pad_1d(qx, output_shape[0], crop_center=crop_center[0])  # qx along z
     qy = pu.crop_pad_1d(qy, output_shape[2], crop_center=crop_center[2])  # qy along x
     qz = pu.crop_pad_1d(qz, output_shape[1], crop_center=crop_center[1])  # qz along y
+
+    numz, numy, numx = len(qx), len(qz), len(qy)
+    qx = qx[:numz - (numz % binning[0]):binning[0]]  # along z downstream
+    qz = qz[:numy - (numy % binning[1]):binning[1]]  # along y vertical
+    qy = qy[:numx - (numx % binning[2]):binning[2]]  # along x outboard
+
     np.savez_compressed(datadir + 'S' + str(scan) + '_cropped_qvalues_' + comment + '.npz', qx=qx, qz=qz, qy=qy)
 
 print('End of script')
