@@ -74,6 +74,7 @@ fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorba
                                 title='Cropped data', is_orthogonal=is_orthogonal,
                                 reciprocal_space=reciprocal_space)
 fig.savefig(datadir + 'S' + str(scan) + '_pynx' + comment + '.png')
+plt.close(fig)
 del data
 gc.collect()
 
@@ -92,6 +93,7 @@ if load_mask:
                                     title='Cropped mask', is_orthogonal=is_orthogonal,
                                     reciprocal_space=reciprocal_space)
     fig.savefig(datadir + 'S' + str(scan) + '_maskpynx' + comment + '.png')
+    plt.close(fig)
     del mask
     gc.collect()
     
