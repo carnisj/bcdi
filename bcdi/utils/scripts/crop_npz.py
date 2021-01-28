@@ -21,13 +21,10 @@ helptext = """
 Crop a stacked 3D dataset saved in NPZ format, to the desired region of interest.
 """
 
-scan = 9999  # scan number, used in the filename when saving
-homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11009357/raw/mag_3_concat/"
-# '/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/ht_pillar3_{:05d}'.format(scan) + '/pynx/'
-# parent folder of scans folders
-datadir = homedir  #  + 'ht_pillar3_combined/'
-crop_center = [580, 456, 580]  # center of the region of interest
-output_shape = (900, 972, 768)  # size of the region of interest to crop around crop_center, before binning
+scan = 22  # scan number, used in the filename when saving
+datadir = "D:/data/P10_August2019_CDI/test/gold_2_2_2_00022/pynx/"
+crop_center = [250, 250, 250]  # center of the region of interest
+roi_size = (100, 100, 100)  # size of the region of interest to crop centered on crop_center, before binning
 binning = (1, 1, 1)  # binning to apply further to the cropped data
 load_mask = True  # True to load the mask and crop it
 load_qvalues = True  # True to load the q values and crop it
@@ -61,14 +58,14 @@ nbz, nby, nbx = data.shape
 #################################################################
 crop_center = list(crop_center or [nbz // 2, nby // 2, nbx // 2])  # if None, default to the middle of the array
 assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
-assert np.all(np.asarray(crop_center)-np.asarray(output_shape)//2 >= 0), 'crop_center incompatible with output_shape'
-assert crop_center[0]+output_shape[0]//2 <= nbz and crop_center[1]+output_shape[1]//2 <= nby\
-        and crop_center[2]+output_shape[2]//2 <= nbx, 'crop_center incompatible with output_shape'
+assert np.all(np.asarray(crop_center)-np.asarray(roi_size)//2 >= 0), 'crop_center incompatible with roi_size'
+assert crop_center[0]+roi_size[0]//2 <= nbz and crop_center[1]+roi_size[1]//2 <= nby\
+        and crop_center[2]+roi_size[2]//2 <= nbx, 'crop_center incompatible with roi_size'
 
 #######################################################
 # crop the data, and optionally the mask and q values #
 #######################################################
-data = pu.crop_pad(data, output_shape=output_shape, crop_center=crop_center, debugging=debug)
+data = pu.crop_pad(data, output_shape=roi_size, crop_center=crop_center, debugging=debug)
 data = pu.bin_data(data, binning=binning, debugging=debug)
 comment = f'{data.shape}_{binning}' + comment
 np.savez_compressed(datadir + 'S' + str(scan) + '_pynx' + comment + '.npz', data=data)
@@ -84,7 +81,7 @@ if load_mask:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the mask file",
                                            filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
     mask, _ = util.load_file(file_path)
-    mask = pu.crop_pad(mask, output_shape=output_shape, crop_center=crop_center, debugging=debug)
+    mask = pu.crop_pad(mask, output_shape=roi_size, crop_center=crop_center, debugging=debug)
     mask = pu.bin_data(mask, binning=binning, debugging=debug)
 
     mask[np.nonzero(mask)] = 1
@@ -104,9 +101,9 @@ if load_qvalues:
     qx = q_values['qx']  # 1D array
     qy = q_values['qy']  # 1D array
     qz = q_values['qz']  # 1D array
-    qx = pu.crop_pad_1d(qx, output_shape[0], crop_center=crop_center[0])  # qx along z
-    qy = pu.crop_pad_1d(qy, output_shape[2], crop_center=crop_center[2])  # qy along x
-    qz = pu.crop_pad_1d(qz, output_shape[1], crop_center=crop_center[1])  # qz along y
+    qx = pu.crop_pad_1d(qx, roi_size[0], crop_center=crop_center[0])  # qx along z
+    qy = pu.crop_pad_1d(qy, roi_size[2], crop_center=crop_center[2])  # qy along x
+    qz = pu.crop_pad_1d(qz, roi_size[1], crop_center=crop_center[1])  # qz along y
 
     numz, numy, numx = len(qx), len(qz), len(qy)
     qx = qx[:numz - (numz % binning[0]):binning[0]]  # along z downstream
