@@ -67,7 +67,7 @@ assert crop_center[0]+roi_size[0]//2 <= nbz and crop_center[1]+roi_size[1]//2 <=
 #######################################################
 data = pu.crop_pad(data, output_shape=roi_size, crop_center=crop_center, debugging=debug)
 data = pu.bin_data(data, binning=binning, debugging=debug)
-comment = f'{data.shape}_{binning}' + comment
+comment = f'{data.shape[0]}_{data.shape[0]}_{data.shape[0]}_{binning[0]}_{binning[1]}_{binning[2]}' + comment
 np.savez_compressed(datadir + 'S' + str(scan) + '_pynx' + comment + '.npz', data=data)
 
 fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
