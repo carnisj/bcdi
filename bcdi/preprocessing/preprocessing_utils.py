@@ -1875,8 +1875,9 @@ def load_background(background_file):
     """
     if background_file:
         background = np.load(background_file)
-        npz_key = background.files
-        background = background[npz_key[0]]
+        if background_file.endswith("npz"):
+            npz_key = background.files
+            background = background[npz_key[0]]
         if background.ndim != 2:
             raise ValueError('background should be a 2D array')
     else:
@@ -2367,8 +2368,9 @@ def load_flatfield(flatfield_file):
     """
     if flatfield_file:
         flatfield = np.load(flatfield_file)
-        npz_key = flatfield.files
-        flatfield = flatfield[npz_key[0]]
+        if flatfield_file.endswith("npz"):
+            npz_key = flatfield.files
+            flatfield = flatfield[npz_key[0]]
         if flatfield.ndim != 2:
             raise ValueError('flatfield should be a 2D array')
     else:
