@@ -243,7 +243,7 @@ detector = exp.Detector(name=detector, template_imagefile=template_imagefile, bi
 tilt_angle = tilt_angle * preprocessing_binning[0] * phasing_binning[0]
 setup = exp.Setup(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle, inplane_angle=inplane_angle,
                   tilt_angle=tilt_angle, rocking_angle=rocking_angle, distance=sdd, pixel_x=detector.pixelsize_x,
-                  pixel_y=detector.pixelsize_y, **{'sample_offsets': sample_offsets})
+                  pixel_y=detector.pixelsize_y, sample_offsets=sample_offsets)
 
 ########################################
 # Initialize the paths and the logfile #
