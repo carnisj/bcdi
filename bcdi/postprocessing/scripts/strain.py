@@ -362,7 +362,7 @@ gc.collect()
 ################
 phase, extent_phase = pu.unwrap(avg_obj, support_threshold=threshold_unwrap_refraction, debugging=True)
 
-print('Extent of the phase over an extended support (ceil(phase range))~ ', int(extent_phase), '(rad)')
+print('Extent of the phase over an extended support (ceil(phase range)) ~ ', int(extent_phase), '(rad)')
 phase = pru.wrap(phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 if debug:
     gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
