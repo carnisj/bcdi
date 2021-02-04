@@ -375,7 +375,8 @@ setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle,
                   beam_direction=beam_direction, sample_inplane=sample_inplane,
                   sample_outofplane=sample_outofplane, offset_inplane=offset_inplane,
                   custom_scan=custom_scan, custom_images=custom_images, sample_offsets=sample_offsets,
-                  custom_monitor=custom_monitor, custom_motors=custom_motors)
+                  custom_monitor=custom_monitor, custom_motors=custom_motors,
+                  pixel_x=detector.pixelsize_x, pixel_y=detector.pixelsize_y)
 
 #############################################
 # Initialize geometry for orthogonalization #
