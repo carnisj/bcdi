@@ -1280,7 +1280,7 @@ class Setup(object):
 
         if not isinstance(obj, np.ndarray) or obj.ndim != 3:
             raise ValueError('obj should be a 3D numpy array')
-
+        debugging = True
         # plot the original data
         if debugging:
             gu.multislices_plot(abs(obj), sum_frames=True, scale=scale, plot_colorbar=True, width_z=width_z,
@@ -1298,29 +1298,39 @@ class Setup(object):
         dq_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
         # calculate the shape of the output array
-        if method_shape == 'fix_shape':
-            nbz, nby, nbx = obj.shape
-        else:  # 'fix_sampling'
-            # calculate the direct space voxel sizes considering the current shape
-            dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(obj.shape, tilt_angle=abs(self.tilt_angle),
-                                                                        pixel_x=self.pixel_x, pixel_y=self.pixel_y)
+        nbz, nby, nbx = obj.shape
 
-            # calculate the new sizes nz, ny, nx such that the direct space voxel size is not affected by cropping
-            # the diffraction pattern during the interpolation
-            nbz = int(np.rint(2 * np.pi / (dz_realspace * dq_along_z)))
-            nby = int(np.rint(2 * np.pi / (dy_realspace * dq_along_y)))
-            nbx = int(np.rint(2 * np.pi / (dx_realspace * dq_along_x)))
+        if method_shape == 'fix_sampling':
+            # calculate the q coordinates of the data points in the laboratory frame
+            myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1),
+                                        np.arange(-nby // 2, nby // 2, 1),
+                                        np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
 
-            raise NotImplementedError('need to calculate the shape when keeping the sampling constant')
+            q_along_x = transfer_matrix[0, 0] * myx + transfer_matrix[0, 1] * myy + transfer_matrix[0, 2] * myz
+            q_along_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
+            q_along_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
 
+            nx_output = int(np.rint((q_along_x.max() - q_along_x.min()) / dq_along_x))
+            ny_output = int(np.rint((q_along_y.max() - q_along_y.min()) / dq_along_y))
+            nz_output = int(np.rint((q_along_z.max() - q_along_z.min()) / dq_along_z))
+
+            nz_output, ny_output, nx_output = smaller_primes((nz_output, ny_output, nx_output), maxprime=7,
+                                                             required_dividers=(2,))
+            del q_along_x, q_along_y, q_along_z, myx, myy, myz
+            gc.collect()
+        else:  # 'fix_shape'
+            nz_output, ny_output, nx_output = nbz, nby, nbx
+
+        print(f'interpolation method = {method_shape}:'
+              f'initial shape = ({nbz},{nby},{nbx}), output shape = ({nz_output},{ny_output},{nx_output})')
         # this assumes that the direct beam was at the center of the array
         # TODO : correct this if the position of the direct beam is provided
 
         # calculate qx qz qy vectors in 1/nm, the reference being the center of the array
         # the usual frame is used for q values: qx downstream, qz vertical up, qy outboard
-        qx = np.arange(-nbz // 2, nbz // 2, 1) * dq_along_z  # along z downstream
-        qz = np.arange(-nby // 2, nby // 2, 1) * dq_along_y  # along y vertical up
-        qy = np.arange(-nbx // 2, nbx // 2, 1) * dq_along_x  # along x outboard
+        qx = np.arange(-nz_output // 2, nz_output // 2, 1) * dq_along_z  # along z downstream
+        qz = np.arange(-ny_output // 2, ny_output // 2, 1) * dq_along_y  # along y vertical up
+        qy = np.arange(-nx_output // 2, nx_output // 2, 1) * dq_along_x  # along x outboard
 
         myz, myy, myx = np.meshgrid(qx, qz, qy, indexing='ij')
 
@@ -1736,6 +1746,78 @@ class Setup(object):
             print('voxelsize_z, voxelsize_y, voxelsize_x='
                   '({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)'.format(voxel_z, voxel_y, voxel_x))
         return voxel_z, voxel_y, voxel_x
+
+
+def primes(number):
+    """
+    Returns the prime decomposition of n as a list. Adapted from PyNX.
+
+    :param number: the integer to be decomposed
+    :return: the list of prime dividers of number
+    """
+    valid.valid_item(number, allowed_types=int, min_excluded=0, name='preprocessing_utils.primes')
+    list_primes = [1]
+    i = 2
+    while i * i <= number:
+        while number % i == 0:
+            list_primes.append(i)
+            number //= i
+        i += 1
+    if number > 1:
+        list_primes.append(number)
+    return list_primes
+
+
+def smaller_primes(number, maxprime=13, required_dividers=(4,)):
+    """
+    Find the closest integer <=n (or list/array of integers), for which the largest prime divider is <=maxprime,
+    and has to include some dividers. The default values for maxprime is the largest integer accepted
+    by the clFFT library for OpenCL GPU FFT. Adapted from PyNX.
+
+    :param number: the integer number
+    :param maxprime: the largest prime factor acceptable
+    :param required_dividers: a list of required dividers for the returned integer.
+    :return: the integer (or list/array of integers) fulfilling the requirements
+    """
+    if isinstance(number, (list, tuple, np.ndarray)):
+        vn = []
+        for i in number:
+            assert (i > 1 and maxprime <= i), "Number is < " + str(maxprime)
+            while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
+                i = i - 1
+                if i == 0:
+                    return 0
+            vn.append(i)
+        if isinstance(number, np.ndarray):
+            return np.array(vn)
+        return vn
+    else:
+        assert (number > 1 and maxprime <= number), "Number is < " + str(maxprime)
+        while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
+            number = number - 1
+            if number == 0:
+                return 0
+        return number
+
+
+def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
+    """
+    Check if the largest prime divider is <=maxprime, and optionally includes some dividers. Adapted from PyNX.
+
+    :param number: the integer number for which the prime decomposition will be checked
+    :param maxprime: the maximum acceptable prime number. This defaults to the largest integer accepted by the clFFT
+        library for OpenCL GPU FFT.
+    :param required_dividers: list of required dividers in the prime decomposition. If None, this check is skipped.
+    :return: True if the conditions are met.
+    """
+    p = primes(number)
+    if max(p) > maxprime:
+        return False
+    if required_dividers is not None:
+        for k in required_dividers:
+            if number % k != 0:
+                return False
+    return True
 
 
 class SetupPostprocessing(object):
