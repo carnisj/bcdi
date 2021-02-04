@@ -1,5 +1,5 @@
-Version 1.0.0
--------------
+Version 0.0.10
+--------------
 
 * Feature: implement interpolate_cdi.py, to interpolate the intensity of masked voxels using the centrosymmetry property
 
@@ -11,7 +11,7 @@ Version 1.0.0
 
 * Feature: implement validation functions in utils.validation.py for commonly used parameters, implement related unit tests
 
-* Refactor: merge the class SetupPostprocessing and SetupPreprocessing in a single one due to code redundances
+* Refactor: merge the class SetupPostprocessing and SetupPreprocessing in a single class Setup due to code redundances
 
 * Feature: implement linecut_diffpattern.py, a GUI to get a linecut of a 3D diffraction pattern along a desired direction
 
