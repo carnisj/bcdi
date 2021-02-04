@@ -50,8 +50,8 @@ or data[z, y, x] for real space
 """
 
 scan = 128  # spec scan number
-root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/test/"  # folder of the experiment, where all scans are stored
-save_dir = None  # images will be saved here, leave it to None otherwise (default to data directory's parent)
+root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
+save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/"  # images will be saved here, leave it to None otherwise (default to data directory's parent)
 sample_name = "PtNP1"  # "S"  # string in front of the scan number in the folder name.
 comment = ''  # comment in filenames, should start with _
 #########################################################
@@ -62,7 +62,7 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [180, 800, 800]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [168, 1024, 800]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 phasing_binning = (1, 2, 2)  # binning factor applied during phase retrieval
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension used in preprocessing (not phase retrieval)
@@ -76,7 +76,7 @@ plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the sup
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-data_frame = 'laboratory'  # 'crystal' if the data was interpolated into the crystal frame using xrayutilities
+data_frame = 'detector'  # 'crystal' if the data was interpolated into the crystal frame using xrayutilities
 # 'laboratory' if the data was interpolated into the laboratory frame using the linearized transformation matrix
 # 'detector' if the data is still in the detector frame
 isosurface_strain = 0.2  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
@@ -129,11 +129,11 @@ correct_absorption = False  # True for correcting the amplitude for absorption
 optical_path_method = 'threshold'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove only outer layers even if
 # the amplitude is lower than isosurface_strain inside the crystal
-dispersion = 4.1184E-05  # delta
-# Pt:  3.0761E-05 @ 10300eV
+dispersion = 5.0328E-05  # delta
+# Pt:  3.0761E-05 @ 10300eV, 5.0328E-05 @ 8170eV
 # 3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994eV, 5.2647E-05 @ 7994eV, 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
-absorption = 3.4298E-06  # beta
-# Pt:  2.0982E-06 @ 10300eV
+absorption = 4.8341E-06  # beta
+# Pt:  2.0982E-06 @ 10300eV, 4.8341E-06 @ 8170eV
 # 2.3486E-06 @ 9994eV, 3.4298E-06 @ 8994eV, 5.2245E-06 @ 7994eV, 4.1969E-06 @ 8500eV
 threshold_unwrap_refraction = 0.05  # threshold used to calculate the optical path
 # the threshold for refraction/absorption corrections should be low, to correct for an object larger than the real one,
@@ -151,7 +151,7 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (0, -1, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
@@ -754,7 +754,7 @@ gc.collect()
 #######################
 pixel_spacing = [tick_spacing / vox for vox in voxel_size]
 print(f'Phase extent before and after thresholding: {phase.max()-phase.min():.2f},'
-      f'{phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min()}:.2f')
+      f'{phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min():.2f}')
 piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
 print(f'phase.max() = {phase[np.nonzero(bulk)].max():.2f} at voxel ({piz}, {piy}, {pix})')
 strain[bulk == 0] = np.nan
