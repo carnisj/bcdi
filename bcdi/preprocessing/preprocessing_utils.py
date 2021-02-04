@@ -1266,7 +1266,6 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
     if mask.ndim != 3:
         raise ValueError('mask is expected to be a 3D array')
 
-    numz, numy, numx = data.shape
     print('Gridding the data using the linearized matrix, the result will be in the laboratory frame')
     string = 'linmat_reciprocal_space_'
     interp_data, q_values = \
@@ -1292,6 +1291,7 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
                      detector.preprocessing_binning[1] * detector.binning[1],
                      detector.preprocessing_binning[2] * detector.binning[2])
 
+    numz, numy, numx = interp_data.shape
     plot_comment = '_' + str(numz) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
                    str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
 
