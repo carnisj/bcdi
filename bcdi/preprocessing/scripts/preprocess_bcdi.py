@@ -129,7 +129,7 @@ specfile_name = ''
 detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 x_bragg = 1355  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 y_bragg = 796  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg - 400, y_bragg + 400, x_bragg - 400, x_bragg + 400]
+roi_detector = [y_bragg - 300, y_bragg + 300, x_bragg - 300, x_bragg + 300]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -567,7 +567,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             else:  # 'linearization'
                 data, mask, q_values = \
                     pru.grid_bcdi_labframe(data=data, mask=mask, detector=detector, setup=setup,
-                                           debugging=debug, follow_bragg=follow_bragg)
+                                           debugging=debug, follow_bragg=follow_bragg, method_shape='fix_sampling')
             nz, ny, nx = data.shape
             print('\nData size after interpolation into an orthonormal frame:', nz, ny, nx)
 
