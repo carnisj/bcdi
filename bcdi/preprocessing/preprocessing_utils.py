@@ -5,12 +5,12 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
-import datetime
-import fabio
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
+import datetime
+import fabio
 import h5py
 import matplotlib.pyplot as plt
 import multiprocessing as mp
@@ -1255,7 +1255,7 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'method_shape', 'follow_bragg'},
                        name='preprocessing_utils.grid_bcdi_labframe')
-    method_shape = kwargs.get('method_shape', 'fix_shape')
+    method_shape = kwargs.get('method_shape', 'fix_sampling')  # 'fix_shape')
     valid.valid_item(value=method_shape, allowed_types=str, name='preprocessing_utils.grid_bcdi_labframe')
     follow_bragg = kwargs.get('follow_bragg', False)
     valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.grid_bcdi_labframe')
@@ -1270,13 +1270,11 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
     print('Gridding the data using the linearized matrix, the result will be in the laboratory frame')
     string = 'linmat_reciprocal_space_'
     interp_data, q_values = \
-        setup.ortho_reciprocal(obj=data, detector=detector, method_shape=method_shape, verbose=True,
-                               debugging=debugging)
+        setup.ortho_reciprocal(obj=data, method_shape=method_shape, verbose=True, debugging=debugging)
     qx, qz, qy = q_values
 
     interp_mask, _ = \
-        setup.ortho_reciprocal(obj=mask, detector=detector, method_shape=method_shape, verbose=False,
-                               debugging=debugging, scale='linear')
+        setup.ortho_reciprocal(obj=mask, method_shape=method_shape, verbose=False, debugging=debugging, scale='linear')
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
