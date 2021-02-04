@@ -1280,7 +1280,7 @@ class Setup(object):
 
         if not isinstance(obj, np.ndarray) or obj.ndim != 3:
             raise ValueError('obj should be a 3D numpy array')
-        debugging = True
+
         # plot the original data
         if debugging:
             gu.multislices_plot(abs(obj), sum_frames=True, scale=scale, plot_colorbar=True, width_z=width_z,
