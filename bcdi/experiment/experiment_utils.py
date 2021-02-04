@@ -1189,8 +1189,7 @@ class Setup(object):
                       str('{:.2f}'.format(pixel_x * 1e6)), 'um)')
 
             # sanity check, the direct space voxel sizes calculated below should be equal to the original ones
-            dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes((nbz, nby, nbx),
-                                                                        tilt_angle=abs(tilt),
+            dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes((nbz, nby, nbx), tilt_angle=abs(tilt),
                                                                         pixel_x=pixel_x, pixel_y=pixel_y)
             if verbose:
                 print('Sanity check, recalculated direct space voxel sizes: (',
@@ -1241,12 +1240,11 @@ class Setup(object):
                                 title=title+' in the orthogonal laboratory frame')
         return ortho_obj, voxel_size
 
-    def ortho_reciprocal(self, obj, detector, method_shape='fix_sampling', verbose=True, debugging=False, **kwargs):
+    def ortho_reciprocal(self, obj, method_shape='fix_sampling', verbose=True, debugging=False, **kwargs):
         """
         Interpolate obj in the orthogonal laboratory frame (z/qx downstream, y/qz vertical up, x/qy outboard).
 
         :param obj: reciprocal space diffraction pattern, in the detector frame
-        :param detector: instance of the Class experiment_utils.Detector()
         :param method_shape: if 'fix_shape', the output array will have the same shape as the input array.
          If 'fix_sampling', the ouput shape will be increased in order to keep the sampling in q in each direction.
         :param verbose: True to have printed comments
@@ -1291,49 +1289,57 @@ class Setup(object):
 
         # calculate the transformation matrix (the unit is 1/nm)
         transfer_matrix, q_offset = self.transformation_matrix(array_shape=obj.shape, tilt_angle=self.tilt_angle,
-                                                               direct_space=False, pixel_x=detector.pixelsize_x,
-                                                               pixel_y=detector.pixelsize_y, verbose=verbose)
+                                                               direct_space=False, pixel_x=self.pixel_x,
+                                                               pixel_y=self.pixel_y, verbose=verbose)
+
+        # the voxel size in q in given by the rows of the transformation matrix (the unit is 1/nm)
+        dq_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
+        dq_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
+        dq_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
         # calculate the shape of the output array
         if method_shape == 'fix_shape':
             nbz, nby, nbx = obj.shape
-
-            # this assumes that the direct beam was at the center of the array
-            # TODO : correct this if the position of the direct beam is provided
-
-            # the voxel size in q in given by the rows of the transformation matrix (the unit is 1/nm)
-            dq_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
-            dq_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
-            dq_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
-
-            # calculate qx qz qy vectors in 1/nm, the reference being the center of the array
-            # the usual frame is used for q values: qx downstream, qz vertical up, qy outboard
-            qx = np.arange(-nbz // 2, nbz // 2, 1) * dq_along_z  # along z downstream
-            qz = np.arange(-nby // 2, nby // 2, 1) * dq_along_y  # along y vertical up
-            qy = np.arange(-nbx // 2, nbx // 2, 1) * dq_along_x  # along x outboard
-
-            myz, myy, myx = np.meshgrid(qx, qz, qy, indexing='ij')
-
-            # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
-            # in RGI, we want to calculate the coordinates that would have a grid of the laboratory frame expressed in
-            # the detector frame, i.e. one has to inverse the transformation matrix.
-            transfer_imatrix = np.linalg.inv(transfer_matrix)
-            new_x = transfer_imatrix[0, 0] * myx + transfer_imatrix[0, 1] * myy + transfer_imatrix[0, 2] * myz
-            new_y = transfer_imatrix[1, 0] * myx + transfer_imatrix[1, 1] * myy + transfer_imatrix[1, 2] * myz
-            new_z = transfer_imatrix[2, 0] * myx + transfer_imatrix[2, 1] * myy + transfer_imatrix[2, 2] * myz
-            del myx, myy, myz
-            gc.collect()
-
-            rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
-                                           np.arange(-nbx // 2, nbx // 2)), obj, method='linear',
-                                          bounds_error=False, fill_value=0)
-            ortho_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                            new_x.reshape((1, new_z.size)))).transpose())
-            ortho_obj = ortho_obj.reshape((len(qx), len(qz), len(qy))).astype(obj.dtype)
-
         else:  # 'fix_sampling'
-            # need to calculate the sampling in each dimension
+            # calculate the direct space voxel sizes considering the current shape
+            dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(obj.shape, tilt_angle=abs(self.tilt_angle),
+                                                                        pixel_x=self.pixel_x, pixel_y=self.pixel_y)
+
+            # calculate the new sizes nz, ny, nx such that the direct space voxel size is not affected by cropping
+            # the diffraction pattern during the interpolation
+            nbz = int(np.rint(2 * np.pi / (dz_realspace * dq_along_z)))
+            nby = int(np.rint(2 * np.pi / (dy_realspace * dq_along_y)))
+            nbx = int(np.rint(2 * np.pi / (dx_realspace * dq_along_x)))
+
             raise NotImplementedError('need to calculate the shape when keeping the sampling constant')
+
+        # this assumes that the direct beam was at the center of the array
+        # TODO : correct this if the position of the direct beam is provided
+
+        # calculate qx qz qy vectors in 1/nm, the reference being the center of the array
+        # the usual frame is used for q values: qx downstream, qz vertical up, qy outboard
+        qx = np.arange(-nbz // 2, nbz // 2, 1) * dq_along_z  # along z downstream
+        qz = np.arange(-nby // 2, nby // 2, 1) * dq_along_y  # along y vertical up
+        qy = np.arange(-nbx // 2, nbx // 2, 1) * dq_along_x  # along x outboard
+
+        myz, myy, myx = np.meshgrid(qx, qz, qy, indexing='ij')
+
+        # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
+        # in RGI, we want to calculate the coordinates that would have a grid of the laboratory frame expressed in
+        # the detector frame, i.e. one has to inverse the transformation matrix.
+        transfer_imatrix = np.linalg.inv(transfer_matrix)
+        new_x = transfer_imatrix[0, 0] * myx + transfer_imatrix[0, 1] * myy + transfer_imatrix[0, 2] * myz
+        new_y = transfer_imatrix[1, 0] * myx + transfer_imatrix[1, 1] * myy + transfer_imatrix[1, 2] * myz
+        new_z = transfer_imatrix[2, 0] * myx + transfer_imatrix[2, 1] * myy + transfer_imatrix[2, 2] * myz
+        del myx, myy, myz
+        gc.collect()
+
+        rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
+                                       np.arange(-nbx // 2, nbx // 2)), obj, method='linear',
+                                      bounds_error=False, fill_value=0)
+        ortho_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                        new_x.reshape((1, new_z.size)))).transpose())
+        ortho_obj = ortho_obj.reshape((len(qx), len(qz), len(qy))).astype(obj.dtype)
 
         # add the offset due to the detector angles to qx qz qy vectors, convert them to 1/A
         # the offset components are in the order (x/qy, y/qz, z/qx)
