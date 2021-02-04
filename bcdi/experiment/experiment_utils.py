@@ -1194,7 +1194,7 @@ class Setup(object):
                                                                         pixel_x=pixel_x, pixel_y=pixel_y)
             if verbose:
                 print('Sanity check, recalculated direct space voxel sizes: (',
-                      str('{:.2f}'.format(dz_realspace)), ' nm,',
+                      str('{:.2f}'.format(dz_realspace)), 'nm,',
                       str('{:.2f}'.format(dy_realspace)), 'nm,',
                       str('{:.2f}'.format(dx_realspace)), 'nm )')
         else:
@@ -1301,7 +1301,7 @@ class Setup(object):
             # this assumes that the direct beam was at the center of the array
             # TODO : correct this if the position of the direct beam is provided
 
-            # the voxel size in q in given by the lines of the transformation matrix (the unit is 1/nm)
+            # the voxel size in q in given by the rows of the transformation matrix (the unit is 1/nm)
             dq_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
             dq_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
             dq_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
@@ -1697,18 +1697,19 @@ class Setup(object):
         valid.valid_container(array_shape, container_types=(tuple, list), length=3, item_types=int,
                               min_excluded=0, name='Setup.voxel_sizes')
 
-        transfer_matrix, _ = self.transformation_matrix(array_shape=array_shape, tilt_angle=tilt_angle,
-                                                        direct_space=False, pixel_x=pixel_x, pixel_y=pixel_y,
-                                                        verbose=verbose)
+        transfer_matrix = self.transformation_matrix(array_shape=array_shape, tilt_angle=tilt_angle,
+                                                     direct_space=True, pixel_x=pixel_x, pixel_y=pixel_y,
+                                                     verbose=verbose)
+        # transfer_matrix is the transformation matrix of the direct space coordinates (its columns are the
+        # non-orthogonal basis vectors reciprocal to the detector frame)
+        # the spacing in the laboratory frame is therefore given by the rows of the matrix
+        dx = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
+        dy = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
+        dz = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
-        q_range_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
-        q_range_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
-        q_range_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
         if verbose:
-            print(f'q_range_z, q_range_y, q_range_x = ({q_range_z:.5f}, {q_range_y:.5f}, {q_range_x:.5f}) (1/nm)')
-            print(f'Direct space voxel size (z, y, x) = '
-                  f'({2 * np.pi / q_range_z:.2f}, {2 * np.pi / q_range_y:.2f}, {2 * np.pi / q_range_x:.2f}) (nm)')
-        return 2 * np.pi / q_range_z, 2 * np.pi / q_range_y, 2 * np.pi / q_range_x
+            print(f'Direct space voxel size (z, y, x) = ({dz:.2f}, {dy:.2f}, {dx:.2f}) (nm)')
+        return dz, dy, dx
 
     def voxel_sizes_detector(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
