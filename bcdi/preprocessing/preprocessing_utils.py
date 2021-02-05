@@ -3351,7 +3351,7 @@ def motor_positions_sixs(logfile, setup, **kwargs):
             try:
                 beta = logfile.beta[0]  # not scanned
             except AttributeError:  # the alias dictionnary was probably not provided
-                beta = logfile.pitch[0]  # not scanned
+                beta = 0
 
         temp_mu = logfile.mu[:]
         if frames_logical is None:
@@ -3363,8 +3363,6 @@ def motor_positions_sixs(logfile, setup, **kwargs):
                 mu[idx - nb_overlap] = temp_mu[idx]
             else:
                 nb_overlap = nb_overlap + 1
-
-        beta = -1 * beta  # beta is rotation in the opposite direction  # TODO correct the transformation matrices
     else:
         beta = setup.custom_motors["beta"]
         delta = setup.custom_motors["delta"]
