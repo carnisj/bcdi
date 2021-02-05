@@ -1250,6 +1250,7 @@ class Setup(object):
         :param verbose: True to have printed comments
         :param debugging: True to show plots before and after interpolation
         :param kwargs:
+         - 'fill_value': fill_value parameter for the RegularGridInterpolator
          - 'title': title for the debugging plots
          - 'scale': 'linear' or 'log', scale for the debugging plots
          - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
@@ -1258,8 +1259,10 @@ class Setup(object):
         :return: object interpolated on an orthogonal grid, q values as a tuple of three 1D vectors (qx, qz, qy)
         """
         # check and load kwargs
-        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'title', 'scale', 'width_z', 'width_y', 'width_x'},
+        valid.valid_kwargs(kwargs=kwargs,
+                           allowed_kwargs={'fill_value', 'title', 'scale', 'width_z', 'width_y', 'width_x'},
                            name='Setup.orthogonalize')
+        fill_value = kwargs.get('fill_value', 0)
         title = kwargs.get('title', 'Object')
         valid.valid_item(value=title, allowed_types=str, name='Setup.ortho_reciprocal')
         scale = kwargs.get('scale', 'log')
@@ -1346,7 +1349,7 @@ class Setup(object):
 
         rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
                                        np.arange(-nbx // 2, nbx // 2)), obj, method='linear',
-                                      bounds_error=False, fill_value=0)
+                                      bounds_error=False, fill_value=fill_value)
         ortho_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                         new_x.reshape((1, new_z.size)))).transpose())
         ortho_obj = ortho_obj.reshape((len(qx), len(qz), len(qy))).astype(obj.dtype)
