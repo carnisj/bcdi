@@ -3363,6 +3363,8 @@ def motor_positions_sixs(logfile, setup, **kwargs):
                 mu[idx - nb_overlap] = temp_mu[idx]
             else:
                 nb_overlap = nb_overlap + 1
+
+        beta = -1 * beta  # beta is rotation in the opposite direction  # TODO correct the transformation matrices
     else:
         beta = setup.custom_motors["beta"]
         delta = setup.custom_motors["delta"]
