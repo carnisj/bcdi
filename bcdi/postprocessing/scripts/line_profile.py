@@ -92,25 +92,9 @@ result = dict()
 result['direction'] = direction
 for point in points:
     # get the indices of all voxels belonging to the linecut
-    indices = util.linecut(array_shape=obj.shape, point=point, direction=direction, voxel_size=voxel_size)
-    # indices is a tuple of ndim ndarrays that can be used to directly slice obj
-
-    cut_points = len(indices[0])
-    x_axis = []
-    for idx in range(cut_points):
-        if ndim == 2:
-            distance = np.sqrt(((indices[0][idx]-indices[0][0]) * voxel_size[0]) ** 2 +
-                               ((indices[1][idx]-indices[1][0]) * voxel_size[1]) ** 2)
-        else:  # 3D
-            distance = np.sqrt(((indices[0][idx]-indices[0][0]) * voxel_size[0]) ** 2 +
-                               ((indices[1][idx]-indices[1][0]) * voxel_size[1]) ** 2 +
-                               ((indices[2][idx]-indices[2][0]) * voxel_size[2]) ** 2)
-        x_axis.append(distance)
-
-    cut = obj[indices]  # cut is now 1D
-
+    distance, cut = util.linecut(array=obj, point=point, direction=direction, voxel_size=voxel_size)
     # store the result in a dictionnary (cuts can have different lengths depending on the direction)
-    result[point] = x_axis, cut
+    result[point] = distance, cut
 
 ##############################
 # save and plot the linecuts #
