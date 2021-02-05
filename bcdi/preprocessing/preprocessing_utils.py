@@ -2822,6 +2822,8 @@ def load_sixs_data(logfile, beamline, detector, flatfield=None, hotpixels=None, 
     if beamline == 'SIXS_2018':
         tmp_data = logfile.mfilm[:]
     else:
+        if detector.name == 'Merlin':
+            tmp_data = logfile.merlin[:]
         try:
             tmp_data = logfile.mpx_image[:]
         except AttributeError:
