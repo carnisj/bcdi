@@ -27,6 +27,8 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
     :param allow_none: True if the container items are allowed to be None
     :param name: name of the calling object appearing in exception messages
     """
+    supported_containers = {list, tuple, set, str, np.ndarray}
+    
     # check the validity of the requirements
     if container_types is None:
         raise ValueError('at least one type must be specified for the container')
@@ -34,7 +36,7 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
         container_types = (container_types,)
     if not all(isinstance(val, type) for val in container_types):
         raise TypeError('container_types should be a collection of valid types')
-    if not all(val in {list, tuple, set, str, np.ndarray} for val in container_types):
+    if not all(val in supported_containers for val in container_types):
         raise TypeError(f'non supported container type {container_types}')
 
     if length is not None:
