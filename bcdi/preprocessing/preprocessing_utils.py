@@ -2819,18 +2819,19 @@ def load_sixs_data(logfile, beamline, detector, flatfield=None, hotpixels=None, 
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     """
 
-    if beamline == 'SIXS_2018':
-        tmp_data = logfile.mfilm[:]
-    else:
-        if detector.name == 'Merlin':
-            tmp_data = logfile.merlin[:]
-        try:
-            tmp_data = logfile.mpx_image[:]
-        except AttributeError:
+    if detector.name == 'Merlin':
+        tmp_data = logfile.merlin[:]
+    else:  # Maxipix
+        if beamline == 'SIXS_2018':
+            tmp_data = logfile.mfilm[:]
+        else:
             try:
-                tmp_data = logfile.maxpix[:]
-            except AttributeError:  # the alias dictionnary was probably not provided
-                tmp_data = logfile.image[:]
+                tmp_data = logfile.mpx_image[:]
+            except AttributeError:
+                try:
+                    tmp_data = logfile.maxpix[:]
+                except AttributeError:  # the alias dictionnary was probably not provided
+                    tmp_data = logfile.image[:]
 
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
     frames_logical = np.ones(tmp_data.shape[0])
