@@ -117,7 +117,9 @@ custom_scan = False  # set it to True for a stack of images acquired without sca
 custom_images = [3]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan, None otherwise
 custom_monitor = np.ones(51)  # monitor values for normalization for the custom_scan, None otherwise
 
-rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
+rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
+# around y vertical up, "energy"
+
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ''
 # template for ID01: name of the spec file without '.spec'
@@ -156,7 +158,7 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 interp_method = 'linearization'  # 'xrayutilities' or 'linearization'
-beam_direction = (1, 0, 0)  # beam direction in the frame (downstream, vertical up, outboard)
+beam_direction = (1, 0, 0)  # beam direction in the laboratory frame (downstream, vertical up, outboard)
 sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
 sdd = 1.83  # in m, sample to detector distance in m
@@ -173,10 +175,10 @@ custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta":
 #######################################################################################################
 # parameters when orthogonalizing the data before phasing  using the linearized transformation matrix #
 #######################################################################################################
-outofplane_angle = None  # out of plane detector angle (typically delta) in deg, corrected for the direct beam position.
-# Leave None to use the uncorrected position.
-inplane_angle = None  # inplane detector angle (typically gamma) in deg, corrected for the direct beam position.
-# Leave None to use the uncorrected position.
+outofplane_angle = None  # detector angle in deg (rotation around x outboard, typically delta),
+# corrected for the direct beam position. Leave None to use the uncorrected position.
+inplane_angle = None  # detector angle in deg(rotation around y vertical up, typically gamma),
+# corrected for the direct beam position. Leave None to use the uncorrected position.
 #########################################################################
 # parameters for xrayutilities to orthogonalize the data before phasing #
 #########################################################################
