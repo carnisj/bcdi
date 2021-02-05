@@ -93,13 +93,14 @@ centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max th
 ######################################
 beamline = "P10"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
-rocking_angle = "outofplane"  # "outofplane" or "inplane", does not matter for energy scan
+rocking_angle = "outofplane"  # # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
+# around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
 sdd = 1.83  # 1.26  # sample to detector distance in m
 energy = 8170  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
-outofplane_angle = 39.0870  # detector delta ID01, delta SIXS, gamma 34ID
-inplane_angle = -1.0270  # detector nu ID01, gamma SIXS, tth 34ID
+outofplane_angle = 39.0870  # detector angle in deg (rotation around x outboard): delta ID01, delta SIXS, gamma 34ID
+inplane_angle = -1.0270  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
 tilt_angle = 0.00783  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # the sample offsets will be subtracted to the motor values
