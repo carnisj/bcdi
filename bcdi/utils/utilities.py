@@ -9,6 +9,7 @@
 import os
 import ctypes
 import h5py
+from numbers import Real
 import numpy as np
 from scipy.special import erf
 from scipy.interpolate import interp1d
@@ -18,6 +19,7 @@ import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.validation as valid
 
 
 def catch_error(exception):
@@ -230,6 +232,51 @@ def is_numeric(string):
         return True
     except ValueError:
         return False
+
+
+def linecut(array, point, direction, voxel_size=1):
+    """
+    Calculate the indices
+
+    :param array:
+    :param point:
+    :param direction:
+    :param voxel_size:
+    :return:
+    """
+    # check parameters
+    ndim = array.ndim
+    if ndim not in {2, 3}:
+        raise ValueError(f'Number of dimensions = {ndim}, expected 2 or 3')
+    valid.valid_container(direction, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
+                          name='utilities.linecut')
+    valid.valid_container(point, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
+                          min_included=0, name='utilities.linecut')
+    if isinstance(voxel_size, Real):
+        voxel_size = (voxel_size,) * ndim
+    valid.valid_container(voxel_size, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
+                          min_excluded=0, name='utilities.linecut')
+
+    # calculate the indices of the voxels belonging to the linecut
+    # TODO: implement the calculation of indices
+    indices = []
+
+    # indices is a tuple of ndim ndarrays that can be used to directly slice obj
+    cut = array[indices]  # cut is now 1D
+
+    cut_points = len(cut)
+    x_axis = []
+    for idx in range(cut_points):
+        if ndim == 2:
+            distance = np.sqrt(((indices[0][idx]-indices[0][0]) * voxel_size[0]) ** 2 +
+                               ((indices[1][idx]-indices[1][0]) * voxel_size[1]) ** 2)
+        else:  # 3D
+            distance = np.sqrt(((indices[0][idx]-indices[0][0]) * voxel_size[0]) ** 2 +
+                               ((indices[1][idx]-indices[1][0]) * voxel_size[1]) ** 2 +
+                               ((indices[2][idx]-indices[2][0]) * voxel_size[2]) ** 2)
+        x_axis.append(distance)
+
+    return x_axis, cut
 
 
 def load_file(file_path, fieldname=None):
