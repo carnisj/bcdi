@@ -29,6 +29,21 @@ def catch_error(exception):
     print(exception)
 
 
+def dos2unix(input_file, output_file):
+    """
+    Convert DOS linefeeds (crlf) to UNIX (lf).
+
+    :param input_file: the original filename (absolute path)
+    :param output_file: the output filename (absolute path) where to save
+    """
+
+    with open(input_file, 'rb') as infile:
+        content = infile.read()
+    with open(output_file, 'wb') as output:
+        for line in content.splitlines():
+            output.write(line + str.encode('\n'))
+
+
 def find_nearest(reference_array, test_values, width=None):
     """
     Find the indices where original_array is nearest to array_values.
