@@ -269,7 +269,7 @@ def linecut(array, point, direction, direction_basis='voxel', voxel_size=1):
     # normalize the vector direction, eventually correct it for anisotropic voxel sizes
     if direction_basis == 'orthonormal':
         direction = [direction[i] * voxel_size[i] for i in range(3)]
-    direction = np.linalg.norm(direction)
+    direction = direction / np.linalg.norm(direction)
 
     # initialize parameters
     ind_z = []
