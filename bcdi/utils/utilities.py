@@ -234,39 +234,88 @@ def is_numeric(string):
         return False
 
 
-def linecut(array, point, direction, voxel_size=1):
+def linecut(array, point, direction, direction_basis='voxel', voxel_size=1):
     """
-    Calculate the indices
+    Calculate the linecut through a 2D or 3D array in some direction passing by a point.
 
-    :param array:
-    :param point:
-    :param direction:
-    :param voxel_size:
-    :return:
+    :param array: 2D or 3D numpy array from which the linecut will be extracted
+    :param point: tuple of three integral indices, point by which the linecut pass.
+    :param direction: list of three vector components, direction of the linecut in units of pixels
+    :param direction_basis: 'orthonormal' if the vector direction is expressed in an orthonormal basis. In that case it
+     will be corrected for the different voxel sizes in each direction. 'voxel' if direction is expressed in the
+     non-orthonormal basis defined by the voxel sizes in each direction.
+    :param voxel_size: real positive number or tuple of three real positive numbers representing the voxel size in each
+     dimension.
+    :return: distances (1D array, distance along the linecut in the unit given by voxel_size) and cut (1D array,
+     linecut through array in direction passing by point)
     """
     # check parameters
     ndim = array.ndim
     if ndim not in {2, 3}:
         raise ValueError(f'Number of dimensions = {ndim}, expected 2 or 3')
-    valid.valid_container(direction, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
+    nbz, nby, nbx = array.shape
+    valid.valid_container(direction, container_types=(list, np.ndarray), length=ndim, item_types=Real,
                           name='utilities.linecut')
-    valid.valid_container(point, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
+    valid.valid_container(point, container_types=(list, tuple, np.ndarray), length=ndim, item_types=int,
                           min_included=0, name='utilities.linecut')
+    if direction_basis not in {'orthonormal', 'voxel'}:
+        raise ValueError(f'unknown value {direction_basis} for direction_basis, allowed are "voxel" and "orthonormal"')
     if isinstance(voxel_size, Real):
         voxel_size = (voxel_size,) * ndim
     valid.valid_container(voxel_size, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
                           min_excluded=0, name='utilities.linecut')
 
-    # calculate the indices of the voxels belonging to the linecut
-    # TODO: implement the calculation of indices
-    indices = []
+    # normalize the vector direction, eventually correct it for anisotropic voxel sizes
+    if direction_basis == 'orthonormal':
+        direction = [direction[i] * voxel_size[i] for i in range(3)]
+    direction = np.linalg.norm(direction)
 
+    # initialize parameters
+    ind_z = []
+    ind_y = []
+    ind_x = []
+    # calculate the indices of the voxels on one side of the linecut
+    go_on = True
+    n = 1
+    while go_on:
+        next_point = (int(np.rint(point[0]-n*direction[0])),
+                      int(np.rint(point[1]-n*direction[1])),
+                      int(np.rint(point[2]-n*direction[2])))
+        go_on = in_range(next_point, (0, nbz-1, 0, nby-1, 0, nbx-1))
+        if go_on:
+            ind_z.append(next_point[0])
+            ind_y.append(next_point[1])
+            ind_x.append(next_point[2])
+            n += 1
+    # flip the indices so that the increasing direction is consistent with the second half of the linecut
+    ind_z = ind_z[::-1]
+    ind_y = ind_y[::-1]
+    ind_x = ind_x[::-1]
+    # append the point by which the linecut pass
+    ind_z.append(point[0])
+    ind_y.append(point[1])
+    ind_x.append(point[2])
+    # calculate the indices of the voxels on the other side of the linecut
+    go_on = True
+    n = 1
+    while go_on:
+        next_point = (int(np.rint(point[0]+n*direction[0])),
+                      int(np.rint(point[1]+n*direction[1])),
+                      int(np.rint(point[2]+n*direction[2])))
+        go_on = in_range(next_point, (0, nbz-1, 0, nby-1, 0, nbx-1))
+        if go_on:
+            ind_z.append(next_point[0])
+            ind_y.append(next_point[1])
+            ind_x.append(next_point[2])
+            n += 1
+
+    indices = ind_z, ind_y, ind_x
     # indices is a tuple of ndim ndarrays that can be used to directly slice obj
     cut = array[indices]  # cut is now 1D
 
-    cut_points = len(cut)
-    x_axis = []
-    for idx in range(cut_points):
+    # calculate the distance along the linecut given the voxel size
+    distances = []
+    for idx in range(len(cut)):
         if ndim == 2:
             distance = np.sqrt(((indices[0][idx]-indices[0][0]) * voxel_size[0]) ** 2 +
                                ((indices[1][idx]-indices[1][0]) * voxel_size[1]) ** 2)
@@ -274,9 +323,9 @@ def linecut(array, point, direction, voxel_size=1):
             distance = np.sqrt(((indices[0][idx]-indices[0][0]) * voxel_size[0]) ** 2 +
                                ((indices[1][idx]-indices[1][0]) * voxel_size[1]) ** 2 +
                                ((indices[2][idx]-indices[2][0]) * voxel_size[2]) ** 2)
-        x_axis.append(distance)
+        distances.append(distance)
 
-    return x_axis, cut
+    return np.asarray(distances), cut
 
 
 def load_file(file_path, fieldname=None):
