@@ -30,7 +30,7 @@ threshold = 0.2  # modulus threshold defining the normalized object from the bac
 binary = True  # True in order to perform the linecuts on a support (0 or 1) created from the thresholded object
 direction = (0, 1, 0)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D) defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-points = {(1, 2, 3)}  # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
+points = {(25, 26, 24)}  # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 comment = ''  # string to add to the filename when saving
@@ -84,6 +84,7 @@ savedir = savedir or datadir
 obj = abs(obj) / abs(obj).max()  # normalize the modulus to 1
 obj[np.isnan(obj)] = 0  # remove nans
 obj[obj < threshold] = 0
+gu.multislices_plot(array=obj, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
 
 #####################################
 # create the linecut for each point #
@@ -102,11 +103,14 @@ for point in points:
 fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 plot_nb = 0
-for point, (x_axis, cut) in result.items():
-    col = colors[plot_nb % len(colors)]
-    line, = ax.plot(x_axis, cut, colors[col])
-    line.set_label(f'{point}')
-    plot_nb += 1
+for key, value in result.items():
+    if key != 'direction':
+        line, = ax.plot(value[0], value[1], color=colors[plot_nb % len(colors)],
+                        marker='.', markersize=10, linestyle='-', linewidth=1)
+        line.set_label(f'cut through voxel {key}')
+        plot_nb += 1
+    else:
+        ax.set_title(f'Linecut in the direction {value}')
 ax.legend()
 
 comment = f'cut_direction{direction[0]}_{direction[1]}_{direction[2]}_{comment}.npz'
