@@ -254,7 +254,8 @@ def linecut(array, point, direction, direction_basis='voxel', voxel_size=1):
     if ndim not in {2, 3}:
         raise ValueError(f'Number of dimensions = {ndim}, expected 2 or 3')
     nbz, nby, nbx = array.shape
-    valid.valid_container(direction, container_types=(list, np.ndarray), length=ndim, item_types=Real,
+    direction = list(direction)
+    valid.valid_container(direction, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
                           name='utilities.linecut')
     valid.valid_container(point, container_types=(list, tuple, np.ndarray), length=ndim, item_types=int,
                           min_included=0, name='utilities.linecut')
