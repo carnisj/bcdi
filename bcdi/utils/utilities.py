@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import os
+from collections import OrderedDict
 import ctypes
 import h5py
 from numbers import Real
@@ -208,15 +209,30 @@ def in_range(point, extent):
     """
     Return a boolean depending on whether point is in the indices range defined by extent or not.
 
-    :param point: tuple of three integers (z, y, x) representing the voxel indices to be tested
-    :param extent: tuple of six integers (z_start, z_stop, y_start, y_stop, x_tart, x_stop) representing the range of
-     valid indices
+    :param point: tuple of two real numbers (2D case) (y, x) or three real numbers (3D case) (z, y, x) representing
+     the voxel indices to be tested
+    :param extent: tuple of four integers (2D case) (y_start, y_stop, x_tart, x_stop) or six integers (3D case)
+     (z_start, z_stop, y_start, y_stop, x_tart, x_stop) representing the range of valid indices
     :return: True if point belongs to extent, False otherwise
     """
-    if (extent[0] <= point[0] <= extent[1]) and\
-       (extent[2] <= point[1] <= extent[3]) and\
-       (extent[4] <= point[2] <= extent[5]):
-        return True
+    # check parameters
+    valid.valid_container(point, container_types=(list, tuple, np.ndarray), item_types=Real, name='utilities.in_range')
+    ndim = len(point)
+    if ndim not in {2, 3}:
+        raise ValueError('point should be 2D or 3D')
+    valid.valid_container(extent, container_types=(list, tuple, np.ndarray), length=2*ndim, item_types=int,
+                          name='utilities.in_range')
+
+    # check the appartenance to the defined extent
+    if ndim == 2:
+        if (extent[0] <= point[0] <= extent[1]) and\
+           (extent[2] <= point[1] <= extent[3]):
+            return True
+    else:
+        if (extent[0] <= point[0] <= extent[1]) and\
+           (extent[2] <= point[1] <= extent[3]) and\
+           (extent[4] <= point[2] <= extent[5]):
+            return True
     return False
 
 
@@ -253,7 +269,10 @@ def linecut(array, point, direction, direction_basis='voxel', voxel_size=1):
     ndim = array.ndim
     if ndim not in {2, 3}:
         raise ValueError(f'Number of dimensions = {ndim}, expected 2 or 3')
-    nbz, nby, nbx = array.shape
+    if ndim == 2:
+        nby, nbx = array.shape
+    else:
+        nbz, nby, nbx = array.shape
     direction = list(direction)
     valid.valid_container(direction, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
                           name='utilities.linecut')
@@ -268,49 +287,58 @@ def linecut(array, point, direction, direction_basis='voxel', voxel_size=1):
 
     # normalize the vector direction, eventually correct it for anisotropic voxel sizes
     if direction_basis == 'orthonormal':
-        direction = [direction[i] * voxel_size[i] for i in range(3)]
+        direction = [direction[i] * voxel_size[i] for i in range(ndim)]
     direction = direction / np.linalg.norm(direction)
 
     # initialize parameters
-    ind_z = []
-    ind_y = []
-    ind_x = []
+    cut_points = []
     # calculate the indices of the voxels on one side of the linecut
     go_on = True
     n = 1
     while go_on:
-        next_point = (int(np.rint(point[0]-n*direction[0])),
-                      int(np.rint(point[1]-n*direction[1])),
-                      int(np.rint(point[2]-n*direction[2])))
-        go_on = in_range(next_point, (0, nbz-1, 0, nby-1, 0, nbx-1))
+        if ndim == 2:
+            next_point = (int(np.rint(point[0]-n*direction[0])),
+                          int(np.rint(point[1]-n*direction[1])))
+            go_on = in_range(next_point, (0, nby - 1, 0, nbx - 1))
+        else:
+            next_point = (int(np.rint(point[0]-n*direction[0])),
+                          int(np.rint(point[1]-n*direction[1])),
+                          int(np.rint(point[2]-n*direction[2])))
+            go_on = in_range(next_point, (0, nbz-1, 0, nby-1, 0, nbx-1))
         if go_on:
-            ind_z.append(next_point[0])
-            ind_y.append(next_point[1])
-            ind_x.append(next_point[2])
+            cut_points.append(next_point)
             n += 1
     # flip the indices so that the increasing direction is consistent with the second half of the linecut
-    ind_z = ind_z[::-1]
-    ind_y = ind_y[::-1]
-    ind_x = ind_x[::-1]
+    cut_points = cut_points[::-1]
     # append the point by which the linecut pass
-    ind_z.append(point[0])
-    ind_y.append(point[1])
-    ind_x.append(point[2])
+    cut_points.append(point)
     # calculate the indices of the voxels on the other side of the linecut
     go_on = True
     n = 1
     while go_on:
-        next_point = (int(np.rint(point[0]+n*direction[0])),
-                      int(np.rint(point[1]+n*direction[1])),
-                      int(np.rint(point[2]+n*direction[2])))
-        go_on = in_range(next_point, (0, nbz-1, 0, nby-1, 0, nbx-1))
+        if ndim == 2:
+            next_point = (int(np.rint(point[0]+n*direction[0])),
+                          int(np.rint(point[1]+n*direction[1])))
+            go_on = in_range(next_point, (0, nby - 1, 0, nbx - 1))
+        else:
+            next_point = (int(np.rint(point[0]+n*direction[0])),
+                          int(np.rint(point[1]+n*direction[1])),
+                          int(np.rint(point[2]+n*direction[2])))
+            go_on = in_range(next_point, (0, nbz-1, 0, nby-1, 0, nbx-1))
         if go_on:
-            ind_z.append(next_point[0])
-            ind_y.append(next_point[1])
-            ind_x.append(next_point[2])
+            cut_points.append(next_point)
             n += 1
 
-    indices = ind_z, ind_y, ind_x
+    # remove duplicates
+    cut_points = list(OrderedDict.fromkeys(cut_points))
+    # transform cut_points in an appropriate way for slicing array
+    if ndim == 2:
+        indices = ([item[0] for item in cut_points],
+                   [item[1] for item in cut_points])
+    else:
+        indices = ([item[0] for item in cut_points],
+                   [item[1] for item in cut_points],
+                   [item[2] for item in cut_points])
     # indices is a tuple of ndim ndarrays that can be used to directly slice obj
     cut = array[indices]  # cut is now 1D
 
