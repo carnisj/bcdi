@@ -28,7 +28,7 @@ savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/linecuts/"
 # results will be saved here, if None it will default to datadir
 threshold = 0.2  # modulus threshold defining the normalized object from the background
 binary = True  # True in order to perform the linecuts on a support (0 or 1) created from the thresholded object
-direction = (0, 1, 0)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D) defining the direction of the cut
+direction = (1, 1, 1)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D) defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
 points = {(25, 26, 24)}  # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
@@ -84,6 +84,8 @@ savedir = savedir or datadir
 obj = abs(obj) / abs(obj).max()  # normalize the modulus to 1
 obj[np.isnan(obj)] = 0  # remove nans
 obj[obj < threshold] = 0
+if binary:
+    obj[np.nonzero(obj)] = 1
 gu.multislices_plot(array=obj, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
 
 #####################################
