@@ -9,8 +9,9 @@
 import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
-import tkinter as tk
+from scipy.interpolate import interp1d
 import sys
+import tkinter as tk
 from tkinter import filedialog
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
@@ -26,7 +27,8 @@ the direction of the cuts and a list of points where to apply the cut along this
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # data folder
 savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/linecuts/"
 # results will be saved here, if None it will default to datadir
-threshold = 0.2  # modulus threshold defining the normalized object from the background
+threshold = 0.2
+# number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 binary = True  # True in order to perform the linecuts on a support (0 or 1) created from the thresholded object
 direction = (1, 1, 1)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D) defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
@@ -78,12 +80,18 @@ valid.valid_container(voxel_size, container_types=(list, tuple, np.ndarray), len
 
 savedir = savedir or datadir
 
-#################################################
-# normalize the modulus and apply the threshold #
-#################################################
+if isinstance(threshold, Real):
+    threshold = (threshold,)
+valid.valid_container(threshold, container_types=(list, tuple, np.ndarray), item_types=Real,
+                      min_included=0, max_included=1, name='line_profile')
+
+comment = f'_direction{direction[0]}_{direction[1]}_{direction[2]}_{comment}'
+
+#########################
+# normalize the modulus #
+#########################
 obj = abs(obj) / abs(obj).max()  # normalize the modulus to 1
 obj[np.isnan(obj)] = 0  # remove nans
-obj[obj < threshold] = 0
 if binary:
     obj[np.nonzero(obj)] = 1
 gu.multislices_plot(array=obj, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
@@ -99,9 +107,9 @@ for point in points:
     # store the result in a dictionnary (cuts can have different lengths depending on the direction)
     result[point] = distance, cut
 
-##############################
-# save and plot the linecuts #
-##############################
+######################
+#  plot the linecuts #
+######################
 fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 plot_nb = 0
@@ -114,8 +122,41 @@ for key, value in result.items():
     else:
         ax.set_title(f'Linecut in the direction {value}')
 ax.legend()
+fig.savefig(savedir + 'cut' + comment + '.png')
 
-comment = f'cut_direction{direction[0]}_{direction[1]}_{direction[2]}_{comment}.npz'
-np.savez_compressed(savedir + comment, result=result)
+#################################################################################
+# calculate the evolution of the width of the object depending on the threshold #
+#################################################################################
+for key, value in result.items():
+    if key != 'direction':
+        fit = interp1d(value[1], value[0])
+        width = np.empty(len(threshold))
+        for idx, thres in enumerate(threshold):
+            # calculate the distances where the modulus is equal to threshold
+            crossings = util.predict_non_monotonic(value=threshold, function=fit)
+            width[idx] = crossings.max() - crossings.min()  # TODO check the special values of crossings (nan, None)
+        result[key] = value[0], value[1], threshold, width
+
+#################################
+#  plot the widths vs threshold #
+#################################
+fig = plt.figure(figsize=(12, 9))
+ax = plt.subplot(111)
+plot_nb = 0
+for key, value in result.items():
+    if key != 'direction':
+        line, = ax.plot(value[2], value[3], color=colors[plot_nb % len(colors)],
+                        marker='.', markersize=10, linestyle='-', linewidth=1)
+        line.set_label(f'cut through voxel {key}')
+        plot_nb += 1
+    else:
+        ax.set_title(f'Width vs threshold in the direction {value}')
+ax.legend()
+fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
+
+###################
+# save the result #
+###################
+np.savez_compressed(savedir + 'cut' + comment + '.npz', result=result)
 plt.ioff()
 plt.show()
