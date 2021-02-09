@@ -32,12 +32,13 @@ threshold = np.linspace(0, 1.0, num=20)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 direction = (0, 1, 0)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D) defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-points = {(23, 26, 23), (23, 26, 24), (23, 26, 25), (23, 26, 26),
-          (24, 26, 23), (24, 26, 24), (24, 26, 25), (24, 26, 26),
-          (25, 26, 23), (25, 26, 24), (25, 26, 25), (25, 26, 26)}
+points = {(23, 26, 23)}  # , (23, 26, 24), (23, 26, 25), (23, 26, 26),
+          # (24, 26, 23), (24, 26, 24), (24, 26, 25), (24, 26, 26),
+          # (25, 26, 23), (25, 26, 24), (25, 26, 25), (25, 26, 26)}
 # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
+width_lines = {99, 100, 101}  # list of vertical lines that will appear in the plot width vs threshold
 comment = ''  # string to add to the filename when saving
 ##################################
 # end of user-defined parameters #
@@ -89,6 +90,9 @@ if isinstance(threshold, Real):
 valid.valid_container(threshold, container_types=(list, tuple, np.ndarray), item_types=Real,
                       min_included=0, max_included=1, name='line_profile')
 
+valid.valid_container(width_lines, container_types=(list, tuple, np.ndarray, set), item_types=Real,
+                      min_excluded=0, name='line_profile')
+
 comment = f'_direction{direction[0]}_{direction[1]}_{direction[2]}_{comment}'
 
 #########################
@@ -104,7 +108,7 @@ gu.multislices_plot(array=obj, sum_frames=False, plot_colorbar=True, reciprocal_
 result = dict()
 result['direction'] = direction
 for point in points:
-    # get the indices of all voxels belonging to the linecut
+    # get the distances and the modulus values along the linecut
     distance, cut = util.linecut(array=obj, point=point, direction=direction, voxel_size=voxel_size)
     # store the result in a dictionnary (cuts can have different lengths depending on the direction)
     result[point] = distance, cut
@@ -165,6 +169,8 @@ for key, value in result.items():
 ax.set_xlabel('threshold')
 ax.set_ylabel('width (nm)')
 ax.legend()
+for hline in width_lines:
+    ax.axhline(y=hline, linestyle='dashed', color='k', linewidth=1)
 fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
 
 ###################
