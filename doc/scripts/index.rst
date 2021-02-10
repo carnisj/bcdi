@@ -252,6 +252,15 @@ amp_histogram.py
    :end-before: """
    :language: rst
 
+
+angular_profile.py
+^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/angular_profile.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 bulk_surface_strain.py
 ^^^^^^^^^^^^^^^^^^^^^^
 
