@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from numbers import Real
 import numpy as np
 from scipy.ndimage.measurements import center_of_mass
 import matplotlib.pyplot as plt
@@ -19,20 +20,31 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.validation as valid
 
 helptext = """
 Eigendecomposition of a set of 3D reconstructed objects from phase retrieval,
 ideally the first mode should be as high as possible. Adapted from PyNX.
 """
 
-datadir = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_2_debug/"
+datadir = "D:/data/P10_August2020_CDI/data/mag_3_macro1/centrosym/"
 user_comment = ''  # string, should start with "_"
-nb_mode = 5  # number of modes to return in the mode array (starting from 0)
-alignment_method = 'modulus'  # 'modulus' or 'support'
+nb_mode = 1  # number of modes to return in the mode array
+alignment_method = 'support'  # 'modulus' or 'support'
 # if 'modulus', use the center of mass of the modulus. If 'support', use the center of mass of a support object defined
 # by support_threshold
-support_threshold = 0.05  # threshold on the normalized modulus to define the support if alignement_method is 'support'
+support_threshold = 0.2  # threshold on the normalized modulus to define the support if alignement_method is 'support'
 debug = True  # True to see debugging plots
+#########################
+# check some parameters #
+#########################
+valid.valid_container(user_comment, container_types=str, name='modes_decomposition')
+valid.valid_item(value=nb_mode, allowed_types=int, min_excluded=0, name='modes_decomposition')
+valid.valid_item(value=support_threshold, allowed_types=Real, min_included=0, name='modes_decomposition')
+if alignment_method not in {'modulus', 'support'}:
+    raise ValueError(f'wrong value for alignment_method {alignment_method}, allowed are "support" and "modulus"')
+valid.valid_item(value=debug, allowed_types=bool, name='modes_decomposition')
+
 ################
 # Load objects #
 ################
