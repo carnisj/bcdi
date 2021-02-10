@@ -1,3 +1,5 @@
+* Feature: implement angular_profile.py to calculate the width of linecuts through the center of mass of a 2D object at different angles
+
 * Feature: implement line_profile.py to calculate line profiles along particular directions in 2D or 3D objects
 
 Version 0.0.10a2
