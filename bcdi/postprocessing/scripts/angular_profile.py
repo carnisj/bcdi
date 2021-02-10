@@ -38,7 +38,7 @@ origin = None  # origin where all the line cuts pass by. If None, it will use th
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 width_lines = (100, 101, 102)  # list of vertical lines that will appear in the plot width vs threshold
 sum_axis = 1  # if the object is 3D, it will be summed along that axis
-debug = False  # True to print the output dictionnary and plot the legend
+debug = False  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
 ##################################
 # end of user-defined parameters #
@@ -53,10 +53,11 @@ markers = ('.', 'v', '^', '<', '>')
 ##################################################
 # create the list of directions for the linecuts #
 ##################################################
-nb_dir = int(180 // angular_step)
+angles = np.arange(0, 180, angular_step)
+nb_dir = len(angles)
 directions = []
 for idx in range(nb_dir):
-    directions.append((np.sin(idx * angular_step * np.pi / 180), np.cos(idx * angular_step * np.pi / 180)))
+    directions.append((np.sin(angles[idx] * np.pi / 180), np.cos(angles[idx] * np.pi / 180)))
 
 #################
 # load the data #
@@ -117,20 +118,20 @@ gu.imshow_plot(array=obj, plot_colorbar=True, reciprocal_space=False, is_orthogo
 #########################################
 result = dict()
 result['origin'] = origin
-for direction in directions:
+for idx, direction in enumerate(directions):
     # get the distances and the modulus values along the linecut
     distance, cut = util.linecut(array=obj, point=origin, direction=direction, voxel_size=voxel_size)
-    # store the result in a dictionnary (cuts can have different lengths depending on the direction)
-    result[f'direction {direction}'] = {'distance': distance, 'cut': cut}
+    # store the result in a dictionary (cuts can have different lengths depending on the direction)
+    result[f'direction {direction}'] = {'angle': angles[idx], 'distance': distance, 'cut': cut}
 
-##################################################
-#  plot the angular profile without thresholding #
-##################################################
+#######################
+#  plot all line cuts #
+#######################
 fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 plot_nb = 0
 for key, value in result.items():
-    if key != 'origin':  # value is a dictionnary {'distance': 1D array, 'cut': 1D array}
+    if key != 'origin':  # value is a dictionary {'angle': angles[idx], 'distance': distance, 'cut': cut}
         line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
                         marker=markers[plot_nb // len(colors)], fillstyle='none', markersize=6,
                         linestyle='-', linewidth=1)
@@ -144,11 +145,11 @@ if debug:
 ax.tick_params(axis='both', which='major', labelsize=16)
 fig.savefig(savedir + 'cuts' + comment + '.png')
 
-###################################################################
-# calculate the evolution of the width depending on the threshold #
-###################################################################
+##############################################################################
+# calculate the evolution of the width vs threshold for different directions #
+##############################################################################
 for key, value in result.items():  # iterating over the directions (except the key 'origin')
-    if key != 'origin':  # value is a dictionnary {'distance': 1D array, 'cut': 1D array}
+    if key != 'origin':  # value is a dictionary {'angle': angles[idx], 'distance': distance, 'cut': cut}
         fit = interp1d(value['distance'], value['cut'])
         dist_interp = np.linspace(value['distance'].min(), value['distance'].max(), num=10000)
         cut_interp = fit(dist_interp)
@@ -162,9 +163,54 @@ for key, value in result.items():  # iterating over the directions (except the k
                 width[idx] = dist_interp[crossings.max()] - dist_interp[crossings.min()]
             else:
                 width[idx] = 0
-        # update the dictionnary value
+        # update the dictionary value
         value['threshold'] = threshold
         value['width'] = width
 
+##########################################################################
+# calculate the evolution of the width vs angle for different thresholds #
+##########################################################################
+for idx, thres in enumerate(threshold):
+    tmp_angles = np.empty(nb_dir)  # will be used to reorder the angles
+    angular_width = np.empty(nb_dir)
+    count = 0
+    for key, value in result.items():  # iterating over the directions (except the key 'origin')
+        if key != 'origin':  # value is a dictionary {'angle': angles[idx], 'distance': distance, 'cut': cut}
+            tmp_angles[count] = value['angle']  # index related to the angle/direction
+            assert thres == value['threshold'][idx], 'ordering error in threshold'
+            angular_width[count] = value['width'][idx]  # index related to the threshold
+
+    # TODO: sort the angles and the corresponding angular profiles
+    raise NotImplementedError
+    # update the dictionary
+    result[f'ang_width_threshold {thres}'] = angular_width
+
+#####################################################
+#  plot the width vs angle for different thresholds #
+#####################################################
+fig = plt.figure(figsize=(12, 9))
+ax = plt.subplot(111)
+for plot_nb, thres in enumerate(threshold):
+    line, = ax.plot(angles, result[f'ang_width_threshold {thres}'], color=colors[plot_nb % len(colors)],
+                    marker=markers[plot_nb // len(colors)], fillstyle='none', markersize=6,
+                    linestyle='-', linewidth=1)
+    line.set_label(f'threshold {thres}')
+
+ax.set_xlabel('angle (deg)', fontsize=20)
+ax.set_ylabel('width (nm)', fontsize=20)
+if debug:
+    ax.legend(fontsize=14)
+ax.tick_params(axis='both', which='major', labelsize=16)
+fig.savefig(savedir + 'width_vs_ang' + comment + '.png')
+
+###################
+# save the result #
+###################
+print('output dictionary:\n', json.dumps(result, cls=util.CustomEncoder, indent=4))
+
+with open(savedir+'ang_width' + comment + '.json', 'w', encoding='utf-8') as file:
+    json.dump(result, file, cls=util.CustomEncoder, ensure_ascii=False, indent=4)
+
+np.savez_compressed(savedir + 'ang_width' + comment + '.npz', result=result)
 plt.ioff()
 plt.show()
