@@ -30,7 +30,7 @@ size and an origin point where all linecuts pass by.
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder
 savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/linecuts/"
 # results will be saved here, if None it will default to datadir
-threshold = np.linspace(0, 1.0, num=20)
+threshold = np.round(np.linspace(0.3, 0.6, num=10), decimals=3)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 angular_step = 10  # in degrees, the linecut directions will be automatically calculated
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
@@ -38,7 +38,7 @@ origin = None  # origin where all the line cuts pass by. If None, it will use th
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 width_lines = (100, 101, 102)  # list of vertical lines that will appear in the plot width vs threshold
 sum_axis = 1  # if the object is 3D, it will be summed along that axis
-debug = False  # True to print the output dictionary and plot the legend
+debug = True  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
 ##################################
 # end of user-defined parameters #
@@ -170,6 +170,7 @@ for key, value in result.items():  # iterating over the directions (except the k
 ##########################################################################
 # calculate the evolution of the width vs angle for different thresholds #
 ##########################################################################
+ang_width_threshold = np.empty((len(threshold), nb_dir))
 for idx, thres in enumerate(threshold):
     tmp_angles = np.empty(nb_dir)  # will be used to reorder the angles
     angular_width = np.empty(nb_dir)
@@ -179,20 +180,22 @@ for idx, thres in enumerate(threshold):
             tmp_angles[count] = value['angle']  # index related to the angle/direction
             assert thres == value['threshold'][idx], 'ordering error in threshold'
             angular_width[count] = value['width'][idx]  # index related to the threshold
+            count += 1
+    assert np.all(np.isclose(tmp_angles, angles)), 'ordering error in angles'
+    ang_width_threshold[idx, :] = angular_width
 
-    # TODO: sort the angles and the corresponding angular profiles
-    raise NotImplementedError
-    # update the dictionary
-    result[f'ang_width_threshold {thres}'] = angular_width
+# update the dictionary
+result['threshold'] = threshold
+result['ang_width_threshold'] = ang_width_threshold
 
 #####################################################
 #  plot the width vs angle for different thresholds #
 #####################################################
 fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
-for plot_nb, thres in enumerate(threshold):
-    line, = ax.plot(angles, result[f'ang_width_threshold {thres}'], color=colors[plot_nb % len(colors)],
-                    marker=markers[plot_nb // len(colors)], fillstyle='none', markersize=6,
+for idx, thres in enumerate(threshold):
+    line, = ax.plot(angles, result[f'ang_width_threshold'][idx], color=colors[idx % len(colors)],
+                    marker=markers[idx // len(colors)], fillstyle='none', markersize=6,
                     linestyle='-', linewidth=1)
     line.set_label(f'threshold {thres}')
 
@@ -206,7 +209,8 @@ fig.savefig(savedir + 'width_vs_ang' + comment + '.png')
 ###################
 # save the result #
 ###################
-print('output dictionary:\n', json.dumps(result, cls=util.CustomEncoder, indent=4))
+if debug:
+    print('output dictionary:\n', json.dumps(result, cls=util.CustomEncoder, indent=4))
 
 with open(savedir+'ang_width' + comment + '.json', 'w', encoding='utf-8') as file:
     json.dump(result, file, cls=util.CustomEncoder, ensure_ascii=False, indent=4)
