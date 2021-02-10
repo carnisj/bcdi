@@ -237,6 +237,27 @@ def gaussian(x_axis, amp, cen, sig):
     return amp*np.exp(-(x_axis-cen)**2/(2.*sig**2))
 
 
+def image_to_ndarray(filename, convert_grey=True, debug=False):
+    """
+    Convert an image to a numpy array using pillow (matplotlib only supports the PNG format).
+
+    :param filename: absolute path of the image to open
+    :param convert_grey: if True and the number of layers is 3, it will be converted to a single layer of grey
+    :param debug: True to see plots
+    :return:
+    """
+    from PIL import Image
+    if convert_grey:
+        im = Image.open(filename).convert('L')
+    else:
+        im = Image.open(filename)
+    array = np.array(im)
+    print(f'array shape: {array.shape}')
+    if debug:
+        gu.imshow_plot(array, sum_axis=2, plot_colorbar=True, reciprocal_space=False)
+    return array
+
+
 def in_range(point, extent):
     """
     Return a boolean depending on whether point is in the indices range defined by extent or not.
@@ -727,6 +748,9 @@ def sum_roi(array, roi, debugging=False):
 
 
 # if __name__ == "__main__":
+#     f = "D:/data/P10_2nd_test_isosurface_Dec2020/samples Nanolab/Sample preparation for Ivan's beam times/P2_001a.jpg"
+#     data = image_to_ndarray(filename=f, debug=True, convert_grey=False)
+#     plt.show()
 #     import numpy as np
 #     import matplotlib.pyplot as plt
 #     x = np.linspace(-3, 3, num=200)
