@@ -39,7 +39,7 @@ points = {(23, 26, 23)}  # , (23, 26, 24), (23, 26, 25), (23, 26, 26),
 # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
-width_lines = {100, 101, 102}  # list of vertical lines that will appear in the plot width vs threshold
+width_lines = {99, 100, 101}  # list of vertical lines that will appear in the plot width vs threshold
 comment = ''  # string to add to the filename when saving
 ##################################
 # end of user-defined parameters #
@@ -130,10 +130,11 @@ for key, value in result.items():
         line.set_label(f'cut through {key}')
         plot_nb += 1
     else:  # value is a vector
-        ax.set_title(f'Linecut in the direction {value}')
-ax.set_xlabel('width (nm)')
-ax.set_ylabel('modulus')
-ax.legend()
+        ax.set_title(f'Linecut in the direction {value}\n', fontsize=20)
+ax.set_xlabel('width (nm)', fontsize=20)
+ax.set_ylabel('modulus', fontsize=20)
+ax.legend(fontsize=14)
+ax.tick_params(axis='both', which='major', labelsize=16)
 fig.savefig(savedir + 'cut' + comment + '.png')
 
 #################################################################################
@@ -180,10 +181,11 @@ for key, value in result.items():
         line.set_label(f'cut through {key}')
         plot_nb += 1
     else:
-        ax.set_title(f'Width vs threshold in the direction {value}')
-ax.set_xlabel('threshold')
-ax.set_ylabel('width (nm)')
-ax.legend()
+        ax.set_title(f'Width vs threshold in the direction {value}\n', fontsize=20)
+ax.set_xlabel('threshold', fontsize=20)
+ax.set_ylabel('width (nm)', fontsize=20)
+ax.legend(fontsize=14)
+ax.tick_params(axis='both', which='major', labelsize=16)
 for hline in width_lines:
     ax.axhline(y=hline, linestyle='dashed', color='k', linewidth=1)
 fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
@@ -191,10 +193,10 @@ fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
 ###################
 # save the result #
 ###################
-print('output dictionnary:\n', json.dumps(result, cls=util.ComplexEncoder, indent=4))
+print('output dictionnary:\n', json.dumps(result, cls=util.CustomEncoder, indent=4))
 
 with open(savedir+'cut' + comment + '.json', 'w', encoding='utf-8') as file:
-    json.dump(result, file, cls=util.ComplexEncoder, ensure_ascii=False, indent=4)
+    json.dump(result, file, cls=util.CustomEncoder, ensure_ascii=False, indent=4)
 
 np.savez_compressed(savedir + 'cut' + comment + '.npz', result=result)
 plt.ioff()
