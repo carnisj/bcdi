@@ -33,13 +33,13 @@ threshold = np.linspace(0, 1.0, num=20)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 direction = (0, 1, 0)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D) defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-points = {(23, 26, 23), (23, 26, 24), (23, 26, 25), (23, 26, 26),
-          (24, 26, 23), (24, 26, 24), (24, 26, 25), (24, 26, 26),
-          (25, 26, 23), (25, 26, 24), (25, 26, 25), (25, 26, 26)}
+points = {(24, 26, 23), (24, 26, 24), (24, 26, 25),
+          (25, 26, 23), (25, 26, 24), (25, 26, 25),
+          (26, 26, 23), (26, 26, 24), (26, 26, 25),}
 # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
-width_lines = {99, 100, 101}  # list of vertical lines that will appear in the plot width vs threshold
+width_lines = (99, 100, 101)  # list of vertical lines that will appear in the plot width vs threshold
 plot_legend = False  # True to plot the legend, noisy when there are many points
 comment = ''  # string to add to the filename when saving
 ##################################
@@ -94,7 +94,7 @@ valid.valid_container(threshold, container_types=(list, tuple, np.ndarray), item
 
 if isinstance(width_lines, Real):
     width_lines = (width_lines,)
-valid.valid_container(width_lines, container_types=(list, tuple, np.ndarray, set), item_types=Real,
+valid.valid_container(width_lines, container_types=(list, tuple, np.ndarray), item_types=Real,
                       min_excluded=0, name='line_profile')
 
 comment = f'_direction{direction[0]}_{direction[1]}_{direction[2]}_{comment}'
@@ -130,8 +130,7 @@ for key, value in result.items():
                         linestyle='-', linewidth=1)
         line.set_label(f'cut through {key}')
         plot_nb += 1
-    else:  # value is a vector
-        ax.set_title(f'Linecut in the direction {value}\n', fontsize=20)
+
 ax.set_xlabel('width (nm)', fontsize=20)
 ax.set_ylabel('modulus', fontsize=20)
 if plot_legend:
@@ -166,7 +165,6 @@ for key, value in result.items():
         # update the dictionnary value
         value['threshold'] = threshold
         value['width'] = width
-        value['expected_width'] = width_lines
         value['fitted_threshold'] = fit_thresh
 
 #################################################
@@ -183,6 +181,7 @@ mean_thres = np.mean(tmp_thres, axis=1)
 std_thres = np.std(tmp_thres, axis=1)
 
 # update the dictionnary
+result['expected_width'] = width_lines
 result['mean_thres'] = np.round(mean_thres, decimals=3)
 result['std_thres'] = np.round(std_thres, decimals=3)
 
@@ -195,6 +194,8 @@ plot_nb = 0
 for key, value in result.items():
     if key == 'direction':
         ax.set_title(f'Width vs threshold in the direction {value}\n', fontsize=20)
+    elif key == 'expected_width':
+        fig.text(0.15, 0.30, f'expected widths: {value}', size=16)
     elif key == 'mean_thres':
         fig.text(0.15, 0.25, f'fitted thresholds: {value}', size=16)
     elif key == 'std_thres':
