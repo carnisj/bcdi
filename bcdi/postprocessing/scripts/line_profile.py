@@ -39,8 +39,8 @@ points = {(24, 26, 23), (24, 26, 24), (24, 26, 25),
 # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
-width_lines = (99, 100, 101)  # list of vertical lines that will appear in the plot width vs threshold
-plot_legend = False  # True to plot the legend, noisy when there are many points
+width_lines = (100, 101, 102)  # list of vertical lines that will appear in the plot width vs threshold
+debug = False  # True to print the output dictionnary and plot the legend
 comment = ''  # string to add to the filename when saving
 ##################################
 # end of user-defined parameters #
@@ -133,7 +133,7 @@ for key, value in result.items():
 
 ax.set_xlabel('width (nm)', fontsize=20)
 ax.set_ylabel('modulus', fontsize=20)
-if plot_legend:
+if debug:
     ax.legend(fontsize=14)
 ax.tick_params(axis='both', which='major', labelsize=16)
 fig.savefig(savedir + 'cut' + comment + '.png')
@@ -209,7 +209,7 @@ for key, value in result.items():
 
 ax.set_xlabel('threshold', fontsize=20)
 ax.set_ylabel('width (nm)', fontsize=20)
-if plot_legend:
+if debug:
     ax.legend(fontsize=14)
 ax.tick_params(axis='both', which='major', labelsize=16)
 for hline in width_lines:
