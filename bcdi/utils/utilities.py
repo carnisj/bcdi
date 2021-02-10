@@ -237,16 +237,20 @@ def gaussian(x_axis, amp, cen, sig):
     return amp*np.exp(-(x_axis-cen)**2/(2.*sig**2))
 
 
-def image_to_ndarray(filename, convert_grey=True, debug=False):
+def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
     """
     Convert an image to a numpy array using pillow (matplotlib only supports the PNG format).
 
     :param filename: absolute path of the image to open
     :param convert_grey: if True and the number of layers is 3, it will be converted to a single layer of grey
+    :param cmap: colormap for the plots
     :param debug: True to see plots
     :return:
     """
     from PIL import Image
+    if cmap is None:
+        cmap = gu.Colormap(bad_color='1.0').cmap
+
     if convert_grey:
         im = Image.open(filename).convert('L')
     else:
@@ -254,7 +258,7 @@ def image_to_ndarray(filename, convert_grey=True, debug=False):
     array = np.array(im)
     print(f'array shape: {array.shape}')
     if debug:
-        gu.imshow_plot(array, sum_axis=2, plot_colorbar=True, reciprocal_space=False)
+        gu.imshow_plot(array, sum_axis=2, plot_colorbar=True, cmap=cmap, reciprocal_space=False)
     return array
 
 
