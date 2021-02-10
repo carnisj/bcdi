@@ -268,6 +268,14 @@ correct_angles_detector.py
    :end-before: """
    :language: rst
 
+line_profile.py
+^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/line_profile.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 modes_decomposition.py
 ^^^^^^^^^^^^^^^^^^^^^^
 
