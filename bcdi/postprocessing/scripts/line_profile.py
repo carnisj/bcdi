@@ -104,7 +104,10 @@ comment = f'_direction{direction[0]}_{direction[1]}_{direction[2]}_{comment}'
 #########################
 obj = abs(obj) / abs(obj).max()  # normalize the modulus to 1
 obj[np.isnan(obj)] = 0  # remove nans
-gu.multislices_plot(array=obj, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
+if ndim == 2:
+    gu.imshow_plot(array=obj, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
+else:
+    gu.multislices_plot(array=obj, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
 
 #####################################
 # create the linecut for each point #
