@@ -33,13 +33,14 @@ threshold = np.linspace(0, 1.0, num=20)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 direction = (0, 1, 0)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D) defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-points = {(23, 26, 23)}  # , (23, 26, 24), (23, 26, 25), (23, 26, 26),
-          # (24, 26, 23), (24, 26, 24), (24, 26, 25), (24, 26, 26),
-          # (25, 26, 23), (25, 26, 24), (25, 26, 25), (25, 26, 26)}
+points = {(23, 26, 23), (23, 26, 24), (23, 26, 25), (23, 26, 26),
+          (24, 26, 23), (24, 26, 24), (24, 26, 25), (24, 26, 26),
+          (25, 26, 23), (25, 26, 24), (25, 26, 25), (25, 26, 26)}
 # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 width_lines = {99, 100, 101}  # list of vertical lines that will appear in the plot width vs threshold
+plot_legend = False  # True to plot the legend, noisy when there are many points
 comment = ''  # string to add to the filename when saving
 ##################################
 # end of user-defined parameters #
@@ -133,7 +134,8 @@ for key, value in result.items():
         ax.set_title(f'Linecut in the direction {value}\n', fontsize=20)
 ax.set_xlabel('width (nm)', fontsize=20)
 ax.set_ylabel('modulus', fontsize=20)
-ax.legend(fontsize=14)
+if plot_legend:
+    ax.legend(fontsize=14)
 ax.tick_params(axis='both', which='major', labelsize=16)
 fig.savefig(savedir + 'cut' + comment + '.png')
 
@@ -167,6 +169,23 @@ for key, value in result.items():
         value['expected_width'] = width_lines
         value['fitted_threshold'] = fit_thresh
 
+#################################################
+# calculate statistics on the fitted thresholds #
+#################################################
+count = 0
+tmp_thres = np.zeros((len(width_lines), len(points)))
+for key, value in result.items():
+    if key != 'direction':  # iterating over points, value is a dictionnary
+        for idx in range(len(width_lines)):
+            tmp_thres[idx, count] = value['fitted_threshold'][idx]
+        count += 1
+mean_thres = np.mean(tmp_thres, axis=1)
+std_thres = np.std(tmp_thres, axis=1)
+
+# update the dictionnary
+result['mean_thres'] = np.round(mean_thres, decimals=3)
+result['std_thres'] = np.round(std_thres, decimals=3)
+
 #################################
 #  plot the widths vs threshold #
 #################################
@@ -174,17 +193,23 @@ fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 plot_nb = 0
 for key, value in result.items():
-    if key != 'direction':
+    if key == 'direction':
+        ax.set_title(f'Width vs threshold in the direction {value}\n', fontsize=20)
+    elif key == 'mean_thres':
+        fig.text(0.15, 0.25, f'fitted thresholds: {value}', size=16)
+    elif key == 'std_thres':
+        fig.text(0.15, 0.20, f'stds: {value}', size=16)
+    else:  # iterating over points, value is a dictionnary
         line, = ax.plot(value['threshold'], value['width'], color=colors[plot_nb % len(colors)],
                         marker=markers[plot_nb // len(colors)], fillstyle='none', markersize=6,
                         linestyle='-', linewidth=1)
         line.set_label(f'cut through {key}')
         plot_nb += 1
-    else:
-        ax.set_title(f'Width vs threshold in the direction {value}\n', fontsize=20)
+
 ax.set_xlabel('threshold', fontsize=20)
 ax.set_ylabel('width (nm)', fontsize=20)
-ax.legend(fontsize=14)
+if plot_legend:
+    ax.legend(fontsize=14)
 ax.tick_params(axis='both', which='major', labelsize=16)
 for hline in width_lines:
     ax.axhline(y=hline, linestyle='dashed', color='k', linewidth=1)
