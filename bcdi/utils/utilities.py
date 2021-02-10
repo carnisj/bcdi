@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import json
 import os
 from collections import OrderedDict
 import ctypes
@@ -21,6 +22,37 @@ sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.validation as valid
+
+
+class CustomEncoder(json.JSONEncoder):
+    """
+    Class to handle the serialization of np.ndarrays, sets
+    """
+    def default(self, obj):
+        """
+        Override the JSONEncoder.default method to support more types
+        """
+        if isinstance(obj, np.ndarray):
+            return CustomEncoder.ndarray_to_list(obj)
+            # Let the base class default method raise the TypeError
+        elif isinstance(obj, set):
+            return list(obj)
+        return json.JSONEncoder.default(self, obj)
+
+    @staticmethod
+    def ndarray_to_list(obj):
+        """
+        Convert a numpy ndarray of any dimension to a nested list
+        """
+        if not isinstance(obj, np.ndarray):
+            raise TypeError('a numpy ndarray is expected')
+        if obj.ndim == 1:
+            return list(obj)
+        else:
+            output = []
+            for idx in range(obj.shape[0]):
+                output.append(CustomEncoder.ndarray_to_list(obj[idx]))
+            return output
 
 
 def catch_error(exception):
