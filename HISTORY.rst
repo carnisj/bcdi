@@ -1,5 +1,7 @@
-Version 0.0.10
---------------
+* Feature: implement line_profile.py to calculate line profiles along particular directions in 2D or 3D objects
+
+Version 0.0.10a2
+----------------
 
 * Feature: implement interpolate_cdi.py, to interpolate the intensity of masked voxels using the centrosymmetry property
 
