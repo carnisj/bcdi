@@ -40,7 +40,7 @@ points = {(24, 26, 23), (24, 26, 24), (24, 26, 25),
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 width_lines = (100, 101, 102)  # list of vertical lines that will appear in the plot width vs threshold
-debug = False  # True to print the output dictionnary and plot the legend
+debug = False  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
 ##################################
 # end of user-defined parameters #
@@ -117,7 +117,7 @@ result['direction'] = direction
 for point in points:
     # get the distances and the modulus values along the linecut
     distance, cut = util.linecut(array=obj, point=point, direction=direction, voxel_size=voxel_size)
-    # store the result in a dictionnary (cuts can have different lengths depending on the direction)
+    # store the result in a dictionary (cuts can have different lengths depending on the direction)
     result[f'voxel {point}'] = {'distance': distance, 'cut': cut}
 
 ######################
@@ -127,7 +127,7 @@ fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 plot_nb = 0
 for key, value in result.items():
-    if key != 'direction':  # value is a dictionnary {'distance': 1D array, 'cut': 1D array}
+    if key != 'direction':  # value is a dictionary {'distance': 1D array, 'cut': 1D array}
         line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
                         marker=markers[plot_nb // len(colors)], fillstyle='none', markersize=6,
                         linestyle='-', linewidth=1)
@@ -165,7 +165,7 @@ for key, value in result.items():
         fit_thresh = np.empty(len(width_lines))
         for idx, val in enumerate(width_lines):
             fit_thresh[idx] = fit(val)
-        # update the dictionnary value
+        # update the dictionary value
         value['threshold'] = threshold
         value['width'] = width
         value['fitted_threshold'] = fit_thresh
@@ -176,14 +176,14 @@ for key, value in result.items():
 count = 0
 tmp_thres = np.zeros((len(width_lines), len(points)))
 for key, value in result.items():
-    if key != 'direction':  # iterating over points, value is a dictionnary
+    if key != 'direction':  # iterating over points, value is a dictionary
         for idx in range(len(width_lines)):
             tmp_thres[idx, count] = value['fitted_threshold'][idx]
         count += 1
 mean_thres = np.mean(tmp_thres, axis=1)
 std_thres = np.std(tmp_thres, axis=1)
 
-# update the dictionnary
+# update the dictionary
 result['expected_width'] = width_lines
 result['mean_thres'] = np.round(mean_thres, decimals=3)
 result['std_thres'] = np.round(std_thres, decimals=3)
@@ -203,7 +203,7 @@ for key, value in result.items():
         fig.text(0.15, 0.25, f'fitted thresholds: {value}', size=16)
     elif key == 'std_thres':
         fig.text(0.15, 0.20, f'stds: {value}', size=16)
-    else:  # iterating over points, value is a dictionnary
+    else:  # iterating over points, value is a dictionary
         line, = ax.plot(value['threshold'], value['width'], color=colors[plot_nb % len(colors)],
                         marker=markers[plot_nb // len(colors)], fillstyle='none', markersize=6,
                         linestyle='-', linewidth=1)
@@ -223,7 +223,7 @@ fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
 # save the result #
 ###################
 if debug:
-    print('output dictionnary:\n', json.dumps(result, cls=util.CustomEncoder, indent=4))
+    print('output dictionary:\n', json.dumps(result, cls=util.CustomEncoder, indent=4))
 
 with open(savedir+'cut' + comment + '.json', 'w', encoding='utf-8') as file:
     json.dump(result, file, cls=util.CustomEncoder, ensure_ascii=False, indent=4)
