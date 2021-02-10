@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import json
 import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
@@ -38,7 +39,7 @@ points = {(23, 26, 23)}  # , (23, 26, 24), (23, 26, 25), (23, 26, 26),
 # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
-width_lines = {99, 100, 101}  # list of vertical lines that will appear in the plot width vs threshold
+width_lines = {100, 101, 102}  # list of vertical lines that will appear in the plot width vs threshold
 comment = ''  # string to add to the filename when saving
 ##################################
 # end of user-defined parameters #
@@ -90,6 +91,8 @@ if isinstance(threshold, Real):
 valid.valid_container(threshold, container_types=(list, tuple, np.ndarray), item_types=Real,
                       min_included=0, max_included=1, name='line_profile')
 
+if isinstance(width_lines, Real):
+    width_lines = (width_lines,)
 valid.valid_container(width_lines, container_types=(list, tuple, np.ndarray, set), item_types=Real,
                       min_excluded=0, name='line_profile')
 
@@ -111,7 +114,7 @@ for point in points:
     # get the distances and the modulus values along the linecut
     distance, cut = util.linecut(array=obj, point=point, direction=direction, voxel_size=voxel_size)
     # store the result in a dictionnary (cuts can have different lengths depending on the direction)
-    result[point] = distance, cut
+    result[f'voxel {point}'] = {'distance': distance, 'cut': cut}
 
 ######################
 #  plot the linecuts #
@@ -120,13 +123,13 @@ fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 plot_nb = 0
 for key, value in result.items():
-    if key != 'direction':
-        line, = ax.plot(value[0], value[1], color=colors[plot_nb % len(colors)],
+    if key != 'direction':  # value is a dictionnary {'distance': 1D array, 'cut': 1D array}
+        line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
                         marker=markers[plot_nb // len(colors)], fillstyle='none', markersize=6,
                         linestyle='-', linewidth=1)
-        line.set_label(f'cut through voxel {key}')
+        line.set_label(f'cut through {key}')
         plot_nb += 1
-    else:
+    else:  # value is a vector
         ax.set_title(f'Linecut in the direction {value}')
 ax.set_xlabel('width (nm)')
 ax.set_ylabel('modulus')
@@ -138,10 +141,12 @@ fig.savefig(savedir + 'cut' + comment + '.png')
 #################################################################################
 for key, value in result.items():
     if key != 'direction':
-        fit = interp1d(value[0], value[1])
-        dist_interp = np.linspace(value[0].min(), value[0].max(), num=10000)
+        fit = interp1d(value['distance'], value['cut'])
+        dist_interp = np.linspace(value['distance'].min(), value['distance'].max(), num=10000)
         cut_interp = fit(dist_interp)
         width = np.empty(len(threshold))
+
+        # calculate the function width vs threshold
         for idx, thres in enumerate(threshold):
             # calculate the distances where the modulus is equal to threshold
             crossings = np.argwhere(cut_interp > thres)
@@ -149,7 +154,17 @@ for key, value in result.items():
                 width[idx] = dist_interp[crossings.max()] - dist_interp[crossings.min()]
             else:
                 width[idx] = 0
-        result[key] = value[0], value[1], threshold, width
+
+        # fit the function width vs threshold and estimate where it crosses the expected widths
+        fit = interp1d(width, threshold)  # width vs threshold is monotonic (decreasing with increasing threshold)
+        fit_thresh = np.empty(len(width_lines))
+        for idx, val in enumerate(width_lines):
+            fit_thresh[idx] = fit(val)
+        # update the dictionnary value
+        value['threshold'] = threshold
+        value['width'] = width
+        value['expected_width'] = width_lines
+        value['fitted_threshold'] = fit_thresh
 
 #################################
 #  plot the widths vs threshold #
@@ -159,10 +174,10 @@ ax = plt.subplot(111)
 plot_nb = 0
 for key, value in result.items():
     if key != 'direction':
-        line, = ax.plot(value[2], value[3], color=colors[plot_nb % len(colors)],
+        line, = ax.plot(value['threshold'], value['width'], color=colors[plot_nb % len(colors)],
                         marker=markers[plot_nb // len(colors)], fillstyle='none', markersize=6,
                         linestyle='-', linewidth=1)
-        line.set_label(f'cut through voxel {key}')
+        line.set_label(f'cut through {key}')
         plot_nb += 1
     else:
         ax.set_title(f'Width vs threshold in the direction {value}')
@@ -176,6 +191,11 @@ fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
 ###################
 # save the result #
 ###################
+print('output dictionnary:\n', json.dumps(result, cls=util.ComplexEncoder, indent=4))
+
+with open(savedir+'cut' + comment + '.json', 'w', encoding='utf-8') as file:
+    json.dump(result, file, cls=util.ComplexEncoder, ensure_ascii=False, indent=4)
+
 np.savez_compressed(savedir + 'cut' + comment + '.npz', result=result)
 plt.ioff()
 plt.show()
