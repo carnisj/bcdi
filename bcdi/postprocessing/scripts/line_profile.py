@@ -222,7 +222,8 @@ fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
 ###################
 # save the result #
 ###################
-print('output dictionnary:\n', json.dumps(result, cls=util.CustomEncoder, indent=4))
+if debug:
+    print('output dictionnary:\n', json.dumps(result, cls=util.CustomEncoder, indent=4))
 
 with open(savedir+'cut' + comment + '.json', 'w', encoding='utf-8') as file:
     json.dump(result, file, cls=util.CustomEncoder, ensure_ascii=False, indent=4)
