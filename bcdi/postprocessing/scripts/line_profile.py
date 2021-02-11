@@ -129,7 +129,7 @@ plot_nb = 0
 for key, value in result.items():
     if key != 'direction':  # value is a dictionary {'distance': 1D array, 'cut': 1D array}
         line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
-                        marker=markers[plot_nb // len(colors)], fillstyle='none', markersize=6,
+                        marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=6,
                         linestyle='-', linewidth=1)
         line.set_label(f'cut through {key}')
         plot_nb += 1
@@ -205,7 +205,7 @@ for key, value in result.items():
         fig.text(0.15, 0.20, f'stds: {value}', size=16)
     else:  # iterating over points, value is a dictionary
         line, = ax.plot(value['threshold'], value['width'], color=colors[plot_nb % len(colors)],
-                        marker=markers[plot_nb // len(colors)], fillstyle='none', markersize=6,
+                        marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=6,
                         linestyle='-', linewidth=1)
         line.set_label(f'cut through {key}')
         plot_nb += 1

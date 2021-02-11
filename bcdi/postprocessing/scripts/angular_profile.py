@@ -32,7 +32,7 @@ savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_
 # results will be saved here, if None it will default to datadir
 threshold = np.round(np.linspace(0.3, 0.6, num=10), decimals=3)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
-angular_step = 10  # in degrees, the linecut directions will be automatically calculated
+angular_step = 1  # in degrees, the linecut directions will be automatically calculated
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
 origin = None  # origin where all the line cuts pass by. If None, it will use the center of mass of the modulus
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
@@ -127,23 +127,23 @@ for idx, direction in enumerate(directions):
 #######################
 #  plot all line cuts #
 #######################
-fig = plt.figure(figsize=(12, 9))
-ax = plt.subplot(111)
-plot_nb = 0
-for key, value in result.items():
-    if key != 'origin':  # value is a dictionary {'angle': angles[idx], 'distance': distance, 'cut': cut}
-        line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
-                        marker=markers[plot_nb // len(colors)], fillstyle='none', markersize=6,
-                        linestyle='-', linewidth=1)
-        line.set_label(f'direction {key}')
-        plot_nb += 1
-
-ax.set_xlabel('width (nm)', fontsize=20)
-ax.set_ylabel('modulus', fontsize=20)
 if debug:
+    fig = plt.figure(figsize=(12, 9))
+    ax = plt.subplot(111)
+    plot_nb = 0
+    for key, value in result.items():
+        if key != 'origin':  # value is a dictionary {'angle': angles[idx], 'distance': distance, 'cut': cut}
+            line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
+                            marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=6,
+                            linestyle='-', linewidth=1)
+            line.set_label(f'direction {key}')
+            plot_nb += 1
+
+    ax.set_xlabel('width (nm)', fontsize=20)
+    ax.set_ylabel('modulus', fontsize=20)
     ax.legend(fontsize=14)
-ax.tick_params(axis='both', which='major', labelsize=16)
-fig.savefig(savedir + 'cuts' + comment + '.png')
+    ax.tick_params(axis='both', which='major', labelsize=16)
+    fig.savefig(savedir + 'cuts' + comment + '.png')
 
 ##############################################################################
 # calculate the evolution of the width vs threshold for different directions #
@@ -195,14 +195,13 @@ fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 for idx, thres in enumerate(threshold):
     line, = ax.plot(angles, result[f'ang_width_threshold'][idx], color=colors[idx % len(colors)],
-                    marker=markers[idx // len(colors)], fillstyle='none', markersize=6,
+                    marker=markers[(idx // len(colors)) % len(markers)], fillstyle='none', markersize=6,
                     linestyle='-', linewidth=1)
     line.set_label(f'threshold {thres}')
 
 ax.set_xlabel('angle (deg)', fontsize=20)
 ax.set_ylabel('width (nm)', fontsize=20)
-if debug:
-    ax.legend(fontsize=14)
+ax.legend(fontsize=14)
 ax.tick_params(axis='both', which='major', labelsize=16)
 fig.savefig(savedir + 'width_vs_ang' + comment + '.png')
 
