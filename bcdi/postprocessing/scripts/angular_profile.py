@@ -18,6 +18,7 @@ import tkinter as tk
 from tkinter import filedialog
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
+import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
@@ -34,12 +35,19 @@ threshold = np.round(np.linspace(0.3, 0.6, num=10), decimals=3)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 angular_step = 1  # in degrees, the linecut directions will be automatically calculated
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-origin = None  # origin where all the line cuts pass by. If None, it will use the center of mass of the modulus
+roi = (460, 560, 700, 800)  # ROI centered around the crystal of interest in the 2D image, the center of mass will be
+# determined within this ROI when origin is not defined. Leave None to use the full array.
+origin = None  # origin where all the line cuts pass by (indices considering the array cropped to roi).
+# If None, it will use the center of mass of the modulus in the region defined by roi
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 width_lines = (100, 101, 102)  # list of vertical lines that will appear in the plot width vs threshold
 sum_axis = 1  # if the object is 3D, it will be summed along that axis
 debug = True  # True to print the output dictionary and plot the legend
-comment = ''  # string to add to the filename when saving
+comment = '_SEM'  # string to add to the filename when saving
+#############################################
+# parameters used when loading a tiff image #
+#############################################
+
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -80,6 +88,15 @@ ndim = obj.ndim
 #########################
 if ndim != 2:
     raise ValueError(f'Number of dimensions = {ndim}, expected 2 or 3')
+
+nby, nbx = obj.shape
+if roi is None:
+    roi = (0, nby, 0, nbx)
+valid.valid_container(origin, container_types=(list, tuple, np.ndarray), length=4, item_types=int,
+                      min_included=0, name='line_profile')
+assert roi[0] < roi[1] <= nby and roi[2] < roi[3] <= nbx, 'roi incompatible with the array shape'
+
+obj = obj[roi[0]:roi[1], roi[2]:roi[3]]
 
 if origin is None:
     piy, pix = center_of_mass(obj)
