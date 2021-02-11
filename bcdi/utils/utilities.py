@@ -37,6 +37,8 @@ class CustomEncoder(json.JSONEncoder):
             # Let the base class default method raise the TypeError
         elif isinstance(obj, set):
             return list(obj)
+        elif isinstance(obj, (np.int32, np.int64)):
+            return int(obj)
         return json.JSONEncoder.default(self, obj)
 
     @staticmethod
