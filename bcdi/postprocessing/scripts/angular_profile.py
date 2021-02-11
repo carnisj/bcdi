@@ -10,6 +10,7 @@ import json
 import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
+import os
 import pathlib
 from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
@@ -31,7 +32,7 @@ datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beam
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder
 savedir = None
 # results will be saved here, if None it will default to datadir
-threshold = np.round(np.linspace(0.3, 0.6, num=10), decimals=3)
+threshold = np.round(np.linspace(0.3, 0.7, num=10), decimals=3)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 angular_step = 1  # in degrees, the linecut directions will be automatically calculated
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
@@ -42,7 +43,7 @@ origin = None  # origin where all the line cuts pass by (indices considering the
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 sum_axis = 1  # if the object is 3D, it will be summed along that axis
 debug = True  # True to print the output dictionary and plot the legend
-comment = '_SEM'  # string to add to the filename when saving
+comment = 'SEM'  # string to add to the filename when saving
 #############################################
 # parameters used when loading a tiff image #
 #############################################
@@ -74,9 +75,12 @@ root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir,
                                        filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
-                                                  ("CXI", "*.cxi"), ("HDF5", "*.h5")])
-
-obj, _ = util.load_file(file_path)
+                                                  ("CXI", "*.cxi"), ("HDF5", "*.h5"), ("all files", "*.*")])
+_, ext = os.path.splitext(file_path)
+if ext in {'.png', '.jpg', '.tif'}:
+    obj = util.image_to_ndarray(filename=file_path, debug=False, convert_grey=True, cmap='gray')
+else:
+    obj, _ = util.load_file(file_path)
 if obj.ndim == 3:
     obj = obj.sum(axis=sum_axis)
 
@@ -91,7 +95,7 @@ if ndim != 2:
 nby, nbx = obj.shape
 if roi is None:
     roi = (0, nby, 0, nbx)
-valid.valid_container(origin, container_types=(list, tuple, np.ndarray), length=4, item_types=int,
+valid.valid_container(roi, container_types=(list, tuple, np.ndarray), length=4, item_types=int,
                       min_included=0, name='line_profile')
 assert roi[0] < roi[1] <= nby and roi[2] < roi[3] <= nbx, 'roi incompatible with the array shape'
 
@@ -143,11 +147,11 @@ if debug:
     plot_nb = 0
     for key, value in result.items():
         # value is a dictionary {'angle': angles[idx], 'distance': distance, 'cut': cut}
-            line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
-                            marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=6,
-                            linestyle='-', linewidth=1)
-            line.set_label(f'direction {key}')
-            plot_nb += 1
+        line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
+                        marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=6,
+                        linestyle='-', linewidth=1)
+        line.set_label(f'direction {key}')
+        plot_nb += 1
 
     ax.set_xlabel('width (nm)', fontsize=20)
     ax.set_ylabel('modulus', fontsize=20)
