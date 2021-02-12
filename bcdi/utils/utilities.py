@@ -258,7 +258,7 @@ def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
     else:
         im = Image.open(filename)
     array = np.array(im)
-    print(f'array shape: {array.shape}')
+    print(f'Image shape after conversion to ndarray: {array.shape}')
     if debug:
         gu.imshow_plot(array, sum_axis=2, plot_colorbar=True, cmap=cmap, reciprocal_space=False)
     return array
