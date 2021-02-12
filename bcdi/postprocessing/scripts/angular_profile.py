@@ -30,24 +30,20 @@ size and an origin point where all linecuts pass by.
 
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder
-savedir = None
+savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/test/"
 # results will be saved here, if None it will default to datadir
-threshold = np.round(np.linspace(0.3, 0.7, num=10), decimals=3)
+threshold = np.round(np.linspace(0.25, 0.5, num=10), decimals=3)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 angular_step = 1  # in degrees, the linecut directions will be automatically calculated
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-roi = (460, 560, 700, 800)  # ROI centered around the crystal of interest in the 2D image, the center of mass will be
+roi = (470, 550, 710, 790)  # ROI centered around the crystal of interest in the 2D image, the center of mass will be
 # determined within this ROI when origin is not defined. Leave None to use the full array.
 origin = None  # origin where all the line cuts pass by (indices considering the array cropped to roi).
 # If None, it will use the center of mass of the modulus in the region defined by roi
-voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
+voxel_size = 2.070393374741201  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 sum_axis = 1  # if the object is 3D, it will be summed along that axis
 debug = True  # True to print the output dictionary and plot the legend
 comment = 'SEM'  # string to add to the filename when saving
-#############################################
-# parameters used when loading a tiff image #
-#############################################
-
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -119,14 +115,16 @@ if isinstance(threshold, Real):
 valid.valid_container(threshold, container_types=(list, tuple, np.ndarray), item_types=Real,
                       min_included=0, max_included=1, name='line_profile')
 
-comment = f'_origin_{origin}_ang_{angular_step}deg_{comment}'
+comment = f'_origin_{origin}_{comment}'
 
 #########################
 # normalize the modulus #
 #########################
 obj = abs(obj) / abs(obj).max()  # normalize the modulus to 1
 obj[np.isnan(obj)] = 0  # remove nans
-gu.imshow_plot(array=obj, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
+fig, _, _ = gu.imshow_plot(array=obj, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
+fig.savefig(savedir + f'roi{roi}' + comment + '.png')
+comment = comment + f'_{angular_step}deg'
 
 #########################################
 # create the linecut for each direction #
@@ -136,7 +134,8 @@ for idx, direction in enumerate(directions):
     # get the distances and the modulus values along the linecut
     distance, cut = util.linecut(array=obj, point=origin, direction=direction, voxel_size=voxel_size)
     # store the result in a dictionary (cuts can have different lengths depending on the direction)
-    result[f'direction {direction}'] = {'angle': angles[idx], 'distance': distance, 'cut': cut}
+    result[f'direction ({direction[0]:.4f},{direction[1]:.4f})'] =\
+        {'angle': angles[idx], 'distance': distance, 'cut': cut}
 
 #######################
 #  plot all line cuts #
@@ -150,7 +149,7 @@ if debug:
         line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
                         marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=6,
                         linestyle='-', linewidth=1)
-        line.set_label(f'direction {key}')
+        line.set_label(f'{key}')
         plot_nb += 1
 
     ax.set_xlabel('width (nm)', fontsize=20)
