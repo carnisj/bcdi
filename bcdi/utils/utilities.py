@@ -66,6 +66,18 @@ def catch_error(exception):
     print(exception)
 
 
+def decode_json(dct):
+    """
+    Function used as the parameter object_hook in json.load function, supporting various types
+
+    :param dct: the input dictionary of strings
+    :return: a dictionary
+    """
+    if '__complex__' in dct:
+        return complex(dct['real'], dct['imag'])
+    return dct
+
+
 def dos2unix(input_file, output_file):
     """
     Convert DOS linefeeds (crlf) to UNIX (lf).
