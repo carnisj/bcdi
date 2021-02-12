@@ -269,6 +269,14 @@ bulk_surface_strain.py
    :end-before: """
    :language: rst
 
+compare_CDI_SEM.py
+^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/postprocessing/scripts/compare_CDI_SEM.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 correct_angles_detector.py
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
