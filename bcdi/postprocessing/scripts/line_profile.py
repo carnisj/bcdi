@@ -113,7 +113,6 @@ else:
 # create the linecut for each point #
 #####################################
 result = dict()
-result['direction'] = direction
 for point in points:
     # get the distances and the modulus values along the linecut
     distance, cut = util.linecut(array=obj, point=point, direction=direction, voxel_size=voxel_size)
@@ -127,12 +126,12 @@ fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 plot_nb = 0
 for key, value in result.items():
-    if key != 'direction':  # value is a dictionary {'distance': 1D array, 'cut': 1D array}
-        line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
-                        marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=6,
-                        linestyle='-', linewidth=1)
-        line.set_label(f'cut through {key}')
-        plot_nb += 1
+    # value is a dictionary {'distance': 1D array, 'cut': 1D array}
+    line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
+                    marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=6,
+                    linestyle='-', linewidth=1)
+    line.set_label(f'cut through {key}')
+    plot_nb += 1
 
 ax.set_xlabel('width (nm)', fontsize=20)
 ax.set_ylabel('modulus', fontsize=20)
@@ -145,30 +144,29 @@ fig.savefig(savedir + 'cut' + comment + '.png')
 # calculate the evolution of the width of the object depending on the threshold #
 #################################################################################
 for key, value in result.items():
-    if key != 'direction':
-        fit = interp1d(value['distance'], value['cut'])
-        dist_interp = np.linspace(value['distance'].min(), value['distance'].max(), num=10000)
-        cut_interp = fit(dist_interp)
-        width = np.empty(len(threshold))
+    fit = interp1d(value['distance'], value['cut'])
+    dist_interp = np.linspace(value['distance'].min(), value['distance'].max(), num=10000)
+    cut_interp = fit(dist_interp)
+    width = np.empty(len(threshold))
 
-        # calculate the function width vs threshold
-        for idx, thres in enumerate(threshold):
-            # calculate the distances where the modulus is equal to threshold
-            crossings = np.argwhere(cut_interp > thres)
-            if len(crossings) > 1:
-                width[idx] = dist_interp[crossings.max()] - dist_interp[crossings.min()]
-            else:
-                width[idx] = 0
+    # calculate the function width vs threshold
+    for idx, thres in enumerate(threshold):
+        # calculate the distances where the modulus is equal to threshold
+        crossings = np.argwhere(cut_interp > thres)
+        if len(crossings) > 1:
+            width[idx] = dist_interp[crossings.max()] - dist_interp[crossings.min()]
+        else:
+            width[idx] = 0
 
-        # fit the function width vs threshold and estimate where it crosses the expected widths
-        fit = interp1d(width, threshold)  # width vs threshold is monotonic (decreasing with increasing threshold)
-        fit_thresh = np.empty(len(width_lines))
-        for idx, val in enumerate(width_lines):
-            fit_thresh[idx] = fit(val)
-        # update the dictionary value
-        value['threshold'] = threshold
-        value['width'] = width
-        value['fitted_threshold'] = fit_thresh
+    # fit the function width vs threshold and estimate where it crosses the expected widths
+    fit = interp1d(width, threshold)  # width vs threshold is monotonic (decreasing with increasing threshold)
+    fit_thresh = np.empty(len(width_lines))
+    for idx, val in enumerate(width_lines):
+        fit_thresh[idx] = fit(val)
+    # update the dictionary value
+    value['threshold'] = threshold
+    value['width'] = width
+    value['fitted_threshold'] = fit_thresh
 
 #################################################
 # calculate statistics on the fitted thresholds #
@@ -176,14 +174,15 @@ for key, value in result.items():
 count = 0
 tmp_thres = np.zeros((len(width_lines), len(points)))
 for key, value in result.items():
-    if key != 'direction':  # iterating over points, value is a dictionary
-        for idx in range(len(width_lines)):
-            tmp_thres[idx, count] = value['fitted_threshold'][idx]
-        count += 1
+    # iterating over points, value is a dictionary
+    for idx in range(len(width_lines)):
+        tmp_thres[idx, count] = value['fitted_threshold'][idx]
+    count += 1
 mean_thres = np.mean(tmp_thres, axis=1)
 std_thres = np.std(tmp_thres, axis=1)
 
 # update the dictionary
+result['direction'] = direction
 result['expected_width'] = width_lines
 result['mean_thres'] = np.round(mean_thres, decimals=3)
 result['std_thres'] = np.round(std_thres, decimals=3)
@@ -228,6 +227,5 @@ if debug:
 with open(savedir+'cut' + comment + '.json', 'w', encoding='utf-8') as file:
     json.dump(result, file, cls=util.CustomEncoder, ensure_ascii=False, indent=4)
 
-np.savez_compressed(savedir + 'cut' + comment + '.npz', result=result)
 plt.ioff()
 plt.show()
