@@ -3156,7 +3156,8 @@ def motor_positions_id01(logfile, scan_number, setup, **kwargs):
 
             nb_overlap = 0
             energy = raw_energy[:]
-            frames_logical = frames_logical or np.ones(len(energy))
+            if frames_logical is None:
+                frames_logical = np.ones(len(energy))
             for idx in range(len(raw_energy) - 1):
                 if raw_energy[idx + 1] == raw_energy[idx]:  # duplicated energy when undulator gap is changed
                     frames_logical[idx + 1] = 0
@@ -3523,8 +3524,8 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     if setup.beamline == 'ID01':
         eta, chi, phi, nu, delta, energy, frames_logical = \
-            motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
-                                 kwargs={'frames_logical': frames_logical, 'follow_bragg': follow_bragg})
+            motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup, frames_logical=frames_logical,
+                                 follow_bragg=follow_bragg)
         chi = chi - setup.sample_offsets[0]  # sample_offsets[0] is the rotation around the downstream axis
         phi = phi - setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
         eta = eta - setup.sample_offsets[2]  # sample_offsets[2] is the rotation around the outboard axis
