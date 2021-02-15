@@ -114,22 +114,23 @@ if index_sem is None or index_bcdi is None:
     sys.exit()
 
 sem_trace = np.array(sem_dict['ang_width_threshold'][index_sem])
-sem_trace = np.roll(sem_trace, 50)
 bcdi_trace = np.array(bcdi_dict['ang_width_threshold'][index_bcdi])
-correlation = correlate(sem_trace, bcdi_trace, mode="full")
+correlation = np.correlate(sem_trace - np.mean(sem_trace), bcdi_trace - np.mean(bcdi_trace), mode="full")
 lags = np.arange(-sem_trace.size + 1, bcdi_trace.size)
 lag = lags[np.argmax(correlation)]
 
 # plot the cross-correlation
-fig = plt.figure(figsize=(12, 9))
+plt.figure(figsize=(12, 9))
 ax0 = plt.subplot(121)
 line, = ax0.plot(sem_trace)
 line.set_label("SEM trace")
 line, = ax0.plot(bcdi_trace)
 line.set_label("BCDI trace")
+
 print(f'lag between the two traces = {lag}')
 print('aligning the SEM trace on the BCDI traces')
 sem_trace = np.roll(sem_trace, -lag)
+
 line, = ax0.plot(sem_trace)
 line.set_label("SEM trace aligned")
 ax0.set_xlabel('angle (deg)', fontsize=20)
