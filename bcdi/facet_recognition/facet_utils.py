@@ -1144,40 +1144,66 @@ def upsample(array, upsampling_factor, voxelsizes, title='', debugging=False):
     :param debugging: True to see plots
     :return: the upsampled array
     """
-    if array.ndim != 3:
+    ndim = array.ndim
+    if ndim not in {2, 3}:
         raise NotImplementedError('Expecting a 3D array as input')  # TODO: implement this
 
     valid.valid_item(value=upsampling_factor, allowed_types=int, min_included=1, name='utils.upsample')
-    valid.valid_container(voxelsizes, container_types=(list, tuple, np.ndarray), length=3, item_types=Real,
+    valid.valid_container(voxelsizes, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
                           min_excluded=0, name='utils.upsample')
 
     vmin, vmax = array.min(), array.max()
 
-    if debugging:
-        gu.multislices_plot(array, sum_frames=False, title=title+' before upsampling', vmin=vmin, vmax=vmax,
-                            scale='linear', plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
-    nbz, nby, nbx = array.shape
-    numz, numy, numx = nbz * upsampling_factor, nby * upsampling_factor, nbx * upsampling_factor
-    newvoxelsizes = [voxsize/upsampling_factor for voxsize in voxelsizes]
+    if ndim == 3:
+        if debugging:
+            gu.multislices_plot(array, sum_frames=False, title=title+' before upsampling', vmin=vmin, vmax=vmax,
+                                scale='linear', plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
+        nbz, nby, nbx = array.shape
+        numz, numy, numx = nbz * upsampling_factor, nby * upsampling_factor, nbx * upsampling_factor
+        newvoxelsizes = [voxsize/upsampling_factor for voxsize in voxelsizes]
 
-    newz, newy, newx = np.meshgrid(np.arange(-numz // 2, numz // 2, 1) * newvoxelsizes[0],
-                                   np.arange(-numy // 2, numy // 2, 1) * newvoxelsizes[1],
-                                   np.arange(-numx // 2, numx // 2, 1) * newvoxelsizes[2], indexing='ij')
+        newz, newy, newx = np.meshgrid(np.arange(-numz // 2, numz // 2, 1) * newvoxelsizes[0],
+                                       np.arange(-numy // 2, numy // 2, 1) * newvoxelsizes[1],
+                                       np.arange(-numx // 2, numx // 2, 1) * newvoxelsizes[2], indexing='ij')
 
-    rgi = RegularGridInterpolator(
-        (np.arange(-nbz // 2, nbz // 2)*voxelsizes[0],
-         np.arange(-nby // 2, nby // 2)*voxelsizes[1],
-         np.arange(-nbx // 2, nbx // 2)*voxelsizes[2]),
-        array, method='linear', bounds_error=False, fill_value=0)
+        rgi = RegularGridInterpolator(
+            (np.arange(-nbz // 2, nbz // 2)*voxelsizes[0],
+             np.arange(-nby // 2, nby // 2)*voxelsizes[1],
+             np.arange(-nbx // 2, nbx // 2)*voxelsizes[2]),
+            array, method='linear', bounds_error=False, fill_value=0)
 
-    obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
-                              newx.reshape((1, newz.size)))).transpose())
+        obj = rgi(np.concatenate((newz.reshape((1, newz.size)), newy.reshape((1, newz.size)),
+                                  newx.reshape((1, newz.size)))).transpose())
 
-    obj = obj.reshape((numz, numy, numx)).astype(array.dtype)
+        obj = obj.reshape((numz, numy, numx)).astype(array.dtype)
 
-    if debugging:
-        gu.multislices_plot(obj, sum_frames=False, title=title+' after upsampling', vmin=vmin, vmax=vmax,
-                            scale='linear', plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
+        if debugging:
+            gu.multislices_plot(obj, sum_frames=False, title=title+' after upsampling', vmin=vmin, vmax=vmax,
+                                scale='linear', plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
+
+    else:  # 2D case
+        if debugging:
+            gu.imshow_plot(array, title=title + ' before upsampling', vmin=vmin, vmax=vmax, scale='linear',
+                           plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
+        nby, nbx = array.shape
+        numy, numx = nby * upsampling_factor, nbx * upsampling_factor
+        newvoxelsizes = [voxsize / upsampling_factor for voxsize in voxelsizes]
+
+        newy, newx = np.meshgrid(np.arange(-numy // 2, numy // 2, 1) * newvoxelsizes[0],
+                                 np.arange(-numx // 2, numx // 2, 1) * newvoxelsizes[1], indexing='ij')
+
+        rgi = RegularGridInterpolator(
+            (np.arange(-nby // 2, nby // 2) * voxelsizes[0],
+             np.arange(-nbx // 2, nbx // 2) * voxelsizes[1]),
+            array, method='linear', bounds_error=False, fill_value=0)
+
+        obj = rgi(np.concatenate((newy.reshape((1, newy.size)), newx.reshape((1, newy.size)))).transpose())
+
+        obj = obj.reshape((numy, numx)).astype(array.dtype)
+
+        if debugging:
+            gu.imshow_plot(obj, title=title + ' after upsampling', vmin=vmin, vmax=vmax, scale='linear',
+                           plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
 
     return obj, newvoxelsizes
 
