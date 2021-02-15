@@ -29,26 +29,24 @@ from the background. Must be given as input: the voxel size (possibly different 
 size and an origin point where all linecuts pass by.   
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder  #
-# "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/"  #
-#
-#
-savedir = datadir + 'linecuts/'  # 'linecuts_P2_001a/'
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/"
+# "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder  #
+savedir = datadir + 'linecuts_P2_018/'  # 'linecuts_P2_001a/'
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/linecuts_P2_001a/"
 # results will be saved here, if None it will default to datadir
-upsampling_factor = 5  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
-threshold = np.round(np.linspace(0.2, 0.6, num=9), decimals=3)
+upsampling_factor = 1  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
+threshold = np.round(np.linspace(0.2, 0.5, num=10), decimals=3)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 angular_step = 1  # in degrees, the linecut directions will be automatically calculated
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-roi = None  # (470, 550, 710, 790)  # ROI centered around the crystal of interest in the 2D image, the center of mass will be
+roi = (220, 680, 620, 1120)  # (470, 550, 710, 790)  # ROI centered around the crystal of interest in the 2D image, the center of mass will be
 # determined within this ROI when origin is not defined. Leave None to use the full array.
 origin = None  # origin where all the line cuts pass by (indices considering the array cropped to roi).
 # If None, it will use the center of mass of the modulus in the region defined by roi
-voxel_size = 5  # 2.070393374741201  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
+voxel_size = 0.3448275862068966  # 2.070393374741201  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 sum_axis = 1  # if the object is 3D, it will be summed along that axis
 debug = False  # True to print the output dictionary and plot the legend
-comment = 'upsampled_5'  # string to add to the filename when saving
+comment = 'SEM'  # string to add to the filename when saving
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -84,7 +82,7 @@ file_path = filedialog.askopenfilename(initialdir=datadir,
                                                   ("CXI", "*.cxi"), ("HDF5", "*.h5"), ("all files", "*.*")])
 _, ext = os.path.splitext(file_path)
 if ext in {'.png', '.jpg', '.tif'}:
-    obj = util.image_to_ndarray(filename=file_path, debug=False, convert_grey=True, cmap='gray')
+    obj = util.image_to_ndarray(filename=file_path, convert_grey=True, cmap='gray', debug=False)
 else:
     obj, _ = util.load_file(file_path)
 
@@ -98,7 +96,10 @@ if upsampling_factor > 1:
     obj, voxel_size = fu.upsample(array=obj, upsampling_factor=upsampling_factor, voxelsizes=voxel_size,
                                   title='modulus', debugging=debug)
     print(f'Upsampled object shape = {obj.shape}, upsampled voxel size = {voxel_size}')
-    
+else:
+    valid.valid_container(voxel_size, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
+                          min_excluded=0, name='angular_profile')
+
 #########################
 # check some parameters #
 #########################
@@ -180,8 +181,6 @@ if ndim == 3:
 # 2D case (SEM): one can create the linecut for each direction first and apply thresholds later #
 #################################################################################################
 else:
-    valid.valid_container(voxel_size, container_types=list, length=2, item_types=Real, min_excluded=0,
-                          name='angular_profile')
     ##############################################################################
     # calculate the evolution of the width vs threshold for different directions #
     ##############################################################################
