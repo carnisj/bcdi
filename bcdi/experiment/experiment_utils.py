@@ -1421,6 +1421,14 @@ class Setup(object):
         tilt = np.radians(tilt_angle)
         q_offset = np.zeros(3)  # TODO: calculate the q offset for all geometries
         nbz, nby, nbx = array_shape
+        if self.detector_hor == 'y-':  # inboard,  as it should be in the CXI convention
+            hor_coeff = 1
+        else:  # 'y+', outboard,  opposite to what it should be in the CXI convention
+            hor_coeff = -1
+        if self.detector_ver == 'z-':  # vertical down,  as it should be in the CXI convention
+            ver_coeff = 1
+        else:  # 'z+', vertical up,  opposite to what it should be in the CXI convention
+            ver_coeff = -1
 
         if self.beamline == 'ID01':
             if verbose:
@@ -1431,11 +1439,11 @@ class Setup(object):
                 if verbose:
                     print('rocking angle is eta')
                 # rocking eta angle clockwise around x (phi does not matter, above eta)
-                mymatrix[:, 0] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * hor_coeff *\
+                    np.array([-pixel_x * np.cos(inplane),
                               0,
-                              pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz *\
+                              -pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * ver_coeff *\
                     np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
                               -pixel_y * np.cos(outofplane),
                               pixel_y * np.cos(inplane) * np.sin(outofplane)])
@@ -1451,11 +1459,11 @@ class Setup(object):
                 if verbose:
                     print(f'rocking angle is phi, eta={grazing_angle[1]*180/np.pi:.3f} deg')
                 # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
-                mymatrix[:, 0] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * hor_coeff *\
+                    np.array([-pixel_x * np.cos(inplane),
                               0,
-                              pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz *\
+                              -pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * ver_coeff *\
                     np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
                               -pixel_y * np.cos(outofplane),
                               pixel_y * np.cos(inplane) * np.sin(outofplane)])
@@ -1476,19 +1484,19 @@ class Setup(object):
                     print(f'rocking angle is omega, chi={grazing_angle[0]*180/np.pi:.3f} deg')
                 # rocking omega angle clockwise around x at mu=0, chi potentially non zero (chi below omega)
                 # (phi does not matter, above eta)
-                mymatrix[:, 0] = 2 * np.pi / lambdaz *\
-                    np.array([-pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
                               0,
-                              pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                              -pixel_y * np.cos(outofplane),
-                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
-                mymatrix[:, 2] = 2 * np.pi / lambdaz *\
-                    np.array([tilt * distance * np.sin(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
-                              tilt * distance * np.cos(grazing_angle[0]) * (1 - np.cos(inplane) * np.cos(outofplane)),
-                              tilt * distance * (np.sin(outofplane) * np.cos(grazing_angle[0]) -
-                                                 np.cos(outofplane) * np.sin(inplane) * np.sin(grazing_angle[0]))])
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
+                    np.array([np.sin(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
+                              np.cos(grazing_angle[0]) * (1 - np.cos(inplane) * np.cos(outofplane)),
+                              (np.sin(outofplane) * np.cos(grazing_angle[0]) -
+                               np.cos(outofplane) * np.sin(inplane) * np.sin(grazing_angle[0]))])
                 q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
@@ -1499,14 +1507,14 @@ class Setup(object):
                           f' chi={grazing_angle[0]*180/np.pi:.3f} deg')
 
                 # rocking phi angle clockwise around y, omega and chi potentially non zero (chi below omega below phi)
-                mymatrix[:, 0] = 2 * np.pi / lambdaz *\
-                    np.array([-pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
                               0,
-                              pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                              -pixel_y * np.cos(outofplane),
-                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
                     np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) +
                               np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
@@ -1527,18 +1535,18 @@ class Setup(object):
                 if verbose:
                     print('rocking angle is theta')
                 # rocking theta angle clockwise around x (phi does not matter, above eta)
-                mymatrix[:, 0] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
                               0,
-                              pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz *\
-                    np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
-                              -pixel_y * np.cos(outofplane),
-                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
-                mymatrix[:, 2] = 2 * np.pi / lambdaz *\
+                              -np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([-np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
                     np.array([0,
-                              tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
-                              tilt * distance * np.sin(outofplane)])
+                              1 - np.cos(inplane) * np.cos(outofplane),
+                              np.sin(outofplane)])
                 q_offset[0] = -2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
@@ -1547,14 +1555,14 @@ class Setup(object):
                 if verbose:
                     print(f'rocking angle is phi, theta={grazing_angle[1]*180/np.pi:.3f} deg')
                 # rocking phi angle clockwise around y, incident angle theta is non zero (theta below phi)
-                mymatrix[:, 0] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
                               0,
-                              pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz *\
-                    np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
-                              -pixel_y * np.cos(outofplane),
-                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                              -np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([-np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
                     np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) +
                                np.cos(grazing_angle[1]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
@@ -1571,19 +1579,19 @@ class Setup(object):
                 if verbose:
                     print(f'rocking angle is phi, chi={grazing_angle[0] * 180 / np.pi:.3f} deg')
                 # rocking phi angle anti-clockwise around x (theta does not matter, above phi)
-                mymatrix[:, 0] = 2 * np.pi / lambdaz *\
-                    np.array([-pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
                               0,
-                              pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                              -pixel_y * np.cos(outofplane),
-                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
-                mymatrix[:, 2] = 2 * np.pi / lambdaz *\
-                    np.array([tilt * distance * np.sin(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
-                              tilt * distance * np.cos(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
-                              -tilt * distance * (np.sin(outofplane) * np.cos(grazing_angle[0]) +
-                                                  np.cos(outofplane) * np.sin(inplane) * np.sin(grazing_angle[0]))])
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
+                    np.array([np.sin(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
+                              np.cos(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
+                              -(np.sin(outofplane) * np.cos(grazing_angle[0]) +
+                                np.cos(outofplane) * np.sin(inplane) * np.sin(grazing_angle[0]))])
                 q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
@@ -1593,14 +1601,14 @@ class Setup(object):
                     print(f'rocking angle is theta, phi={grazing_angle[1]*180/np.pi:.3f} deg,'
                           f' chi={grazing_angle[0]*180/np.pi:.3f} deg')
                 # rocking theta angle anti-clockwise around y, incident angle is non zero (theta is above phi)
-                mymatrix[:, 0] = 2 * np.pi / lambdaz * \
-                    np.array([-pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff * \
+                    np.array([-np.cos(inplane),
                               0,
-                              pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz * \
-                    np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                              -pixel_y * np.cos(outofplane),
-                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff * \
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
                     np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) -
                               np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
@@ -1622,11 +1630,11 @@ class Setup(object):
                     print(f'rocking angle is mu, beta={grazing_angle[1] * 180 / np.pi:.3f} deg')
 
                 # rocking mu angle anti-clockwise around y
-                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x *\
-                    np.array([np.cos(inplane),
-                              -np.sin(grazing_angle[1]) * np.sin(inplane),
-                              -np.cos(grazing_angle[1]) * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y *\
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
+                              np.sin(grazing_angle[1]) * np.sin(inplane),
+                              np.cos(grazing_angle[1]) * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
                     np.array([np.sin(inplane) * np.sin(outofplane),
                               (np.sin(grazing_angle[1]) * np.cos(inplane) * np.sin(outofplane)
                                - np.cos(grazing_angle[1]) * np.cos(outofplane)),
@@ -1655,18 +1663,18 @@ class Setup(object):
                 if verbose:
                     print('rocking angle is mgomega')
                 # rocking mgomega angle clockwise around x
-                mymatrix[:, 0] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
                               0,
-                              -pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                              -pixel_y * np.cos(outofplane),
-                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
-                mymatrix[:, 2] = 2 * np.pi / lambdaz *\
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
                     np.array([0,
-                              tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
-                              tilt * distance * np.sin(outofplane)])
+                              1 - np.cos(inplane) * np.cos(outofplane),
+                              np.sin(outofplane)])
                 q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
@@ -1674,14 +1682,14 @@ class Setup(object):
                 if verbose:
                     print(f'rocking angle is phi, mgomega={grazing_angle[1]*180/np.pi:.3f} deg')
                 # rocking phi angle anti-clockwise around y, incident angle mgomega is non zero (mgomega below phi)
-                mymatrix[:, 0] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_x * np.cos(inplane),
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
                               0,
-                              -pixel_x * np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz *\
-                    np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
-                              -pixel_y * np.cos(outofplane),
-                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
                     np.array([(-np.sin(grazing_angle[1]) * np.sin(outofplane) -
                                np.cos(grazing_angle[1]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
