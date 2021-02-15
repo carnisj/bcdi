@@ -265,11 +265,13 @@ def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
     if cmap is None:
         cmap = gu.Colormap(bad_color='1.0').cmap
 
-    if convert_grey:
-        im = Image.open(filename).convert('L')
-    else:
-        im = Image.open(filename)
-    array = np.array(im)
+    im = Image.open(filename)
+
+    array = np.asarray(im)
+    if array.ndim == 3 and convert_grey:
+        print('converting image to gray')
+        array = rgb2gray(array)
+
     print(f'Image shape after conversion to ndarray: {array.shape}')
     if debug:
         gu.imshow_plot(array, sum_axis=2, plot_colorbar=True, cmap=cmap, reciprocal_space=False)
@@ -706,6 +708,17 @@ def remove_background(array, q_values, avg_background, avg_qvalues, method='norm
     array[array < 0] = 0
 
     return array
+
+
+def rgb2gray(rgb):
+    """
+    Convert a three layered RGB image in gray
+    :param rgb: the image in RGB
+    :return:
+    """
+    if rgb.ndim != 3:
+        raise ValueError('the input array should be 3d')
+    return 0.2989 * rgb[:, :, 0] + 0.5870 * rgb[:, :, 1] + 0.1140 * rgb[:, :, 2]
 
 
 def skewed_gaussian(x_axis, amp, loc, sig, alpha):
