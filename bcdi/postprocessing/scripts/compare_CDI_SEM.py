@@ -42,9 +42,8 @@ datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_
 savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/linecuts/"
 # results will be saved here, if None it will default to datadir
 index_sem = 2  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
-index_bcdi = 1  # index of the threshold to use for the BCDI profile used for angular alignement with the SEM.
 # Leave None to print the available thresholds.
-comment = 'upsampled_5'  # string to add to the filename when saving
+comment = '_upsampled_5'  # string to add to the filename when saving, should start with "_"
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -108,16 +107,15 @@ except KeyError:
 ####################################################################
 # get the angular shift between SEM and BCDI traces and align them #
 ####################################################################
-if index_sem is None or index_bcdi is None:
+if index_sem is None:
     print(f"thresholds SEM: {sem_dict['threshold']}")
-    print(f"thresholds BCDI: {bcdi_dict['threshold']}")
     sys.exit()
 
 sem_trace = np.array(sem_dict['ang_width_threshold'][index_sem])
-bcdi_trace = np.array(bcdi_dict['ang_width_threshold'][index_bcdi])
-correlation = np.correlate(sem_trace - np.mean(sem_trace), bcdi_trace - np.mean(bcdi_trace), mode="full")
+bcdi_trace = np.array(bcdi_dict['ang_width_threshold'][0])
+cross_corr = np.correlate(sem_trace - np.mean(sem_trace), bcdi_trace - np.mean(bcdi_trace), mode="full")
 lags = np.arange(-sem_trace.size + 1, bcdi_trace.size)
-lag = lags[np.argmax(correlation)]
+lag = lags[np.argmax(cross_corr)]
 
 # plot the cross-correlation
 plt.figure(figsize=(12, 9))
@@ -137,7 +135,7 @@ ax0.set_xlabel('angle (deg)', fontsize=20)
 ax0.set_ylabel('width (nm)', fontsize=20)
 ax0.legend(fontsize=14)
 ax1 = plt.subplot(122)
-ax1.plot(correlation)
+ax1.plot(cross_corr)
 ax1.set_title("cross-correlated signal", fontsize=14)
 plt.tight_layout()  # avoids the overlap of subplots with axes labels
 
@@ -155,6 +153,11 @@ line.set_label(f"SEM thres {sem_dict['threshold'][index_sem]}")
 
 for idx, thres in enumerate(thres_bcdi, start=1):
     bcdi_trace = np.array(bcdi_dict['ang_width_threshold'][idx-1])
+    cross_corr = np.correlate(sem_trace - np.mean(sem_trace), bcdi_trace - np.mean(bcdi_trace), mode="full")
+    lag = lags[np.argmax(cross_corr)]
+    sem_trace = np.roll(sem_trace, -lag)
+    print(f'bcdi trace {idx}, threshold = {thres}, lag = {lag}')
+
     correlation[idx-1] = pearsonr(sem_trace, bcdi_trace)[0]
     line, = ax0.plot(angles_bcdi, bcdi_trace, color=colors[idx % len(colors)],
                      marker=markers[(idx // len(colors)) % len(markers)], fillstyle='none', markersize=6,
