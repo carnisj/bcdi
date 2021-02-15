@@ -90,7 +90,7 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
     if obj is not None and length is not None:
         try:
             if len(obj) != length:
-                raise ValueError(f'{name} should be of length {length}')
+                raise ValueError(f'{name}: the container should be of length {length}')
         except TypeError as ex:
             raise TypeError(f'method __len__ not defined for the type(s) {container_types}') from ex
 
