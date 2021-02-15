@@ -1146,7 +1146,7 @@ def upsample(array, upsampling_factor, voxelsizes, title='', debugging=False):
     """
     ndim = array.ndim
     if ndim not in {2, 3}:
-        raise NotImplementedError('Expecting a 3D array as input')  # TODO: implement this
+        raise ValueError('Expecting a 2D or 3D array as input')
 
     valid.valid_item(value=upsampling_factor, allowed_types=int, min_included=1, name='utils.upsample')
     valid.valid_container(voxelsizes, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
