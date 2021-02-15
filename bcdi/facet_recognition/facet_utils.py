@@ -14,6 +14,7 @@ from scipy import stats
 from scipy import ndimage
 from skimage.feature import corner_peaks
 from skimage.morphology import watershed
+from numbers import Real
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
@@ -22,6 +23,7 @@ import sys
 sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+import bcdi.utils.validation as valid
 
 colormap = gu.Colormap()
 default_cmap = colormap.cmap
@@ -1143,10 +1145,11 @@ def upsample(array, upsampling_factor, voxelsizes, title='', debugging=False):
     :return: the upsampled array
     """
     if array.ndim != 3:
-        raise ValueError('Expecting a 3D array as input')
+        raise NotImplementedError('Expecting a 3D array as input')  # TODO: implement this
 
-    if not isinstance(upsampling_factor, int):
-        raise ValueError('upsampling_factor should be an integer')
+    valid.valid_item(value=upsampling_factor, allowed_types=int, min_included=1, name='utils.upsample')
+    valid.valid_container(voxelsizes, container_types=(list, tuple, np.ndarray), length=3, item_types=Real,
+                          min_excluded=0, name='utils.upsample')
 
     vmin, vmax = array.min(), array.max()
 
