@@ -11,7 +11,7 @@ import os
 from collections import OrderedDict
 import ctypes
 import h5py
-from numbers import Real
+from numbers import Number, Real
 import numpy as np
 from scipy.special import erf
 from scipy.interpolate import interp1d
@@ -73,8 +73,12 @@ def decode_json(dct):
     :param dct: the input dictionary of strings
     :return: a dictionary
     """
-    if '__complex__' in dct:
-        return complex(dct['real'], dct['imag'])
+    for key, val in dct.items():
+        if isinstance(val, list):
+            try:
+                dct[key] = np.asarray(val)
+            except TypeError:
+                pass
     return dct
 
 

@@ -90,12 +90,12 @@ _, ext = os.path.splitext(file_path)
 if ext == '.json':
     with open(file_path, 'r') as f:
         json_string = f.read()
-    bcdi_dict = json.loads(json_string, object_hook=util.decode_json)  # TODO deserialize lists as ndarrays
+    bcdi_dict = json.loads(json_string, object_hook=util.decode_json)
 else:
     raise ValueError(f'expecting as JSON file, got a {ext}')
 
 try:
-    if not np.all(np.array(sem_dict['angles']) == np.array(bcdi_dict['angles'])):
+    if not np.all(sem_dict['angles'] == bcdi_dict['angles']):
         print('angular steps are not equal:')
         print(f"SEM angles: {sem_dict['angles']}")
         print(f"BCDI angles: {bcdi_dict['angles']}")
@@ -111,8 +111,8 @@ if index_sem is None:
     print(f"thresholds SEM: {sem_dict['threshold']}")
     sys.exit()
 
-sem_trace = np.array(sem_dict['ang_width_threshold'][index_sem])
-bcdi_trace = np.array(bcdi_dict['ang_width_threshold'][0])
+sem_trace = sem_dict['ang_width_threshold'][index_sem]
+bcdi_trace = bcdi_dict['ang_width_threshold'][0]
 cross_corr = np.correlate(sem_trace - np.mean(sem_trace), bcdi_trace - np.mean(bcdi_trace), mode="full")
 lags = np.arange(-sem_trace.size + 1, bcdi_trace.size)
 lag = lags[np.argmax(cross_corr)]
@@ -142,17 +142,17 @@ plt.tight_layout()  # avoids the overlap of subplots with axes labels
 ##########################################################################
 # plot the aligned BDCI traces for different thresholds vs the SEM trace #
 ##########################################################################
-thres_bcdi = np.array(bcdi_dict['threshold'])
-angles_bcdi = np.array(bcdi_dict['angles'])
+thres_bcdi = bcdi_dict['threshold']
+angles_bcdi = bcdi_dict['angles']
 correlation = np.zeros(thres_bcdi.size)
 fig = plt.figure(figsize=(12, 9))
 ax0 = plt.subplot(121)
-line, = ax0.plot(np.array(sem_dict['angles']), sem_trace, color=colors[0], marker=markers[0], fillstyle='none',
+line, = ax0.plot(sem_dict['angles'], sem_trace, color=colors[0], marker=markers[0], fillstyle='none',
                  markersize=6, linestyle='-', linewidth=1)
 line.set_label(f"SEM thres {sem_dict['threshold'][index_sem]}")
 
 for idx, thres in enumerate(thres_bcdi, start=1):
-    bcdi_trace = np.array(bcdi_dict['ang_width_threshold'][idx-1])
+    bcdi_trace = bcdi_dict['ang_width_threshold'][idx-1]
     cross_corr = np.correlate(sem_trace - np.mean(sem_trace), bcdi_trace - np.mean(bcdi_trace), mode="full")
     lag = lags[np.argmax(cross_corr)]
     sem_trace = np.roll(sem_trace, -lag)
