@@ -1078,7 +1078,7 @@ class Setup(object):
         :param save_dir: path of the directory where to save the analysis results, can be None
         :param specfile_name: beamline-dependent string
          - ID01: name of the spec file without '.spec'
-         - SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
+         - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary (e.g. root_folder+'alias_dict_2019.txt')
          - empty string for all other beamlines
         :param template_imagefile: beamline-dependent template for the data files
          - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
@@ -1115,6 +1115,14 @@ class Setup(object):
             datadir = homedir + 'data/'
             specfile = specfile_name
             scan_template = sample_name + '_{:06d}'.format(scan_number) + '/'  # used to create the folder
+        elif self.beamline in {'SIXS_2018', 'SIXS_2019'}:
+            homedir = root_folder + sample_name + str(scan_number) + '/'
+            datadir = homedir + "data/"
+            if specfile_name is None:  # default to the alias dictionnary located within the package
+                specfile_name = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir,
+                                                             'preprocessing/alias_dict_2021.txt'))
+            specfile = specfile_name
+            scan_template = sample_name + '_' + str(scan_number) + '/'  # used to create the folder
         else:
             homedir = root_folder + sample_name + str(scan_number) + '/'
             datadir = homedir + "data/"
