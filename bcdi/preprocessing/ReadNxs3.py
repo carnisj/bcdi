@@ -53,7 +53,8 @@ class DataSet(object):
         self._SpecNaNs = Nxs2Spec  # Remove the NaNs if the spec file need to be generated
         attlist = []  # used for self generated file attribute list 
         aliases = []  # used for SBS imported with alias_dict file
-        
+
+        print('### ReadNxs3 ###')
         if alias_dict:
             try:
                 self._alias_dict = pickle.load(open(alias_dict, 'rb'))
@@ -401,7 +402,7 @@ class DataSet(object):
         except:
             print('No Xpad Publisher defined')
        
-            
+        print('### End of ReadNxs3 ###\n')
         ff.close()
     ########################################################################################
     ##################### down here useful function in the NxsRead #########################
