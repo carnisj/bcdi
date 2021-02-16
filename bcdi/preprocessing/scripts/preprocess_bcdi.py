@@ -826,9 +826,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     else:
         print("\nSkipping median filtering")
 
-    #############################################
-    # apply photon threshold
-    #############################################
+    ##########################
+    # apply photon threshold #
+    ##########################
     if photon_threshold != 0:
         mask[data < photon_threshold] = 1
         data[data < photon_threshold] = 0
