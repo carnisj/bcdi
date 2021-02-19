@@ -1614,8 +1614,8 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
         return amp, phase, myrampy, myrampx
 
 
-def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, width_z=None, width_y=None, width_x=None,
-                   is_orthogonal=False, reciprocal_space=False, scale='linear', debugging=False):
+def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, fill_value=0, width_z=None, width_y=None,
+                   width_x=None, is_orthogonal=False, reciprocal_space=False, scale='linear', debugging=False):
     """
     Rotate myobj to align axis_to_align onto reference_axis.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
@@ -1626,6 +1626,7 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, width_
     :param axis_to_align: the axis to be aligned (e.g. vector q), expressed in an orthonormal frame x y z
     :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame  x y z
     :param voxel_size: tuple, voxel size of the 3D array in z, y, and x (CXI convention)
+    :param fill_value: numeric value used in the RegularGridInterpolator for points outside of the interpolation domain
     :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
     :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
     :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
@@ -1647,6 +1648,8 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, width_
                           name='postprocessing_utils.rotate_crystal', min_excluded=0)
     if scale not in {'linear', 'log'}:
         raise ValueError(f'scale {scale} not supported, allowed is "linear" and "log"')
+    if not isinstance(fill_value, Number):
+        raise ValueError('fill_value should be a number')
 
     # normalize the vectors
     axis_to_align = axis_to_align / np.linalg.norm(axis_to_align)
@@ -1674,7 +1677,8 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, width_
     new_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
 
     del myx, myy, myz
-    rgi = RegularGridInterpolator((old_z, old_y, old_x), array, method='linear', bounds_error=False, fill_value=0)
+    rgi = RegularGridInterpolator((old_z, old_y, old_x), array, method='linear', bounds_error=False,
+                                  fill_value=fill_value)
     new_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                    new_x.reshape((1, new_z.size)))).transpose())
     new_array = new_array.reshape((nbz, nby, nbx)).astype(array.dtype)
