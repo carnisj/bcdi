@@ -76,8 +76,9 @@ plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the sup
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-data_frame = 'detector'  # 'crystal' if the data was interpolated into the crystal frame using xrayutilities
-# 'laboratory' if the data was interpolated into the laboratory frame using the linearized transformation matrix
+data_frame = 'detector'  # 'crystal' if the data was interpolated into the crystal frame using (xrayutilities) or
+# (transformation matrix + align_q=True)
+# 'laboratory' if the data was interpolated into the laboratory frame using the transformation matrix (align_q = False)
 # 'detector' if the data is still in the detector frame
 isosurface_strain = 0.2  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 strain_method = 'default'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
