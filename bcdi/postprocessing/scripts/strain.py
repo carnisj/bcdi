@@ -538,8 +538,8 @@ kin = 2*np.pi/setup.wavelength * setup.beam_direction  # in laboratory frame z d
 kout = setup.exit_wavevector  # in laboratory frame z downstream, y vertical, x outboard
 
 q = kout - kin  # in laboratory frame z downstream, y vertical, x outboard
-Qnorm = np.linalg.norm(q)
-q = q / Qnorm
+qnorm = np.linalg.norm(q)
+q = q / qnorm
 angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=myaxis)
 print(f"\nAngle between q and {ref_axis_q} = {angle:.2f} deg")
 if debug:
@@ -547,10 +547,10 @@ if debug:
     print(f"Angle with y in xy plane = {np.arctan(-q[2]/q[1])*180/np.pi:.2f} deg")
     print(f"Angle with z in xz plane = {180+np.arctan(q[2]/q[0])*180/np.pi:.2f} deg\n")
 
-Qnorm = Qnorm * 1e-10  # switch to angstroms
-planar_dist = 2*np.pi/Qnorm  # Qnorm should be in angstroms
-print("Normalized wavevector transfer [z, y, x]:", q)
-print("Wavevector transfer: (angstroms)", str('{:.4f}'.format(Qnorm)))
+qnorm = qnorm * 1e-10  # switch to angstroms
+planar_dist = 2*np.pi/qnorm  # qnorm should be in angstroms
+print("Normalized wavevector transfer [z*, y*, x*]:", q)
+print("Wavevector transfer: (angstroms)", str('{:.4f}'.format(qnorm)))
 print("Atomic plane distance: (angstroms)", str('{:.4f}'.format(planar_dist)), "angstroms")
 
 if get_temperature:
