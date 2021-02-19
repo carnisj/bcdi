@@ -49,10 +49,10 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 128  # spec scan number
-root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/"  # images will be saved here, leave it to None otherwise (default to data directory's parent)
-sample_name = "PtNP1"  # "S"  # string in front of the scan number in the folder name.
+scan = 1058  # spec scan number
+root_folder = "D:/data/SIXS_Fev2021/"  # folder of the experiment, where all scans are stored
+save_dir = None  # images will be saved here, leave it to None otherwise (default to data directory's parent)
+sample_name = "S"  # "S"  # string in front of the scan number in the folder name.
 comment = ''  # comment in filenames, should start with _
 #########################################################
 # parameters used when averaging several reconstruction #
@@ -62,13 +62,13 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [168, 1024, 800]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [200, 400, 300]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 phasing_binning = (1, 2, 2)  # binning factor applied during phase retrieval
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension used in preprocessing (not phase retrieval)
-output_size = (50, 50, 50)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
+output_size = (150, 150, 150)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
-fix_voxel = 5  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
+fix_voxel = 6  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
 # provided, the voxel size will be identical is all 3 directions. Set it to None to use the default voxel size
 # (calculated from q values, it will be different in each dimension).
 plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the support in each direction when cropping,
@@ -91,30 +91,32 @@ centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max th
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = "P10"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
+beamline = "SIXS_2019"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
-rocking_angle = "outofplane"  # # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
+rocking_angle = "inplane"  # # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
 # around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 1.83  # 1.26  # sample to detector distance in m
-energy = 8170  # x-ray energy in eV, 6eV offset at ID01
+sdd = 1.2  # 1.26  # sample to detector distance in m
+energy = 8500  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
-outofplane_angle = 39.0870  # detector angle in deg (rotation around x outboard): delta ID01, delta SIXS, gamma 34ID
-inplane_angle = -1.0270  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
-tilt_angle = 0.00783  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
-sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+outofplane_angle = 0  # detector angle in deg (rotation around x outboard): delta ID01, delta SIXS, gamma 34ID
+# this is the true angle, corrected for the direct beam position
+inplane_angle = 35.8  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
+# this is the true angle, corrected for the direct beam position
+tilt_angle = 0.6/201  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # the sample offsets will be subtracted to the motor values
-specfile_name = ''
+specfile_name = root_folder + 'alias_dict_2021.txt'
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
 # template for all other beamlines: ''
 ###############################
 # detector related parameters #
 ###############################
-detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+detector = "Merlin"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
-template_imagefile = '_master.h5'
+template_imagefile = 'Pt_YSZ_ascan_mu_%05d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -125,15 +127,15 @@ template_imagefile = '_master.h5'
 ###################################################
 # parameters related to the refraction correction #
 ###################################################
-correct_refraction = True  # True for correcting the phase shift due to refraction
+correct_refraction = False  # True for correcting the phase shift due to refraction
 correct_absorption = False  # True for correcting the amplitude for absorption
 optical_path_method = 'threshold'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove only outer layers even if
 # the amplitude is lower than isosurface_strain inside the crystal
-dispersion = 5.0328E-05  # delta
+dispersion = 4.6353E-05  # delta
 # Pt:  3.0761E-05 @ 10300eV, 5.0328E-05 @ 8170eV
 # 3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994eV, 5.2647E-05 @ 7994eV, 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
-absorption = 4.8341E-06  # beta
+absorption = 4.1969E-06  # beta
 # Pt:  2.0982E-06 @ 10300eV, 4.8341E-06 @ 8170eV
 # 2.3486E-06 @ 9994eV, 3.4298E-06 @ 8994eV, 5.2245E-06 @ 7994eV, 4.1969E-06 @ 8500eV
 threshold_unwrap_refraction = 0.05  # threshold used to calculate the optical path
@@ -152,12 +154,12 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, -1, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (0, 0, -1)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
 align_q = True  # if True rotates the crystal to align q it along one axis of the array
-ref_axis_q = "y"  # q will be aligned along that axis
+ref_axis_q = "x"  # q will be aligned along that axis
 align_axis = False  # if True rotates the crystal to align axis_to_align along ref_axis
 ref_axis = "y"  # will align axis_to_align to that axis
 axis_to_align = np.array([-0.011662456997498807, 0.957321364700986, -0.28879022106682123])
@@ -539,15 +541,10 @@ Qnorm = np.linalg.norm(q)
 q = q / Qnorm
 angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=myaxis)
 print(f"\nAngle between q and {ref_axis_q} = {angle:.2f} deg")
-print(f"Angle with y in zy plane = {np.arctan(q[0]/q[1])*180/np.pi:.2f} deg")
-print(f"Angle with y in xy plane = {np.arctan(-q[2]/q[1])*180/np.pi:.2f} deg")
-print(f"Angle with z in xz plane = {180+np.arctan(q[2]/q[0])*180/np.pi:.2f} deg\n")
-
-if data_frame == 'crystal':  # transform kin and kout into the crystal frame (xrayutilities output in crystal frame)
-    kin = pu.rotate_vector(vector=np.array([kin[2], kin[1], kin[0]]), axis_to_align=myaxis,
-                           reference_axis=np.array([q[2], q[1], q[0]]))
-    kout = pu.rotate_vector(vector=np.array([kout[2], kout[1], kout[0]]), axis_to_align=myaxis,
-                            reference_axis=np.array([q[2], q[1], q[0]]))
+if debug:
+    print(f"Angle with y in zy plane = {np.arctan(q[0]/q[1])*180/np.pi:.2f} deg")
+    print(f"Angle with y in xy plane = {np.arctan(-q[2]/q[1])*180/np.pi:.2f} deg")
+    print(f"Angle with z in xz plane = {180+np.arctan(q[2]/q[0])*180/np.pi:.2f} deg\n")
 
 Qnorm = Qnorm * 1e-10  # switch to angstroms
 planar_dist = 2*np.pi/Qnorm  # Qnorm should be in angstroms
@@ -592,6 +589,15 @@ if invert_phase:
 if correct_refraction or correct_absorption:
     bulk = pu.find_bulk(amp=amp, support_threshold=threshold_unwrap_refraction, method=optical_path_method,
                         debugging=debug)
+
+    # kin and kout were calculated in the laboratory frame. If the crystal is in its frame, we need to transform kin
+    # and kout back into the crystal frame (xrayutilities output is in crystal frame)
+    if data_frame == 'crystal':
+        kin = pu.rotate_vector(vector=np.array([kin[2], kin[1], kin[0]]), axis_to_align=myaxis,
+                               reference_axis=np.array([q[2], q[1], q[0]]))
+        kout = pu.rotate_vector(vector=np.array([kout[2], kout[1], kout[0]]), axis_to_align=myaxis,
+                                reference_axis=np.array([q[2], q[1], q[0]]))
+
     # calculate the optical path of the incoming wavevector
     path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=debug)  # path_in already in nm
 
