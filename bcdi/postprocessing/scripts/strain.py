@@ -549,9 +549,9 @@ if debug:
 
 qnorm = qnorm * 1e-10  # switch to angstroms
 planar_dist = 2*np.pi/qnorm  # qnorm should be in angstroms
-print("Normalized wavevector transfer [z*, y*, x*]:", q)
-print("Wavevector transfer: (angstroms)", str('{:.4f}'.format(qnorm)))
-print("Atomic plane distance: (angstroms)", str('{:.4f}'.format(planar_dist)), "angstroms")
+print(f"Normalized wavevector transfer (z*, y*, x*): {q[0]:.4f}, {q[1]:.4f}, {q[2]:.4f}")
+print("Wavevector transfer: (1/A)", str('{:.4f}'.format(qnorm)))
+print("Atomic plane distance: (A)", str('{:.4f}'.format(planar_dist)), "angstroms")
 
 if get_temperature:
     temperature = pu.bragg_temperature(spacing=planar_dist, reflection=reflection, spacing_ref=reference_spacing,
