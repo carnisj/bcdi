@@ -1651,6 +1651,9 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, fill_v
     if not isinstance(fill_value, Number):
         raise ValueError('fill_value should be a number')
 
+    # convert array type to float, for integers the interpolation can lead to artefacts
+    array = array.astype(float)
+
     # normalize the vectors
     axis_to_align = axis_to_align / np.linalg.norm(axis_to_align)
     reference_axis = reference_axis / np.linalg.norm(reference_axis)
