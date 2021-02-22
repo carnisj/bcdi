@@ -216,6 +216,13 @@ if fix_voxel:
     assert isinstance(fix_voxel, (tuple, list)) and all(val > 0 for val in fix_voxel),\
         'fix_voxel should be a positive number or a tuple/list of three positive numbers'
 
+if data_frame not in {'laboratory', 'crystal', 'laboratory'}:
+    raise ValueError('Uncorrect setting for "data_frame" parameter')
+elif data_frame == 'laboratory':
+    is_orthogonal = False
+else:
+    is_orthogonal = True
+
 comment = comment + '_' + str(isosurface_strain)
 
 ###################
@@ -416,7 +423,7 @@ phase = phase + gridz * rampz + gridy * rampy + gridx * rampx  # put back the ph
 
 if apodize_flag:
     amp, phase = pu.apodize(amp=amp, phase=phase, initial_shape=original_size, window_type=apodize_window,
-                            sigma=sigma, mu=mu, alpha=alpha, data_frame=data_frame, debugging=True)
+                            sigma=sigma, mu=mu, alpha=alpha, is_orthogonal=is_orthogonal, debugging=True)
     comment = comment + '_apodize_' + apodize_window
 
 ####################################################################################################################
