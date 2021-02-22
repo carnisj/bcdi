@@ -682,24 +682,10 @@ if data_frame != 'crystal':
 strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxel_size, reference_axis=ref_axis_q,
                        extent_phase=extent_phase, method=strain_method, debugging=debug)
 
-################################################################
-# rotates the crystal inplane for easier slicing of the result #
-################################################################
+#######################################
+# optionally rotates back the crystal #
+#######################################
 if data_frame != 'crystal':
-    if align_axis:
-        if ref_axis == "x":
-            myaxis_inplane = np.array([1, 0, 0])  # must be in [x, y, z] order
-        elif ref_axis == "y":
-            myaxis_inplane = np.array([0, 1, 0])  # must be in [x, y, z] order
-        else:  # ref_axis = "z"
-            myaxis_inplane = np.array([0, 0, 1])  # must be in [x, y, z] order
-        amp = pu.rotate_crystal(array=amp, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                                reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=True)
-        phase = pu.rotate_crystal(array=phase, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                                  reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False)
-        strain = pu.rotate_crystal(array=strain, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                                   reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False)
-
     if align_q:
         comment = comment + '_crystal-frame'
     else:
@@ -712,7 +698,22 @@ if data_frame != 'crystal':
         strain = pu.rotate_crystal(array=strain, axis_to_align=myaxis, voxel_size=voxel_size,
                                    reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False)
 
-    print(f'Voxel size: ({voxel_size[0]:.2f}, {voxel_size[1]:.2f}, {voxel_size[2]:.2f}) (nm)')
+############################################################################
+# rotates the crystal for example inplane for easier slicing of the result #
+############################################################################
+if align_axis:
+    if ref_axis == "x":
+        myaxis_inplane = np.array([1, 0, 0])  # must be in [x, y, z] order
+    elif ref_axis == "y":
+        myaxis_inplane = np.array([0, 1, 0])  # must be in [x, y, z] order
+    else:  # ref_axis = "z"
+        myaxis_inplane = np.array([0, 0, 1])  # must be in [x, y, z] order
+    amp = pu.rotate_crystal(array=amp, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
+                            reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=True)
+    phase = pu.rotate_crystal(array=phase, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
+                              reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False)
+    strain = pu.rotate_crystal(array=strain, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
+                               reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False)
 
 ##############################################
 # pad array to fit the output_size parameter #
@@ -729,6 +730,7 @@ print("Final data shape:", numz, numy, numx)
 ##############################################################################################
 # save result to vtk (result in the laboratory frame or rotated result in the crystal frame) #
 ##############################################################################################
+print(f'Voxel size: ({voxel_size[0]:.2f}, {voxel_size[1]:.2f}, {voxel_size[2]:.2f}) (nm)')
 bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method='threshold')
 if save:
     if invert_phase:
