@@ -93,22 +93,16 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     :param kwargs:
      - for the normal distribution: 'sigma' and 'mu' of the 3d multivariate normal distribution, tuples of 3 floats
      - for the Tuckey window: 'alpha' (shape parameter) of the 3d Tukey window, tuple of 3 floats
-     - 'data_frame': frame of the data, 'detector', 'crystal' or 'laboratory'. Used for defining default plot labels.
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
     :return: filtered amplitude, phase of the same shape as myamp
     """
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma', 'mu', 'alpha', 'data_frame'},
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma', 'mu', 'alpha', 'is_orthogonal'},
                        name='postprocessing_utils.apodize')
     sigma = kwargs.get('sigma', None)
     mu = kwargs.get('mu', None)
     alpha = kwargs.get('alpha', None)
-    data_frame = kwargs.get('data_frame', 'laboratory')
-    if data_frame not in {'laboratory', 'crystal', 'detector'}:
-        raise ValueError('Incorrect value for "data_frame" kwarg')
-    elif data_frame == 'laboratory':
-        is_orthogonal = False
-    else:
-        is_orthogonal = True
+    is_orthogonal = kwargs.get('is_orthogonal', False)
 
     if amp.ndim != 3 or phase.ndim != 3:
         raise ValueError('amp and phase should be 3D arrays')
