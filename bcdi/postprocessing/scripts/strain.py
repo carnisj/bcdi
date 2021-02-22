@@ -107,7 +107,7 @@ inplane_angle = 35.8  # detector angle in deg(rotation around y vertical up): nu
 tilt_angle = 0.6/201  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # the sample offsets will be subtracted to the motor values
-specfile_name = root_folder + 'alias_dict_2021.txt'
+specfile_name = None  # root_folder + 'alias_dict_2021.txt'
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
 # template for all other beamlines: ''
@@ -216,9 +216,9 @@ if fix_voxel:
     assert isinstance(fix_voxel, (tuple, list)) and all(val > 0 for val in fix_voxel),\
         'fix_voxel should be a positive number or a tuple/list of three positive numbers'
 
-if data_frame not in {'laboratory', 'crystal', 'laboratory'}:
+if data_frame not in {'detector', 'crystal', 'laboratory'}:
     raise ValueError('Uncorrect setting for "data_frame" parameter')
-elif data_frame == 'laboratory':
+elif data_frame == 'detector':
     is_orthogonal = False
 else:
     is_orthogonal = True
@@ -360,7 +360,8 @@ for counter, value in enumerate(sorted_obj):
 
     avg_obj, flag_avg = pu.average_obj(avg_obj=avg_obj, ref_obj=ref_obj, obj=obj, support_threshold=0.25,
                                        correlation_threshold=avg_threshold, aligning_option='dft',
-                                       method=avg_method, debugging=True)
+                                       method=avg_method, reciprocal_space=False, is_orthogonal=is_orthogonal,
+                                       debugging=True)
     avg_counter = avg_counter + flag_avg
 
 avg_obj = avg_obj / avg_counter
@@ -371,13 +372,14 @@ gc.collect()
 ################
 # unwrap phase #
 ################
-phase, extent_phase = pu.unwrap(avg_obj, support_threshold=threshold_unwrap_refraction, debugging=True)
+phase, extent_phase = pu.unwrap(avg_obj, support_threshold=threshold_unwrap_refraction, debugging=True,
+                                reciprocal_space=False, is_orthogonal=is_orthogonal)
 
 print('Extent of the phase over an extended support (ceil(phase range)) ~ ', int(extent_phase), '(rad)')
 phase = pru.wrap(phase, start_angle=-extent_phase/2, range_angle=extent_phase)
 if debug:
-    gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                        plot_colorbar=True, title='Phase after unwrap + wrap')
+    gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange, plot_colorbar=True,
+                        title='Phase after unwrap + wrap', reciprocal_space=False, is_orthogonal=is_orthogonal)
 
 #############################################
 # phase ramp removal before phase filtering #
@@ -389,8 +391,8 @@ del avg_obj
 gc.collect()
 
 if debug:
-    gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                        plot_colorbar=True, title='Phase after ramp removal')
+    gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange, plot_colorbar=True,
+                        title='Phase after ramp removal', reciprocal_space=False, is_orthogonal=is_orthogonal)
 
 ########################
 # phase offset removal #
@@ -487,7 +489,8 @@ if data_frame == 'detector':
                         sum_frames=False, plot_colorbar=True, vmin=0, vmax=abs(avg_obj).max(),
                         title='Amp before orthogonalization', reciprocal_space=False, is_orthogonal=False)
     if debug:
-        phase, _ = pu.unwrap(avg_obj, support_threshold=threshold_unwrap_refraction, debugging=True)
+        phase, _ = pu.unwrap(avg_obj, support_threshold=threshold_unwrap_refraction, debugging=True,
+                             reciprocal_space=False, is_orthogonal=False)
         gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
                             sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=False,
                             title='Unwrapped phase before orthogonalization')
@@ -573,17 +576,18 @@ planar_dist = planar_dist / 10  # switch to nm
 ######################
 obj_ortho = pu.center_com(obj_ortho)
 amp = abs(obj_ortho)
-phase, extent_phase = pu.unwrap(obj_ortho, support_threshold=threshold_unwrap_refraction, debugging=debug)
+phase, extent_phase = pu.unwrap(obj_ortho, support_threshold=threshold_unwrap_refraction, debugging=debug,
+                                reciprocal_space=False, is_orthogonal=True)
 del obj_ortho
 gc.collect()
 
 if debug:
     gu.multislices_plot(amp, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
                         sum_frames=False, plot_colorbar=True, vmin=0, vmax=amp.max(),
-                        title='Amp before absorption correction')
+                        title='Amp before absorption correction', reciprocal_space=False, is_orthogonal=True)
     gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                        sum_frames=False, plot_colorbar=True,
-                        title='Unwrapped phase before refraction correction')
+                        sum_frames=False, plot_colorbar=True, title='Unwrapped phase before refraction correction',
+                        reciprocal_space=False, is_orthogonal=True)
 
 #############################################
 # invert phase: -1*phase = displacement * q #
@@ -649,7 +653,8 @@ amp, phase, _, _, _ = pu.remove_ramp(amp=amp, phase=phase, initial_shape=origina
 support = np.zeros(amp.shape)
 support[amp > isosurface_strain*amp.max()] = 1
 phase = pu.remove_offset(array=phase, support=support, offset_method=offset_method, user_offset=phase_offset,
-                         offset_origin=offset_origin, title='Orthogonal phase', debugging=debug)
+                         offset_origin=offset_origin, title='Orthogonal phase', debugging=debug,
+                         reciprocal_space=False, is_orthogonal=True)
 del support
 gc.collect()
 
@@ -679,9 +684,11 @@ if save_labframe:
 if data_frame != 'crystal':
     print('\nAligning Q along ', ref_axis_q, ":", myaxis)
     amp = pu.rotate_crystal(array=amp, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
-                            reference_axis=myaxis, voxel_size=voxel_size, debugging=True)
+                            reference_axis=myaxis, voxel_size=voxel_size, debugging=True,
+                            is_orthogonal=True, reciprocal_space=False)
     phase = pu.rotate_crystal(array=phase, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
-                              reference_axis=myaxis, voxel_size=voxel_size, debugging=False)
+                              reference_axis=myaxis, voxel_size=voxel_size, debugging=False,
+                              is_orthogonal=True, reciprocal_space=False)
 
 ################################################################
 # calculate the strain depending on which axis q is aligned on #
@@ -699,11 +706,14 @@ if data_frame != 'crystal':
         comment = comment + '_lab-frame'
         print('Rotating back the crystal in laboratory frame')
         amp = pu.rotate_crystal(array=amp, axis_to_align=myaxis, voxel_size=voxel_size,
-                                reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=True)
+                                reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=True,
+                                is_orthogonal=True, reciprocal_space=False)
         phase = pu.rotate_crystal(array=phase, axis_to_align=myaxis, voxel_size=voxel_size,
-                                  reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False)
+                                  reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False,
+                                  is_orthogonal=True, reciprocal_space=False)
         strain = pu.rotate_crystal(array=strain, axis_to_align=myaxis, voxel_size=voxel_size,
-                                   reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False)
+                                   reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False,
+                                   is_orthogonal=True, reciprocal_space=False)
 
 ############################################################################
 # rotates the crystal for example inplane for easier slicing of the result #
@@ -716,11 +726,14 @@ if align_axis:
     else:  # ref_axis = "z"
         myaxis_inplane = np.array([0, 0, 1])  # must be in [x, y, z] order
     amp = pu.rotate_crystal(array=amp, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                            reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=True)
+                            reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=True,
+                            is_orthogonal=True, reciprocal_space=False)
     phase = pu.rotate_crystal(array=phase, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                              reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False)
+                              reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False,
+                              is_orthogonal=True, reciprocal_space=False)
     strain = pu.rotate_crystal(array=strain, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                               reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False)
+                               reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False,
+                               is_orthogonal=True, reciprocal_space=False)
 
 ##############################################
 # pad array to fit the output_size parameter #
