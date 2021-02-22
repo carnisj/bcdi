@@ -50,11 +50,11 @@ scans = 128  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.delete(scans, bad_indices)
 
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/test/"  # images will be saved here, leave it to None otherwise
+save_dir = None  # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/test/"  # images will be saved here, leave it to None otherwise
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
 sample_name = "PtNP1"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
-user_comment = '_bindet2'  # string, should start with "_"
+user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = (1, 2, 2)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
@@ -158,7 +158,8 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 interp_method = 'linearization'  # 'xrayutilities' or 'linearization'
-align_q = True  # if True rotates the crystal to align q it along one axis of the array
+align_q = True  # when interp_method is 'linearization', if True it rotates the crystal to align q
+# along one axis of the array
 ref_axis_q = "y"  # q will be aligned along that axis
 beam_direction = (1, 0, 0)  # beam direction in the laboratory frame (downstream, vertical up, outboard)
 sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
@@ -873,9 +874,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
 
         # axes in rotate_crystal must be in [x, y, z] order, i.e. [qy, qz, qx]
         data = pu.rotate_crystal(array=data, axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                 reference_axis=myaxis, voxel_size=(dqy, dqz, dqx), scale='log', debugging=True)
+                                 reference_axis=myaxis, voxel_size=(dqy, dqz, dqx), scale='log', debugging=debug)
         mask = pu.rotate_crystal(array=mask, axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                 reference_axis=myaxis, voxel_size=(dqy, dqz, dqx), fill_value=1, debugging=True)
+                                 reference_axis=myaxis, voxel_size=(dqy, dqz, dqx), fill_value=1, debugging=debug)
 
     ################################################
     # check for nans and infs in the data and mask #
