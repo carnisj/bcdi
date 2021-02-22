@@ -1283,7 +1283,7 @@ def regrid(array, old_voxelsize, new_voxelsize):
 
 
 def remove_offset(array, support, offset_method='COM', user_offset=0, offset_origin=None, title='',
-                  debugging=False):
+                  debugging=False, **kwargs):
     """
     Remove the offset in a 3D array based on a 3D support.
 
@@ -1295,12 +1295,22 @@ def remove_offset(array, support, offset_method='COM', user_offset=0, offset_ori
     :param offset_origin: If provided, the value of array at this voxel will be subtracted to the array.
     :param title: string, used in plot title
     :param debugging: True to see plots
+    :param kwargs:
+     - 'reciprocal_space': True if the object is in reciprocal space
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
     :return: the processed array
     """
     assert array.ndim == 3 and support.ndim == 3, 'array and support should be 3D arrayse'
     assert array.shape == support.shape, 'array and support should have the same shape'
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'reciprocal_space', 'is_orthogonal'},
+                       name='postprocessing_utils.average_obj')
+    reciprocal_space = kwargs.get('reciprocal_space', False)
+    is_orthogonal = kwargs.get('is_orthogonal', False)
+
     if debugging:
-        gu.multislices_plot(array, sum_frames=False, plot_colorbar=True, title=title + ' before offset removal')
+        gu.multislices_plot(array, sum_frames=False, plot_colorbar=True, title=title + ' before offset removal',
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
 
     if offset_origin is None:  # use offset_method to remove the offset
         if offset_method == 'COM':
@@ -1321,7 +1331,8 @@ def remove_offset(array, support, offset_method='COM', user_offset=0, offset_ori
         array = array - array[offset_origin[0], offset_origin[1], offset_origin[2]] + user_offset
 
     if debugging:
-        gu.multislices_plot(array, sum_frames=False, plot_colorbar=True, title=title + ' after offset removal')
+        gu.multislices_plot(array, sum_frames=False, plot_colorbar=True, title=title + ' after offset removal',
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
     return array
 
 
