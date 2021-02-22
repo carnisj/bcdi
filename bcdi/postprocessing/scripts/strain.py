@@ -129,7 +129,6 @@ template_imagefile = 'Pt_YSZ_ascan_mu_%05d.nxs'
 # parameters related to the refraction correction #
 ###################################################
 correct_refraction = False  # True for correcting the phase shift due to refraction
-correct_absorption = False  # True for correcting the amplitude for absorption
 optical_path_method = 'threshold'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove only outer layers even if
 # the amplitude is lower than isosurface_strain inside the crystal
@@ -598,7 +597,7 @@ if invert_phase:
 ########################################
 # refraction and absorption correction #
 ########################################
-if correct_refraction or correct_absorption:
+if correct_refraction:  # or correct_absorption:
     bulk = pu.find_bulk(amp=amp, support_threshold=threshold_unwrap_refraction, method=optical_path_method,
                         debugging=debug)
 
@@ -628,7 +627,7 @@ if correct_refraction or correct_absorption:
                             width_x=2 * xrange, sum_frames=False, plot_colorbar=True, vmin=0, vmax=np.pi/2,
                             title='Refraction correction on the support', is_orthogonal=True, reciprocal_space=False)
 
-    if correct_absorption:
+    if False:  # correct_absorption:
         # TODO: it is correct to compensate also the X-ray absorption in the reconstructed modulus?
         amp_correction = np.exp(2 * np.pi / (1e9 * setup.wavelength) * absorption * optical_path)
         amp = amp * amp_correction
