@@ -1420,6 +1420,7 @@ def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames
                      detector.preprocessing_binning[1] * detector.binning[1],
                      detector.preprocessing_binning[2] * detector.binning[2])
 
+    numz, numy, numx = interp_data.shape
     plot_comment = '_' + str(numz) + '_' + str(numy) + '_' + str(numx) + '_' + str(final_binning[0]) + '_' + \
                    str(final_binning[1]) + '_' + str(final_binning[2]) + '.png'
 
