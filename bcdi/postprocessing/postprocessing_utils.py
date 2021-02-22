@@ -1815,7 +1815,7 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
     return tukey3
 
 
-def unwrap(obj, support_threshold, seed=0, debugging=True):
+def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
     """
     Unwrap the phase of a complex object, based on skimage.restoration.unwrap_phase. A mask can be applied by
      thresholding the modulus of the object.
@@ -1824,11 +1824,20 @@ def unwrap(obj, support_threshold, seed=0, debugging=True):
     :param support_threshold: relative threshold used to define a support from abs(obj)
     :param seed: int, random seed. Use always the same value if you want a deterministic behavior.
     :param debugging: set to True to see plots
+    :param kwargs:
+     - 'reciprocal_space': True if the object is in reciprocal space
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
     :return: unwrapped phase, unwrapped phase range
     """
     from skimage.restoration import unwrap_phase
     import numpy.ma as ma
     assert 0 <= support_threshold <= 1, 'support_threshold is a relative threshold, expected value between 0 and 1'
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'reciprocal_space', 'is_orthogonal'},
+                       name='postprocessing_utils.average_obj')
+    reciprocal_space = kwargs.get('reciprocal_space', False)
+    is_orthogonal = kwargs.get('is_orthogonal', False)
+
     ndim = obj.ndim
     unwrap_support = np.ones(obj.shape, dtype=int)
     unwrap_support[abs(obj) > support_threshold * abs(obj).max()] = 0  # 0 is a valid entry for ma.masked_array
@@ -1836,13 +1845,15 @@ def unwrap(obj, support_threshold, seed=0, debugging=True):
 
     if debugging:
         if ndim == 3:
-            gu.multislices_plot(phase_wrapped.data, plot_colorbar=True, title='Object before unwrapping')
+            gu.multislices_plot(phase_wrapped.data, plot_colorbar=True, title='Object before unwrapping',
+                                reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
 
     phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=seed).data
     phase_unwrapped[np.nonzero(unwrap_support)] = 0
     if debugging:
         if ndim == 3:
-            gu.multislices_plot(phase_unwrapped, plot_colorbar=True, title='Object after unwrapping')
+            gu.multislices_plot(phase_unwrapped, plot_colorbar=True, title='Object after unwrapping',
+                                reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
 
     extent_phase = np.ceil(phase_unwrapped.max() - phase_unwrapped.min())
 
