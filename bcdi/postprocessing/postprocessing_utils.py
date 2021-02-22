@@ -93,14 +93,22 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     :param kwargs:
      - for the normal distribution: 'sigma' and 'mu' of the 3d multivariate normal distribution, tuples of 3 floats
      - for the Tuckey window: 'alpha' (shape parameter) of the 3d Tukey window, tuple of 3 floats
+     - 'data_frame': frame of the data, 'detector', 'crystal' or 'laboratory'. Used for defining default plot labels.
     :return: filtered amplitude, phase of the same shape as myamp
     """
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma', 'mu', 'alpha'},
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma', 'mu', 'alpha', 'data_frame'},
                        name='postprocessing_utils.apodize')
     sigma = kwargs.get('sigma', None)
     mu = kwargs.get('mu', None)
     alpha = kwargs.get('alpha', None)
+    data_frame = kwargs.get('data_frame', 'laboratory')
+    if data_frame not in {'laboratory', 'crystal', 'detector'}:
+        raise ValueError('Incorrect value for "data_frame" kwarg')
+    elif data_frame == 'laboratory':
+        is_orthogonal = False
+    else:
+        is_orthogonal = True
 
     if amp.ndim != 3 or phase.ndim != 3:
         raise ValueError('amp and phase should be 3D arrays')
@@ -108,25 +116,25 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
         raise ValueError('amp and phase must have the same shape\n'
                          'amp is ', amp.shape, ' while phase is ', phase.shape)
 
+    # calculate the diffraction pattern of the reconstructed object
     nb_z, nb_y, nb_x = amp.shape
     nbz, nby, nbx = initial_shape
     myobj = crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx))
     del amp, phase
     gc.collect()
     if debugging:
-        plt.figure()
-        plt.imshow(abs(myobj[nbz // 2, :, :]))
-        plt.pause(0.1)
+        gu.multislices_plot(array=abs(myobj), sum_frames=False, plot_colorbar=True, title='modulus before apodization',
+                            reciprocal_space=False, is_orthogonal=is_orthogonal, scale='linear')
+
     my_fft = fftshift(fftn(myobj))
     del myobj
     gc.collect()
     fftmax = abs(my_fft).max()
     print('Max FFT=', fftmax)
     if debugging:
-        plt.figure()
-        plt.imshow(np.log10(abs(my_fft[nbz // 2, :, :])), vmin=0, vmax=np.log10(fftmax))
-        plt.colorbar()
-        plt.pause(0.1)
+        gu.multislices_plot(array=abs(my_fft), sum_frames=False, plot_colorbar=True,
+                            title='diffraction amplitude before apodization',
+                            reciprocal_space=True, is_orthogonal=is_orthogonal, scale='log')
 
     if window_type == 'normal':
         print('Apodization using a 3d multivariate normal window')
@@ -160,17 +168,16 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     my_fft = my_fft * fftmax / abs(my_fft).max()
     print('Max apodized FFT after normalization =', abs(my_fft).max())
     if debugging:
-        plt.figure()
-        plt.imshow(np.log10(abs(my_fft[nbz // 2, :, :])), vmin=0, vmax=np.log10(fftmax))
-        plt.colorbar()
-        plt.pause(0.1)
+        gu.multislices_plot(array=abs(my_fft), sum_frames=False, plot_colorbar=True,
+                            title='diffraction amplitude after apodization',
+                            reciprocal_space=True, is_orthogonal=is_orthogonal, scale='log')
+
     myobj = ifftn(ifftshift(my_fft))
     del my_fft
     gc.collect()
     if debugging:
-        plt.figure()
-        plt.imshow(abs(myobj[nbz // 2, :, :]))
-        plt.pause(0.1)
+        gu.multislices_plot(array=abs(myobj), sum_frames=False, plot_colorbar=True, title='modulus after apodization',
+                            reciprocal_space=False, is_orthogonal=is_orthogonal, scale='linear')
     myobj = crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
     return abs(myobj), np.angle(myobj)
 
