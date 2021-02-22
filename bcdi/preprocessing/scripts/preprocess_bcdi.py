@@ -50,7 +50,7 @@ scans = 128  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.delete(scans, bad_indices)
 
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = None  # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/test/"  # images will be saved here, leave it to None otherwise
+save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/test/"  # images will be saved here, leave it to None otherwise
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
 sample_name = "PtNP1"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
@@ -94,7 +94,7 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 #################################################
 # parameters used when reloading processed data #
 #################################################
-reload_previous = False  # True to resume a previous masking (load data and mask)
+reload_previous = True  # True to resume a previous masking (load data and mask)
 reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension of the binned data to be reloaded
 ##################
@@ -131,7 +131,7 @@ specfile_name = None
 detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 x_bragg = 1355  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 y_bragg = 796  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg - 400, y_bragg + 400, x_bragg - 380, x_bragg + 380]
+roi_detector = None  # [y_bragg - 400, y_bragg + 400, x_bragg - 380, x_bragg + 380]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -321,11 +321,11 @@ if photon_filter == 'loading':
 else:
     loading_threshold = 0
 
+create_savedir = True
+
 if reload_previous:
-    create_savedir = False
     user_comment += '_reloaded'
 else:
-    create_savedir = True
     preprocessing_binning = (1, 1, 1)
     reload_orthogonal = False
 
@@ -478,9 +478,11 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         detector.roi = roi_detector or [0, ny, 0, nx]
         print('Detector ROI:', detector.roi)
         # update savedir to save the data in the same directory as the reloaded data
-        detector.savedir = os.path.dirname(file_path) + '/'
-        print(f'Updated saving directory: {detector.savedir}')
-        file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select mask file",
+        if not save_dir:
+            detector.savedir = os.path.dirname(file_path) + '/'
+            print(f'Updated saving directory: {detector.savedir}')
+
+        file_path = filedialog.askopenfilename(initialdir=os.path.dirname(file_path) + '/', title="Select mask file",
                                                filetypes=[("NPZ", "*.npz")])
         mask = np.load(file_path)
         npz_key = mask.files
