@@ -416,7 +416,7 @@ phase = phase + gridz * rampz + gridy * rampy + gridx * rampx  # put back the ph
 
 if apodize_flag:
     amp, phase = pu.apodize(amp=amp, phase=phase, initial_shape=original_size, window_type=apodize_window,
-                            sigma=sigma, mu=mu, alpha=alpha, debugging=True)
+                            sigma=sigma, mu=mu, alpha=alpha, data_frame=data_frame, debugging=True)
     comment = comment + '_apodize_' + apodize_window
 
 ####################################################################################################################
@@ -446,20 +446,9 @@ elif centering_method == 'max_com':
     avg_obj = pu.center_max(avg_obj)
     avg_obj = pu.center_com(avg_obj)
 
-#########################################
-#  plot amp & phase, save support & vti #
-#########################################
-gu.multislices_plot(abs(avg_obj), width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                    sum_frames=False, plot_colorbar=True, vmin=0, vmax=abs(avg_obj).max(),
-                    title='Amp before orthogonalization')
-if debug:
-    phase, _ = pu.unwrap(avg_obj, support_threshold=threshold_unwrap_refraction, debugging=True)
-    gu.multislices_plot(phase, width_z=2*zrange, width_y=2*yrange, width_x=2*xrange,
-                        sum_frames=False, plot_colorbar=True,
-                        title='Unwrapped phase before orthogonalization')
-    del phase
-    gc.collect()
-
+#######################
+#  save support & vti #
+#######################
 if save_support:  # to be used as starting support in phasing, hence still in the detector frame
     support = np.zeros((numz, numy, numx))
     support[abs(avg_obj)/abs(avg_obj).max() > 0.01] = 1
@@ -487,12 +476,23 @@ if save_raw:
 #######################
 print('\nShape before orthogonalization', avg_obj.shape)
 if data_frame == 'detector':
+    gu.multislices_plot(abs(avg_obj), width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
+                        sum_frames=False, plot_colorbar=True, vmin=0, vmax=abs(avg_obj).max(),
+                        title='Amp before orthogonalization', reciprocal_space=False, is_orthogonal=False)
+    if debug:
+        phase, _ = pu.unwrap(avg_obj, support_threshold=threshold_unwrap_refraction, debugging=True)
+        gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
+                            sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=False,
+                            title='Unwrapped phase before orthogonalization')
+        del phase
+        gc.collect()
+
     obj_ortho, voxel_size = setup.orthogonalize(obj=avg_obj, initial_shape=original_size, voxel_size=fix_voxel)
     print(f"VTK spacing : {voxel_size} (nm)")
 
     gu.multislices_plot(abs(obj_ortho), width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
                         sum_frames=False, plot_colorbar=True, vmin=0, vmax=abs(obj_ortho).max(),
-                        title='Amp after orthogonalization')
+                        title='Amp after orthogonalization', reciprocal_space=False, is_orthogonal=True)
 
 else:  # data already orthogonalized using xrayutilities or the linearized transformation matrix
     obj_ortho = avg_obj
