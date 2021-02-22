@@ -177,7 +177,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
 
 
 def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_threshold=0.90, aligning_option='dft',
-                width_z=None, width_y=None, width_x=None, method='reciprocal_space', debugging=False):
+                width_z=None, width_y=None, width_x=None, method='reciprocal_space', debugging=False, **kwargs):
     """
     Average two reconstructions after aligning it, if their cross-correlation is larger than
     correlation_threshold.
@@ -194,8 +194,17 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
     :param method: 'real_space' or 'reciprocal_space', in which space the average will be performed
     :param debugging: set to True to see plots
     :type debugging: bool
+    :param kwargs:
+     - 'reciprocal_space': True if the object is in reciprocal space
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
     :return: the average complex density
     """
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'reciprocal_space', 'is_orthogonal'},
+                       name='postprocessing_utils.average_obj')
+    reciprocal_space = kwargs.get('reciprocal_space', False)
+    is_orthogonal = kwargs.get('is_orthogonal', False)
+
     if obj.ndim != 3 or avg_obj.ndim != 3 or ref_obj.ndim != 3:
         raise ValueError('avg_obj, ref_obj and obj should be 3D arrays')
     if obj.shape != avg_obj.shape or obj.shape != ref_obj.shape:
@@ -208,7 +217,8 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
         avg_obj = ref_obj
         if debugging:
             gu.multislices_plot(abs(avg_obj), width_z=width_z, width_y=width_y, width_x=width_x, plot_colorbar=True,
-                                sum_frames=True, title='Reference object')
+                                sum_frames=True, title='Reference object', reciprocal_space=reciprocal_space,
+                                is_orthogonal=is_orthogonal)
     else:
         myref_support = np.zeros((nbz, nby, nbx))
         myref_support[abs(ref_obj) > support_threshold*abs(ref_obj).max()] = 1
@@ -255,7 +265,8 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
 
             if debugging:
                 myfig, _, _ = gu.multislices_plot(abs(new_obj), width_z=width_z, width_y=width_y, width_x=width_x,
-                                                  sum_frames=True, plot_colorbar=True, title='Aligned object')
+                                                  sum_frames=True, plot_colorbar=True, title='Aligned object',
+                                                  reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
                 myfig.text(0.60, 0.30, "pearson-correlation = " + str('{:.4f}'.format(correlation)), size=20)
 
             if method == 'real_space':
@@ -268,7 +279,8 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
 
         if debugging:
             gu.multislices_plot(abs(avg_obj), plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                sum_frames=True, title='New averaged object')
+                                sum_frames=True, title='New averaged object', reciprocal_space=reciprocal_space,
+                                is_orthogonal=is_orthogonal)
 
     return avg_obj, avg_flag
 
