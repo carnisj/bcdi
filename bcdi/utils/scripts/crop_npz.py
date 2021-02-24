@@ -21,17 +21,17 @@ helptext = """
 Crop a stacked 3D dataset saved in NPZ format, to the desired region of interest.
 """
 
-scan = 22  # scan number, used in the filename when saving
-datadir = "D:/data/P10_August2019_CDI/test/gold_2_2_2_00022/pynx/"
-crop_center = [250, 250, 250]  # center of the region of interest
-roi_size = (100, 100, 100)  # size of the region of interest to crop centered on crop_center, before binning
+scan = 24  # scan number, used in the filename when saving
+datadir = "D:/data/Longfei/data/B15_syn_S1_2_00024/pynxraw/"
+crop_center = [75, 128, 90]  # center of the region of interest
+roi_size = (144, 256, 180)  # size of the region of interest to crop centered on crop_center, before binning
 binning = (1, 1, 1)  # binning to apply further to the cropped data
 load_mask = True  # True to load the mask and crop it
-load_qvalues = True  # True to load the q values and crop it
-is_orthogonal = True  # True if the data is in an orthogonal frame, only used for plots
+load_qvalues = False  # True to load the q values and crop it
+is_orthogonal = False  # True if the data is in an orthogonal frame, only used for plots
 reciprocal_space = True  # True if the data is in reciprocal space, only used for plots
 debug = True  # True to see more plots
-comment = '_combined'  # should start with _
+comment = ''  # should start with _
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -67,7 +67,7 @@ assert crop_center[0]+roi_size[0]//2 <= nbz and crop_center[1]+roi_size[1]//2 <=
 #######################################################
 data = pu.crop_pad(data, output_shape=roi_size, crop_center=crop_center, debugging=debug)
 data = pu.bin_data(data, binning=binning, debugging=debug)
-comment = f'{data.shape[0]}_{data.shape[0]}_{data.shape[0]}_{binning[0]}_{binning[1]}_{binning[2]}' + comment
+comment = f'{data.shape[0]}_{data.shape[1]}_{data.shape[2]}_{binning[0]}_{binning[1]}_{binning[2]}' + comment
 np.savez_compressed(datadir + 'S' + str(scan) + '_pynx' + comment + '.npz', data=data)
 
 fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='log', plot_colorbar=True, vmin=0,
