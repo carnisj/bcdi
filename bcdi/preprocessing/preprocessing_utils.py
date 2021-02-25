@@ -798,18 +798,17 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
         pad_width = np.zeros(6, dtype=int)  # do nothing or crop the data, starting_frame should be 0
         if len(fix_size) == 6:
             # take binning into account
-            print("fix_size defined by user on the full detector: ", z0, y0, x0)
-            fix_size[2] = fix_size[2] / detector.binning[1]
-            fix_size[3] = fix_size[3] / detector.binning[1]
-            fix_size[4] = fix_size[4] / detector.binning[2]
-            fix_size[5] = fix_size[5] / detector.binning[2]
-            print("fix_size defined after considering binning in detector plane (no ROI): ", z0, y0, x0)
+            fix_size[2] = int(fix_size[2] // detector.binning[1])
+            fix_size[3] = int(fix_size[3] // detector.binning[1])
+            fix_size[4] = int(fix_size[4] // detector.binning[2])
+            fix_size[5] = int(fix_size[5] // detector.binning[2])
             # size of output array defined
             nbz, nby, nbx = np.shape(data)
-            z_pan = fix_size[1] - fix_size[0]
-            y_pan = fix_size[3] - fix_size[2]
-            x_pan = fix_size[5] - fix_size[4]
-            if z_pan > nbz or y_pan > nby or x_pan > nbx or fix_size[1] > nbz or fix_size[3] > nby or fix_size[5] > nbx:
+            z_span = fix_size[1] - fix_size[0]
+            y_span = fix_size[3] - fix_size[2]
+            x_span = fix_size[5] - fix_size[4]
+            if (z_span > nbz or y_span > nby or x_span > nbx
+                    or fix_size[1] > nbz or fix_size[3] > nby or fix_size[5] > nbx):
                 raise ValueError("Predefined fix_size uncorrect")
             else:
                 data = data[fix_size[0]:fix_size[1], fix_size[2]:fix_size[3], fix_size[4]:fix_size[5]]
