@@ -27,6 +27,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 
@@ -44,24 +45,24 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 128  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
+scans = 288  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/test/"  # images will be saved here, leave it to None otherwise
+root_folder = "D:/data/Longfei/data/"  # folder of the experiment, where all scans are stored
+save_dir = None  # images will be saved here, leave it to None otherwise
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
-sample_name = "PtNP1"  # str or list of str of sample names (string in front of the scan number in the folder name).
+sample_name = "B10_syn_S1"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
-user_comment = ''  # string, should start with "_"
+user_comment = '_raw'  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = (1, 2, 2)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = False  # True to interact with plots, False to close it automatically
+flag_interact = True  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
@@ -94,7 +95,7 @@ medfilt_order = 8    # for custom median filter, number of pixels with intensity
 #################################################
 # parameters used when reloading processed data #
 #################################################
-reload_previous = True  # True to resume a previous masking (load data and mask)
+reload_previous = False  # True to resume a previous masking (load data and mask)
 reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension of the binned data to be reloaded
 ##################
@@ -129,9 +130,10 @@ specfile_name = None
 # detector related parameters #
 ###############################
 detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
-x_bragg = 1355  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 796  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = None  # [y_bragg - 400, y_bragg + 400, x_bragg - 380, x_bragg + 380]
+x_bragg = 1259  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 832  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = [552, 1064, 187, 587]
+
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -156,7 +158,7 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
+use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 interp_method = 'linearization'  # 'xrayutilities' or 'linearization'
 align_q = True  # when interp_method is 'linearization', if True it rotates the crystal to align q
 # along one axis of the array
@@ -164,7 +166,7 @@ ref_axis_q = "y"  # q will be aligned along that axis
 beam_direction = (1, 0, 0)  # beam direction in the laboratory frame (downstream, vertical up, outboard)
 sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
-sdd = 1.83  # in m, sample to detector distance in m
+sdd = 1.84  # in m, sample to detector distance in m
 energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
@@ -886,21 +888,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     nz, ny, nx = data.shape
     print('\nData size after masking:', nz, ny, nx)
 
-    # use a binary mask
-    mask[np.nonzero(mask)] = 1
-
-    # check for Nan
-    mask[np.isnan(data)] = 1
-    data[np.isnan(data)] = 0
-    mask[np.isnan(mask)] = 1
-    # check for Inf
-    mask[np.isinf(data)] = 1
-    data[np.isinf(data)] = 0
-    mask[np.isinf(mask)] = 1
+    data, mask = util.remove_nan(data=data, mask=mask)
 
     data[mask == 1] = 0
-    if save_asint:
-        data = data.astype(int)
 
     ####################
     # debugging plots  #
@@ -950,6 +940,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     # save final data and mask #
     ############################
     print('\nSaving directory:', detector.savedir)
+    if save_asint:
+        data = data.astype(int)
     print('Data type before saving:', data.dtype)
     mask[np.nonzero(mask)] = 1
     mask = mask.astype(int)
