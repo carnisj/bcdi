@@ -50,29 +50,43 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
      - the shifted mask
      - if return_shift, returns a tuple containing the shifts
     """
-    if reference_data.ndim == 3:
-        nbz, nby, nbx = reference_data.shape
-        if reference_data.shape != data.shape:
-            raise ValueError('reference_data and data do not have the same shape')
+    #########################
+    # check some parameters #
+    #########################
+    ndim = reference_data.ndim
+    if ndim not in {2, 3}:
+        raise ValueError('reference_data should be 2d or 3D')
+    if reference_data.shape != data.shape:
+        raise ValueError('reference_data and data do not have the same shape')
+    if method not in {'center_of_mass', 'registration'}:
+        raise ValueError(f'Incorrect setting {method} for the parameter "method"')
+    if combining_method not in {'rgi', 'subpixel'}:
+        raise ValueError(f'Incorrect setting {combining_method} for the parameter "combining_method"')
 
+    ######################
+    # align the datasets #
+    ######################
+
+    ###########
+    # 3D case #
+    ###########
+    if ndim == 3:
+        nbz, nby, nbx = reference_data.shape
         if method == 'registration':
             shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=100)
-        elif method == 'center_of_mass':
+        else:  # 'center_of_mass'
             ref_piz, ref_piy, ref_pix = center_of_mass(abs(reference_data))
             piz, piy, pix = center_of_mass(abs(data))
             shiftz = ref_piz - piz
             shifty = ref_piy - piy
             shiftx = ref_pix - pix
-        else:
-            raise ValueError("Incorrect value for parameter 'method'")
-
         print('z shift', str('{:.2f}'.format(shiftz)), ', y shift',
               str('{:.2f}'.format(shifty)), ', x shift', str('{:.2f}'.format(shiftx)))
-        if (shiftz == 0) and (shifty == 0) and (shiftx == 0):
+        if all(val == 0 for val in (shiftz, shifty, shiftx)):
             if not return_shift:
                 return data, mask
             else:
-                return data, mask, (0, 0, 0)
+                return data, mask, (shiftz, shifty, shiftx)
 
         if combining_method == 'rgi':
             # re-sample data on a new grid based on the shift
@@ -91,45 +105,36 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
             data = data.reshape((nbz, nby, nbx)).astype(reference_data.dtype)
             if mask is not None:
                 rgi = RegularGridInterpolator((old_z, old_y, old_x), mask, method='linear', bounds_error=False,
-                                              fill_value=0)
+                                              fill_value=1)  # fill_value=1: mask voxels where data is not defined
                 mask = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                            new_x.reshape((1, new_z.size)))).transpose())
                 mask = mask.reshape((nbz, nby, nbx)).astype(data.dtype)
-                mask = np.rint(mask)  # mask is integer 0 or 1
 
-        elif combining_method == 'subpixel':
+        else:  # 'subpixel'
             data = abs(reg.subpixel_shift(data, shiftz, shifty, shiftx))  # data is a real number (intensity)
             if mask is not None:
-                mask = np.rint(abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx)))  # mask is integer 0 or 1
-        else:
-            raise ValueError("Incorrect value for parameter 'combining_method'")
+                mask = abs(reg.subpixel_shift(mask, shiftz, shifty, shiftx))
 
-        if not return_shift:
-            return data, mask
-        else:
-            return data, mask, (shiftz, shifty, shiftx)
+        shift = shiftz, shifty, shiftx
 
-    elif reference_data.ndim == 2:
+    ###########
+    # 2D case #
+    ###########
+    else:  # ndim = 2
         nby, nbx = reference_data.shape
-        if reference_data.shape != data.shape:
-            raise ValueError('reference_data and data do not have the same shape')
-
         if method == 'registration':
             shifty, shiftx = reg.getimageregistration(abs(reference_data), abs(data), precision=100)
-        elif method == 'center_of_mass':
+        else:  # 'center_of_mass'
             ref_piy, ref_pix = center_of_mass(abs(reference_data))
             piy, pix = center_of_mass(abs(data))
             shifty = ref_piy - piy
             shiftx = ref_pix - pix
-        else:
-            raise ValueError("Incorrect value for parameter 'method'")
-
         print('y shift', str('{:.2f}'.format(shifty)), ', x shift', str('{:.2f}'.format(shiftx)))
-        if (shifty == 0) and (shiftx == 0):
+        if all(val == 0 for val in (shifty, shiftx)):
             if not return_shift:
                 return data, mask
             else:
-                return data, mask, (0, 0)
+                return data, mask, (shifty, shiftx)
 
         if combining_method == 'rgi':
             # re-sample data on a new grid based on the shift
@@ -143,25 +148,29 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
             data = rgi(np.concatenate((new_y.reshape((1, new_y.size)), new_x.reshape((1, new_y.size)))).transpose())
             data = data.reshape((nby, nbx)).astype(reference_data.dtype)
             if mask is not None:
-                rgi = RegularGridInterpolator((old_y, old_x), mask, method='linear', bounds_error=False, fill_value=0)
+                rgi = RegularGridInterpolator((old_y, old_x), mask, method='linear', bounds_error=False, fill_value=1)
+                # fill_value=1: mask voxels where data is not defined
                 mask = rgi(np.concatenate((new_y.reshape((1, new_y.size)), new_x.reshape((1, new_y.size)))).transpose())
                 mask = mask.reshape((nby, nbx)).astype(data.dtype)
-                mask = np.rint(mask)  # mask is integer 0 or 1
-
-        elif combining_method == 'subpixel':
+        else:  # 'subpixel'
             data = abs(reg.subpixel_shift(data, shifty, shiftx))  # data is a real number (intensity)
             if mask is not None:
-                mask = np.rint(abs(reg.subpixel_shift(mask, shifty, shiftx)))  # mask is integer 0 or 1
-        else:
-            raise ValueError("Incorrect value for parameter 'combining_method'")
+                mask = abs(reg.subpixel_shift(mask, shifty, shiftx))
 
-        if not return_shift:
-            return data, mask
-        else:
-            return data, mask, (shifty, shiftx)
+        shift = shifty, shiftx
 
+    ####################################
+    # filter the data and mask for nan #
+    ####################################
+    data, mask = util.remove_nan(data=data, mask=mask)
+
+    ###########################
+    # return aligned datasets #
+    ###########################
+    if not return_shift:
+        return data, mask
     else:
-        raise ValueError('Expect 2D or 3D arrays as input')
+        return data, mask, shift
 
 
 def beamstop_correction(data, detector, setup, debugging=False):
