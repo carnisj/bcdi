@@ -714,6 +714,31 @@ def remove_background(array, q_values, avg_background, avg_qvalues, method='norm
     return array
 
 
+def remove_nan(data, mask=None):
+    """
+    Remove nan values from data and optionally update the mask (masked data = 1 in the mask, 0 otherwise).
+
+    :param data: numpy ndarray
+    :param mask: if provided, numpy ndarray of the same shape as the data
+    :return: the filtered data and (optionally) mask
+    """
+    if mask is not None:
+        if mask.shape != data.shape:
+            raise ValueError("data and mask should have the same shape")
+
+        # check for Nan
+        mask[np.isnan(data)] = 1
+        mask[np.isnan(mask)] = 1
+        # check for Inf
+        mask[np.isinf(data)] = 1
+        mask[np.isinf(mask)] = 1
+        mask[np.nonzero(mask)] = 1
+
+    data[np.isnan(data)] = 0
+    data[np.isinf(data)] = 0
+    return data, mask
+
+
 def rgb2gray(rgb):
     """
     Convert a three layered RGB image in gray
