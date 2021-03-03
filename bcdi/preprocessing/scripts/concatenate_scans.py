@@ -24,36 +24,36 @@ The alignment of diffraction patterns is based on the center of mass shift or df
 grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
 """
 
-scans = [22, 32]  # np.arange(1138, 1141+1, 3)  # list or array of scan numbers
+scans = np.arange(314, 374+1, 4)  # list or array of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
-sample_name = ['ht_pillar3']  # list of sample names. If only one name is indicated,
+sample_name = ['PtNP1']  # list of sample names. If only one name is indicated,
 # it will be repeated to match the length of scans
-suffix = ['_cropped_1400_1600_1450.npz']  # list of sample names (end of the filename template after 'pynx'),
+suffix = ['_norm_250_1100_900_1_1_1.npz']  # list of sample names (end of the filename template after 'pynx'),
 # it will be repeated to match the length of scans
-homedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/"  # parent folder of scans folders
-savedir = "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/ht_pillar3_combined/"
+homedir = "G:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # parent folder of scans folders
+savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2/test/"
 # path of the folder to save data
-alignement_method = 'skip'
+alignement_method = 'registration'
 # method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
-combining_method = 'rgi'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
-corr_roi = [1100, 1200, 600, 700, 1025, 1125]
+combining_method = 'subpixel'  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
+corr_roi = None
 # [420, 520, 660, 760, 600, 700]  # region of interest where to calculate the correlation between scans.
 # If None, it will use the full array. [zstart, zstop, ystart, ystop, xstart, xstop]
-output_shape = (800, 800, 800)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+output_shape = (250, 1024, 800)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
 crop_center = None  # [z, y, x] pixels position in the original array of the center of the cropped output
 # if None, it will be set to the center of the original array
-boundaries = 'skip'  # 'mask', 'crop' or 'skip'. If 'mask', boundary pixels were not all scans are defined after
+boundaries = 'crop'  # 'mask', 'crop' or 'skip'. If 'mask', boundary pixels were not all scans are defined after
 # alignement will be masked, if 'crop' output_shape will be modified to crop them. If 'skip', boundaries will not be
 # processed.
 partially_masked = 'unmask'  # 'unmask' or 'mask'. If 'unmask', partially masked pixels will be set to their mean value
 # and unmasked. If 'mask', partially masked pixels will be set to 0 and masked.
-correlation_threshold = 0.90  # only scans having a correlation larger than this threshold will be combined
-reference_scan = 1  # index in scans of the scan to be used as the reference for the correlation calculation
+correlation_threshold = 0.95  # only scans having a correlation larger than this threshold will be combined
+reference_scan = 0  # index in scans of the scan to be used as the reference for the correlation calculation
 combine_masks = True  # if True, the output mask is the combination of all masks. If False, the reference mask is used
 # if a pixel is defined only in part of the dataset, its value will be used with proper rescaling
-is_orthogonal = True  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
+is_orthogonal = False  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
 plot_threshold = 0  # data below this will be set to 0, only in plots
 comment = ''  # should start with _ , it will be added to the filename when saving the combined dataset
 debug = False  # True or False
@@ -370,9 +370,7 @@ plt.savefig(savedir + 'data' + template + '.png')
 
 fig, _, _ = gu.multislices_plot(mean_data, sum_frames=False, scale='log', plot_colorbar=True,
                                 is_orthogonal=is_orthogonal, reciprocal_space=True,
-                                slice_position=[crop_center[0]-output_shape[0]//2,
-                                                crop_center[1]-output_shape[1]//2,
-                                                crop_center[2]-output_shape[2]//2],
+                                slice_position=[crop_center[0], crop_center[1], crop_center[2]],
                                 title='Combined masked intensity', vmin=0)
 fig.text(0.55, 0.40, "Scans tested:", size=12)
 fig.text(0.55, 0.35, str(scans), size=8)
