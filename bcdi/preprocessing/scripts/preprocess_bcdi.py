@@ -331,6 +331,10 @@ else:
     preprocessing_binning = (1, 1, 1)
     reload_orthogonal = False
 
+if rocking_angle == "energy":
+    use_rawdata = False  # you need to interpolate the data in QxQyQz for energy scans
+    print("Energy scan: defaulting use_rawdata to False, the data will be interpolated using xrayutilities")
+
 if reload_orthogonal:
     use_rawdata = False
 
@@ -384,32 +388,6 @@ setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle,
                   custom_scan=custom_scan, custom_images=custom_images, sample_offsets=sample_offsets,
                   custom_monitor=custom_monitor, custom_motors=custom_motors,
                   pixel_x=detector.pixelsize_x, pixel_y=detector.pixelsize_y)
-
-#############################################
-# Initialize geometry for orthogonalization #
-#############################################
-if rocking_angle == "energy":
-    use_rawdata = False  # you need to interpolate the data in QxQyQz for energy scans
-    print("Energy scan: defaulting use_rawdata to False, the data will be interpolated using xrayutilities")
-if not use_rawdata:
-    if interp_method == 'xrayutilities':
-        qconv, offsets = pru.init_qconversion(setup)
-        detector.offsets = offsets
-        hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane,  en=energy, qconv=qconv)
-        # x downstream, y outboard, z vertical
-        # first 2 arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
-        cch1 = cch1 - detector.roi[0]  # Ver. direct beam position, take into account the roi if the image is cropped
-        cch2 = cch2 - detector.roi[2]  # Hor. direct beam position, take into account the roi if the image is cropped
-        # number of pixels after taking into account the roi and binning
-        nch1 = (detector.roi[1] - detector.roi[0]) // (detector.preprocessing_binning[1] * detector.binning[1]) +\
-            (detector.roi[1] - detector.roi[0]) % (detector.preprocessing_binning[1] * detector.binning[1])
-        nch2 = (detector.roi[3] - detector.roi[2]) // (detector.preprocessing_binning[2] * detector.binning[2]) +\
-            (detector.roi[3] - detector.roi[2]) % (detector.preprocessing_binning[2] * detector.binning[2])
-        # detector init_area method, pixel sizes are the binned ones
-        hxrd.Ang2Q.init_area(setup.detector_ver, setup.detector_hor, cch1=cch1, cch2=cch2,
-                             Nch1=nch1, Nch2=nch2, pwidth1=detector.pixelsize_y, pwidth2=detector.pixelsize_x,
-                             distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
-        # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
 ########################################
 # print the current setup and detector #
@@ -569,6 +547,29 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             gc.collect()
 
             if interp_method == 'xrayutilities':
+                qconv, offsets = pru.init_qconversion(setup)
+                detector.offsets = offsets
+                hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, en=energy, qconv=qconv)
+                # the first 2 arguments in HXRD are the inplane reference direction along the beam and surface normal
+                # of the sample
+
+                # Ver. direct beam position, take into account the roi if the image is cropped
+                cch1 = cch1 - detector.roi[0]
+                # Hor. direct beam position, take into account the roi if the image is cropped
+                cch2 = cch2 - detector.roi[2]
+                # number of pixels after taking into account the roi and binning
+                nch1 = (detector.roi[1] - detector.roi[0]) // (
+                            detector.preprocessing_binning[1] * detector.binning[1]) + \
+                       (detector.roi[1] - detector.roi[0]) % (detector.preprocessing_binning[1] * detector.binning[1])
+                nch2 = (detector.roi[3] - detector.roi[2]) // (
+                            detector.preprocessing_binning[2] * detector.binning[2]) + \
+                       (detector.roi[3] - detector.roi[2]) % (detector.preprocessing_binning[2] * detector.binning[2])
+                # detector init_area method, pixel sizes are the binned ones
+                hxrd.Ang2Q.init_area(setup.detector_ver, setup.detector_hor, cch1=cch1, cch2=cch2,
+                                     Nch1=nch1, Nch2=nch2, pwidth1=detector.pixelsize_y, pwidth2=detector.pixelsize_x,
+                                     distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
+                # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
+
                 data, mask, q_values, frames_logical = \
                     pru.grid_bcdi_xrayutil(data=data, mask=mask, scan_number=scan_nb, logfile=logfile,
                                            detector=detector, setup=setup, frames_logical=frames_logical, hxrd=hxrd,
