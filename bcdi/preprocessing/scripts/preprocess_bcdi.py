@@ -45,7 +45,7 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 288  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
+scans = 283  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
@@ -132,7 +132,7 @@ specfile_name = None
 detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 x_bragg = 1259  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
 y_bragg = 832  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [552, 1064, 187, 587]
+roi_detector = [552, 1064, 215, 615]
 
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
@@ -160,9 +160,6 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 interp_method = 'linearization'  # 'xrayutilities' or 'linearization'
-align_q = True  # when interp_method is 'linearization', if True it rotates the crystal to align q
-# along one axis of the array
-ref_axis_q = "y"  # q will be aligned along that axis
 beam_direction = (1, 0, 0)  # beam direction in the laboratory frame (downstream, vertical up, outboard)
 sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
@@ -180,6 +177,9 @@ custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta":
 #######################################################################################################
 # parameters when orthogonalizing the data before phasing  using the linearized transformation matrix #
 #######################################################################################################
+align_q = True  # used only when interp_method is 'linearization', if True it rotates the crystal to align q
+# along one axis of the array
+ref_axis_q = "y"  # q will be aligned along that axis
 outofplane_angle = 39.0870  # detector angle in deg (rotation around x outboard, typically delta),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
 inplane_angle = -1.0270  # detector angle in deg(rotation around y vertical up, typically gamma),
