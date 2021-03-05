@@ -553,10 +553,10 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 # the first 2 arguments in HXRD are the inplane reference direction along the beam and surface normal
                 # of the sample
 
-                # Ver. direct beam position, take into account the roi if the image is cropped
-                cch1 = cch1 - detector.roi[0]
-                # Hor. direct beam position, take into account the roi if the image is cropped
-                cch2 = cch2 - detector.roi[2]
+                # Update the direct beam vertical position, take into account the roi and binning
+                cch1 = (cch1 - detector.roi[0]) / (detector.preprocessing_binning[1] * detector.binning[1])
+                # Update the direct beam horizontal position, take into account the roi and binning
+                cch2 = (cch2 - detector.roi[2]) / (detector.preprocessing_binning[2] * detector.binning[2])
                 # number of pixels after taking into account the roi and binning
                 nch1 = (detector.roi[1] - detector.roi[0]) // (
                             detector.preprocessing_binning[1] * detector.binning[1]) + \
