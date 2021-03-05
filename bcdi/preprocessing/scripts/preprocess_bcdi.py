@@ -567,7 +567,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 # detector init_area method, pixel sizes are the binned ones
                 hxrd.Ang2Q.init_area(setup.detector_ver, setup.detector_hor, cch1=cch1, cch2=cch2,
                                      Nch1=nch1, Nch2=nch2, pwidth1=detector.pixelsize_y, pwidth2=detector.pixelsize_x,
-                                     distance=sdd, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
+                                     distance=setup.distance, detrot=detrot, tiltazimuth=tiltazimuth, tilt=tilt)
                 # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
                 data, mask, q_values, frames_logical = \
