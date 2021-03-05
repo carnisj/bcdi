@@ -27,11 +27,11 @@ For everything else than q values, the convention is the CXI convention: (z down
 For q values, the convention is (qx downstream, qz vertical up, qy outboard).
 """
 
-scan = 78  # spec scan number
-root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
-sample_name = "S"
+scan = 1  # spec scan number
+root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
+sample_name = "dataset_"
 datadir = root_folder + sample_name + str(scan) + '/pynx/'
-photon_threshold = 1  # everything < this value will be set to 0
+photon_threshold = 0  # everything < this value will be set to 0
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Used for plot labels
 ##############################
@@ -39,8 +39,8 @@ is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Us
 ##############################
 savedir = datadir  # path of the saving directory
 save_qyqz = True  # True to save the strain in QyQz plane
-save_qyqx = False  # True to save the strain in QyQx plane
-save_qzqx = False  # True to save the strain in QzQx plane
+save_qyqx = True  # True to save the strain in QyQx plane
+save_qzqx = True  # True to save the strain in QzQx plane
 save_sum = True  # True to save the summed diffraction pattern in the detector, False to save the central slice only
 comment = ''  # should start with _
 ##########################
@@ -49,7 +49,7 @@ comment = ''  # should start with _
 plot_symmetrical = True  # if False, will not use the parameter half_range
 half_range = (None, None, None)  # tuple of three pixel numbers, half-range in each direction. Use None to use the
 # maximum symmetrical data range along one direction e.g. [20, None, None]
-colorbar_range = (0, 6)  # [vmin, vmax] log scale in photon counts
+colorbar_range = (0, 4.5)  # [vmin, vmax] log scale in photon counts
 grey_background = False  # True to set nans to grey in the plots
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 4  # in plots
@@ -178,7 +178,7 @@ if save_qyqz:
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[4], q_range[5], q_range[3], q_range[2]])
     if load_qvalues:
-        ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
+        ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
     else:
@@ -218,7 +218,7 @@ if save_qyqx:
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[4], q_range[5], q_range[1], q_range[0]])
     if load_qvalues:
-        ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
+        ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
     else:
@@ -257,7 +257,7 @@ if save_qzqx:
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
     if load_qvalues:
-        ax0.tick_params(axis='both', which='both', bottom=True, top=False, left=True, right=False,
+        ax0.tick_params(axis='both', which='both', bottom=True, top=True, left=True, right=True,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
     else:
