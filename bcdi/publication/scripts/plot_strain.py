@@ -6,8 +6,9 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 from matplotlib import pyplot as plt
+from numbers import Real
+import numpy as np
 from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
@@ -30,22 +31,22 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 """
 
 
-# scan = 1301  # spec scan number
-datadir = 'D:/data/P10_OER/analysis/candidate_12/dewet2_2_S1638_to_S1680/'  # 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
-savedir = datadir  # 'D:/data/SIXS_2019_Ni/S' + str(scan) + '/pynxraw/'
-comment = ''   # should start with _
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/result/"
+savedir = datadir + '/figures/scratch/'
+comment = '_iso0.4'   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
-strain_isosurface = 0.50  # amplitude below this value will be set to 0
+strain_isosurface = 0.40  # amplitude below this value will be set to 0
 
-voxel_size = 6.0  # in nm
-tick_spacing = 100  # for plots, in nm
-field_of_view = 500  # in nm, can be larger than the total width (the array will be padded)
+voxel_size = 5.0  # in nm
+tick_spacing = 25  # for plots, in nm
+field_of_view = 200  # in nm, can be larger than the total width (the array will be padded)
 
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 
-strain_range = 0.002  # for plots
+strain_range = 'minmax'  # 0.008  # for plots, if float it represents the half range, if 'minmax' if will use the full
+# data range
 phase_range = np.pi  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
 
@@ -55,7 +56,7 @@ save_XY = True  # True to save the view in XY plane
 
 flag_strain = True  # True to plot and save the strain
 flag_phase = True  # True to plot and save the phase
-flag_amp = True  # True to plot and save the amplitude
+flag_amp = False  # True to plot and save the amplitude
 
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
@@ -78,6 +79,12 @@ else:
     bad_color = '1.0'  # white background
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
+
+#########################
+# check some parameters #
+#########################
+if not isinstance(strain_range, Real) and not strain_range == 'minmax':
+    raise ValueError(f'Incorrect setting {strain_range} for the parameter "strain_range"')
 
 #############
 # load data #
@@ -131,8 +138,19 @@ amp = np.roll(amp, (numz//2-zcom, numy//2-ycom, numx//2-xcom), axis=(0, 1, 2))
 ################################################
 # assign default values outside of the crystal #
 ################################################
+# support[25, 24:26, 35] = 1
+# support[19:27, 25, 32:36] = 1
+# gu.multislices_plot(support, sum_frames=False, is_orthogonal=True, reciprocal_space=False)
 strain[support == 0] = background_strain
 phase[support == 0] = background_phase
+
+############################################
+# define the plotting range for the strain #
+############################################
+if isinstance(strain_range, Real):
+    strain_min, strain_max = -strain_range, strain_range
+else:  # 'minmax'
+    strain_min, strain_max = strain[~np.isnan(strain)].min(), strain[~np.isnan(strain)].max()
 
 ###########
 # Support #
@@ -180,7 +198,7 @@ if flag_support:
 if flag_amp:
     fig, ax0 = plt.subplots(1, 1)
     plt0 = ax0.imshow(
-        amp[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx // 2],
+        ref_amp[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx // 2],
         vmin=0, vmax=1, cmap=my_cmap)
 
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -192,7 +210,7 @@ if flag_amp:
 
     fig, ax1 = plt.subplots(1, 1)
     plt1 = ax1.imshow(
-        amp[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
+        ref_amp[numz // 2 - pixel_FOV:numz // 2 + pixel_FOV, numy // 2, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
         vmin=0, vmax=1, cmap=my_cmap)
     ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -203,7 +221,7 @@ if flag_amp:
 
     fig, ax2 = plt.subplots(1, 1)
     plt2 = ax2.imshow(
-        amp[numz // 2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
+        ref_amp[numz // 2, numy // 2 - pixel_FOV:numy // 2 + pixel_FOV, numx // 2 - pixel_FOV:numx // 2 + pixel_FOV],
         vmin=0, vmax=1, cmap=my_cmap)
     ax2.invert_yaxis()
     ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -238,7 +256,7 @@ if flag_amp:
 if flag_strain:
     fig, ax0 = plt.subplots(1, 1)
     plt0 = ax0.imshow(strain[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixel_FOV:numy//2+pixel_FOV, numx // 2],
-                      vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
+                      vmin=strain_min, vmax=strain_max, cmap=my_cmap)
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
@@ -248,7 +266,7 @@ if flag_strain:
 
     fig, ax1 = plt.subplots(1, 1)
     plt1 = ax1.imshow(strain[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2, numx//2-pixel_FOV:numx//2+pixel_FOV],
-                      vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
+                      vmin=strain_min, vmax=strain_max, cmap=my_cmap)
     ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
@@ -258,7 +276,7 @@ if flag_strain:
 
     fig, ax2 = plt.subplots(1, 1)
     plt2 = ax2.imshow(strain[numz // 2, numy//2-pixel_FOV:numy//2+pixel_FOV, numx//2-pixel_FOV:numx//2+pixel_FOV],
-                      vmin=-strain_range, vmax=strain_range, cmap=my_cmap)
+                      vmin=strain_min, vmax=strain_max, cmap=my_cmap)
     ax2.invert_yaxis()
     ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
