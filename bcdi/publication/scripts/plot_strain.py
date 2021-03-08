@@ -47,7 +47,8 @@ tick_width = 2  # in plots
 
 strain_range = 'minmax'  # 0.008  # for plots, if float it represents the half range, if 'minmax' if will use the full
 # data range
-phase_range = np.pi  # for plots
+phase_range = 'minmax'  # for plots, if float it represents the half range, if 'minmax' if will use the full
+# data range
 grey_background = True  # True to set the background to grey in phase and strain plots
 
 save_YZ = True  # True to save the view in YZ plane
@@ -83,8 +84,17 @@ my_cmap = colormap.cmap
 #########################
 # check some parameters #
 #########################
-if not isinstance(strain_range, Real) and not strain_range == 'minmax':
-    raise ValueError(f'Incorrect setting {strain_range} for the parameter "strain_range"')
+if not isinstance(strain_range, Real):
+    if not strain_range == 'minmax':
+        raise ValueError(f'Incorrect setting {strain_range} for the parameter "strain_range"')
+else:
+    strain_min, strain_max = -strain_range, strain_range
+
+if not isinstance(phase_range, Real):
+    if not phase_range == 'minmax':
+        raise ValueError(f'Incorrect setting {phase_range} for the parameter "phase_range"')
+else:
+    phase_min, phase_max = -phase_range, phase_range
 
 #############
 # load data #
@@ -138,19 +148,11 @@ amp = np.roll(amp, (numz//2-zcom, numy//2-ycom, numx//2-xcom), axis=(0, 1, 2))
 ################################################
 # assign default values outside of the crystal #
 ################################################
-# support[25, 24:26, 35] = 1
-# support[19:27, 25, 32:36] = 1
-# gu.multislices_plot(support, sum_frames=False, is_orthogonal=True, reciprocal_space=False)
+support[25, 24:26, 35] = 1
+support[19:27, 25, 32:36] = 1
+gu.multislices_plot(support, sum_frames=False, is_orthogonal=True, reciprocal_space=False)
 strain[support == 0] = background_strain
 phase[support == 0] = background_phase
-
-############################################
-# define the plotting range for the strain #
-############################################
-if isinstance(strain_range, Real):
-    strain_min, strain_max = -strain_range, strain_range
-else:  # 'minmax'
-    strain_min, strain_max = strain[~np.isnan(strain)].min(), strain[~np.isnan(strain)].max()
 
 ###########
 # Support #
@@ -207,6 +209,8 @@ if flag_amp:
                     length=tick_length, width=tick_width)
     if save_YZ:
         fig.savefig(savedir + 'amp_YZ' + comment + '.png', bbox_inches="tight")
+        plt.colorbar(plt0, ax=ax0)
+        fig.savefig(savedir + 'amp_YZ' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax1 = plt.subplots(1, 1)
     plt1 = ax1.imshow(
@@ -218,6 +222,8 @@ if flag_amp:
                     length=tick_length, width=tick_width)
     if save_XZ:
         fig.savefig(savedir + 'amp_XZ' + comment + '.png', bbox_inches="tight")
+        plt.colorbar(plt1, ax=ax1)
+        fig.savefig(savedir + 'amp_XZ' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax2 = plt.subplots(1, 1)
     plt2 = ax2.imshow(
@@ -231,8 +237,8 @@ if flag_amp:
 
     if save_XY:
         fig.savefig(savedir + 'amp_XY' + comment + '.png', bbox_inches="tight")
-    plt.colorbar(plt2, ax=ax2)
-    fig.savefig(savedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
+        plt.colorbar(plt2, ax=ax2)
+        fig.savefig(savedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax = plt.subplots(1, 1)
     ax.hist(ref_amp[ref_amp > 0.05*ref_amp.max()].flatten(), bins=250)  # avoid the peak for very low noise amplitudes
@@ -255,6 +261,9 @@ if flag_amp:
 ##########
 if flag_strain:
     fig, ax0 = plt.subplots(1, 1)
+    if not isinstance(strain_range, Real):
+        tmp_strain = strain[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixel_FOV:numy//2+pixel_FOV, numx // 2]
+        strain_min, strain_max = tmp_strain[~np.isnan(tmp_strain)].min(), tmp_strain[~np.isnan(tmp_strain)].max()
     plt0 = ax0.imshow(strain[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixel_FOV:numy//2+pixel_FOV, numx // 2],
                       vmin=strain_min, vmax=strain_max, cmap=my_cmap)
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -263,8 +272,12 @@ if flag_strain:
                     length=tick_length, width=tick_width)
     if save_YZ:
         fig.savefig(savedir + 'strain_YZ' + comment + '.png', bbox_inches="tight")
-
+        plt.colorbar(plt0, ax=ax0)
+        fig.savefig(savedir + 'strain_YZ' + comment + '_colorbar.png', bbox_inches="tight")
     fig, ax1 = plt.subplots(1, 1)
+    if not isinstance(strain_range, Real):
+        tmp_strain = strain[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2, numx//2-pixel_FOV:numx//2+pixel_FOV]
+        strain_min, strain_max = tmp_strain[~np.isnan(tmp_strain)].min(), tmp_strain[~np.isnan(tmp_strain)].max()
     plt1 = ax1.imshow(strain[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2, numx//2-pixel_FOV:numx//2+pixel_FOV],
                       vmin=strain_min, vmax=strain_max, cmap=my_cmap)
     ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -273,8 +286,13 @@ if flag_strain:
                     length=tick_length, width=tick_width)
     if save_XZ:
         fig.savefig(savedir + 'strain_XZ' + comment + '.png', bbox_inches="tight")
+        plt.colorbar(plt1, ax=ax1)
+        fig.savefig(savedir + 'strain_XZ' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax2 = plt.subplots(1, 1)
+    if not isinstance(strain_range, Real):
+        tmp_strain = strain[numz // 2, numy//2-pixel_FOV:numy//2+pixel_FOV, numx//2-pixel_FOV:numx//2+pixel_FOV]
+        strain_min, strain_max = tmp_strain[~np.isnan(tmp_strain)].min(), tmp_strain[~np.isnan(tmp_strain)].max()
     plt2 = ax2.imshow(strain[numz // 2, numy//2-pixel_FOV:numy//2+pixel_FOV, numx//2-pixel_FOV:numx//2+pixel_FOV],
                       vmin=strain_min, vmax=strain_max, cmap=my_cmap)
     ax2.invert_yaxis()
@@ -285,36 +303,49 @@ if flag_strain:
 
     if save_XY:
         fig.savefig(savedir + 'strain_XY' + comment + '.png', bbox_inches="tight")
-    plt.colorbar(plt2, ax=ax2)
-    fig.savefig(savedir + 'strain_XY' + comment + '_colorbar.png', bbox_inches="tight")
+        plt.colorbar(plt2, ax=ax2)
+        fig.savefig(savedir + 'strain_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
 #########
 # Phase #
 #########
 if flag_phase:
     fig, ax0 = plt.subplots(1, 1)
+    if not isinstance(phase_range, Real):
+        tmp_phase = phase[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixel_FOV:numy//2+pixel_FOV, numx // 2]
+        phase_min, phase_max = tmp_phase[~np.isnan(tmp_phase)].min(), tmp_phase[~np.isnan(tmp_phase)].max()
     plt0 = ax0.imshow(phase[numz//2-pixel_FOV:numz//2+pixel_FOV, numy//2-pixel_FOV:numy//2+pixel_FOV, numx // 2],
-                      vmin=-phase_range, vmax=phase_range, cmap=my_cmap)
+                      vmin=phase_min, vmax=phase_max, cmap=my_cmap)
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
     if save_YZ:
         fig.savefig(savedir + 'phase_YZ' + comment + '.png', bbox_inches="tight")
+        plt.colorbar(plt0, ax=ax0)
+        fig.savefig(savedir + 'phase_YZ' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax1 = plt.subplots(1, 1)
+    if not isinstance(phase_range, Real):
+        tmp_phase = phase[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2, numx//2-pixel_FOV:numx//2+pixel_FOV]
+        phase_min, phase_max = tmp_phase[~np.isnan(tmp_phase)].min(), tmp_phase[~np.isnan(tmp_phase)].max()
     plt1 = ax1.imshow(phase[numz//2-pixel_FOV:numz//2+pixel_FOV, numy // 2, numx//2-pixel_FOV:numx//2+pixel_FOV],
-                      vmin=-phase_range, vmax=phase_range, cmap=my_cmap)
+                      vmin=phase_min, vmax=phase_max, cmap=my_cmap)
     ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
                     length=tick_length, width=tick_width)
     if save_XZ:
         fig.savefig(savedir + 'phase_XZ' + comment + '.png', bbox_inches="tight")
+        plt.colorbar(plt1, ax=ax1)
+        fig.savefig(savedir + 'phase_XZ' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax2 = plt.subplots(1, 1)
+    if not isinstance(phase_range, Real):
+        tmp_phase = phase[numz // 2, numy//2-pixel_FOV:numy//2+pixel_FOV, numx//2-pixel_FOV:numx//2+pixel_FOV]
+        phase_min, phase_max = tmp_phase[~np.isnan(tmp_phase)].min(), tmp_phase[~np.isnan(tmp_phase)].max()
     plt2 = ax2.imshow(phase[numz // 2, numy//2-pixel_FOV:numy//2+pixel_FOV, numx//2-pixel_FOV:numx//2+pixel_FOV],
-                      vmin=-phase_range, vmax=phase_range, cmap=my_cmap)
+                      vmin=phase_min, vmax=phase_max, cmap=my_cmap)
     ax2.invert_yaxis()
     ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
     ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing))
@@ -323,8 +354,8 @@ if flag_phase:
 
     if save_XY:
         fig.savefig(savedir + 'phase_XY' + comment + '.png', bbox_inches="tight")
-    plt.colorbar(plt2, ax=ax2)
-    fig.savefig(savedir + 'phase_XY' + comment + '_colorbar.png', bbox_inches="tight")
+        plt.colorbar(plt2, ax=ax2)
+        fig.savefig(savedir + 'phase_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
     ###################
     # example of a line cut on the phase, can also load more data for the lineplot for comparison
