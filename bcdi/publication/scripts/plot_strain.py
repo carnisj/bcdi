@@ -57,7 +57,7 @@ save_XY = True  # True to save the view in XY plane
 
 flag_strain = True  # True to plot and save the strain
 flag_phase = True  # True to plot and save the phase
-flag_amp = False  # True to plot and save the amplitude
+flag_amp = True  # True to plot and save the amplitude
 
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 flag_support = False  # True to plot and save the support
@@ -243,17 +243,20 @@ if flag_amp:
     fig, ax = plt.subplots(1, 1)
     ax.hist(ref_amp[ref_amp > 0.05*ref_amp.max()].flatten(), bins=250)  # avoid the peak for very low noise amplitudes
     ax.set_xlim(left=0.05)
-    ax.set_ylim(bottom=1)  # , top=100000
+    ax.set_ylim(bottom=1)
     if amp_histogram_Yaxis == 'log':
         ax.set_yscale('log')
+        ax.set_ylim(bottom=1)
         ax.set_ylim(top=100000)
+    else:
+        ax.set_ylim(bottom=0)
     ax.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
+    ax.spines['right'].set_linewidth(tick_width)
+    ax.spines['left'].set_linewidth(tick_width)
+    ax.spines['top'].set_linewidth(tick_width)
+    ax.spines['bottom'].set_linewidth(tick_width)
     fig.savefig(savedir + 'phased_histogram_amp' + comment + '.png', bbox_inches="tight")
     ax.tick_params(labelbottom=True, labelleft=True, direction='out', length=tick_length, width=tick_width)
-    ax.spines['right'].set_linewidth(1.5)
-    ax.spines['left'].set_linewidth(1.5)
-    ax.spines['top'].set_linewidth(1.5)
-    ax.spines['bottom'].set_linewidth(1.5)
     fig.savefig(savedir + 'phased_histogram_amp' + comment + '_labels.png', bbox_inches="tight")
 
 ##########
