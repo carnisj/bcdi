@@ -40,7 +40,7 @@ points = {(24, 26, 23), (24, 26, 24), (24, 26, 25),
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 width_lines = (98, 100, 102)  # list of vertical lines that will appear in the plot width vs threshold
-styles = {0: (0, (1, 5)), 1: 'dashed', 2: (0, (1, 5))}  # line style for the width_lines, 1 for each line
+styles = {0: (0, (2, 6)), 1: 'dashed', 2: (0, (2, 6))}  # line style for the width_lines, 1 for each line
 debug = False  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
 tick_length = 10  # in plots
@@ -226,6 +226,14 @@ for index, hline in enumerate(width_lines):
     ax.axhline(y=hline, linestyle=styles[index], color='k', linewidth=1.5)
 fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
 
+ax.set_xlim(left=0.335, right=0.565)
+ax.set_ylim(bottom=96, top=104)
+fig.savefig(savedir + 'width_vs_threshold' + comment + '_zoom.png')
+ax.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
+fig.savefig(savedir + 'width_vs_threshold' + comment + '_zoom_labels.png')
+
+ax.set_xlim(left=0, right=1)
+ax.set_ylim(bottom=0, top=145)
 ax.set_xlabel('threshold', fontsize=20)
 ax.set_ylabel('width (nm)', fontsize=20)
 ax.set_title(f"Width vs threshold in the direction {result['direction']}\n", fontsize=20)
