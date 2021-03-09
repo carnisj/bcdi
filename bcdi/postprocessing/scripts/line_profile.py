@@ -142,11 +142,12 @@ ax.spines['left'].set_linewidth(tick_width)
 ax.spines['top'].set_linewidth(tick_width)
 ax.spines['bottom'].set_linewidth(tick_width)
 fig.savefig(savedir + 'cut' + comment + '.png')
+
 ax.set_xlabel('width (nm)', fontsize=20)
 ax.set_ylabel('modulus', fontsize=20)
 if debug:
     ax.legend(fontsize=14)
-ax.tick_params(axis='both', which='major', labelsize=16)
+ax.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
 fig.savefig(savedir + 'cut' + comment + '_labels.png')
 
 #################################################################################
@@ -203,29 +204,32 @@ fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 plot_nb = 0
 for key, value in result.items():
-    if key == 'direction':
-        ax.set_title(f'Width vs threshold in the direction {value}\n', fontsize=20)
-    elif key == 'expected_width':
-        fig.text(0.15, 0.30, f'expected widths: {value}', size=16)
-    elif key == 'mean_thres':
-        fig.text(0.15, 0.25, f'fitted thresholds: {value}', size=16)
-    elif key == 'std_thres':
-        fig.text(0.15, 0.20, f'stds: {value}', size=16)
-    else:  # iterating over points, value is a dictionary
+    if isinstance(value, dict):  # iterating over points, value is a dictionary
         line, = ax.plot(value['threshold'], value['width'], color=colors[plot_nb % len(colors)],
-                        marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=6,
+                        marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=10,
                         linestyle='-', linewidth=1)
         line.set_label(f'cut through {key}')
         plot_nb += 1
 
-ax.set_xlabel('threshold', fontsize=20)
-ax.set_ylabel('width (nm)', fontsize=20)
-if debug:
-    ax.legend(fontsize=14)
-ax.tick_params(axis='both', which='major', labelsize=16)
+ax.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
+ax.spines['right'].set_linewidth(tick_width)
+ax.spines['left'].set_linewidth(tick_width)
+ax.spines['top'].set_linewidth(tick_width)
+ax.spines['bottom'].set_linewidth(tick_width)
 for hline in width_lines:
     ax.axhline(y=hline, linestyle='dashed', color='k', linewidth=1)
 fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
+
+ax.set_xlabel('threshold', fontsize=20)
+ax.set_ylabel('width (nm)', fontsize=20)
+ax.set_title(f"Width vs threshold in the direction {result['direction']}\n", fontsize=20)
+if debug:
+    ax.legend(fontsize=14)
+fig.text(0.15, 0.30, f"expected widths: {result['expected_width']}", size=16)
+fig.text(0.15, 0.25, f"fitted thresholds: {result['mean_thres']}", size=16)
+fig.text(0.15, 0.20, f"stds: {result['std_thres']}", size=16)
+ax.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
+fig.savefig(savedir + 'width_vs_threshold' + comment + '_labels.png')
 
 ###################
 # save the result #
