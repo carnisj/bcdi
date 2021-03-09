@@ -40,6 +40,7 @@ points = {(24, 26, 23), (24, 26, 24), (24, 26, 25),
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 width_lines = (98, 100, 102)  # list of vertical lines that will appear in the plot width vs threshold
+styles = {0: (0, (1, 5)), 1: 'dashed', 2: (0, (1, 5))}  # line style for the width_lines, 1 for each line
 debug = False  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
 tick_length = 10  # in plots
@@ -99,6 +100,11 @@ if isinstance(width_lines, Real):
     width_lines = (width_lines,)
 valid.valid_container(width_lines, container_types=(list, tuple, np.ndarray), item_types=Real,
                       min_excluded=0, name='line_profile')
+
+if not isinstance(styles, dict):
+    raise TypeError('styles should be a dictionnary')
+if len(styles) != len(width_lines):
+    raise ValueError('styles should have as many entries as the number of width_lines')
 
 comment = f'_direction{direction[0]}_{direction[1]}_{direction[2]}_{comment}'
 
@@ -216,8 +222,8 @@ ax.spines['right'].set_linewidth(tick_width)
 ax.spines['left'].set_linewidth(tick_width)
 ax.spines['top'].set_linewidth(tick_width)
 ax.spines['bottom'].set_linewidth(tick_width)
-for hline in width_lines:
-    ax.axhline(y=hline, linestyle='dashed', color='k', linewidth=1)
+for index, hline in enumerate(width_lines):
+    ax.axhline(y=hline, linestyle=styles[index], color='k', linewidth=1.5)
 fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
 
 ax.set_xlabel('threshold', fontsize=20)
