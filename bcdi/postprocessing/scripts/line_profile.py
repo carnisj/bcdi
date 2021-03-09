@@ -26,8 +26,8 @@ defining the object from the background. Must be given as input: the voxel size 
 the direction of the cuts and a list of points where to apply the cut along this direction.   
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder
-savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/linecuts/"
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/result/"  # data folder
+savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/result/linecuts_v2/"
 # results will be saved here, if None it will default to datadir
 threshold = np.linspace(0, 1.0, num=20)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
@@ -39,9 +39,12 @@ points = {(24, 26, 23), (24, 26, 24), (24, 26, 25),
 # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
-width_lines = (100, 101, 102)  # list of vertical lines that will appear in the plot width vs threshold
+width_lines = (98, 100, 102)  # list of vertical lines that will appear in the plot width vs threshold
 debug = False  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
+tick_length = 10  # in plots
+tick_width = 2  # in plots
+
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -128,17 +131,23 @@ plot_nb = 0
 for key, value in result.items():
     # value is a dictionary {'distance': 1D array, 'cut': 1D array}
     line, = ax.plot(value['distance'], value['cut'], color=colors[plot_nb % len(colors)],
-                    marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=6,
+                    marker=markers[(plot_nb // len(colors)) % len(markers)], fillstyle='none', markersize=10,
                     linestyle='-', linewidth=1)
     line.set_label(f'cut through {key}')
     plot_nb += 1
 
+ax.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
+ax.spines['right'].set_linewidth(tick_width)
+ax.spines['left'].set_linewidth(tick_width)
+ax.spines['top'].set_linewidth(tick_width)
+ax.spines['bottom'].set_linewidth(tick_width)
+fig.savefig(savedir + 'cut' + comment + '.png')
 ax.set_xlabel('width (nm)', fontsize=20)
 ax.set_ylabel('modulus', fontsize=20)
 if debug:
     ax.legend(fontsize=14)
 ax.tick_params(axis='both', which='major', labelsize=16)
-fig.savefig(savedir + 'cut' + comment + '.png')
+fig.savefig(savedir + 'cut' + comment + '_labels.png')
 
 #################################################################################
 # calculate the evolution of the width of the object depending on the threshold #
