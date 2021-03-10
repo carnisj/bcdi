@@ -26,16 +26,16 @@ defining the object from the background. Must be given as input: the voxel size 
 the direction of the cuts and a list of points where to apply the cut along this direction.   
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/result/"  # data folder
-savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/result/linecuts_v2/"
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"  # data folder
+savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/linecuts/"
 # results will be saved here, if None it will default to datadir
 threshold = np.linspace(0, 1.0, num=20)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 direction = (0, 1, 0)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D) defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-points = {(24, 26, 23), (24, 26, 24), (24, 26, 25),
-          (25, 26, 23), (25, 26, 24), (25, 26, 25),
-          (26, 26, 23), (26, 26, 24), (26, 26, 25),}
+points = {(25, 37, 23), (25, 37, 24), (25, 37, 25), (25, 37, 26),
+          (26, 37, 23), (26, 37, 24), (26, 37, 25), (26, 37, 26),
+          (27, 37, 24), (27, 37, 25)}
 # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
@@ -116,7 +116,8 @@ obj[np.isnan(obj)] = 0  # remove nans
 if ndim == 2:
     gu.imshow_plot(array=obj, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
 else:
-    gu.multislices_plot(array=obj, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True)
+    gu.multislices_plot(array=obj, sum_frames=False, plot_colorbar=True, reciprocal_space=False, is_orthogonal=True,
+                        slice_position=(25, 37, 25))
 
 #####################################
 # create the linecut for each point #
@@ -225,15 +226,17 @@ ax.spines['bottom'].set_linewidth(tick_width)
 for index, hline in enumerate(width_lines):
     ax.axhline(y=hline, linestyle=styles[index], color='k', linewidth=1.5)
 fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
+ymin, ymax = ax.get_ylim()
 
 ax.set_xlim(left=0.335, right=0.565)
 ax.set_ylim(bottom=96, top=104)
 fig.savefig(savedir + 'width_vs_threshold' + comment + '_zoom.png')
 ax.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
+plt.pause(0.5)
 fig.savefig(savedir + 'width_vs_threshold' + comment + '_zoom_labels.png')
 
 ax.set_xlim(left=0, right=1)
-ax.set_ylim(bottom=0, top=145)
+ax.set_ylim(bottom=ymin, top=ymax)
 ax.set_xlabel('threshold', fontsize=20)
 ax.set_ylabel('width (nm)', fontsize=20)
 ax.set_title(f"Width vs threshold in the direction {result['direction']}\n", fontsize=20)
@@ -243,6 +246,7 @@ fig.text(0.15, 0.30, f"expected widths: {result['expected_width']}", size=16)
 fig.text(0.15, 0.25, f"fitted thresholds: {result['mean_thres']}", size=16)
 fig.text(0.15, 0.20, f"stds: {result['std_thres']}", size=16)
 ax.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
+plt.pause(0.5)
 fig.savefig(savedir + 'width_vs_threshold' + comment + '_labels.png')
 
 ###################
