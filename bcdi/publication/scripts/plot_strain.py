@@ -9,6 +9,7 @@
 from matplotlib import pyplot as plt
 from numbers import Real
 import numpy as np
+import pathlib
 from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
@@ -17,6 +18,7 @@ import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.validation as valid
 
 helptext = """
 Template for figures of the following article: 
@@ -31,11 +33,11 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 """
 
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/result/"
-savedir = datadir + '/figures/scratch/'
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"
+savedir = datadir + '/figures/'
 comment = '_iso0.4'   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
-strain_isosurface = 0.40  # amplitude below this value will be set to 0
+strain_isosurface = 0.01  # amplitude below this value will be set to 0
 
 voxel_size = 5.0  # in nm
 tick_spacing = 25  # for plots, in nm
@@ -55,12 +57,14 @@ save_YZ = True  # True to save the view in YZ plane
 save_XZ = True  # True to save the view in XZ plane
 save_XY = True  # True to save the view in XY plane
 
-flag_strain = True  # True to plot and save the strain
-flag_phase = True  # True to plot and save the phase
+flag_strain = False  # True to plot and save the strain
+flag_phase = False  # True to plot and save the phase
 flag_amp = True  # True to plot and save the amplitude
+flag_support = False  # True to plot and save the support
 
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
-flag_support = False  # True to plot and save the support
+vline_hist = [0.375, 0.505]  # list of vertical lines to plot in the amplitude histogram, leave None otherwise
+
 flag_linecut = False  # True to plot and save a linecut of the phase
 y_linecut = 257  # in pixels
 
@@ -95,6 +99,11 @@ if not isinstance(phase_range, Real):
         raise ValueError(f'Incorrect setting {phase_range} for the parameter "phase_range"')
 else:
     phase_min, phase_max = -phase_range, phase_range
+
+valid.valid_container(obj=vline_hist, container_types=(list, tuple, np.ndarray, set), min_excluded=0, allow_none=True,
+                      item_types=Real, name='plot_strain')
+
+pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
 #############
 # load data #
@@ -255,8 +264,13 @@ if flag_amp:
     ax.spines['left'].set_linewidth(tick_width)
     ax.spines['top'].set_linewidth(tick_width)
     ax.spines['bottom'].set_linewidth(tick_width)
+    if vline_hist is not None:
+        for line in vline_hist:
+            ax.axvline(x=line, linestyle=(0, (1, 100)), color='k', linewidth=0.5)  # vertical line
     fig.savefig(savedir + 'phased_histogram_amp' + comment + '.png', bbox_inches="tight")
     ax.tick_params(labelbottom=True, labelleft=True, direction='out', length=tick_length, width=tick_width)
+    if vline_hist is not None:
+        ax.set_title(f"vlines: {vline_hist}", size=12)
     fig.savefig(savedir + 'phased_histogram_amp' + comment + '_labels.png', bbox_inches="tight")
 
 ##########
