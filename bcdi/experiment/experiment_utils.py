@@ -1129,7 +1129,9 @@ class Setup(object):
             specfile = specfile_name
             scan_template = sample_name + '_' + str(scan_number) + '/'  # used to create the folder
         if save_dir:
-            savedir = save_dir + scan_template + save_dirname + '/'
+            savedir = save_dir  #  + scan_template + save_dirname + '/'
+            if not savedir.endswith('/'):
+                savedir += '/'
         else:
             savedir = homedir + save_dirname + '/'
         detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
