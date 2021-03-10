@@ -45,10 +45,10 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 314
+scan = 128
 sample_name = "PtNP1"  # "SN"  #
-root_folder = "D:/data/P10_December2020_BCDI/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = "D:/data/P10_December2020_BCDI/data_nanolab/dataset_2/"  # PRTF will be saved here, leave None otherwise
+root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
+save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/result/"  # PRTF will be saved here, leave None otherwise
 comment = ""  # should start with _
 crop_roi = None  # list of 6 integers, ROI used if 'center_auto' was True in PyNX, leave None otherwise
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
@@ -347,7 +347,10 @@ obj, extension = util.load_file(file_path)
 print('Opening ', file_path)
 
 if extension == '.h5':
-    comment = comment + '_mode'
+    if comment:
+        comment += '_mode'
+    else:
+        comment = 'mode'
 
 # check if the shape of the real space object is the same as the measured diffraction pattern
 # the real space object may have been further cropped to a tight support, to save memory space.
@@ -522,7 +525,7 @@ ax.spines['top'].set_linewidth(1.5)
 ax.spines['bottom'].set_linewidth(1.5)
 ax.tick_params(labelbottom=False, labelleft=False)
 if save:
-    fig.savefig(detector.savedir + 'S' + str(scan) + '_prtf' + comment + '.png')
+    fig.savefig(detector.savedir + f'S{scan}_prtf' + comment + '.png')
 ax.set_title('PRTF')
 ax.set_xlabel('q (1/nm)')
 ax.tick_params(labelbottom=True, labelleft=True)
@@ -530,6 +533,6 @@ fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
 fig.text(0.15, 0.20, f"q at PRTF=1/e: {q_resolution:.5f} (1/nm)", size=14)
 fig.text(0.15, 0.15, f"resolution d = {2*np.pi / q_resolution:.3f} nm", size=14)
 if save:
-    fig.savefig(detector.savedir + f'S{scan}_prtf' + comment + '.png')
+    fig.savefig(detector.savedir + f'S{scan}_prtf' + comment + '_label.png')
 plt.ioff()
 plt.show()
