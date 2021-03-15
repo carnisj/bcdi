@@ -70,6 +70,7 @@ class TestGraphUtils(unittest.TestCase):
         self.assertRaises(TypeError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
                           tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 0))
 
+
 if __name__ == 'main':
     result = run_tests(TestGraphUtils)
     print(result)
