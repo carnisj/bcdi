@@ -35,7 +35,7 @@ savedir = datadir + 'linecuts_P2_018/'  # 'linecuts_P2_001a/'
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/linecuts_P2_001a/"
 # results will be saved here, if None it will default to datadir
 upsampling_factor = 1  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
-threshold = np.round(np.linspace(0.2, 0.5, num=10), decimals=3)
+threshold = 0.5  # np.round(np.linspace(0.2, 0.5, num=10), decimals=3)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 angular_step = 1  # in degrees, the linecut directions will be automatically calculated
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
@@ -43,7 +43,7 @@ roi = (220, 680, 620, 1120)  # (470, 550, 710, 790)  # ROI centered around the c
 # determined within this ROI when origin is not defined. Leave None to use the full array.
 origin = None  # origin where all the line cuts pass by (indices considering the array cropped to roi).
 # If None, it will use the center of mass of the modulus in the region defined by roi
-voxel_size = 0.3448275862068966  # 2.070393374741201  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
+voxel_size = 0.3448275862068966 * 0.96829786  # 2.070393374741201  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 sum_axis = 1  # if the object is 3D, it will be summed along that axis
 debug = False  # True to print the output dictionary and plot the legend
 comment = 'SEM'  # string to add to the filename when saving
@@ -116,7 +116,7 @@ valid.valid_container(roi, container_types=(list, tuple, np.ndarray), length=4, 
                       min_included=0, name='angular_profile')
 assert roi[0] < roi[1] <= nby and roi[2] < roi[3] <= nbx, 'roi incompatible with the array shape'
 
-obj = obj[roi[0]:roi[1], roi[2]:roi[3]]
+obj = obj[roi[0]:roi[1], roi[2]:roi[3]].astype(float)
 
 if origin is None:
     if ndim == 3:
