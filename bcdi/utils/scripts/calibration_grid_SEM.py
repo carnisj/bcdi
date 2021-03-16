@@ -54,6 +54,7 @@ background_roi = [0, 400, 112, 118]  # [ystart, ystop, xstart, xstop], the mean 
 # subtracted from the data. Leave None otherwise
 # list of tuples [(start, stop), ...] of regions to be fitted, in the unit of length along the linecut, None otherwise
 voxel_size = 4.140786749482402  # positive real number, voxel size of the SEM image
+expected_width = 5120  # in nm, real positive number or None
 debug = False  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
 tick_length = 10  # in plots
@@ -120,6 +121,7 @@ if fit_roi is not None:
 valid.valid_container(background_roi, container_types=(list, tuple), allow_none=True, item_types=int, min_included=0,
                       name='calibration_grid_SEM')
 
+valid.valid_item(value=expected_width, allowed_types=Real, min_excluded=0, allow_none=True, name='calibration_grid_SEM')
 comment = f'_direction{direction[0]}_{direction[1]}_{comment}'
 
 #########################
@@ -252,7 +254,9 @@ if fit_roi is not None:
 tmp_str = 'mean width'
 print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
 print(f"mean width: {result['mean_width']}, std width: {result['std_width']}")
-
+if expected_width is not None:
+    correction_factor = expected_width / result['mean_width']
+    print(f"correction factor to apply to the voxel size: {correction_factor}")
 if debug:
     tmp_str = 'output dictionnary'
     print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
