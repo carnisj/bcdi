@@ -333,12 +333,12 @@ def linecut(array, point, direction, direction_basis='voxel', voxel_size=1):
 
     :param array: 2D or 3D numpy array from which the linecut will be extracted
     :param point: tuple of three integral indices, point by which the linecut pass.
-    :param direction: list of three vector components, direction of the linecut in units of pixels
+    :param direction: list of 2 (for 2D) or 3 (for 3D) vector components, direction of the linecut in units of pixels
     :param direction_basis: 'orthonormal' if the vector direction is expressed in an orthonormal basis. In that case it
      will be corrected for the different voxel sizes in each direction. 'voxel' if direction is expressed in the
      non-orthonormal basis defined by the voxel sizes in each direction.
-    :param voxel_size: real positive number or tuple of three real positive numbers representing the voxel size in each
-     dimension.
+    :param voxel_size: real positive number or tuple of 2 (for 2D) or 3 (for 3D) real positive numbers representing
+     the voxel size in each dimension.
     :return: distances (1D array, distance along the linecut in the unit given by voxel_size) and cut (1D array,
      linecut through array in direction passing by point)
     """
@@ -500,11 +500,10 @@ def lorentzian(x_axis, amp, cen, sig):
 
 def objective_lmfit(params, x_axis, data, distribution):
     """
-    Calculate total residual for fits to several data sets held
-    in a 2-D array, and modeled by gaussian functions.
+    Calculate total residual for fits to several data sets held in a 2-D array.
 
     :param params: a lmfit Parameters object
-    :param x_axis: where to calculate the gaussian distribution
+    :param x_axis: where to calculate the distribution
     :param data: data to fit
     :param distribution: distribution to use for fitting
     :return: the residuals of the fit of data using the parameters
@@ -808,13 +807,6 @@ def sum_roi(array, roi, debugging=False):
 
 
 # if __name__ == "__main__":
-#     f = "D:/data/P10_2nd_test_isosurface_Dec2020/samples Nanolab/Sample preparation for Ivan's beam times/P2_001a.jpg"
+#     f = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM calibration/MCS_03.tif"
 #     data = image_to_ndarray(filename=f, debug=True, convert_grey=False)
-#     plt.show()
-#     import numpy as np
-#     import matplotlib.pyplot as plt
-#     x = np.linspace(-3, 3, num=200)
-#     y = np.asarray([skewed_gaussian(point, 1, 0, 1, 3) for point in x])
-#     plt.figure()
-#     plt.plot(x, y)
 #     plt.show()
