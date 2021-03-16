@@ -34,18 +34,26 @@ savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM cali
 # results will be saved here, if None it will default to datadir
 direction = (0, 1)  # tuple of 2 numbers defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-points = [(0, 5)]  # , (0, 25), (0, 50), (0, 75), (0, 100), (0, 125), (0, 150), (0, 175), (0, 200), (0, 225)}
-#  {(25, 37, 23), (25, 37, 24), (25, 37, 25), (25, 37, 26),
-#      (26, 37, 23), (26, 37, 24), (26, 37, 25), (26, 37, 26),
-#      (27, 37, 24), (27, 37, 25)]
+points = [(5, 0), (25, 0), (50, 0), (75, 0), (100, 0), (125, 0), (150, 0), (175, 0), (200, 0), (225, 0)]
 # list/tuple of 2 indices corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
-gaussian_roi = [(350, 490), (5660, 5880)]
+fit_roi = [[(350, 495), (5660, 5800)],
+           [(350, 495), (5660, 5800)],
+           [(350, 495), (5660, 5780)],
+           [(350, 495), (5660, 5780)],
+           [(350, 495), (5650, 5790)],
+           [(350, 495), (5650, 5790)],
+           [(350, 495), (5650, 5790)],
+           [(350, 485), (5640, 5780)],
+           [(350, 485), (5640, 5780)],
+           [(350, 485), (5640, 5780)]]  # ROIs that should be fitted for each point. There should be as many
+
+
+# sublists as the number of points. Leave None otherwise.
 background_roi = [0, 400, 112, 118]  # [ystart, ystop, xstart, xstop], the mean intensity in this ROI will be
 # subtracted from the data. Leave None otherwise
 # list of tuples [(start, stop), ...] of regions to be fitted, in the unit of length along the linecut, None otherwise
 voxel_size = 4.140786749482402  # positive real number, voxel size of the SEM image
-expected_width = None  # vertical line that will appear in the plot width vs threshold, leave None otherwise
 debug = False  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
 tick_length = 10  # in plots
@@ -67,7 +75,7 @@ plt.ion()
 root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir,
-                                       filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
+                                       filetypes=[("TIFF", "*.tif"), ("NPZ", "*.npz"), ("NPY", "*.npy"),
                                                   ("CXI", "*.cxi"), ("HDF5", "*.h5"), ("all files", "*.*")])
 
 _, ext = os.path.splitext(file_path)
@@ -99,14 +107,16 @@ valid.valid_container(voxel_size, container_types=(list, tuple, np.ndarray), len
 savedir = savedir or datadir
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
-valid.valid_item(value=expected_width, allowed_types=Real, min_excluded=0, allow_none=True, name='calibration_grid_SEM')
-
-valid.valid_container(gaussian_roi, container_types=(list, tuple), allow_none=True, name='calibration_grid_SEM')
-if gaussian_roi is not None:
-    for roi in gaussian_roi:
-        valid.valid_container(roi, container_types=(list, tuple), length=ndim, item_types=Real,
-                              min_included=0, name='calibration_grid_SEM')
-
+valid.valid_container(fit_roi, container_types=(list, tuple), allow_none=True, name='calibration_grid_SEM')
+if fit_roi is not None:
+    if len(fit_roi) != len(points):
+        raise ValueError('There should be as many ROIs sublists as the number of points (None allowed)')
+    for sublist in fit_roi:
+        valid.valid_container(sublist, container_types=(list, tuple), allow_none=True, name='calibration_grid_SEM')
+        if sublist is not None:
+            for roi in sublist:
+                valid.valid_container(roi, container_types=(list, tuple), length=ndim, item_types=Real,
+                                      min_included=0, name='calibration_grid_SEM')
 valid.valid_container(background_roi, container_types=(list, tuple), allow_none=True, item_types=int, min_included=0,
                       name='calibration_grid_SEM')
 
@@ -168,26 +178,26 @@ fig.savefig(savedir + 'cut' + comment + '_labels.png')
 ###############################
 # fit the peaks with gaussian #
 ###############################
-if gaussian_roi is not None:
-    # peaks = np.empty((len(points), len(gaussian_roi)))  # array where the peaks positions will be saved
+if fit_roi is not None:
+    # peaks = np.empty((len(points), len(fit_roi)))  # array where the peaks positions will be saved
     width = np.empty(len(points))
     # define the fit initial parameters
     fit_params = Parameters()
-    fit_params.add('amp_1', value=0.5, min=0.1, max=100)
-    fit_params.add('sig_1', value=30, min=20, max=50)
-    fit_params.add('ratio_1', value=0.5, min=0, max=1)
 
     idx_point = 0
     for key, value in result.items():
         # value is a dictionary {'distance': 1D array, 'cut': 1D array}
         tmp_str = f'{key}'
         print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
-        for idx_roi, roi in enumerate(gaussian_roi):  # loop over the ROIs, roi is a tuple of two number
+        for idx_roi, roi in enumerate(fit_roi[idx_point]):  # loop over the ROIs, roi is a tuple of two number
             # define the fit initial center
             tmp_str = f'{roi}'
             indent = 2
             print(f'\n{" " * indent}{"-" * len(tmp_str)}\n' + f'{" " * indent}' + tmp_str + '\n' +
                   f'{" " * indent}{"-" * len(tmp_str)}')
+            fit_params.add('amp_1', value=50, min=1, max=100)
+            fit_params.add('sig_1', value=25, min=15, max=35)
+            fit_params.add('ratio_1', value=0.5, min=0, max=1)
             fit_params.add('cen_1', value=(roi[0]+roi[1])/2, min=roi[0], max=roi[1])
             # find linecut indices falling into the roi
             ind_start, ind_stop = util.find_nearest(value['distance'], roi)
@@ -205,14 +215,15 @@ if gaussian_roi is not None:
             # idx_point += 1
 
         # calculate the mean distance between the first and last peaks
-        width[idx_point] = (value[f'roi {gaussian_roi[-1]}']['cen_1'].value -
-                            value[f'roi {gaussian_roi[0]}']['cen_1'].value)
+        width[idx_point] = (value[f'roi {fit_roi[idx_point][-1]}']['cen_1'].value -
+                            value[f'roi {fit_roi[idx_point][0]}']['cen_1'].value)
+        idx_point += 1
 
     # update the dictionnary
-    result['expected_width'] = expected_width
+    print(f'\n widths: {width}')
     result['mean_width'] = np.mean(width)
     result['std_width'] = np.std(width)
-    result['fitting_rois'] = gaussian_roi
+    result['fitting_rois'] = fit_roi
 
     #####################################################################
     # plot an overlay of the first and last peaks for the first linecut #
@@ -220,27 +231,32 @@ if gaussian_roi is not None:
     fig = plt.figure(figsize=(12, 9))
     # area around the first peak
     ax0 = plt.subplot(121)
-    ind_start, ind_stop = util.find_nearest(result[f'pixel {points[0]}']['distance'], gaussian_roi[0])
+    ind_start, ind_stop = util.find_nearest(result[f'pixel {points[0]}']['distance'], fit_roi[0][0])
     x_axis = result[f'pixel {points[0]}']['distance'][ind_start:ind_stop+1]
     ax0.plot(x_axis, result[f'pixel {points[0]}']['cut'][ind_start:ind_stop+1], '-r')
-    params_first = result[f'pixel {points[0]}'][f'roi {gaussian_roi[0]}']
+    params_first = result[f'pixel {points[0]}'][f'roi {fit_roi[0][0]}']
     fit_first = util.function_lmfit(params=params_first, x_axis=x_axis, distribution='pseudovoigt')
     ax0.plot(x_axis, fit_first, '.b')
 
     ax1 = plt.subplot(122)
-    ind_start, ind_stop = util.find_nearest(result[f'pixel {points[0]}']['distance'], gaussian_roi[-1])
+    ind_start, ind_stop = util.find_nearest(result[f'pixel {points[0]}']['distance'], fit_roi[0][-1])
     x_axis = result[f'pixel {points[0]}']['distance'][ind_start:ind_stop+1]
     ax1.plot(x_axis, result[f'pixel {points[0]}']['cut'][ind_start:ind_stop+1], '-r')
-    params_last = result[f'pixel {points[0]}'][f'roi {gaussian_roi[-1]}']
+    params_last = result[f'pixel {points[0]}'][f'roi {fit_roi[0][-1]}']
     fit_last = util.function_lmfit(params=params_last, x_axis=x_axis, distribution='pseudovoigt')
     ax1.plot(x_axis, fit_last, '.b')
 
-###################
-# save the result #
-###################
-tmp_str = 'output dictionnary'
+#############################
+# print and save the result #
+#############################
+tmp_str = 'mean width'
 print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
-pprint(result, indent=2)
+print(f"mean width: {result['mean_width']}, std width: {result['std_width']}")
+
+if debug:
+    tmp_str = 'output dictionnary'
+    print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
+    pprint(result, indent=2)
 # if debug:
 #     print('output dictionary:\n', json.dumps(result, cls=util.CustomEncoder, indent=4))
 #
