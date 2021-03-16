@@ -34,20 +34,30 @@ savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM cali
 # results will be saved here, if None it will default to datadir
 direction = (0, 1)  # tuple of 2 numbers defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-points = [(5, 0), (25, 0), (50, 0), (75, 0), (100, 0), (125, 0), (150, 0), (175, 0), (200, 0), (225, 0)]  # MCS_06.tif
-# [(5, 0), (25, 0), (50, 0), (75, 0), (100, 0), (125, 0), (150, 0), (175, 0), (200, 0), (225, 0)]  # MCS_03.tif
+points = [(5, 0), (25, 0), (50, 0), (75, 0), (100, 0), (125, 0), (150, 0), (175, 0), (200, 0), (225, 0)]
+# points for MCS_03.tif,  MCS_06.tif and MCS_07.tif
 # list/tuple of 2 indices corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
-fit_roi = [[(200, 320), (1700, 1820)],  # ROIs for MCS_06.tif
-           [(300, 420), (1800, 1920)],
-           [(400, 520), (1900, 2015)],
-           [(500, 620), (2000, 2120)],
-           [(600, 720), (2100, 2220)],
-           [(700, 820), (2200, 2320)],
-           [(800, 920), (2300, 2420)],
-           [(900, 1020), (2400, 2520)],
-           [(1000, 1120), (2500, 2620)],
-           [(1100, 1220), (2600, 2720)]]
+fit_roi = [[(360, 480), (1070, 1190)],
+           [(475, 590), (1175, 1290)],
+           [(575, 685), (1275, 1390)],
+           [(675, 785), (1375, 1490)],
+           [(360, 480), (1070, 1190)],
+           [(475, 590), (1175, 1290)],
+           [(575, 685), (1275, 1390)],
+           [(675, 785), (1375, 1490)],
+           [(360, 480), (1070, 1190)],
+           [(475, 590), (1175, 1290)]]
+# fit_roi = [[(200, 320), (1700, 1820)],  # ROIs for MCS_06.tif
+#            [(300, 420), (1800, 1920)],
+#            [(400, 520), (1900, 2015)],
+#            [(500, 620), (2000, 2120)],
+#            [(600, 720), (2100, 2220)],
+#            [(700, 820), (2200, 2320)],
+#            [(800, 920), (2300, 2420)],
+#            [(900, 1020), (2400, 2520)],
+#            [(1000, 1120), (2500, 2620)],
+#            [(1100, 1220), (2600, 2720)]]
 # fit_roi = [[(350, 495), (5660, 5800)],
 #            [(350, 495), (5660, 5800)],
 #            [(350, 495), (5660, 5780)],
@@ -59,11 +69,14 @@ fit_roi = [[(200, 320), (1700, 1820)],  # ROIs for MCS_06.tif
 #            [(350, 485), (5640, 5780)],
 #            [(350, 485), (5640, 5780)]]  # ROIs that should be fitted for each point. There should be as many
 # sublists as the number of points. Leave None otherwise.
-background_roi = [0, 400, 150, 156]  # [ystart, ystop, xstart, xstop], the mean intensity in this ROI will be
+background_roi = [0, 400, 465, 485]  # background_roi for MCS_07.tif
+# [0, 400, 150, 156]  # background_roi for MCS_06.tif
+# [0, 400, 112, 118]  # background_roi for MCS_03.tif
+# [ystart, ystop, xstart, xstop], the mean intensity in this ROI will be
 # subtracted from the data. Leave None otherwise
 # list of tuples [(start, stop), ...] of regions to be fitted, in the unit of length along the linecut, None otherwise
-voxel_size = 2.070393374741201 * 0.96829786  # positive real number, voxel size of the SEM image
-nb_lines = 16
+voxel_size = 1.0351966873706004 * 0.96829786  # positive real number, voxel size of the SEM image
+nb_lines = 8
 expected_width = 100.4 * (nb_lines-1)  # 5120  # in nm, real positive number or None
 debug = False  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
