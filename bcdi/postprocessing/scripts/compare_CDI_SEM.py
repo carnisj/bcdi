@@ -8,21 +8,15 @@
 
 import json
 import matplotlib.pyplot as plt
-from numbers import Real
 import numpy as np
 import os
 import pathlib
-from scipy.interpolate import interp1d
-from scipy.ndimage.measurements import center_of_mass
-from scipy.signal import correlate
 from scipy.stats import pearsonr
 import sys
 import tkinter as tk
 from tkinter import filedialog
 sys.path.append('D:/myscripts/bcdi/')
-import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
-import bcdi.utils.validation as valid
 
 helptext = """
 This script can be used to compare the lateral sizes of an object measured by CDI and scanning electron micrscopy. Two
@@ -37,12 +31,11 @@ After aligning the traces of the width vs angle (e.g. if the object was slightly
 the traces are overlaid in order to determine which threshold is correct.     
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/linecuts/"
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_old_psf/result/linecuts/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder
-savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/linecuts/"
+savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_old_psf/result/linecuts/test/"
 # results will be saved here, if None it will default to datadir
-index_sem = 2  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
-# Leave None to print the available thresholds.
+index_sem = 0  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
 comment = '_upsampled_5'  # string to add to the filename when saving, should start with "_"
 ##################################
 # end of user-defined parameters #
@@ -123,7 +116,7 @@ ax0 = plt.subplot(121)
 line, = ax0.plot(sem_trace)
 line.set_label("SEM trace")
 line, = ax0.plot(bcdi_trace)
-line.set_label("BCDI trace")
+line.set_label(f"BCDI trace (threshold={bcdi_dict['threshold'][0]})")
 
 print(f'lag between the two traces = {lag}')
 print('aligning the SEM trace on the BCDI traces')
