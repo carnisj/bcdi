@@ -517,6 +517,14 @@ angular_avg_3Dto1D.py
    :end-before: """
    :language: rst
 
+calibration_grid_SEM.py
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/calibration_grid_SEM.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 center_of_rotation.py
 ^^^^^^^^^^^^^^^^^^^^^
 
