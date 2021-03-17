@@ -185,12 +185,14 @@ fig.savefig(savedir + 'compa_width_vs_ang' + comment + '_legend.png')
 ##############################################################################################################
 fig = plt.figure(figsize=(12, 9))
 ax0 = plt.subplot(111)
-ax0.plot(thres_bcdi, correlation, color='b', marker='.', fillstyle='none', markersize=6, linestyle='solid', linewidth=1)
+ax0.plot(thres_bcdi, correlation, color='b', marker='.', fillstyle='none', markersize=10, markeredgewidth=2,
+         linestyle='solid', linewidth=2)
 ax0.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width,
                 labelsize=16)
 
 ax1 = ax0.twinx()
-ax1.plot(thres_bcdi, residuals, color='r', marker='v', fillstyle='none', markersize=6, linestyle='dashed', linewidth=1)
+ax1.plot(thres_bcdi, residuals, color='r', marker='v', fillstyle='none', markersize=10, markeredgewidth=2,
+         linestyle='dashed', linewidth=2)
 ax1.tick_params(labelbottom=False, labelright=False, direction='out', length=tick_length, width=tick_width,
                 labelsize=16)
 fig.savefig(savedir + 'Pearson_vs_threshold' + comment + '.png')
