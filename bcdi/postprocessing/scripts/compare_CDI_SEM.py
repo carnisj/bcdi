@@ -32,9 +32,9 @@ After aligning the traces of the width vs angle (e.g. if the object was slightly
 the traces are overlaid in order to determine which threshold is correct.     
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/test/"
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/linecuts/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder
-savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/test/"
+savedir = datadir + 'test/'
 # results will be saved here, if None it will default to datadir
 index_sem = 0  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
 comment = 'ups_5'  # string to add to the filename when saving, should start with "_"
@@ -147,20 +147,20 @@ angles_bcdi = bcdi_dict['angles']
 correlation = np.zeros(thres_bcdi.size)
 fig = plt.figure(figsize=(12, 9))
 ax0 = plt.subplot(121)
-line, = ax0.plot(sem_dict['angles'], sem_trace, color=colors[0], marker=markers[0], fillstyle='none',
-                 markersize=6, linestyle='-', linewidth=1)
+line, = ax0.plot(sem_dict['angles'], sem_trace, color='k', marker='.', markersize=12, linestyle='-', linewidth=1)
 line.set_label(f"SEM thres {sem_dict['threshold'][index_sem]}")
 
-for idx, thres in enumerate(thres_bcdi, start=1):
-    bcdi_trace = bcdi_dict['ang_width_threshold'][idx-1]
+for idx, thres in enumerate(thres_bcdi, start=0):
+    bcdi_trace = bcdi_dict['ang_width_threshold'][idx]
     cross_corr = np.correlate(sem_trace - np.mean(sem_trace), bcdi_trace - np.mean(bcdi_trace), mode="full")
     lag = lags[np.argmax(cross_corr)]
     sem_trace = np.roll(sem_trace, -lag)
     print(f'bcdi trace {idx}, threshold = {thres}, lag = {lag}')
 
-    correlation[idx-1] = pearsonr(sem_trace, bcdi_trace)[0]
+    correlation[idx] = pearsonr(sem_trace, bcdi_trace)[0]
     line, = ax0.plot(angles_bcdi, bcdi_trace, color=colors[idx % len(colors)],
-                     marker=markers[(idx // len(colors)) % len(markers)], fillstyle='none', markersize=6,
+                     marker=markers[idx % len(markers)],
+                     fillstyle='none', markersize=6,
                      linestyle='-', linewidth=1)
     line.set_label(f'threshold {thres}')
 
