@@ -17,6 +17,7 @@ import tkinter as tk
 from tkinter import filedialog
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.utils.utilities as util
+import bcdi.utils.validation as valid
 
 helptext = """
 This script can be used to compare the lateral sizes of an object measured by CDI and scanning electron micrscopy. Two
@@ -31,25 +32,31 @@ After aligning the traces of the width vs angle (e.g. if the object was slightly
 the traces are overlaid in order to determine which threshold is correct.     
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_old_psf/result/linecuts/"
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/test/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder
-savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_old_psf/result/linecuts/test/"
+savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/test/"
 # results will be saved here, if None it will default to datadir
 index_sem = 0  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
-comment = '_upsampled_5'  # string to add to the filename when saving, should start with "_"
+comment = 'ups_5'  # string to add to the filename when saving, should start with "_"
 ##################################
 # end of user-defined parameters #
 ##################################
 
-###############################
-# list of colors for the plot #
-###############################
-colors = ('b', 'g', 'r', 'c', 'm', 'y', 'k')
-markers = ('.', 'v', '^', '<', '>')
+#############################
+# define default parameters #
+#############################
+colors = ('b', 'g', 'r', 'c', 'm', 'y', 'k')  # for plots
+markers = ('.', 'v', '^', '<', '>')  # for plots
+validation_name = 'compare_CDI_SEM'
 
 #########################
 # check some parameters #
 #########################
+valid.valid_item(value=index_sem, allowed_types=int, min_included=0, name=validation_name)
+valid.valid_container(comment, container_types=str, name=validation_name)
+if comment.startswith('_'):
+    comment = comment[1:]
+
 savedir = savedir or datadir
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
