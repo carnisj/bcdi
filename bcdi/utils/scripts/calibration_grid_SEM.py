@@ -86,11 +86,12 @@ tick_width = 2  # in plots
 # end of user-defined parameters #
 ##################################
 
-###############################
-# list of colors for the plot #
-###############################
-colors = ('b', 'g', 'r', 'c', 'm', 'y', 'k')
-markers = ('.', 'v', '^', '<', '>')
+#############################
+# define default parameters #
+#############################
+colors = ('b', 'g', 'r', 'c', 'm', 'y', 'k')  # for plots
+markers = ('.', 'v', '^', '<', '>')  # for plots
+validation_name = 'calibration_grid_SEM'
 
 #################
 # load the data #
@@ -116,37 +117,37 @@ if ndim != 2:
     raise ValueError(f'Number of dimensions = {ndim}, expected 2')
 
 valid.valid_container(direction, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
-                      name='calibration_grid_SEM')
+                      name=validation_name)
 
-valid.valid_container(points, container_types=(list, tuple), min_length=1, name='calibration_grid_SEM')
+valid.valid_container(points, container_types=(list, tuple), min_length=1, name=validation_name)
 for point in points:
     valid.valid_container(point, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
-                          min_included=0, name='calibration_grid_SEM')
+                          min_included=0, name=validation_name)
 
 if isinstance(voxel_size, Real):
     voxel_size = (voxel_size,) * ndim
 valid.valid_container(voxel_size, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
-                      min_excluded=0, name='calibration_grid_SEM')
+                      min_excluded=0, name=validation_name)
 
 savedir = savedir or datadir
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
-valid.valid_container(fit_roi, container_types=(list, tuple), allow_none=True, name='calibration_grid_SEM')
+valid.valid_container(fit_roi, container_types=(list, tuple), allow_none=True, name=validation_name)
 if fit_roi is not None:
     if len(fit_roi) != len(points):
         raise ValueError('There should be as many ROIs sublists as the number of points (None allowed)')
     for sublist in fit_roi:
-        valid.valid_container(sublist, container_types=(list, tuple), allow_none=True, name='calibration_grid_SEM')
+        valid.valid_container(sublist, container_types=(list, tuple), allow_none=True, name=validation_name)
         if sublist is not None:
             for roi in sublist:
                 valid.valid_container(roi, container_types=(list, tuple), length=ndim, item_types=Real,
-                                      min_included=0, name='calibration_grid_SEM')
+                                      min_included=0, name=validation_name)
 valid.valid_container(background_roi, container_types=(list, tuple), allow_none=True, item_types=int, min_included=0,
-                      name='calibration_grid_SEM')
+                      name=validation_name)
 
-valid.valid_item(value=expected_width, allowed_types=Real, min_excluded=0, allow_none=True, name='calibration_grid_SEM')
+valid.valid_item(value=expected_width, allowed_types=Real, min_excluded=0, allow_none=True, name=validation_name)
 
-valid.valid_container(comment, container_types=str, name='calibration_grid_SEM')
+valid.valid_container(comment, container_types=str, name=validation_name)
 if comment.startswith('_'):
     comment = comment[1:]
 comment = f'_direction{direction[0]}_{direction[1]}_{comment}'
