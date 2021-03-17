@@ -29,38 +29,48 @@ from the background. Must be given as input: the voxel size (possibly different 
 size and an origin point where all linecuts pass by.   
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/"
-# "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder  #
-savedir = datadir + 'linecuts_P2_018/'  # 'linecuts_P2_001a/'
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"
+# "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/"
+# "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/PtNP1_00128/result/"  # data folder  #
+savedir = datadir + 'test/'  # 'linecuts_P2_001a/'
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/linecuts_P2_001a/"
 # results will be saved here, if None it will default to datadir
-upsampling_factor = 1  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
-threshold = 0.5  # np.round(np.linspace(0.2, 0.5, num=10), decimals=3)
+upsampling_factor = 5  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
+threshold = np.linspace(0.25, 0.55, num=4)  #  np.round(np.linspace(0.2, 0.5, num=10), decimals=3)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 angular_step = 1  # in degrees, the linecut directions will be automatically calculated
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-roi = (220, 680, 620, 1120)  # (470, 550, 710, 790)  # ROI centered around the crystal of interest in the 2D image, the center of mass will be
+roi = None  # (470, 550, 710, 790)  # P2_001a.tif
+# (220, 680, 620, 1120)  # P2_018.tif
+# ROI centered around the crystal of interest in the 2D image, the center of mass will be
 # determined within this ROI when origin is not defined. Leave None to use the full array.
 origin = None  # origin where all the line cuts pass by (indices considering the array cropped to roi).
 # If None, it will use the center of mass of the modulus in the region defined by roi
-voxel_size = 0.3448275862068966 * 0.96829786  # 2.070393374741201  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
+voxel_size = 5
+# 2.070393374741201 * 0.96829786  # P2_001a.tif
+# 0.3448275862068966 * 0.96829786  # P2_018.tif
+# positive real number or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D) (in nm)
 sum_axis = 1  # if the object is 3D, it will be summed along that axis
 debug = False  # True to print the output dictionary and plot the legend
-comment = 'SEM'  # string to add to the filename when saving
+comment = 'ups_5'  # string to add to the filename when saving
 ##################################
 # end of user-defined parameters #
 ##################################
 
+#############################
+# define default parameters #
+#############################
+colors = ('b', 'g', 'r', 'c', 'm', 'y', 'k')  # for plots
+markers = ('.', 'v', '^', '<', '>')  # for plots
+validation_name = 'angular_profile'
+
 #########################
 # check some parameters #
 #########################
-valid.valid_item(value=upsampling_factor, allowed_types=int, min_included=1, name='angular_profile')
-
-###############################
-# list of colors for the plot #
-###############################
-colors = ('b', 'g', 'r', 'c', 'm', 'y', 'k')
-markers = ('.', 'v', '^', '<', '>')
+valid.valid_item(value=upsampling_factor, allowed_types=int, min_included=1, name=validation_name)
+valid.valid_container(comment, container_types=str, name=validation_name)
+if comment.startswith('_'):
+    comment = comment[1:]
 
 ##################################################
 # create the list of directions for the linecuts #
