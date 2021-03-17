@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import json
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -49,6 +50,7 @@ tick_width = 2  # in plots
 #############################
 colors = ('b', 'g', 'r', 'c', 'm', 'y', 'k')  # for plots
 markers = ('.', 'v', '^', '<', '>')  # for plots
+mpl.rcParams['axes.linewidth'] = tick_width  # set the linewidth globally
 validation_name = 'compare_CDI_SEM'
 
 #########################
@@ -167,10 +169,6 @@ for idx, thres in enumerate(thres_bcdi, start=0):
                      linestyle='-', linewidth=1)
     line.set_label(f'threshold {thres}')
 
-ax0.spines['right'].set_linewidth(tick_width)
-ax0.spines['left'].set_linewidth(tick_width)
-ax0.spines['top'].set_linewidth(tick_width)
-ax0.spines['bottom'].set_linewidth(tick_width)
 ax0.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width,
                 labelsize=16)
 fig.savefig(savedir + 'compa_width_vs_ang' + comment + '.png')
@@ -185,10 +183,6 @@ fig = plt.figure(figsize=(12, 9))
 ax0 = plt.subplot(111)
 line, = ax0.plot(thres_bcdi, correlation, color=colors[0], marker=markers[0], fillstyle='none', markersize=6,
                  linestyle='-', linewidth=1)
-ax0.spines['right'].set_linewidth(tick_width)
-ax0.spines['left'].set_linewidth(tick_width)
-ax0.spines['top'].set_linewidth(tick_width)
-ax0.spines['bottom'].set_linewidth(tick_width)
 ax0.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width,
                 labelsize=16)
 fig.savefig(savedir + 'Pearson_vs_threshold' + comment + '.png')
