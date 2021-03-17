@@ -34,7 +34,7 @@ the traces are overlaid in order to determine which threshold is correct.
 
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/linecuts/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder
-savedir = datadir + 'test/'
+savedir = datadir + 'comparison_SEM/'
 # results will be saved here, if None it will default to datadir
 index_sem = 0  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
 comment = 'ups_5'  # string to add to the filename when saving, should start with "_"
@@ -56,8 +56,8 @@ validation_name = 'compare_CDI_SEM'
 #########################
 valid.valid_item(value=index_sem, allowed_types=int, min_included=0, name=validation_name)
 valid.valid_container(comment, container_types=str, name=validation_name)
-if comment.startswith('_'):
-    comment = comment[1:]
+if len(comment) != 0 and not comment.startswith('_'):
+    comment = '_' + comment
 
 savedir = savedir or datadir
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
