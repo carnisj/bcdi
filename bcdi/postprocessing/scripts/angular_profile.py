@@ -157,7 +157,7 @@ comment = f'_origin_{origin}_{comment}'
 obj = abs(obj) / abs(obj).max()  # normalize the modulus to 1
 obj[np.isnan(obj)] = 0  # remove nans
 fig, axs, _ = gu.imshow_plot(array=obj, sum_frames=True, sum_axis=1, plot_colorbar=True, reciprocal_space=False,
-                             is_orthogonal=True)
+                             vmin=0, vmax=1, is_orthogonal=True)
 axs.tick_params(labelbottom=True, labelleft=True, direction='out', length=tick_length, width=tick_width,
                 labelsize=16)
 cbar = axs.images[0].colorbar
