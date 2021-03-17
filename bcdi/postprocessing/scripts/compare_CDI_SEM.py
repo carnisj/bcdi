@@ -149,7 +149,8 @@ fig.savefig(savedir + 'crosscorr_alignement' + comment + '.png')
 ##########################################################################
 thres_bcdi = bcdi_dict['threshold']
 angles_bcdi = bcdi_dict['angles']
-correlation = np.zeros(thres_bcdi.size)
+correlation = np.empty(thres_bcdi.size)
+residuals = np.empty(thres_bcdi.size)
 fig = plt.figure(figsize=(12, 9))
 ax0 = plt.subplot(111)
 line, = ax0.plot(sem_dict['angles'], sem_trace, color='k', marker='.', markersize=12, linestyle='-', linewidth=1)
@@ -163,6 +164,7 @@ for idx, thres in enumerate(thres_bcdi, start=0):
     print(f'bcdi trace {idx}, threshold = {thres}, lag = {lag}')
 
     correlation[idx] = pearsonr(sem_trace, bcdi_trace)[0]
+    residuals[idx] = (np.subtract(sem_trace, bcdi_trace)**2).sum()
     line, = ax0.plot(angles_bcdi, bcdi_trace, color=colors[idx % len(colors)],
                      marker=markers[idx % len(markers)],
                      fillstyle='none', markersize=6,
@@ -178,18 +180,26 @@ ax0.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', la
 ax0.legend(fontsize=14)
 fig.savefig(savedir + 'compa_width_vs_ang' + comment + '_legend.png')
 
-# Plot the evolution of the Pearson correlation coefficient depending on the threshold
+##############################################################################################################
+# Plot the evolution of the Pearson correlation coefficient and squared residuals depending on the threshold #
+##############################################################################################################
 fig = plt.figure(figsize=(12, 9))
 ax0 = plt.subplot(111)
-line, = ax0.plot(thres_bcdi, correlation, color=colors[0], marker=markers[0], fillstyle='none', markersize=6,
-                 linestyle='-', linewidth=1)
+ax0.plot(thres_bcdi, correlation, color='b', marker='.', fillstyle='none', markersize=6, linestyle='solid', linewidth=1)
 ax0.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width,
+                labelsize=16)
+
+ax1 = ax0.twinx()
+ax1.plot(thres_bcdi, residuals, color='r', marker='v', fillstyle='none', markersize=6, linestyle='dashed', linewidth=1)
+ax1.tick_params(labelbottom=False, labelright=False, direction='out', length=tick_length, width=tick_width,
                 labelsize=16)
 fig.savefig(savedir + 'Pearson_vs_threshold' + comment + '.png')
 ax0.set_xlabel('threshold', fontsize=20)
 ax0.set_ylabel('Pearson correlation coeff.', fontsize=20)
-ax0.tick_params(axis='both', which='major', labelsize=16)
+ax1.set_ylabel('Squared residuals', fontsize=20)
 ax0.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
+ax1.tick_params(labelright=True, axis='both', which='major', labelsize=16)
+fig.tight_layout()
 fig.savefig(savedir + 'Pearson_vs_threshold' + comment + '_legend.png')
 
 plt.ioff()
