@@ -38,6 +38,8 @@ savedir = datadir + 'test/'
 # results will be saved here, if None it will default to datadir
 index_sem = 0  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
 comment = 'ups_5'  # string to add to the filename when saving, should start with "_"
+tick_length = 10  # in plots
+tick_width = 2  # in plots
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -118,7 +120,7 @@ lags = np.arange(-sem_trace.size + 1, bcdi_trace.size)
 lag = lags[np.argmax(cross_corr)]
 
 # plot the cross-correlation
-plt.figure(figsize=(12, 9))
+fig = plt.figure(figsize=(12, 9))
 ax0 = plt.subplot(121)
 line, = ax0.plot(sem_trace)
 line.set_label("SEM trace")
@@ -138,6 +140,7 @@ ax1 = plt.subplot(122)
 ax1.plot(cross_corr)
 ax1.set_title("cross-correlated signal", fontsize=14)
 plt.tight_layout()  # avoids the overlap of subplots with axes labels
+fig.savefig(savedir + 'crosscorr_alignement' + comment + '.png')
 
 ##########################################################################
 # plot the aligned BDCI traces for different thresholds vs the SEM trace #
@@ -146,7 +149,7 @@ thres_bcdi = bcdi_dict['threshold']
 angles_bcdi = bcdi_dict['angles']
 correlation = np.zeros(thres_bcdi.size)
 fig = plt.figure(figsize=(12, 9))
-ax0 = plt.subplot(121)
+ax0 = plt.subplot(111)
 line, = ax0.plot(sem_dict['angles'], sem_trace, color='k', marker='.', markersize=12, linestyle='-', linewidth=1)
 line.set_label(f"SEM thres {sem_dict['threshold'][index_sem]}")
 
@@ -164,19 +167,36 @@ for idx, thres in enumerate(thres_bcdi, start=0):
                      linestyle='-', linewidth=1)
     line.set_label(f'threshold {thres}')
 
+ax0.spines['right'].set_linewidth(tick_width)
+ax0.spines['left'].set_linewidth(tick_width)
+ax0.spines['top'].set_linewidth(tick_width)
+ax0.spines['bottom'].set_linewidth(tick_width)
+ax0.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width,
+                labelsize=16)
+fig.savefig(savedir + 'compa_width_vs_ang' + comment + '.png')
 ax0.set_xlabel('angle (deg)', fontsize=20)
 ax0.set_ylabel('width (nm)', fontsize=20)
-ax0.tick_params(axis='both', which='major', labelsize=16)
-ax1 = plt.subplot(122)
-line, = ax1.plot(thres_bcdi, correlation, color=colors[0], marker=markers[0], fillstyle='none', markersize=6,
-                 linestyle='-', linewidth=1)
-ax1.set_xlabel('threshold', fontsize=20)
-ax1.set_ylabel('Pearson correlation coeff.', fontsize=20)
-ax1.tick_params(axis='both', which='major', labelsize=16)
-plt.tight_layout()  # avoids the overlap of subplots with axes labels
-fig.savefig(savedir + 'compa_width_vs_ang' + comment + '.png')
+ax0.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
 ax0.legend(fontsize=14)
 fig.savefig(savedir + 'compa_width_vs_ang' + comment + '_legend.png')
+
+# Plot the evolution of the Pearson correlation coefficient depending on the threshold
+fig = plt.figure(figsize=(12, 9))
+ax0 = plt.subplot(111)
+line, = ax0.plot(thres_bcdi, correlation, color=colors[0], marker=markers[0], fillstyle='none', markersize=6,
+                 linestyle='-', linewidth=1)
+ax0.spines['right'].set_linewidth(tick_width)
+ax0.spines['left'].set_linewidth(tick_width)
+ax0.spines['top'].set_linewidth(tick_width)
+ax0.spines['bottom'].set_linewidth(tick_width)
+ax0.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width,
+                labelsize=16)
+fig.savefig(savedir + 'Pearson_vs_threshold' + comment + '.png')
+ax0.set_xlabel('threshold', fontsize=20)
+ax0.set_ylabel('Pearson correlation coeff.', fontsize=20)
+ax0.tick_params(axis='both', which='major', labelsize=16)
+ax0.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
+fig.savefig(savedir + 'Pearson_vs_threshold' + comment + '_legend.png')
 
 plt.ioff()
 plt.show()
