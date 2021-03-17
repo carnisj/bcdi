@@ -145,6 +145,10 @@ valid.valid_container(background_roi, container_types=(list, tuple), allow_none=
                       name='calibration_grid_SEM')
 
 valid.valid_item(value=expected_width, allowed_types=Real, min_excluded=0, allow_none=True, name='calibration_grid_SEM')
+
+valid.valid_container(comment, container_types=str, name='calibration_grid_SEM')
+if comment.startswith('_'):
+    comment = comment[1:]
 comment = f'_direction{direction[0]}_{direction[1]}_{comment}'
 
 #########################
