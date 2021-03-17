@@ -292,8 +292,6 @@ if fit_roi is not None:
     fit1.set_label('fit')
     ax1.set_ylim(-0.05, 0.9)
 
-    ax0.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
-    ax1.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
     ax0.spines['right'].set_linewidth(tick_width)
     ax0.spines['left'].set_linewidth(tick_width)
     ax0.spines['top'].set_linewidth(tick_width)
@@ -302,7 +300,10 @@ if fit_roi is not None:
     ax1.spines['left'].set_linewidth(tick_width)
     ax1.spines['top'].set_linewidth(tick_width)
     ax1.spines['bottom'].set_linewidth(tick_width)
-    # plt.axis('equal')
+    ax0.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width,
+                    labelsize=16)
+    ax1.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width,
+                    labelsize=16)
     fig.savefig(savedir + 'fit_roi' + comment + '.png')
 
     ax0.set_xlabel('width (nm)', fontsize=20)
