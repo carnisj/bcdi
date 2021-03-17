@@ -34,20 +34,20 @@ savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM cali
 # results will be saved here, if None it will default to datadir
 direction = (0, 1)  # tuple of 2 numbers defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-points = [(5, 0), (25, 0), (50, 0), (75, 0), (100, 0), (125, 0), (150, 0), (175, 0), (200, 0), (225, 0)]
+points = [(5, 0)]  # , (25, 0), (50, 0), (75, 0), (100, 0), (125, 0), (150, 0), (175, 0), (200, 0), (225, 0)]
 # points for MCS_03.tif,  MCS_06.tif and MCS_07.tif
 # list/tuple of 2 indices corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
-fit_roi = [[(360, 480), (1070, 1190)],
-           [(475, 590), (1175, 1290)],
-           [(575, 685), (1275, 1390)],
-           [(675, 785), (1375, 1490)],
-           [(360, 480), (1070, 1190)],
-           [(475, 590), (1175, 1290)],
-           [(575, 685), (1275, 1390)],
-           [(675, 785), (1375, 1490)],
-           [(360, 480), (1070, 1190)],
-           [(475, 590), (1175, 1290)]]
+# fit_roi = [[(360, 480), (1070, 1190)],  # ROIs for MCS_07.tif
+#            [(475, 590), (1175, 1290)],
+#            [(575, 685), (1275, 1390)],
+#            [(675, 785), (1375, 1490)],
+#            [(360, 480), (1070, 1190)],
+#            [(475, 590), (1175, 1290)],
+#            [(575, 685), (1275, 1390)],
+#            [(675, 785), (1375, 1490)],
+#            [(360, 480), (1070, 1190)],
+#            [(475, 590), (1175, 1290)]]
 # fit_roi = [[(200, 320), (1700, 1820)],  # ROIs for MCS_06.tif
 #            [(300, 420), (1800, 1920)],
 #            [(400, 520), (1900, 2015)],
@@ -58,25 +58,25 @@ fit_roi = [[(360, 480), (1070, 1190)],
 #            [(900, 1020), (2400, 2520)],
 #            [(1000, 1120), (2500, 2620)],
 #            [(1100, 1220), (2600, 2720)]]
-# fit_roi = [[(350, 495), (5660, 5800)],
-#            [(350, 495), (5660, 5800)],
-#            [(350, 495), (5660, 5780)],
-#            [(350, 495), (5660, 5780)],              # ROIs for MCS_03.tif
-#            [(350, 495), (5650, 5790)],
-#            [(350, 495), (5650, 5790)],
-#            [(350, 495), (5650, 5790)],
-#            [(350, 485), (5640, 5780)],
-#            [(350, 485), (5640, 5780)],
-#            [(350, 485), (5640, 5780)]]  # ROIs that should be fitted for each point. There should be as many
+fit_roi = [[(350, 495), (5660, 5800)],]
+           # [(350, 495), (5660, 5800)],
+           # [(350, 495), (5660, 5780)],
+           # [(350, 495), (5660, 5780)],              # ROIs for MCS_03.tif
+           # [(350, 495), (5650, 5790)],
+           # [(350, 495), (5650, 5790)],
+           # [(350, 495), (5650, 5790)],
+           # [(350, 485), (5640, 5780)],
+           # [(350, 485), (5640, 5780)],
+           # [(350, 485), (5640, 5780)]]  # ROIs that should be fitted for each point. There should be as many
 # sublists as the number of points. Leave None otherwise.
-background_roi = [0, 400, 465, 485]  # background_roi for MCS_07.tif
-# [0, 400, 150, 156]  # background_roi for MCS_06.tif
-# [0, 400, 112, 118]  # background_roi for MCS_03.tif
+# background_roi = [0, 400, 465, 485]  # background_roi for MCS_07.tif
+# background_roi = [0, 400, 150, 156]  # background_roi for MCS_06.tif
+background_roi = [0, 400, 112, 118]  # background_roi for MCS_03.tif
 # [ystart, ystop, xstart, xstop], the mean intensity in this ROI will be
 # subtracted from the data. Leave None otherwise
 # list of tuples [(start, stop), ...] of regions to be fitted, in the unit of length along the linecut, None otherwise
-voxel_size = 1.0351966873706004 * 0.96829786  # positive real number, voxel size of the SEM image
-nb_lines = 8
+voxel_size = 4.140786749482402  #  * 0.96829786  # positive real number, voxel size of the SEM image
+nb_lines = 52
 expected_width = 100.4 * (nb_lines-1)  # 5120  # in nm, real positive number or None
 debug = False  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
@@ -266,18 +266,51 @@ if fit_roi is not None:
     ax0 = plt.subplot(121)
     ind_start, ind_stop = util.find_nearest(result[f'pixel {points[0]}']['distance'], fit_roi[0][0])
     x_axis = result[f'pixel {points[0]}']['distance'][ind_start:ind_stop+1]
-    ax0.plot(x_axis, result[f'pixel {points[0]}']['cut'][ind_start:ind_stop+1], '-r')
+    line0, = ax0.plot(x_axis, result[f'pixel {points[0]}']['cut'][ind_start:ind_stop+1], '-or')
+    line0.set_label('linecut')
     params_first = result[f'pixel {points[0]}'][f'roi {fit_roi[0][0]}']
-    fit_first = util.function_lmfit(params=params_first, x_axis=x_axis, distribution='pseudovoigt')
-    ax0.plot(x_axis, fit_first, '.b')
+    fit_axis = np.linspace(x_axis.min(), x_axis.max(), num=200)
+    fit_first = util.function_lmfit(params=params_first, x_axis=fit_axis, distribution='pseudovoigt')
+    fit0, = ax0.plot(fit_axis, fit_first, '-b')
+    fit0.set_label('fit')
+    ax0.set_ylim(-0.05, 0.9)
 
     ax1 = plt.subplot(122)
     ind_start, ind_stop = util.find_nearest(result[f'pixel {points[0]}']['distance'], fit_roi[0][-1])
     x_axis = result[f'pixel {points[0]}']['distance'][ind_start:ind_stop+1]
-    ax1.plot(x_axis, result[f'pixel {points[0]}']['cut'][ind_start:ind_stop+1], '-r')
+    line1, = ax1.plot(x_axis, result[f'pixel {points[0]}']['cut'][ind_start:ind_stop+1], '-or')
+    line1.set_label('linecut')
     params_last = result[f'pixel {points[0]}'][f'roi {fit_roi[0][-1]}']
-    fit_last = util.function_lmfit(params=params_last, x_axis=x_axis, distribution='pseudovoigt')
-    ax1.plot(x_axis, fit_last, '.b')
+    fit_axis = np.linspace(x_axis.min(), x_axis.max(), num=200)
+    fit_last = util.function_lmfit(params=params_last, x_axis=fit_axis, distribution='pseudovoigt')
+    fit1, = ax1.plot(fit_axis, fit_last, '-b')
+    fit1.set_label('fit')
+    ax1.set_ylim(-0.05, 0.9)
+
+    ax0.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
+    ax1.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
+    ax0.spines['right'].set_linewidth(tick_width)
+    ax0.spines['left'].set_linewidth(tick_width)
+    ax0.spines['top'].set_linewidth(tick_width)
+    ax0.spines['bottom'].set_linewidth(tick_width)
+    ax1.spines['right'].set_linewidth(tick_width)
+    ax1.spines['left'].set_linewidth(tick_width)
+    ax1.spines['top'].set_linewidth(tick_width)
+    ax1.spines['bottom'].set_linewidth(tick_width)
+    # plt.axis('equal')
+    fig.savefig(savedir + 'fit_roi' + comment + '.png')
+
+    ax0.set_xlabel('width (nm)', fontsize=20)
+    ax0.set_ylabel('modulus', fontsize=20)
+    ax0.set_title('first roi', fontsize=20)
+    ax1.set_xlabel('width (nm)', fontsize=20)
+    ax1.set_ylabel('modulus', fontsize=20)
+    ax1.set_title('last roi', fontsize=20)
+    ax0.legend(fontsize=14)
+    ax1.legend(fontsize=14)
+    ax0.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
+    ax1.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
+    fig.savefig(savedir + 'fit_roi' + comment + '_labels.png')
 
 #############################
 # print and save the result #
