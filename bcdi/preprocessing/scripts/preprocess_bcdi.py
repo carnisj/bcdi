@@ -52,12 +52,14 @@ scans = 120  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 
 root_folder = "D:/data/Sarah_linearity_detector/"  # folder of the experiment, where all scans are stored
 save_dir = None  # images will be saved here, leave it to None otherwise
+data_dirname = 'data2'  # leave None to use the beamline default, '' empty string when there is no subfolder
+# (data directly in the scan folder), or a non-empty string for the subfolder name
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
 sample_name = "S"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (1, 1, 1)  # binning to apply to the data
+binning = (1, 2, 2)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
@@ -121,7 +123,7 @@ custom_monitor = np.ones(51)  # monitor values for normalization for the custom_
 rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
 # around y vertical up, "energy"
 
-follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
+follow_bragg = True  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = 'BCDI_2021_02_13_103614'
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary or None to use the one in the package folder
@@ -130,7 +132,9 @@ specfile_name = 'BCDI_2021_02_13_103614'
 # detector related parameters #
 ###############################
 detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
-linearity_func = lambda array_1d: np.divide(array_1d, (1-array_1d*1.3e-6))  # Sarah_1
+linearity_func = lambda array_1d: (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 +
+                                             5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
+# np.divide(array_1d, (1-array_1d*1.3e-6))  # Sarah_1
 # (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 + 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
 # linearity correction for the detector, leave None otherwise.
 # You can use def instead of a lambda expression but the input array should be 1d (flattened 2D detector array).
@@ -160,10 +164,10 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
-interp_method = 'linearization'  # 'xrayutilities' or 'linearization'
+use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
+interp_method = 'xrayutilities'  # 'xrayutilities' or 'linearization'
 beam_direction = (1, 0, 0)  # beam direction in the laboratory frame (downstream, vertical up, outboard)
-sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
 sdd = 1.84  # in m, sample to detector distance in m
 energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
@@ -424,8 +428,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
 
     # initialize the paths
     setup.init_paths(detector=detector, sample_name=sample_name[scan_idx-1], scan_number=scan_nb,
-                     root_folder=root_folder, save_dir=save_dir, save_dirname=save_dirname, verbose=True,
-                     create_savedir=create_savedir, specfile_name=specfile_name, template_imagefile=template_imagefile)
+                     data_dirname=data_dirname, root_folder=root_folder, save_dir=save_dir, save_dirname=save_dirname,
+                     verbose=True, create_savedir=create_savedir, specfile_name=specfile_name,
+                     template_imagefile=template_imagefile)
 
     logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan_nb,
                                  root_folder=root_folder, filename=detector.specfile)

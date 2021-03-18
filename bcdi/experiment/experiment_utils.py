@@ -1079,7 +1079,7 @@ class Setup(object):
         return detector_obj
 
     def init_paths(self, detector, sample_name, scan_number, root_folder, save_dir, specfile_name, template_imagefile,
-                   save_dirname='result', create_savedir=False, verbose=False):
+                   data_dirname=None, save_dirname='result', create_savedir=False, verbose=False):
         """
         Update the detector instance with initialized paths and template for filenames depending on the beamline
 
@@ -1100,6 +1100,8 @@ class Setup(object):
          - P10: '_master.h5'
          - NANOMAX: '%06d.h5'
          - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+        :param data_dirname: name of the data folder, if None it will use the beamline default, if it is an empty
+         string, it will look for the data directly into the scan folder (no subfolder)
         :param save_dirname: name of the saving folder, by default 'save_dir/result/' will be created
         :param create_savedir: boolean, True to create the saving folder if it does not exist
         :param verbose: True to print the paths
@@ -1112,44 +1114,58 @@ class Setup(object):
 
         if not isinstance(sample_name, str):
             raise TypeError('sample_name should be a string')
-        # check that the name is not an empty string
+
+        # check that the provided folder names are not an empty string
         valid.valid_container(save_dirname, container_types=str, min_length=1, name='Setup.init_paths')
+        valid.valid_container(data_dirname, container_types=str, min_length=0, allow_none=True,
+                              name='Setup.init_paths')
         detector.rootdir, detector.sample_name, detector.template_file = root_folder, sample_name, template_imagefile
 
         if self.beamline == 'P10':
             specfile = sample_name + '_{:05d}'.format(scan_number)
             homedir = root_folder + specfile + '/'
-            datadir = homedir + 'e4m/'
+            default_dirname = 'e4m/'
             template_imagefile = specfile + template_imagefile
-            scan_template = sample_name + '_{:05d}'.format(scan_number) + '/'  # used to create the folder
         elif self.beamline == 'NANOMAX':
             homedir = root_folder + sample_name + '{:06d}'.format(scan_number) + '/'
-            datadir = homedir + 'data/'
+            default_dirname = 'data/'
             specfile = specfile_name
-            scan_template = sample_name + '_{:06d}'.format(scan_number) + '/'  # used to create the folder
         elif self.beamline in {'SIXS_2018', 'SIXS_2019'}:
             homedir = root_folder + sample_name + str(scan_number) + '/'
-            datadir = homedir + "data/"
+            default_dirname = "data/"
             if specfile_name is None:  # default to the alias dictionnary located within the package
                 specfile_name = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir,
                                                              'preprocessing/alias_dict_2021.txt'))
             specfile = specfile_name
-            scan_template = sample_name + '_' + str(scan_number) + '/'  # used to create the folder
         else:
             homedir = root_folder + sample_name + str(scan_number) + '/'
-            datadir = homedir + "data/"
+            default_dirname = "data/"
             specfile = specfile_name
-            scan_template = sample_name + '_' + str(scan_number) + '/'  # used to create the folder
+
+        if data_dirname is not None:
+            if len(data_dirname) == 0:  # no subfolder
+                datadir = homedir
+            else:
+                datadir = homedir + data_dirname
+        else:
+            datadir = homedir + default_dirname
+
         if save_dir:
-            savedir = save_dir  #  + scan_template + save_dirname + '/'
-            if not savedir.endswith('/'):
-                savedir += '/'
+            savedir = save_dir
         else:
             savedir = homedir + save_dirname + '/'
+
+        if not savedir.endswith('/'):
+            savedir += '/'
+        if not datadir.endswith('/'):
+            datadir += '/'
+
         detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
             savedir, datadir, specfile, template_imagefile
+
         if create_savedir:
             pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
+
         if verbose:
             if not self.custom_scan:
                 print(f"datadir = '{datadir}'\nsavedir = '{savedir}'\ntemplate_imagefile = '{template_imagefile}'\n")
