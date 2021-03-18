@@ -266,7 +266,7 @@ if flag_amp:
     ax.spines['bottom'].set_linewidth(tick_width)
     if vline_hist is not None:
         for line in vline_hist:
-            ax.axvline(x=line, linestyle=(0, (1, 100)), color='k', linewidth=0.5)  # vertical line
+            ax.axvline(x=line, linestyle=(0, (1, 300)), color='k', linewidth=0.5)  # vertical line
     fig.savefig(savedir + 'phased_histogram_amp' + comment + '.png', bbox_inches="tight")
     ax.tick_params(labelbottom=True, labelleft=True, direction='out', length=tick_length, width=tick_width)
     if vline_hist is not None:
