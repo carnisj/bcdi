@@ -34,21 +34,22 @@ datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beam
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/PtNP1_00128/result/"  # data folder  #
-savedir = datadir + 'linecuts_P2_001a/'  # 'linecuts/'  #
+savedir = datadir + 'linecuts_P2_001a/refined/'  # 'linecuts/refined0.45-0.65/'  #
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/linecuts_P2_001a/"
 # results will be saved here, if None it will default to datadir
 upsampling_factor = 1  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
-threshold = 0.5  # np.linspace(0.25, 0.75, num=6)  # np.round(np.linspace(0.2, 0.5, num=10), decimals=3)
+threshold = np.linspace(0.4, 0.6, num=201)  # np.round(np.linspace(0.2, 0.5, num=10), decimals=3)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 angular_step = 1  # in degrees, the linecut directions will be automatically calculated
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
 roi = (470, 550, 710, 790)  # P2_001a.tif
+# (470, 550, 710, 790)  # P2_001a.tif
 # (220, 680, 620, 1120)  # P2_018.tif
 # ROI centered around the crystal of interest in the 2D image, the center of mass will be
 # determined within this ROI when origin is not defined. Leave None to use the full array.
 origin = None  # origin where all the line cuts pass by (indices considering the array cropped to roi).
 # If None, it will use the center of mass of the modulus in the region defined by roi
-voxel_size = 2.070393374741201 * 0.96829786
+voxel_size = 2.070393374741201 * 0.96829786  # P2_001a.tif
 # 2.070393374741201 * 0.96829786  # P2_001a.tif
 # 0.3448275862068966 * 0.96829786  # P2_018.tif
 # positive real number or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D) (in nm)
@@ -56,7 +57,7 @@ sum_axis = 1  # if the object is 3D, it will be summed along that axis
 debug = False  # True to print the output dictionary and plot the legend
 tick_length = 8  # in plots
 tick_width = 2  # in plots
-comment = 'SEM'  # string to add to the filename when saving
+comment = ''  # string to add to the filename when saving
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -157,7 +158,7 @@ comment = f'_origin_{origin}_{comment}'
 obj = abs(obj) / abs(obj).max()  # normalize the modulus to 1
 obj[np.isnan(obj)] = 0  # remove nans
 fig, axs, _ = gu.imshow_plot(array=obj, sum_frames=True, sum_axis=1, plot_colorbar=True, reciprocal_space=False,
-                             vmin=0, vmax=1, is_orthogonal=True)
+                             vmin=0, vmax=np.nan, is_orthogonal=True)
 axs.tick_params(labelbottom=True, labelleft=True, direction='out', length=tick_length, width=tick_width,
                 labelsize=16)
 cbar = axs.images[0].colorbar
@@ -167,7 +168,7 @@ comment = comment + f'_{angular_step}deg'
 result = dict()
 
 ####################################################################################################
-# 3D case (BCDI): loop over thredholds first (the threshold needs to be applied before projecting) #
+# 3D case (BCDI): loop over thresholds first (the threshold needs to be applied before projecting) #
 ####################################################################################################
 if ndim == 3:
     # remove the voxel size along the projection axis
@@ -267,6 +268,7 @@ else:
 fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 for idx, thres in enumerate(threshold):
+    # print(result[f'ang_width_threshold'][idx].min(), result[f'ang_width_threshold'][idx].max())
     line, = ax.plot(angles, result[f'ang_width_threshold'][idx], color=colors[idx % len(colors)],
                     marker=markers[(idx // len(colors)) % len(markers)], fillstyle='none', markersize=6,
                     linestyle='-', linewidth=1)
