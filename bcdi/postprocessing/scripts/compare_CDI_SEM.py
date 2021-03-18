@@ -183,6 +183,7 @@ fig.savefig(savedir + 'compa_width_vs_ang' + comment + '_legend.png')
 ##############################################################################################################
 # Plot the evolution of the Pearson correlation coefficient and squared residuals depending on the threshold #
 ##############################################################################################################
+min_thres_idx = np.unravel_index(residuals.argmin(), shape=residuals.shape)[0]
 fig = plt.figure(figsize=(12, 9))
 ax0 = plt.subplot(111)
 ax0.plot(thres_bcdi, correlation, color='b', marker='.', fillstyle='none', markersize=10, markeredgewidth=2,
@@ -202,6 +203,7 @@ ax1.set_ylabel('Squared residuals', fontsize=20)
 ax0.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
 ax1.tick_params(labelright=True, axis='both', which='major', labelsize=16)
 fig.tight_layout()
+fig.text(0.4, 0.4, f'Min SR at threshold={thres_bcdi[min_thres_idx]}', size=12)
 fig.savefig(savedir + 'Pearson_vs_threshold' + comment + '_legend.png')
 
 plt.ioff()
