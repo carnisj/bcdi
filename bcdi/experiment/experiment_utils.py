@@ -48,6 +48,8 @@ class Detector(object):
      - 'preprocessing_binning': tuple of the three binning factors used in a previous preprocessing step
      - 'offsets': tuple or list, sample and detector offsets corresponding to the parameter delta
        in xrayutilities hxrd.Ang2Q.area method
+     - 'linearity_func': function to apply to each pixel of the detector in order to compensate the deviation of the
+       detector linearity for large intensities.
     """
     def __init__(self, name, rootdir=None, datadir=None, savedir=None, template_file=None, template_imagefile=None,
                  specfile=None, sample_name=None, roi=None, sum_roi=None, binning=(1, 1, 1), **kwargs):
@@ -55,7 +57,8 @@ class Detector(object):
         self.name = name
 
         valid.valid_kwargs(kwargs=kwargs,
-                           allowed_kwargs={'is_series', 'nb_pixel_x', 'nb_pixel_y', 'preprocessing_binning', 'offsets'},
+                           allowed_kwargs={'is_series', 'nb_pixel_x', 'nb_pixel_y', 'preprocessing_binning', 'offsets',
+                                           'linearity_func'},
                            name='Detector.__init__')
 
         # load the kwargs
@@ -64,6 +67,10 @@ class Detector(object):
         self.nb_pixel_x = kwargs.get('nb_pixel_x', None)
         self.nb_pixel_y = kwargs.get('nb_pixel_y', None)
         self.offsets = kwargs.get('offsets', None)  # delegate the test to xrayutilities
+        linearity_func = kwargs.get('linearity_func', None)
+        if linearity_func is not None and not callable(linearity_func):
+            raise TypeError(f'linearity_func should be a function, got {type(linearity_func)}')
+        self._linearity_func = linearity_func
 
         # load other positional arguments
         self.binning = binning
@@ -361,7 +368,6 @@ class Detector(object):
         :param hotpixels: a 2D array with hotpixels to be masked (1=hotpixel, 0=normal pixel)
         :return: the masked data and the updated mask
         """
-
         assert isinstance(data, np.ndarray) and isinstance(mask, np.ndarray), 'data and mask should be numpy arrays'
         if data.ndim != 2 or mask.ndim != 2:
             raise ValueError('data and mask should be 2D arrays')
@@ -369,6 +375,12 @@ class Detector(object):
         if data.shape != mask.shape:
             raise ValueError('data and mask must have the same shape\n data is ', data.shape,
                              ' while mask is ', mask.shape)
+
+        # linearity correction
+        if self._linearity_func is not None:
+            data = data.astype(float)
+            nby, nbx = data.shape
+            data = self._linearity_func(data.flatten()).reshape((nby, nbx))
 
         # flatfield correction
         if flatfield is not None:
