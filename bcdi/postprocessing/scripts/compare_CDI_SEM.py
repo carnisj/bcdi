@@ -49,7 +49,7 @@ tick_width = 2  # in plots
 # define default parameters #
 #############################
 colors = ('b', 'g', 'r', 'c', 'm', 'y', 'k')  # for plots
-markers = ('.', 'v', '^', '<', '>')  # for plots
+markers = ('.', 'v', '^', '<', '>', 'x', '+', 'o')  # for plots
 mpl.rcParams['axes.linewidth'] = tick_width  # set the linewidth globally
 validation_name = 'compare_CDI_SEM'
 
@@ -153,7 +153,7 @@ correlation = np.empty(thres_bcdi.size)
 residuals = np.empty(thres_bcdi.size)
 fig = plt.figure(figsize=(12, 9))
 ax0 = plt.subplot(111)
-line, = ax0.plot(sem_dict['angles'], sem_trace, color='k', marker='.', markersize=12, linestyle='-', linewidth=1)
+line, = ax0.plot(sem_dict['angles'], sem_trace, color='k', marker='.', markersize=15, linestyle='-', linewidth=1)
 line.set_label(f"SEM thres {sem_dict['threshold'][index_sem]}")
 
 for idx, thres in enumerate(thres_bcdi, start=0):
@@ -167,7 +167,7 @@ for idx, thres in enumerate(thres_bcdi, start=0):
     residuals[idx] = (np.subtract(sem_trace, bcdi_trace)**2).sum()
     line, = ax0.plot(angles_bcdi, bcdi_trace, color=colors[idx % len(colors)],
                      marker=markers[idx % len(markers)],
-                     fillstyle='none', markersize=6,
+                     fillstyle='none', markersize=9,
                      linestyle='-', linewidth=1)
     line.set_label(f'threshold {thres}')
 
