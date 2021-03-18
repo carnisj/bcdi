@@ -45,19 +45,19 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 283  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
+scans = 120  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/Longfei/data/"  # folder of the experiment, where all scans are stored
+root_folder = "D:/data/Sarah_linearity_detector/"  # folder of the experiment, where all scans are stored
 save_dir = None  # images will be saved here, leave it to None otherwise
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
-sample_name = "B10_syn_S1"  # str or list of str of sample names (string in front of the scan number in the folder name).
+sample_name = "S"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
-user_comment = '_raw'  # string, should start with "_"
+user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (1, 2, 2)  # binning to apply to the data
+binning = (1, 1, 1)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
@@ -109,9 +109,9 @@ save_asint = False  # if True, the result will be saved as an array of integers 
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX', '34ID'
-is_series = True  # specific to series measurement at P10
+is_series = False  # specific to series measurement at P10
 
 custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available
@@ -122,19 +122,21 @@ rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outb
 # around y vertical up, "energy"
 
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = None
+specfile_name = 'BCDI_2021_02_13_103614'
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary or None to use the one in the package folder
 # template for all other beamlines: ''
 ###############################
 # detector related parameters #
 ###############################
-detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
-x_bragg = 1259  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 832  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [552, 1064, 215, 615]
-
-# roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
+detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+linearity_func = lambda array_1d: np.divide(array_1d, (1-array_1d*1.3e-6))  # Sarah_1
+# (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 + 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
+# linearity correction for the detector, leave None otherwise.
+# You can use def instead of a lambda expression but the input array should be 1d (flattened 2D detector array).
+x_bragg = 163  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 340  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = [y_bragg - 100, y_bragg + 100, x_bragg - 100, x_bragg + 100]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
 # [Vstart, Vstop, Hstart, Hstop]
@@ -145,7 +147,7 @@ photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon thre
 background_file = None  # root_folder + 'background.npz'  # non empty file path or None
 hotpixels_file = None  # root_folder + 'mask_merlin.npy'  # non empty file path or None
 flatfield_file = None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
-template_imagefile = '_master.h5'
+template_imagefile = 'data_mpx4_%05d.edf.gz'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -325,6 +327,9 @@ else:
 
 create_savedir = True
 
+valid.valid_container(user_comment, container_types=str, name='preprocess_bcdi')
+if len(user_comment) != 0 and not user_comment.startswith('_'):
+    user_comment = '_' + user_comment
 if reload_previous:
     user_comment += '_reloaded'
 else:
@@ -375,7 +380,7 @@ kwargs['is_series'] = is_series
 kwargs['preprocessing_binning'] = preprocessing_binning
 kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
-
+kwargs['linearity_func'] = linearity_func
 detector = exp.Detector(name=detector, template_imagefile=template_imagefile, roi=roi_detector,
                         binning=binning, **kwargs)
 
