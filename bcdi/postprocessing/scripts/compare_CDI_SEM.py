@@ -37,10 +37,12 @@ datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/linecuts_P2_001a/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/linecuts/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder
-savedir = datadir + 'comparison_SEM/comparison_SEM_0.5-1.5nm/'
+savedir = datadir + 'comparison_SEM/valid_range/'
 # results will be saved here, if None it will default to datadir
-index_sem = None  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
-comment = 'SEM_0.5-1.5nm'  # string to add to the filename when saving, should start with "_"
+index_sem = 1  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
+plot_sem = 'fill'  # if 'single', will plot only index_sem, if 'fill', it will fill the area between the first
+# and the last SEM thresholds in grey
+comment = 'valid_range'  # string to add to the filename when saving, should start with "_"
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 ##################################
@@ -59,6 +61,9 @@ validation_name = 'compare_CDI_SEM'
 # check some parameters #
 #########################
 valid.valid_item(value=index_sem, allowed_types=int, min_included=0, allow_none=True, name=validation_name)
+valid.valid_container(plot_sem, container_types=str, name=validation_name)
+if plot_sem not in {'single', 'fill'}:
+    raise ValueError("allowed values for plot_sem are 'single' and 'all'")
 valid.valid_container(comment, container_types=str, name=validation_name)
 if len(comment) != 0 and not comment.startswith('_'):
     comment = '_' + comment
@@ -155,8 +160,13 @@ correlation = np.empty(thres_bcdi.size)
 residuals = np.empty(thres_bcdi.size)
 fig = plt.figure(figsize=(12, 9))
 ax0 = plt.subplot(111)
-line, = ax0.plot(sem_dict['angles'], sem_trace, color='k', marker='.', markersize=15, linestyle='-', linewidth=1)
-line.set_label(f"SEM thres {sem_dict['threshold'][index_sem]}")
+if plot_sem == 'single':
+    line, = ax0.plot(sem_dict['angles'], sem_trace, color='k', marker='.', markersize=15, linestyle='-', linewidth=1)
+    line.set_label(f"SEM thres {sem_dict['threshold'][index_sem]}")
+else:  # fill area between the first and the last SEM thresholds
+    ax0.fill_between(x=sem_dict['angles'],
+                     y1=np.roll(sem_dict['ang_width_threshold'][0], -lag),
+                     y2=np.roll(sem_dict['ang_width_threshold'][-1], -lag), color='grey')
 
 for idx, thres in enumerate(thres_bcdi, start=0):
     bcdi_trace = bcdi_dict['ang_width_threshold'][idx]
@@ -180,6 +190,8 @@ ax0.set_xlabel('angle (deg)', fontsize=20)
 ax0.set_ylabel('width (nm)', fontsize=20)
 ax0.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
 ax0.legend(fontsize=14)
+if plot_sem == 'fill':
+    ax0.set_title(f"fill between SEM_thres {sem_dict['threshold'][0]} and {sem_dict['threshold'][-1]}")
 fig.savefig(savedir + 'compa_width_vs_ang' + comment + '_legend.png')
 
 ##############################################################################################################
