@@ -20,10 +20,12 @@ def run_tests(test_class):
     return runner.run(suite)
 
 
-class TestGraphUtils(unittest.TestCase):
-
+class TestSaveToVti(unittest.TestCase):
+    ########################
+    # tests on save_to_vti #
+    ########################
     def __init__(self, *args, **kwargs):
-        super(TestGraphUtils, self).__init__(*args, **kwargs)
+        super(TestSaveToVti, self).__init__(*args, **kwargs)
         self.saving_dir = os.getcwd() + '/test_output/'
         pathlib.Path(self.saving_dir).mkdir(parents=True, exist_ok=True)
 
@@ -37,9 +39,6 @@ class TestGraphUtils(unittest.TestCase):
     # def tearDown(self):
     #     executed after each test
 
-    ########################
-    # tests on save_to_vti #
-    ########################
     def test_savetovti_amp(self):
         self.assertIsNone(gu.save_to_vti(filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
                                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase')))
@@ -72,5 +71,4 @@ class TestGraphUtils(unittest.TestCase):
 
 
 if __name__ == 'main':
-    result = run_tests(TestGraphUtils)
-    print(result)
+    run_tests(TestSaveToVti)

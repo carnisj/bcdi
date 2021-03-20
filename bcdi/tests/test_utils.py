@@ -18,8 +18,10 @@ def run_tests(test_class):
     return runner.run(suite)
 
 
-class TestUtils(unittest.TestCase):
-
+class TestInRange(unittest.TestCase):
+    #####################
+    # tests on in_range #
+    #####################
     def setUp(self):
         # executed before each test
         self.extent = (-10, 99, -20, 89, 10, 119)
@@ -28,9 +30,6 @@ class TestUtils(unittest.TestCase):
     # def tearDown(self):
     #     executed after each test
 
-    #####################
-    # tests on in_range #
-    #####################
     def test_inrange_in_range(self):
         self.assertTrue(util.in_range(point=(0, 0, 20), extent=self.extent))
 
@@ -72,5 +71,5 @@ class TestUtils(unittest.TestCase):
 
 
 if __name__ == 'main':
-    result = run_tests(TestUtils)
-    print(result)
+    run_tests(TestInRange)
+

@@ -18,18 +18,17 @@ def run_tests(test_class):
     return runner.run(suite)
 
 
-class TestValidation(unittest.TestCase):
-    # def setUp(self):
-    #     executed before each test
-    #
-    # def tearDown(self):
-    #     executed after each test
-
+class TestValidContainer(unittest.TestCase):
     ############################
     # tests on valid_container #
     ############################
     # valid_container(obj, container_types, length=None, min_length=None, item_types=None, min_included=None,
     #                 min_excluded=None, max_included=None, max_excluded=None, allow_none=False, name=None)
+    # def setUp(self):
+    #     executed before each test
+    #
+    # def tearDown(self):
+    #     executed after each test
 
     def test_validcontainer_container_type(self):
         self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=1)
@@ -149,6 +148,8 @@ class TestValidation(unittest.TestCase):
     def test_validcontainer_notallownone(self):
         self.assertRaises(ValueError, valid.valid_container, obj=[1, None], container_types=list, allow_none=False)
 
+
+class TestValidKwargs(unittest.TestCase):
     #########################
     # tests on valid_kwargs #
     #########################
@@ -188,6 +189,8 @@ class TestValidation(unittest.TestCase):
         self.assertRaises(KeyError, valid.valid_kwargs, kwargs={'test': 0, 'red': None},
                           allowed_kwargs={'test', 'blue'})
 
+
+class TestValidItem(unittest.TestCase):
     #######################
     # tests on valid_item #
     #######################
@@ -289,5 +292,6 @@ class TestValidation(unittest.TestCase):
 
 
 if __name__ == 'main':
-    result = run_tests(TestValidation)
-    print(result)
+    run_tests(TestValidContainer)
+    run_tests(TestValidKwargs)
+    run_tests(TestValidItem)
