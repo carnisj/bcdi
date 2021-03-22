@@ -9,6 +9,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
+import pathlib
 import tkinter as tk
 from tkinter import filedialog
 from scipy.ndimage.measurements import center_of_mass
@@ -27,17 +28,17 @@ For everything else than q values, the convention is the CXI convention: (z down
 For q values, the convention is (qx downstream, qz vertical up, qy outboard).
 """
 
-scan = 1  # spec scan number
+scan = 2  # spec scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
-datadir = root_folder + sample_name + str(scan) + '/pynx/'
+datadir = root_folder + sample_name + str(scan) + '_pearson97.5_newpsf/'
 photon_threshold = 0  # everything < this value will be set to 0
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Used for plot labels
 ##############################
 # settings related to saving #
 ##############################
-savedir = datadir  # path of the saving directory
+savedir = datadir + 'diffraction pattern/' # path of the saving directory
 save_qyqz = True  # True to save the strain in QyQz plane
 save_qyqx = True  # True to save the strain in QyQx plane
 save_qzqx = True  # True to save the strain in QzQx plane
@@ -74,6 +75,8 @@ if is_orthogonal:
     labels = ('Qx', 'Qz', 'Qy')
 else:
     labels = ('rocking angle', 'detector Y', 'detector X')
+pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
+
 ###################
 # define colormap #
 ###################
