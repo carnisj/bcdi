@@ -9,6 +9,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from lmfit import minimize, Parameters, report_fit
+import pathlib
 import tkinter as tk
 from tkinter import filedialog
 import os
@@ -25,11 +26,12 @@ the surface and in the remaining bulk.
 Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_strain.npz)
 """
 
-scan = 78  # spec scan number
-root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
-sample_name = "S"  # "S"
-datadir = root_folder + sample_name + str(scan) + "/pynxraw/gap_interp/"
-support_threshold = 0.25  # threshold applied to the modulus for reading the surface strain
+scan = 1  # spec scan number
+root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
+sample_name = "dataset_"  # "S"
+datadir = root_folder + sample_name + str(scan) + "_newpsf/result/"
+savedir = datadir + 'test/'  # valid path or None (default to datadir in that case)
+support_threshold = 0.496  # threshold applied to the modulus for reading the surface strain
 normalize = True  # if True, will normalize the histograms to the respective number of points
 bin_step = 2e-5  # step size for the bins (in units of strain)
 plot_scale = 'linear'  # 'log' or 'linear', Y scale for the histograms
@@ -48,7 +50,8 @@ tick_width = 1.5  # in plots
 # check some parameters #
 #########################
 assert fit_pdf in {'pseudovoigt', 'skewed_gaussian'}, 'invalid value for fit_pdf parameter'
-
+savedir = savedir or datadir
+pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
 ###################
 # define colormap #
