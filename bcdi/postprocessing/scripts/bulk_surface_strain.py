@@ -96,11 +96,11 @@ if debug:
 # save the strain values #
 ##########################
 if save_txt:
-    file_surface = open(os.path.join(datadir, "S" + str(scan) +
+    file_surface = open(os.path.join(savedir, "S" + str(scan) +
                                      "_threshold" + str(support_threshold) + "_surface.dat"), "w")
-    file_bulk = open(os.path.join(datadir, "S" + str(scan) +
+    file_bulk = open(os.path.join(savedir, "S" + str(scan) +
                                   "_threshold" + str(support_threshold) + "_bulk.dat"), "w")
-    file_total = open(os.path.join(datadir, "S" + str(scan) +
+    file_total = open(os.path.join(savedir, "S" + str(scan) +
                                    "_threshold" + str(support_threshold) + "_bulk+surface.dat"), "w")
     # write surface points position / strain to file
     surface_indices = np.nonzero(surface)
@@ -204,7 +204,7 @@ if ylim is not None:
 
 vline1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
 ax.tick_params(labelbottom=False, labelleft=False)
-fig.savefig(datadir + 'S' + str(scan) + '_surface_strain_iso' + str(support_threshold)+'.png')
+fig.savefig(savedir + 'S' + str(scan) + '_surface_strain_iso' + str(support_threshold)+'.png')
 
 ax.set_xlabel('strain')
 vline2 = ax.axvline(x=np.mean(strain[np.nonzero(surface)]), ymin=0, ymax=1, color='r', linestyle='dashed')
@@ -228,7 +228,7 @@ else:
     fig.text(0.15, 0.50, 'PDF ratio={:.2e}\n   +/-{:.2e}'.format(result.params['ratio_1'].value,
                                                                  result.params['ratio_1'].stderr))
 plt.pause(0.1)
-fig.savefig(datadir + 'S' + str(scan) + '_surface_strain_iso' + str(support_threshold)+'_labels.png')
+fig.savefig(savedir + 'S' + str(scan) + '_surface_strain_iso' + str(support_threshold)+'_labels.png')
 
 ####################################
 # fit the bulk strain distribution #
@@ -296,7 +296,7 @@ if ylim is not None:
 
 vline1 = ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
 ax.tick_params(labelbottom=False, labelleft=False)
-fig.savefig(datadir + 'S' + str(scan) + '_bulk_strain_iso' + str(support_threshold)+'.png')
+fig.savefig(savedir + 'S' + str(scan) + '_bulk_strain_iso' + str(support_threshold)+'.png')
 
 ax.set_xlabel('strain')
 vline2 = ax.axvline(x=np.mean(strain[np.nonzero(bulk)]), ymin=0, ymax=1, color='b', linestyle='dashed')
@@ -320,7 +320,7 @@ else:
     fig.text(0.15, 0.50, 'PDF ratio={:.2e}\n   +/-{:.2e}'.format(result.params['ratio_1'].value,
                                                                  result.params['ratio_1'].stderr))
 plt.pause(0.1)
-fig.savefig(datadir + 'S' + str(scan) + '_bulk_strain_iso' + str(support_threshold)+'_labels.png')
+fig.savefig(savedir + 'S' + str(scan) + '_bulk_strain_iso' + str(support_threshold)+'_labels.png')
 
 nb_total = len(np.nonzero(support)[0])
 print("Sanity check: Total points = {:d}".format(nb_total), ", surface+bulk = {:d}".format(nb_surface+nb_bulk))
@@ -349,12 +349,12 @@ if ylim is not None:
 
 ax.axvline(x=0, ymin=0, ymax=1, color='k', linestyle='dotted', linewidth=1.0)
 ax.tick_params(length=tick_length, width=tick_width)
-fig.savefig(datadir + 'S' + str(scan) + '_overlay_strain_iso' + str(support_threshold)+'_labels.png')
+fig.savefig(savedir + 'S' + str(scan) + '_overlay_strain_iso' + str(support_threshold)+'_labels.png')
 ax.tick_params(labelbottom=False, labelleft=False)
 ax.spines['right'].set_linewidth(tick_width)
 ax.spines['left'].set_linewidth(tick_width)
 ax.spines['top'].set_linewidth(tick_width)
 ax.spines['bottom'].set_linewidth(tick_width)
-fig.savefig(datadir + 'S' + str(scan) + '_overlay_strain_iso' + str(support_threshold)+'.png')
+fig.savefig(savedir + 'S' + str(scan) + '_overlay_strain_iso' + str(support_threshold)+'.png')
 plt.ioff()
 plt.show()
