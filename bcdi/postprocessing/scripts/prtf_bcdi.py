@@ -45,10 +45,10 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 128
+scan = 314
 sample_name = "PtNP1"  # "SN"  #
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/result/"  # PRTF will be saved here, leave None otherwise
+save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/scratch/"  # PRTF will be saved here, leave None otherwise
 comment = ""  # should start with _
 crop_roi = None  # list of 6 integers, ROI used if 'center_auto' was True in PyNX, leave None otherwise
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
@@ -388,7 +388,7 @@ if normalize_prtf:
           ' of the diffraction pattern ...')
     norm_factor = np.sqrt(diff_pattern[z0-3:z0+4, y0-3:y0+4, x0-3:x0+4]).sum() /\
         abs(phased_fft[z0-3:z0+4, y0-3:y0+4, x0-3:x0+4]).sum()
-    print(f'Normalization factor = {norm_factor:.2f}\n')
+    print(f'Normalization factor = {norm_factor:.4f}\n')
     phased_fft = phased_fft * norm_factor
 
 plt.figure()
