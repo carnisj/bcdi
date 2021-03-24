@@ -45,26 +45,26 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 120  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
+scans = 137  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/Sarah_linearity_detector/"  # folder of the experiment, where all scans are stored
-save_dir = None  # images will be saved here, leave it to None otherwise
-data_dirname = 'data2'  # leave None to use the beamline default, '' empty string when there is no subfolder
+root_folder = "D:/data/CRISTAL_Nov2020/"  # folder of the experiment, where all scans are stored
+save_dir = None  # root_folder + '/dataset_2_pearson97.5_newpsf/result/diffpattern_from_reconstruction/'  # images will be saved here, leave it to None otherwise
+data_dirname = None  # leave None to use the beamline default, '' empty string when there is no subfolder
 # (data directly in the scan folder), or a non-empty string for the subfolder name
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
 sample_name = "S"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (1, 2, 2)  # binning to apply to the data
+binning = (1, 1, 1)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = True  # True to interact with plots, False to close it automatically
+flag_interact = False  # True to interact with plots, False to close it automatically
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
@@ -88,7 +88,7 @@ normalize_flux = 'skip'  # 'monitor' to normalize the intensity by the default m
 # parameters for data filtering #
 #################################
 mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
-flag_medianfilter = 'skip'
+flag_medianfilter = 'interp_isolated'
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
@@ -111,9 +111,9 @@ save_asint = False  # if True, the result will be saved as an array of integers 
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'CRISTAL'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX', '34ID'
-is_series = False  # specific to series measurement at P10
+is_series = True  # specific to series measurement at P10
 
 custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available
@@ -123,8 +123,8 @@ custom_monitor = np.ones(51)  # monitor values for normalization for the custom_
 rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
 # around y vertical up, "energy"
 
-follow_bragg = True  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'BCDI_2021_02_13_103614'
+follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
+specfile_name = ''
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary or None to use the one in the package folder
 # template for all other beamlines: ''
@@ -132,15 +132,15 @@ specfile_name = 'BCDI_2021_02_13_103614'
 # detector related parameters #
 ###############################
 detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
-linearity_func = lambda array_1d: (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 +
-                                             5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
+linearity_func = None  # lambda array_1d: (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 +
+# 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
 # np.divide(array_1d, (1-array_1d*1.3e-6))  # Sarah_1
 # (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 + 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
 # linearity correction for the detector, leave None otherwise.
 # You can use def instead of a lambda expression but the input array should be 1d (flattened 2D detector array).
-x_bragg = 163  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 340  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg - 100, y_bragg + 100, x_bragg - 100, x_bragg + 100]  # CH5309
+x_bragg = 1356  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 792  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = None  # [y_bragg - 512, y_bragg + 512, x_bragg - 400, x_bragg + 400]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
 # [Vstart, Vstop, Hstart, Hstop]
@@ -151,7 +151,7 @@ photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon thre
 background_file = None  # root_folder + 'background.npz'  # non empty file path or None
 hotpixels_file = None  # root_folder + 'mask_merlin.npy'  # non empty file path or None
 flatfield_file = None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+template_imagefile = 'mgomega-2020_%04d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -164,13 +164,13 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
+use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 interp_method = 'xrayutilities'  # 'xrayutilities' or 'linearization'
 beam_direction = (1, 0, 0)  # beam direction in the laboratory frame (downstream, vertical up, outboard)
-sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+sample_offsets = (0, 0, 0)  # -6*0.007821)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
-sdd = 1.84  # in m, sample to detector distance in m
-energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+sdd = 1.26  # in m, sample to detector distance in m
+energy = 8500  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
@@ -186,9 +186,9 @@ custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta":
 align_q = True  # used only when interp_method is 'linearization', if True it rotates the crystal to align q
 # along one axis of the array
 ref_axis_q = "y"  # q will be aligned along that axis
-outofplane_angle = 39.0870  # detector angle in deg (rotation around x outboard, typically delta),
+outofplane_angle = None  # detector angle in deg (rotation around x outboard, typically delta),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
-inplane_angle = -1.0270  # detector angle in deg(rotation around y vertical up, typically gamma),
+inplane_angle = None  # detector angle in deg(rotation around y vertical up, typically gamma),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
 ################################################################################
 # parameters when orthogonalizing the data before phasing  using xrayutilities #
@@ -463,7 +463,16 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         npz_key = data.files
         data = data[npz_key[0]]
         nz, ny, nx = np.shape(data)
-
+        # from numpy.fft import fftn, fftshift
+        # print('data.shape before padding', data.shape)
+        # # first dataset (168, 1024, 800)
+        # data = pu.crop_pad(array=data, output_shape=(224, 1024, 800), debugging=False)
+        # data = fftshift(fftn(data)) / (np.sqrt(224) * np.sqrt(1024) * np.sqrt(800))  # complex amplitude
+        # # second dataset (168, 1024, 800)
+        # data = abs(np.multiply(data, np.conjugate(data)))  # intensity
+        # # data = data * 0.2740**2  # dataset_1_newpsf   due to mode decomposition
+        # # data = data * 0.2806**2  # dataset_1_nopsf   due to mode decomposition
+        # data = data * 0.2744**2  # dataset_2_pearson97.5_newpsf   due to mode decomposition
         # check that the ROI is correctly defined
         detector.roi = roi_detector or [0, ny, 0, nx]
         print('Detector ROI:', detector.roi)
@@ -827,11 +836,12 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         print("\nFiltering isolated pixels")
         nb_pix = 0
         for idx in range(pad_width[0], nz-pad_width[1]):  # filter only frames whith data (not padded)
-            data[idx, :, :], numb_pix, mask[idx, :, :] = \
+            data[idx, :, :], processed_pix, mask[idx, :, :] = \
                 pru.mean_filter(data=data[idx, :, :], nb_neighbours=medfilt_order, mask=mask[idx, :, :],
                                 interpolate=flag_medianfilter, min_count=3, debugging=debug)
-            nb_pix = nb_pix + numb_pix
-            print("Processed image nb: ", idx)
+            nb_pix = nb_pix + processed_pix
+            sys.stdout.write(f'\rImage {idx}, number of processed pixels: {processed_pix}')
+            sys.stdout.flush()
         if flag_medianfilter == 'mask_isolated':
             print("\nTotal number of masked isolated pixels: ", nb_pix)
         if flag_medianfilter == 'interp_isolated':
