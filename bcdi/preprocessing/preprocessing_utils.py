@@ -1015,7 +1015,7 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
     return logfile
 
 
-def cristal_find_data(datafile, root, detector_shape, data_path='scan_data', pattern='^data_[0-9][0-9]$'):
+def cristal_find_detector(datafile, root, detector_shape, data_path='scan_data', pattern='^data_[0-9][0-9]$'):
     """
     Look for the entry corresponding to the detector data in the file and return the corresponding dataset.
 
@@ -2164,8 +2164,8 @@ def load_cristal_data(logfile, detector, flatfield=None, hotpixels=None, backgro
 
     group_key = list(logfile.keys())[0]
 
-    tmp_data = cristal_find_data(datafile=logfile, root=group_key,
-                                 detector_shape=(detector.nb_pixel_y, detector.nb_pixel_x))
+    tmp_data = cristal_find_detector(datafile=logfile, root=group_key,
+                                     detector_shape=(detector.nb_pixel_y, detector.nb_pixel_x))
 
     nb_img = tmp_data.shape[0]
 
