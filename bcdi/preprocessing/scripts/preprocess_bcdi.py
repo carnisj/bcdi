@@ -839,18 +839,14 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             data[idx, :, :], processed_pix, mask[idx, :, :] = \
                 pru.mean_filter(data=data[idx, :, :], nb_neighbours=medfilt_order, mask=mask[idx, :, :],
                                 interpolate=flag_medianfilter, min_count=3, debugging=debug)
-            nb_pix = nb_pix + processed_pix
-            sys.stdout.write(f'\rImage {idx}, number of processed pixels: {processed_pix}')
+            nb_pix += processed_pix
+            sys.stdout.write(f'\rImage {idx}, number of filtered pixels: {processed_pix}')
             sys.stdout.flush()
-        if flag_medianfilter == 'mask_isolated':
-            print("\nTotal number of masked isolated pixels: ", nb_pix)
-        if flag_medianfilter == 'interp_isolated':
-            print("\nTotal number of interpolated isolated pixels: ", nb_pix)
-
+        print("\nTotal number of filtered pixels: ", nb_pix)
     elif flag_medianfilter == 'median':  # apply median filter
+        print("\nApplying median filtering")
         for idx in range(pad_width[0], nz-pad_width[1]):  # filter only frames whith data (not padded)
             data[idx, :, :] = scipy.signal.medfilt2d(data[idx, :, :], [3, 3])
-        print("\nApplying median filtering")
     else:
         print("\nSkipping median filtering")
 
