@@ -24,7 +24,6 @@ class TestInRange(unittest.TestCase):
         # executed before each test
         self.extent = (-10, 99, -20, 89, 10, 119)
 
-    #
     # def tearDown(self):
     #     executed after each test
 
