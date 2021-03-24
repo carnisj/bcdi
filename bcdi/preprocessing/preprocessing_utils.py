@@ -3041,7 +3041,7 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
     if data.shape != mask.shape:
         raise ValueError('data and mask should have the same shape')
 
-    if not np.isnan(target_val) or not isinstance(target_val, int):
+    if not np.isnan(target_val) and not isinstance(target_val, int):
         raise ValueError('target_val should be nan or an integer, cannot assess float equality')
 
     valid.valid_item(extent, allowed_types=int, min_excluded=0, name='mean_filter')
