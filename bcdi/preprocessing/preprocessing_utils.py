@@ -2072,7 +2072,7 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     :param normalize: 'skip' to skip, 'monitor'  to normalize by the default monitor, 'sum_roi' to normalize by the
      integrated intensity in the region of interest defined by detector.sum_roi
     :param debugging:  set to True to see plots
-    :parama kwargs:
+    :param kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
     :return:
      - the 3D data and mask arrays
@@ -2191,6 +2191,9 @@ def load_cristal_data(logfile, detector, flatfield=None, hotpixels=None, backgro
         monitor = np.zeros(nb_img)
     elif normalize == 'monitor':
         monitor = logfile['/' + group_key + '/scan_data/data_04'][:]
+        if len(monitor.shape) != 1 or len(monitor) != nb_img:
+            print('could not find the correct entry for the monitor, skip normalization')
+            monitor = np.ones(nb_img)
     else:  # 'skip'
         monitor = np.ones(nb_img)
 
@@ -2229,15 +2232,19 @@ def load_cristal_data(logfile, detector, flatfield=None, hotpixels=None, backgro
     return data, mask3d, monitor, frames_logical
 
 
-def load_cristal_monitor(logfile):
+def load_cristal_monitor(logfile, nb_frames):
     """
     Load the default monitor for a dataset measured at CRISTAL.
 
     :param logfile: h5py File object of CRISTAL .nxs scan file
+    :param nb_frames: int, number of detector frames in the stacked dataset
     :return: the default monitor values
     """
     group_key = list(logfile.keys())[0]
     monitor = logfile['/' + group_key + '/scan_data/data_04'][:]
+    if len(monitor.shape) != 1 or len(monitor) != nb_frames:
+        print('could not find the correct entry for the monitor, skip normalization')
+        monitor = np.ones(nb_frames)
     return monitor
 
 
@@ -2622,15 +2629,24 @@ def load_id01_monitor(logfile, scan_number):
     return monitor
 
 
-def load_monitor(scan_number, logfile, setup):
+def load_monitor(scan_number, logfile, setup, **kwargs):
     """
     Load the default monitor for intensity normalization of the considered beamline.
 
     :param scan_number: the scan number to load
     :param logfile: path of the . fio file containing the information about the scan
     :param setup: the experimental setup: Class SetupPreprocessing()
+    :param kwargs:
+     - 'nb_frames' = int, number of detector frames in the stacked dataset
     :return: the default monitor values
     """
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'nb_frames'},
+                       name='preprocessing_utils.load_monitor')
+    nb_frames = kwargs.get('nb_frames', None)
+    valid.valid_item(nb_frames, allowed_types=int, min_excluded=0, allow_none=True,
+                     name='preprocessing_utils.load_monitor')
+
     if setup.custom_scan and not setup.filtered_data:
         monitor = setup.custom_monitor
     elif setup.beamline == 'ID01':
@@ -2638,7 +2654,7 @@ def load_monitor(scan_number, logfile, setup):
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
         monitor = load_sixs_monitor(logfile=logfile, beamline=setup.beamline)
     elif setup.beamline == 'CRISTAL':
-        monitor = load_cristal_monitor(logfile=logfile)
+        monitor = load_cristal_monitor(logfile=logfile, nb_frames=nb_frames)
     elif setup.beamline == 'P10':
         monitor = load_p10_monitor(logfile=logfile)
     elif setup.beamline == 'NANOMAX':
@@ -3912,7 +3928,7 @@ def reload_bcdi_data(data, mask, logfile, scan_number, detector, setup, normaliz
         print('Skip intensity normalization')
         monitor = []
     else:  # use the default monitor of the beamline
-        monitor = load_monitor(logfile=logfile, scan_number=scan_number, setup=setup)
+        monitor = load_monitor(logfile=logfile, scan_number=scan_number, setup=setup, nb_frames=nbz)
 
         print('Intensity normalization using ' + normalize_method)
         data, monitor = normalize_dataset(array=data, raw_monitor=monitor, frames_logical=frames_logical,
@@ -3991,7 +4007,7 @@ def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize
             monitor = data[:, detector.sum_roi[0]:detector.sum_roi[1],
                            detector.sum_roi[2]:detector.sum_roi[3]].sum(axis=(1, 2))
         else:  # use the default monitor of the beamline
-            monitor = load_monitor(logfile=logfile, scan_number=scan_number, setup=setup)
+            monitor = load_monitor(logfile=logfile, scan_number=scan_number, setup=setup, nb_frames=nbz)
 
         print('Intensity normalization using ' + normalize_method)
         data, monitor = normalize_dataset(array=data, raw_monitor=monitor, frames_logical=frames_logical,
