@@ -2218,7 +2218,13 @@ def load_cristal_data(logfile, detector, flatfield=None, hotpixels=None, backgro
     mask3d[np.isnan(data)] = 1
     data[np.isnan(data)] = 0
 
-    frames_logical = np.ones(nb_img)
+    # check for empty frames (no beam)
+    frames_logical = np.zeros(nb_img)
+    frames_logical[np.argwhere(data.sum(axis=(1, 2)))] = 1
+    if frames_logical.sum() != nb_img:
+        print('\nEmpty frame detected, cropping the data\n')
+    data = data[np.nonzero(frames_logical)]
+    mask3d = mask3d[np.nonzero(frames_logical)]
 
     return data, mask3d, monitor, frames_logical
 
@@ -3125,24 +3131,37 @@ def motor_positions_34id(setup):
     return mu, tilt, chi, theta, delta, gamma
 
 
-def motor_positions_cristal(logfile, setup):
+def motor_positions_cristal(logfile, setup, **kwargs):
     """
     Load the scan data and extract motor positions.
 
     :param logfile: h5py File object of CRISTAL .nxs scan file
     :param setup: the experimental setup: Class SetupPreprocessing()
+    :param kwargs:
+     - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
+       equal to the number of measured frames. In case of data padding, the length changes.
     :return: (mgomega, phi, gamma, delta) motor positions
     """
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
+                       name='preprocessing_utils.motor_positions_id01')
+    frames_logical = kwargs.get('frames_logical', None)
+    if frames_logical is not None:
+        assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
+            'frames_logical should be a list of values in {-1, 0, 1}'
+
     if not setup.custom_scan:
         group_key = list(logfile.keys())[0]
         energy = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/',
                                     actuator_name='Monochromator', field_name='energy') * 1000  # in eV
         print(f'Overriding the defined energy of {setup.energy} by the value in the datafile {energy}')
         setup.energy = energy
+        scanned_motor = cristal_load_motor(datafile=logfile, root='/' + group_key, actuator_name='scan_data',
+                                           field_name='actuator_1_1')
+        scanned_motor = scanned_motor[np.nonzero(frames_logical)]  # exclude positions corresponding to empty frames
 
         if setup.rocking_angle == 'outofplane':
-            mgomega = cristal_load_motor(datafile=logfile, root='/' + group_key, actuator_name='scan_data',
-                                         field_name='actuator_1_1')  # mgomega is scanned
+            mgomega = scanned_motor  # mgomega is scanned
             phi = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
                                      actuator_name='I06-C-C07-EX-DIF-KPHI', field_name='position')
             delta = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
@@ -3151,8 +3170,7 @@ def motor_positions_cristal(logfile, setup):
                                        actuator_name='I06-C-C07-EX-DIF-GAMMA', field_name='position')
 
         elif setup.rocking_angle == 'inplane':
-            phi = cristal_load_motor(datafile=logfile, root='/' + group_key, actuator_name='scan_data',
-                                     field_name='actuator_1_1')  # phi is scanned
+            phi = scanned_motor  # phi is scanned
             mgomega = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
                                          actuator_name='I06-C-C07-EX-DIF-MGOMEGA', field_name='position')
             delta = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
@@ -3167,8 +3185,8 @@ def motor_positions_cristal(logfile, setup):
         gamma = setup.custom_motors["gamma"]
         phi = setup.custom_motors.get("phi", None)
         energy = setup.custom_motors["energy", setup.energy]
-    # check if mgomega needs to be divided by 1e6 (data taken before the implementation of the correction)
 
+    # check if mgomega needs to be divided by 1e6 (data taken before the implementation of the correction)
     if isinstance(mgomega, Real) and abs(mgomega) > 360:
         mgomega = mgomega / 1e6
     elif isinstance(mgomega, (tuple, list, np.ndarray)) and any(abs(val) > 360 for val in mgomega):
@@ -3612,7 +3630,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
     binning = detector.binning
 
     if frames_logical is None:  # retrieve the raw data length, then len(frames_logical) may be different from nb_frames
-        if (setup.beamline == 'ID01') or (setup.beamline == 'SIXS_2018') or (setup.beamline == 'SIXS_2019'):
+        if setup.beamline in {'ID01', 'CRISTAL', 'SIXS_2018', 'SIXS_2019'}:
             _, _, _, frames_logical = load_data(logfile=logfile, scan_number=scan_number,
                                                 detector=detector, setup=setup)
         else:  # frames_logical parameter not used yet for other beamlines
@@ -3691,7 +3709,8 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(beta, mu, beta, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'CRISTAL':
-        mgomega, phi, gamma, delta, energy = motor_positions_cristal(logfile, setup)
+        mgomega, phi, gamma, delta, energy =\
+            motor_positions_cristal(logfile=logfile, setup=setup, frames_logical=frames_logical)
         mgomega = mgomega - setup.sample_offsets[2]  # sample_offsets[2] is the rotation around the outboard axis
         phi = phi - setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
