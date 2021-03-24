@@ -17,6 +17,7 @@ import multiprocessing as mp
 from numbers import Real
 import numpy as np
 import os
+import re
 import sys
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
@@ -1012,6 +1013,38 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
         raise ValueError('Incorrect value for beamline parameter')
 
     return logfile
+
+
+def cristal_find_data(datafile, root, detector_shape, data_path='scan_data', pattern='^data_[0-9][0-9]$'):
+    """
+
+    :param datafile: h5py File object of CRISTAL .nxs scan file
+    :param root: root folder name in the data file
+    :param detector_shape:
+    :param data_path:
+    :param pattern:
+    :return:
+    """
+    # check input arguments
+    valid.valid_container(root, container_types=str, min_length=1, name='cristal_find_data')
+    if not root.startswith('/'):
+        root = '/' + root
+    valid.valid_container(detector_shape, container_types=(tuple, list), item_types=int, length=2,
+                          name='cristal_find_data')
+    valid.valid_container(data_path, container_types=str, min_length=1, name='cristal_find_data')
+    if not data_path.startswith('/'):
+        data_path = '/' + data_path
+    valid.valid_container(pattern, container_types=str, min_length=1, name='cristal_find_data')
+
+    # loop over the available keys at the defined path in the data file and check the shape of the corresponding dataset
+    nb_pix_ver, nb_pix_hor = detector_shape
+    for key in list(datafile[root + data_path]):
+        if bool(re.match(pattern, key)):
+            obj_shape = datafile[root + data_path + '/' + key][:].shape
+            if nb_pix_ver in obj_shape and nb_pix_hor in obj_shape:  # founc the key corresponding to the detector
+                print(f"subdirectory '{key}' contains the detector images, shape={obj_shape}")
+                return datafile[root + data_path + '/' + key][:]
+    raise ValueError(f"Could not find detector data using data_path={data_path} and pattern={pattern}")
 
 
 def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
@@ -2085,7 +2118,9 @@ def load_cristal_data(logfile, detector, flatfield=None, hotpixels=None, backgro
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
     group_key = list(logfile.keys())[0]
-    tmp_data = logfile['/' + group_key + '/scan_data/data_06'][:]
+
+    tmp_data = cristal_find_data(datafile=logfile, root=group_key,
+                                 detector_shape=(detector.nb_pixel_y, detector.nb_pixel_x))
 
     nb_img = tmp_data.shape[0]
 
@@ -3057,6 +3092,7 @@ def motor_positions_cristal(logfile, setup):
             try:
                 phi = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-PHI/position'][:]
             except KeyError:
+                print('no data for the phi circle')
                 # data taken before the installation of the phi circle
                 phi = 0
             delta = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-DELTA/position'][:]
