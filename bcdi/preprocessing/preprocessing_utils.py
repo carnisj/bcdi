@@ -3015,10 +3015,10 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
     Mask or apply a mean filter if the empty pixel is surrounded by nb_neighbours or more pixels with at least
     min_count intensity per pixel.
 
-    :param data: 2D array to be filtered
+    :param data: 2D or 3D array to be filtered
     :param nb_neighbours: minimum number of non-zero neighboring pixels for median filtering
-    :param mask: 2D mask array
-    :param target_val: value where to interpolate
+    :param mask: mask array of the same shape as data
+    :param target_val: value where to interpolate, allowed values are int>=0 or np.nan
     :param extent: in pixels, extent of the averaging window from the reference pixel
      (extent=1, 2, 3 ... corresponds to window width=3, 5, 7 ... )
     :param min_count: minimum intensity in the neighboring pixels
@@ -3029,13 +3029,31 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
     :return: updated data and mask, number of pixels treated
     """
     # TODO: try to improve the speed of this function
+    # check some mparameters
     if mask is None:
         mask = np.zeros(data.shape)
+    if not isinstance(data, np.ndarray):
+        raise TypeError('data should be a numpy ndarray')
+    if data.ndim not in {2, 3}:
+        raise ValueError('data should be either a 2D or a 3D array')
+    if not isinstance(mask, np.ndarray):
+        raise TypeError('mask should be a numpy ndarray')
+    if data.shape != mask.shape:
+        raise ValueError('data and mask should have the same shape')
 
-    assert data.shape == mask.shape, 'data and mask should have the same shape'
-    assert np.isnan(target_val) or isinstance(target_val, int), 'target_val should be nan or an integer, cannot assess'\
-                                                                'float equality'
+    if not np.isnan(target_val) or not isinstance(target_val, int):
+        raise ValueError('target_val should be nan or an integer, cannot assess float equality')
 
+    valid.valid_item(extent, allowed_types=int, min_excluded=0, name='mean_filter')
+    valid.valid_item(min_count, allowed_types=int, min_included=0, name='mean_filter')
+
+    if interpolate not in {'mask_isolated', 'interp_isolated'}:
+        raise ValueError(f"invalid value '{interpolate}' for interpolate,"
+                         f" allowed are 'mask_isolated' and 'interp_isolated'")
+    if not isinstance(debugging, bool):
+        raise TypeError(f"debugging should be a boolean, got {type(debugging)}")
+
+    # find all voxels to be processed
     if target_val is np.nan:
         target_pixels = np.argwhere(np.isnan(data))
     else:
