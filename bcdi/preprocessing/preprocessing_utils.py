@@ -3021,14 +3021,14 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
     :param target_val: value where to interpolate, allowed values are int>=0 or np.nan
     :param extent: in pixels, extent of the averaging window from the reference pixel
      (extent=1, 2, 3 ... corresponds to window width=3, 5, 7 ... )
-    :param min_count: minimum intensity in the neighboring pixels
+    :param min_count: minimum intensity (inclusive) in the neighboring pixels to interpolate, the pixel will be masked
+     otherwise.
     :param interpolate: based on 'nb_neighbours', if 'mask_isolated' will mask isolated pixels,
       if 'interp_isolated' will interpolate isolated pixels
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: updated data and mask, number of pixels treated
     """
-    # TODO: try to improve the speed of this function
     # check some mparameters
     if mask is None:
         mask = np.zeros(data.shape)
@@ -3044,6 +3044,7 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
     if not np.isnan(target_val) and not isinstance(target_val, int):
         raise ValueError('target_val should be nan or an integer, cannot assess float equality')
 
+    valid.valid_item(nb_neighbours, allowed_types=int, min_excluded=0, name='mean_filter')
     valid.valid_item(extent, allowed_types=int, min_excluded=0, name='mean_filter')
     valid.valid_item(min_count, allowed_types=int, min_included=0, name='mean_filter')
 
@@ -3060,68 +3061,45 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
         target_pixels = np.argwhere(data == target_val)
     nb_pixels = 0
 
-    if data.ndim == 2:
-        if debugging:
-            gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
-                              tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
-                              tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
-                              tuple_title=('Data before filtering', 'Mask before filtering'), reciprocal_space=True)
+    if debugging:
+        gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
+                          tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
+                          tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
+                          tuple_title=('Data before filtering', 'Mask before filtering'), reciprocal_space=True)
 
+    if data.ndim == 2:
         for indx in range(target_pixels.shape[0]):
             pixrow = target_pixels[indx, 0]
             pixcol = target_pixels[indx, 1]
             temp = data[pixrow-extent:pixrow+extent+1, pixcol-extent:pixcol+extent+1]
-            n_pix = np.logical_and(~np.isnan(temp), temp != target_val).sum()  # nb of pixels not equal to target_val
-            if temp.size != 0 and temp[~np.isnan(temp)].sum() >= min_count*nb_neighbours \
-                    and n_pix >= nb_neighbours:
-                # mask/interpolate if at least min_count photons in each neighboring pixels
-                nb_pixels = nb_pixels + 1
+            temp = temp[np.logical_and(~np.isnan(temp), temp != target_val)]
+            if temp.size >= nb_neighbours and (temp > min_count).all():  # nb_neighbours is >= 1
+                nb_pixels += 1
                 if interpolate == 'interp_isolated':
-                    data[pixrow, pixcol] = temp[~np.isnan(temp)].sum() / n_pix
+                    data[pixrow, pixcol] = temp.mean()
                     mask[pixrow, pixcol] = 0
                 else:
                     mask[pixrow, pixcol] = 1
-
-        if debugging:
-            gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(False, False), tuple_sum_axis=(0, 0),
-                              tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
-                              tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
-                              tuple_title=('Data after filtering', 'Mask after filtering'), reciprocal_space=True)
-    elif data.ndim == 3:
-        if debugging:
-            gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(True, True), tuple_sum_axis=(0, 0),
-                              tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
-                              tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
-                              tuple_title=('Data before filtering', 'Mask before filtering'), reciprocal_space=True)
-
+    else:  # 3D
         for indx in range(target_pixels.shape[0]):
             pix_z = target_pixels[indx, 0]
             pix_y = target_pixels[indx, 1]
             pix_x = target_pixels[indx, 2]
             temp = data[pix_z-extent:pix_z+extent+1, pix_y-extent:pix_y+extent+1, pix_x-extent:pix_x+extent+1]
-            n_pix = np.logical_and(~np.isnan(temp), temp != target_val).sum()  # nb of pixels not equal to target_val
-            if temp.size != 0 and temp[~np.isnan(temp)].sum() >= min_count*nb_neighbours \
-                    and n_pix >= nb_neighbours:
-                # mask/interpolate if at least min_count photons in each neighboring pixels
-                nb_pixels = nb_pixels + 1
+            temp = temp[np.logical_and(~np.isnan(temp), temp != target_val)]
+            if temp.size >= nb_neighbours and (temp > min_count).all():  # nb_neighbours is >= 1
+                nb_pixels += 1
                 if interpolate == 'interp_isolated':
-                    data[pix_z, pix_y, pix_x] = temp[~np.isnan(temp)].sum() / n_pix
+                    data[pix_z, pix_y, pix_x] = temp.mean()
                     mask[pix_z, pix_y, pix_x] = 0
                 else:
                     mask[pix_z, pix_y, pix_x] = 1
 
-        if debugging:
-            gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(True, True), tuple_sum_axis=(0, 0),
-                              tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
-                              tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
-                              tuple_title=('Data after filtering', 'Mask after filtering'), reciprocal_space=True)
-    else:
-        raise ValueError('data should be 2D or 3D')
-
-    if interpolate == 'interp_isolated':
-        print("Nb of interpolated pixel: ", nb_pixels)
-    else:
-        print("Nb of masked pixel: ", nb_pixels)
+    if debugging:
+        gu.combined_plots(tuple_array=(data, mask), tuple_sum_frames=(True, True), tuple_sum_axis=(0, 0),
+                          tuple_width_v=(None, None), tuple_width_h=(None, None), tuple_colorbar=(True, True),
+                          tuple_vmin=(-1, 0), tuple_vmax=(np.nan, 1), tuple_scale=('log', 'linear'),
+                          tuple_title=('Data after filtering', 'Mask after filtering'), reciprocal_space=True)
 
     return data, nb_pixels, mask
 
