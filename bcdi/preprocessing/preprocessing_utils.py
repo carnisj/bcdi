@@ -1017,13 +1017,14 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
 
 def cristal_find_data(datafile, root, detector_shape, data_path='scan_data', pattern='^data_[0-9][0-9]$'):
     """
+    Look for the entry corresponding to the detector data in the file and return the corresponding dataset.
 
     :param datafile: h5py File object of CRISTAL .nxs scan file
     :param root: root folder name in the data file
-    :param detector_shape:
-    :param data_path:
-    :param pattern:
-    :return:
+    :param detector_shape: tuple or list of two integer (nb_pixels_vertical, nb_pixels_horizontal)
+    :param data_path: string, name of the subfolder when the scan data is located
+    :param pattern: string, pattern corresponding to the entries where the detector data could be located
+    :return: numpy array of the shape of the detector dataset
     """
     # check input arguments
     valid.valid_container(root, container_types=str, min_length=1, name='cristal_find_data')
@@ -1045,6 +1046,50 @@ def cristal_find_data(datafile, root, detector_shape, data_path='scan_data', pat
                 print(f"subdirectory '{key}' contains the detector images, shape={obj_shape}")
                 return datafile[root + data_path + '/' + key][:]
     raise ValueError(f"Could not find detector data using data_path={data_path} and pattern={pattern}")
+
+
+def cristal_load_motor(datafile, root, actuator_name, field_name):
+    """
+    Try to load the dataset at the defined entry and returns it. Patterns keep changing at CRISTAL.
+
+    :param datafile: h5py File object of CRISTAL .nxs scan file
+    :param root: string, path of the data up to the last subfolder (not included). This part is expected to
+     not change over time
+    :param actuator_name: string, name of the actuator (e.g. 'I06-C-C07-EX-DIF-KPHI'). Lowercase and uppercase will
+     be tested when trying to load the data.
+    :param: name of the field under the actuator name (e.g. 'position')
+    :return: the dataset if found or 0
+    """
+    # check input arguments
+    valid.valid_container(root, container_types=str, min_length=1, name='cristal_load_motor')
+    if not root.startswith('/'):
+        root = '/' + root
+    valid.valid_container(actuator_name, container_types=str, min_length=1, name='cristal_load_motor')
+
+    # check if there is an entry for the actuator
+    if actuator_name not in datafile[root].keys():
+        actuator_name = actuator_name.lower()
+        if actuator_name not in datafile[root].keys():
+            actuator_name = actuator_name.upper()
+            if actuator_name not in datafile[root].keys():
+                print(f"\nCould not find the entry for the actuator'{actuator_name}'")
+                print(f'list of available actuators: {list(datafile[root].keys())}\n')
+                return 0
+
+    # check if the field is a valid entry for the actuator
+    try:
+        dataset = datafile[root + '/' + actuator_name + '/' + field_name][:]
+    except KeyError:  # try lowercase
+        try:
+            dataset = datafile[root + '/' + actuator_name + '/' + field_name.lower()][:]
+        except KeyError:  # try uppercase
+            try:
+                dataset = datafile[root + '/' + actuator_name + '/' + field_name.upper()][:]
+            except KeyError:  # nothing else that we can do
+                print(f"\nCould not find the field '{field_name}' in the actuator'{actuator_name}'")
+                print(f"list of available fields: {list(datafile[root + '/' + actuator_name].keys())}\n")
+                return 0
+    return dataset
 
 
 def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
@@ -3087,28 +3132,30 @@ def motor_positions_cristal(logfile, setup):
     """
     if not setup.custom_scan:
         group_key = list(logfile.keys())[0]
-        energy = logfile['/' + group_key + '/CRISTAL/Monochromator/energy'][:] * 1000  # in eV
-        print(f'Overriding the defined energy of {setup.energy} by the value in the datafile {energy:.2f}')
+        energy = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/',
+                                    actuator_name='Monochromator', field_name='energy') * 1000  # in eV
+        print(f'Overriding the defined energy of {setup.energy} by the value in the datafile {energy}')
         setup.energy = energy
+
         if setup.rocking_angle == 'outofplane':
-            mgomega = logfile['/' + group_key + '/scan_data/actuator_1_1'][:]  # mgomega is scanned
-            try:
-                phi = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-PHI/position'][:]
-            except KeyError:
-                print('no data for the phi circle')
-                # data taken before the installation of the phi circle
-                phi = 0
-            delta = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-DELTA/position'][:]
-            gamma = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-GAMMA/position'][:]
+            mgomega = cristal_load_motor(datafile=logfile, root='/' + group_key, actuator_name='scan_data',
+                                         field_name='actuator_1_1')  # mgomega is scanned
+            phi = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
+                                     actuator_name='I06-C-C07-EX-DIF-KPHI', field_name='position')
+            delta = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
+                                       actuator_name='I06-C-C07-EX-DIF-DELTA', field_name='position')
+            gamma = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
+                                       actuator_name='I06-C-C07-EX-DIF-GAMMA', field_name='position')
+
         elif setup.rocking_angle == 'inplane':
-            # TODO: check the motor names in the data file
-            try:
-                phi = logfile['/' + group_key + '/scan_data/actuator_1_1'][:]  # phi is scanned
-            except KeyError as ex:
-                raise KeyError('Phi not available in the data file') from ex
-            mgomega = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-MGOMEGA/position'][:]
-            delta = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-DELTA/position'][:]
-            gamma = logfile['/' + group_key + '/CRISTAL/Diffractometer/I06-C-C07-EX-DIF-GAMMA/position'][:]
+            phi = cristal_load_motor(datafile=logfile, root='/' + group_key, actuator_name='scan_data',
+                                     field_name='actuator_1_1')  # phi is scanned
+            mgomega = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
+                                         actuator_name='I06-C-C07-EX-DIF-MGOMEGA', field_name='position')
+            delta = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
+                                       actuator_name='I06-C-C07-EX-DIF-DELTA', field_name='position')
+            gamma = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
+                                       actuator_name='I06-C-C07-EX-DIF-GAMMA', field_name='position')
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
     else:
@@ -3118,6 +3165,7 @@ def motor_positions_cristal(logfile, setup):
         phi = setup.custom_motors.get("phi", None)
         energy = setup.custom_motors["energy", setup.energy]
     # check if mgomega needs to be divided by 1e6 (data taken before the implementation of the correction)
+
     if isinstance(mgomega, Real) and abs(mgomega) > 360:
         mgomega = mgomega / 1e6
     elif isinstance(mgomega, (tuple, list, np.ndarray)) and any(abs(val) > 360 for val in mgomega):
