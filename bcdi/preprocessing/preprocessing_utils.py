@@ -1060,7 +1060,7 @@ def cristal_load_motor(datafile, root, actuator_name, field_name):
      not change over time
     :param actuator_name: string, name of the actuator (e.g. 'I06-C-C07-EX-DIF-KPHI'). Lowercase and uppercase will
      be tested when trying to load the data.
-    :param: name of the field under the actuator name (e.g. 'position')
+    :param field_name: name of the field under the actuator name (e.g. 'position')
     :return: the dataset if found or 0
     """
     # check input arguments
