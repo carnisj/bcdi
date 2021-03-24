@@ -7,8 +7,6 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-from numbers import Real
-import numpy as np
 import bcdi.utils.utilities as util
 
 
@@ -19,9 +17,9 @@ def run_tests(test_class):
 
 
 class TestInRange(unittest.TestCase):
-    #####################
-    # tests on in_range #
-    #####################
+    """
+    Tests on the function utilities.in_range
+    """
     def setUp(self):
         # executed before each test
         self.extent = (-10, 99, -20, 89, 10, 119)
