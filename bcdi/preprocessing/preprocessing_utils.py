@@ -1228,7 +1228,7 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
     elif setup.beamline == 'CRISTAL':
-        mgomega, phi, gamma, delta = motor_positions_cristal(logfile, setup)
+        mgomega, phi, gamma, delta, energy = motor_positions_cristal(logfile, setup)
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             grazing = (0,)  # no chi at CRISTAL
             tilt, inplane, outofplane = mgomega, gamma[0], delta[0]
@@ -3087,6 +3087,9 @@ def motor_positions_cristal(logfile, setup):
     """
     if not setup.custom_scan:
         group_key = list(logfile.keys())[0]
+        energy = logfile['/' + group_key + '/CRISTAL/Monochromator/energy'][:] * 1000  # in eV
+        print(f'Overriding the defined energy of {setup.energy} by the value in the datafile {energy:.2f}')
+        setup.energy = energy
         if setup.rocking_angle == 'outofplane':
             mgomega = logfile['/' + group_key + '/scan_data/actuator_1_1'][:]  # mgomega is scanned
             try:
@@ -3113,14 +3116,14 @@ def motor_positions_cristal(logfile, setup):
         delta = setup.custom_motors["delta"]
         gamma = setup.custom_motors["gamma"]
         phi = setup.custom_motors.get("phi", None)
-
+        energy = setup.custom_motors["energy", setup.energy]
     # check if mgomega needs to be divided by 1e6 (data taken before the implementation of the correction)
     if isinstance(mgomega, Real) and abs(mgomega) > 360:
         mgomega = mgomega / 1e6
     elif isinstance(mgomega, (tuple, list, np.ndarray)) and any(abs(val) > 360 for val in mgomega):
         mgomega = mgomega / 1e6
 
-    return mgomega, phi, gamma, delta
+    return mgomega, phi, gamma, delta, energy
 
 
 def motor_positions_id01(logfile, scan_number, setup, **kwargs):
@@ -3637,7 +3640,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(beta, mu, beta, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'CRISTAL':
-        mgomega, phi, gamma, delta = motor_positions_cristal(logfile, setup)
+        mgomega, phi, gamma, delta, energy = motor_positions_cristal(logfile, setup)
         mgomega = mgomega - setup.sample_offsets[2]  # sample_offsets[2] is the rotation around the outboard axis
         phi = phi - setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
@@ -3669,9 +3672,9 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
-        mgomega, phi,  gamma, delta = bin_parameters(binning=binning[0], nb_frames=nb_frames,
-                                                     params=[mgomega, phi, gamma, delta])
-        qx, qy, qz = hxrd.Ang2Q.area(mgomega, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
+        mgomega, phi,  gamma, delta, energy = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                             params=[mgomega, phi, gamma, delta, energy])
+        qx, qy, qz = hxrd.Ang2Q.area(mgomega, phi, gamma, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == 'P10':
         om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile=logfile, setup=setup)
