@@ -739,12 +739,18 @@ class Setup(object):
     def energy(self, value):
         if value is None:
             self._energy = value
-        elif not isinstance(value, Real):
-            raise TypeError('energy should be a number in eV')
-        elif value <= 0:
-            raise ValueError('energy should be a strictly positive number in eV')
-        else:
+        elif isinstance(value, Real):
+            if value <= 0:
+                raise ValueError('energy should be strictly positive, in eV')
             self._energy = value
+        elif isinstance(value, (list, tuple, np.ndarray)):
+            if len(value) == 0:
+                raise ValueError('energy should be a number or a non-empty list of numbers in eV')
+            if any(val<=0 for val in value):
+                raise ValueError('energy should be strictly positive, in eV')
+            self._energy = value
+        else:
+            raise TypeError('energy should be a number or a list of numbers, in eV')
 
     @property
     def exit_wavevector(self):

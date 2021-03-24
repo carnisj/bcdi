@@ -185,6 +185,9 @@ def beamstop_correction(data, detector, setup, debugging=False):
     :return: the corrected data
     """
     energy = setup.energy
+    if not isinstance(energy, Real):
+        raise TypeError(f'Energy should be a number in eV, not a {type(energy)}')
+
     print(f'Applying beamstop correction for the X-ray energy of {energy}eV')
 
     if energy not in [8200, 8700, 10000, 10235]:
