@@ -289,27 +289,23 @@ defined_q = q_axis[~np.isnan(prtf_avg)]
 arc_length = np.concatenate((np.zeros(1),
                              np.cumsum(np.diff(prtf_avg[~np.isnan(prtf_avg)])**2 + np.diff(defined_q)**2)),
                             axis=0)  # cumulative linear arc length, used as the parameter
-arc_length_interp = np.linspace(0, arc_length[-1], 10000)
-fit_prtf = interp1d(arc_length, prtf_avg[~np.isnan(prtf_avg)], kind='linear')
-prtf_interp = fit_prtf(arc_length_interp)
-idx_resolution = [i for i, x in enumerate(prtf_interp) if x < 1/np.e]  # indices where prtf < 1/e
 
-fit_q = interp1d(arc_length, defined_q, kind='linear')
-q_interp = fit_q(arc_length_interp)
-
-plt.figure()
-plt.plot(prtf_avg[~np.isnan(prtf_avg)], defined_q, 'o', prtf_interp, q_interp, '.r')
-plt.xlabel('PRTF')
-plt.ylabel('q (1/nm)')
-
+fit_prtf = interp1d(prtf_avg[~np.isnan(prtf_avg)], arc_length, kind='linear')
 try:
-    q_resolution = q_interp[min(idx_resolution)]
+    arc_length_res = fit_prtf(1/np.e)
+    fit_q = interp1d(arc_length, defined_q, kind='linear')
+    q_resolution = fit_q(arc_length_res)
 except ValueError:
-    print('Resolution limited by the 1 photon counts only (min(prtf)>1/e)')
-    print('min(PRTF) = ', prtf_avg[~np.isnan(prtf_avg)].min())
-    q_resolution = q_axis[len(prtf_avg[~np.isnan(prtf_avg)])-1]
-print('q resolution =', str('{:.5f}'.format(q_resolution)), ' (1/nm)')
-print('resolution d= ' + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm')
+    if (prtf_avg[~np.isnan(prtf_avg)] > 1/np.e).all():
+        print('Resolution limited by the 1 photon counts only (min(prtf)>1/e)')
+        print(f'min(PRTF) = {prtf_avg[~np.isnan(prtf_avg)].min()}')
+        q_resolution = defined_q.max()
+    else:  # PRTF always below 1/e
+        print('PRTF < 1/e for all q values, problem of normalization')
+        q_resolution = np.nan
+
+print(f'q resolution = {q_resolution:.5f} (1/nm)')
+print(f'resolution d = {2*np.pi / q_resolution:.1f} nm')
 
 fig = plt.figure()
 plt.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
