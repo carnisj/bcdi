@@ -108,7 +108,6 @@ tilt_simu = 0.0102  # angular step size for rocking angle, eta @ ID01
 normalize_prtf = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
 interpolate_nans = False  # if True, interpolate nans in the PRTF before the interactive interface. Time consuming
 debug = False  # True to show more plots
-save = True  # True to save the prtf figure
 background_plot = '0.5'  # in level of grey in [0,1], 0 being dark. For visual comfort when using the GUI
 ##########################
 # end of user parameters #
@@ -508,25 +507,17 @@ except ValueError:
 print(f'q resolution = {q_resolution:.5f} (1/nm)')
 print(f'resolution d = {2*np.pi / q_resolution:.1f} nm')
 
-fig, ax = plt.subplots(1, 1)
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
 ax.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
 ax.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)  # horizontal line at PRTF=1/e
 ax.set_xlim(defined_q.min(), defined_q.max())
 ax.set_ylim(0, 1.1)
-ax.spines['right'].set_linewidth(1.5)
-ax.spines['left'].set_linewidth(1.5)
-ax.spines['top'].set_linewidth(1.5)
-ax.spines['bottom'].set_linewidth(1.5)
-ax.tick_params(labelbottom=False, labelleft=False)
-if save:
-    fig.savefig(detector.savedir + f'S{scan}_prtf' + comment + '.png')
-ax.set_title('PRTF')
-ax.set_xlabel('q (1/nm)')
-ax.tick_params(labelbottom=True, labelleft=True)
-fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
-fig.text(0.15, 0.20, f"q at PRTF=1/e: {q_resolution:.5f} (1/nm)", size=14)
-fig.text(0.15, 0.15, f"resolution d = {2*np.pi / q_resolution:.3f} nm", size=14)
-if save:
-    fig.savefig(detector.savedir + f'S{scan}_prtf' + comment + '_label.png')
+
+gu.savefig(savedir=detector.savedir, figure=fig, axes=ax, tick_width=2, tick_length=10, tick_labelsize=14,
+           label_size=16, xlabels='q (1/nm)', ylabels='PRTF', filename=f'S{scan}_prtf' + comment,
+           text={0: {'x': 0.15, 'y': 0.30, 's': "Scan " + str(scan) + comment, 'fontsize': 16},
+                 1: {'x': 0.15, 'y': 0.25, 's': f"q at PRTF=1/e: {q_resolution:.5f} (1/nm)", 'fontsize': 16},
+                 2: {'x': 0.15, 'y': 0.20, 's': f"resolution d = {2*np.pi / q_resolution:.3f} nm", 'fontsize': 16}})
+
 plt.ioff()
 plt.show()

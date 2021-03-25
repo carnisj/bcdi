@@ -13,6 +13,7 @@ except ModuleNotFoundError:
 import numpy as np
 from numpy.fft import fftn, fftshift
 from matplotlib import pyplot as plt
+import pathlib
 from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
@@ -38,6 +39,7 @@ scan = 22
 root_folder = 'D:/data/P10_August2019/data/'  # location of the .spec or log file
 sample_name = "gold_2_2_2_000"  # "SN"  #
 datadir = root_folder + sample_name + str(scan) + '/pynx/1000_2_debug/'
+savedir = None
 comment = "_hotpixel"  # should start with _
 binning = (1, 1, 1)  # binning factor used during phasing: axis0=downstream, axis1=vertical up, axis2=outboard
 # leave it to (1, 1, 1) if the binning factor is the same between the input data and the phasing output
@@ -47,7 +49,6 @@ original_shape = (500, 500, 500)  # shape of the array used during phasing, befo
 ###########
 normalize_prtf = False  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = False  # True to show more plots
-save = True  # True to save the prtf figure
 q_max = None  # in 1/nm, PRTF normalization using only points smaller than q_max. Leave it to None otherwise.
 ##########################
 # end of user parameters #
@@ -58,6 +59,12 @@ q_max = None  # in 1/nm, PRTF normalization using only points smaller than q_max
 ###################
 colormap = gu.Colormap()
 my_cmap = colormap.cmap
+
+#########################
+# check some parameters #
+#########################
+savedir = savedir or datadir
+pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
 ##############################
 # load reciprocal space data #
@@ -307,20 +314,17 @@ except ValueError:
 print(f'q resolution = {q_resolution:.5f} (1/nm)')
 print(f'resolution d = {2*np.pi / q_resolution:.1f} nm')
 
-fig = plt.figure()
-plt.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
-plt.title('PRTF')
-plt.xlabel('q (1/nm)')
-# draw an horizontal line corresponding to 1/e
-plt.plot([defined_q.min(), defined_q.max()], [1/np.e, 1/np.e], 'k.', lw=1)
-plt.xlim(defined_q.min(), defined_q.max())
-plt.ylim(0, 1.1)
-if save:
-    plt.savefig(datadir + 'S' + str(scan) + '_prtf' + comment + '.png')
-fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
-fig.text(0.15, 0.20, "q at PRTF=1/e: " + str('{:.5f}'.format(q_resolution)) + '(1/nm)', size=14)
-fig.text(0.15, 0.15, "resolution d= " + str('{:.3f}'.format(2*np.pi / q_resolution)) + 'nm', size=14)
-if save:
-    plt.savefig(datadir + 'S' + str(scan) + '_prtf_comments' + comment + '.png')
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
+ax.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
+ax.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)  # horizontal line at PRTF=1/e
+ax.set_xlim(defined_q.min(), defined_q.max())
+ax.set_ylim(0, 1.1)
+
+gu.savefig(savedir=savedir, figure=fig, axes=ax, tick_width=2, tick_length=10, tick_labelsize=14,
+           label_size=16, xlabels='q (1/nm)', ylabels='PRTF', filename=f'S{scan}_prtf' + comment,
+           text={0: {'x': 0.15, 'y': 0.30, 's': "Scan " + str(scan) + comment, 'fontsize': 16},
+                 1: {'x': 0.15, 'y': 0.25, 's': f"q at PRTF=1/e: {q_resolution:.5f} (1/nm)", 'fontsize': 16},
+                 2: {'x': 0.15, 'y': 0.20, 's': f"resolution d = {2*np.pi / q_resolution:.3f} nm", 'fontsize': 16}})
+
 plt.ioff()
 plt.show()

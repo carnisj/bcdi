@@ -108,7 +108,6 @@ tilt_simu = 0.0102  # angular step size for rocking angle, eta @ ID01
 ###########
 normalize_prtf = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = False  # True to show more plots
-save = True  # True to save the prtf figure
 ##########################
 # end of user parameters #
 ##########################
@@ -411,19 +410,17 @@ except ValueError:
 print(f'q resolution = {q_resolution:.5f} (1/nm)')
 print(f'resolution d = {2*np.pi / q_resolution:.1f} nm')
 
-fig = plt.figure()
-plt.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
-plt.title('PRTF')
-plt.xlabel('q (1/nm)')
-plt.plot([defined_q.min(), defined_q.max()], [1/np.e, 1/np.e], 'k.', lw=1)
-plt.xlim(defined_q.min(), defined_q.max())
-plt.ylim(0, 1.1)
-if save:
-    plt.savefig(detector.savedir + 'S' + str(scan) + '_prtf' + comment + '.png')
-fig.text(0.15, 0.25, "Scan " + str(scan) + comment, size=14)
-fig.text(0.15, 0.20, f"q at PRTF=1/e: {q_resolution:.5f} (1/nm)", size=14)
-fig.text(0.15, 0.15, f"resolution d = {2*np.pi / q_resolution:.3f} nm", size=14)
-if save:
-    plt.savefig(detector.savedir + f'S{scan}_prtf_comments' + comment + '.png')
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
+ax.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
+ax.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)  # horizontal line at PRTF=1/e
+ax.set_xlim(defined_q.min(), defined_q.max())
+ax.set_ylim(0, 1.1)
+
+gu.savefig(savedir=detector.savedir, figure=fig, axes=ax, tick_width=2, tick_length=10, tick_labelsize=14,
+           label_size=16, xlabels='q (1/nm)', ylabels='PRTF', filename=f'S{scan}_prtf' + comment,
+           text={0: {'x': 0.15, 'y': 0.30, 's': "Scan " + str(scan) + comment, 'fontsize': 16},
+                 1: {'x': 0.15, 'y': 0.25, 's': f"q at PRTF=1/e: {q_resolution:.5f} (1/nm)", 'fontsize': 16},
+                 2: {'x': 0.15, 'y': 0.20, 's': f"resolution d = {2*np.pi / q_resolution:.3f} nm", 'fontsize': 16}})
+
 plt.ioff()
 plt.show()
