@@ -30,26 +30,26 @@ from the background. Must be given as input: the voxel size (possibly different 
 size and an origin point where all linecuts pass by.   
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/"
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_no_psf/result/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/PtNP1_00128/result/"  # data folder  #
-savedir = datadir + 'linecuts_P2_001a/refined/'  # 'linecuts/refined0.45-0.65/'  #
+savedir = datadir + 'linecuts/refined0.25-0.55/test/'  # 'linecuts_P2_001a/valid_range/'  #
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/linecuts_P2_001a/"
 # results will be saved here, if None it will default to datadir
-upsampling_factor = 1  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
-threshold = np.linspace(0.4, 0.6, num=201)  # np.round(np.linspace(0.2, 0.5, num=10), decimals=3)
+upsampling_factor = 5  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
+threshold = np.linspace(0.25, 0.55, num=11)  # [0.471, 0.5, 0.526]  # np.round(np.linspace(0.2, 0.5, num=10), decimals=3)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 angular_step = 1  # in degrees, the linecut directions will be automatically calculated
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-roi = (470, 550, 710, 790)  # P2_001a.tif
+roi = None  # (470, 550, 710, 790)  # P2_001a.tif
 # (470, 550, 710, 790)  # P2_001a.tif
 # (220, 680, 620, 1120)  # P2_018.tif
 # ROI centered around the crystal of interest in the 2D image, the center of mass will be
 # determined within this ROI when origin is not defined. Leave None to use the full array.
 origin = None  # origin where all the line cuts pass by (indices considering the array cropped to roi).
 # If None, it will use the center of mass of the modulus in the region defined by roi
-voxel_size = 2.070393374741201 * 0.96829786  # P2_001a.tif
+voxel_size = 5
 # 2.070393374741201 * 0.96829786  # P2_001a.tif
 # 0.3448275862068966 * 0.96829786  # P2_018.tif
 # positive real number or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D) (in nm)
@@ -159,11 +159,11 @@ obj = abs(obj) / abs(obj).max()  # normalize the modulus to 1
 obj[np.isnan(obj)] = 0  # remove nans
 fig, axs, _ = gu.imshow_plot(array=obj, sum_frames=True, sum_axis=1, plot_colorbar=True, reciprocal_space=False,
                              vmin=0, vmax=np.nan, is_orthogonal=True)
-axs.tick_params(labelbottom=True, labelleft=True, direction='out', length=tick_length, width=tick_width,
-                labelsize=16)
-cbar = axs.images[0].colorbar
-cbar.ax.tick_params(length=tick_length, width=tick_width, labelsize=16)
-fig.savefig(savedir + f'roi{roi}' + comment + '.png')
+
+gu.savefig(savedir=savedir, figure=fig, axes=axs, tick_width=tick_width, tick_length=tick_length, tick_labelsize=14,
+           xlabels=axs.get_xlabel(), ylabels=axs.get_ylabel(), titles=axs.get_title(), label_size=16,
+           filename=f'roi{roi}' + comment)
+
 comment = comment + f'_{angular_step}deg'
 result = dict()
 
@@ -236,11 +236,12 @@ else:
                             linestyle='-', linewidth=1)
             line.set_label(f'{key}')
             plot_nb += 1
-        ax.set_xlabel('width (nm)', fontsize=20)
-        ax.set_ylabel('modulus', fontsize=20)
-        ax.legend(fontsize=14)
-        ax.tick_params(axis='both', which='major', labelsize=16)
-        fig.savefig(savedir + 'cuts' + comment + '.png')
+        legend = False
+        if plot_nb < 15:
+            legend = True
+        gu.savefig(savedir=savedir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
+                   tick_labelsize=16, xlabels='width (nm)', ylabels='modulus', label_size=20, legend=legend,
+                   legend_labelsize=14, filename='cuts' + comment, only_labels=True)
 
     ##########################################################################
     # calculate the evolution of the width vs angle for different thresholds #
@@ -274,11 +275,13 @@ for idx, thres in enumerate(threshold):
                     linestyle='-', linewidth=1)
     line.set_label(f'threshold {thres}')
 
-ax.set_xlabel('angle (deg)', fontsize=20)
-ax.set_ylabel('width (nm)', fontsize=20)
-ax.legend(fontsize=14)
-ax.tick_params(axis='both', which='major', labelsize=16)
-fig.savefig(savedir + 'width_vs_ang' + comment + '.png')
+legend = False
+if len(threshold) < 15:
+    legend = True
+
+gu.savefig(savedir=savedir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length, tick_labelsize=14,
+           xlabels='angle (deg)', ylabels='width (nm)', label_size=20, legend=legend, legend_labelsize=14,
+           filename='width_vs_ang' + comment, only_labels=True)
 
 ###################
 # save the result #
