@@ -27,21 +27,22 @@ defining the object from the background. Must be given as input: the voxel size 
 the direction of the cuts and a list of points where to apply the cut along this direction.   
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM calibration/"  # data folder
-savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM calibration/test/"
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"  # data folder
+savedir = datadir + "linecuts/test/"
 # results will be saved here, if None it will default to datadir
-threshold = 0
+threshold = np.linspace(0, 1.0, num=20)
 # number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
-direction = (0, 1)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D) defining the direction of the cut
+direction = (0, 1, 0)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D) defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-points = {(0, 5), (0, 25), (0, 50), (0, 75), (0, 100), (0, 125), (0, 150), (0, 175), (0, 200), (0, 225)}
-#  {(25, 37, 23), (25, 37, 24), (25, 37, 25), (25, 37, 26),
-#      (26, 37, 23), (26, 37, 24), (26, 37, 25), (26, 37, 26),
-#      (27, 37, 24), (27, 37, 25)}
+points = {(25, 37, 23), (25, 37, 24), (25, 37, 25), (25, 37, 26),
+          (26, 37, 23), (26, 37, 24), (26, 37, 25), (26, 37, 26),
+          (27, 37, 24), (27, 37, 25)}
+# {(0, 5), (0, 25), (0, 50), (0, 75), (0, 100), (0, 125), (0, 150), (0, 175), (0, 200), (0, 225)}w
+
 # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
-voxel_size = 4.140786749482402  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
-width_lines = None  # (98, 100, 102)  # list of vertical lines that will appear in the plot width vs threshold, None otherwise
+voxel_size = 5  # 4.140786749482402  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
+width_lines = (96.3, 98.3, 100.3)  # list of vertical lines that will appear in the plot width vs threshold, None otherwise
 styles = {0: (0, (2, 6)), 1: 'dashed', 2: (0, (2, 6))}  # line style for the width_lines, 1 for each line
 debug = False  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
@@ -154,19 +155,12 @@ for key, value in result.items():
     line.set_label(f'cut through {key}')
     plot_nb += 1
 
-ax.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
-ax.spines['right'].set_linewidth(tick_width)
-ax.spines['left'].set_linewidth(tick_width)
-ax.spines['top'].set_linewidth(tick_width)
-ax.spines['bottom'].set_linewidth(tick_width)
-fig.savefig(savedir + 'cut' + comment + '.png')
-
-ax.set_xlabel('width (nm)', fontsize=20)
-ax.set_ylabel('modulus', fontsize=20)
-if debug:
-    ax.legend(fontsize=14)
-ax.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
-fig.savefig(savedir + 'cut' + comment + '_labels.png')
+legend = False
+if plot_nb < 15:
+    legend = True
+gu.savefig(savedir=savedir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
+           tick_labelsize=16, xlabels='width (nm)', ylabels='modulus', label_size=20, legend=legend,
+           legend_labelsize=14, filename='cuts' + comment, only_labels=True)
 
 #################################################################################
 # calculate the evolution of the width of the object depending on the threshold #
@@ -225,38 +219,34 @@ for key, value in result.items():
         line.set_label(f'cut through {key}')
         plot_nb += 1
 
-ax.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
-ax.spines['right'].set_linewidth(tick_width)
-ax.spines['left'].set_linewidth(tick_width)
-ax.spines['top'].set_linewidth(tick_width)
-ax.spines['bottom'].set_linewidth(tick_width)
 if width_lines is not None:
     for index, hline in enumerate(width_lines):
         ax.axhline(y=hline, linestyle=styles[index], color='k', linewidth=1.5)
-fig.savefig(savedir + 'width_vs_threshold' + comment + '.png')
 ymin, ymax = ax.get_ylim()
 
-ax.set_xlim(left=0.27, right=0.50)  # ax.set_xlim(left=0.335, right=0.565)
+# ax.set_xlim(left=0.27, right=0.50)
+ax.set_xlim(left=0.335, right=0.565)
 ax.set_ylim(bottom=96, top=104)
-fig.savefig(savedir + 'width_vs_threshold' + comment + '_zoom.png')
-ax.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
-plt.pause(0.5)
-fig.savefig(savedir + 'width_vs_threshold' + comment + '_zoom_labels.png')
+gu.savefig(savedir=savedir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
+           tick_labelsize=16, xlabels='threshold', ylabels='width (nm)',
+           titles=f"Width vs threshold in the direction {result['direction']}\n", title_size=20, label_size=20,
+           legend_labelsize=14, filename='width_vs_threshold' + comment + '_zoom')
 
 ax.set_xlim(left=0, right=1)
 ax.set_ylim(bottom=ymin, top=ymax)
-ax.set_xlabel('threshold', fontsize=20)
-ax.set_ylabel('width (nm)', fontsize=20)
-ax.set_title(f"Width vs threshold in the direction {result['direction']}\n", fontsize=20)
-if debug:
-    ax.legend(fontsize=14)
+legend = False
+if debug and plot_nb < 15:
+    legend = True
 if width_lines is not None:
-    fig.text(0.15, 0.30, f"expected widths: {result['expected_width']}", size=16)
-    fig.text(0.15, 0.25, f"fitted thresholds: {result['mean_thres']}", size=16)
-    fig.text(0.15, 0.20, f"stds: {result['std_thres']}", size=16)
-ax.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
-plt.pause(0.5)
-fig.savefig(savedir + 'width_vs_threshold' + comment + '_labels.png')
+    text = {0: {'x': 0.55, 'y': 0.80, 's': f"expected widths: {result['expected_width']}", 'fontsize': 14},
+            1: {'x': 0.55, 'y': 0.75, 's': f"fitted thresholds: {result['mean_thres']}", 'fontsize': 14},
+            2: {'x': 0.55, 'y': 0.70, 's': f"stds: {result['std_thres']}", 'fontsize': 14}}
+else:
+    text = ''
+gu.savefig(savedir=savedir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
+           tick_labelsize=16, xlabels='threshold', ylabels='width (nm)', legend=legend, text=text,
+           titles=f"Width vs threshold in the direction {result['direction']}\n", title_size=20, label_size=20,
+           legend_labelsize=14, filename='width_vs_threshold' + comment)
 
 ###################
 # save the result #
