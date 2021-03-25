@@ -485,7 +485,7 @@ q_axis = q_axis[:-1]
 #############################
 # plot and save the 1D PRTF #
 #############################
-defined_q = 10 * q_axis[~np.isnan(prtf_avg)]
+defined_q = 10 * q_axis[~np.isnan(prtf_avg)]  # switch to 1/nm
 # create a new variable 'arc_length' to predict q and prtf parametrically (because prtf is not monotonic)
 arc_length = np.concatenate((np.zeros(1),
                              np.cumsum(np.diff(prtf_avg[~np.isnan(prtf_avg)])**2 + np.diff(defined_q)**2)),
