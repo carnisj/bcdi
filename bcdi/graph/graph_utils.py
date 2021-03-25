@@ -1671,7 +1671,7 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
     valid.valid_item(label_size, allowed_types=int, min_excluded=0, name=fname)
     valid.valid_item(title_size, allowed_types=int, min_excluded=0, name=fname)
     valid.valid_container(text, container_types=dict, item_types=int, allow_none=True, min_length=1, min_included=0,
-                          max_excluded=len(text), name=fname)
+                          name=fname)
 
     #########################
     # plot and save figures #
