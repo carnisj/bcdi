@@ -387,7 +387,7 @@ if normalize_prtf:
 #############################
 # plot and save the 1D PRTF #
 #############################
-defined_q = 10 * q_axis[~np.isnan(prtf_avg)]
+defined_q = 10 * q_axis[~np.isnan(prtf_avg)]  # switch to 1/nm
 
 # create a new variable 'arc_length' to predict q and prtf parametrically (because prtf is not monotonic)
 arc_length = np.concatenate((np.zeros(1),
