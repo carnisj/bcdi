@@ -53,7 +53,7 @@ comment = ""  # should start with _
 crop_roi = None  # list of 6 integers, ROI used if 'center_auto' was True in PyNX, leave None otherwise
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
 align_pattern = False  # if True, will align the retrieved diffraction amplitude with the measured one
-flag_interact = True  # True to calculate interactively the PRTF along particular directions of reciprocal space
+flag_interact = False  # True to calculate interactively the PRTF along particular directions of reciprocal space
 ############################
 # beamline parameters #
 ############################
@@ -388,7 +388,7 @@ if normalize_prtf:
           ' of the diffraction pattern ...')
     norm_factor = np.sqrt(diff_pattern[z0-3:z0+4, y0-3:y0+4, x0-3:x0+4]).sum() /\
         abs(phased_fft[z0-3:z0+4, y0-3:y0+4, x0-3:x0+4]).sum()
-    print(f'Normalization factor = {norm_factor:.4f}\n')
+    print(f'Normalization factor = {norm_factor:.4f}')
     phased_fft = phased_fft * norm_factor
 
 plt.figure()
@@ -486,32 +486,27 @@ q_axis = q_axis[:-1]
 # plot and save the 1D PRTF #
 #############################
 defined_q = 10 * q_axis[~np.isnan(prtf_avg)]
-
+prtf_avg = prtf_avg + 1
 # create a new variable 'arc_length' to predict q and prtf parametrically (because prtf is not monotonic)
 arc_length = np.concatenate((np.zeros(1),
                              np.cumsum(np.diff(prtf_avg[~np.isnan(prtf_avg)])**2 + np.diff(defined_q)**2)),
                             axis=0)  # cumulative linear arc length, used as the parameter
-arc_length_interp = np.linspace(0, arc_length[-1], 10000)
-fit_prtf = interp1d(arc_length, prtf_avg[~np.isnan(prtf_avg)], kind='linear')
-prtf_interp = fit_prtf(arc_length_interp)
-idx_resolution = [i for i, x in enumerate(prtf_interp) if x < 1/np.e]  # indices where prtf < 1/e
 
-fit_q = interp1d(arc_length, defined_q, kind='linear')
-q_interp = fit_q(arc_length_interp)
-
-if debug:
-    plt.figure()
-    plt.plot(prtf_avg[~np.isnan(prtf_avg)], defined_q, 'o', prtf_interp, q_interp, '.r')
-    plt.xlabel('PRTF')
-    plt.ylabel('q (1/nm)')
-
+fit_prtf = interp1d(prtf_avg[~np.isnan(prtf_avg)], arc_length, kind='linear')
 try:
-    q_resolution = q_interp[min(idx_resolution)]
+    arc_length_res = fit_prtf(1/np.e)
+    fit_q = interp1d(arc_length, defined_q, kind='linear')
+    q_resolution = fit_q(arc_length_res)
 except ValueError:
-    print('Resolution limited by the 1 photon counts only (min(prtf)>1/e)')
-    print(f'min(PRTF) = {prtf_avg[~np.isnan(prtf_avg)].min()}')
-    q_resolution = 10 * q_axis[len(prtf_avg[~np.isnan(prtf_avg)])-1]
-print(f'q resolution ={q_resolution:.5f} (1/nm)')
+    if (prtf_avg[~np.isnan(prtf_avg)] > 1/np.e).all():
+        print('Resolution limited by the 1 photon counts only (min(prtf)>1/e)')
+        print(f'min(PRTF) = {prtf_avg[~np.isnan(prtf_avg)].min()}')
+        q_resolution = defined_q.max()
+    else:  # PRTF always below 1/e
+        print('PRTF < 1/e for all q values, problem of normalization')
+        q_resolution = np.nan
+
+print(f'q resolution = {q_resolution:.5f} (1/nm)')
 print(f'resolution d = {2*np.pi / q_resolution:.1f} nm')
 
 fig, ax = plt.subplots(1, 1)
