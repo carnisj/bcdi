@@ -1589,13 +1589,15 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
      - 'bottom', 'top', 'left', 'right': bool, whether to draw the respective ticks.
      - 'labelbottom', 'labeltop', 'labelleft', 'labelright': bool, whether to draw the respective tick labels.
      - 'legend': bool, wheter to show the legend or not
+     - 'text': dict, a dictionnary of dictionnaries containing the parameters for matplotlib.pyplot.text function
+    e.g. {0: {'x': 0.4, 'y': 0.4, 's': 'test', 'fontsize': 12}, 1:{'x': 0.4, 'y': 0.5, 's': 'res', 'fontsize': 12},...}
     :return:
     """
     #########################
     # check and load kwargs #
     #########################
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'labelbottom', 'labeltop', 'labelleft', 'labelright',
-                                                      'bottom', 'top', 'left', 'right', 'legend'},
+                                                      'bottom', 'top', 'left', 'right', 'legend', 'text'},
                        name='preprocessing_utils.load_monitor')
     labelbottom = kwargs.get('labelbottom', True)
     labeltop = kwargs.get('labeltop', False)
@@ -1606,6 +1608,7 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
     left = kwargs.get('left', True)
     right = kwargs.get('right', True)
     legend = kwargs.get('legend', False)
+    text = kwargs.get('text', None)
 
     ####################
     # check parameters #
@@ -1667,6 +1670,8 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
     valid.valid_item(legend_labelsize, allowed_types=int, min_excluded=0, name=fname)
     valid.valid_item(label_size, allowed_types=int, min_excluded=0, name=fname)
     valid.valid_item(title_size, allowed_types=int, min_excluded=0, name=fname)
+    valid.valid_container(text, container_types=dict, item_types=int, allow_none=True, min_length=1, min_included=0,
+                          max_excluded=len(text), name=fname)
 
     #########################
     # plot and save figures #
@@ -1686,6 +1691,9 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
         ax.set_title(titles[idx], fontsize=title_size)
         if legend[idx]:
             ax.legend(fontsize=legend_labelsize)
+    if text is not None:
+        for _, value in text.items():
+            figure.text(**value)
     figure.tight_layout()
     figure.savefig(savedir + filename + '_labels.png')
     plt.ioff()
