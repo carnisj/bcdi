@@ -1567,7 +1567,8 @@ def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped becaus
 
 
 def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='', tick_direction='out', tick_width=2,
-            tick_length=10, tick_labelsize=16, legend_labelsize=16, label_size=20, title_size=20, **kwargs):
+            tick_length=10, tick_labelsize=16, legend_labelsize=16, label_size=20, title_size=20, only_labels=False,
+            **kwargs):
     """
     This function can be used to plot template figures for publications, without and with labels.
 
@@ -1585,6 +1586,7 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
     :param legend_labelsize: label size in points of the legend
     :param label_size: label size in points of axis labels
     :param title_size: label size in points of titles
+    :param only_labels: bool, if True only the figure with all labels will be saved
     :param kwargs:
      - 'bottom', 'top', 'left', 'right': bool, whether to draw the respective ticks.
      - 'labelbottom', 'labeltop', 'labelleft', 'labelright': bool, whether to draw the respective tick labels.
@@ -1672,6 +1674,7 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
     valid.valid_item(title_size, allowed_types=int, min_excluded=0, name=fname)
     valid.valid_container(text, container_types=dict, item_types=int, allow_none=True, min_length=1, min_included=0,
                           name=fname)
+    valid.valid_item(only_labels, allowed_types=bool, name=fname)
 
     #########################
     # plot and save figures #
@@ -1681,28 +1684,34 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
         ax.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=bottom[idx],
                        top=top[idx], left=left[idx], right=right[idx], direction=tick_direction, length=tick_length,
                        width=tick_width, labelsize=tick_labelsize)
+        ax.set_xlabel(xlabels[idx], fontsize=label_size, visible=False)
+        ax.set_ylabel(ylabels[idx], fontsize=label_size, visible=False)
+        ax.set_title(titles[idx], fontsize=title_size, visible=False)
         ax.spines['right'].set_linewidth(tick_width)
         ax.spines['left'].set_linewidth(tick_width)
         ax.spines['top'].set_linewidth(tick_width)
         ax.spines['bottom'].set_linewidth(tick_width)
         try:  # Check if there is a colorbar
             cbar = ax.images[0].colorbar
-            cbar.ax.tick_params(length=tick_length, width=tick_width, labelsize=tick_labelsize)
+            cbar.ax.tick_params(labelright=False, length=tick_length, width=tick_width, labelsize=tick_labelsize)
         except IndexError:
-            pass
-    figure.savefig(savedir + filename + '.png')
+            cbar = None
+    if not only_labels:
+        figure.savefig(savedir + filename + '.png')
 
     for idx, ax in enumerate(axes):
         ax.tick_params(labelbottom=labelbottom[idx], labelleft=labelleft[idx], labelright=labelright[idx],
                        labeltop=labeltop[idx], axis='both', which='major', labelsize=label_size)
-        ax.set_xlabel(xlabels[idx], fontsize=label_size)
-        ax.set_ylabel(ylabels[idx], fontsize=label_size)
-        ax.set_title(titles[idx], fontsize=title_size)
+        ax.set_xlabel(xlabels[idx], fontsize=label_size, visible=True)
+        ax.set_ylabel(ylabels[idx], fontsize=label_size, visible=True)
+        ax.set_title(titles[idx], fontsize=title_size, visible=True)
         if legend[idx]:
             ax.legend(fontsize=legend_labelsize)
     if text is not None:
         for _, value in text.items():
             figure.text(**value)
+    if cbar is not None:
+        cbar.ax.tick_params(labelright=True)
     figure.tight_layout()
     figure.savefig(savedir + filename + '_labels.png')
     plt.ioff()
