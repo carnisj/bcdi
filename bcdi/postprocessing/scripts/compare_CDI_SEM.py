@@ -17,6 +17,7 @@ import sys
 import tkinter as tk
 from tkinter import filedialog
 sys.path.append('D:/myscripts/bcdi/')
+import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
@@ -33,16 +34,16 @@ After aligning the traces of the width vs angle (e.g. if the object was slightly
 the traces are overlaid in order to determine which threshold is correct.     
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/linecuts/"
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/result/linecuts/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/linecuts_P2_001a/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/linecuts/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1/PtNP1_00128/result/"  # data folder
-savedir = datadir + 'comparison_SEM/valid_range/'
+savedir = datadir + 'comparison_SEM/refined_SEM_0.471nm/test/'  # 'comparison_SEM/refined_SEM_0.471nm/'
 # results will be saved here, if None it will default to datadir
-index_sem = 1  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
-plot_sem = 'fill'  # if 'single', will plot only index_sem, if 'fill', it will fill the area between the first
+index_sem = 0  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
+plot_sem = 'single'  # if 'single', will plot only index_sem, if 'fill', it will fill the area between the first
 # and the last SEM thresholds in grey
-comment = 'valid_range'  # string to add to the filename when saving, should start with "_"
+comment = 'SEM_0.471'  # string to add to the filename when saving, should start with "_"
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 ##################################
@@ -183,42 +184,34 @@ for idx, thres in enumerate(thres_bcdi, start=0):
                      linestyle='-', linewidth=1)
     line.set_label(f'threshold {thres}')
 
-ax0.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width,
-                labelsize=16)
-fig.savefig(savedir + 'compa_width_vs_ang' + comment + '.png')
-ax0.set_xlabel('angle (deg)', fontsize=20)
-ax0.set_ylabel('width (nm)', fontsize=20)
-ax0.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
-ax0.legend(fontsize=14)
 if plot_sem == 'fill':
-    ax0.set_title(f"fill between SEM_thres {sem_dict['threshold'][0]} and {sem_dict['threshold'][-1]}")
-fig.savefig(savedir + 'compa_width_vs_ang' + comment + '_legend.png')
+    title = f"fill between SEM_thres {sem_dict['threshold'][0]} and {sem_dict['threshold'][-1]}"
+else:
+    title = ''
+
+legend = False
+if len(thres_bcdi) < 10:
+    legend = True
+
+gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length, label_size=16,
+           xlabels='angle (deg)', ylabels='width (nm)', filename='compa_width_vs_ang'+comment, titles=title,
+           legend=legend, legend_labelsize=12)
 
 ##############################################################################################################
 # Plot the evolution of the Pearson correlation coefficient and squared residuals depending on the threshold #
 ##############################################################################################################
 min_thres_idx = np.unravel_index(residuals.argmin(), shape=residuals.shape)[0]
-fig = plt.figure(figsize=(12, 9))
-ax0 = plt.subplot(111)
+fig, ax0 = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
 ax0.plot(thres_bcdi, correlation, color='b', marker='.', fillstyle='none', markersize=10, markeredgewidth=2,
          linestyle='solid', linewidth=2)
-ax0.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width,
-                labelsize=16)
-
 ax1 = ax0.twinx()
 ax1.plot(thres_bcdi, residuals, color='r', marker='v', fillstyle='none', markersize=10, markeredgewidth=2,
          linestyle='dashed', linewidth=2)
-ax1.tick_params(labelbottom=False, labelright=False, direction='out', length=tick_length, width=tick_width,
-                labelsize=16)
-fig.savefig(savedir + 'Pearson_vs_threshold' + comment + '.png')
-ax0.set_xlabel('threshold', fontsize=20)
-ax0.set_ylabel('Pearson correlation coeff.', fontsize=20)
-ax1.set_ylabel('Squared residuals', fontsize=20)
-ax0.tick_params(labelbottom=True, labelleft=True, axis='both', which='major', labelsize=16)
-ax1.tick_params(labelright=True, axis='both', which='major', labelsize=16)
-fig.tight_layout()
-fig.text(0.4, 0.4, f'Min SR at threshold={thres_bcdi[min_thres_idx]}', size=12)
-fig.savefig(savedir + 'Pearson_vs_threshold' + comment + '_legend.png')
+gu.savefig(savedir=savedir, figure=fig, axes=(ax0, ax1), tick_width=tick_width, tick_length=tick_length, label_size=16,
+           xlabels=('threshold', ''), ylabels=('Pearson correlation coeff.', 'Squared residuals'),
+           filename='Pearson_vs_threshold'+comment, labelbottom=(True, False), labelleft=(True, False),
+           labelright=(False, True), left=(True, False), right=(False, True), bottom=(True, False), top=False,
+           text={0: {'x': 0.4, 'y': 0.4, 's': f'Min SR at threshold={thres_bcdi[min_thres_idx]}', 'fontsize': 12}})
 
 plt.ioff()
 plt.show()
