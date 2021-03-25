@@ -1681,6 +1681,15 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
         ax.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=bottom[idx],
                        top=top[idx], left=left[idx], right=right[idx], direction=tick_direction, length=tick_length,
                        width=tick_width, labelsize=tick_labelsize)
+        ax.spines['right'].set_linewidth(tick_width)
+        ax.spines['left'].set_linewidth(tick_width)
+        ax.spines['top'].set_linewidth(tick_width)
+        ax.spines['bottom'].set_linewidth(tick_width)
+        try:  # Check if there is a colorbar
+            cbar = ax.images[0].colorbar
+            cbar.ax.tick_params(length=tick_length, width=tick_width, labelsize=tick_labelsize)
+        except IndexError:
+            pass
     figure.savefig(savedir + filename + '.png')
 
     for idx, ax in enumerate(axes):
