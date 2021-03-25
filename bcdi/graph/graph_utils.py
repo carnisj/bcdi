@@ -1604,9 +1604,9 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
     labelleft = kwargs.get('labelleft', True)
     labelright = kwargs.get('labelright', False)
     bottom = kwargs.get('bottom', True)
-    top = kwargs.get('top', True)
+    top = kwargs.get('top', False)
     left = kwargs.get('left', True)
-    right = kwargs.get('right', True)
+    right = kwargs.get('right', False)
     legend = kwargs.get('legend', False)
     text = kwargs.get('text', None)
 
