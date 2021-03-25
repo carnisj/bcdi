@@ -11,6 +11,7 @@ from numbers import Real
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import matplotlib.patches as patches
@@ -1563,6 +1564,131 @@ def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped becaus
     plt.pause(0.5)
     plt.ioff()
     return fig, ax0
+
+
+def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='', tick_direction='out', tick_width=2,
+            tick_length=10, tick_labelsize=16, legend_labelsize=16, label_size=20, title_size=20, **kwargs):
+    """
+    This function can be used to plot template figures for publications, without and with labels.
+
+    :param savedir: str, the directory where to save the figures
+    :param figure: a matplotlib figure instance
+    :param axes: a matplotlib axis or a tuple of axes
+    :param xlabels: str, horizontal labels (one per axis)
+    :param ylabels: str, vertical labels (one per axis)
+    :param titles: str, title (one per axis)
+    :param filename: name of the file for saving the figure
+    :param tick_direction: 'in', 'out' or 'inout'
+    :param tick_width: tick width in points
+    :param tick_length: tick length in points
+    :param tick_labelsize: label size in points of tick labels
+    :param legend_labelsize: label size in points of the legend
+    :param label_size: label size in points of axis labels
+    :param title_size: label size in points of titles
+    :param kwargs:
+     - 'bottom', 'top', 'left', 'right': bool, whether to draw the respective ticks.
+     - 'labelbottom', 'labeltop', 'labelleft', 'labelright': bool, whether to draw the respective tick labels.
+     - 'legend': bool, wheter to show the legend or not
+    :return:
+    """
+    #########################
+    # check and load kwargs #
+    #########################
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'labelbottom', 'labeltop', 'labelleft', 'labelright',
+                                                      'bottom', 'top', 'left', 'right', 'legend'},
+                       name='preprocessing_utils.load_monitor')
+    labelbottom = kwargs.get('labelbottom', True)
+    labeltop = kwargs.get('labeltop', False)
+    labelleft = kwargs.get('labelleft', True)
+    labelright = kwargs.get('labelright', False)
+    bottom = kwargs.get('bottom', True)
+    top = kwargs.get('top', True)
+    left = kwargs.get('left', True)
+    right = kwargs.get('right', True)
+    legend = kwargs.get('legend', False)
+
+    ####################
+    # check parameters #
+    ####################
+    fname = 'savefig'
+    valid.valid_container(savedir, container_types=str, min_length=1, name=fname)
+    if not isinstance(figure, mpl.figure.Figure):
+        raise TypeError('figure should be a matplotlib Figure')
+    if isinstance(axes, mpl.axes.Axes):
+        axes = (axes,)
+    valid.valid_container(axes, container_types=(tuple, list), min_length=1, name=fname)
+    for ax in axes:
+        if not isinstance(ax, mpl.axes.Axes):
+            raise TypeError('axes should be a tuple of matplotlib axes')
+    nb_axes = len(axes)
+    if isinstance(labelbottom, bool):
+        labelbottom = (labelbottom,) * nb_axes
+    valid.valid_container(labelbottom, container_types=(tuple, list), item_types=bool, length=nb_axes, name=fname)
+    if isinstance(labeltop, bool):
+        labeltop = (labeltop,) * nb_axes
+    valid.valid_container(labeltop, container_types=(tuple, list), item_types=bool, length=nb_axes, name=fname)
+    if isinstance(labelleft, bool):
+        labelleft = (labelleft,) * nb_axes
+    valid.valid_container(labelleft, container_types=(tuple, list), item_types=bool, length=nb_axes, name=fname)
+    if isinstance(labelright, bool):
+        labelright = (labelright,) * nb_axes
+    valid.valid_container(labelright, container_types=(tuple, list), item_types=bool, length=nb_axes, name=fname)
+    if isinstance(bottom, bool):
+        bottom = (bottom,) * nb_axes
+    valid.valid_container(bottom, container_types=(tuple, list), item_types=bool, length=nb_axes, name=fname)
+    if isinstance(top, bool):
+        top = (top,) * nb_axes
+    valid.valid_container(top, container_types=(tuple, list), item_types=bool, length=nb_axes, name=fname)
+    if isinstance(left, bool):
+        left = (left,) * nb_axes
+    valid.valid_container(left, container_types=(tuple, list), item_types=bool, length=nb_axes, name=fname)
+    if isinstance(right, bool):
+        right = (right,) * nb_axes
+    valid.valid_container(right, container_types=(tuple, list), item_types=bool, length=nb_axes, name=fname)
+    if isinstance(legend, bool):
+        legend = (legend,) * nb_axes
+    valid.valid_container(legend, container_types=(tuple, list), item_types=bool, length=nb_axes, name=fname)
+    if isinstance(xlabels, str):
+        xlabels = (xlabels,) * nb_axes
+    valid.valid_container(xlabels, container_types=(tuple, list), item_types=str, length=nb_axes, name=fname)
+    if isinstance(ylabels, str):
+        ylabels = (ylabels,) * nb_axes
+    valid.valid_container(ylabels, container_types=(tuple, list), item_types=str, length=nb_axes, name=fname)
+    if isinstance(titles, str):
+        titles = (titles,) * nb_axes
+    valid.valid_container(titles, container_types=(tuple, list), item_types=str, length=nb_axes, name=fname)
+    valid.valid_container(filename, container_types=str, name=fname)
+    filename = filename.replace('.png', '')  # in case the user put the extension in the filename
+    if tick_direction not in {'in', 'out', 'inout'}:
+        raise ValueError("Invalid value {tick_direction} for tick_direction, allowed are 'in', 'out', 'inout'")
+    valid.valid_item(tick_width, allowed_types=int, min_excluded=0, name=fname)
+    valid.valid_item(tick_length, allowed_types=int, min_excluded=0, name=fname)
+    valid.valid_item(tick_labelsize, allowed_types=int, min_excluded=0, name=fname)
+    valid.valid_item(legend_labelsize, allowed_types=int, min_excluded=0, name=fname)
+    valid.valid_item(label_size, allowed_types=int, min_excluded=0, name=fname)
+    valid.valid_item(title_size, allowed_types=int, min_excluded=0, name=fname)
+
+    #########################
+    # plot and save figures #
+    #########################
+    plt.ion()
+    for idx, ax in enumerate(axes):
+        ax.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=bottom[idx],
+                       top=top[idx], left=left[idx], right=right[idx], direction=tick_direction, length=tick_length,
+                       width=tick_width, labelsize=tick_labelsize)
+    figure.savefig(savedir + filename + '.png')
+
+    for idx, ax in enumerate(axes):
+        ax.tick_params(labelbottom=labelbottom[idx], labelleft=labelleft[idx], labelright=labelright[idx],
+                       labeltop=labeltop[idx], axis='both', which='major', labelsize=label_size)
+        ax.set_xlabel(xlabels[idx], fontsize=label_size)
+        ax.set_ylabel(ylabels[idx], fontsize=label_size)
+        ax.set_title(titles[idx], fontsize=title_size)
+        if legend[idx]:
+            ax.legend(fontsize=legend_labelsize)
+    figure.tight_layout()
+    figure.savefig(savedir + filename + '_labels.png')
+    plt.ioff()
 
 
 def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 0, 0), amplitude_threshold=0.01):
