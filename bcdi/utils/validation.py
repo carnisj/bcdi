@@ -27,7 +27,7 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
     :param allow_none: True if the container items are allowed to be None
     :param name: name of the calling object appearing in exception messages
     """
-    supported_containers = {list, tuple, set, str, np.ndarray}
+    supported_containers = {list, tuple, set, str, np.ndarray, dict}
     
     # check the validity of the requirements
     if container_types is None:
