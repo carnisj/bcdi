@@ -36,6 +36,9 @@ class TestValidContainer(unittest.TestCase):
     def test_validcontainer_container_list(self):
         self.assertTrue(valid.valid_container(list(), container_types=list))
 
+    def test_validcontainer_container_dict(self):
+        self.assertTrue(valid.valid_container(dict(), container_types=dict))
+
     def test_validcontainer_container_tuple(self):
         self.assertTrue(valid.valid_container(tuple(), container_types=tuple))
 
@@ -75,6 +78,9 @@ class TestValidContainer(unittest.TestCase):
     def test_validcontainer_container_string_wrong_length(self):
         self.assertRaises(ValueError, valid.valid_container, obj='test', container_types=str, length=2)
 
+    def test_validcontainer_container_dict_wrong_length(self):
+        self.assertRaises(ValueError, valid.valid_container, obj={0: {'x': 1}}, container_types=dict, min_length=2)
+
     def test_validcontainer_container_minlength_float(self):
         self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, min_length=2.3)
 
@@ -83,6 +89,9 @@ class TestValidContainer(unittest.TestCase):
 
     def test_validcontainer_container_itemtype(self):
         self.assertTrue(valid.valid_container(obj=list(), container_types=list, item_types=int))
+
+    def test_validcontainer_container_dict_itemtype_int(self):
+        self.assertTrue(valid.valid_container(obj={0: {'x': 1}}, container_types=dict, item_types=int))
 
     def test_validcontainer_container_itemtype_none(self):
         self.assertTrue(valid.valid_container(obj=list(), container_types=list, item_types=None))
