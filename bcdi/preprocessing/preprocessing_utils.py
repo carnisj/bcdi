@@ -3170,7 +3170,8 @@ def motor_positions_cristal(logfile, setup, **kwargs):
         setup.energy = energy
         scanned_motor = cristal_load_motor(datafile=logfile, root='/' + group_key, actuator_name='scan_data',
                                            field_name='actuator_1_1')
-        scanned_motor = scanned_motor[np.nonzero(frames_logical)]  # exclude positions corresponding to empty frames
+        if frames_logical is not None:
+            scanned_motor = scanned_motor[np.nonzero(frames_logical)]  # exclude positions corresponding to empty frames
 
         if setup.rocking_angle == 'outofplane':
             mgomega = scanned_motor  # mgomega is scanned
