@@ -48,6 +48,7 @@ beamline = 'CRISTAL'  # name of the beamline, used for data loading and normaliz
 actuators = {'rocking_angle': 'actuator_1_3'}
 # Optional dictionary that can be used to define the entries corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
+# e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series = False  # specific to series measurement at P10
 
 custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)

@@ -97,6 +97,7 @@ beamline = "CRISTAL"  # name of the beamline, used for data loading and normaliz
 actuators = {'rocking_angle': 'actuator_1_3'}
 # Optional dictionary that can be used to define the entries corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
+# e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 rocking_angle = "inplane"  # # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
 # around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
