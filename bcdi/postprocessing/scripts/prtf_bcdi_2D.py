@@ -59,6 +59,10 @@ slicing_axis = 1  # 0 for first axis, 1 for second, 2 for third
 ############################
 beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+actuators = {}
+# Optional dictionary that can be used to define the entries corresponding to actuators in data files
+# (useful at CRISTAL where the location of data keeps changing)
+# e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series = False  # specific to series measurement at P10
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
@@ -126,7 +130,7 @@ detector = exp.Detector(name=detector, template_imagefile=template_imagefile, bi
 ####################
 setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                   beam_direction=beam_direction, sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
-                  sample_offsets=sample_offsets)
+                  sample_offsets=sample_offsets, actuators=actuators)
 
 ########################################
 # Initialize the paths and the logfile #

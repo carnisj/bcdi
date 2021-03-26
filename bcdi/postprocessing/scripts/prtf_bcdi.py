@@ -45,10 +45,10 @@ Path structure:
     data in /root_folder/S2191/data/
 """
 
-scan = 314
-sample_name = "PtNP1"  # "SN"  #
-root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/scratch/"  # PRTF will be saved here, leave None otherwise
+scan = 74
+sample_name = "S"  # "SN"  #
+root_folder = "D:/data/CRISTAL_March2021/"  # folder of the experiment, where all scans are stored
+save_dir = None  # PRTF will be saved here, leave None otherwise
 comment = ""  # should start with _
 crop_roi = None  # list of 6 integers, ROI used if 'center_auto' was True in PyNX, leave None otherwise
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
@@ -57,10 +57,14 @@ flag_interact = False  # True to calculate interactively the PRTF along particul
 ############################
 # beamline parameters #
 ############################
-beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'CRISTAL'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+actuators = {'rocking_angle': 'actuator_1_1'}
+# Optional dictionary that can be used to define the entries corresponding to actuators in data files
+# (useful at CRISTAL where the location of data keeps changing)
+# e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series = True  # specific to series measurement at P10
-rocking_angle = "outofplane"  # "outofplane" or "inplane"
+rocking_angle = "inplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ''
 # template for ID01: name of the spec file without '.spec'
@@ -69,8 +73,8 @@ specfile_name = ''
 ######################################
 # define detector related parameters #
 ######################################
-detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-template_imagefile = '_master.h5'
+detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
+template_imagefile = 'mgphi-2021_%04d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -81,18 +85,18 @@ template_imagefile = '_master.h5'
 ################################################################################
 # parameters for calculating q values #
 ################################################################################
-sdd = 1.83  # sample to detector distance in m
-energy = 8170   # x-ray energy in eV, 6eV offset at ID01
+sdd = 0.914  # sample to detector distance in m
+energy = 8500   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 pre_binning = (1, 1, 1)  # binning factor applied during preprocessing: rocking curve axis, detector vertical and
 # horizontal axis. This is necessary to calculate correctly q values.
-phasing_binning = (1, 2, 2)  # binning factor applied during phasing: rocking curve axis, detector vertical and
+phasing_binning = (1, 1, 1)  # binning factor applied during phasing: rocking curve axis, detector vertical and
 # horizontal axis.
 # If the reconstructed object was further cropped after phasing, it will be automatically padded back to the FFT window
 # shape used during phasing (after binning) before calculating the Fourier transform.
-sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
 ###############################
 # only needed for simulations #
@@ -200,7 +204,7 @@ detector = exp.Detector(name=detector, template_imagefile=template_imagefile, bi
 ####################
 setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                   beam_direction=beam_direction, sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
-                  sample_offsets=sample_offsets)
+                  sample_offsets=sample_offsets, actuators=actuators)
 
 ########################
 # Initialize the paths #
