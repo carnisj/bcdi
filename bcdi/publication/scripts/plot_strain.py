@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
@@ -34,8 +35,8 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 
 
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"
-savedir = datadir + '/figures/'
-comment = '_iso0.4'   # should start with _
+savedir = datadir + '/figures/test/'
+comment = '_iso0.01'   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 strain_isosurface = 0.01  # amplitude below this value will be set to 0
 
@@ -63,7 +64,7 @@ flag_amp = True  # True to plot and save the amplitude
 flag_support = False  # True to plot and save the support
 
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
-vline_hist = [0.375, 0.505]  # list of vertical lines to plot in the amplitude histogram, leave None otherwise
+vline_hist = [0.375, 0.451, 0.505, 0.541]  # list of vertical lines to plot in the amplitude histogram, leave None otherwise
 
 flag_linecut = False  # True to plot and save a linecut of the phase
 y_linecut = 257  # in pixels

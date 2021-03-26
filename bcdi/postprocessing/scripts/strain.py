@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
@@ -68,7 +69,7 @@ phasing_binning = (1, 1, 1)  # binning factor applied during phase retrieval
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension used in preprocessing (not phase retrieval)
 output_size = (150, 150, 150)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
-fix_voxel = None # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
+fix_voxel = None  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
 # provided, the voxel size will be identical is all 3 directions. Set it to None to use the default voxel size
 # (calculated from q values, it will be different in each dimension).
 plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the support in each direction when cropping,
@@ -80,7 +81,7 @@ data_frame = 'detector'  # 'crystal' if the data was interpolated into the cryst
 # (transformation matrix + align_q=True)
 # 'laboratory' if the data was interpolated into the laboratory frame using the transformation matrix (align_q = False)
 # 'detector' if the data is still in the detector frame
-isosurface_strain = 0.2  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+isosurface_strain = 0.1  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 strain_method = 'default'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
 # magnitude value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases

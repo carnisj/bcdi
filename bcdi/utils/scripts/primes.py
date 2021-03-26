@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
@@ -13,7 +14,7 @@ Check smaller or higher prime of a number, in order to determine the correct FFT
 Adapted from PyNX
 """
 # 428 * 294 * 599
-my_nb = 599
+my_nb = 368
 
 
 def primes(n):

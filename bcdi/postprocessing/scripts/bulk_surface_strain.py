@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
@@ -76,6 +77,14 @@ nbz, nby, nbx = amp.shape
 ######################################
 support = np.zeros(amp.shape)
 support[amp > support_threshold*amp.max()] = 1
+
+# gu.multislices_plot(support, sum_frames=False, is_orthogonal=True, reciprocal_space=False)
+# thres = 0.65
+# support2 = np.zeros(amp.shape)
+# support2[amp > thres*amp.max()] = 1
+# print(f"Number of voxel excluded with thres={thres}: {(support - support2).sum()}")
+# gu.multislices_plot(support - support2, sum_frames=False, is_orthogonal=True, reciprocal_space=False)
+
 coordination_matrix = pu.calc_coordination(support=support, kernel=np.ones((3, 3, 3)), debugging=debug)
 surface = np.copy(support)
 surface[coordination_matrix > 22] = 0  # remove the bulk 22
