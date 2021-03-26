@@ -501,10 +501,10 @@ simu_signe_phase.py
 Utilities
 ---------
    
-apodize.py
-^^^^^^^^^^
+bcdi_apodize.py
+^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/apodize.py
+.. literalinclude:: ../../bcdi/utils/scripts/bcdi_apodize.py
    :start-after: helptext
    :end-before: """
    :language: rst
