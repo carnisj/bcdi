@@ -1,5 +1,5 @@
-Version 0.0.11
---------------
+Version 0.1.0
+-------------
 
 * Refactor: simplify PRTF calculations
 
