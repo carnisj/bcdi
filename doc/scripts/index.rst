@@ -580,11 +580,11 @@ parse_fio2spec.py
    :start-after: helptext
    :end-before: """
    :language: rst
-   
-primes.py
-^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/primes.py
+bcdi_primes.py
+^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/utils/scripts/bcdi_primes.py
    :start-after: helptext
    :end-before: """
    :language: rst
