@@ -1281,7 +1281,7 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
             grazing = (0,)  # no chi at CRISTAL
             tilt, inplane, outofplane = mgomega, gamma[0], delta[0]
         elif rocking_angle == 'inplane':  # phi rocking curve
-            grazing = (0, mgomega-offsets[2])  # no chi at CRISTAL
+            grazing = (0, mgomega[0]-offsets[2])  # no chi at CRISTAL
             tilt, inplane, outofplane = phi, gamma[0], delta[0]
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
