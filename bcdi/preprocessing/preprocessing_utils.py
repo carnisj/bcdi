@@ -3174,8 +3174,8 @@ def motor_positions_cristal(logfile, setup, **kwargs):
 
         if setup.rocking_angle == 'outofplane':
             mgomega = scanned_motor  # mgomega is scanned
-            phi = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
-                                     actuator_name='I06-C-C07-EX-DIF-KPHI', field_name='position')
+            phi = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/',
+                                     actuator_name='i06-c-c07-ex-mg_phi', field_name='position')
             delta = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
                                        actuator_name='I06-C-C07-EX-DIF-DELTA', field_name='position')
             gamma = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
@@ -3183,8 +3183,8 @@ def motor_positions_cristal(logfile, setup, **kwargs):
 
         elif setup.rocking_angle == 'inplane':
             phi = scanned_motor  # phi is scanned
-            mgomega = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
-                                         actuator_name='I06-C-C07-EX-DIF-MGOMEGA', field_name='position')
+            mgomega = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/',
+                                         actuator_name='i06-c-c07-ex-mg_omega', field_name='position')
             delta = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
                                        actuator_name='I06-C-C07-EX-DIF-DELTA', field_name='position')
             gamma = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
