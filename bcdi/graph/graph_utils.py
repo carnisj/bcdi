@@ -1592,7 +1592,7 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
      - 'labelbottom', 'labeltop', 'labelleft', 'labelright': bool, whether to draw the respective tick labels.
      - 'legend': bool, wheter to show the legend or not
      - 'text': dict, a dictionnary of dictionnaries containing the parameters for matplotlib.pyplot.text function
-    e.g. {0: {'x': 0.4, 'y': 0.4, 's': 'test', 'fontsize': 12}, 1:{'x': 0.4, 'y': 0.5, 's': 'res', 'fontsize': 12},...}
+       e.g. {0: {'x': 0.4, 'y': 0.4, 's': 'test', 'fontsize': 12}, 1:{'x': 0.4, 'y': 0.5, 's': 'res', 'fontsize': 12}}
     :return:
     """
     #########################
