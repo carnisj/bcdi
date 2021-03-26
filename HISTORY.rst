@@ -1,3 +1,12 @@
+Version 0.0.11
+--------------
+
+* Refactor: simplify PRTF calculations
+
+* Feature: implement the inplane rocking curve at CRISTAL
+
+* Feature: implement graph_utils.savefig to save figures for publication with and without labels
+
 * Feature: implement angular_profile.py to calculate the width of linecuts through the center of mass of a 2D object at different angles
 
 * Feature: implement line_profile.py to calculate line profiles along particular directions in 2D or 3D objects
