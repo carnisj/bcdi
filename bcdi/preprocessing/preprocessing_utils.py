@@ -2232,16 +2232,18 @@ def load_cristal_data(logfile, detector, flatfield=None, hotpixels=None, backgro
     return data, mask3d, monitor, frames_logical
 
 
-def load_cristal_monitor(logfile, nb_frames):
+def load_cristal_monitor(logfile, setup, nb_frames):
     """
     Load the default monitor for a dataset measured at CRISTAL.
 
     :param logfile: h5py File object of CRISTAL .nxs scan file
+    :param setup: the experimental setup: Class SetupPreprocessing()
     :param nb_frames: int, number of detector frames in the stacked dataset
     :return: the default monitor values
     """
     group_key = list(logfile.keys())[0]
-    monitor = logfile['/' + group_key + '/scan_data/data_04'][:]
+    monitor = cristal_load_motor(datafile=logfile, root='/' + group_key, actuator_name='scan_data',
+                                 field_name=setup.actuators.get('monitor', 'data_04'))
     if len(monitor.shape) != 1 or len(monitor) != nb_frames:
         print('could not find the correct entry for the monitor, skip normalization')
         monitor = np.ones(nb_frames)
@@ -2654,7 +2656,7 @@ def load_monitor(scan_number, logfile, setup, **kwargs):
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
         monitor = load_sixs_monitor(logfile=logfile, beamline=setup.beamline)
     elif setup.beamline == 'CRISTAL':
-        monitor = load_cristal_monitor(logfile=logfile, nb_frames=nb_frames)
+        monitor = load_cristal_monitor(logfile=logfile, setup=setup, nb_frames=nb_frames)
     elif setup.beamline == 'P10':
         monitor = load_p10_monitor(logfile=logfile)
     elif setup.beamline == 'NANOMAX':
@@ -3169,7 +3171,7 @@ def motor_positions_cristal(logfile, setup, **kwargs):
         print(f'Overriding the defined energy of {setup.energy} by the value in the datafile {energy}')
         setup.energy = energy
         scanned_motor = cristal_load_motor(datafile=logfile, root='/' + group_key, actuator_name='scan_data',
-                                           field_name='actuator_1_1')
+                                           field_name=setup.actuators.get('rocking_angle', 'actuator_1_1'))
         if frames_logical is not None:
             scanned_motor = scanned_motor[np.nonzero(frames_logical)]  # exclude positions corresponding to empty frames
 

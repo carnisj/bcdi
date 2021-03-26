@@ -529,6 +529,8 @@ class Setup(object):
        the motor values.
      - 'offset_inplane': inplane offset of the detector defined as the outer angle in xrayutilities area detector
        calibration.
+     - 'actuators': optional dictionary that can be used to define the entries corresponding to actuators in data files
+       (useful at CRISTAL where the location of data keeps changing)
     """
     def __init__(self, beamline, beam_direction=(1, 0, 0), energy=None, distance=None, outofplane_angle=None,
                  inplane_angle=None, tilt_angle=None, rocking_angle=None, grazing_angle=None, pixel_x=None,
@@ -537,7 +539,7 @@ class Setup(object):
         valid.valid_kwargs(kwargs=kwargs,
                            allowed_kwargs={'direct_beam', 'filtered_data', 'custom_scan', 'custom_images',
                                            'custom_monitor', 'custom_motors', 'sample_inplane', 'sample_outofplane',
-                                           'sample_offsets', 'offset_inplane'},
+                                           'sample_offsets', 'offset_inplane', 'actuators'},
                            name='Setup.__init__')
 
         # kwargs for preprocessing forward CDI data
@@ -549,6 +551,7 @@ class Setup(object):
         self.custom_images = kwargs.get('custom_images', None)  # list or tuple
         self.custom_monitor = kwargs.get('custom_monitor', None)  # list or tuple
         self.custom_motors = kwargs.get('custom_motors', None)  # dictionnary
+        self.actuators = kwargs.get('actuators', {})  # list or tuple
         # kwargs for xrayutilities, delegate the test on their values to xrayutilities
         self.sample_inplane = kwargs.get('sample_inplane', (1, 0, 0))
         self.sample_outofplane = kwargs.get('sample_outofplane', (0, 0, 1))
@@ -566,6 +569,19 @@ class Setup(object):
         self.grazing_angle = grazing_angle
         self.pixel_x = pixel_x
         self.pixel_y = pixel_y
+
+    @property
+    def actuators(self):
+        """
+        Optional dictionary that can be used to define the entries corresponding to actuators in data files
+        (useful at CRISTAL where the location of data keeps changing)
+        """
+        return self._actuators
+
+    @actuators.setter
+    def actuators(self, value):
+        valid.valid_container(value, container_types=dict, item_types=str, name='Setup.actuators')
+        self._actuators = value
 
     @property
     def beam_direction(self):

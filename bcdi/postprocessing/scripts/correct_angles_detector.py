@@ -32,8 +32,8 @@ For Pt samples it gives also an estimation of the temperature based on the therm
 Input: direct beam and Bragg peak position, sample to detector distance, energy
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 11
-root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
+scan = 78
+root_folder = "D:/data/CRISTAL_March2021/"
 sample_name = "S"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
@@ -43,8 +43,11 @@ debug = False  # True to see more plots
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'CRISTAL'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
+actuators = {'rocking_angle': 'actuator_1_3'}
+# Optional dictionary that can be used to define the entries corresponding to actuators in data files
+# (useful at CRISTAL where the location of data keeps changing)
 is_series = False  # specific to series measurement at P10
 
 custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
@@ -56,8 +59,8 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 
-rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = 'l5'
+rocking_angle = "inplane"  # "outofplane" or "inplane"
+specfile_name = ''
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
 # template for all other beamlines: ''
@@ -71,9 +74,9 @@ roi_detector = None  # [y_bragg-290, y_bragg+290, x_bragg-290, x_bragg+290]
 # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430
 # leave it as None to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 high_threshold = 1000000  # everything above will be considered as hotpixel
-hotpixels_file = None  # root_folder + 'hotpixels_HS4670.npz'  # non empty file path or None
-flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+hotpixels_file = root_folder + 'hotpixels_cristal.npz'  # root_folder + 'hotpixels_HS4670.npz'  # non empty file path or None
+flatfield_file = None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
+template_imagefile = 'mgphi-2021_%04d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -87,12 +90,12 @@ template_imagefile = 'data_mpx4_%05d.edf.gz'
 beam_direction = (1, 0, 0)  # beam along z
 sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
-directbeam_x = 154  # x horizontal,  cch2 in xrayutilities
-directbeam_y = 208  # y vertical,  cch1 in xrayutilities
+directbeam_x = 171  # x horizontal,  cch2 in xrayutilities
+directbeam_y = 183  # y vertical,  cch1 in xrayutilities
 direct_inplane = 0.0  # outer angle in xrayutilities
 direct_outofplane = 0.0
-sdd = 0.50678  # sample to detector distance in m
-energy = 9000  # in eV, offset of 6eV at ID01
+sdd = 0.914  # sample to detector distance in m
+energy = 8500  # in eV, offset of 6eV at ID01
 ################################################
 # parameters related to temperature estimation #
 ################################################
@@ -117,7 +120,7 @@ detector = exp.Detector(name=detector, template_imagefile=template_imagefile, ro
 setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                   beam_direction=beam_direction, custom_scan=custom_scan, custom_images=custom_images,
                   custom_monitor=custom_monitor, custom_motors=custom_motors, pixel_x=detector.pixelsize_x,
-                  pixel_y=detector.pixelsize_y, sample_offsets=sample_offsets)
+                  pixel_y=detector.pixelsize_y, sample_offsets=sample_offsets, actuators=actuators)
 
 ########################################
 # Initialize the paths and the logfile #

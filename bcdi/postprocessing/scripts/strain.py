@@ -49,8 +49,8 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space,
 or data[z, y, x] for real space
 """
 
-scan = 1058  # spec scan number
-root_folder = "D:/data/SIXS_Fev2021/"  # folder of the experiment, where all scans are stored
+scan = 74  # spec scan number
+root_folder = "D:/data/CRISTAL_March2021/"  # folder of the experiment, where all scans are stored
 save_dir = None  # images will be saved here, leave it to None otherwise (default to data directory's parent)
 sample_name = "S"  # "S"  # string in front of the scan number in the folder name.
 comment = ''  # comment in filenames, should start with _
@@ -62,13 +62,13 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [200, 400, 300]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [256, 256, 360]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-phasing_binning = (1, 2, 2)  # binning factor applied during phase retrieval
+phasing_binning = (1, 1, 1)  # binning factor applied during phase retrieval
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension used in preprocessing (not phase retrieval)
 output_size = (150, 150, 150)  # (z, y, x) Fix the size of the output array, leave it as () otherwise
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
-fix_voxel = 6  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
+fix_voxel = None # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
 # provided, the voxel size will be identical is all 3 directions. Set it to None to use the default voxel size
 # (calculated from q values, it will be different in each dimension).
 plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the support in each direction when cropping,
@@ -92,19 +92,22 @@ centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max th
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = "SIXS_2019"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
+beamline = "CRISTAL"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
+actuators = {'rocking_angle': 'actuator_1_3'}
+# Optional dictionary that can be used to define the entries corresponding to actuators in data files
+# (useful at CRISTAL where the location of data keeps changing)
 rocking_angle = "inplane"  # # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
 # around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 1.2  # 1.26  # sample to detector distance in m
+sdd = 0.914  # 1.26  # sample to detector distance in m
 energy = 8500  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
-outofplane_angle = 0  # detector angle in deg (rotation around x outboard): delta ID01, delta SIXS, gamma 34ID
+outofplane_angle = 20.8447  # detector angle in deg (rotation around x outboard): delta ID01, delta SIXS, gamma 34ID
 # this is the true angle, corrected for the direct beam position
-inplane_angle = 35.8  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
+inplane_angle = 39.1953  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
 # this is the true angle, corrected for the direct beam position
-tilt_angle = 0.6/201  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 0.00469  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # the sample offsets will be subtracted to the motor values
 specfile_name = None  # root_folder + 'alias_dict_2021.txt'
@@ -114,10 +117,10 @@ specfile_name = None  # root_folder + 'alias_dict_2021.txt'
 ###############################
 # detector related parameters #
 ###############################
-detector = "Merlin"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
-template_imagefile = 'Pt_YSZ_ascan_mu_%05d.nxs'
+template_imagefile = 'mgphi-2021_%04d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -154,11 +157,11 @@ save_support = False  # True to save the non-orthogonal support for later phase 
 save_labframe = False  # True to save the data in the laboratory frame (before rotations)
 save = True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug = False  # set to True to show all plots for debugging
-roll_modes = (0, 0, -1)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
+roll_modes = (0, 0, 0)   # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
-align_q = True  # if True rotates the crystal to align q it along one axis of the array
+align_q = False  # if True rotates the crystal to align q it along one axis of the array
 ref_axis_q = "x"  # q will be aligned along that axis
 align_axis = False  # if True rotates the crystal to align axis_to_align along ref_axis
 ref_axis = "y"  # will align axis_to_align to that axis
@@ -253,7 +256,7 @@ detector = exp.Detector(name=detector, template_imagefile=template_imagefile, bi
 tilt_angle = tilt_angle * preprocessing_binning[0] * phasing_binning[0]
 setup = exp.Setup(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle, inplane_angle=inplane_angle,
                   tilt_angle=tilt_angle, rocking_angle=rocking_angle, distance=sdd, pixel_x=detector.pixelsize_x,
-                  pixel_y=detector.pixelsize_y, sample_offsets=sample_offsets)
+                  pixel_y=detector.pixelsize_y, sample_offsets=sample_offsets, actuators=actuators)
 
 ########################################
 # Initialize the paths and the logfile #

@@ -27,8 +27,8 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 1301
-root_folder = "D:/data/SIXS_2019_Ni/"
+scan = 76
+root_folder = "D:/data/CRISTAL_March2021/"
 sample_name = "S"  # string in front of the scan number in the folder name
 save_dir = None  # images will be saved here, leave it to None otherwise (default to data directory's parent)
 save_mask = False  # set to True to save the mask
@@ -38,9 +38,11 @@ binning = (1, 1, 1)  # binning to apply to the data
 ###############################
 # beamline related parameters #
 ###############################
-beamline = 'SIXS_2019'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'CRISTAL'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX'
-
+actuators = {'rocking_angle': 'actuator_1_3'}
+# Optional dictionary that can be used to define the entries corresponding to actuators in data files
+# (useful at CRISTAL where the location of data keeps changing)
 custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
@@ -52,7 +54,7 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 
 rocking_angle = "inplane"  # "outofplane" or "inplane"
 is_series = False  # specific to series measurement at P10
-specfile_name = root_folder + 'alias_dict_2020.txt'
+specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -63,7 +65,7 @@ specfile_name = root_folder + 'alias_dict_2020.txt'
 detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M" or 'Merlin'
 x_bragg = 134  # horizontal pixel number of the Bragg peak, leave None for automatic detection (using the max)
 y_bragg = 162  # vertical pixel number of the Bragg peak, leave None for automatic detection (using the max)
-roi_detector = [y_bragg - 100, y_bragg + 100, x_bragg - 100, x_bragg + 100]
+roi_detector = None  # [y_bragg - 100, y_bragg + 100, x_bragg - 100, x_bragg + 100]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
@@ -71,9 +73,9 @@ roi_detector = [y_bragg - 100, y_bragg + 100, x_bragg - 100, x_bragg + 100]
 # leave None to use the full detector. Use with center_fft='skip' if you want this exact size.
 peak_method = 'max'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 high_threshold = 150000  # everything above will be considered as hotpixel
-hotpixels_file = ''  # root_folder + 'merlin_mask_190222_14keV.h5'  #
+hotpixels_file = root_folder + 'hotpixels_cristal.npz'  # root_folder + 'merlin_mask_190222_14keV.h5'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'Pt_ascan_mu_%05d.nxs'
+template_imagefile = 'mgphi-2021_%04d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -124,7 +126,7 @@ detector = exp.Detector(name=detector, template_imagefile=template_imagefile, ro
 # Initialize setup #
 ####################
 setup = exp.Setup(beamline=beamline, rocking_angle=rocking_angle, custom_scan=custom_scan, custom_images=custom_images,
-                  custom_monitor=custom_monitor, custom_motors=custom_motors)
+                  custom_monitor=custom_monitor, custom_motors=custom_motors, actuators=actuators)
 
 ########################################
 # print the current setup and detector #
