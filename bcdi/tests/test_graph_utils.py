@@ -7,11 +7,10 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-from numbers import Real
 import numpy as np
 import os
 import pathlib
-import bcdi.graph.graph_utils as gu
+from .context import gu
 
 
 def run_tests(test_class):

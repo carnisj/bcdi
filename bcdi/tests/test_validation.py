@@ -9,7 +9,7 @@
 import unittest
 from numbers import Real
 import numpy as np
-import bcdi.utils.validation as valid
+from .context import valid
 
 
 def run_tests(test_class):
