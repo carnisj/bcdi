@@ -41,6 +41,7 @@ setup(name='bcdi', version='0.1.0',
                'bcdi/graph/scripts/visu_2Dslice.py',
                'bcdi/postprocessing/scripts/amp_histogram.py',
                'bcdi/postprocessing/scripts/angular_profile.py',
+               'bcdi/scripts/postprocessing/bcdi_blurring_function'
                'bcdi/postprocessing/scripts/compare_CDI_SEM.py',
                'bcdi/postprocessing/scripts/correct_angles_detector.py',
                'bcdi/postprocessing/scripts/bulk_surface_strain.py',
