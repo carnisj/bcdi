@@ -9,17 +9,16 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
 import tkinter as tk
 from tkinter import filedialog
-import gc
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
 
 helptext = """
-Calculate the mean and variance of the strain, for all voxels in the support
+Load a 3D BCDI reconstruction (.npz file) containing the fields 'amp' and 'strain'. Calculate the mean and variance of 
+the strain, for all voxels in the support.
 """
 
 scan = 1301  # spec scan number
