@@ -11,10 +11,18 @@ Scripts Reference
 Algorithms
 ----------
 
-flatten_intensity.py
-^^^^^^^^^^^^^^^^^^^^
+bcdi_flatten_intensity.py
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/algorithms/scripts/flatten_intensity.py
+.. literalinclude:: ../../bcdi/scripts/algorithms/bcdi_flatten_intensity.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_blurring_function.py
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/algorithms/bcdi_blurring_function.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -22,26 +30,26 @@ flatten_intensity.py
 Experiment
 ----------
 
-ccd_calib.py
-^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/experiment/scripts/ccd_calib.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-ccd_calib_cristal.py
-^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/experiment/scripts/ccd_calib_cristal.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-ccd_calib_sixs.py
+bcdi_ccd_calib.py
 ^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/experiment/scripts/ccd_calib_sixs.py
+.. literalinclude:: ../../bcdi/scripts/experiment/bcdi_ccd_calib.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_ccd_calib_cristal.py
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/experiment/bcdi_ccd_calib_cristal.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_ccd_calib_sixs.py
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/experiment/bcdi_ccd_calib_sixs.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -51,18 +59,18 @@ ccd_calib_sixs.py
 Facet recognition
 -----------------
 
-facet_strain.py
-^^^^^^^^^^^^^^^
+bcdi_facet_strain.py
+^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/facet_recognition/scripts/facet_strain.py
+.. literalinclude:: ../../bcdi/scripts/facet_recognition/bcdi_facet_strain.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-polarplot.py
-^^^^^^^^^^^^
+bcdi_polarplot.py
+^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/facet_recognition/scripts/polarplot.py
+.. literalinclude:: ../../bcdi/scripts/facet_recognition/bcdi_polarplot.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -72,83 +80,82 @@ polarplot.py
 Graph
 -----
 
-3Dobject_movie.py
-^^^^^^^^^^^^^^^^^
+bcdi_3D_object_movie.py
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/graph/scripts/3Dobject_movie.py
+.. literalinclude:: ../../bcdi/scripts/graph/bcdi_3D_object_movie.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-linecut_diffpattern.py
-^^^^^^^^^^^^^^^^^^^^^^
+bcdi_linecut_diffpattern.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/graph/scripts/linecut_diffpattern.py
+.. literalinclude:: ../../bcdi/scripts/graph/bcdi_linecut_diffpattern.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-merge3D_qspace.py
-^^^^^^^^^^^^^^^^^
+bcdi_merge_3D_qspace.py
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/graph/scripts/merge3D_qspace.py
+.. literalinclude:: ../../bcdi/scripts/graph/bcdi_merge_3D_qspace.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-scan_analysis.py
+bcdi_scan_analysis.py
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/graph/bcdi_scan_analysis.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_scan_movie.py
+^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/graph/bcdi_scan_movie.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_view_ccf.py
 ^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/graph/scripts/scan_analysis.py
+.. literalinclude:: ../../bcdi/scripts/graph/bcdi_view_ccf.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-scan_movie.py
-^^^^^^^^^^^^^
+bcdi_view_ccf_map.py
+^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/graph/scripts/scan_movie.py
+.. literalinclude:: ../../bcdi/scripts/graph/bcdi_view_ccf_map.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-view_ccf.py
-^^^^^^^^^^^
+bcdi_view_mesh.py
+^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/graph/scripts/view_ccf.py
+.. literalinclude:: ../../bcdi/scripts/graph/bcdi_view_mesh.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-view_ccf_map.py
-^^^^^^^^^^^^^^^
+bcdi_view_psf.py
+^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/graph/scripts/view_ccf_map.py
+.. literalinclude:: ../../bcdi/scripts/graph/bcdi_view_psf.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
+bcdi_visu_2D_slice.py
+^^^^^^^^^^^^^^^^^^^^^
 
-view_mesh.py
-^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/graph/scripts/view_mesh.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-view_psf.py
-^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/graph/scripts/view_psf.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-visu_2Dslice.py
-^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/graph/scripts/visu_2Dslice.py
+.. literalinclude:: ../../bcdi/scripts/graph/bcdi_visu_2D_slice.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -158,82 +165,82 @@ visu_2Dslice.py
 Preprocessing
 -------------
 
-apodize.py
-^^^^^^^^^^
+bcdi_apodize.py
+^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/apodize.py
+.. literalinclude:: ../../bcdi/scripts/preprocessing/bcdi_apodize.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-concatenate_scans.py
-^^^^^^^^^^^^^^^^^^^^
+bcdi_concatenate_scans.py
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/concatenate_scans.py
+.. literalinclude:: ../../bcdi/scripts/preprocessing/bcdi_concatenate_scans.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-interpolate_cdi.py
-^^^^^^^^^^^^^^^^^^
+bcdi_interpolate_CDI.py
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/interpolate_cdi.py
+.. literalinclude:: ../../bcdi/scripts/preprocessing/bcdi_interpolate_CDI.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-preprocess_bcdi.py
-^^^^^^^^^^^^^^^^^^
+bcdi_preprocess_BCDI.py
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/preprocess_bcdi.py
+.. literalinclude:: ../../bcdi/scripts/preprocessing/bcdi_preprocess_BCDI.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-preprocess_cdi.py
-^^^^^^^^^^^^^^^^^
+bcdi_preprocess_CDI.py
+^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/preprocess_cdi.py
+.. literalinclude:: ../../bcdi/scripts/preprocessing/bcdi_preprocess_CDI.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-read_bcdi_data.py
-^^^^^^^^^^^^^^^^^
+bcdi_read_BCDI_scan.py
+^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/read_bcdi_data.py
+.. literalinclude:: ../../bcdi/scripts/preprocessing/bcdi_read_BCDI_scan.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-read_edf.py
-^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/preprocessing/scripts/read_edf.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-read_data_P10.py
+bcdi_read_edf.py
 ^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/read_data_P10.py
+.. literalinclude:: ../../bcdi/scripts/preprocessing/bcdi_read_edf.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-rescale_support.py
-^^^^^^^^^^^^^^^^^^
+bcdi_read_data_P10.py
+^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/rescale_support.py
+.. literalinclude:: ../../bcdi/scripts/preprocessing/bcdi_read_data_P10.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-rotate_scan.py
-^^^^^^^^^^^^^^
+bcdi_rescale_support.py
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/preprocessing/scripts/rotate_scan.py
+.. literalinclude:: ../../bcdi/scripts/preprocessing/bcdi_rescale_support.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_rotate_scan.py
+^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/preprocessing/bcdi_rotate_scan.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -244,132 +251,123 @@ Postprocessing
 --------------
 
 
-amp_histogram.py
+bcdi_amp_histogram.py
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_amp_histogram.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_angular_profile.py
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_angular_profile.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_bulk_surface_strain.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_bulk_surface_strain.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_compare_BCDI_SEM.py
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_compare_BCDI_SEM.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_correct_angles_detector.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_correct_angles_detector.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_line_profile.py
+^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_line_profile.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_modes_decomposition.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_modes_decomposition.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_post_process_BCDI_2D.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_post_process_BCDI_2D.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_prtf_BCDI.py
+^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_prtf_BCDI.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+   
+bcdi_prtf_BCDI_2D.py
+^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_prtf_BCDI_2D.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_prtf_CDI.py
 ^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/postprocessing/scripts/amp_histogram.py
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_prtf_CDI.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-
-angular_profile.py
-^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/angular_profile.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-bcdi_blurring_function.py
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_blurring_function.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-bulk_surface_strain.py
+bcdi_rocking_curves.py
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/postprocessing/scripts/bulk_surface_strain.py
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_rocking_curves.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-compare_CDI_SEM.py
-^^^^^^^^^^^^^^^^^^
+bcdi_strain.py
+^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/postprocessing/scripts/compare_CDI_SEM.py
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_strain.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-correct_angles_detector.py
-^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/postprocessing/scripts/correct_angles_detector.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
+bcdi_strain_mean_var_rms.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-line_profile.py
-^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/line_profile.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-modes_decomposition.py
-^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/modes_decomposition.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-post_process_CDI_2D.py
-^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/post_process_CDI_2D.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-prtf_bcdi.py
-^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/prtf_bcdi.py
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_strain_mean_var_rms.py
    :start-after: helptext
    :end-before: """
    :language: rst
    
-prtf_bcdi_2D.py
-^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/prtf_bcdi_2D.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-prtf_cdi.py
-^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/prtf_cdi.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-rocking_curves.py
-^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/rocking_curves.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-strain.py
-^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/strain.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-
-strain_mean_var_rms.py
+bcdi_volume_phasing.py
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/postprocessing/scripts/strain_mean_var_rms.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-   
-volume_phasing.py
-^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/postprocessing/scripts/volume_phasing.py
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_volume_phasing.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -379,58 +377,59 @@ volume_phasing.py
 Publication
 -----------
 
-coefficient_variation.py
-^^^^^^^^^^^^^^^^^^^^^^^^
+bcdi_coefficient_variation.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/publication/scripts/coefficient_variation.py
+.. literalinclude:: ../../bcdi/scripts/publication/bcdi_coefficient_variation.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-plot_strain.py
-^^^^^^^^^^^^^^
+bcdi_plot_strain.py
+^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/publication/scripts/plot_strain.py
+.. literalinclude:: ../../bcdi/scripts/publication/bcdi_plot_strain.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-compa_simu_exp.py
-^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/publication/scripts/compa_simu_exp.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-plot_diffpattern_2d.py
+bcdi_compa_simu_exp.py
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/publication/scripts/plot_diffpattern_2d.py
+.. literalinclude:: ../../bcdi/scripts/publication/bcdi_compa_simu_exp.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-diffpattern_isosurf_3d.py
-^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/publication/scripts/diffpattern_isosurf_3d.py
+bcdi_diffpattern_isosurf_3D.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/publication/bcdi_diffpattern_isosurf_3D.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-realspace_isosurf_bcdi.py
-^^^^^^^^^^^^^^^^^^^^^^^^^
+bcdi_plot_diffpattern_2D.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/publication/scripts/realspace_isosurf_bcdi.py
+.. literalinclude:: ../../bcdi/scripts/publication/bcdi_plot_diffpattern_2D.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-realspace_isosurf_cdi.py
-^^^^^^^^^^^^^^^^^^^^^^^^
+bcdi_realspace_isosurf_BCDI.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/publication/scripts/realspace_isosurf_cdi.py
+.. literalinclude:: ../../bcdi/scripts/publication/bcdi_realspace_isosurf_BCDI.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_realspace_isosurf_CDI.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/publication/bcdi_realspace_isosurf_CDI.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -440,66 +439,66 @@ realspace_isosurf_cdi.py
 Simulation
 ----------
 
-diffraction_angles.py
-^^^^^^^^^^^^^^^^^^^^^
+bcdi_diffraction_angles.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/simulation/scripts/diffraction_angles.py
+.. literalinclude:: ../../bcdi/scripts/simulation/bcdi_diffraction_angles.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-domain_orientation.py
-^^^^^^^^^^^^^^^^^^^^^
+bcdi_domain_orientation.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/simulation/scripts/domain_orientation.py
+.. literalinclude:: ../../bcdi/scripts/simulation/bcdi_domain_orientation.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-kinematic_sum_forloop.py
-^^^^^^^^^^^^^^^^^^^^^^^^
+bcdi_kinematic_sum_forloop.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/simulation/scripts/kinematic_sum_forloop.py
+.. literalinclude:: ../../bcdi/scripts/simulation/bcdi_kinematic_sum_forloop.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-kinematic_sum_pynx.py
-^^^^^^^^^^^^^^^^^^^^^
+bcdi_kinematic_sum_pynx.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/simulation/scripts/kinematic_sum_pynx.py
+.. literalinclude:: ../../bcdi/scripts/simulation/bcdi_kinematic_sum_pynx.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-plane_angle.py
-^^^^^^^^^^^^^^
+bcdi_plane_angle.py
+^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/simulation/scripts/plane_angle.py
+.. literalinclude:: ../../bcdi/scripts/simulation/bcdi_plane_angle.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-simu_diffpattern_BCDI.py
-^^^^^^^^^^^^^^^^^^^^^^^^
+bcdi_simu_diffpattern_BCDI.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/simulation/scripts/simu_diffpattern_BCDI.py
+.. literalinclude:: ../../bcdi/scripts/simulation/bcdi_simu_diffpattern_BCDI.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-simu_diffpattern_CDI.py
-^^^^^^^^^^^^^^^^^^^^^^^
+bcdi_simu_diffpattern_CDI.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/simulation/scripts/simu_diffpattern_CDI.py
+.. literalinclude:: ../../bcdi/scripts/simulation/bcdi_simu_diffpattern_CDI.py
    :start-after: helptext
    :end-before: """
    :language: rst
    
-simu_signe_phase.py
-^^^^^^^^^^^^^^^^^^^
+bcdi_simu_signe_phase.py
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/simulation/scripts/simu_signe_phase.py
+.. literalinclude:: ../../bcdi/scripts/simulation/bcdi_simu_signe_phase.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -512,79 +511,79 @@ Utilities
 bcdi_apodize.py
 ^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/bcdi_apodize.py
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_apodize.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-angular_avg_3Dto1D.py
-^^^^^^^^^^^^^^^^^^^^^
+bcdi_angular_avg_3Dto1D.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/angular_avg_3Dto1D.py
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_angular_avg_3Dto1D.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-calibration_grid_SEM.py
-^^^^^^^^^^^^^^^^^^^^^^^
+bcdi_calibration_grid_SEM.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/calibration_grid_SEM.py
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_calibration_grid_SEM.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-center_of_rotation.py
-^^^^^^^^^^^^^^^^^^^^^
+bcdi_center_of_rotation.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/center_of_rotation.py
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_center_of_rotation.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-correlation_realspace.py
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/correlation_realspace.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-crop_npz.py
-^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/utils/scripts/crop_npz.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-cross_corr_fast_live_macro.py
+bcdi_correlation_realspace.py
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/cross_corr_fast_live_macro.py
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_correlation_realspace.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-fit_1Dcurve.py
-^^^^^^^^^^^^^^
+bcdi_crop_npz.py
+^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/fit_1Dcurve.py
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_crop_npz.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-fit_1D_background.py
+bcdi_cross_corr_fast_live.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_cross_corr_fast_live.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_fit_1D_curve.py
 ^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/fit_1D_background.py
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_fit_1D_curve.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-parse_fio2spec.py
-^^^^^^^^^^^^^^^^^
+bcdi_fit_1D_background.py
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/parse_fio2spec.py
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_fit_1D_background.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_parse_fio2spec.py
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_parse_fio2spec.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -592,15 +591,15 @@ parse_fio2spec.py
 bcdi_primes.py
 ^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/bcdi_primes.py
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_primes.py
    :start-after: helptext
    :end-before: """
    :language: rst
 
-save_to_mat.py
-^^^^^^^^^^^^^^
+bcdi_save_to_mat.py
+^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/utils/scripts/save_to_mat.py
+.. literalinclude:: ../../bcdi/scripts/utils/bcdi_save_to_mat.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -610,34 +609,34 @@ save_to_mat.py
 XCCA
 ----
 
-xcca_3D_map_polar.py
+bcdi_xcca_3D_map_polar.py
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/xcca/bcdi_xcca_3D_map_polar.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_xcca_3D_map_rect.py
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/xcca/bcdi_xcca_3D_map_rect.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_xcca_3D_polar.py
+^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/xcca/bcdi_xcca_3D_polar.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_xcca_3D_rect.py
 ^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D_map_polar.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-xcca_3D_map_rect.py
-^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D_map_rect.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-xcca_3D_polar.py
-^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D_polar.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-xcca_3D_rect.py
-^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/xcca/scripts/xcca_3D_rect.py
+.. literalinclude:: ../../bcdi/scripts/xcca/bcdi_xcca_3D_rect.py
    :start-after: helptext
    :end-before: """
    :language: rst
