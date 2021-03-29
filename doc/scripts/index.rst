@@ -261,6 +261,14 @@ angular_profile.py
    :end-before: """
    :language: rst
 
+bcdi_blurring_function.py
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/postprocessing/bcdi_blurring_function.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 bulk_surface_strain.py
 ^^^^^^^^^^^^^^^^^^^^^^
 
