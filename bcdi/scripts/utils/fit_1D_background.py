@@ -14,7 +14,7 @@ plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of
 import tkinter as tk
 from tkinter import filedialog
 import sys
-sys.path.append('D:/myscripts/bcdi/')
+sys.path.append('//')
 import bcdi.utils.utilities as util
 import bcdi.graph.graph_utils as gu
 

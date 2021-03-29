@@ -14,7 +14,7 @@ from lmfit import minimize, Parameters, report_fit
 import tkinter as tk
 from tkinter import filedialog
 import sys
-sys.path.append('D:/myscripts/bcdi/')
+sys.path.append('//')
 import bcdi.utils.utilities as util
 
 helptext = """
