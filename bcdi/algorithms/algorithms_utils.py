@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from numbers import Real
 import numpy as np
 from numpy.fft import fftshift
 from skimage.restoration.deconvolution import richardson_lucy
@@ -13,6 +14,7 @@ import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.validation as valid
 
 
 def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, debugging=False):
@@ -54,7 +56,7 @@ def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, deb
     return im_deconv
 
 
-def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=False):
+def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=False, **kwargs):
     """
     Partial coherence deconvolution using Richardson-Lucy algorithm. See J.N. Clark et al., Nat. Comm. 3, 993 (2012).
 
@@ -62,42 +64,47 @@ def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=Fals
     :param coherent_intensity: estimate of the object measured by a fully coherent illumination
     :param iterations: number of iterations for the Richardson-Lucy algorithm
     :param debugging: True to see plots
+    :param kwargs:
+     - 'scale': scale for the plot, 'linear' or 'log'
+     - 'reciprocal_space': True if the data is in reciprocal space, False otherwise.
+     - 'is_orthogonal': set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
+     - 'vmin' = user defined output array size [nbz, nby, nbx]
+     - 'vmax' = [qx, qz, qy], each component being a 1D array
     :return:
     """
+    validation_name = 'algorithms_utils.psf_rl'
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'scale', 'reciprocal_space', 'is_orthogonal', 'vmin', 'vmax'},
+                       name=validation_name)
+    scale = kwargs.get('scale', 'log')
+    if scale not in {'log', 'linear'}:
+        raise ValueError('"scale" should be either "log" or "linear"')
+    reciprocal_space = kwargs.get('reciprocal_space', True)
+    if not isinstance(reciprocal_space, bool):
+        raise TypeError('"reciprocal_space" should be a boolean')
+    is_orthogonal = kwargs.get('is_orthogonal', True)
+    if not isinstance(is_orthogonal, bool):
+        raise TypeError('"is_orthogonal" should be a boolean')
+    vmin = kwargs.get('vmin', np.nan)
+    valid.valid_item(vmin, allowed_types=Real, name=validation_name)
+    vmax = kwargs.get('vmax', np.nan)
+    valid.valid_item(vmax, allowed_types=Real, name=validation_name)
+
+    # calculate the psf
     psf = np.abs(richardson_lucy(image=measured_intensity, psf=coherent_intensity, iterations=iterations, clip=False))
     psf = (psf / psf.sum()).astype(np.float32)
+
+    # debugging plot
     if debugging:
-        gu.multislices_plot(fftshift(psf), scale='log', sum_frames=False, title='log(psf) in detector frame',
-                            reciprocal_space=True, vmin=-5, is_orthogonal=False, plot_colorbar=True)
+        if scale == 'linear':
+            title = 'psf in detector frame'
+        else:  # 'log'
+            title = 'log(psf) in detector frame'
+
+        gu.multislices_plot(fftshift(psf), scale='log', sum_frames=False, title=title, vmin=vmin, vmax=vmax,
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal,
+                            plot_colorbar=True)
     return psf
 
 
-# def er:
-#     return
-#
-#
-# def hio:
-#     return
-#
-#
-# def hio_or:
-#     return
-# def raar:
-#     return
-
-if __name__ == "__main__":
-    import h5py
-    import matplotlib.pyplot as plt
-
-    datadir = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/maximum_likelihood/'
-    filename = 'modes_ml.h5'
-    h5file = h5py.File(datadir+filename, 'r')
-    group_key = list(h5file.keys())[0]
-    subgroup_key = list(h5file[group_key])
-    dataset = h5file['/' + group_key + '/' + subgroup_key[0] + '/data'][0]  # select only first mode
-    dataset = abs(dataset) / abs(dataset).max()
-    # my_psf = pu.tukey_window((10, 10, 10), alpha=(0.6, 0.6, 0.6))
-    output = deconvolution_rl(dataset, psf=None, iterations=10, debugging=True)
-    # psf = pu.gaussian_window(window_shape=(3, 3, 3), sigma=0.7, mu=0.0, debugging=False)
-    # output = deconvolution_rl(output, psf=psf, iterations=20, debugging=True)
-    plt.show()
+# if __name__ == "__main__":
