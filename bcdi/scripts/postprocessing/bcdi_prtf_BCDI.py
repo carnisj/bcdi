@@ -55,9 +55,9 @@ crop_roi = None  # list of 6 integers, ROI used if 'center_auto' was True in PyN
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
 align_pattern = False  # if True, will align the retrieved diffraction amplitude with the measured one
 flag_interact = False  # True to calculate interactively the PRTF along particular directions of reciprocal space
-############################
+#######################
 # beamline parameters #
-############################
+#######################
 beamline = 'CRISTAL'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 actuators = {'rocking_angle': 'actuator_1_1'}
@@ -83,9 +83,9 @@ template_imagefile = 'mgphi-2021_%04d.nxs'
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-################################################################################
+#######################################
 # parameters for calculating q values #
-################################################################################
+#######################################
 sdd = 0.914  # sample to detector distance in m
 energy = 8500   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x

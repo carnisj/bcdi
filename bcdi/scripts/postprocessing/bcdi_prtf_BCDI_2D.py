@@ -55,9 +55,9 @@ crop_roi = [3, 255, 3, 387]  # ROI used if 'center_auto' was True in PyNX, leave
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
 align_pattern = False  # if True, will align the retrieved diffraction amplitude with the measured one
 slicing_axis = 1  # 0 for first axis, 1 for second, 2 for third
-############################
+#######################
 # beamline parameters #
-############################
+#######################
 beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 actuators = {}
@@ -84,9 +84,9 @@ template_imagefile = 'alignment_12_%04d.edf.gz'
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-################################################################################
+#######################################
 # parameters for calculating q values #
-################################################################################
+#######################################
 sdd = 1.3  # sample to detector distance in m
 energy = 9000   # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
