@@ -101,7 +101,7 @@ def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=Fals
         else:  # 'log'
             title = 'log(psf) in detector frame'
 
-        gu.multislices_plot(fftshift(psf), scale='log', sum_frames=False, title=title, vmin=vmin, vmax=vmax,
+        gu.multislices_plot(fftshift(psf), scale=scale, sum_frames=False, title=title, vmin=vmin, vmax=vmax,
                             reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal,
                             plot_colorbar=True)
     return psf
