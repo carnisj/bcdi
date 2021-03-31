@@ -156,7 +156,7 @@ def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
         im_deconv = guess
     else:
         im_deconv = np.full(image.shape, 0.5)
-    psf[psf == 0] += 1e-10
+
     psf_mirror = psf[::-1, ::-1]
 
     for _ in range(iterations):
