@@ -9,7 +9,7 @@
 from numbers import Real
 import numpy as np
 from numpy.fft import fftshift
-from skimage.restoration.deconvolution import richardson_lucy
+from scipy.signal import fftconvolve, convolve
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -68,13 +68,15 @@ def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=Fals
      - 'scale': scale for the plot, 'linear' or 'log'
      - 'reciprocal_space': True if the data is in reciprocal space, False otherwise.
      - 'is_orthogonal': set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
-     - 'vmin' = user defined output array size [nbz, nby, nbx]
-     - 'vmax' = [qx, qz, qy], each component being a 1D array
+     - 'vmin' = lower boundary for the colorbar. Float or tuple of 3 floats
+     - 'vmax' = [higher boundary for the colorbar. Float or tuple of 3 floats
+     - 'guess': ndarray, initial guess for the psf, of the same shape as measured_intensity
     :return:
     """
     validation_name = 'algorithms_utils.psf_rl'
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'scale', 'reciprocal_space', 'is_orthogonal', 'vmin', 'vmax'},
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'scale', 'reciprocal_space', 'is_orthogonal', 'vmin', 'vmax',
+                                                      'guess'},
                        name=validation_name)
     scale = kwargs.get('scale', 'log')
     if scale not in {'log', 'linear'}:
@@ -89,9 +91,16 @@ def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=Fals
     valid.valid_item(vmin, allowed_types=Real, name=validation_name)
     vmax = kwargs.get('vmax', np.nan)
     valid.valid_item(vmax, allowed_types=Real, name=validation_name)
+    guess = kwargs.get('guess', None)
+    if guess is not None:
+        if not isinstance(guess, np.ndarray):
+            raise TypeError(f"guess should be a ndarray, got {type(guess)}")
+        if guess.shape != measured_intensity.shape:
+            raise ValueError('the guess array should have the same shape as measured_intensity')
 
     # calculate the psf
-    psf = np.abs(richardson_lucy(image=measured_intensity, psf=coherent_intensity, iterations=iterations, clip=False))
+    psf = np.abs(richardson_lucy(image=measured_intensity, psf=coherent_intensity, iterations=iterations, clip=False,
+                                 guess=guess))
     psf = (psf / psf.sum()).astype(np.float32)
 
     # debugging plot
@@ -105,6 +114,60 @@ def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=Fals
                             reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal,
                             plot_colorbar=True)
     return psf
+
+
+def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
+    """
+    Richardson-Lucy algorithm as implemented in scikit-image.restoration.deconvolution with an additional parameter for
+    the initial guess of the psf.
+
+    :param image: ndarray, input degraded image (can be N dimensional).
+    :param psf: ndarray, the point spread function.
+    :param iterations: int, number of iterations. This parameter plays the role of regularisation.
+    :param clip: boolean. If true, pixel values of the result above 1 or under -1 are thresholded for skimage
+     pipeline compatibility.
+    :param guess: ndarray, the initial guess for the deconvoluted image. Leave None to use the default
+     (flat array of 0.5)
+    :return: ndarray, the deconvolved image.
+    """
+    # compute the times for direct convolution and the fft method. The fft is of
+    # complexity O(N log(N)) for each dimension and the direct method does
+    # straight arithmetic (and is O(n*k) to add n elements k times)
+    direct_time = np.prod(image.shape + psf.shape)
+    fft_time = np.sum([n*np.log(n) for n in image.shape + psf.shape])
+
+    # see whether the fourier transform convolution method or the direct
+    # convolution method is faster (discussed in scikit-image PR #1792)
+    time_ratio = 40.032 * fft_time / direct_time
+
+    if time_ratio <= 1 or len(image.shape) > 2:
+        convolve_method = fftconvolve
+    else:
+        convolve_method = convolve
+
+    image = image.astype(np.float)
+    psf = psf.astype(np.float)
+
+    if guess is not None:
+        if not isinstance(guess, np.ndarray):
+            raise TypeError(f"guess should be a ndarray, got {type(guess)}")
+        if guess.shape != image.shape:
+            raise ValueError('the guess array should have the same shape as the image')
+        im_deconv = guess
+    else:
+        im_deconv = np.full(image.shape, 0.5)
+    psf[psf == 0] += 1e-10
+    psf_mirror = psf[::-1, ::-1]
+
+    for _ in range(iterations):
+        relative_blur = image / convolve_method(im_deconv, psf, 'same')
+        im_deconv *= convolve_method(relative_blur, psf_mirror, 'same')
+
+    if clip:
+        im_deconv[im_deconv > 1] = 1
+        im_deconv[im_deconv < -1] = -1
+
+    return im_deconv
 
 
 # if __name__ == "__main__":
