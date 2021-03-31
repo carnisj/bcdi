@@ -1385,9 +1385,9 @@ class Setup(object):
             nz_output, ny_output, nx_output = nbz, nby, nbx
 
         if verbose:
-            print(f"interpolation method = '{method_shape}':  "
-                  f"initial shape = ({nbz},{nby},{nbx}), output shape = ({nz_output},{ny_output},{nx_output})"
-                  f"dqx={dq_along_z}(1/nm) dqz=={dq_along_y}(1/nm), dqy={dq_along_x}(1/nm) ")
+            print(f"\ninterpolation method = '{method_shape}':"
+                  f"\n    initial shape = ({nbz},{nby},{nbx})\n    output shape = ({nz_output},{ny_output},{nx_output})"
+                  f"\n    sampling in q (1/nm): dqx = {dq_along_z:.5f}, dqz = {dq_along_y:.5f}, dqy = {dq_along_x:.5f}")
         # this assumes that the direct beam was at the center of the array
         # TODO : correct this if the position of the direct beam is provided
 
