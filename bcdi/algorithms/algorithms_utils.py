@@ -23,7 +23,7 @@ def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, deb
     where PSF is described as the impulse response of the optical system.
 
     :param image: image to be deconvoluted
-    :param psf: psf to be used as a first guess
+    :param psf: ndarray, psf if known. Leave None to use a Gaussian kernel of shape psf_shape.
     :param psf_shape: shape of the kernel used for deconvolution
     :param iterations: number of iterations for the Richardson-Lucy algorithm
     :param debugging: True to see plots
