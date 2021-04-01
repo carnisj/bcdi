@@ -17,6 +17,107 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.validation as valid
 
 
+def blind_deconvolution_rl(blurred_object, perfect_object, psf, nb_cycles=10, sub_iterations=10, update_psf_first=True,
+                           debugging=False, **kwargs):
+    """
+    Blind deconvolution using Richardson-Lucy algorithm. Estimates of the perfect object and psf have to be provided.
+    See Figure 1 and equations (4) & (5) in  D. A. Fish et al. J. Opt. Soc. Am. A, 12, 58 (1995).
+
+    :param blurred_object: ndarray, measured object with partial coherent illumination
+    :param perfect_object: ndarray, estimate of the object measured by a fully coherent illumination,
+     same shape as blurred_object
+    :param psf: ndarray, estimate of the psf, same shape as blurred_object
+    :param nb_cycles: number of blind deconvolution interations
+    :param sub_iterations: number of iterations of the Richardson-Lucy algorithm during a single blind iteration
+    :param update_psf_first: bool, if True the psf estimate is updated first and then the perfect object estimate
+    :param debugging: True to see plots
+    :param kwargs:
+     - 'scale': tuple, scale for the plots, 'linear' or 'log'
+     - 'reciprocal_space': bool, True if the data is in reciprocal space, False otherwise.
+     - 'is_orthogonal': bool, True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
+     - 'vmin' = tuple of two floats (np.nan to use default), lower boundary for the colorbars
+     - 'vmax' = tuple of two floats (np.nan to use default), higher boundary for the colorbars
+    :return:
+    """
+    validation_name = 'algorithms_utils.psf_rl'
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'scale', 'reciprocal_space', 'is_orthogonal', 'vmin', 'vmax'},
+                       name=validation_name)
+    scale = kwargs.get('scale', ('linear', 'log'))
+    valid.valid_container(scale, container_types=(tuple, list), length=2, name=validation_name)
+    if not all(val in {'log', 'linear'} for val in scale):
+        raise ValueError('"scale" should be either "log" or "linear"')
+    reciprocal_space = kwargs.get('reciprocal_space', True)
+    if not isinstance(reciprocal_space, bool):
+        raise TypeError('"reciprocal_space" should be a boolean')
+    is_orthogonal = kwargs.get('is_orthogonal', True)
+    if not isinstance(is_orthogonal, bool):
+        raise TypeError('"is_orthogonal" should be a boolean')
+    vmin = kwargs.get('vmin', (np.nan, np.nan))
+    valid.valid_container(vmin, container_types=(tuple, list), item_types=Real, name=validation_name)
+    vmax = kwargs.get('vmax', (np.nan, np.nan))
+    valid.valid_container(vmax, container_types=(tuple, list), item_types=Real, name=validation_name)
+
+    # check parameters
+    if not isinstance(blurred_object, np.ndarray):
+        raise TypeError(f"blurred_object should be a ndarray, got {type(blurred_object)}")
+    if not isinstance(perfect_object, np.ndarray):
+        raise TypeError(f"perfect_object should be a ndarray, got {type(perfect_object)}")
+    if not isinstance(psf, np.ndarray):
+        raise TypeError(f"psf should be a ndarray, got {type(psf)}")
+    if not isinstance(debugging, bool):
+        raise TypeError('"debugging" should be a boolean')
+    if not isinstance(update_psf_first, bool):
+        raise TypeError('"update_psf_first" should be a boolean')
+    if perfect_object.shape != blurred_object.shape or psf.shape != blurred_object.shape:
+        raise ValueError('blurred_object, perfect_object and psf should have the same shape')
+
+    ########################
+    # plot initial guesses #
+    ########################
+    if debugging:
+        gu.multislices_plot(perfect_object, scale=scale[0], sum_frames=False, title='guessed perfect object',
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal, vmin=vmin[0], vmax=vmax[0],
+                            plot_colorbar=True)
+
+        gu.multislices_plot(psf, scale=scale[1], sum_frames=False, title='guessed psf', vmin=vmin[1], vmax=vmax[1],
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal,
+                            plot_colorbar=True)
+
+    ###########################################
+    # loop over the blind deconvolution steps #
+    ###########################################
+    for cycle in range(nb_cycles):
+        if update_psf_first:
+            # update the estimate of the psf
+            psf = richardson_lucy(image=blurred_object, psf=perfect_object, iterations=sub_iterations, clip=False,
+                                  guess=psf)
+            # udpate the estimate of the perfect object
+            perfect_object = richardson_lucy(image=blurred_object, psf=psf, iterations=sub_iterations, clip=True,
+                                             guess=perfect_object)
+        else:
+            # udpate the estimate of the perfect object
+            perfect_object = richardson_lucy(image=blurred_object, psf=psf, iterations=sub_iterations, clip=True,
+                                             guess=perfect_object)
+            # update the estimate of the psf
+            psf = richardson_lucy(image=blurred_object, psf=perfect_object, iterations=sub_iterations, clip=False,
+                                  guess=psf)
+    psf = (psf / psf.sum()).astype(np.float)
+
+    ###############
+    # plot result #
+    ###############
+    if debugging:
+        gu.multislices_plot(perfect_object, scale=scale[0], sum_frames=False, title='retrieved perfect object',
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal, vmin=vmin[0], vmax=vmax[0],
+                            plot_colorbar=True)
+
+        gu.multislices_plot(psf, scale=scale[1], sum_frames=False, title='retrieved psf', vmin=vmin[1], vmax=vmax[1],
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal,
+                            plot_colorbar=True)
+    return psf
+
+
 def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, debugging=False):
     """
     Image deconvolution using Richardson-Lucy algorithm. The algorithm is based on a PSF (Point Spread Function),
@@ -106,11 +207,11 @@ def partial_coherence_rl(measured_intensity, coherent_intensity, iterations=20, 
     # debugging plot
     if debugging:
         if scale == 'linear':
-            title = 'psf in detector frame'
+            title = 'psf'
         else:  # 'log'
-            title = 'log(psf) in detector frame'
+            title = 'log(psf)'
 
-        gu.multislices_plot(fftshift(psf), scale=scale, sum_frames=False, title=title, vmin=vmin, vmax=vmax,
+        gu.multislices_plot(psf, scale=scale, sum_frames=False, title=title, vmin=vmin, vmax=vmax,
                             reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal,
                             plot_colorbar=True)
     return psf
