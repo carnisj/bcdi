@@ -32,11 +32,11 @@ Bragg coherent diffraction imaging. Appl. Phys. Lett. 113, 203101 (2018); https:
 
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/result/"
 savedir = datadir + 'test/'
-isosurface_threshold = 0.45
+isosurface_threshold = 0.2
 phasing_shape = None  # shape of the dataset used during phase retrieval (after an eventual binning in PyNX).
 # tuple of 3 positive integers or None, if None the actual shape will be considered.
-upsampling_factor = 1  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
-rl_iterations = 135   # number of iterations for the Richardson-Lucy algorithm
+upsampling_factor = 2  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
+rl_iterations = 50   # number of iterations for the Richardson-Lucy algorithm
 comment = ''  # string to add to the filename when saving, should start with "_"
 tick_length = 10  # in plots
 tick_width = 2  # in plots
@@ -129,9 +129,11 @@ psf_partial_coh, error = algo.partial_coherence_rl(measured_intensity=obj, coher
                                                    is_orthogonal=True, reciprocal_space=False, guess=psf_guess)
 
 psf_partial_coh = abs(psf_partial_coh) / abs(psf_partial_coh).max()
-
 print(f"error minimum at iteration {np.unravel_index(error.argmin(), shape=(rl_iterations,))}")
 
+###############################################
+# plot the retrieved psf and the error metric #
+###############################################
 gu.multislices_plot(psf_partial_coh, scale='linear', sum_frames=False, title='psf', reciprocal_space=False,
                     is_orthogonal=True, plot_colorbar=True)
 _, ax = plt.subplots(figsize=(12, 9))
@@ -139,5 +141,12 @@ ax.plot(error, 'r.')
 ax.set_yscale('log')
 ax.set_xlabel('iteration number')
 ax.set_ylabel('difference between consecutive iterates')
+
+################
+# save the psf #
+################
+np.savez_compressed(savedir + 'psf.npz', nb_iter=rl_iterations, isosurface_threshold=isosurface_threshold,
+                    upsampling_factor=upsampling_factor)
+
 plt.ioff()
 plt.show()
