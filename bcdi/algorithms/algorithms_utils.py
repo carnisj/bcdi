@@ -6,9 +6,9 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
-from numpy.fft import fftshift
 from scipy.signal import fftconvolve, convolve
 import sys
 sys.path.append('D:/myscripts/bcdi/')
@@ -90,19 +90,19 @@ def blind_deconvolution_rl(blurred_object, perfect_object, psf, nb_cycles=10, su
     for cycle in range(nb_cycles):
         if update_psf_first:
             # update the estimate of the psf
-            psf = richardson_lucy(image=blurred_object, psf=perfect_object, iterations=sub_iterations, clip=False,
-                                  guess=psf)
+            psf, _ = richardson_lucy(image=blurred_object, psf=perfect_object, iterations=sub_iterations, clip=False,
+                                     guess=psf)
             # udpate the estimate of the perfect object
-            perfect_object = richardson_lucy(image=blurred_object, psf=psf, iterations=sub_iterations, clip=True,
-                                             guess=perfect_object)
+            perfect_object, _ = richardson_lucy(image=blurred_object, psf=psf, iterations=sub_iterations, clip=True,
+                                                guess=perfect_object)
         else:
             # udpate the estimate of the perfect object
-            perfect_object = richardson_lucy(image=blurred_object, psf=psf, iterations=sub_iterations, clip=True,
-                                             guess=perfect_object)
+            perfect_object, _ = richardson_lucy(image=blurred_object, psf=psf, iterations=sub_iterations, clip=True,
+                                                guess=perfect_object)
             # update the estimate of the psf
-            psf = richardson_lucy(image=blurred_object, psf=perfect_object, iterations=sub_iterations, clip=False,
-                                  guess=psf)
-    psf = (psf / psf.sum()).astype(np.float)
+            psf, _ = richardson_lucy(image=blurred_object, psf=perfect_object, iterations=sub_iterations, clip=False,
+                                     guess=psf)
+    psf = (np.abs(psf) / np.abs(psf).sum()).astype(np.float)
 
     ###############
     # plot result #
@@ -145,8 +145,8 @@ def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, deb
         gu.multislices_plot(array=psf, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window',
                             reciprocal_space=False, is_orthogonal=True)
 
-    im_deconv = np.abs(richardson_lucy(image=image, psf=psf, iterations=iterations, clip=False))
-    im_deconv / im_deconv.max(initial=None) * max_img  # normalize back to max_img
+    im_deconv, _ = np.abs(richardson_lucy(image=image, psf=psf, iterations=iterations, clip=False))
+    im_deconv = abs(im_deconv) / abs(im_deconv).max(initial=None) * max_img  # normalize back to max_img
 
     if debugging:
         image = abs(image) / abs(image).max()
@@ -172,7 +172,7 @@ def partial_coherence_rl(measured_intensity, coherent_intensity, iterations=20, 
      - 'vmin' = lower boundary for the colorbar. Float or tuple of 3 floats
      - 'vmax' = [higher boundary for the colorbar. Float or tuple of 3 floats
      - 'guess': ndarray, initial guess for the psf, of the same shape as measured_intensity
-    :return:
+    :return: the retrieved psf (ndarray), the error metric (1D ndarray of len=iterations)
     """
     validation_name = 'algorithms_utils.psf_rl'
     # check and load kwargs
@@ -200,21 +200,19 @@ def partial_coherence_rl(measured_intensity, coherent_intensity, iterations=20, 
             raise ValueError('the guess array should have the same shape as measured_intensity')
 
     # calculate the psf
-    psf = np.abs(richardson_lucy(image=measured_intensity, psf=coherent_intensity, iterations=iterations, clip=False,
-                                 guess=guess))
-    psf = (psf / psf.sum()).astype(np.float32)
+    psf, error = richardson_lucy(image=measured_intensity, psf=coherent_intensity, iterations=iterations,
+                                 clip=False, guess=guess)
 
-    # debugging plot
+    # optional plot
     if debugging:
-        if scale == 'linear':
-            title = 'psf'
-        else:  # 'log'
-            title = 'log(psf)'
-
-        gu.multislices_plot(psf, scale=scale, sum_frames=False, title=title, vmin=vmin, vmax=vmax,
-                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal,
-                            plot_colorbar=True)
-    return psf
+        gu.multislices_plot(psf, scale=scale, sum_frames=False, title='psf', vmin=vmin, vmax=vmax,
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal, plot_colorbar=True)
+        _, ax = plt.subplots(figsize=(12, 9))
+        ax.plot(error, 'r.')
+        ax.set_yscale('log')
+        ax.set_xlabel('iteration number')
+        ax.set_ylabel('difference between consecutive iterates')
+    return psf, error
 
 
 def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
@@ -229,7 +227,8 @@ def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
      pipeline compatibility.
     :param guess: ndarray, the initial guess for the deconvoluted image. Leave None to use the default
      (flat array of 0.5)
-    :return: ndarray, the deconvolved image.
+    :return: the deconvolved image (ndarray) and the error metric (1D ndarray, len = iterations). The error is given by
+     np.linalg.norm(previous_deconv-new_deconv) / np.linalg.norm(previous_deconv)
     """
     # compute the times for direct convolution and the fft method. The fft is of
     # complexity O(N log(N)) for each dimension and the direct method does
@@ -260,15 +259,18 @@ def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
 
     psf_mirror = psf[::-1, ::-1]
 
-    for _ in range(iterations):
+    error = np.empty(iterations)
+    for idx in range(iterations):
+        previous_deconv = np.copy(im_deconv)
         relative_blur = image / convolve_method(im_deconv, psf, 'same')
         im_deconv *= convolve_method(relative_blur, psf_mirror, 'same')
+        error[idx] = np.linalg.norm(previous_deconv-im_deconv) / np.linalg.norm(previous_deconv)
 
     if clip:
         im_deconv[im_deconv > 1] = 1
         im_deconv[im_deconv < -1] = -1
 
-    return im_deconv
+    return im_deconv, error
 
 
 # if __name__ == "__main__":
