@@ -56,7 +56,7 @@ def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, deb
     return im_deconv
 
 
-def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=False, **kwargs):
+def partial_coherence_rl(measured_intensity, coherent_intensity, iterations=20, debugging=False, **kwargs):
     """
     Partial coherence deconvolution using Richardson-Lucy algorithm. See J.N. Clark et al., Nat. Comm. 3, 993 (2012).
 
