@@ -1133,7 +1133,7 @@ def update_logfile(support, strain_array, summary_file, allpoints_file, label=0,
                        '{0: <10}'.format(str('{:.5f}'.format(plane_normal[2]))) + '\n')
 
 
-def upsample(array, upsampling_factor, voxelsizes, title='', debugging=False):
+def upsample(array, upsampling_factor, voxelsizes=None, title='', debugging=False):
     """
     Upsample array using a factor of upsampling.
 
@@ -1149,6 +1149,8 @@ def upsample(array, upsampling_factor, voxelsizes, title='', debugging=False):
         raise ValueError('Expecting a 2D or 3D array as input')
 
     valid.valid_item(value=upsampling_factor, allowed_types=int, min_included=1, name='utils.upsample')
+    if voxelsizes is None:
+        voxelsizes = (1,) * ndim
     valid.valid_container(voxelsizes, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
                           min_excluded=0, name='utils.upsample')
 
