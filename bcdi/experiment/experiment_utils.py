@@ -580,6 +580,8 @@ class Setup(object):
 
     @actuators.setter
     def actuators(self, value):
+        if value is None:
+            value = {}
         valid.valid_container(value, container_types=dict, item_types=str, name='Setup.actuators')
         self._actuators = value
 
