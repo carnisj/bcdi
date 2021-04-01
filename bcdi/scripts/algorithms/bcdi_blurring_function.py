@@ -145,8 +145,8 @@ ax.set_ylabel('difference between consecutive iterates')
 ################
 # save the psf #
 ################
-np.savez_compressed(savedir + 'psf.npz', nb_iter=rl_iterations, isosurface_threshold=isosurface_threshold,
-                    upsampling_factor=upsampling_factor)
+np.savez_compressed(savedir + 'psf.npz', psf=psf_partial_coh, nb_iter=rl_iterations,
+                    isosurface_threshold=isosurface_threshold, upsampling_factor=upsampling_factor)
 
 plt.ioff()
 plt.show()
