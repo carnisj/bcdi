@@ -32,10 +32,11 @@ Bragg coherent diffraction imaging. Appl. Phys. Lett. 113, 203101 (2018); https:
 
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/result/"
 savedir = datadir + 'test/'
-isosurface_threshold = 0.2
+isosurface_threshold = 0.45
 phasing_shape = None  # shape of the dataset used during phase retrieval (after an eventual binning in PyNX).
 # tuple of 3 positive integers or None, if None the actual shape will be considered.
-upsampling_factor = 2  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
+upsampling_factor = 1  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
+rl_iterations = 135   # number of iterations for the Richardson-Lucy algorithm
 comment = ''  # string to add to the filename when saving, should start with "_"
 tick_length = 10  # in plots
 tick_width = 2  # in plots
@@ -74,6 +75,7 @@ valid.valid_item(tick_length, allowed_types=int, min_excluded=0, name=validation
 valid.valid_item(tick_width, allowed_types=int, min_excluded=0, name=validation_name)
 valid.valid_item(debug, allowed_types=bool, name=validation_name)
 valid.valid_item(min_offset, allowed_types=Real, min_included=0, name=validation_name)
+valid.valid_item(rl_iterations, allowed_types=int, min_excluded=0, name=validation_name)
 
 #########################################################
 # load the 3D recontruction , output of phase retrieval #
@@ -103,14 +105,16 @@ if upsampling_factor > 1:
 ######################
 # define the support #
 ######################
-obj = abs(obj) / abs(obj).max()  # take the normalized modulus of the object
-obj[obj == 0] = min_offset
+obj = abs(obj)
+min_obj = obj[np.nonzero(obj)].min()
+obj = obj / min_obj  # normalize to the non-zero min to avoid dividing by small numbers
+obj[obj == 0] = min_offset  # avoid dividing by 0
 support = np.zeros(obj.shape)
-support[obj >= isosurface_threshold] = 1
+support[obj >= isosurface_threshold * obj.max()] = 1
 support[support == 0] = min_offset
 
 if debug:
-    gu.multislices_plot(obj, sum_frames=False, reciprocal_space=False, is_orthogonal=True, vmin=0, vmax=1,
+    gu.multislices_plot(obj, sum_frames=False, reciprocal_space=False, is_orthogonal=True,
                         plot_colorbar=True, title='normalized modulus')
     gu.multislices_plot(support, sum_frames=False, reciprocal_space=False, is_orthogonal=True, vmin=0, vmax=1, 
                         plot_colorbar=True, title=f'support at threshold {isosurface_threshold}')
@@ -118,20 +122,22 @@ if debug:
 ###################################
 # calculate the blurring function #
 ###################################
-psf_guess = pu.gaussian_window(window_shape=obj.shape, sigma=0.05, mu=0.0, debugging=debug)
-psf_guess = (psf_guess / psf_guess.sum()).astype(np.float)
+psf_guess = pu.gaussian_window(window_shape=obj.shape, sigma=0.1, mu=0.0, debugging=debug)
+psf_guess = psf_guess / min_obj
+psf_partial_coh, error = algo.partial_coherence_rl(measured_intensity=obj, coherent_intensity=support,
+                                                   iterations=rl_iterations, debugging=False, scale='linear',
+                                                   is_orthogonal=True, reciprocal_space=False, guess=psf_guess)
 
-psf_partial_coh, metric = algo.partial_coherence_rl(measured_intensity=obj, coherent_intensity=support, iterations=500,
-                                                    debugging=True, scale='linear', is_orthogonal=True,
-                                                    reciprocal_space=False, guess=psf_guess)
+psf_partial_coh = abs(psf_partial_coh) / abs(psf_partial_coh).max()
 
-# # now that we estimated the psf, apply blind deconvolution
-# psf_partial_coh = (psf_partial_coh / psf_partial_coh.sum()).astype(np.float)
-# perfect_object = np.copy(obj)
-# perfect_object[perfect_object < isosurface_threshold] = 1e-6
-# psf_blind = algo.blind_deconvolution_rl(blurred_object=obj, perfect_object=perfect_object, psf=psf_partial_coh,
-#                                         nb_cycles=1, sub_iterations=50, debugging=True, is_orthogonal=True,
-#                                         reciprocal_space=False, scale=('linear', 'linear'), update_psf_first=False,
-#                                         vmin=(0, np.nan), vmax=(1, np.nan))
+print(f"error minimum at iteration {np.unravel_index(error.argmin(), shape=(rl_iterations,))}")
+
+gu.multislices_plot(psf_partial_coh, scale='linear', sum_frames=False, title='psf', reciprocal_space=False,
+                    is_orthogonal=True, plot_colorbar=True)
+_, ax = plt.subplots(figsize=(12, 9))
+ax.plot(error, 'r.')
+ax.set_yscale('log')
+ax.set_xlabel('iteration number')
+ax.set_ylabel('difference between consecutive iterates')
 plt.ioff()
 plt.show()
