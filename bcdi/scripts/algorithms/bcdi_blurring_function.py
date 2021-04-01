@@ -17,7 +17,9 @@ from tkinter import filedialog
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.algorithms.algorithms_utils as algo
+import bcdi.facet_recognition.facet_utils as fu
 import bcdi.graph.graph_utils as gu
+import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
@@ -30,13 +32,16 @@ Bragg coherent diffraction imaging. Appl. Phys. Lett. 113, 203101 (2018); https:
 
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/result/"
 savedir = datadir + 'test/'
-isosurface_threshold = 0.3
+isosurface_threshold = 0.2
 phasing_shape = None  # shape of the dataset used during phase retrieval (after an eventual binning in PyNX).
 # tuple of 3 positive integers or None, if None the actual shape will be considered.
+upsampling_factor = 2  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
 comment = ''  # string to add to the filename when saving, should start with "_"
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 debug = True  # True to see more plots
+min_offset = 1e-6  # object and support voxels with null value will be set to this number, in order to avoid
+# divisions by zero
 ##########################
 # end of user parameters #
 ##########################
@@ -61,12 +66,14 @@ pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 valid.valid_item(isosurface_threshold, allowed_types=Real, min_included=0, max_excluded=1, name=validation_name)
 valid.valid_container(phasing_shape, container_types=(tuple, list, np.ndarray), allow_none=True, item_types=int,
                       min_excluded=0, name=validation_name)
+valid.valid_item(value=upsampling_factor, allowed_types=int, min_included=1, name=validation_name)
 valid.valid_container(comment, container_types=str, name=validation_name)
 if len(comment) != 0 and not comment.startswith('_'):
     comment = '_' + comment
 valid.valid_item(tick_length, allowed_types=int, min_excluded=0, name=validation_name)
 valid.valid_item(tick_width, allowed_types=int, min_excluded=0, name=validation_name)
 valid.valid_item(debug, allowed_types=bool, name=validation_name)
+valid.valid_item(min_offset, allowed_types=Real, min_included=0, name=validation_name)
 
 #########################################################
 # load the 3D recontruction , output of phase retrieval #
@@ -89,12 +96,19 @@ if extension == '.h5':
 if phasing_shape is None:
     phasing_shape = obj.shape
 
+if upsampling_factor > 1:
+    obj, _ = fu.upsample(array=obj, upsampling_factor=upsampling_factor, debugging=debug)
+    print(f'Upsampled object shape = {obj.shape}')
+
 ######################
 # define the support #
 ######################
 obj = abs(obj) / abs(obj).max()  # take the normalized modulus of the object
+obj[obj == 0] = min_offset
 support = np.zeros(obj.shape)
 support[obj >= isosurface_threshold] = 1
+support[support == 0] = min_offset
+
 if debug:
     gu.multislices_plot(obj, sum_frames=False, reciprocal_space=False, is_orthogonal=True, vmin=0, vmax=1,
                         plot_colorbar=True, title='normalized modulus')
@@ -104,7 +118,20 @@ if debug:
 ###################################
 # calculate the blurring function #
 ###################################
-psf = algo.psf_rl(measured_intensity=obj, coherent_intensity=support, iterations=10, debugging=True, scale='linear')
+psf_guess = pu.gaussian_window(window_shape=obj.shape, sigma=0.05, mu=0.0, debugging=debug)
+psf_guess = (psf_guess / psf_guess.sum()).astype(np.float)
 
+psf_partial_coh, metric = algo.partial_coherence_rl(measured_intensity=obj, coherent_intensity=support, iterations=500,
+                                                    debugging=True, scale='linear', is_orthogonal=True,
+                                                    reciprocal_space=False, guess=psf_guess)
+
+# # now that we estimated the psf, apply blind deconvolution
+# psf_partial_coh = (psf_partial_coh / psf_partial_coh.sum()).astype(np.float)
+# perfect_object = np.copy(obj)
+# perfect_object[perfect_object < isosurface_threshold] = 1e-6
+# psf_blind = algo.blind_deconvolution_rl(blurred_object=obj, perfect_object=perfect_object, psf=psf_partial_coh,
+#                                         nb_cycles=1, sub_iterations=50, debugging=True, is_orthogonal=True,
+#                                         reciprocal_space=False, scale=('linear', 'linear'), update_psf_first=False,
+#                                         vmin=(0, np.nan), vmax=(1, np.nan))
 plt.ioff()
 plt.show()
