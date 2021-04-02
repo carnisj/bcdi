@@ -38,8 +38,9 @@ phasing_shape = None  # shape of the dataset used during phase retrieval (after 
 upsampling_factor = 2  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
 rl_iterations = 50   # number of iterations for the Richardson-Lucy algorithm
 comment = ''  # string to add to the filename when saving, should start with "_"
-tick_length = 10  # in plots
+tick_length = 8  # in plots
 tick_width = 2  # in plots
+roi_width = 25  # in pixels, width of the central regio of the psf to plot
 debug = True  # True to see more plots
 min_offset = 1e-6  # object and support voxels with null value will be set to this number, in order to avoid
 # divisions by zero
@@ -76,6 +77,7 @@ valid.valid_item(tick_width, allowed_types=int, min_excluded=0, name=validation_
 valid.valid_item(debug, allowed_types=bool, name=validation_name)
 valid.valid_item(min_offset, allowed_types=Real, min_included=0, name=validation_name)
 valid.valid_item(rl_iterations, allowed_types=int, min_excluded=0, name=validation_name)
+valid.valid_item(roi_width, allowed_types=int, min_excluded=0, name=validation_name)
 
 #########################################################
 # load the 3D recontruction , output of phase retrieval #
@@ -134,8 +136,10 @@ print(f"error minimum at iteration {np.unravel_index(error.argmin(), shape=(rl_i
 ###############################################
 # plot the retrieved psf and the error metric #
 ###############################################
-gu.multislices_plot(psf_partial_coh, scale='linear', sum_frames=False, title='psf', reciprocal_space=False,
-                    is_orthogonal=True, plot_colorbar=True)
+fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) = \
+    gu.multislices_plot(psf_partial_coh, scale='linear', sum_frames=False, title='psf', reciprocal_space=False,
+                        is_orthogonal=True, plot_colorbar=True, width_z=roi_width, width_y=roi_width, width_x=roi_width,
+                        tick_width=tick_width, tick_length=tick_length, tick_direction='out')
 _, ax = plt.subplots(figsize=(12, 9))
 ax.plot(error, 'r.')
 ax.set_yscale('log')
@@ -145,7 +149,7 @@ ax.set_ylabel('difference between consecutive iterates')
 ################
 # save the psf #
 ################
-np.savez_compressed(savedir + 'psf.npz', psf=psf_partial_coh, nb_iter=rl_iterations,
+np.savez_compressed(savedir + f'psf_{rl_iterations}.npz', psf=psf_partial_coh, nb_iter=rl_iterations,
                     isosurface_threshold=isosurface_threshold, upsampling_factor=upsampling_factor)
 
 plt.ioff()
