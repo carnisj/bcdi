@@ -131,7 +131,11 @@ psf_partial_coh, error = algo.partial_coherence_rl(measured_intensity=obj, coher
                                                    is_orthogonal=True, reciprocal_space=False, guess=psf_guess)
 
 psf_partial_coh = abs(psf_partial_coh) / abs(psf_partial_coh).max()
-print(f"error minimum at iteration {np.unravel_index(error.argmin(), shape=(rl_iterations,))}")
+min_error_idx = np.unravel_index(error.argmin(), shape=(rl_iterations,))
+if min_error_idx == rl_iterations-1:
+    print(f"no local minimum for this number of iterations")
+else:
+    print(f"error minimum at iteration {min_error_idx}")
 
 ###############################################
 # plot the retrieved psf and the error metric #
