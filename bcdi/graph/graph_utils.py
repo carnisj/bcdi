@@ -102,7 +102,7 @@ def colorbar(mappable, scale='linear', numticks=10, label=None):
 
 
 def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, tuple_scale, tuple_sum_axis=None,
-                   cmap=my_cmap, tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=None,
+                   cmap=my_cmap, tick_direction='out', tick_width=2, tick_length=8, pixel_spacing=None,
                    tuple_width_v=None, tuple_width_h=None, tuple_vmin=np.nan, tuple_vmax=np.nan, is_orthogonal=False,
                    reciprocal_space=False, **kwargs):
     """
@@ -383,15 +383,16 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         else:
             axis.set_ylabel(default_ylabel)
         plt.axis('scaled')
+        axis.tick_params(direction=tick_direction, length=tick_length, width=tick_width)
         if pixel_spacing is not None:
             axis.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
             axis.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
-            axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
-                             length=tick_length, width=tick_width)
+            axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True)
         if invert_yaxis:  # Y is axis 0, need to be flipped
             axis.invert_yaxis()
         if plot_colorbar:
-            colorbar(plot, numticks=5)
+            cbar = colorbar(plot, numticks=5)
+            cbar.ax.tick_params(length=tick_length, width=tick_width)
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.5)
@@ -716,7 +717,7 @@ def define_labels(reciprocal_space, is_orthogonal, sum_frames, labels=None):
 
 def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None, plot_colorbar=False,
                 vmin=np.nan, vmax=np.nan, cmap=my_cmap, title='', labels=None, scale='linear',
-                tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=None,
+                tick_direction='out', tick_width=2, tick_length=8, pixel_spacing=None,
                 is_orthogonal=False, reciprocal_space=False, **kwargs):
     """
     2D imshow plot of a 2D or 3D dataset using user-defined parameters.
@@ -873,13 +874,14 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     axis.set_ylabel(ver_label)
     plt.title(title + slice_name)
     plt.axis('scaled')
+    axis.tick_params(direction=tick_direction, length=tick_length, width=tick_width)
     if pixel_spacing is not None:
         axis.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
         axis.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
-        axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
-                         length=tick_length, width=tick_width)
+        axis.tick_params(labelbottom=False, labelleft=False, top=True, right=True)
     if plot_colorbar:
-        colorbar(plot, numticks=5)
+        cbar = colorbar(plot, numticks=5)
+        cbar.ax.tick_params(length=tick_length, width=tick_width)
     plt.pause(0.5)
     plt.ioff()
     return fig, axis, plot
@@ -1268,7 +1270,7 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
 
 def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None, width_y=None, width_x=None,
                      plot_colorbar=False, cmap=my_cmap, title='', scale='linear', vmin=np.nan, vmax=np.nan,
-                     tick_direction='inout', tick_width=1, tick_length=3, pixel_spacing=None,
+                     tick_direction='out', tick_width=2, tick_length=8, pixel_spacing=None,
                      is_orthogonal=False, reciprocal_space=False, ipynb_layout=False, **kwargs):
     """
     Create a figure with three 2D imshow plots from a 3D dataset.
@@ -1408,12 +1410,13 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
         ax0.invert_yaxis()
     plt.axis('scaled')
     if plot_colorbar:
-        colorbar(plt0, numticks=5)
+        cbar = colorbar(plt0, numticks=5)
+        cbar.ax.tick_params(length=tick_length, width=tick_width)
+    ax0.tick_params(direction=tick_direction, length=tick_length, width=tick_width)
     if pixel_spacing is not None:
         ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
         ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
-        ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
-                        length=tick_length, width=tick_width)
+        ax0.tick_params(labelbottom=False, labelleft=False, top=True, right=True)
 
     ##########
     # axis 1 #
@@ -1460,12 +1463,13 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     ax1.set_title(title + slice_names[1])
     plt.axis('scaled')
     if plot_colorbar:
-        colorbar(plt1, numticks=5)
+        cbar = colorbar(plt1, numticks=5)
+        cbar.ax.tick_params(length=tick_length, width=tick_width)
+    ax1.tick_params(direction=tick_direction, length=tick_length, width=tick_width)
     if pixel_spacing is not None:
         ax1.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
         ax1.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
-        ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
-                        length=tick_length, width=tick_width)
+        ax1.tick_params(labelbottom=False, labelleft=False, top=True, right=True)
 
     ##########
     # axis 2 #
@@ -1513,12 +1517,13 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     plt.axis('scaled')
 
     if plot_colorbar:
-        colorbar(plt2, numticks=5)
+        cbar = colorbar(plt2, numticks=5)
+        cbar.ax.tick_params(length=tick_length, width=tick_width)
+    ax2.tick_params(direction=tick_direction, length=tick_length, width=tick_width)
     if pixel_spacing is not None:
         ax2.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
         ax2.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
-        ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True, direction=tick_direction,
-                        length=tick_length, width=tick_width)
+        ax2.tick_params(labelbottom=False, labelleft=False, top=True, right=True)
 
     ##########
     # axis 3 #
