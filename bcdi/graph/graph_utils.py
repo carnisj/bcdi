@@ -135,6 +135,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  the figure instance
     """
+    mpl.rcParams['axes.linewidth'] = tick_width  # set the linewidth globally
     ####################
     # check parameters #
     ####################
@@ -746,12 +747,21 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return:  fig, axis, plot instances
     """
-    assert sum_axis in {0, 1, 2}, 'sum_axis should be either 0, 1 or 2'
-    assert isinstance(sum_frames, bool), 'sum_frames should be a boolean'
-    assert scale in {'linear', 'log'}, 'scale should be either "linear" or "log"'
+    mpl.rcParams['axes.linewidth'] = tick_width  # set the linewidth globally
+    #########################
+    # check some parameters #
+    #########################
+    if sum_axis not in {0, 1, 2}:
+        raise ValueError('sum_axis should be either 0, 1 or 2')
+    if not isinstance(sum_frames, bool):
+        raise TypeError('sum_frames should be a boolean')
+    if scale not in {'linear', 'log'}:
+        raise ValueError('scale should be either "linear" or "log"')
     if not np.isnan(vmin) and not np.isnan(vmax):
         assert vmin < vmax, 'vmin should be strictly smaller than vmax'
-    # load kwargs
+    ###############
+    # load kwargs #
+    ###############
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'invert_y', 'ylabel', 'position', 'invert_y'},
                        name='graph_utils.imshow_plot')
     invert_y = kwargs.get('invert_y', None)
@@ -1299,6 +1309,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
      - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
     :return: fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) instances
     """
+    mpl.rcParams['axes.linewidth'] = tick_width  # set the linewidth globally
     ###############
     # load kwargs #
     ###############
