@@ -102,7 +102,7 @@ def colorbar(mappable, scale='linear', numticks=10, label=None):
 
 
 def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, tuple_scale, tuple_sum_axis=None,
-                   cmap=my_cmap, tick_direction='out', tick_width=2, tick_length=8, pixel_spacing=None,
+                   cmap=my_cmap, tick_direction='out', tick_width=1, tick_length=4, pixel_spacing=None,
                    tuple_width_v=None, tuple_width_h=None, tuple_vmin=np.nan, tuple_vmax=np.nan, is_orthogonal=False,
                    reciprocal_space=False, **kwargs):
     """
@@ -718,7 +718,7 @@ def define_labels(reciprocal_space, is_orthogonal, sum_frames, labels=None):
 
 def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None, plot_colorbar=False,
                 vmin=np.nan, vmax=np.nan, cmap=my_cmap, title='', labels=None, scale='linear',
-                tick_direction='out', tick_width=2, tick_length=8, pixel_spacing=None,
+                tick_direction='out', tick_width=1, tick_length=4, pixel_spacing=None,
                 is_orthogonal=False, reciprocal_space=False, **kwargs):
     """
     2D imshow plot of a 2D or 3D dataset using user-defined parameters.
@@ -1280,7 +1280,7 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
 
 def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None, width_y=None, width_x=None,
                      plot_colorbar=False, cmap=my_cmap, title='', scale='linear', vmin=np.nan, vmax=np.nan,
-                     tick_direction='out', tick_width=2, tick_length=8, pixel_spacing=None,
+                     tick_direction='out', tick_width=1, tick_length=4, pixel_spacing=None,
                      is_orthogonal=False, reciprocal_space=False, ipynb_layout=False, **kwargs):
     """
     Create a figure with three 2D imshow plots from a 3D dataset.
