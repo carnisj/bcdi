@@ -1341,17 +1341,25 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
     :param kwargs:
      - 'method_shape': if 'fix_shape', the output array will have the same shape as the input array.
        If 'fix_sampling', the ouput shape will be increased in order to keep the sampling in q in each direction.
-     - 'follow_bragg' (bool): True when for energy scans the detector was also scanned to follow the Bragg peak
+     - 'follow_bragg': bool, True when for energy scans the detector was also scanned to follow the Bragg peak
+     - 'fill_value': tuple of two real numbers, fill values to use for pixels outside of the interpolation range.
+       The first value is for the data, the second for the mask.
     :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard).
      q values are in inverse angstroms.
     """
+    valid_name = 'preprocessing_utils.grid_bcdi_labframe'
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'method_shape', 'follow_bragg'},
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'method_shape', 'follow_bragg', 'fill_value'},
                        name='preprocessing_utils.grid_bcdi_labframe')
     method_shape = kwargs.get('method_shape', 'fix_sampling')  # 'fix_shape')
-    valid.valid_item(value=method_shape, allowed_types=str, name='preprocessing_utils.grid_bcdi_labframe')
+    valid.valid_item(value=method_shape, allowed_types=str, name=valid_name)
     follow_bragg = kwargs.get('follow_bragg', False)
-    valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.grid_bcdi_labframe')
+    valid.valid_item(follow_bragg, allowed_types=bool, name=valid_name)
+    fill_value = kwargs.get('fill_value', (0, 0))
+    valid.valid_container(fill_value, container_types=(tuple, list, np.ndarray), length=2, item_types=Real,
+                          name=valid_name)
+
+    # check some parameters
     if setup.rocking_angle == 'energy':
         raise NotImplementedError('Geometric transformation not yet implemented for energy scans')
     if data.ndim != 3:
@@ -1362,12 +1370,13 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
     print('Gridding the data using the linearized matrix, the result will be in the laboratory frame')
     string = 'linmat_reciprocal_space_'
     interp_data, q_values = \
-        setup.ortho_reciprocal(obj=data, method_shape=method_shape, verbose=True, debugging=debugging, fill_value=0)
+        setup.ortho_reciprocal(obj=data, method_shape=method_shape, verbose=True, debugging=debugging,
+                               fill_value=fill_value[0])
     qx, qz, qy = q_values
 
     interp_mask, _ = \
         setup.ortho_reciprocal(obj=mask, method_shape=method_shape, verbose=False, debugging=debugging, scale='linear',
-                               fill_value=1)
+                               fill_value=fill_value[1])
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
@@ -1473,7 +1482,6 @@ def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames
                     tempdata[idx - offset_frame, :, :] = (tempdata[idx - offset_frame, :, :] + data[idx, :, :]) / 2
             data = tempdata
             mask = mask[0:data.shape[0], :, :]  # truncate the mask to have the correct size
-            numz = data.shape[0]
 
     maxbins = []
     for dim in (qx, qy, qz):
