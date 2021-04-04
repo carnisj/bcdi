@@ -169,6 +169,9 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 interp_method = 'linearization'  # 'xrayutilities' or 'linearization'
+fill_value_mask = 0  # 0 (not masked) or 1 (masked). It will define how the pixels outside of the data range are
+# processed during the interpolation. Because of the large number of masked pixels, phase retrieval converges better if
+# the pixels are not masked (0 intensity imposed). The data is by default set to 0 outside of the defined range.
 beam_direction = (1, 0, 0)  # beam direction in the laboratory frame (downstream, vertical up, outboard)
 sample_offsets = (0, 0, 0)  # -6*0.007821)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
@@ -371,6 +374,9 @@ if isinstance(sample_name, str):
     sample_name = [sample_name for idx in range(len(scans))]
 valid.valid_container(sample_name, container_types=(tuple, list), length=len(scans), item_types=str,
                       name='preprocess_bcdi')
+
+if fill_value_mask not in {0, 1}:
+    raise ValueError(f'fill_value_mask should be 0 or 1, got {fill_value_mask}')
 
 ###################
 # define colormap #
@@ -599,7 +605,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             else:  # 'linearization'
                 data, mask, q_values = \
                     pru.grid_bcdi_labframe(data=data, mask=mask, detector=detector, setup=setup,
-                                           debugging=debug, follow_bragg=follow_bragg, method_shape='fix_sampling')
+                                           debugging=debug, follow_bragg=follow_bragg, method_shape='fix_sampling',
+                                           fill_value=(0, fill_value_mask))
             nz, ny, nx = data.shape
             print('\nData size after interpolation into an orthonormal frame:', nz, ny, nx)
 
@@ -903,7 +910,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         data = pu.rotate_crystal(array=data, axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
                                  reference_axis=myaxis, voxel_size=(dqy, dqz, dqx), scale='log', debugging=debug)
         mask = pu.rotate_crystal(array=mask, axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                 reference_axis=myaxis, voxel_size=(dqy, dqz, dqx), fill_value=1, debugging=debug)
+                                 reference_axis=myaxis, voxel_size=(dqy, dqz, dqx), fill_value=fill_value_mask,
+                                 debugging=debug)
 
     ################################################
     # check for nans and infs in the data and mask #
