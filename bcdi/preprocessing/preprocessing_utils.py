@@ -1488,7 +1488,8 @@ def grid_bcdi_xrayutil(data, mask, scan_number, logfile, detector, setup, frames
         maxstep = max((abs(np.diff(dim, axis=j)).max() for j in range(3)))
         maxbins.append(int(abs(dim.max() - dim.min()) / maxstep))
     print(f'Maximum number of bins based on the sampling in q: {maxbins}')
-
+    maxbins = smaller_primes(maxbins, maxprime=7, required_dividers=(2,))
+    print(f'Maximum number of bins based on the shape requirements for FFT: {maxbins}')
     # only rectangular cuboidal voxels are supported in xrayutilities FuzzyGridder3D
     gridder = xu.FuzzyGridder3D(*maxbins)
     #
