@@ -820,7 +820,7 @@ def find_crop_center(array_shape, crop_shape, pivot):
             else:
                 crop_center[idx] = pivot[idx]
 
-    crop_center = map(lambda x: int(x), crop_center)
+    crop_center = list(map(lambda x: int(x), crop_center))
     return crop_center
 
 
