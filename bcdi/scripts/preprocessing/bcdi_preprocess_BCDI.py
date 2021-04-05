@@ -52,7 +52,7 @@ scans = 2227  # np.arange(1401, 1419+1, 3)  # scan number or list of scan number
 # scans = np.delete(scans, bad_indices)
 
 root_folder = "D:/data/CH4760/"  # folder of the experiment, where all scans are stored
-save_dir = root_folder + '/S2227/pynxraw/test/'  # images will be saved here, leave it to None otherwise
+save_dir = root_folder + '/S2227/pynx/lin/align_q/'  # images will be saved here, leave it to None otherwise
 data_dirname = None  # leave None to use the beamline default, '' empty string when there is no subfolder
 # (data directly in the scan folder), or a non-empty string for the subfolder name
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
@@ -167,7 +167,7 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
+use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 interp_method = 'linearization'  # 'xrayutilities' or 'linearization'
 fill_value_mask = 0  # 0 (not masked) or 1 (masked). It will define how the pixels outside of the data range are
 # processed during the interpolation. Because of the large number of masked pixels, phase retrieval converges better if
@@ -189,7 +189,7 @@ custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta":
 #######################################################################################################
 # parameters when orthogonalizing the data before phasing  using the linearized transformation matrix #
 #######################################################################################################
-align_q = False  # used only when interp_method is 'linearization', if True it rotates the crystal to align q
+align_q = True  # used only when interp_method is 'linearization', if True it rotates the crystal to align q
 # along one axis of the array
 ref_axis_q = "y"  # q will be aligned along that axis
 outofplane_angle = 35.3254  # detector angle in deg (rotation around x outboard, typically delta),
@@ -203,7 +203,7 @@ inplane_angle = -1.6011  # detector angle in deg(rotation around y vertical up, 
 sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles in xrayutilities frame
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles in xrayutilities frame
 offset_inplane = 0  # outer detector angle offset as determined by xrayutilities area detector initialization
-cch1 = 258   # direct beam vertical position in the full unbinned detector for xrayutilities 2D detector calibration
+cch1 = 208   # direct beam vertical position in the full unbinned detector for xrayutilities 2D detector calibration
 cch2 = 154  # direct beam horizontal position in the full unbinned detector for xrayutilities 2D detector calibration
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 360  # tiltazimuth parameter from xrayutilities 2D detector calibration
@@ -906,11 +906,12 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         print("Atomic plane distance: (A)", str('{:.4f}'.format(planar_dist)), "angstroms")
         print(f'Aligning Q along {ref_axis_q}: {myaxis}')
 
-        # axes in rotate_crystal must be in [x, y, z] order, i.e. [qy, qz, qx]
+        # axes in rotate_crystal must be in [x, y, z] order (x outboard, y vertical up, z downsteam), i.e. [qy, qz, qx]
+        # voxel_size is in the normal CXI order [z, y, x], i.e. [qx, qz, qy]
         data = pu.rotate_crystal(array=data, axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                 reference_axis=myaxis, voxel_size=(dqy, dqz, dqx), scale='log', debugging=debug)
+                                 reference_axis=myaxis, voxel_size=(dqx, dqz, dqy), scale='log', debugging=debug)
         mask = pu.rotate_crystal(array=mask, axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                 reference_axis=myaxis, voxel_size=(dqy, dqz, dqx), fill_value=fill_value_mask,
+                                 reference_axis=myaxis, voxel_size=(dqx, dqz, dqy), fill_value=fill_value_mask,
                                  debugging=debug)
 
     ################################################
