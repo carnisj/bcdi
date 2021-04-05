@@ -788,6 +788,42 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=
     return support
 
 
+def find_crop_center(array_shape, crop_shape, pivot):
+    """
+    Find the closest voxel to pivot which allows to crop an array of array_shape to crop_shape.
+
+    :param array_shape: initial shape of the array
+    :type array_shape: tuple
+    :param crop_shape: final shape of the array
+    :type crop_shape: tuple
+    :param pivot: position on which the final region of interest dhould be centered (center of mass of the Bragg peak)
+    :type pivot: tuple
+    :return: the voxel position closest to pivot which allows cropping to the defined shape.
+    """
+    valid_name = 'postprocessing_utils.find_crop_center'
+    valid.valid_container(array_shape, container_types=(tuple, list, np.ndarray), min_length=1, item_types=int,
+                          name=valid_name)
+    ndim = len(array_shape)
+    valid.valid_container(crop_shape, container_types=(tuple, list, np.ndarray), length=ndim, item_types=int,
+                          name=valid_name)
+    valid.valid_container(pivot, container_types=(tuple, list, np.ndarray), length=ndim, item_types=int,
+                          name=valid_name)
+    crop_center = np.empty(ndim)
+    for idx, dim in enumerate(range(ndim)):
+        if max(0, pivot[idx] - crop_shape[idx] // 2) == 0:
+            # not enough range on this side of the com
+            crop_center[idx] = crop_shape[idx] // 2
+        else:
+            if min(array_shape[idx], pivot[idx] + crop_shape[idx] // 2) == array_shape[idx]:
+                # not enough range on this side of the com
+                crop_center[idx] = array_shape[idx] - crop_shape[idx] // 2
+            else:
+                crop_center[idx] = pivot[idx]
+
+    crop_center = map(lambda x: int(x), crop_center)
+    return crop_center
+
+
 def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False):
     """
     Find the meaningful range of the data, in order to reduce the memory consumption when manipulating the object. The
