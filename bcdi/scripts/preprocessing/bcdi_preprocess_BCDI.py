@@ -52,7 +52,7 @@ scans = 2227  # np.arange(1401, 1419+1, 3)  # scan number or list of scan number
 # scans = np.delete(scans, bad_indices)
 
 root_folder = "D:/data/CH4760/"  # folder of the experiment, where all scans are stored
-save_dir = root_folder + '/S2227/pynx/lin-not-align-q-no-mask/'  # images will be saved here, leave it to None otherwise
+save_dir = root_folder + '/S2227/pynxraw/test/'  # images will be saved here, leave it to None otherwise
 data_dirname = None  # leave None to use the beamline default, '' empty string when there is no subfolder
 # (data directly in the scan folder), or a non-empty string for the subfolder name
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
@@ -167,7 +167,7 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. 
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
+use_rawdata = True  # False for using data gridded in laboratory frame/ True for using data in detector frame
 interp_method = 'linearization'  # 'xrayutilities' or 'linearization'
 fill_value_mask = 0  # 0 (not masked) or 1 (masked). It will define how the pixels outside of the data range are
 # processed during the interpolation. Because of the large number of masked pixels, phase retrieval converges better if
@@ -963,8 +963,17 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             numz = len(qx)
             qx = qx[:numz - (numz % detector.binning[0]):detector.binning[0]]  # along Z
             del numz
-    nz, ny, nx = data.shape
     print('\nData size after binning the stacking dimension:', data.shape)
+
+    ##################################################################
+    # final check of the shape to comply with FFT shape requirements #
+    ##################################################################
+    final_shape = pru.smaller_primes(data.shape, maxprime=7, required_dividers=(2,))
+    com = tuple(map(lambda x: int(np.rint(x)), center_of_mass(data)))
+    crop_center = pu.find_crop_center(array_shape=data.shape, crop_shape=final_shape, pivot=com)
+    data = pu.crop_pad(data, output_shape=final_shape, crop_center=crop_center)
+    print('\nData size after considering FFT shape requirements:', data.shape)
+    nz, ny, nx = data.shape
     comment = f'{comment}_{nz}_{ny}_{nx}' + binning_comment
 
     ############################
