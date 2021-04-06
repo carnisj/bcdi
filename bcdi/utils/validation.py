@@ -10,8 +10,8 @@ from numbers import Real
 import numpy as np
 
 
-def valid_container(obj, container_types, length=None, min_length=None, item_types=None, min_included=None,
-                    min_excluded=None, max_included=None, max_excluded=None, allow_none=False, name=None):
+def valid_container(obj, container_types, length=None, min_length=None, max_length=None, item_types=None, name=None,
+                    min_included=None, min_excluded=None, max_included=None, max_excluded=None, allow_none=False):
     """
     Check that the input object as three elements fulfilling the defined requirements.
 
@@ -19,6 +19,7 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
     :param container_types: list of the allowed types for obj
     :param length: required length
     :param min_length: mininum length (inclusive)
+    :param max_length: maximum length (inclusive)
     :param item_types: list of the allowed types for the object items
     :param min_included: minimum allowed value (inclusive)
     :param min_excluded: minimum allowed value (exclusive)
@@ -50,6 +51,14 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
             raise TypeError('min_length should be an integer')
         if min_length < 0:
             raise ValueError('min_length should be a positive integer')
+
+    if max_length is not None:
+        if not isinstance(max_length, int):
+            raise TypeError('max_length should be an integer')
+        if max_length < 0:
+            raise ValueError('max_length should be a positive integer')
+        if min_length is not None and max_length < min_length:
+            raise ValueError('max_length should be larger or equal to min_length')
 
     if item_types is not None:
         if isinstance(item_types, type):
@@ -99,6 +108,14 @@ def valid_container(obj, container_types, length=None, min_length=None, item_typ
         try:
             if len(obj) < min_length:
                 raise ValueError(f'{name}: the container should be of length >= {min_length}')
+        except TypeError as ex:
+            raise TypeError(f'method __len__ not defined for the type(s) {container_types}') from ex
+
+    # check the max_length of obj
+    if obj is not None and max_length is not None:
+        try:
+            if len(obj) > max_length:
+                raise ValueError(f'{name}: the container should be of length <= {max_length}')
         except TypeError as ex:
             raise TypeError(f'method __len__ not defined for the type(s) {container_types}') from ex
 
