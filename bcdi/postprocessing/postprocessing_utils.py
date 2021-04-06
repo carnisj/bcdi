@@ -968,7 +968,17 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
     :param debugging: True to see plots
     :return: the Gaussian window
     """
+    valid_name = 'postprocessing_utils.gaussian_window'
+    # check parameters
+    valid.valid_container(window_shape, container_types=(tuple, list, np.ndarray), min_length=2, name=valid_name)
     ndim = len(window_shape)
+    if ndim not in {2, 3}:
+        raise ValueError('window_shape should be hav 2 or 3 elements')
+    valid.valid_item(sigma, allowed_types=Real, min_excluded=0, name=valid_name)
+    valid.valid_item(mu, allowed_types=Real, name=valid_name)
+    valid.valid_item(debugging, allowed_types=bool, name=valid_name)
+
+    # define sigma and mu in ndim
     sigma = np.repeat(sigma, ndim)
     mu = np.repeat(mu, ndim)
 
@@ -983,7 +993,7 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
         gc.collect()
         window = window.reshape((nby, nbx))
 
-    elif ndim == 3:
+    else:  # 3D
         nbz, nby, nbx = window_shape
         grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby),
                                              np.linspace(-1, 1, nbx), indexing='ij')
@@ -993,9 +1003,6 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
         del grid_z, grid_y, grid_x
         gc.collect()
         window = window.reshape((nbz, nby, nbx))
-
-    else:
-        raise ValueError('Image should be 2D or 3D')
 
     if debugging:
         gu.multislices_plot(array=window, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window',
