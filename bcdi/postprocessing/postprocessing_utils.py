@@ -970,15 +970,14 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
     """
     valid_name = 'postprocessing_utils.gaussian_window'
     # check parameters
-    valid.valid_container(window_shape, container_types=(tuple, list, np.ndarray), min_length=2, name=valid_name)
-    ndim = len(window_shape)
-    if ndim not in {2, 3}:
-        raise ValueError('window_shape should be hav 2 or 3 elements')
+    valid.valid_container(window_shape, container_types=(tuple, list, np.ndarray), min_length=2, max_length=3,
+                          name=valid_name)
     valid.valid_item(sigma, allowed_types=Real, min_excluded=0, name=valid_name)
     valid.valid_item(mu, allowed_types=Real, name=valid_name)
     valid.valid_item(debugging, allowed_types=bool, name=valid_name)
 
     # define sigma and mu in ndim
+    ndim = len(window_shape)
     sigma = np.repeat(sigma, ndim)
     mu = np.repeat(mu, ndim)
 
