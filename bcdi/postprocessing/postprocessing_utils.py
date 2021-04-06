@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from functools import reduce
 from numbers import Number, Real
 from math import pi
 import numpy as np
@@ -1013,6 +1014,10 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
         del grid_z, grid_y, grid_x
         gc.collect()
         window = window.reshape((nbz, nby, nbx))
+
+    # rescale the gaussian if voxel size was provided
+    if voxel_size is not None:
+        window = window * reduce((lambda x, y: x * y), window_shape)**2
 
     if debugging:
         gu.multislices_plot(array=window, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window',
