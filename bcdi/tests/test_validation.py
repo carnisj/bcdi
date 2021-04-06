@@ -84,8 +84,30 @@ class TestValidContainer(unittest.TestCase):
     def test_validcontainer_container_minlength_float(self):
         self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, min_length=2.3)
 
+    def test_validcontainer_container_maxlength_float(self):
+        self.assertRaises(TypeError, valid.valid_container, obj=list(), container_types=list, max_length=2.3)
+
     def test_validcontainer_container_minlength_negative(self):
-        self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=list, length=-2)
+        self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=list, min_length=-2)
+
+    def test_validcontainer_container_maxlength_negative(self):
+        self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=list, max_length=-2)
+
+    def test_validcontainer_container_maxlength_wrong_length(self):
+        self.assertRaises(ValueError, valid.valid_container, obj=[4, 3, 2], container_types=list, max_length=2)
+
+    def test_validcontainer_container_maxlength_smaller_than_minlength(self):
+        self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=list, min_length=2,
+                          max_length=1)
+
+    def test_validcontainer_container_maxlength_larger_than_minlength(self):
+        self.assertTrue(valid.valid_container(obj=[1, 2], container_types=list, min_length=1, max_length=2))
+
+    def test_validcontainer_container_maxlength_equal_minlength(self):
+        self.assertTrue(valid.valid_container(obj=[1], container_types=list, min_length=1, max_length=1))
+
+    def test_validcontainer_container_maxlength_equal_minlength_zero(self):
+        self.assertTrue(valid.valid_container(obj=list(), container_types=list, min_length=0, max_length=0))
 
     def test_validcontainer_container_itemtype(self):
         self.assertTrue(valid.valid_container(obj=list(), container_types=list, item_types=int))
