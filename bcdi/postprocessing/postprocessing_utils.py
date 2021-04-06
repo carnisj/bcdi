@@ -958,32 +958,41 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     return kernel
 
 
-def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
+def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=False):
     """
     Create a 2D or 3D Gaussian window using scipy.stats.multivariate_normal.
 
     :param window_shape: shape of the window
     :param sigma: float, sigma of the distribution
     :param mu: float, mean of the distribution
+    :param voxel_size: tuple, voxel size in each dimension corresponding to window_shape. If None, it will default to
+     1/window_shape[ii] for each dimension so that it is independent of the shape of the window
     :param debugging: True to see plots
     :return: the Gaussian window
     """
     valid_name = 'postprocessing_utils.gaussian_window'
     # check parameters
     valid.valid_container(window_shape, container_types=(tuple, list, np.ndarray), min_length=2, max_length=3,
-                          name=valid_name)
+                          min_excluded=0, name=valid_name)
+    ndim = len(window_shape)
     valid.valid_item(sigma, allowed_types=Real, min_excluded=0, name=valid_name)
     valid.valid_item(mu, allowed_types=Real, name=valid_name)
+    valid.valid_container(voxel_size, container_types=(tuple, list, np.ndarray), length=ndim, allow_none=True,
+                          item_types=int, min_excluded=0, name=valid_name)
     valid.valid_item(debugging, allowed_types=bool, name=valid_name)
 
     # define sigma and mu in ndim
-    ndim = len(window_shape)
     sigma = np.repeat(sigma, ndim)
     mu = np.repeat(mu, ndim)
 
+    # check the voxel size
+    if voxel_size is None:
+        voxel_size = [1/pixel_nb for pixel_nb in window_shape]
+
     if ndim == 2:
         nby, nbx = window_shape
-        grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nby), np.linspace(-1, 1, nbx),
+        grid_y, grid_x = np.meshgrid(np.linspace(-nby, nby, nby) * voxel_size[0],
+                                     np.linspace(-nbx, nbx, nbx) * voxel_size[1],
                                      indexing='ij')
         covariance = np.diag(sigma ** 2)
         window = multivariate_normal.pdf(np.column_stack([grid_y.flat, grid_x.flat]), mean=mu,
@@ -994,8 +1003,10 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
 
     else:  # 3D
         nbz, nby, nbx = window_shape
-        grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby),
-                                             np.linspace(-1, 1, nbx), indexing='ij')
+        grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-nbz, nbz, nbz) * voxel_size[0],
+                                             np.linspace(-nby, nby, nby) * voxel_size[1],
+                                             np.linspace(-nbx, nbx, nbx) * voxel_size[2],
+                                             indexing='ij')
         covariance = np.diag(sigma ** 2)
         window = multivariate_normal.pdf(np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]), mean=mu,
                                          cov=covariance)
