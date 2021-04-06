@@ -979,7 +979,7 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
     valid.valid_item(sigma, allowed_types=Real, min_excluded=0, name=valid_name)
     valid.valid_item(mu, allowed_types=Real, name=valid_name)
     valid.valid_container(voxel_size, container_types=(tuple, list, np.ndarray), length=ndim, allow_none=True,
-                          item_types=int, min_excluded=0, name=valid_name)
+                          item_types=Real, min_excluded=0, name=valid_name)
     valid.valid_item(debugging, allowed_types=bool, name=valid_name)
 
     # define sigma and mu in ndim
