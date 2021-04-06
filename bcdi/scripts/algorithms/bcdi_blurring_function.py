@@ -35,12 +35,12 @@ savedir = datadir + 'test/'
 isosurface_threshold = 0.2
 phasing_shape = None  # shape of the dataset used during phase retrieval (after an eventual binning in PyNX).
 # tuple of 3 positive integers or None, if None the actual shape will be considered.
-upsampling_factor = 2  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
+upsampling_factor = 1  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
 rl_iterations = 50   # number of iterations for the Richardson-Lucy algorithm
 comment = ''  # string to add to the filename when saving, should start with "_"
 tick_length = 8  # in plots
 tick_width = 2  # in plots
-roi_width = 25  # in pixels, width of the central regio of the psf to plot
+roi_width = 20  # in pixels, width of the central regio of the psf to plot
 debug = True  # True to see more plots
 min_offset = 1e-6  # object and support voxels with null value will be set to this number, in order to avoid
 # divisions by zero
@@ -124,18 +124,20 @@ if debug:
 ###################################
 # calculate the blurring function #
 ###################################
-psf_guess = pu.gaussian_window(window_shape=obj.shape, sigma=0.1, mu=0.0, debugging=debug)
-psf_guess = psf_guess / min_obj
+psf_guess = pu.gaussian_window(window_shape=obj.shape,
+                               sigma=13.5, mu=0.0, voxel_size=(5, 5, 5),  # 13.46
+                               debugging=debug)
+psf_guess = psf_guess / min_obj  # rescale to the object original min
 psf_partial_coh, error = algo.partial_coherence_rl(measured_intensity=obj, coherent_intensity=support,
                                                    iterations=rl_iterations, debugging=False, scale='linear',
                                                    is_orthogonal=True, reciprocal_space=False, guess=psf_guess)
 
 psf_partial_coh = abs(psf_partial_coh) / abs(psf_partial_coh).max()
 min_error_idx = np.unravel_index(error.argmin(), shape=(rl_iterations,))
-if min_error_idx == rl_iterations-1:
+if min_error_idx[0] == rl_iterations-1:
     print(f"no local minimum for this number of iterations")
 else:
-    print(f"error minimum at iteration {min_error_idx}")
+    print(f"error minimum at iteration {min_error_idx[0]}")
 
 ###############################################
 # plot the retrieved psf and the error metric #
@@ -144,11 +146,14 @@ fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) = \
     gu.multislices_plot(psf_partial_coh, scale='linear', sum_frames=False, title='psf', reciprocal_space=False,
                         is_orthogonal=True, plot_colorbar=True, width_z=roi_width, width_y=roi_width, width_x=roi_width,
                         tick_width=tick_width, tick_length=tick_length, tick_direction='out')
-_, ax = plt.subplots(figsize=(12, 9))
+fig.savefig(savedir + 'psf_slices.png')
+
+fig, ax = plt.subplots(figsize=(12, 9))
 ax.plot(error, 'r.')
 ax.set_yscale('log')
 ax.set_xlabel('iteration number')
 ax.set_ylabel('difference between consecutive iterates')
+fig.savefig(savedir + 'error_metric.png')
 
 ################
 # save the psf #
