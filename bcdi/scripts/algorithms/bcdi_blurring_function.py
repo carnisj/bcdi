@@ -39,11 +39,11 @@ upsampling_factor = 2  # integer, 1=no upsampling_factor, 2=voxel size divided b
 voxel_size = 5  # number or list of three numbers corresponding to the voxel size in each dimension. If a single number
 # is provided, it will use it for all dimensions
 sigma_guess = 15  # in nm, sigma of the gaussian guess for the blurring function (e.g. mean PRTF)
-rl_iterations = 50   # number of iterations for the Richardson-Lucy algorithm
+rl_iterations = 2000   # number of iterations for the Richardson-Lucy algorithm
 comment = ''  # string to add to the filename when saving, should start with "_"
 tick_length = 8  # in plots
 tick_width = 2  # in plots
-roi_width = 20  # in pixels, width of the central regio of the psf to plot
+roi_width = 20  # in pixels, width of the central region of the psf to plot
 debug = True  # True to see more plots
 min_offset = 1e-6  # object and support voxels with null value will be set to this number, in order to avoid
 # divisions by zero
