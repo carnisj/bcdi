@@ -35,7 +35,10 @@ savedir = datadir + 'test/'
 isosurface_threshold = 0.2
 phasing_shape = None  # shape of the dataset used during phase retrieval (after an eventual binning in PyNX).
 # tuple of 3 positive integers or None, if None the actual shape will be considered.
-upsampling_factor = 1  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
+upsampling_factor = 2  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
+voxel_size = 5  # number or list of three numbers corresponding to the voxel size in each dimension. If a single number
+# is provided, it will use it for all dimensions
+sigma_guess = 15  # in nm, sigma of the gaussian guess for the blurring function (e.g. mean PRTF)
 rl_iterations = 50   # number of iterations for the Richardson-Lucy algorithm
 comment = ''  # string to add to the filename when saving, should start with "_"
 tick_length = 8  # in plots
@@ -76,6 +79,12 @@ valid.valid_item(tick_length, allowed_types=int, min_excluded=0, name=validation
 valid.valid_item(tick_width, allowed_types=int, min_excluded=0, name=validation_name)
 valid.valid_item(debug, allowed_types=bool, name=validation_name)
 valid.valid_item(min_offset, allowed_types=Real, min_included=0, name=validation_name)
+if isinstance(voxel_size, Real):
+    voxel_size = [voxel_size] * 3
+voxel_size = list(voxel_size)
+valid.valid_container(voxel_size, container_types=(list, np.ndarray), item_types=Real, min_excluded=0,
+                      name=validation_name)
+valid.valid_item(sigma_guess, allowed_types=Real, min_excluded=0, name=validation_name)
 valid.valid_item(rl_iterations, allowed_types=int, min_excluded=0, name=validation_name)
 valid.valid_item(roi_width, allowed_types=int, min_excluded=0, name=validation_name)
 
@@ -124,8 +133,8 @@ if debug:
 ###################################
 # calculate the blurring function #
 ###################################
-psf_guess = pu.gaussian_window(window_shape=obj.shape,
-                               sigma=13.5, mu=0.0, voxel_size=(5, 5, 5),  # 13.46
+psf_guess = pu.gaussian_window(window_shape=obj.shape, sigma=sigma_guess, mu=0.0,
+                               voxel_size=[vox/upsampling_factor for vox in voxel_size],
                                debugging=debug)
 psf_guess = psf_guess / min_obj  # rescale to the object original min
 psf_partial_coh, error = algo.partial_coherence_rl(measured_intensity=obj, coherent_intensity=support,
