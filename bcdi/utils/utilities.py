@@ -355,6 +355,7 @@ def linecut(array, point, direction, direction_basis='voxel', voxel_size=1):
                           name='utilities.linecut')
     valid.valid_container(point, container_types=(list, tuple, np.ndarray), length=ndim, item_types=int,
                           min_included=0, name='utilities.linecut')
+    point = tuple(point)  # point needs to be hashable
     if direction_basis not in {'orthonormal', 'voxel'}:
         raise ValueError(f'unknown value {direction_basis} for direction_basis, allowed are "voxel" and "orthonormal"')
     if isinstance(voxel_size, Real):
