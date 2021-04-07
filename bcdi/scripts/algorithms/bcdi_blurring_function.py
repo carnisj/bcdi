@@ -157,14 +157,14 @@ fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) = \
     gu.multislices_plot(psf_partial_coh, scale='linear', sum_frames=False, title='psf', reciprocal_space=False,
                         is_orthogonal=True, plot_colorbar=True, width_z=roi_width, width_y=roi_width, width_x=roi_width,
                         tick_width=tick_width, tick_length=tick_length, tick_direction='out', slice_position=psf_com)
-fig.savefig(savedir + 'psf_slices.png')
+fig.savefig(savedir + f'psf_slices_{rl_iterations}.png')
 
 fig, ax = plt.subplots(figsize=(12, 9))
 ax.plot(error, 'r.')
 ax.set_yscale('log')
 ax.set_xlabel('iteration number')
 ax.set_ylabel('difference between consecutive iterates')
-fig.savefig(savedir + 'error_metric.png')
+fig.savefig(savedir + f'error_metric_{rl_iterations}.png')
 
 ################
 # save the psf #
