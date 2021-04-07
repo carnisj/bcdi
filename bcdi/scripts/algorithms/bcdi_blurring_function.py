@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 from numbers import Real
 import numpy as np
 import pathlib
+from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
 import sys
@@ -39,7 +40,7 @@ upsampling_factor = 2  # integer, 1=no upsampling_factor, 2=voxel size divided b
 voxel_size = 5  # number or list of three numbers corresponding to the voxel size in each dimension. If a single number
 # is provided, it will use it for all dimensions
 sigma_guess = 15  # in nm, sigma of the gaussian guess for the blurring function (e.g. mean PRTF)
-rl_iterations = 2000   # number of iterations for the Richardson-Lucy algorithm
+rl_iterations = 3000   # number of iterations for the Richardson-Lucy algorithm
 comment = ''  # string to add to the filename when saving, should start with "_"
 tick_length = 8  # in plots
 tick_width = 2  # in plots
@@ -151,10 +152,11 @@ else:
 ###############################################
 # plot the retrieved psf and the error metric #
 ###############################################
+psf_com = list(map(lambda x: int(np.rint(x)), center_of_mass(psf_partial_coh)))
 fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) = \
     gu.multislices_plot(psf_partial_coh, scale='linear', sum_frames=False, title='psf', reciprocal_space=False,
                         is_orthogonal=True, plot_colorbar=True, width_z=roi_width, width_y=roi_width, width_x=roi_width,
-                        tick_width=tick_width, tick_length=tick_length, tick_direction='out')
+                        tick_width=tick_width, tick_length=tick_length, tick_direction='out', slice_position=psf_com)
 fig.savefig(savedir + 'psf_slices.png')
 
 fig, ax = plt.subplots(figsize=(12, 9))
