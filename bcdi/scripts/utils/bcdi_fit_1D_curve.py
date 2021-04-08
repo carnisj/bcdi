@@ -18,8 +18,9 @@ sys.path.append('//')
 import bcdi.utils.utilities as util
 
 helptext = """
-Fit a reciprocal space linecut over selected region using different lineshapes. The fit is performed simultaneously 
-over all regions defined by the user, limiting the number of fitting parameters.
+Fit a reciprocal space radial profile over selected q ranges using different lineshapes. The fit is performed 
+simultaneously  over all q ranges defined by the user; it is possible to define constraints  limiting the number of 
+free fitting parameters.
 """
 
 datadir = 'D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/'
