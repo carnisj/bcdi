@@ -34,7 +34,7 @@ Bragg coherent diffraction imaging. Appl. Phys. Lett. 113, 203101 (2018); https:
 """
 
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/result/"
-savedir = datadir + 'test/'
+savedir = datadir + 'blurring_function/'
 isosurface_threshold = 0.2
 phasing_shape = None  # shape of the dataset used during phase retrieval (after an eventual binning in PyNX).
 # tuple of 3 positive integers or None, if None the actual shape will be considered.
@@ -42,12 +42,12 @@ upsampling_factor = 2  # integer, 1=no upsampling_factor, 2=voxel size divided b
 voxel_size = 5  # number or list of three numbers corresponding to the voxel size in each dimension. If a single number
 # is provided, it will use it for all dimensions
 sigma_guess = 15  # in nm, sigma of the gaussian guess for the blurring function (e.g. mean PRTF)
-rl_iterations = 50   # number of iterations for the Richardson-Lucy algorithm
+rl_iterations = 500  # number of iterations for the Richardson-Lucy algorithm
 center_method = 'max'  # 'com' or 'max', method to determine the center of the blurring function for line cuts
 comment = ''  # string to add to the filename when saving, should start with "_"
 tick_length = 8  # in plots
 tick_width = 2  # in plots
-roi_width = 10  # in pixels, width of the central region of the psf to plot
+roi_width = 20  # in pixels, width of the central region of the psf to plot
 debug = True  # True to see more plots
 min_offset = 1e-6  # object and support voxels with null value will be set to this number, in order to avoid
 # divisions by zero
@@ -200,7 +200,7 @@ for idx in range(3):  # 3 linecuts in orthogonal directions to be fitted by a ga
     fit_params.add('amp_%i' % (idx + 1), value=1, min=0.1, max=100)
     fit_params.add('cen_%i' % (idx + 1), value=linecuts[idx, :].mean(),
                    min=linecuts[idx, :].min(), max=linecuts[idx, :].max())
-    fit_params.add('sig_%i' % (idx + 1), value=5, min=1, max=100)
+    fit_params.add('sig_%i' % (idx + 1), value=5, min=0.1, max=100)
 
 # run the global fit to all the data sets
 minimization = minimize(util.objective_lmfit, fit_params, args=(linecuts[0:3, :], linecuts[3:6, :], 'gaussian'))
@@ -227,7 +227,7 @@ for idx in axes_dict.keys():
                                 distribution='gaussian')
     line, = axes_dict[idx][0].plot(fit_x_axis, y_fit, 'b-')
     sig_name = f'sig_{idx+1}'
-    line.set_label(f'fit, sig={minimization.params[sig_name].value:.2f}')
+    line.set_label(f'fit, FWHM={2*np.sqrt(2*np.log(2))*minimization.params[sig_name].value:.2f}nm')
 
 gu.savefig(savedir=savedir, figure=fig, axes=(ax0, ax1, ax2), tick_width=tick_width, tick_length=tick_length,
            tick_labelsize=16, xlabels='width (nm)', ylabels='psf (a.u.)', label_size=20, legend=True,
