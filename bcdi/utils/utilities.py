@@ -501,7 +501,7 @@ def lorentzian(x_axis, amp, cen, sig):
 
 def objective_lmfit(params, x_axis, data, distribution):
     """
-    Calculate total residual for fits to several data sets held in a 2-D array.
+    Calculate total residual for fits to several data sets held in a 2-D array (1 row per dataset).
 
     :param params: a lmfit Parameters object
     :param x_axis: where to calculate the distribution
@@ -512,6 +512,8 @@ def objective_lmfit(params, x_axis, data, distribution):
     if len(data.shape) == 1:  # single dataset
         data = data[np.newaxis, :]
         x_axis = x_axis[np.newaxis, :]
+    if data.ndim != 2:
+        raise ValueError('Data should be a 2D stack of 1D datasets (1 per row)')
     ndata, nx = data.shape
     resid = 0.0*data[:]
     # make residual per data set
