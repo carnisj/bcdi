@@ -208,7 +208,7 @@ def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, l, m):
 
 def function_lmfit(params, x_axis, distribution, iterator=0):
     """
-    Calculate distribution using by lmfit Parameters.
+    Calculate distribution defined by lmfit Parameters.
 
     :param params: a lmfit Parameters object
     :param x_axis: where to calculate the function
