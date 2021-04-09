@@ -15,6 +15,7 @@ from numbers import Real
 import numpy as np
 import pathlib
 from scipy.ndimage.measurements import center_of_mass
+from scipy.signal import find_peaks
 import tkinter as tk
 from tkinter import filedialog
 import sys
@@ -38,7 +39,7 @@ savedir = datadir + 'blurring_function/'
 isosurface_threshold = 0.2
 phasing_shape = None  # shape of the dataset used during phase retrieval (after an eventual binning in PyNX).
 # tuple of 3 positive integers or None, if None the actual shape will be considered.
-upsampling_factor = 2  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
+upsampling_factor = 1  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
 voxel_size = 5  # number or list of three numbers corresponding to the voxel size in each dimension. If a single number
 # is provided, it will use it for all dimensions
 sigma_guess = 15  # in nm, sigma of the gaussian guess for the blurring function (e.g. mean PRTF)
@@ -149,11 +150,14 @@ psf_partial_coh, error = algo.partial_coherence_rl(measured_intensity=obj, coher
                                                    is_orthogonal=True, reciprocal_space=False, guess=psf_guess)
 
 psf_partial_coh = abs(psf_partial_coh) / abs(psf_partial_coh).max()
-min_error_idx = np.unravel_index(error.argmin(), shape=(rl_iterations,))
-if min_error_idx[0] == rl_iterations-1:
+min_error_idx = np.unravel_index(error.argmin(), shape=(rl_iterations,))[0]
+
+peaks, _ = find_peaks(-1*error)
+if peaks.size == 1 and peaks[0] == rl_iterations-1:
     print(f"no local minimum for this number of iterations")
 else:
-    print(f"error minimum at iteration {min_error_idx[0]}")
+    print(f"error local minima at iterations {list(val for val in peaks)}")
+print(f"min error={error.min():.6f} at iteration {min_error_idx}\n")
 
 ###############################################
 # plot the retrieved psf and the error metric #
