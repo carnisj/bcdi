@@ -261,13 +261,14 @@ def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
 
     error = np.empty(iterations)
     for idx in range(iterations):
-        sys.stdout.write(f'\rRL iteration {idx}')
-        sys.stdout.flush()
+        if (idx % 10) == 0:
+            sys.stdout.write(f'\rRL iteration {idx}')
+            sys.stdout.flush()
         previous_deconv = np.copy(im_deconv)
         relative_blur = image / convolve_method(im_deconv, psf, 'same')
         im_deconv *= convolve_method(relative_blur, psf_mirror, 'same')
         error[idx] = np.linalg.norm(previous_deconv-im_deconv) / np.linalg.norm(previous_deconv)
-
+    print('\n')
     if clip:
         im_deconv[im_deconv > 1] = 1
         im_deconv[im_deconv < -1] = -1
