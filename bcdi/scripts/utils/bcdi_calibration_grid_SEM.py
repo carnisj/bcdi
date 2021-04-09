@@ -7,15 +7,13 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import json
-from lmfit import minimize, Parameters, report_fit
+from lmfit.models import RectangleModel
 import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
 import os
 import pathlib
 from pprint import pprint
-from scipy.interpolate import interp1d
 import sys
 import tkinter as tk
 from tkinter import filedialog
@@ -27,7 +25,7 @@ import bcdi.utils.validation as valid
 helptext = """
 This script allow to plot and save linecuts through a 2D SEM image of a calibration grid. 
 Must be given as input: the voxel size, the direction of the cuts and a list of points where to apply the cut along 
-this direction. Optionally Gaussian can be fitted to the grid maxima.
+this direction. A rectangular profile is fitted to the maxima.
 """
 
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM calibration/"  # data folder
@@ -35,7 +33,7 @@ savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM cali
 # results will be saved here, if None it will default to datadir
 direction = (0, 1)  # tuple of 2 numbers defining the direction of the cut
 # in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
-points = [(5, 0)]  # , (25, 0), (50, 0), (75, 0), (100, 0), (125, 0), (150, 0), (175, 0), (200, 0), (225, 0)]
+points = [(5, 0), (25, 0), (50, 0), (75, 0), (100, 0), (125, 0), (150, 0), (175, 0), (200, 0), (225, 0)]
 # points for MCS_03.tif,  MCS_06.tif and MCS_07.tif
 # list/tuple of 2 indices corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
@@ -59,16 +57,16 @@ points = [(5, 0)]  # , (25, 0), (50, 0), (75, 0), (100, 0), (125, 0), (150, 0), 
 #            [(900, 1020), (2400, 2520)],
 #            [(1000, 1120), (2500, 2620)],
 #            [(1100, 1220), (2600, 2720)]]
-fit_roi = [[(350, 495), (5660, 5800)],]
-           # [(350, 495), (5660, 5800)],
-           # [(350, 495), (5660, 5780)],
-           # [(350, 495), (5660, 5780)],              # ROIs for MCS_03.tif
-           # [(350, 495), (5650, 5790)],
-           # [(350, 495), (5650, 5790)],
-           # [(350, 495), (5650, 5790)],
-           # [(350, 485), (5640, 5780)],
-           # [(350, 485), (5640, 5780)],
-           # [(350, 485), (5640, 5780)]]  # ROIs that should be fitted for each point. There should be as many
+fit_roi = [[(350, 495), (5660, 5800)],
+           [(350, 495), (5660, 5800)],
+           [(350, 495), (5660, 5780)],
+           [(350, 495), (5660, 5780)],              # ROIs for MCS_03.tif
+           [(350, 495), (5650, 5790)],
+           [(350, 495), (5650, 5790)],
+           [(350, 495), (5650, 5790)],
+           [(350, 485), (5640, 5780)],
+           [(350, 485), (5640, 5780)],
+           [(350, 485), (5640, 5780)]]  # ROIs that should be fitted for each point. There should be as many
 # sublists as the number of points. Leave None otherwise.
 # background_roi = [0, 400, 465, 485]  # background_roi for MCS_07.tif
 # background_roi = [0, 400, 150, 156]  # background_roi for MCS_06.tif
@@ -210,13 +208,10 @@ fig.savefig(savedir + 'cut' + comment + '_labels.png')
 # fit the peaks with gaussian #
 ###############################
 if fit_roi is not None:
-    # peaks = np.empty((len(points), len(fit_roi)))  # array where the peaks positions will be saved
     width = np.empty(len(points))
-    # define the fit initial parameters
-    fit_params = Parameters()
 
     idx_point = 0
-    for key, value in result.items():
+    for key, value in result.items():  # loop over linecuts
         # value is a dictionary {'distance': 1D array, 'cut': 1D array}
         tmp_str = f'{key}'
         print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
@@ -226,28 +221,30 @@ if fit_roi is not None:
             indent = 2
             print(f'\n{" " * indent}{"-" * len(tmp_str)}\n' + f'{" " * indent}' + tmp_str + '\n' +
                   f'{" " * indent}{"-" * len(tmp_str)}')
-            fit_params.add('amp_1', value=50, min=1, max=100)
-            fit_params.add('sig_1', value=25, min=15, max=35)
-            fit_params.add('ratio_1', value=0.5, min=0, max=1)
-            fit_params.add('cen_1', value=(roi[0]+roi[1])/2, min=roi[0], max=roi[1])
             # find linecut indices falling into the roi
             ind_start, ind_stop = util.find_nearest(value['distance'], roi)
+
+            # fit a RectangleModel from lmfit to the peaks
+            midpoint = (roi[0] + roi[1])/2
+            offset = (roi[1] - roi[0]) / 8
+            # initialize fit parameters (guess does not perform well)
+            rect_mod = RectangleModel(form='erf')
+            rect_params = rect_mod.make_params()
+            rect_params['amplitude'].set(0.75, min=0.5, max=1)
+            rect_params['center1'].set(midpoint-offset, min=roi[0], max=roi[1])
+            rect_params['sigma1'].set(1, min=0.001, max=10)
+            rect_params['center2'].set(midpoint+offset, min=roi[0], max=roi[1])
+            rect_params['sigma2'].set(1, min=0.001, max=10)
             # run the fit
-            minimization = minimize(util.objective_lmfit, fit_params,
-                                    args=(value['distance'][ind_start:ind_stop+1],
-                                          value['cut'][ind_start:ind_stop+1],
-                                          'pseudovoigt'))
-            report_fit(minimization.params)
-            value[f'roi {roi}'] = minimization.params
-            # peak_fit = util.function_lmfit(params=minimization.params,
-            #                                x_axis=value['distance'][ind_start:ind_stop+1],
-            #                                distribution='pseudovoigt')
-            # peaks[idx_point, idx_roi] = minimization.params['cen_1'].value
-            # idx_point += 1
+            rect_result = rect_mod.fit(value['cut'][ind_start:ind_stop+1], rect_params,
+                                       x=value['distance'][ind_start:ind_stop+1])
+            print('\n' + rect_result.fit_report())
+
+            value[f'roi {roi}'] = rect_result
 
         # calculate the mean distance between the first and last peaks
-        width[idx_point] = (value[f'roi {fit_roi[idx_point][-1]}']['cen_1'].value -
-                            value[f'roi {fit_roi[idx_point][0]}']['cen_1'].value)
+        width[idx_point] = (value[f'roi {fit_roi[idx_point][-1]}'].params['midpoint'].value -
+                            value[f'roi {fit_roi[idx_point][0]}'].params['midpoint'].value)
         idx_point += 1
 
     # update the dictionnary
@@ -274,11 +271,11 @@ if fit_roi is not None:
     x_axis = result[f'pixel {points[0]}']['distance'][ind_start:ind_stop+1]
     line0, = ax0.plot(x_axis, result[f'pixel {points[0]}']['cut'][ind_start:ind_stop+1], '-or')
     line0.set_label('linecut')
-    params_first = result[f'pixel {points[0]}'][f'roi {fit_roi[0][0]}']
     fit_axis = np.linspace(x_axis.min(), x_axis.max(), num=200)
-    fit_first = util.function_lmfit(params=params_first, x_axis=fit_axis, distribution='pseudovoigt')
-    fit0, = ax0.plot(fit_axis, fit_first, '-b')
-    fit0.set_label('fit')
+    result_first = result[f'pixel {points[0]}'][f'roi {fit_roi[0][0]}']  # results of the fit with rect. model
+    fit_first = result_first.eval(x=fit_axis)
+    fit0, = ax0.plot(fit_axis, fit_first, 'b-')
+    fit0.set_label('RectModel')
     ax0.set_ylim(-0.05, 0.9)
 
     ax1 = plt.subplot(122)
@@ -286,11 +283,11 @@ if fit_roi is not None:
     x_axis = result[f'pixel {points[0]}']['distance'][ind_start:ind_stop+1]
     line1, = ax1.plot(x_axis, result[f'pixel {points[0]}']['cut'][ind_start:ind_stop+1], '-or')
     line1.set_label('linecut')
-    params_last = result[f'pixel {points[0]}'][f'roi {fit_roi[0][-1]}']
     fit_axis = np.linspace(x_axis.min(), x_axis.max(), num=200)
-    fit_last = util.function_lmfit(params=params_last, x_axis=fit_axis, distribution='pseudovoigt')
-    fit1, = ax1.plot(fit_axis, fit_last, '-b')
-    fit1.set_label('fit')
+    result_last = result[f'pixel {points[0]}'][f'roi {fit_roi[0][-1]}']  # results of the fit with rect. model
+    fit_last = result_last.eval(x=fit_axis)
+    fit1, = ax1.plot(fit_axis, fit_last, 'b-')
+    fit1.set_label('RectModel')
     ax1.set_ylim(-0.05, 0.9)
 
     ax0.spines['right'].set_linewidth(tick_width)
@@ -326,11 +323,6 @@ if debug:
     tmp_str = 'output dictionnary'
     print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
     pprint(result, indent=2)
-# if debug:
-#     print('output dictionary:\n', json.dumps(result, cls=util.CustomEncoder, indent=4))
-#
-# with open(savedir+'SEM_calib' + comment + '.json', 'w', encoding='utf-8') as file:
-#     json.dump(result, file, cls=util.CustomEncoder, ensure_ascii=False, indent=4)
 
 plt.ioff()
 plt.show()
