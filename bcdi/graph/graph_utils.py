@@ -1695,6 +1695,10 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
     #########################
     # plot and save figures #
     #########################
+    xlims = []
+    ylims = []
+    xlocs = []
+    ylocs = []
     plt.ion()
     for idx, ax in enumerate(axes):
         ax.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=bottom[idx],
@@ -1712,6 +1716,11 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
             cbar.ax.tick_params(labelright=False, length=tick_length, width=tick_width, labelsize=tick_labelsize)
         except IndexError:
             cbar = None
+        xlims.append(ax.get_xlim())
+        ylims.append(ax.get_ylim())
+        xlocs.append(ax.xaxis.get_ticklocs())
+        ylocs.append(ax.yaxis.get_ticklocs())
+
     if not only_labels:
         figure.savefig(savedir + filename + '.png')
 
@@ -1723,11 +1732,17 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
         ax.set_title(titles[idx], fontsize=title_size, visible=True)
         if legend[idx]:
             ax.legend(fontsize=legend_labelsize)
+        ax.set_xticks(xlocs[idx])
+        ax.set_yticks(ylocs[idx])
+        ax.set_xlim(left=xlims[idx][0], right=xlims[idx][1])
+        ax.set_ylim(bottom=ylims[idx][0], top=ylims[idx][1])
+
     if text is not None:
         for _, value in text.items():
             figure.text(**value)
     if cbar is not None:
         cbar.ax.tick_params(labelright=True)
+
     figure.tight_layout()
     figure.savefig(savedir + filename + '_labels.png')
     plt.ioff()
