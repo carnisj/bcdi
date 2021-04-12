@@ -43,13 +43,18 @@ points = {(25, 37, 23), (25, 37, 24), (25, 37, 25), (25, 37, 26),
 # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
 # the cut alond direction should be performed. The reference frame is given by the array axes.
 voxel_size = 5  # 4.140786749482402  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
-width_lines = (96.3, 98.3, 100.3)  # list of vertical lines that will appear in the plot width vs threshold, None otherwise
+width_lines = (98, 100, 102)  # list of vertical lines that will appear in the plot width vs threshold, None otherwise
 styles = {0: (0, (2, 6)), 1: 'dashed', 2: (0, (2, 6))}  # line style for the width_lines, 1 for each line
 debug = False  # True to print the output dictionary and plot the legend
 comment = ''  # string to add to the filename when saving
 tick_length = 10  # in plots
 tick_width = 2  # in plots
-
+fig_size = (7, 9)  # figure size for the plot of linecuts and plot of width vs threshold. If None, default to (12, 9)
+cuts_limits = [63, 212, 0, 1]  # [xmin, xmax, ymin, ymax] list of axes limits for the plot of the linecuts.
+# Leave None for the default range.
+thres_limits = [0.1, 0.7, 85, 120]  # [xmin, xmax, ymin, ymax] list of axes limits for the plot width vs threshold.
+# Leave None for the default range.
+zoom = None  # [xmin, xmax, ymin, ymax] list of axes limits for a zoom on a ROI of the plot. Leave None to skip.
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -80,21 +85,22 @@ ndim = obj.ndim
 #########################
 # check some parameters #
 #########################
+valid_name = 'bcdi_line_profile'
 if ndim not in {2, 3}:
     raise ValueError(f'Number of dimensions = {ndim}, expected 2 or 3')
 
 valid.valid_container(direction, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
-                      name='line_profile')
+                      name=valid_name)
 
-valid.valid_container(points, container_types=(list, tuple, set), min_length=1, name='line_profile')
+valid.valid_container(points, container_types=(list, tuple, set), min_length=1, name=valid_name)
 for point in points:
     valid.valid_container(point, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
-                          min_included=0, name='line_profile')
+                          min_included=0, name=valid_name)
 
 if isinstance(voxel_size, Real):
     voxel_size = (voxel_size,) * ndim
 valid.valid_container(voxel_size, container_types=(list, tuple, np.ndarray), length=ndim, item_types=Real,
-                      min_excluded=0, name='line_profile')
+                      min_excluded=0, name=valid_name)
 
 savedir = savedir or datadir
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
@@ -102,12 +108,12 @@ pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 if isinstance(threshold, Real):
     threshold = (threshold,)
 valid.valid_container(threshold, container_types=(list, tuple, np.ndarray), item_types=Real,
-                      min_included=0, max_included=1, name='line_profile')
+                      min_included=0, max_included=1, name=valid_name)
 
 if isinstance(width_lines, Real):
     width_lines = (width_lines,)
 valid.valid_container(width_lines, container_types=(list, tuple, np.ndarray), item_types=Real,
-                      min_excluded=0, allow_none=True, name='line_profile')
+                      min_excluded=0, allow_none=True, name=valid_name)
 
 if width_lines is not None:
     tmp_thres = np.zeros((len(width_lines), len(points)))
@@ -115,6 +121,15 @@ if width_lines is not None:
         raise TypeError('styles should be a dictionnary')
     if len(styles) != len(width_lines):
         raise ValueError('styles should have as many entries as the number of width_lines')
+
+if fig_size is None:
+    fig_size = (12, 9)
+valid.valid_container(fig_size, container_types=(list, tuple), item_types=Real, length=2, name=valid_name)
+valid.valid_container(cuts_limits, container_types=(list, tuple), item_types=Real, length=4, allow_none=True,
+                      name=valid_name)
+valid.valid_container(thres_limits, container_types=(list, tuple), item_types=Real, length=4, allow_none=True,
+                      name=valid_name)
+valid.valid_container(zoom, container_types=(list, tuple), item_types=Real, length=4, allow_none=True, name=valid_name)
 
 if ndim == 3:
     comment = f'_direction{direction[0]}_{direction[1]}_{direction[2]}_{comment}'
@@ -145,7 +160,7 @@ for point in points:
 ######################
 #  plot the linecuts #
 ######################
-fig = plt.figure(figsize=(12, 9))
+fig = plt.figure(figsize=fig_size)
 ax = plt.subplot(111)
 plot_nb = 0
 for key, value in result.items():
@@ -155,6 +170,10 @@ for key, value in result.items():
                     linestyle='-', linewidth=1)
     line.set_label(f'cut through {key}')
     plot_nb += 1
+
+if cuts_limits is not None:
+    ax.set_xlim(left=cuts_limits[0], right=cuts_limits[1])
+    ax.set_ylim(bottom=cuts_limits[2], top=cuts_limits[3])
 
 legend = False
 if plot_nb < 15:
@@ -209,7 +228,7 @@ if width_lines is not None:
 #################################
 result['direction'] = direction
 
-fig = plt.figure(figsize=(12, 9))
+fig = plt.figure(figsize=fig_size)
 ax = plt.subplot(111)
 plot_nb = 0
 for key, value in result.items():
@@ -223,25 +242,32 @@ for key, value in result.items():
 if width_lines is not None:
     for index, hline in enumerate(width_lines):
         ax.axhline(y=hline, linestyle=styles[index], color='k', linewidth=1.5)
+
+xmin, xmax = ax.get_xlim()
 ymin, ymax = ax.get_ylim()
 
-# ax.set_xlim(left=0.27, right=0.50)
-ax.set_xlim(left=0.335, right=0.565)
-ax.set_ylim(bottom=96, top=104)
-gu.savefig(savedir=savedir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
-           tick_labelsize=16, xlabels='threshold', ylabels='width (nm)',
-           titles=f"Width vs threshold in the direction {result['direction']}\n", title_size=20, label_size=20,
-           legend_labelsize=14, filename='width_vs_threshold' + comment + '_zoom')
+if zoom is not None:
+    ax.set_xlim(left=zoom[0], right=zoom[1])
+    ax.set_ylim(bottom=zoom[2], top=zoom[3])
+    gu.savefig(savedir=savedir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
+               tick_labelsize=16, xlabels='threshold', ylabels='width (nm)',
+               titles=f"Width vs threshold in the direction {result['direction']}\n", title_size=20, label_size=20,
+               legend_labelsize=14, filename='width_vs_threshold' + comment + '_zoom')
 
-ax.set_xlim(left=0, right=1)
-ax.set_ylim(bottom=ymin, top=ymax)
+if thres_limits is not None:
+    ax.set_xlim(left=thres_limits[0], right=thres_limits[1])
+    ax.set_ylim(bottom=thres_limits[2], top=thres_limits[3])
+else:
+    ax.set_xlim(left=xmin, right=xmax)
+    ax.set_ylim(bottom=ymin, top=ymax)
+
 legend = False
 if debug and plot_nb < 15:
     legend = True
 if width_lines is not None:
-    text = {0: {'x': 0.55, 'y': 0.80, 's': f"expected widths: {result['expected_width']}", 'fontsize': 14},
-            1: {'x': 0.55, 'y': 0.75, 's': f"fitted thresholds: {result['mean_thres']}", 'fontsize': 14},
-            2: {'x': 0.55, 'y': 0.70, 's': f"stds: {result['std_thres']}", 'fontsize': 14}}
+    text = {0: {'x': 0.3, 'y': 0.80, 's': f"expected widths: {result['expected_width']}", 'fontsize': 14},
+            1: {'x': 0.3, 'y': 0.75, 's': f"fitted thresholds: {result['mean_thres']}", 'fontsize': 14},
+            2: {'x': 0.3, 'y': 0.70, 's': f"stds: {result['std_thres']}", 'fontsize': 14}}
 else:
     text = ''
 gu.savefig(savedir=savedir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
