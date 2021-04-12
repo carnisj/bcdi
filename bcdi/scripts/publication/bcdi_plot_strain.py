@@ -36,7 +36,7 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"
 savedir = datadir + '/figures/test/'
-comment = '_iso0.01'   # should start with _
+comment = ''   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
 strain_isosurface = 0.01  # amplitude below this value will be set to 0
 
@@ -64,7 +64,9 @@ flag_amp = True  # True to plot and save the amplitude
 flag_support = False  # True to plot and save the support
 
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
-vline_hist = [0.375, 0.451, 0.505, 0.541]  # list of vertical lines to plot in the amplitude histogram, leave None otherwise
+min_histo = 0  # array values <= min_histo*array.max() will not be plotted to avoid the peak at 0
+vline_hist = [0.375, 0.451, 0.505, 0.541]
+# list of vertical lines to plot in the amplitude histogram, leave None otherwise
 
 flag_linecut = False  # True to plot and save a linecut of the phase
 y_linecut = 257  # in pixels
@@ -89,6 +91,7 @@ my_cmap = colormap.cmap
 #########################
 # check some parameters #
 #########################
+valid_name = 'plot_strain'
 if not isinstance(strain_range, Real):
     if not strain_range == 'minmax':
         raise ValueError(f'Incorrect setting {strain_range} for the parameter "strain_range"')
@@ -101,8 +104,9 @@ if not isinstance(phase_range, Real):
 else:
     phase_min, phase_max = -phase_range, phase_range
 
+valid.valid_item(min_histo, allowed_types=Real, min_included=0, name=valid_name)
 valid.valid_container(obj=vline_hist, container_types=(list, tuple, np.ndarray, set), min_excluded=0, allow_none=True,
-                      item_types=Real, name='plot_strain')
+                      item_types=Real, name=valid_name)
 
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
@@ -251,15 +255,16 @@ if flag_amp:
         fig.savefig(savedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax = plt.subplots(1, 1)
-    ax.hist(ref_amp[ref_amp > 0.05*ref_amp.max()].flatten(), bins=250)  # avoid the peak for very low noise amplitudes
-    ax.set_xlim(left=0.05)
+    ax.hist(ref_amp[ref_amp > min_histo*ref_amp.max()].flatten(), bins=250)
+    # avoid the peak for very low noise amplitudes
+    ax.set_xlim(left=0)
     ax.set_ylim(bottom=1)
     if amp_histogram_Yaxis == 'log':
         ax.set_yscale('log')
         ax.set_ylim(bottom=1)
         ax.set_ylim(top=100000)
     else:
-        ax.set_ylim(bottom=0)
+        ax.set_ylim(bottom=0, top=150)
     ax.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
     ax.spines['right'].set_linewidth(tick_width)
     ax.spines['left'].set_linewidth(tick_width)
