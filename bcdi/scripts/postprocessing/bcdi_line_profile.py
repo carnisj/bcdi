@@ -180,7 +180,7 @@ if plot_nb < 15:
     legend = True
 gu.savefig(savedir=savedir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
            tick_labelsize=16, xlabels='width (nm)', ylabels='modulus', label_size=20, legend=legend,
-           legend_labelsize=14, filename='cuts' + comment, only_labels=True)
+           legend_labelsize=14, filename='cuts' + comment, only_labels=False)
 
 #################################################################################
 # calculate the evolution of the width of the object depending on the threshold #
