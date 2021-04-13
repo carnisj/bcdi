@@ -9,7 +9,7 @@
 
 from numbers import Real
 import numpy as np
-from numpy.fft import fft, fftshift
+from numpy.fft import fftn, fftshift
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import h5py
@@ -32,9 +32,9 @@ is_orthogonal = False  # True if the data was orthogonalized before phasing
 comment = ''  # should start with _
 width = None  # integer or tuple of three integers (one for each dimension), the psf will be plotted
 # for +/- this number of pixels from center of the array. Leave None to use the full array
-vmin = -6  # min of the colorbar for plots (log scale). Use np.nan for default.
-vmax = 0  # max of the colorbar for plots (log scale). Use np.nan for default.
-plot_mcf = False  # True to plot the Fourier transform of the PSF
+vmin = np.nan  # min of the colorbar for plots (log scale). Use np.nan for default.
+vmax = np.nan  # max of the colorbar for plots (log scale). Use np.nan for default.
+plot_mcf = True  # True to plot the Fourier transform of the PSF
 save_slices = True  # True to save individual 2D slices (in z, y, x)
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 8  # in plots
@@ -88,7 +88,7 @@ file_path = filedialog.askopenfilename(initialdir=datadir, filetypes=[("CXI", "*
 h5file = h5py.File(file_path, 'r')
 try:
     if plot_mcf:
-        dataset = fftshift(fft(h5file['/entry_1/image_1/instrument_1/detector_1/point_spread_function'].value))
+        dataset = fftshift(fftn(h5file['/entry_1/image_1/instrument_1/detector_1/point_spread_function'].value))
         fname = 'mcf'
         plot_scale = 'linear'
     else:
