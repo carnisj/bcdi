@@ -7,10 +7,12 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from numpy.fft import fftshift
 import numpy as np
+from numpy.fft import fftshift
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import h5py
+import pathlib
 import tkinter as tk
 from tkinter import filedialog
 import sys
@@ -21,13 +23,14 @@ helptext = """
 Open and plot the psf from a .cxi reconstruction file (from PyNX). The psf has to be fftshifted.
 """
 
-datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/current_paper/"
-save_dir = None
-is_orthogonal = True  # True if the data was orthogonalized before phasing
-comment = '_binning2x2x2'  # should start with _
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/"
+save_dir = datadir + "psf/"
+is_orthogonal = False  # True if the data was orthogonalized before phasing
+comment = ''  # should start with _
 width = 30  # the psf will be plotted for +/- this number of pixels from center of the array
 vmin = -6  # min of the colorbar for plots (log scale). Use np.nan for default.
-vmax = 1  # max of the colorbar for plots (log scale). Use np.nan for default.
+vmax = 0  # max of the colorbar for plots (log scale). Use np.nan for default.
+fft_shift = False  # True to apply fftshift to the loaded psf
 save_slices = True  # True to save individual 2D slices (in z, y, x)
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 8  # in plots
@@ -39,6 +42,7 @@ linewidth = 2  # linewidth for the plot frame
 bad_color = '1.0'  # white background
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
+mpl.rcParams['axes.linewidth'] = tick_width  # set the linewidth globally
 
 #####################################################
 # load the CXI file, output of PyNX phase retreival #
@@ -49,20 +53,29 @@ file_path = filedialog.askopenfilename(initialdir=datadir, filetypes=[("CXI", "*
 
 h5file = h5py.File(file_path, 'r')
 try:
-    dataset = fftshift(h5file['/entry_1/image_1/instrument_1/detector_1/point_spread_function'].value)
+    if fft_shift:
+        dataset = fftshift(h5file['/entry_1/image_1/instrument_1/detector_1/point_spread_function'].value)
+    else:
+        dataset = h5file['/entry_1/image_1/instrument_1/detector_1/point_spread_function'].value
 except KeyError as ex:
     print('The PSF was not saved in the CXI file')
     raise KeyError from ex
+
+# normalize the psf to 1
+dataset = abs(dataset) / abs(dataset).max()
 
 #########################
 # check some parameters #
 #########################
 save_dir = save_dir or datadir
-nbz, nby, nbx = dataset.shape
+pathlib.Path(save_dir).mkdir(parents=True, exist_ok=True)
+nbz, nby, nbx = np.shape(dataset)
 print(f'psf shape = {dataset.shape}')
 cen_z, cen_y, cen_x = nbz // 2, nby // 2, nbx // 2
 if any((cen_z-width < 0, cen_z+width > nbz, cen_y-width < 0, cen_y+width > nby, cen_x-width < 0, cen_x+width > nbx)):
-    raise ValueError('width is not compatible with the psf shape')
+    print('width is not compatible with the psf shape')
+    width = min(cen_z, cen_y, cen_x)
+
 if is_orthogonal:
     title = 'log(psf) in laboratory frame'
 else:
@@ -77,38 +90,28 @@ fig, _, _ = gu.multislices_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen
 fig.savefig(save_dir + 'psf_centralslice' + comment + '.png')
 
 if save_slices:
-    fig, axs, _ = gu.imshow_plot(dataset[cen_z, cen_y-width:cen_y+width, cen_x-width:cen_x+width], sum_frames=False,
-                                 scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
-                                 plot_colorbar=False)
-    axs.tick_params(labelbottom=False, labelleft=False, direction=tick_direction, length=tick_length, width=tick_width)
-    axs.spines['right'].set_linewidth(linewidth)
-    axs.spines['left'].set_linewidth(linewidth)
-    axs.spines['top'].set_linewidth(linewidth)
-    axs.spines['bottom'].set_linewidth(linewidth)
-    fig.savefig(save_dir + 'psf_centralslice_z' + comment + '.png')
+    fig, ax, _ = gu.imshow_plot(dataset[cen_z, cen_y-width:cen_y+width, cen_x-width:cen_x+width], sum_frames=False,
+                                scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
+                                plot_colorbar=True)
 
-    fig, axs, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y, cen_x-width:cen_x+width], sum_frames=False,
-                                 scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
-                                 plot_colorbar=False)
-    axs.tick_params(labelbottom=False, labelleft=False, direction=tick_direction, length=tick_length, width=tick_width)
-    axs.spines['right'].set_linewidth(linewidth)
-    axs.spines['left'].set_linewidth(linewidth)
-    axs.spines['top'].set_linewidth(linewidth)
-    axs.spines['bottom'].set_linewidth(linewidth)
-    fig.savefig(save_dir + 'psf_centralslice_y' + comment + '.png')
+    gu.savefig(savedir=save_dir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
+               tick_labelsize=16, xlabels='X', ylabels='Y', titles='psf central slice in Z', title_size=20,
+               label_size=20, legend_labelsize=14, filename='psf_centralslice_z' + comment)
 
-    fig, axs, plot = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen_y+width, cen_x], sum_frames=False,
-                                    scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False,
-                                    is_orthogonal=is_orthogonal, plot_colorbar=False)
-    axs.tick_params(labelbottom=False, labelleft=False, direction=tick_direction, length=tick_length, width=tick_width)
-    axs.spines['right'].set_linewidth(linewidth)
-    axs.spines['left'].set_linewidth(linewidth)
-    axs.spines['top'].set_linewidth(linewidth)
-    axs.spines['bottom'].set_linewidth(linewidth)
-    fig.savefig(save_dir + 'psf_centralslice_x' + comment + '.png')
-    axs.tick_params(labelbottom=True, labelleft=True)
-    cbar = plt.colorbar(plot, ax=axs)
-    cbar.outline.set_linewidth(linewidth)
-    cbar.ax.tick_params(length=tick_length, width=tick_width)
-    fig.savefig(save_dir + 'psf_centralslice_x_labels_colorbar' + comment + '.png')
+    fig, ax, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y, cen_x-width:cen_x+width], sum_frames=False,
+                                scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
+                                plot_colorbar=True)
+
+    gu.savefig(savedir=save_dir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
+               tick_labelsize=16, xlabels='X', ylabels='Z', titles='psf central slice in Y', title_size=20,
+               label_size=20, legend_labelsize=14, filename='psf_centralslice_y' + comment)
+
+    fig, ax, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen_y+width, cen_x], sum_frames=False,
+                                scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
+                                plot_colorbar=True)
+
+    gu.savefig(savedir=save_dir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
+               tick_labelsize=16, xlabels='Y', ylabels='Z', titles='psf central slice in X', title_size=20,
+               label_size=20, legend_labelsize=14, filename='psf_centralslice_x' + comment)
+
 plt.show()
