@@ -81,6 +81,9 @@ if is_orthogonal:
 else:
     title = 'log(psf) in detector frame'
 
+if comment and not comment.startswith('_'):
+    comment = '_' + comment
+
 #########################
 # plot and save the psf #
 #########################
@@ -90,28 +93,40 @@ fig, _, _ = gu.multislices_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen
 fig.savefig(save_dir + 'psf_centralslice' + comment + '.png')
 
 if save_slices:
+    if is_orthogonal:  # orthogonal laboratory frame, CXI convention z downstream, y vertical up, x outboard
+        labels = (('x', 'y', 'z'),  # labels for x axis, y axis, title
+                  ('x', 'z', 'y'),
+                  ('y', 'z', 'x'))
+    else:  # non-orthogonal detector frame stacking axis, detector vertical Y down, detector horizontal X inboard
+        labels = (('detector X', 'detector Y', 'stacking axis'),  # labels for x axis, y axis, title
+                  ('detector X', 'stacking axis', 'detector Y'),
+                  ('detector Y', 'stacking axis', 'detector X'))
+
     fig, ax, _ = gu.imshow_plot(dataset[cen_z, cen_y-width:cen_y+width, cen_x-width:cen_x+width], sum_frames=False,
                                 scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
                                 plot_colorbar=True)
 
     gu.savefig(savedir=save_dir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
-               tick_labelsize=16, xlabels='X', ylabels='Y', titles='psf central slice in Z', title_size=20,
-               label_size=20, legend_labelsize=14, filename='psf_centralslice_z' + comment)
+               tick_labelsize=16, xlabels=labels[0][0], ylabels=labels[0][1], label_size=20,
+               titles='psf central slice in '+labels[0][2], title_size=20,
+               legend_labelsize=14, filename='psf_centralslice_z' + comment)
 
     fig, ax, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y, cen_x-width:cen_x+width], sum_frames=False,
                                 scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
                                 plot_colorbar=True)
 
     gu.savefig(savedir=save_dir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
-               tick_labelsize=16, xlabels='X', ylabels='Z', titles='psf central slice in Y', title_size=20,
-               label_size=20, legend_labelsize=14, filename='psf_centralslice_y' + comment)
+               tick_labelsize=16, xlabels=labels[1][0], ylabels=labels[1][1], label_size=20,
+               titles='psf central slice in '+labels[1][2], title_size=20,
+               legend_labelsize=14, filename='psf_centralslice_y' + comment)
 
     fig, ax, _ = gu.imshow_plot(dataset[cen_z-width:cen_z+width, cen_y-width:cen_y+width, cen_x], sum_frames=False,
                                 scale='log', vmin=vmin, vmax=vmax, reciprocal_space=False, is_orthogonal=is_orthogonal,
                                 plot_colorbar=True)
 
     gu.savefig(savedir=save_dir, figure=fig, axes=ax, tick_width=tick_width, tick_length=tick_length,
-               tick_labelsize=16, xlabels='Y', ylabels='Z', titles='psf central slice in X', title_size=20,
-               label_size=20, legend_labelsize=14, filename='psf_centralslice_x' + comment)
+               tick_labelsize=16, xlabels=labels[2][0], ylabels=labels[2][1], label_size=20,
+               titles='psf central slice in '+labels[2][2], title_size=20,
+               legend_labelsize=14, filename='psf_centralslice_x' + comment)
 
 plt.show()
