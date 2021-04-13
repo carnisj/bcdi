@@ -1714,6 +1714,7 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
         try:  # Check if there is a colorbar
             cbar = ax.images[0].colorbar
             cbar.ax.tick_params(labelright=False, length=tick_length, width=tick_width, labelsize=tick_labelsize)
+            cbar.outline.set_linewidth(tick_width)
         except IndexError:
             cbar = None
         xlims.append(ax.get_xlim())
