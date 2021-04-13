@@ -45,7 +45,7 @@ my_cmap = colormap.cmap
 mpl.rcParams['axes.linewidth'] = tick_width  # set the linewidth globally
 
 #####################################################
-# load the CXI file, output of PyNX phase retreival #
+# load the CXI file, output of PyNX phase retrieval #
 #####################################################
 root = tk.Tk()
 root.withdraw()
