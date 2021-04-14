@@ -1773,21 +1773,26 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, fill_v
     return new_array
 
 
-def rotate_vector(vector, axis_to_align, reference_axis):
+def rotate_vector(vectors, axis_to_align, reference_axis):
     """
     Calculate the vector components in the basis where axis_to_align and reference_axis are aligned.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
     (CXI convention).
 
-    :param vector: the vector to be rotated, expressed in an orthonormal frame x y z
+    :param vectors: the vectors to be rotated, tuple of three components (values or 1D-arrays) expressed in an
+     orthonormal frame x y z
     :param axis_to_align: the axis of myobj (vector q), expressed in an orthonormal frame x y z
     :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame x y z
     :return: rotated vector in CXI convention z y x
     """
-    if vector.ndim != 1:
-        raise ValueError('vector should be a 1D array')
-    elif len(vector) != 3:
-        raise ValueError('vector should have 3 elements')
+    # check parameters
+    if isinstance(vectors, np.ndarray):
+        if vectors.ndim == 1:  # a single vecotr was provided
+            vectors = tuple(vectors)
+        else:
+            raise ValueError('vectors should be a tuple of three values/arrays')
+    valid_name = 'postprocessing_utils.rotate_vector'
+    valid.valid_container(vectors, container_types=(tuple, list), length=3, item_types=(np.ndarray, Real), name=valid_name)
 
     # normalize the vectors
     axis_to_align = axis_to_align / np.linalg.norm(axis_to_align)
@@ -1799,11 +1804,16 @@ def rotate_vector(vector, axis_to_align, reference_axis):
         skew_sym_matrix + np.dot(skew_sym_matrix, skew_sym_matrix) / (1+np.dot(axis_to_align, reference_axis))
     transfer_matrix = my_rotation_matrix.transpose()
 
-    new_x = transfer_matrix[0, 0] * vector[0] + transfer_matrix[0, 1] * vector[1] + transfer_matrix[0, 2] * vector[2]
-    new_y = transfer_matrix[1, 0] * vector[0] + transfer_matrix[1, 1] * vector[1] + transfer_matrix[1, 2] * vector[2]
-    new_z = transfer_matrix[2, 0] * vector[0] + transfer_matrix[2, 1] * vector[1] + transfer_matrix[2, 2] * vector[2]
+    myz, myy, myx = np.meshgrid(vectors[2], vectors[1], vectors[0], indexing='ij')
 
-    return np.array([new_z, new_y, new_x])
+    new_x = transfer_matrix[0, 0] * myx + transfer_matrix[0, 1] * myy + transfer_matrix[0, 2] * myz
+    new_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
+    new_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
+
+    if new_x.size == 1:  # a single vector was given as input, return it in a friendly format
+        return np.array([new_z[0, 0, 0], new_y[0, 0, 0], new_x[0, 0, 0]])
+
+    return new_z, new_y, new_x
 
 
 def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method='variance/mean'):
