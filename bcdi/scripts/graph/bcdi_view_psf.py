@@ -26,15 +26,15 @@ Open and plot the point-spread function (PSF) from a .cxi reconstruction file (f
 coherence function (FFT of the PSF) can be to be plotted.
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/"
-savedir = datadir + "psf/test/"
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/"
+savedir = datadir + "psf_Run0020/"
 is_orthogonal = False  # True if the data was orthogonalized before phasing
 comment = ''  # should start with _
-width = None  # integer or tuple of three integers (one for each dimension), the psf will be plotted
+width = 30  # integer or tuple of three integers (one for each dimension), the psf will be plotted
 # for +/- this number of pixels from center of the array. Leave None to use the full array
-vmin = np.nan  # min of the colorbar for plots (log scale). Use np.nan for default.
-vmax = np.nan  # max of the colorbar for plots (log scale). Use np.nan for default.
-plot_mcf = True  # True to plot the Fourier transform of the PSF
+vmin = -6  # min of the colorbar for plots (log scale). Use np.nan for default.
+vmax = 0  # max of the colorbar for plots (log scale). Use np.nan for default.
+plot_mcf = False  # True to plot the Fourier transform of the PSF
 save_slices = True  # True to save individual 2D slices (in z, y, x)
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 8  # in plots
@@ -114,7 +114,8 @@ if any((cen_z-width[0] < 0, cen_z+width[0] > nbz,
         cen_y-width[1] < 0, cen_y+width[1] > nby,
         cen_x-width[2] < 0, cen_x+width[2] > nbx)):
     print('width is not compatible with the psf shape')
-    width = (cen_z, cen_y, cen_x)
+
+    width = (min(cen_z, cen_y, cen_x),)*3
 
 #########################
 # plot and save the psf #
