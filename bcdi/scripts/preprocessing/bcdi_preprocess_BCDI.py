@@ -914,7 +914,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                  reference_axis=myaxis, voxel_size=(dqx, dqz, dqy), fill_value=fill_value_mask,
                                  debugging=debug)
 
-        # calculate the q values in the crystal frame (back rotation to have qz along q)
+        # calculate the q values in the crystal frame (back rotation to have axis_to_align (e.g. qz) along q)
         qx_crystal, qz_crystal, qy_crystal =\
             pu.rotate_vector(vectors=(qy, qz, qx), axis_to_align=myaxis,
                              reference_axis=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm))
