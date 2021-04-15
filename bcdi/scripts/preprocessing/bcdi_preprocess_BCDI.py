@@ -930,7 +930,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                        axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
                                        scale='log', fill_value=np.nan,  debugging=debug)
 
-        # remove nan values from rotated q values and make 1D vectors (the basis follows array axes now)
+        # remove nan values from rotated q values and make 1D vectors (the basis follows array axes now, all values are
+        # identical in the 2D slice perpendicular to the axis considered)
         # TODO: check if this works also for inplane RC, is the basis still following array axes?
         # TODO: The std should be only due to interpolation + floating point errors
         std = np.zeros(nqx)
