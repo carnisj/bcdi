@@ -609,9 +609,9 @@ if correct_refraction:  # or correct_absorption:
     # kin and kout were calculated in the laboratory frame. If the crystal is in its frame, we need to transform kin
     # and kout back into the crystal frame (xrayutilities output is in crystal frame)
     if data_frame == 'crystal':
-        kin = pu.rotate_vector(vector=np.array([kin[2], kin[1], kin[0]]), axis_to_align=myaxis,
+        kin = pu.rotate_vector(vectors=np.array([kin[2], kin[1], kin[0]]), axis_to_align=myaxis,
                                reference_axis=np.array([q[2], q[1], q[0]]))
-        kout = pu.rotate_vector(vector=np.array([kout[2], kout[1], kout[0]]), axis_to_align=myaxis,
+        kout = pu.rotate_vector(vectors=np.array([kout[2], kout[1], kout[0]]), axis_to_align=myaxis,
                                 reference_axis=np.array([q[2], q[1], q[0]]))
 
     # calculate the optical path of the incoming wavevector
