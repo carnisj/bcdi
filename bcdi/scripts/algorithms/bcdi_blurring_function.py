@@ -15,7 +15,7 @@ from numbers import Real
 import numpy as np
 import pathlib
 from scipy.ndimage.measurements import center_of_mass
-from scipy.signal import deconvolve, find_peaks
+from scipy.signal import find_peaks
 import tkinter as tk
 from tkinter import filedialog
 import sys
