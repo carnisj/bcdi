@@ -88,21 +88,20 @@ def smaller_primes(n, maxprime=13, required_dividers=(4,)):
         return n
 
 
-def higher_primes(n, maxprime=13, required_dividers=(4,)):
-    """ Find the closest integer >=n (or list/array of integers), for which the largest prime divider is <=maxprime,
-    and has to include some dividers.
-    The default values for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU FFT.
-
-    Args:
-        n: the integer number
-        maxprime: the largest prime factor acceptable
-        required_dividers: a list of required dividers for the returned integer.
-    Returns:
-        the integer (or list/array of integers) fulfilling the requirements
+def higher_primes(number, maxprime=13, required_dividers=(4,)):
     """
-    if (type(n) is list) or (type(n) is tuple) or (type(n) is np.ndarray):
+    Find the closest integer >=n (or list/array of integers), for which the largest prime divider is <=maxprime,
+    and has to include some dividers. The default values for maxprime is the largest integer accepted
+    by the clFFT library for OpenCL GPU FFT. Adapted from PyNX.
+
+    :param number: the integer number
+    :param maxprime: the largest prime factor acceptable
+    :param required_dividers: a list of required dividers for the returned integer.
+    :return: the integer (or list/array of integers) fulfilling the requirements
+    """
+    if isinstance(number, (list, tuple, np.ndarray)):
         vn = []
-        for i in n:
+        for i in number:
             limit = i
             assert (i > 1 and maxprime <= i)
             while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
@@ -110,17 +109,17 @@ def higher_primes(n, maxprime=13, required_dividers=(4,)):
                 if i == limit:
                     return limit
             vn.append(i)
-        if type(n) is np.ndarray:
+        if isinstance(number, np.ndarray):
             return np.array(vn)
         return vn
     else:
-        limit = n
-        assert (n > 1 and maxprime <= n)
-        while try_smaller_primes(n, maxprime=maxprime, required_dividers=required_dividers) is False:
-            n = n + 1
-            if n == limit:
+        limit = number
+        assert (number > 1 and maxprime <= number)
+        while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
+            number = number + 1
+            if number == limit:
                 return limit
-        return n
+        return number
 
 
 nb_low = smaller_primes(my_nb, maxprime=7, required_dividers=(2,))
