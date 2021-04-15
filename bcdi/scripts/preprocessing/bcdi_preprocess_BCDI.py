@@ -46,21 +46,21 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 2227  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
+scans = 128  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/CH4760/"  # folder of the experiment, where all scans are stored
-save_dir = root_folder + '/S2227/pynx/lin/align_q/'  # images will be saved here, leave it to None otherwise
+root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
+save_dir = root_folder + 'PtNP1_00128/pynx/lin_crystal/'  # images will be saved here, leave it to None otherwise
 data_dirname = None  # leave None to use the beamline default, '' empty string when there is no subfolder
 # (data directly in the scan folder), or a non-empty string for the subfolder name
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
-sample_name = "S"  # str or list of str of sample names (string in front of the scan number in the folder name).
+sample_name = "PtNP1"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (1, 1, 1)  # binning to apply to the data
+binning = (1, 4, 4)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
@@ -112,13 +112,13 @@ save_asint = False  # if True, the result will be saved as an array of integers 
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX', '34ID'
 actuators = None  # {'rocking_angle': 'actuator_1_1'}
 # Optional dictionary that can be used to define the entries corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
-is_series = False  # specific to series measurement at P10
+is_series = True  # specific to series measurement at P10
 
 custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available
@@ -129,23 +129,23 @@ rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outb
 # around y vertical up, "energy"
 
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'alignment'
+specfile_name = ''
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary or None to use the one in the package folder
 # template for all other beamlines: ''
 ###############################
 # detector related parameters #
 ###############################
-detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 linearity_func = None  # lambda array_1d: (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 +
 # 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
 # np.divide(array_1d, (1-array_1d*1.3e-6))  # Sarah_1
 # (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 + 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
 # linearity correction for the detector, leave None otherwise.
 # You can use def instead of a lambda expression but the input array should be 1d (flattened 2D detector array).
-x_bragg = 214  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 220  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg - 210, y_bragg + 210, x_bragg - 210, x_bragg + 210]  #
+x_bragg = 1355  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 796   # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = [y_bragg - 400, y_bragg + 400, x_bragg - 400, x_bragg + 400]  #
 # [Vstart, Vstop, Hstart, Hstop]
 # leave None to use the full detector. Use with center_fft='skip' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
@@ -153,8 +153,8 @@ photon_filter = 'loading'  # 'loading' or 'postprocessing', when the photon thre
 # if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
 background_file = None  # root_folder + 'background.npz'  # non empty file path or None
 hotpixels_file = None  # root_folder + 'hotpixels_cristal.npz'  # root_folder + 'mask_merlin.npy'  # non empty file path or None
-flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
-template_imagefile = 'data_mpx4_%05d.edf.gz'
+flatfield_file = None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
+template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -173,10 +173,10 @@ fill_value_mask = 0  # 0 (not masked) or 1 (masked). It will define how the pixe
 # processed during the interpolation. Because of the large number of masked pixels, phase retrieval converges better if
 # the pixels are not masked (0 intensity imposed). The data is by default set to 0 outside of the defined range.
 beam_direction = (1, 0, 0)  # beam direction in the laboratory frame (downstream, vertical up, outboard)
-sample_offsets = (0, 0, 0)  # -6*0.007821)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
-sdd = 0.50678  # in m, sample to detector distance in m
-energy = 9000-6  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+sdd = 1.83  # in m, sample to detector distance in m
+energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
 # example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
@@ -192,9 +192,9 @@ custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta":
 align_q = True  # used only when interp_method is 'linearization', if True it rotates the crystal to align q
 # along one axis of the array
 ref_axis_q = "y"  # q will be aligned along that axis
-outofplane_angle = 35.3254  # detector angle in deg (rotation around x outboard, typically delta),
+outofplane_angle = 39.0870  # detector angle in deg (rotation around x outboard, typically delta),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
-inplane_angle = -1.6011  # detector angle in deg(rotation around y vertical up, typically gamma),
+inplane_angle = -1.0270  # detector angle in deg(rotation around y vertical up, typically gamma),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
 ################################################################################
 # parameters when orthogonalizing the data before phasing  using xrayutilities #
@@ -914,6 +914,46 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                  reference_axis=myaxis, voxel_size=(dqx, dqz, dqy), fill_value=fill_value_mask,
                                  debugging=debug)
 
+        # calculate the q values in the crystal frame (back rotation to have qz along q)
+        qx_crystal, qz_crystal, qy_crystal =\
+            pu.rotate_vector(vectors=(qy, qz, qx), axis_to_align=myaxis,
+                             reference_axis=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm))
+
+        # rotate the q values of the crystal frame into the frame where q is along the reference axis
+        qx_crystal = pu.rotate_crystal(array=qx_crystal, reference_axis=myaxis, voxel_size=(dqx, dqz, dqy),
+                                       axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
+                                       scale='log', fill_value=np.nan, debugging=debug)
+        qy_crystal = pu.rotate_crystal(array=qy_crystal, reference_axis=myaxis, voxel_size=(dqx, dqz, dqy),
+                                       axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
+                                       scale='log', fill_value=np.nan,  debugging=debug)
+        qz_crystal = pu.rotate_crystal(array=qz_crystal, reference_axis=myaxis, voxel_size=(dqx, dqz, dqy),
+                                       axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
+                                       scale='log', fill_value=np.nan,  debugging=debug)
+
+        # remove nan values from rotated q values and make 1D vectors (the basis follows array axes now)
+        # TODO: check if this works also for inplane RC, is the basis still following array axes?
+        # TODO: The std should be only due to interpolation + floating point errors
+        std = np.zeros(nqx)
+        for idx in range(nqx):
+            tmp = qx_crystal[idx, :, :]
+            qx[idx] = tmp[~np.isnan(tmp)].mean()
+            std[idx] = tmp[~np.isnan(tmp)].std()
+        print(f'Taking 1D qx components, std={std.mean()}')
+
+        std = np.zeros(nqz)
+        for idx in range(nqz):
+            tmp = qz_crystal[:, idx, :]
+            qz[idx] = tmp[~np.isnan(tmp)].mean()
+            std[idx] = tmp[~np.isnan(tmp)].std()
+        print(f'Taking 1D qz components, std={std.mean()}')
+
+        std = np.zeros(nqy)
+        for idx in range(nqy):
+            tmp = qy_crystal[:, :, idx]
+            qy[idx] = tmp[~np.isnan(tmp)].mean()
+            std[idx] = tmp[~np.isnan(tmp)].std()
+        print(f'Taking 1D qy components, std={std.mean()}')
+
     ################################################
     # check for nans and infs in the data and mask #
     ################################################
@@ -991,13 +1031,13 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     if not use_rawdata and len(q_values) != 0:
         if save_to_npz:
             np.savez_compressed(detector.savedir + f'QxQzQy_S{scan_nb}' + comment,
-                                qx=q_values[0], qz=q_values[1], qy=q_values[2])
+                                qx=qx, qz=qz, qy=qy)
         if save_to_mat:
-            savemat(detector.savedir + f'S{scan_nb}_qx.mat', {'qx': q_values[0]})
-            savemat(detector.savedir + f'S{scan_nb}_qz.mat', {'qz': q_values[1]})
-            savemat(detector.savedir + f'S{scan_nb}_qy.mat', {'qy': q_values[2]})
+            savemat(detector.savedir + f'S{scan_nb}_qx.mat', {'qx': qx})
+            savemat(detector.savedir + f'S{scan_nb}_qz.mat', {'qz': qz})
+            savemat(detector.savedir + f'S{scan_nb}_qy.mat', {'qy': qy})
         max_z = data.sum(axis=0).max()
-        fig, _, _ = gu.contour_slices(data, (q_values[0], q_values[1], q_values[2]), sum_frames=True,
+        fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=True,
                                       title='Final data', plot_colorbar=True, scale='log', is_orthogonal=True,
                                       levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=False),
                                       reciprocal_space=True)
