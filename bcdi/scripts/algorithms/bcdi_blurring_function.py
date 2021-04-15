@@ -15,7 +15,7 @@ from numbers import Real
 import numpy as np
 import pathlib
 from scipy.ndimage.measurements import center_of_mass
-from scipy.signal import find_peaks
+from scipy.signal import deconvolve, find_peaks
 import tkinter as tk
 from tkinter import filedialog
 import sys
@@ -35,15 +35,15 @@ Bragg coherent diffraction imaging. Appl. Phys. Lett. 113, 203101 (2018); https:
 """
 
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/result/"
-savedir = datadir + 'blurring_function/'
+savedir = datadir + 'blurring_function/test/'
 isosurface_threshold = 0.2
 phasing_shape = None  # shape of the dataset used during phase retrieval (after an eventual binning in PyNX).
 # tuple of 3 positive integers or None, if None the actual shape will be considered.
-upsampling_factor = 1  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
+upsampling_factor = 2  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
 voxel_size = 5  # number or list of three numbers corresponding to the voxel size in each dimension. If a single number
 # is provided, it will use it for all dimensions
 sigma_guess = 15  # in nm, sigma of the gaussian guess for the blurring function (e.g. mean PRTF)
-rl_iterations = 500  # number of iterations for the Richardson-Lucy algorithm
+rl_iterations = 50  # number of iterations for the Richardson-Lucy algorithm
 center_method = 'max'  # 'com' or 'max', method to determine the center of the blurring function for line cuts
 comment = ''  # string to add to the filename when saving, should start with "_"
 tick_length = 8  # in plots
@@ -148,6 +148,10 @@ psf_guess = psf_guess / min_obj  # rescale to the object original min
 psf_partial_coh, error = algo.partial_coherence_rl(measured_intensity=obj, coherent_intensity=support,
                                                    iterations=rl_iterations, debugging=False, scale='linear',
                                                    is_orthogonal=True, reciprocal_space=False, guess=psf_guess)
+
+denoised_obj, _ = algo.richardson_lucy(image=obj, psf=psf_partial_coh, iterations=20, clip=False)
+gu.multislices_plot(denoised_obj, sum_frames=False, reciprocal_space=False, is_orthogonal=True,
+                    plot_colorbar=True, title='denoised modulus')
 
 psf_partial_coh = abs(psf_partial_coh) / abs(psf_partial_coh).max()
 min_error_idx = np.unravel_index(error.argmin(), shape=(rl_iterations,))[0]
