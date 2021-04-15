@@ -1823,6 +1823,40 @@ class Setup(object):
         return voxel_z, voxel_y, voxel_x
 
 
+def higher_primes(number, maxprime=13, required_dividers=(4,)):
+    """
+    Find the closest integer >=n (or list/array of integers), for which the largest prime divider is <=maxprime,
+    and has to include some dividers. The default values for maxprime is the largest integer accepted
+    by the clFFT library for OpenCL GPU FFT. Adapted from PyNX.
+
+    :param number: the integer number
+    :param maxprime: the largest prime factor acceptable
+    :param required_dividers: a list of required dividers for the returned integer.
+    :return: the integer (or list/array of integers) fulfilling the requirements
+    """
+    if isinstance(number, (list, tuple, np.ndarray)):
+        vn = []
+        for i in number:
+            limit = i
+            assert (i > 1 and maxprime <= i)
+            while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
+                i = i + 1
+                if i == limit:
+                    return limit
+            vn.append(i)
+        if isinstance(number, np.ndarray):
+            return np.array(vn)
+        return vn
+    else:
+        limit = number
+        assert (number > 1 and maxprime <= number)
+        while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
+            number = number + 1
+            if number == limit:
+                return limit
+        return number
+
+
 def primes(number):
     """
     Returns the prime decomposition of n as a list. Adapted from PyNX.
