@@ -901,9 +901,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         q_com = np.array([qx_com, qy_com, qz_com])
         qnorm = np.linalg.norm(q_com)  # in 1/A
         planar_dist = 2 * np.pi / qnorm  # in A
-        print(f"Wavevector transfer (qx, qz, qy): {qx_com:.4f}, {qz_com:.4f}, {qy_com:.4f}")
-        print("Wavevector transfer: (1/A)", str('{:.4f}'.format(qnorm)))
-        print("Atomic plane distance: (A)", str('{:.4f}'.format(planar_dist)), "angstroms")
+        print(f"Wavevector transfer (qx, qz, qy): {qx_com:.4f}, {qz_com:.4f}, {qy_com:.4f} (1/A)")
+        print(f"Wavevector transfer: {qnorm:.4f} (1/A)")
+        print(f"Atomic plane distance: {planar_dist:.4f} (A)")
         print(f'Aligning Q along {ref_axis_q}: {myaxis}')
 
         # axes in rotate_crystal must be in [x, y, z] order (x outboard, y vertical up, z downsteam), i.e. [qy, qz, qx]
@@ -919,41 +919,53 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             pu.rotate_vector(vectors=(qy, qz, qx), axis_to_align=myaxis,
                              reference_axis=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm))
 
-        # rotate the q values of the crystal frame into the frame where q is along the reference axis
+        # rotate the qx values of the crystal frame into the frame where q is along the reference axis
         qx_crystal = pu.rotate_crystal(array=qx_crystal, reference_axis=myaxis, voxel_size=(dqx, dqz, dqy),
                                        axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
                                        scale='log', fill_value=np.nan, debugging=debug)
-        qy_crystal = pu.rotate_crystal(array=qy_crystal, reference_axis=myaxis, voxel_size=(dqx, dqz, dqy),
-                                       axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                       scale='log', fill_value=np.nan,  debugging=debug)
-        qz_crystal = pu.rotate_crystal(array=qz_crystal, reference_axis=myaxis, voxel_size=(dqx, dqz, dqy),
-                                       axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                       scale='log', fill_value=np.nan,  debugging=debug)
-
-        # remove nan values from rotated q values and make 1D vectors (the basis follows array axes now, all values are
+        # remove nan values from rotated qx values and make 1D vectors (the basis follows array axes now, all values are
         # identical in the 2D slice perpendicular to the axis considered)
-        # TODO: check if this works also for inplane RC, is the basis still following array axes?
-        # TODO: The std should be only due to interpolation + floating point errors
         std = np.zeros(nqx)
         for idx in range(nqx):
             tmp = qx_crystal[idx, :, :]
             qx[idx] = tmp[~np.isnan(tmp)].mean()
             std[idx] = tmp[~np.isnan(tmp)].std()
-        print(f'Taking 1D qx components, std={std.mean()}')
+        print(f'Taking 1D qx components, range={qx.max()-qx.min():.4f} (1/A), std={std.mean():.2e}')
+        del qx_crystal, std, tmp
+        gc.collect()
 
+        # rotate the qz values of the crystal frame into the frame where q is along the reference axis
+        qz_crystal = pu.rotate_crystal(array=qz_crystal, reference_axis=myaxis, voxel_size=(dqx, dqz, dqy),
+                                       axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
+                                       scale='log', fill_value=np.nan,  debugging=debug)
+        # remove nan values from rotated qz values and make 1D vectors (the basis follows array axes now, all values are
+        # identical in the 2D slice perpendicular to the axis considered)
         std = np.zeros(nqz)
         for idx in range(nqz):
             tmp = qz_crystal[:, idx, :]
             qz[idx] = tmp[~np.isnan(tmp)].mean()
             std[idx] = tmp[~np.isnan(tmp)].std()
-        print(f'Taking 1D qz components, std={std.mean()}')
+        print(f'Taking 1D qz components, range={qz.max()-qz.min():.4f} (1/A), std={std.mean():.2e}')
+        del qz_crystal, std, tmp
+        gc.collect()
 
+        # rotate the qy values of the crystal frame into the frame where q is along the reference axis
+        qy_crystal = pu.rotate_crystal(array=qy_crystal, reference_axis=myaxis, voxel_size=(dqx, dqz, dqy),
+                                       axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
+                                       scale='log', fill_value=np.nan,  debugging=debug)
+        # remove nan values from rotated qy values and make 1D vectors (the basis follows array axes now, all values are
+        # identical in the 2D slice perpendicular to the axis considered)
         std = np.zeros(nqy)
         for idx in range(nqy):
             tmp = qy_crystal[:, :, idx]
             qy[idx] = tmp[~np.isnan(tmp)].mean()
             std[idx] = tmp[~np.isnan(tmp)].std()
-        print(f'Taking 1D qy components, std={std.mean()}')
+        print(f'Taking 1D qy components, range={qy.max()-qy.min():.4f} (1/A), std={std.mean():.2e}')
+        del qy_crystal, std, tmp
+        gc.collect()
+
+        # TODO: check if this works also for inplane RC, is the basis still following array axes?
+        # TODO: The std should be only due to interpolation + floating point errors
 
     ################################################
     # check for nans and infs in the data and mask #
