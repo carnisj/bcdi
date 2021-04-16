@@ -752,6 +752,34 @@ def rgb2gray(rgb):
     return 0.2989 * rgb[:, :, 0] + 0.5870 * rgb[:, :, 1] + 0.1140 * rgb[:, :, 2]
 
 
+def rotation_matrix_3d(axis_to_align, reference_axis):
+    """
+    Calculate the rotation matrix which aligns axis_to_align onto reference_axis in 3D.
+
+    :param axis_to_align: the 3D vector to be aligned (e.g. vector q), expressed in an orthonormal frame x y z
+    :param reference_axis: will align axis_to_align onto this 3D vector, expressed in an orthonormal frame  x y z
+    :return: the rotation matrix as a np.array of shape (3, 3)
+    """
+    # check parameters
+    valid_name = 'utilities.rotation_matrix_3d'
+    valid.valid_container(axis_to_align, container_types=(list, tuple, np.ndarray), length=3, item_types=Real,
+                          name=valid_name)
+    valid.valid_container(reference_axis, container_types=(list, tuple, np.ndarray), length=3, item_types=Real,
+                          name=valid_name)
+
+    # normalize the vectors
+    axis_to_align = axis_to_align / np.linalg.norm(axis_to_align)
+    reference_axis = reference_axis / np.linalg.norm(reference_axis)
+
+    # calculate the skew-symmetric matrix
+    v = np.cross(axis_to_align, reference_axis)
+    skew_sym_matrix = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    rotation_matrix = np.identity(3) + skew_sym_matrix +\
+        np.dot(skew_sym_matrix, skew_sym_matrix) / (1+np.dot(axis_to_align, reference_axis))
+
+    return rotation_matrix.transpose()
+
+
 def skewed_gaussian(x_axis, amp, loc, sig, alpha):
     """
     Skewed Gaussian line shape.
