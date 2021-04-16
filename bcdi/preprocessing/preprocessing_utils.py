@@ -1373,14 +1373,11 @@ def grid_bcdi_labframe(data, mask, detector, setup, align_q=False, reference_axi
     # grid the data
     print('Gridding the data using the linearized matrix, the result will be in the laboratory frame')
     string = 'linmat_reciprocal_space_'
-    interp_data, q_values = \
-        setup.ortho_reciprocal(obj=data, verbose=True, debugging=debugging, fill_value=fill_value[0], align_q=align_q,
-                               reference_axis=reference_axis)
+    (interp_data, interp_mask), q_values = \
+        setup.ortho_reciprocal(arrays=(data, mask), verbose=True, debugging=debugging, fill_value=fill_value,
+                               align_q=align_q, reference_axis=reference_axis, scale=('log', 'linear'),
+                               title=('data', 'mask'))
     qx, qz, qy = q_values
-
-    interp_mask, _ = \
-        setup.ortho_reciprocal(obj=mask, verbose=False, debugging=debugging, scale='linear', fill_value=fill_value[1],
-                               align_q=align_q, reference_axis=reference_axis)
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
