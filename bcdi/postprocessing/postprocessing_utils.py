@@ -1735,33 +1735,28 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, fill_v
 
     # convert array type to float, for integers the interpolation can lead to artefacts
     array = array.astype(float)
-
-    # normalize the vectors
-    axis_to_align = axis_to_align / np.linalg.norm(axis_to_align)
-    reference_axis = reference_axis / np.linalg.norm(reference_axis)
-
     nbz, nby, nbx = array.shape
     if debugging:
         gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, title='Before rotating',
                             is_orthogonal=is_orthogonal, scale=scale, reciprocal_space=reciprocal_space)
 
-    v = np.cross(axis_to_align, reference_axis)
-    skew_sym_matrix = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-    my_rotation_matrix = np.identity(3) +\
-        skew_sym_matrix + np.dot(skew_sym_matrix, skew_sym_matrix) / (1+np.dot(axis_to_align, reference_axis))
-    transfer_matrix = my_rotation_matrix.transpose()
+    # calculate the rotation matrix which aligns axis_to_align onto reference_axis
+    rotation_matrix = util.rotation_matrix_3d(axis_to_align, reference_axis)
 
+    # calculate the new indices after transformation
     old_z = np.arange(-nbz // 2, nbz // 2, 1) * voxel_size[0]
     old_y = np.arange(-nby // 2, nby // 2, 1) * voxel_size[1]
     old_x = np.arange(-nbx // 2, nbx // 2, 1) * voxel_size[2]
 
     myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing='ij')
 
-    new_x = transfer_matrix[0, 0] * myx + transfer_matrix[0, 1] * myy + transfer_matrix[0, 2] * myz
-    new_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
-    new_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
-
+    new_x = rotation_matrix[0, 0] * myx + rotation_matrix[0, 1] * myy + rotation_matrix[0, 2] * myz
+    new_y = rotation_matrix[1, 0] * myx + rotation_matrix[1, 1] * myy + rotation_matrix[1, 2] * myz
+    new_z = rotation_matrix[2, 0] * myx + rotation_matrix[2, 1] * myy + rotation_matrix[2, 2] * myz
     del myx, myy, myz
+    gc.collect()
+
+    # interpolate array onto the new positions
     rgi = RegularGridInterpolator((old_z, old_y, old_x), array, method='linear', bounds_error=False,
                                   fill_value=fill_value)
     new_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
@@ -1775,7 +1770,7 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, fill_v
 
 def rotate_vector(vectors, axis_to_align, reference_axis):
     """
-    Calculate the vector components in the basis where axis_to_align and reference_axis are aligned.
+    Calculate the vector components (3D) in the basis where axis_to_align and reference_axis are aligned.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
     (CXI convention).
 
@@ -1783,7 +1778,8 @@ def rotate_vector(vectors, axis_to_align, reference_axis):
      orthonormal frame x y z
     :param axis_to_align: the axis of myobj (vector q), expressed in an orthonormal frame x y z
     :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame x y z
-    :return: rotated vector in CXI convention z y x
+    :return: tuple of three ndarrays in CXI convention z y x, each of shape
+     (vectors[0].size, vectors[1].size, vectors[2].size). If a single vector is provided, returns a 1D array of size 3.
     """
     # check parameters
     if isinstance(vectors, np.ndarray):
@@ -1792,23 +1788,17 @@ def rotate_vector(vectors, axis_to_align, reference_axis):
         else:
             raise ValueError('vectors should be a tuple of three values/arrays')
     valid_name = 'postprocessing_utils.rotate_vector'
-    valid.valid_container(vectors, container_types=(tuple, list), length=3, item_types=(np.ndarray, Real), name=valid_name)
+    valid.valid_container(vectors, container_types=(tuple, list), length=3, item_types=(np.ndarray, Real),
+                          name=valid_name)
 
-    # normalize the vectors
-    axis_to_align = axis_to_align / np.linalg.norm(axis_to_align)
-    reference_axis = reference_axis / np.linalg.norm(reference_axis)
+    # calculate the rotation matrix which aligns axis_to_align onto reference_axis
+    rotation_matrix = util.rotation_matrix_3d(axis_to_align, reference_axis)
 
-    v = np.cross(axis_to_align, reference_axis)
-    skew_sym_matrix = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-    my_rotation_matrix = np.identity(3) +\
-        skew_sym_matrix + np.dot(skew_sym_matrix, skew_sym_matrix) / (1+np.dot(axis_to_align, reference_axis))
-    transfer_matrix = my_rotation_matrix.transpose()
-
+    # calculate the new vector components after transformation
     myz, myy, myx = np.meshgrid(vectors[2], vectors[1], vectors[0], indexing='ij')
-
-    new_x = transfer_matrix[0, 0] * myx + transfer_matrix[0, 1] * myy + transfer_matrix[0, 2] * myz
-    new_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
-    new_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
+    new_x = rotation_matrix[0, 0] * myx + rotation_matrix[0, 1] * myy + rotation_matrix[0, 2] * myz
+    new_y = rotation_matrix[1, 0] * myx + rotation_matrix[1, 1] * myy + rotation_matrix[1, 2] * myz
+    new_z = rotation_matrix[2, 0] * myx + rotation_matrix[2, 1] * myy + rotation_matrix[2, 2] * myz
 
     if new_x.size == 1:  # a single vector was given as input, return it in a friendly format
         return np.array([new_z[0, 0, 0], new_y[0, 0, 0], new_x[0, 0, 0]])

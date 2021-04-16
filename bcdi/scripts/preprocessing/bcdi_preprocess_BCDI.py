@@ -316,6 +316,7 @@ def press_key(event):
 #########################
 # check some parameters #
 #########################
+valid_name = 'bcdi_preprocess_BCDI'
 if isinstance(scans, int):
     scans = (scans,)
 
@@ -337,7 +338,7 @@ else:
 
 create_savedir = True
 
-valid.valid_container(user_comment, container_types=str, name='preprocess_bcdi')
+valid.valid_container(user_comment, container_types=str, name=valid_name)
 if len(user_comment) != 0 and not user_comment.startswith('_'):
     user_comment = '_' + user_comment
 if reload_previous:
@@ -373,10 +374,18 @@ else:
 if isinstance(sample_name, str):
     sample_name = [sample_name for idx in range(len(scans))]
 valid.valid_container(sample_name, container_types=(tuple, list), length=len(scans), item_types=str,
-                      name='preprocess_bcdi')
+                      name=valid_name)
 
 if fill_value_mask not in {0, 1}:
     raise ValueError(f'fill_value_mask should be 0 or 1, got {fill_value_mask}')
+
+valid.valid_item(align_q, allowed_types=bool, name=valid_name)
+if align_q:
+    user_comment += f'_align-q-{ref_axis_q}'
+    if ref_axis_q not in {'x', 'y', 'z'}:
+        raise ValueError("ref_axis_q should be either 'x', 'y' or 'z'")
+else:
+    ref_axis_q = 'y'  # ref_axis_q will not be used
 
 ###################
 # define colormap #
@@ -603,10 +612,18 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                            detector=detector, setup=setup, frames_logical=frames_logical, hxrd=hxrd,
                                            follow_bragg=follow_bragg, debugging=debug)
             else:  # 'linearization'
+                # for q values, the frame used is (qx downstream, qy outboard, qz vertical up)
+                # for ref_axis, the frame is z downstream, y vertical up, x outboard but the order must be x,y,z
+                if ref_axis_q == "x":
+                    ref_axis = np.array([1, 0, 0])  # must be in [x, y, z] order
+                elif ref_axis_q == "y":
+                    ref_axis = np.array([0, 1, 0])  # must be in [x, y, z] order
+                else:  # "z"
+                    ref_axis = np.array([0, 0, 1])  # must be in [x, y, z] order
                 data, mask, q_values = \
                     pru.grid_bcdi_labframe(data=data, mask=mask, detector=detector, setup=setup,
-                                           debugging=debug, follow_bragg=follow_bragg, method_shape='fix_sampling',
-                                           fill_value=(0, fill_value_mask))
+                                           align_q=align_q, reference_axis=ref_axis, debugging=debug,
+                                           follow_bragg=follow_bragg, fill_value=(0, fill_value_mask))
             nz, ny, nx = data.shape
             print('\nData size after interpolation into an orthonormal frame:', nz, ny, nx)
 
@@ -867,105 +884,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         mask[data < photon_threshold] = 1
         data[data < photon_threshold] = 0
         print("\nApplying photon threshold < ", photon_threshold)
-
-    #################################################################################################################
-    # rotate the diffraction pattern interpolated into the laboratory frame, to have q aligned along one array axis #
-    #################################################################################################################
-    # for q values, the frame used is (qx downstream, qy outboard, qz vertical up)
-    # for myaxis and axis_to_align, the frame is z downstream, y vertical up, x outboard but the order must be x,y,z
-    if not use_rawdata and interp_method == 'linearization' and align_q:
-        comment += f'_align-q-{ref_axis_q}'
-        if ref_axis_q == "x":
-            myaxis = np.array([1, 0, 0])  # must be in [x, y, z] order
-        elif ref_axis_q == "y":
-            myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
-        elif ref_axis_q == "z":
-            myaxis = np.array([0, 0, 1])  # must be in [x, y, z] order
-        else:
-            ref_axis_q = "y"
-            myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
-
-        nqx, nqz, nqy = data.shape
-        qx, qz, qy = q_values
-        dqx = (qx.max() - qx.min()) / nqx
-        dqy = (qy.max() - qy.min()) / nqy
-        dqz = (qz.max() - qz.min()) / nqz
-
-        # find the position in q of the center of mass
-        piz, piy, pix = center_of_mass(data)
-        print(f'\n position of the com of the Bragg peak: '
-              f'({int(np.rint(piz))}, {int(np.rint(piz))}, {int(np.rint(piz))})')
-        qx_com = qx[int(np.rint(piz))]
-        qz_com = qz[int(np.rint(piy))]
-        qy_com = qy[int(np.rint(pix))]
-        q_com = np.array([qx_com, qy_com, qz_com])
-        qnorm = np.linalg.norm(q_com)  # in 1/A
-        planar_dist = 2 * np.pi / qnorm  # in A
-        print(f"Wavevector transfer (qx, qz, qy): {qx_com:.4f}, {qz_com:.4f}, {qy_com:.4f} (1/A)")
-        print(f"Wavevector transfer: {qnorm:.4f} (1/A)")
-        print(f"Atomic plane distance: {planar_dist:.4f} (A)")
-        print(f'Aligning Q along {ref_axis_q}: {myaxis}')
-
-        # axes in rotate_crystal must be in [x, y, z] order (x outboard, y vertical up, z downsteam), i.e. [qy, qz, qx]
-        # voxel_size is in the normal CXI order [z, y, x], i.e. [qx, qz, qy]
-        data = pu.rotate_crystal(array=data, axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                 reference_axis=myaxis, voxel_size=(dqx, dqz, dqy), scale='log', debugging=debug)
-        mask = pu.rotate_crystal(array=mask, axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                 reference_axis=myaxis, voxel_size=(dqx, dqz, dqy), fill_value=fill_value_mask,
-                                 debugging=debug)
-
-        # calculate the q values in the crystal frame (back rotation to have axis_to_align (e.g. qz) along q)
-        qx_crystal, qz_crystal, qy_crystal =\
-            pu.rotate_vector(vectors=(qy, qz, qx), axis_to_align=myaxis,
-                             reference_axis=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm))
-
-        # rotate the qx values of the crystal frame into the frame where q is along the reference axis
-        qx_crystal = pu.rotate_crystal(array=qx_crystal, reference_axis=myaxis, voxel_size=(dqx, dqz, dqy),
-                                       axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                       scale='log', fill_value=np.nan, debugging=debug)
-        # remove nan values from rotated qx values and make 1D vectors (the basis follows array axes now, all values are
-        # identical in the 2D slice perpendicular to the axis considered)
-        std = np.zeros(nqx)
-        for idx in range(nqx):
-            tmp = qx_crystal[idx, :, :]
-            qx[idx] = tmp[~np.isnan(tmp)].mean()
-            std[idx] = tmp[~np.isnan(tmp)].std()
-        print(f'Taking 1D qx components, range={qx.max()-qx.min():.4f} (1/A), std={std.mean():.2e}')
-        del qx_crystal, std, tmp
-        gc.collect()
-
-        # rotate the qz values of the crystal frame into the frame where q is along the reference axis
-        qz_crystal = pu.rotate_crystal(array=qz_crystal, reference_axis=myaxis, voxel_size=(dqx, dqz, dqy),
-                                       axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                       scale='log', fill_value=np.nan,  debugging=debug)
-        # remove nan values from rotated qz values and make 1D vectors (the basis follows array axes now, all values are
-        # identical in the 2D slice perpendicular to the axis considered)
-        std = np.zeros(nqz)
-        for idx in range(nqz):
-            tmp = qz_crystal[:, idx, :]
-            qz[idx] = tmp[~np.isnan(tmp)].mean()
-            std[idx] = tmp[~np.isnan(tmp)].std()
-        print(f'Taking 1D qz components, range={qz.max()-qz.min():.4f} (1/A), std={std.mean():.2e}')
-        del qz_crystal, std, tmp
-        gc.collect()
-
-        # rotate the qy values of the crystal frame into the frame where q is along the reference axis
-        qy_crystal = pu.rotate_crystal(array=qy_crystal, reference_axis=myaxis, voxel_size=(dqx, dqz, dqy),
-                                       axis_to_align=np.array([qy_com, qz_com, qx_com]) / np.linalg.norm(qnorm),
-                                       scale='log', fill_value=np.nan,  debugging=debug)
-        # remove nan values from rotated qy values and make 1D vectors (the basis follows array axes now, all values are
-        # identical in the 2D slice perpendicular to the axis considered)
-        std = np.zeros(nqy)
-        for idx in range(nqy):
-            tmp = qy_crystal[:, :, idx]
-            qy[idx] = tmp[~np.isnan(tmp)].mean()
-            std[idx] = tmp[~np.isnan(tmp)].std()
-        print(f'Taking 1D qy components, range={qy.max()-qy.min():.4f} (1/A), std={std.mean():.2e}')
-        del qy_crystal, std, tmp
-        gc.collect()
-
-        # TODO: check if this works also for inplane RC, is the basis still following array axes?
-        # TODO: The std should be only due to interpolation + floating point errors
 
     ################################################
     # check for nans and infs in the data and mask #
