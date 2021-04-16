@@ -1328,7 +1328,7 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
     return tilt, grazing, inplane, outofplane
 
 
-def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
+def grid_bcdi_labframe(data, mask, detector, setup, align_q=False, reference_axis=(0, 1, 0), debugging=False, **kwargs):
     """
     Interpolate BCDI reciprocal space data using a linearized transformation matrix. The resulting (qx, qy, qz) are in
      the laboratory frame (qx downstrean, qz vertical up, qy outboard).
@@ -1337,22 +1337,21 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
     :param mask: the corresponding 3D mask
     :param detector: instance of the Class experiment_utils.Detector()
     :param setup: instance of the Class experiment_utils.Setup()
+    :param align_q: boolean, if True the data will be rotated such that q is along reference_axis, and q values will be
+     calculated in the pseudo crystal frame.
+    :param reference_axis: 3D vector along which q will be aligned, expressed in an orthonormal frame x y z
     :param debugging: set to True to see plots
     :param kwargs:
-     - 'method_shape': if 'fix_shape', the output array will have the same shape as the input array.
-       If 'fix_sampling', the ouput shape will be increased in order to keep the sampling in q in each direction.
      - 'follow_bragg': bool, True when for energy scans the detector was also scanned to follow the Bragg peak
      - 'fill_value': tuple of two real numbers, fill values to use for pixels outside of the interpolation range.
-       The first value is for the data, the second for the mask.
+       The first value is for the data, the second for the mask. Default is (0, 0)
     :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard).
      q values are in inverse angstroms.
     """
     valid_name = 'preprocessing_utils.grid_bcdi_labframe'
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'method_shape', 'follow_bragg', 'fill_value'},
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'fill_value', 'reference_axis'},
                        name='preprocessing_utils.grid_bcdi_labframe')
-    method_shape = kwargs.get('method_shape', 'fix_sampling')  # 'fix_shape')
-    valid.valid_item(value=method_shape, allowed_types=str, name=valid_name)
     follow_bragg = kwargs.get('follow_bragg', False)
     valid.valid_item(follow_bragg, allowed_types=bool, name=valid_name)
     fill_value = kwargs.get('fill_value', (0, 0))
@@ -1366,17 +1365,22 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
         raise ValueError('data is expected to be a 3D array')
     if mask.ndim != 3:
         raise ValueError('mask is expected to be a 3D array')
+    valid.valid_item(align_q, allowed_types=bool, name=valid_name)
+    valid.valid_container(reference_axis, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                          name=valid_name)
+    reference_axis = np.array(reference_axis)
 
+    # grid the data
     print('Gridding the data using the linearized matrix, the result will be in the laboratory frame')
     string = 'linmat_reciprocal_space_'
     interp_data, q_values = \
-        setup.ortho_reciprocal(obj=data, method_shape=method_shape, verbose=True, debugging=debugging,
-                               fill_value=fill_value[0])
+        setup.ortho_reciprocal(obj=data, verbose=True, debugging=debugging, fill_value=fill_value[0], align_q=align_q,
+                               reference_axis=reference_axis)
     qx, qz, qy = q_values
 
     interp_mask, _ = \
-        setup.ortho_reciprocal(obj=mask, method_shape=method_shape, verbose=False, debugging=debugging, scale='linear',
-                               fill_value=fill_value[1])
+        setup.ortho_reciprocal(obj=mask, verbose=False, debugging=debugging, scale='linear', fill_value=fill_value[1],
+                               align_q=align_q, reference_axis=reference_axis)
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
@@ -1389,7 +1393,7 @@ def grid_bcdi_labframe(data, mask, detector, setup, debugging=False, **kwargs):
     # apply the mask to the data
     interp_data[np.nonzero(interp_mask)] = 0
 
-    # plot the gridded data
+    # save plots of the gridded data
     final_binning = (detector.preprocessing_binning[0] * detector.binning[0],
                      detector.preprocessing_binning[1] * detector.binning[1],
                      detector.preprocessing_binning[2] * detector.binning[2])

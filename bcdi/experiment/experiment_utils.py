@@ -1302,17 +1302,21 @@ class Setup(object):
                                 title=title+' in the orthogonal laboratory frame')
         return ortho_obj, voxel_size
 
-    def ortho_reciprocal(self, obj, method_shape='fix_sampling', verbose=True, debugging=False, **kwargs):
+    def ortho_reciprocal(self, obj, fill_value=0, align_q=False, reference_axis=(0, 1, 0), verbose=True,
+                         debugging=False, **kwargs):
         """
-        Interpolate obj in the orthogonal laboratory frame (z/qx downstream, y/qz vertical up, x/qy outboard).
+        Interpolate obj in the orthogonal laboratory frame (z/qx downstream, y/qz vertical up, x/qy outboard). The
+        ouput shape will be increased in order to keep the same extent in q in each direction. The sampling in q is
+        defined as the norm of the rows of the transformation matrix.
 
         :param obj: reciprocal space diffraction pattern, in the detector frame
-        :param method_shape: if 'fix_shape', the output array will have the same shape as the input array.
-         If 'fix_sampling', the ouput shape will be increased in order to keep the sampling in q in each direction.
+        :param fill_value: fill_value parameter for the RegularGridInterpolator
+        :param align_q: boolean, if True the data will be rotated such that q is along reference_axis, and q values
+         will be calculated in the pseudo crystal frame.
+        :param reference_axis: 3D vector along which q will be aligned, expressed in an orthonormal frame x y z
         :param verbose: True to have printed comments
         :param debugging: True to show plots before and after interpolation
         :param kwargs:
-         - 'fill_value': fill_value parameter for the RegularGridInterpolator
          - 'title': title for the debugging plots
          - 'scale': 'linear' or 'log', scale for the debugging plots
          - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
@@ -1320,31 +1324,34 @@ class Setup(object):
          - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
         :return: object interpolated on an orthogonal grid, q values as a tuple of three 1D vectors (qx, qz, qy)
         """
+        valid_name = 'Setup.ortho_reciprocal'
         # check and load kwargs
         valid.valid_kwargs(kwargs=kwargs,
-                           allowed_kwargs={'fill_value', 'title', 'scale', 'width_z', 'width_y', 'width_x'},
+                           allowed_kwargs={'title', 'scale', 'width_z', 'width_y', 'width_x'},
                            name='Setup.orthogonalize')
-        fill_value = kwargs.get('fill_value', 0)
         title = kwargs.get('title', 'Object')
-        valid.valid_item(value=title, allowed_types=str, name='Setup.ortho_reciprocal')
+        valid.valid_item(value=title, allowed_types=str, name=valid_name)
         scale = kwargs.get('scale', 'log')
-        valid.valid_item(value=scale, allowed_types=str, name='Setup.ortho_reciprocal')
+        valid.valid_item(value=scale, allowed_types=str, name=valid_name)
         width_z = kwargs.get('width_z', None)
         valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
-                         name='Setup.ortho_reciprocal')
+                         name=valid_name)
         width_y = kwargs.get('width_y', None)
         valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
-                         name='Setup.ortho_reciprocal')
+                         name=valid_name)
         width_x = kwargs.get('width_x', None)
         valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
-                         name='Setup.ortho_reciprocal')
+                         name=valid_name)
 
         # check some parameters
-        if method_shape not in {'fix_sampling', 'fix_shape'}:
-            raise ValueError('method_shape should be either "fix_sampling" or "fix_shape"')
-
+        if not isinstance(fill_value, Real):
+            raise ValueError(f'fill_value should be a real number, got {type(fill_value)}')
         if not isinstance(obj, np.ndarray) or obj.ndim != 3:
             raise ValueError('obj should be a 3D numpy array')
+        valid.valid_item(align_q, allowed_types=bool, name=valid_name)
+        valid.valid_container(reference_axis, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name=valid_name)
+        reference_axis = np.array(reference_axis)
 
         # plot the original data
         if debugging:
@@ -1357,37 +1364,36 @@ class Setup(object):
                                                                direct_space=False, pixel_x=self.pixel_x,
                                                                pixel_y=self.pixel_y, verbose=verbose)
 
-        # the voxel size in q in given by the rows of the transformation matrix (the unit is 1/nm)
+        # the voxel size in q in the laboratory frame is given by the rows of the transformation matrix
+        # (the unit is 1/nm)
         dq_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
         dq_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
         dq_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
-        # calculate the shape of the output array
+        ############################################################################################
+        # find the shape of the output array that fits the extent of the data after transformation #
+        ############################################################################################
         nbz, nby, nbx = obj.shape
+        # calculate the q coordinates of the data points in the laboratory frame
+        myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1),
+                                    np.arange(-nby // 2, nby // 2, 1),
+                                    np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
 
-        if method_shape == 'fix_sampling':
-            # calculate the q coordinates of the data points in the laboratory frame
-            myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1),
-                                        np.arange(-nby // 2, nby // 2, 1),
-                                        np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
+        q_along_x = transfer_matrix[0, 0] * myx + transfer_matrix[0, 1] * myy + transfer_matrix[0, 2] * myz
+        q_along_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
+        q_along_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
 
-            q_along_x = transfer_matrix[0, 0] * myx + transfer_matrix[0, 1] * myy + transfer_matrix[0, 2] * myz
-            q_along_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
-            q_along_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
+        nx_output = int(np.rint((q_along_x.max() - q_along_x.min()) / dq_along_x))
+        ny_output = int(np.rint((q_along_y.max() - q_along_y.min()) / dq_along_y))
+        nz_output = int(np.rint((q_along_z.max() - q_along_z.min()) / dq_along_z))
 
-            nx_output = int(np.rint((q_along_x.max() - q_along_x.min()) / dq_along_x))
-            ny_output = int(np.rint((q_along_y.max() - q_along_y.min()) / dq_along_y))
-            nz_output = int(np.rint((q_along_z.max() - q_along_z.min()) / dq_along_z))
-
-            nz_output, ny_output, nx_output = smaller_primes((nz_output, ny_output, nx_output), maxprime=7,
-                                                             required_dividers=(2,))
-            del q_along_x, q_along_y, q_along_z, myx, myy, myz
-            gc.collect()
-        else:  # 'fix_shape'
-            nz_output, ny_output, nx_output = nbz, nby, nbx
+        nz_output, ny_output, nx_output = smaller_primes((nz_output, ny_output, nx_output), maxprime=7,
+                                                         required_dividers=(2,))
+        # del q_along_x, q_along_y, q_along_z, myx, myy, myz
+        # gc.collect()
 
         if verbose:
-            print(f"\ninterpolation method = '{method_shape}':"
+            print("\nInterpolating:"
                   f"\n    initial shape = ({nbz},{nby},{nbx})\n    output shape = ({nz_output},{ny_output},{nx_output})"
                   f"\n    sampling in q (1/nm): dqx = {dq_along_z:.5f}, dqz = {dq_along_y:.5f}, dqy = {dq_along_x:.5f}")
         # this assumes that the direct beam was at the center of the array
@@ -1395,6 +1401,7 @@ class Setup(object):
 
         # calculate qx qz qy vectors in 1/nm, the reference being the center of the array
         # the usual frame is used for q values: qx downstream, qz vertical up, qy outboard
+        # TODO: isn't this calculate just above (q_along_x ...)?
         qx = np.arange(-nz_output // 2, nz_output // 2, 1) * dq_along_z  # along z downstream
         qz = np.arange(-ny_output // 2, ny_output // 2, 1) * dq_along_y  # along y vertical up
         qy = np.arange(-nx_output // 2, nx_output // 2, 1) * dq_along_x  # along x outboard
