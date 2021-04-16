@@ -1770,7 +1770,7 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, fill_v
 
 def rotate_vector(vectors, axis_to_align, reference_axis):
     """
-    Calculate the vector components in the basis where axis_to_align and reference_axis are aligned.
+    Calculate the vector components (3D) in the basis where axis_to_align and reference_axis are aligned.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
     (CXI convention).
 
@@ -1778,7 +1778,8 @@ def rotate_vector(vectors, axis_to_align, reference_axis):
      orthonormal frame x y z
     :param axis_to_align: the axis of myobj (vector q), expressed in an orthonormal frame x y z
     :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame x y z
-    :return: rotated vector in CXI convention z y x
+    :return: tuple of three ndarrays in CXI convention z y x, each of shape
+     (vectors[0].size, vectors[1].size, vectors[2].size). If a single vector is provided, returns a 1D array of size 3.
     """
     # check parameters
     if isinstance(vectors, np.ndarray):
@@ -1787,7 +1788,8 @@ def rotate_vector(vectors, axis_to_align, reference_axis):
         else:
             raise ValueError('vectors should be a tuple of three values/arrays')
     valid_name = 'postprocessing_utils.rotate_vector'
-    valid.valid_container(vectors, container_types=(tuple, list), length=3, item_types=(np.ndarray, Real), name=valid_name)
+    valid.valid_container(vectors, container_types=(tuple, list), length=3, item_types=(np.ndarray, Real),
+                          name=valid_name)
 
     # calculate the rotation matrix which aligns axis_to_align onto reference_axis
     rotation_matrix = util.rotation_matrix_3d(axis_to_align, reference_axis)
