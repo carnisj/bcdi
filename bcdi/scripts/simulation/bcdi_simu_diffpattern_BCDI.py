@@ -23,6 +23,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.simulation.simulation_utils as simu
 
 helptext = """
 Using a support created from a reconstructed object (real space), calculate the diffraction pattern depending on several 
@@ -95,10 +96,9 @@ my_cmap = colormap.cmap
 ################
 # define setup #
 ################
-setup = exp.SetupPostprocessing(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle,
-                                inplane_angle=inplane_angle, tilt_angle=tilt_angle, rocking_angle=rocking_angle,
-                                grazing_angle=grazing_angle, distance=original_sdd, pixel_x=pixel_size,
-                                pixel_y=pixel_size)
+setup = exp.Setup(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle, inplane_angle=inplane_angle,
+                  tilt_angle=tilt_angle, rocking_angle=rocking_angle, grazing_angle=grazing_angle,
+                  distance=original_sdd, pixel_x=pixel_size, pixel_y=pixel_size)
 
 #########################
 # load a reconstruction #
@@ -240,13 +240,14 @@ if rotate_crystal:
         ref_axis_outplane = "y"
         myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
     print('Q aligned along ', ref_axis_outplane, ":", myaxis)
-    angle = pu.plane_angle(np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), myaxis)
+    angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), test_vector=myaxis)
     print("Angle between q and", ref_axis_outplane, "=", angle, "deg")
     print("Angle with y in zy plane", np.arctan(q[0] / q[1]) * 180 / np.pi, "deg")
     print("Angle with y in xy plane", np.arctan(-q[2] / q[1]) * 180 / np.pi, "deg")
     print("Angle with z in xz plane", 180 + np.arctan(q[2] / q[0]) * 180 / np.pi, "deg")
 
-    support, phase = pu.rotate_crystal((support, phase), axis_to_align=myaxis, debugging=(True, False),
+    support, phase = pu.rotate_crystal(arrays=(support, phase), axis_to_align=myaxis, debugging=(True, False),
+                                       title=('support', 'phase'),
                                        reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q))
 
 original_obj = support * np.exp(1j * phase)
