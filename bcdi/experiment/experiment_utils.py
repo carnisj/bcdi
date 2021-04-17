@@ -1498,6 +1498,8 @@ class Setup(object):
         ######################
         output_arrays = []
         for idx, array in enumerate(arrays):
+            # convert array type to float, for integers the interpolation can lead to artefacts
+            array = array.astype(float)
             rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
                                            np.arange(-nbx // 2, nbx // 2)), array, method='linear',
                                           bounds_error=False, fill_value=fill_value[idx])
