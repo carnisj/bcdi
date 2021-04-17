@@ -1307,9 +1307,9 @@ class Setup(object):
     def ortho_reciprocal(self, arrays, fill_value=0, align_q=False, reference_axis=(0, 1, 0), verbose=True,
                          debugging=False, **kwargs):
         """
-        Interpolate obj in the orthogonal laboratory frame (z/qx downstream, y/qz vertical up, x/qy outboard). The
-        ouput shape will be increased in order to keep the same extent in q in each direction. The sampling in q is
-        defined as the norm of the rows of the transformation matrix.
+        Interpolate arrays in the orthogonal laboratory frame (z/qx downstream, y/qz vertical up, x/qy outboard)
+        or crystal frame (q aligned along one array axis). The ouput shape will be increased in order to keep the same
+        range in q in each direction. The sampling in q is defined as the norm of the rows of the transformation matrix.
 
         :param arrays: tuple of 3D arrays of the same shape (e.g.: reciprocal space diffraction pattern and mask),
          in the detector frame
@@ -1319,7 +1319,8 @@ class Setup(object):
          will be calculated in the pseudo crystal frame.
         :param reference_axis: 3D vector along which q will be aligned, expressed in an orthonormal frame x y z
         :param verbose: True to have printed comments
-        :param debugging: True to show plots before and after interpolation
+        :param debugging: tuple of booleans of the same length as the number of input arrays, True to show plots before
+         and after interpolation
         :param kwargs:
          - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
          - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging plots, same length as the
@@ -1370,7 +1371,10 @@ class Setup(object):
             fill_value = (fill_value,) * nb_arrays
         valid.valid_container(fill_value, container_types=(tuple, list, np.ndarray), length=nb_arrays, item_types=Real,
                               name=valid_name)
-
+        if isinstance(debugging, bool):
+            debugging = (debugging,) * nb_arrays
+        valid.valid_container(debugging, container_types=(tuple, list), length=nb_arrays, item_types=bool,
+                              name=valid_name)
         valid.valid_item(align_q, allowed_types=bool, name=valid_name)
         valid.valid_container(reference_axis, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
                               name=valid_name)
@@ -1502,7 +1506,7 @@ class Setup(object):
             ortho_array = ortho_array.reshape((len(qx), len(qz), len(qy))).astype(array.dtype)
             output_arrays.append(ortho_array)
 
-            if debugging:
+            if debugging[idx]:
                 gu.multislices_plot(abs(array), sum_frames=True, scale=scale, plot_colorbar=True, width_z=width_z,
                                     width_y=width_y, width_x=width_x, is_orthogonal=False, reciprocal_space=True,
                                     vmin=0, title=title[idx] + ' in detector frame')
