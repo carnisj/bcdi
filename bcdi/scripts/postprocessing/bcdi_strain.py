@@ -687,12 +687,9 @@ if save_labframe:
 ############################################################################
 if data_frame != 'crystal':
     print('\nAligning Q along ', ref_axis_q, ":", myaxis)
-    amp = pu.rotate_crystal(array=amp, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
-                            reference_axis=myaxis, voxel_size=voxel_size, debugging=True,
-                            is_orthogonal=True, reciprocal_space=False)
-    phase = pu.rotate_crystal(array=phase, axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
-                              reference_axis=myaxis, voxel_size=voxel_size, debugging=False,
-                              is_orthogonal=True, reciprocal_space=False)
+    amp, phase = pu.rotate_crystal(arrays=(amp, phase), axis_to_align=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
+                                   reference_axis=myaxis, voxel_size=voxel_size, debugging=(True, False),
+                                   title=('amp', 'phase'), is_orthogonal=True, reciprocal_space=False)
 
 ################################################################
 # calculate the strain depending on which axis q is aligned on #
@@ -709,19 +706,14 @@ if data_frame != 'crystal':
     else:
         comment = comment + '_lab-frame'
         print('Rotating back the crystal in laboratory frame')
-        amp = pu.rotate_crystal(array=amp, axis_to_align=myaxis, voxel_size=voxel_size,
-                                reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=True,
-                                is_orthogonal=True, reciprocal_space=False)
-        phase = pu.rotate_crystal(array=phase, axis_to_align=myaxis, voxel_size=voxel_size,
-                                  reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False,
-                                  is_orthogonal=True, reciprocal_space=False)
-        strain = pu.rotate_crystal(array=strain, axis_to_align=myaxis, voxel_size=voxel_size,
-                                   reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q), debugging=False,
-                                   is_orthogonal=True, reciprocal_space=False)
+        amp, phase, strain = pu.rotate_crystal(arrays=(amp, phase, strain), axis_to_align=myaxis, voxel_size=voxel_size,
+                                               reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
+                                               debugging=(True, False, False), title=('amp', 'phase', 'strain'),
+                                               is_orthogonal=True, reciprocal_space=False)
 
-############################################################################
-# rotates the crystal for example inplane for easier slicing of the result #
-############################################################################
+#####################################################################
+# rotates the crystal inplane e.g. for easier slicing of the result #
+#####################################################################
 if align_axis:
     if ref_axis == "x":
         myaxis_inplane = np.array([1, 0, 0])  # must be in [x, y, z] order
@@ -729,15 +721,10 @@ if align_axis:
         myaxis_inplane = np.array([0, 1, 0])  # must be in [x, y, z] order
     else:  # ref_axis = "z"
         myaxis_inplane = np.array([0, 0, 1])  # must be in [x, y, z] order
-    amp = pu.rotate_crystal(array=amp, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                            reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=True,
-                            is_orthogonal=True, reciprocal_space=False)
-    phase = pu.rotate_crystal(array=phase, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                              reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False,
-                              is_orthogonal=True, reciprocal_space=False)
-    strain = pu.rotate_crystal(array=strain, axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
-                               reference_axis=myaxis_inplane, voxel_size=voxel_size, debugging=False,
-                               is_orthogonal=True, reciprocal_space=False)
+    amp, phase, strain = pu.rotate_crystal(arrays=(amp, phase, strain), reference_axis=myaxis_inplane,
+                                           axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
+                                           voxel_size=voxel_size, debugging=(True, False, False),
+                                           is_orthogonal=True, reciprocal_space=False, title=('amp', 'phase', 'strain'))
 
 ##############################################
 # pad array to fit the output_size parameter #
