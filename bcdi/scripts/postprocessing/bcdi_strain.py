@@ -227,6 +227,14 @@ elif data_frame == 'detector':
 else:
     is_orthogonal = True
 
+if ref_axis_q not in {'x', 'y', 'z'}:
+    raise ValueError("ref_axis_q should be either 'x', 'y', 'z'")
+
+if ref_axis not in {'x', 'y', 'z'}:
+    raise ValueError("ref_axis should be either 'x', 'y', 'z'")
+
+axis_to_array_xyz = {'x': np.array([1, 0, 0]), 'y': np.array([0, 1, 0]), 'z': np.array([0, 0, 1])}  # in xyz order
+
 comment = comment + '_' + str(isosurface_strain)
 
 ###################
@@ -538,23 +546,13 @@ gc.collect()
 ##################################################
 # calculate q, kin , kout from angles and energy #
 ##################################################
-if ref_axis_q == "x":
-    myaxis = np.array([1, 0, 0])  # must be in [x, y, z] order
-elif ref_axis_q == "y":
-    myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
-elif ref_axis_q == "z":
-    myaxis = np.array([0, 0, 1])  # must be in [x, y, z] order
-else:
-    ref_axis_q = "y"
-    myaxis = np.array([0, 1, 0])  # must be in [x, y, z] order
-
 kin = 2*np.pi/setup.wavelength * setup.beam_direction  # in laboratory frame z downstream, y vertical, x outboard
 kout = setup.exit_wavevector  # in laboratory frame z downstream, y vertical, x outboard
 
 q = kout - kin  # in laboratory frame z downstream, y vertical, x outboard
 qnorm = np.linalg.norm(q)
 q = q / qnorm
-angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=myaxis)
+angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=axis_to_array_xyz[ref_axis_q])
 print(f"\nAngle between q and {ref_axis_q} = {angle:.2f} deg")
 if debug:
     print(f"Angle with y in zy plane = {np.arctan(q[0]/q[1])*180/np.pi:.2f} deg")
@@ -609,9 +607,10 @@ if correct_refraction:  # or correct_absorption:
     # kin and kout were calculated in the laboratory frame. If the crystal is in its frame, we need to transform kin
     # and kout back into the crystal frame (xrayutilities output is in crystal frame)
     if data_frame == 'crystal':
-        kin = pu.rotate_vector(vectors=np.array([kin[2], kin[1], kin[0]]), axis_to_align=myaxis,
+        kin = pu.rotate_vector(vectors=np.array([kin[2], kin[1], kin[0]]), axis_to_align=axis_to_array_xyz[ref_axis_q],
                                reference_axis=np.array([q[2], q[1], q[0]]))
-        kout = pu.rotate_vector(vectors=np.array([kout[2], kout[1], kout[0]]), axis_to_align=myaxis,
+        kout = pu.rotate_vector(vectors=np.array([kout[2], kout[1], kout[0]]),
+                                axis_to_align=axis_to_array_xyz[ref_axis_q],
                                 reference_axis=np.array([q[2], q[1], q[0]]))
 
     # calculate the optical path of the incoming wavevector
@@ -715,13 +714,7 @@ if data_frame != 'crystal':
 # rotates the crystal inplane e.g. for easier slicing of the result #
 #####################################################################
 if align_axis:
-    if ref_axis == "x":
-        myaxis_inplane = np.array([1, 0, 0])  # must be in [x, y, z] order
-    elif ref_axis == "y":
-        myaxis_inplane = np.array([0, 1, 0])  # must be in [x, y, z] order
-    else:  # ref_axis = "z"
-        myaxis_inplane = np.array([0, 0, 1])  # must be in [x, y, z] order
-    amp, phase, strain = pu.rotate_crystal(arrays=(amp, phase, strain), reference_axis=myaxis_inplane,
+    amp, phase, strain = pu.rotate_crystal(arrays=(amp, phase, strain), reference_axis=axis_to_array_xyz[ref_axis],
                                            axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
                                            voxel_size=voxel_size, debugging=(True, False, False),
                                            is_orthogonal=True, reciprocal_space=False, title=('amp', 'phase', 'strain'))

@@ -386,6 +386,7 @@ if align_q:
         raise ValueError("ref_axis_q should be either 'x', 'y' or 'z'")
 else:
     ref_axis_q = 'y'  # ref_axis_q will not be used
+axis_to_array_xyz = {'x': np.array([1, 0, 0]), 'y': np.array([0, 1, 0]), 'z': np.array([0, 0, 1])}  # in xyz order
 
 ###################
 # define colormap #
@@ -613,17 +614,11 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                            follow_bragg=follow_bragg, debugging=debug)
             else:  # 'linearization'
                 # for q values, the frame used is (qx downstream, qy outboard, qz vertical up)
-                # for ref_axis, the frame is z downstream, y vertical up, x outboard but the order must be x,y,z
-                if ref_axis_q == "x":
-                    ref_axis = np.array([1, 0, 0])  # must be in [x, y, z] order
-                elif ref_axis_q == "y":
-                    ref_axis = np.array([0, 1, 0])  # must be in [x, y, z] order
-                else:  # "z"
-                    ref_axis = np.array([0, 0, 1])  # must be in [x, y, z] order
+                # for reference_axis, the frame is z downstream, y vertical up, x outboard but the order must be x,y,z
                 data, mask, q_values = \
                     pru.grid_bcdi_labframe(data=data, mask=mask, detector=detector, setup=setup,
-                                           align_q=align_q, reference_axis=ref_axis, debugging=debug,
-                                           follow_bragg=follow_bragg, fill_value=(0, fill_value_mask))
+                                           align_q=align_q, reference_axis=axis_to_array_xyz[ref_axis_q],
+                                           debugging=debug, follow_bragg=follow_bragg, fill_value=(0, fill_value_mask))
             nz, ny, nx = data.shape
             print('\nData size after interpolation into an orthonormal frame:', nz, ny, nx)
 
