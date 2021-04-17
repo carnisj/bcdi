@@ -245,10 +245,9 @@ if rotate_crystal:
     print("Angle with y in zy plane", np.arctan(q[0] / q[1]) * 180 / np.pi, "deg")
     print("Angle with y in xy plane", np.arctan(-q[2] / q[1]) * 180 / np.pi, "deg")
     print("Angle with z in xz plane", 180 + np.arctan(q[2] / q[0]) * 180 / np.pi, "deg")
-    support = pu.rotate_crystal(support, axis_to_align=myaxis,
-                                reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), debugging=True)
-    phase = pu.rotate_crystal(phase, axis_to_align=myaxis,
-                              reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q), debugging=False)
+
+    support, phase = pu.rotate_crystal((support, phase), axis_to_align=myaxis, debugging=(True, False),
+                                       reference_axis=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q))
 
 original_obj = support * np.exp(1j * phase)
 del phase, support
