@@ -1696,51 +1696,85 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
         return amp, phase, myrampy, myrampx
 
 
-def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, fill_value=0, width_z=None, width_y=None,
-                   width_x=None, is_orthogonal=False, reciprocal_space=False, scale='linear', debugging=False):
+def rotate_crystal(arrays, axis_to_align, reference_axis, voxel_size=None, fill_value=0, is_orthogonal=False,
+                   reciprocal_space=False, debugging=False, **kwargs):
     """
-    Rotate myobj to align axis_to_align onto reference_axis.
+    Rotate arrays to align axis_to_align onto reference_axis. The pivot of the rotation is in the center of the arrays.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
     (CXI convention).
 
-    :param array: 3D real array, the center of mass of the object to be rotated is assumed to be located in the middle
-     of the array
+    :param arrays: tuple of 3D real arrays of the same shape.
     :param axis_to_align: the axis to be aligned (e.g. vector q), expressed in an orthonormal frame x y z
     :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame  x y z
     :param voxel_size: tuple, voxel size of the 3D array in z, y, and x (CXI convention)
-    :param fill_value: numeric value used in the RegularGridInterpolator for points outside of the interpolation domain
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :param fill_value: tuple of numeric values used in the RegularGridInterpolator for points outside of the
+     interpolation domain. The length of the tuple should be equal to the number of input arrays.
     :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
-    :param scale: 'linear' or 'log', scale for the plots
-    :param debugging: set to True to see plots before and after rotation
-    :type debugging: bool
-    :return: rotated myobj
+    :param debugging: tuple of booleans of the same length as the number of input arrays, True to see plots before and
+     after rotation
+    :param kwargs:
+     - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
+     - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging plots, same length as the
+       number of arrays
+     - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+     - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+     - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :return: tuple of rotated arrays, same length as the number of input arrays
     """
-    # check some parameters
-    if array.ndim != 3:
-        raise ValueError('array should be 3D arrays')
+    valid_name = 'postprocessing_utils.rotate_crystal'
+    # check that arrays is a tuple of 3D arrays
+    if isinstance(arrays, np.ndarray):
+        arrays = (arrays,)
+    valid.valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray, min_length=1,
+                          name=valid_name)
+    if any(array.ndim != 3 for array in arrays):
+        raise ValueError('all arrays should be 3D ndarrays of the same shape')
+    ref_shape = arrays[0].shape
+    if any(array.shape != ref_shape for array in arrays):
+        raise ValueError('all arrays should be 3D ndarrays of the same shape')
+    nb_arrays = len(arrays)
+    nbz, nby, nbx = ref_shape
 
+    # check some parameters
     voxel_size = voxel_size or (1, 1, 1)
-    if isinstance(voxel_size, Number):
+    if isinstance(voxel_size, Real):
         voxel_size = (voxel_size,) * 3
     valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real,
                           name='postprocessing_utils.rotate_crystal', min_excluded=0)
-    if scale not in {'linear', 'log'}:
-        raise ValueError(f'scale {scale} not supported, allowed is "linear" and "log"')
-    if not isinstance(fill_value, Number):
-        raise ValueError('fill_value should be a number')
+    if isinstance(fill_value, Real):
+        fill_value = (fill_value,) * nb_arrays
+    valid.valid_container(fill_value, container_types=(tuple, list, np.ndarray), length=nb_arrays, item_types=Real,
+                          name=valid_name)
+    if isinstance(debugging, bool):
+        debugging = (debugging,) * nb_arrays
+    valid.valid_container(debugging, container_types=(tuple, list), length=nb_arrays, item_types=bool,
+                          name=valid_name)
 
-    # convert array type to float, for integers the interpolation can lead to artefacts
-    array = array.astype(float)
-    nbz, nby, nbx = array.shape
-    if debugging:
-        gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, title='Before rotating',
-                            is_orthogonal=is_orthogonal, scale=scale, reciprocal_space=reciprocal_space)
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs,
+                       allowed_kwargs={'title', 'scale', 'width_z', 'width_y', 'width_x'},
+                       name='Setup.orthogonalize')
+    title = kwargs.get('title', ('Object',)*nb_arrays)
+    valid.valid_container(title, container_types=(tuple, list), length=nb_arrays, item_types=str, name=valid_name)
+    scale = kwargs.get('scale', ('linear',)*nb_arrays)
+    valid.valid_container(scale, container_types=(tuple, list), length=nb_arrays, name=valid_name)
+    if any(val not in {'log', 'linear'} for val in scale):
+        raise ValueError("scale should be either 'log' or 'linear'")
 
-    # calculate the rotation matrix which aligns axis_to_align onto reference_axis
+    width_z = kwargs.get('width_z', None)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_y = kwargs.get('width_y', None)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_x = kwargs.get('width_x', None)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+
+    ################################################################################
+    # calculate the rotation matrix which aligns axis_to_align onto reference_axis #
+    ################################################################################
     rotation_matrix = util.rotation_matrix_3d(axis_to_align, reference_axis)
 
     # calculate the new indices after transformation
@@ -1756,16 +1790,30 @@ def rotate_crystal(array, axis_to_align, reference_axis, voxel_size=None, fill_v
     del myx, myy, myz
     gc.collect()
 
-    # interpolate array onto the new positions
-    rgi = RegularGridInterpolator((old_z, old_y, old_x), array, method='linear', bounds_error=False,
-                                  fill_value=fill_value)
-    new_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                   new_x.reshape((1, new_z.size)))).transpose())
-    new_array = new_array.reshape((nbz, nby, nbx)).astype(array.dtype)
-    if debugging:
-        gu.multislices_plot(new_array, width_z=width_z, width_y=width_y, width_x=width_x, title='After rotating',
-                            is_orthogonal=is_orthogonal, scale=scale, reciprocal_space=reciprocal_space)
-    return new_array
+    ######################
+    # interpolate arrays #
+    ######################
+    output_arrays = []
+    for idx, array in enumerate(arrays):
+        # convert array type to float, for integers the interpolation can lead to artefacts
+        array = array.astype(float)
+
+        # interpolate array onto the new positions
+        rgi = RegularGridInterpolator((old_z, old_y, old_x), array, method='linear', bounds_error=False,
+                                      fill_value=fill_value[idx])
+        rotated_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                            new_x.reshape((1, new_z.size)))).transpose())
+        rotated_array = rotated_array.reshape((nbz, nby, nbx)).astype(array.dtype)
+        output_arrays.append(rotated_array)
+
+        if debugging[idx]:
+            gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x,
+                                title=title[idx] + ' before rotating', is_orthogonal=is_orthogonal, scale=scale[idx],
+                                reciprocal_space=reciprocal_space)
+            gu.multislices_plot(rotated_array, width_z=width_z, width_y=width_y, width_x=width_x,
+                                title=title[idx] + ' after rotating', is_orthogonal=is_orthogonal, scale=scale[idx],
+                                reciprocal_space=reciprocal_space)
+    return output_arrays
 
 
 def rotate_vector(vectors, axis_to_align, reference_axis):
