@@ -1720,7 +1720,8 @@ def rotate_crystal(arrays, axis_to_align, reference_axis, voxel_size=None, fill_
      - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
      - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
      - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :return: tuple of rotated arrays, same length as the number of input arrays
+    :return: a rotated array (if a single array was provided) or a tuple of rotated arrays (same length as the number
+     of input arrays)
     """
     valid_name = 'postprocessing_utils.rotate_crystal'
     # check that arrays is a tuple of 3D arrays
@@ -1813,6 +1814,9 @@ def rotate_crystal(arrays, axis_to_align, reference_axis, voxel_size=None, fill_
             gu.multislices_plot(rotated_array, width_z=width_z, width_y=width_y, width_x=width_x,
                                 title=title[idx] + ' after rotating', is_orthogonal=is_orthogonal, scale=scale[idx],
                                 reciprocal_space=reciprocal_space)
+
+    if nb_arrays == 1:
+        output_arrays = output_arrays[0]  # return the array instead of the tuple
     return output_arrays
 
 
