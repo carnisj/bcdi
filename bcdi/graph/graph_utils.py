@@ -1766,26 +1766,28 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     """
     import vtk
     from vtk.util import numpy_support
-
+    valid_name = 'graph_utils.save_to_vti'
     #########################
     # check some parameters #
     #########################
     valid.valid_container(obj=voxel_size, container_types=(tuple, list), length=3, item_types=Real, min_excluded=0,
-                          name='graph_utils.save_to_vti')
+                          name=valid_name)
 
     if isinstance(tuple_array, np.ndarray):
         tuple_array = (tuple_array,)
     valid.valid_container(obj=tuple_array, container_types=(tuple, list), item_types=np.ndarray,
-                          name='graph_utils.save_to_vti')
+                          name=valid_name)
     nb_arrays = len(tuple_array)
-    assert all(arr.ndim == 3 for arr in tuple_array), 'expecting only 3D arrays'
-    assert all(arr.shape == tuple_array[0].shape for arr in tuple_array), 'all arrays should have the same shape'
+    if not all(arr.ndim == 3 for arr in tuple_array):
+        raise ValueError('expecting only 3D arrays')
+    if not all(arr.shape == tuple_array[0].shape for arr in tuple_array):
+        raise ValueError('all arrays should have the same shape')
     nbz, nby, nbx = tuple_array[0].shape
 
     if isinstance(tuple_fieldnames, str):
         tuple_fieldnames = (tuple_fieldnames,)
     valid.valid_container(obj=tuple_fieldnames, container_types=(tuple, list), length=nb_arrays, item_types=str,
-                          name='graph_utils.save_to_vti')
+                          name=valid_name)
 
     #############################
     # initialize the VTK object #
