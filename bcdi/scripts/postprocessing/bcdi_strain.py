@@ -506,7 +506,7 @@ kin = 2*np.pi/setup.wavelength * setup.beam_direction  # in laboratory frame z d
 kout = setup.exit_wavevector  # in laboratory frame z downstream, y vertical, x outboard
 q = (kout - kin) * 1e-10  # (1/A), in the laboratory frame z downstream, y vertical, x outboard
 angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=axis_to_array_xyz[ref_axis_q])
-print(f"\nDiffusion vector in the laboratory frame (z*, y*, x*) (1/A): {q[0]:.4f}, {q[1]:.4f}, {q[2]:.4f}")
+print(f"\nDiffusion vector in the laboratory frame (z*, y*, x*): ({q[0]:.4f} 1/A, {q[1]:.4f} 1/A, {q[2]:.4f} 1/A)")
 print(f"\nAngle between q and {ref_axis_q} = {angle:.2f} deg")
 if debug:
     print(f"Angle with y in zy plane = {np.arctan(q[0]/q[1])*180/np.pi:.2f} deg")

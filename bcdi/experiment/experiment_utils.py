@@ -1371,7 +1371,7 @@ class Setup(object):
         if verbose:
             print("\nCalculating the shape of the output array fitting the data extent after transformation:"
                   f"\nSampling in the crystal frame (axis 0, axis 1, axis 2):    "
-                  f"({d_along_z:.2f} nm, {d_along_y:.2f} nm, {d_along_x:.2f} nm")
+                  f"({d_along_z:.2f} nm, {d_along_y:.2f} nm, {d_along_x:.2f} nm)")
         # these positions are not equally spaced, we just extract the data extent from them
         nx_output = int(np.rint((pos_along_x.max() - pos_along_x.min()) / d_along_x))
         ny_output = int(np.rint((pos_along_y.max() - pos_along_y.min()) / d_along_y))
@@ -1546,8 +1546,8 @@ class Setup(object):
         q_along_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
         if verbose:
             print("\nInterpolating:"
-                  f"\n  sampling in q in the laboratory frame (1/nm):"
-                  f" dqx = {dq_along_z:.5f}, dqz = {dq_along_y:.5f}, dqy = {dq_along_x:.5f}")
+                  f"\nSampling in q in the laboratory frame (z*, y*, x*):    "
+                  f"({dq_along_z:.5f} 1/nm, {dq_along_y:.5f} 1/nm, {dq_along_x:.5f} 1/nm)")
         # these q values are not equally spaced, we just extract the q extent from them
         nx_output = int(np.rint((q_along_x.max() - q_along_x.min()) / dq_along_x))
         ny_output = int(np.rint((q_along_y.max() - q_along_y.min()) / dq_along_y))
@@ -1565,7 +1565,7 @@ class Setup(object):
             q_along_x_com = q_along_x[nbz//2, nby//2, nbx//2] + q_offset[0]
             qnorm = np.linalg.norm(np.array([q_along_x_com, q_along_y_com, q_along_z_com]))  # in 1/A
             if verbose:
-                print(f'\n  Aligning Q along {reference_axis} (x,y,z)')
+                print(f'\nAligning Q along {reference_axis} (x,y,z)')
 
             # calculate the rotation matrix from the crystal frame to the laboratory frame
             # (inverse rotation to have reference_axis along q)
@@ -1599,8 +1599,8 @@ class Setup(object):
             nz_output = int(np.rint((q_along_z.max() - q_along_z.min()) / dq_along_z))
 
             if verbose:
-                print(f"  sampling in q in the crystal frame (1/nm):"
-                      f" dqx = {dq_along_z:.5f}, dqz = {dq_along_y:.5f}, dqy = {dq_along_x:.5f}")
+                print(f"\nSampling in q in the crystal frame (axis 0, axis 1, axis 2):    "
+                      f"({dq_along_z:.5f} 1/nm, {dq_along_y:.5f} 1/nm, {dq_along_x:.5f} 1/nm)")
 
         del q_along_x, q_along_y, q_along_z, myx, myy, myz
         gc.collect()
@@ -1611,7 +1611,7 @@ class Setup(object):
         nz_output, ny_output, nx_output = smaller_primes((nz_output, ny_output, nx_output), maxprime=7,
                                                          required_dividers=(2,))
         if verbose:
-            print(f"\n  initial shape = ({nbz},{nby},{nbx})\n  output shape  = ({nz_output},{ny_output},{nx_output})")
+            print(f"\nInitial shape = ({nbz},{nby},{nbx})\nOutput shape  = ({nz_output},{ny_output},{nx_output})")
 
         #####################################################################################################
         # define the interpolation qx qz qy 1D vectors in 1/nm, the reference being the center of the array #
