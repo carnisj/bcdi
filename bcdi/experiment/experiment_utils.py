@@ -1241,7 +1241,8 @@ class Setup(object):
         if any(array.shape != ref_shape for array in arrays):
             raise ValueError('all arrays should be 3D ndarrays of the same shape')
         nb_arrays = len(arrays)
-        input_shape = arrays[0].shape  # could be smaller if the object was cropped around the support
+        input_shape = arrays[0].shape  # could be smaller than the shape used in phase retrieval,
+        # if the object was cropped around the support
 
         #########################
         # check and load kwargs #
@@ -1354,15 +1355,48 @@ class Setup(object):
         # calculate the full transfer matrix including the rotation into the crystal frame #
         ####################################################################################
         transfer_matrix = np.matmul(rotation_matrix, transfer_matrix)
+        # transfer_matrix is the transformation matrix of the direct space coordinates
+        # the spacing in the crystal frame is therefore given by the rows of the matrix
+        d_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
+        d_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
+        d_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
+
+        ############################################################################################
+        # find the shape of the output array that fits the extent of the data after transformation #
+        ############################################################################################
+
+        # calculate the voxel coordinates of the data points in the laboratory frame
+        myz, myy, myx = np.meshgrid(np.arange(-input_shape[0] // 2, input_shape[0] // 2, 1),
+                                    np.arange(-input_shape[1] // 2, input_shape[1] // 2, 1),
+                                    np.arange(-input_shape[2] // 2, input_shape[2] // 2, 1), indexing='ij')
+
+        pos_along_x = transfer_matrix[0, 0] * myx + transfer_matrix[0, 1] * myy + transfer_matrix[0, 2] * myz
+        pos_along_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
+        pos_along_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
+
+        print("\nCalculating the shape of the output array fitting the data extent after transformation:"
+              f"\n  sampling in the crystal frame (nm):"
+              f"  dz = {d_along_z:.2f}, dy = {d_along_y:.2f}, dx = {d_along_x:.2f}")
+        # these positions are not equally spaced, we just extract the data extent from them
+        nx_output = int(np.rint((pos_along_x.max() - pos_along_x.min()) / d_along_x))
+        ny_output = int(np.rint((pos_along_y.max() - pos_along_y.min()) / d_along_y))
+        nz_output = int(np.rint((pos_along_z.max() - pos_along_z.min()) / d_along_z))
+
+        # add some margin to the output shape for easier visualization
+        nx_output += 10
+        ny_output += 10
+        nz_output += 10
+        del pos_along_x, pos_along_y, pos_along_z
+        gc.collect()
 
         #########################################
         # calculate the interpolation positions #
         #########################################
         # this assumes that the diffraction pattern is in the center of the array
         # TODO : correct this if the diffraction pattern is not in the center of the array
-        myz, myy, myx = np.meshgrid(np.arange(-input_shape[0] // 2, input_shape[0] // 2, 1) * voxel_size[0],
-                                    np.arange(-input_shape[1] // 2, input_shape[1] // 2, 1) * voxel_size[1],
-                                    np.arange(-input_shape[2] // 2, input_shape[2] // 2, 1) * voxel_size[2],
+        myz, myy, myx = np.meshgrid(np.arange(-nz_output // 2, nz_output // 2, 1) * voxel_size[0],
+                                    np.arange(-ny_output // 2, ny_output // 2, 1) * voxel_size[1],
+                                    np.arange(-nx_output // 2, nx_output // 2, 1) * voxel_size[2],
                                     indexing='ij')
 
         # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
@@ -1386,7 +1420,7 @@ class Setup(object):
                                           method='linear', bounds_error=False, fill_value=fill_value[idx])
             ortho_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                               new_x.reshape((1, new_z.size)))).transpose())
-            ortho_array = ortho_array.reshape(input_shape).astype(array.dtype)
+            ortho_array = ortho_array.reshape((nz_output, ny_output, nx_output)).astype(array.dtype)
             output_arrays.append(ortho_array)
 
             if debugging[idx]:
@@ -1618,7 +1652,7 @@ class Setup(object):
                                           bounds_error=False, fill_value=fill_value[idx])
             ortho_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
                                               new_x.reshape((1, new_z.size)))).transpose())
-            ortho_array = ortho_array.reshape((len(qx), len(qz), len(qy))).astype(array.dtype)
+            ortho_array = ortho_array.reshape((nz_output, ny_output, nx_output)).astype(array.dtype)
             output_arrays.append(ortho_array)
 
             if debugging[idx]:
