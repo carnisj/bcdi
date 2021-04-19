@@ -506,7 +506,7 @@ kin = 2*np.pi/setup.wavelength * setup.beam_direction  # in laboratory frame z d
 kout = setup.exit_wavevector  # in laboratory frame z downstream, y vertical, x outboard
 q = (kout - kin) * 1e-10  # (1/A), in the laboratory frame z downstream, y vertical, x outboard
 angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=axis_to_array_xyz[ref_axis_q])
-print(f"Diffusion vector in the laboratory frame (z*, y*, x*): {q[0]:.4f}, {q[1]:.4f}, {q[2]:.4f}")
+print(f"\nDiffusion vector in the laboratory frame (z*, y*, x*) (1/A): {q[0]:.4f}, {q[1]:.4f}, {q[2]:.4f}")
 print(f"\nAngle between q and {ref_axis_q} = {angle:.2f} deg")
 if debug:
     print(f"Angle with y in zy plane = {np.arctan(q[0]/q[1])*180/np.pi:.2f} deg")
@@ -515,8 +515,8 @@ if debug:
 qnorm = np.linalg.norm(q)
 q = q / qnorm
 planar_dist = 2*np.pi/qnorm  # qnorm should be in angstroms
-print("Wavevector transfer: (1/A)", str('{:.4f}'.format(qnorm)))
-print("Atomic planar distance: (A)", str('{:.4f}'.format(planar_dist)), "angstroms")
+print(f"Wavevector transfer: {qnorm:.4f} 1/A")
+print(f"Atomic planar distance: {planar_dist:.4f} A")
 
 if get_temperature:
     temperature = pu.bragg_temperature(spacing=planar_dist, reflection=reflection, spacing_ref=reference_spacing,
@@ -594,6 +594,7 @@ obj_ortho = pu.center_com(obj_ortho)
 ####################
 # Phase unwrapping #
 ####################
+print('\nPhase unwrapping')
 phase, extent_phase = pu.unwrap(obj_ortho, support_threshold=threshold_unwrap_refraction, debugging=True,
                                 reciprocal_space=False, is_orthogonal=True)
 amp = abs(obj_ortho)
@@ -656,6 +657,7 @@ if correct_refraction:  # or correct_absorption:
 ##############################################
 # phase ramp and offset removal (mean value) #
 ##############################################
+print('\nPhase ramp removal')
 amp, phase, _, _, _ = pu.remove_ramp(amp=amp, phase=phase, initial_shape=original_size, method=phase_ramp_removal,
                                      amplitude_threshold=isosurface_strain, gradient_threshold=threshold_gradient,
                                      debugging=debug)
@@ -663,6 +665,7 @@ amp, phase, _, _, _ = pu.remove_ramp(amp=amp, phase=phase, initial_shape=origina
 ########################
 # phase offset removal #
 ########################
+print('\nPhase offset removal')
 support = np.zeros(amp.shape)
 support[amp > isosurface_strain*amp.max()] = 1
 phase = pu.remove_offset(array=phase, support=support, offset_method=offset_method, user_offset=phase_offset,
@@ -670,12 +673,13 @@ phase = pu.remove_offset(array=phase, support=support, offset_method=offset_meth
                          reciprocal_space=False, is_orthogonal=True)
 del support
 gc.collect()
-
+# Wrap the phase around 0 (no more offset)
 phase = pru.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
 
 ################################################################
 # calculate the strain depending on which axis q is aligned on #
 ################################################################
+print(f'\nCalculation of the strain along {ref_axis_q}')
 strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxel_size, reference_axis=ref_axis_q,
                        extent_phase=extent_phase, method=strain_method, debugging=debug)
 
@@ -699,6 +703,7 @@ if data_frame != 'crystal':  # we do not know the geometry of the experiment if 
 ##########################################################################################
 # typically this is an inplane rotation, q should stay aligned with the axis along which the strain was calculated
 if align_axis:
+    print('\nRotating arrays for visualization')
     amp, phase, strain = pu.rotate_crystal(arrays=(amp, phase, strain), reference_axis=axis_to_array_xyz[ref_axis],
                                            axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
                                            voxel_size=voxel_size, debugging=(True, False, False),
@@ -711,13 +716,12 @@ if output_size is not None:
     amp = pu.crop_pad(array=amp, output_shape=output_size)
     phase = pu.crop_pad(array=phase, output_shape=output_size)
     strain = pu.crop_pad(array=strain, output_shape=output_size)
-numz, numy, numx = amp.shape
-print("Final data shape:", numz, numy, numx)
+print(f"\nFinal data shape: {amp.shape}")
 
 ######################
 # save result to vtk #
 ######################
-print(f'Voxel size: ({voxel_size[0]:.2f}, {voxel_size[1]:.2f}, {voxel_size[2]:.2f}) (nm)')
+print(f'\nVoxel size: ({voxel_size[0]:.2f} nm, {voxel_size[1]:.2f} nm, {voxel_size[2]:.2f} nm)')
 bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method='threshold')
 if save:
     if invert_phase:
@@ -750,7 +754,7 @@ gc.collect()
 # plot slices of the results #
 ##############################
 pixel_spacing = [tick_spacing / vox for vox in voxel_size]
-print(f'Phase extent before and after thresholding: {phase.max()-phase.min():.2f},'
+print(f'\nPhase extent without / with thresholding the modulus: {phase.max()-phase.min():.2f},'
       f'{phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min():.2f}')
 piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
 print(f'phase.max() = {phase[np.nonzero(bulk)].max():.2f} at voxel ({piz}, {piy}, {pix})')
@@ -834,6 +838,6 @@ if save:
     plt.savefig(detector.savedir + f'S{scan}_strain' + comment + '.png')
 
 
-print('End of script')
+print('\nEnd of script')
 plt.ioff()
 plt.show()

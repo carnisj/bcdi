@@ -1301,10 +1301,8 @@ class Setup(object):
         dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(initial_shape, tilt_angle=abs(self.tilt_angle),
                                                                     pixel_x=self.pixel_x, pixel_y=self.pixel_y)
         if verbose:
-            print('Direct space voxel sizes (z, y, x) based on initial FFT shape: (',
-                  str('{:.2f}'.format(dz_realspace)), 'nm,',
-                  str('{:.2f}'.format(dy_realspace)), 'nm,',
-                  str('{:.2f}'.format(dx_realspace)), 'nm )')
+            print(f"Sampling in the laboratory frame (z, y, x): ",
+                  f"({dz_realspace:.2f} nm, {dy_realspace:.2f} nm, {dx_realspace:.2f} nm)")
 
         if input_shape != initial_shape:
             # recalculate the tilt and pixel sizes to accomodate a shape change
@@ -1312,19 +1310,15 @@ class Setup(object):
             pixel_y = self.pixel_y * initial_shape[1] / input_shape[1]
             pixel_x = self.pixel_x * initial_shape[2] / input_shape[2]
             if verbose:
-                print('Tilt, pixel_y, pixel_x based on cropped array shape: (',
-                      str('{:.4f}'.format(tilt)), 'deg,',
-                      str('{:.2f}'.format(pixel_y * 1e6)), 'um,',
-                      str('{:.2f}'.format(pixel_x * 1e6)), 'um)')
+                print('Tilt, pixel_y, pixel_x based on the shape of the cropped array:',
+                      f"({tilt:.4f} deg, {pixel_y * 1e6:.2f} um, {pixel_x * 1e6:.2f} um)")
 
             # sanity check, the direct space voxel sizes calculated below should be equal to the original ones
             dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(input_shape, tilt_angle=abs(tilt),
                                                                         pixel_x=pixel_x, pixel_y=pixel_y)
             if verbose:
-                print('Sanity check, recalculated direct space voxel sizes: (',
-                      str('{:.2f}'.format(dz_realspace)), 'nm,',
-                      str('{:.2f}'.format(dy_realspace)), 'nm,',
-                      str('{:.2f}'.format(dx_realspace)), 'nm )')
+                print('Sanity check, recalculated direct space voxel sizes (z, y, x): ',
+                      f"({dz_realspace:.2f} nm, {dy_realspace:.2f} nm, {dx_realspace:.2f} nm)")
         else:
             tilt = self.tilt_angle
             pixel_y = self.pixel_y
@@ -1376,8 +1370,8 @@ class Setup(object):
 
         if verbose:
             print("\nCalculating the shape of the output array fitting the data extent after transformation:"
-                  f"\nSampling in the crystal frame (nm):    "
-                  f"dz = {d_along_z:.2f}, dy = {d_along_y:.2f}, dx = {d_along_x:.2f}\n")
+                  f"\nSampling in the crystal frame (axis 0, axis 1, axis 2):    "
+                  f"({d_along_z:.2f} nm, {d_along_y:.2f} nm, {d_along_x:.2f} nm")
         # these positions are not equally spaced, we just extract the data extent from them
         nx_output = int(np.rint((pos_along_x.max() - pos_along_x.min()) / d_along_x))
         ny_output = int(np.rint((pos_along_y.max() - pos_along_y.min()) / d_along_y))
@@ -1716,7 +1710,7 @@ class Setup(object):
          it is in 1/nm.
         """
         if verbose:
-            print(f'out-of plane detector angle={self.outofplane_angle:.3f} deg,'
+            print(f'\nout-of plane detector angle={self.outofplane_angle:.3f} deg,'
                   f' inplane_angle={self.inplane_angle:.3f} deg')
         wavelength = self.wavelength * 1e9  # convert to nm
         distance = self.distance * 1e9  # convert to nm

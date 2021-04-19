@@ -1647,8 +1647,8 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         myz, myy, myx = np.meshgrid(np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1),
                                     indexing='ij')
 
-        print('Gradient: Phase_ramp_z, Phase_ramp_y, Phase_ramp_x: (', str('{:.3f}'.format(myrampz)),
-              str('{:.3f}'.format(myrampy)), str('{:.3f}'.format(myrampx)), ') rad')
+        print('Gradient: phase_ramp_z, phase_ramp_y, phase_ramp_x: ',
+              f"({myrampz:.3f} rad, {myrampy:.3f} rad, {myrampx:.3f} rad)")
         phase = phase - myz * myrampz - myy * myrampy - myx * myrampx
         return amp, phase, myrampz, myrampy, myrampx
 
