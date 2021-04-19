@@ -1374,9 +1374,10 @@ class Setup(object):
         pos_along_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
         pos_along_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
 
-        print("\nCalculating the shape of the output array fitting the data extent after transformation:"
-              f"\n  sampling in the crystal frame (nm):"
-              f"  dz = {d_along_z:.2f}, dy = {d_along_y:.2f}, dx = {d_along_x:.2f}")
+        if verbose:
+            print("\nCalculating the shape of the output array fitting the data extent after transformation:"
+                  f"\nSampling in the crystal frame (nm):    "
+                  f"dz = {d_along_z:.2f}, dy = {d_along_y:.2f}, dx = {d_along_x:.2f}\n")
         # these positions are not equally spaced, we just extract the data extent from them
         nx_output = int(np.rint((pos_along_x.max() - pos_along_x.min()) / d_along_x))
         ny_output = int(np.rint((pos_along_y.max() - pos_along_y.min()) / d_along_y))
