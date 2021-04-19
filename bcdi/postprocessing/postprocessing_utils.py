@@ -1026,8 +1026,7 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
     return window
 
 
-def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_y=None, width_x=None,
-                    debugging=False):
+def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **kwargs):
     """
     Calculate the optical path for refraction/absorption corrections in the crystal. 'k' should be in the same basis
     (crystal or laboratory frame) as the data. For xrayutilities, the data is orthogonalized in crystal frame.
@@ -1037,32 +1036,51 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
     :param k: vector for the incident or diffracted wave depending on direction, expressed in an orthonormal frame
      (without taking in to account the different voxel size in each dimension)
     :param voxel_size: tuple, actual voxel size in z, y, and x (CXI convention)
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param debugging: set to True to see plots
-    :type debugging: bool
+    :param debugging: boolena, True to see plots
+    :param kwargs:
+         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
     :return: the optical path in nm, of the same shape as mysupport
     """
+    valid_name = 'postprocessing_utils.get_opticalpath'
+    #########################
+    # check and load kwargs #
+    #########################
+    valid.valid_kwargs(kwargs=kwargs,
+                       allowed_kwargs={'width_z', 'width_y', 'width_x'}, name=valid_name)
+    width_z = kwargs.get('width_z', None)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_y = kwargs.get('width_y', None)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_x = kwargs.get('width_x', None)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+
+    #########################
+    # check some parameters #
+    #########################
     if support.ndim != 3:
         raise ValueError('support should be a 3D array')
 
     voxel_size = voxel_size or (1, 1, 1)
     if isinstance(voxel_size, Number):
         voxel_size = (voxel_size,) * 3
-    valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real,
-                          name='postprocessing_utils.get_opticalpath', min_excluded=0)
+    valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real, min_excluded=0,
+                          name=valid_name)
 
-    # correct k for the different voxel size in each dimension (k is expressed in an orthonormal basis)
+    #####################################################################################################
+    # correct k for the different voxel size in each dimension (k is expressed in an orthonormal basis) #
+    #####################################################################################################
     k = [k[i] * voxel_size[i] for i in range(3)]
 
+    ###################################################################
+    # find the extent of the object, to optimize the calculation time #
+    ###################################################################
     nbz, nby, nbx = support.shape
     path = np.zeros((nbz, nby, nbx))
-    if debugging:
-        gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x, vmin=0, vmax=1,
-                            sum_frames=False, title='Support for optical path', is_orthogonal=True,
-                            reciprocal_space=False)
-
     indices_support = np.nonzero(support)
     min_z = indices_support[0].min()
     max_z = indices_support[0].max() + 1  # last point not included in range()
@@ -1073,44 +1091,48 @@ def get_opticalpath(support, direction, k, voxel_size=None, width_z=None, width_
     print(f"Support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):{min_z}, {max_z}, {min_y}, {max_y},"
           f" {min_x}, {max_x}")
 
-    # normalize k, now it is in units of voxels
+    #############################################
+    # normalize k, now it is in units of voxels #
+    #############################################
     if direction == "in":
         k_norm = -1 / np.linalg.norm(k) * np.asarray(k)  # we will work with -k_in
     else:  # "out"
         k_norm = 1 / np.linalg.norm(k) * np.asarray(k)
 
-    if direction == "in" and np.allclose(k_norm, np.array([-1, 0, 0]), rtol=1e-08, atol=1e-08):
-        # data orthogonalized in the laboratory frame, k_in along axis 0
-        for idz in range(min_z, max_z, 1):
-            path[idz, :, :] = support[0:idz+1, :, :].sum(axis=0) * voxel_size[0]  # include also the pixel
-        path = np.multiply(path, support)
+    #############################################
+    # calculate the optical path for each voxel #
+    #############################################
+    for idz in range(min_z, max_z, 1):
+        for idy in range(min_y, max_y, 1):
+            for idx in range(min_x, max_x, 1):
+                stop_flag = False
+                counter = support[idz, idy, idx]  # include also the pixel if it belongs to the support
+                pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
+                # beware, the support could be 0 at some voxel inside the object also, but the loop should
+                # continue until it reaches the end of the box (min_z, max_z, min_y, max_y, min_x, max_x)
+                while not stop_flag:
+                    pixel = pixel + k_norm  # add unitary translation in -k_in direction
+                    coords = np.rint(pixel)
+                    stop_flag = True
+                    if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and\
+                            (min_x <= coords[2] <= max_x):
+                        counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
+                        stop_flag = False
 
-    else:  # k is not along any array axis
-        for idz in range(min_z, max_z, 1):
-            for idy in range(min_y, max_y, 1):
-                for idx in range(min_x, max_x, 1):
-                    stop_flag = False
-                    counter = support[idz, idy, idx]  # include also the pixel if it belongs to the support
-                    pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
-                    # beware, the support could be 0 at some voxel inside the object also, but the loop should
-                    # continue until it reaches the end of the box (min_z, max_z, min_y, max_y, min_x, max_x)
-                    while not stop_flag:
-                        pixel = pixel + k_norm  # add unitary translation in -k_in direction
-                        coords = np.rint(pixel)
-                        stop_flag = True
-                        if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and\
-                                (min_x <= coords[2] <= max_x):
-                            counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
-                            stop_flag = False
+                # For each voxel, counter is the number of steps along the unitary k vector where the support is
+                # non zero. Now we need to convert this into nm using the voxel size, different in each dimension
+                endpoint = np.array([idz, idy, idx]) + counter * k_norm  # indices of the final voxel
+                path[idz, idy, idx] = np.sqrt(((np.rint(endpoint[0])-idz) * voxel_size[0])**2 +
+                                              ((np.rint(endpoint[1])-idy) * voxel_size[1])**2 +
+                                              ((np.rint(endpoint[2])-idx) * voxel_size[2])**2)
 
-                    # For each voxel, counter is the number of steps along the unitary k vector where the support is
-                    # non zero. Now we need to convert this into nm using the voxel size, different in each dimension
-                    endpoint = np.array([idz, idy, idx]) + counter * k_norm  # indices of the final voxel
-                    path[idz, idy, idx] = np.sqrt(((np.rint(endpoint[0])-idz) * voxel_size[0])**2 +
-                                                  ((np.rint(endpoint[1])-idy) * voxel_size[1])**2 +
-                                                  ((np.rint(endpoint[2])-idx) * voxel_size[2])**2)
-
+    ###################
+    # debugging plots #
+    ###################
     if debugging:
+        gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x, vmin=0, vmax=1,
+                            sum_frames=False, title='Support for optical path', is_orthogonal=True,
+                            reciprocal_space=False)
         gu.multislices_plot(path, width_z=width_z, width_y=width_y, width_x=width_x, plot_colorbar=True, vmin=0,
                             title=f'Optical path {direction} (nm)' + direction, is_orthogonal=True,
                             reciprocal_space=False)
