@@ -1671,7 +1671,7 @@ class Setup(object):
 
     def orthogonalize_vector(self, vector, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
-        Calculate the direct space voxel sizes in the laboratory frame (z downstream, y vertical up, x outboard).
+        Calculate the coordinates of the vector in the laboratory frame.
 
         :param vector: tuple of 3 coordinates, vector to be transformed in the detector frame
         :param array_shape: shape of the 3D array to orthogonalize
@@ -1679,7 +1679,7 @@ class Setup(object):
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
         :param verbose: True to have printed comments
-        :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
+        :return: tuple of 3 numbers, the coordinates of the vector expressed in the laboratory frame
         """
         valid.valid_container(array_shape, container_types=(tuple, list), length=3, item_types=int,
                               min_excluded=0, name='Setup.orthogonalize_vector')
@@ -1697,7 +1697,8 @@ class Setup(object):
 
     def transformation_matrix(self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space=True, verbose=True):
         """
-        Calculate the pixel non-orthogonal coordinates in the orthogonal reference frame.
+        Calculate the transformation matrix from the detector frame to the laboratory frame. For direct space, the
+        length scale is in nm, for reciprocal space, it is in 1/nm.
 
         :param array_shape: shape of the 3D array to orthogonalize
         :param tilt_angle: angular step during the rocking curve, in degrees
@@ -1705,9 +1706,9 @@ class Setup(object):
         :param pixel_y: vertical pixel size, in meters
         :param direct_space: True in order to return the transformation matrix in direct space
         :param verbose: True to have printed comments
-        :return: the transformation matrix from the detector frame to the laboratory frame, and the q offset
-         (3D vector) if direct_space is False. For direct space, the length scale is in nm, for reciprocal space,
-         it is in 1/nm.
+        :return:
+         - the transformation matrix from the detector frame to the laboratory frame
+         - the q offset (3D vector) if direct_space is False.
         """
         if verbose:
             print(f'\nout-of plane detector angle={self.outofplane_angle:.3f} deg,'
