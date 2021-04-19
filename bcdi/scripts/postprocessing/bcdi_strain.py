@@ -66,7 +66,7 @@ original_size = [168, 1024, 800]  # size of the FFT array before binning. It wil
 # during phasing automatically. Leave it to () if the shape did not change.
 phasing_binning = (1, 2, 2)  # binning factor applied during phase retrieval
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension used in preprocessing (not phase retrieval)
-output_size = (150, 150, 150)  # (z, y, x) Fix the size of the output array, leave None to use the object size
+output_size = (50, 50, 50)  # (z, y, x) Fix the size of the output array, leave None to use the object size
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
 fix_voxel = 5  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
 # provided, the voxel size will be identical is all 3 directions. Set it to None to use the default voxel size
@@ -136,7 +136,7 @@ template_imagefile = '_master.h5'
 ###################################################
 # parameters related to the refraction correction #
 ###################################################
-correct_refraction = True  # True for correcting the phase shift due to refraction
+correct_refraction = False  # True for correcting the phase shift due to refraction
 optical_path_method = 'threshold'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove only outer layers even if
 # the amplitude is lower than isosurface_strain inside the crystal
@@ -329,7 +329,7 @@ nz, ny, nx = obj.shape
 # define range for orthogonalization and plotting - speed up calculations #
 ###########################################################################
 zrange, yrange, xrange =\
-    pu.find_datarange(array=obj, plot_margin=plot_margin, amplitude_threshold=0.1, keep_size=keep_size)
+    pu.find_datarange(array=obj, amplitude_threshold=0.05, keep_size=keep_size)
 
 numz = zrange * 2
 numy = yrange * 2
@@ -372,17 +372,18 @@ for counter, value in enumerate(sorted_obj):
 
     # align with average reconstruction
     if counter == 0:  # the fist array loaded will serve as reference object
-        print('This reconstruction will serve as reference object.')
+        print('This reconstruction will be used as reference.')
         ref_obj = obj
 
     avg_obj, flag_avg = pu.average_obj(avg_obj=avg_obj, ref_obj=ref_obj, obj=obj, support_threshold=0.25,
                                        correlation_threshold=avg_threshold, aligning_option='dft',
                                        method=avg_method, reciprocal_space=False, is_orthogonal=is_orthogonal,
-                                       debugging=True)
+                                       debugging=debug)
     avg_counter = avg_counter + flag_avg
 
 avg_obj = avg_obj / avg_counter
-print('\nAverage performed over ', avg_counter, 'reconstructions\n')
+if avg_counter > 1:
+    print('\nAverage performed over ', avg_counter, 'reconstructions\n')
 del obj, ref_obj
 gc.collect()
 
