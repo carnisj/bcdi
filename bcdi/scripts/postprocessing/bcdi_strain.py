@@ -588,20 +588,17 @@ gc.collect()
 ######################################################
 # center the object (centering based on the modulus) #
 ######################################################
+print('\nCentering the crystal')
 obj_ortho = pu.center_com(obj_ortho)
-amp = abs(obj_ortho)
+
+####################
+# Phase unwrapping #
+####################
 phase, extent_phase = pu.unwrap(obj_ortho, support_threshold=threshold_unwrap_refraction, debugging=True,
                                 reciprocal_space=False, is_orthogonal=True)
+amp = abs(obj_ortho)
 del obj_ortho
 gc.collect()
-
-if debug:
-    gu.multislices_plot(amp, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                        sum_frames=False, plot_colorbar=True, vmin=0, vmax=amp.max(),
-                        title='Amp before absorption correction', reciprocal_space=False, is_orthogonal=True)
-    gu.multislices_plot(phase, width_z=2 * zrange, width_y=2 * yrange, width_x=2 * xrange,
-                        sum_frames=False, plot_colorbar=True, title='Unwrapped phase before refraction correction',
-                        reciprocal_space=False, is_orthogonal=True)
 
 #############################################
 # invert phase: -1*phase = displacement * q #
