@@ -430,7 +430,7 @@ phase = pru.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_ph
 if hwidth != 0:
     bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method='threshold')
     # the phase should be averaged only in the support defined by the isosurface
-    phase = pu.mean_filter(phase=phase, support=bulk, half_width=hwidth)
+    phase = pu.mean_filter(array=phase, support=bulk, half_width=hwidth)
     del bulk
     gc.collect()
 
