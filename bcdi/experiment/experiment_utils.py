@@ -1199,53 +1199,118 @@ class Setup(object):
                 print(f"rootdir = '{root_folder}'\nsavedir = '{savedir}'\nsample_name = '{detector.sample_name}'\n"
                       f"template_imagefile = '{detector.template_file}'\n")
 
-    def orthogonalize(self, obj, initial_shape=None, voxel_size=None, width_z=None, width_y=None,
-                      width_x=None, verbose=True, debugging=False, **kwargs):
+    def ortho_directspace(self, arrays, q_com, initial_shape=None, voxel_size=None, fill_value=0,
+                          reference_axis=(0, 1, 0), verbose=True, debugging=False, **kwargs):
         """
-        Interpolate obj on the orthogonal reference frame defined by the setup.
+        Interpolate arrays (direct space output of the phase retrieval) in the orthogonal reference frame where q_com
+        is aligned onto the array axis reference_axis.
 
-        :param obj: real space object, in a non-orthogonal frame (output of phasing program)
+        :param arrays: tuple of 3D arrays of the same shape (output of the phase retrieval), in the detector frame
+        :param q_com: tuple of 3 vector components for the q values of the center of mass of the Bragg peak,
+         expressed in an orthonormal frame x y z
         :param initial_shape: shape of the FFT used for phasing
         :param voxel_size: number or list of three user-defined voxel sizes for the interpolation, in nm.
          If a single number is provided, the voxel size will be identical in all directions.
-        :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-        :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-        :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :param fill_value: tuple of real numbers, fill_value parameter for the RegularGridInterpolator, same length as
+         the number of arrays
+        :param reference_axis: 3D vector along which q will be aligned, expressed in an orthonormal frame x y z
         :param verbose: True to have printed comments
-        :param debugging: True to show plots before and after interpolation
+        :param debugging: tuple of booleans of the same length as the number of input arrays, True to show plots before
+         and after interpolation
         :param kwargs:
-         - 'title': title for the debugging plots
-        :return: object interpolated on an orthogonal grid
+         - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :return:
+         - an array (if a single array was provided) or a tuple of arrays interpolated on an orthogonal grid
+           (same length as the number of input arrays)
+         - a tuple of 3 voxels size for the interpolated arrays
         """
-        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'title'}, name='Setup.orthogonalize')
-        title = kwargs.get('title', 'Object')
+        valid_name = 'Setup.ortho_directspace'
+        #############################################
+        # check that arrays is a tuple of 3D arrays #
+        #############################################
+        if isinstance(arrays, np.ndarray):
+            arrays = (arrays,)
+        valid.valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray, min_length=1,
+                              name=valid_name)
+        if any(array.ndim != 3 for array in arrays):
+            raise ValueError('all arrays should be 3D ndarrays of the same shape')
+        ref_shape = arrays[0].shape
+        if any(array.shape != ref_shape for array in arrays):
+            raise ValueError('all arrays should be 3D ndarrays of the same shape')
+        nb_arrays = len(arrays)
+        input_shape = arrays[0].shape  # could be smaller if the object was cropped around the support
+
+        #########################
+        # check and load kwargs #
+        #########################
+        valid.valid_kwargs(kwargs=kwargs,
+                           allowed_kwargs={'title', 'scale', 'width_z', 'width_y', 'width_x'},
+                           name='Setup.orthogonalize')
+        title = kwargs.get('title', ('Object',)*nb_arrays)
+        if isinstance(title, str):
+            title = (title,) * nb_arrays
+        valid.valid_container(title, container_types=(tuple, list), length=nb_arrays, item_types=str, name=valid_name)
+        width_z = kwargs.get('width_z', None)
+        valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                         name=valid_name)
+        width_y = kwargs.get('width_y', None)
+        valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                         name=valid_name)
+        width_x = kwargs.get('width_x', None)
+        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                         name=valid_name)
+
+        #########################
+        # check some parameters #
+        #########################
+        valid.valid_container(q_com, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name=valid_name)
+        if np.linalg.norm(q_com) == 0:
+            raise ValueError('q_com should be a non zero vector')
+
+        if isinstance(fill_value, Real):
+            fill_value = (fill_value,) * nb_arrays
+        valid.valid_container(fill_value, container_types=(tuple, list, np.ndarray), length=nb_arrays, item_types=Real,
+                              name=valid_name)
+        if isinstance(debugging, bool):
+            debugging = (debugging,) * nb_arrays
+        valid.valid_container(debugging, container_types=(tuple, list), length=nb_arrays, item_types=bool,
+                              name=valid_name)
+        valid.valid_container(q_com, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name=valid_name)
+        q_com = np.array(q_com)
+        valid.valid_container(reference_axis, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name=valid_name)
+        reference_axis = np.array(reference_axis)
+        if not any((reference_axis == val).all() for val in
+                   (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))):
+            raise NotImplemented('strain calculation along directions other than array axes is not implemented')
 
         if not initial_shape:
-            initial_shape = obj.shape
+            initial_shape = input_shape
         else:
             valid.valid_container(initial_shape, container_types=(tuple, list), length=3, item_types=int,
                                   min_excluded=0, name='Setup.orthogonalize')
 
-        if debugging:
-            gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                title=title+' in detector frame')
-
-        # estimate the direct space voxel sizes in nm based on the FFT window shape used in phase retrieval
+        ######################################################################################################
+        # calculate the direct space voxel sizes in nm based on the FFT window shape used in phase retrieval #
+        ######################################################################################################
         dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(initial_shape, tilt_angle=abs(self.tilt_angle),
                                                                     pixel_x=self.pixel_x, pixel_y=self.pixel_y)
-
         if verbose:
             print('Direct space voxel sizes (z, y, x) based on initial FFT shape: (',
                   str('{:.2f}'.format(dz_realspace)), 'nm,',
                   str('{:.2f}'.format(dy_realspace)), 'nm,',
                   str('{:.2f}'.format(dx_realspace)), 'nm )')
 
-        nbz, nby, nbx = obj.shape  # could be smaller if the object was cropped around the support
-        if nbz != initial_shape[0] or nby != initial_shape[1] or nbx != initial_shape[2]:
+        if input_shape != initial_shape:
             # recalculate the tilt and pixel sizes to accomodate a shape change
-            tilt = self.tilt_angle * initial_shape[0] / nbz
-            pixel_y = self.pixel_y * initial_shape[1] / nby
-            pixel_x = self.pixel_x * initial_shape[2] / nbx
+            tilt = self.tilt_angle * initial_shape[0] / input_shape[0]
+            pixel_y = self.pixel_y * initial_shape[1] / input_shape[1]
+            pixel_x = self.pixel_x * initial_shape[2] / input_shape[2]
             if verbose:
                 print('Tilt, pixel_y, pixel_x based on cropped array shape: (',
                       str('{:.4f}'.format(tilt)), 'deg,',
@@ -1253,7 +1318,7 @@ class Setup(object):
                       str('{:.2f}'.format(pixel_x * 1e6)), 'um)')
 
             # sanity check, the direct space voxel sizes calculated below should be equal to the original ones
-            dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes((nbz, nby, nbx), tilt_angle=abs(tilt),
+            dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(input_shape, tilt_angle=abs(tilt),
                                                                         pixel_x=pixel_x, pixel_y=pixel_y)
             if verbose:
                 print('Sanity check, recalculated direct space voxel sizes: (',
@@ -1273,36 +1338,70 @@ class Setup(object):
             assert isinstance(voxel_size, (tuple, list)) and len(voxel_size) == 3 and\
                 all(val > 0 for val in voxel_size), 'voxel_size should be a list/tuple of three positive numbers in nm'
 
-        ortho_matrix = self.transformation_matrix(array_shape=(nbz, nby, nbx), tilt_angle=tilt,
-                                                  pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
+        ######################################################################
+        # calculate the transformation matrix based on the beamline geometry #
+        ######################################################################
+        transfer_matrix = self.transformation_matrix(array_shape=input_shape, tilt_angle=tilt,
+                                                     pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
 
+        ################################################################################
+        # calculate the rotation matrix from the crystal frame to the laboratory frame #
+        ################################################################################
+        # (inverse rotation to have reference_axis along q)
+        rotation_matrix = \
+            util.rotation_matrix_3d(axis_to_align=reference_axis, reference_axis=q_com/np.linalg.norm(q_com))
+        # rotation_matrix = np.identity(3)
+        ####################################################################################
+        # calculate the full transfer matrix including the rotation into the crystal frame #
+        ####################################################################################
+        transfer_matrix = np.matmul(rotation_matrix, transfer_matrix)
+
+        #########################################
+        # calculate the interpolation positions #
+        #########################################
         # this assumes that the diffraction pattern is in the center of the array
         # TODO : correct this if the diffraction pattern is not in the center of the array
-        myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * voxel_size[0],
-                                    np.arange(-nby // 2, nby // 2, 1) * voxel_size[1],
-                                    np.arange(-nbx // 2, nbx // 2, 1) * voxel_size[2], indexing='ij')
+        myz, myy, myx = np.meshgrid(np.arange(-input_shape[0] // 2, input_shape[0] // 2, 1) * voxel_size[0],
+                                    np.arange(-input_shape[1] // 2, input_shape[1] // 2, 1) * voxel_size[1],
+                                    np.arange(-input_shape[2] // 2, input_shape[2] // 2, 1) * voxel_size[2],
+                                    indexing='ij')
 
         # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
         # in RGI, we want to calculate the coordinates that would have a grid of the laboratory frame expressed in the
         # detector frame, i.e. one has to inverse the transformation matrix.
-        ortho_imatrix = np.linalg.inv(ortho_matrix)
-        new_x = ortho_imatrix[0, 0] * myx + ortho_imatrix[0, 1] * myy + ortho_imatrix[0, 2] * myz
-        new_y = ortho_imatrix[1, 0] * myx + ortho_imatrix[1, 1] * myy + ortho_imatrix[1, 2] * myz
-        new_z = ortho_imatrix[2, 0] * myx + ortho_imatrix[2, 1] * myy + ortho_imatrix[2, 2] * myz
+        transfer_imatrix = np.linalg.inv(transfer_matrix)
+        new_x = transfer_imatrix[0, 0] * myx + transfer_imatrix[0, 1] * myy + transfer_imatrix[0, 2] * myz
+        new_y = transfer_imatrix[1, 0] * myx + transfer_imatrix[1, 1] * myy + transfer_imatrix[1, 2] * myz
+        new_z = transfer_imatrix[2, 0] * myx + transfer_imatrix[2, 1] * myy + transfer_imatrix[2, 2] * myz
         del myx, myy, myz
         gc.collect()
 
-        rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
-                                       np.arange(-nbx // 2, nbx // 2)), obj, method='linear',
-                                      bounds_error=False, fill_value=0)
-        ortho_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                        new_x.reshape((1, new_z.size)))).transpose())
-        ortho_obj = ortho_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
+        ######################
+        # interpolate arrays #
+        ######################
+        output_arrays = []
+        for idx, array in enumerate(arrays):
+            rgi = RegularGridInterpolator((np.arange(-input_shape[0] // 2, input_shape[0] // 2, 1),
+                                           np.arange(-input_shape[1] // 2, input_shape[1] // 2, 1),
+                                           np.arange(-input_shape[2] // 2, input_shape[2] // 2, 1)), array,
+                                          method='linear', bounds_error=False, fill_value=fill_value[idx])
+            ortho_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                              new_x.reshape((1, new_z.size)))).transpose())
+            ortho_array = ortho_array.reshape(input_shape).astype(array.dtype)
+            output_arrays.append(ortho_array)
 
-        if debugging:
-            gu.multislices_plot(abs(ortho_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                title=title+' in the orthogonal laboratory frame')
-        return ortho_obj, voxel_size
+            if debugging:
+                gu.multislices_plot(abs(array), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                    reciprocal_space=False, is_orthogonal=False, scale='linear',
+                                    title=title[idx] + ' in detector frame')
+
+                gu.multislices_plot(abs(ortho_array), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                    reciprocal_space=False, is_orthogonal=True, scale='linear',
+                                    title=title[idx] + ' in the orthogonal laboratory frame')
+
+        if nb_arrays == 1:
+            output_arrays = output_arrays[0]  # return the array instead of the tuple
+        return output_arrays, voxel_size
 
     def ortho_reciprocal(self, arrays, fill_value=0, align_q=False, reference_axis=(0, 1, 0), verbose=True,
                          debugging=False, **kwargs):
@@ -1328,11 +1427,15 @@ class Setup(object):
          - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
          - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
          - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-        :return: a tuple of arrays interpolated on an orthogonal grid (same length as the number of input arrays),
-         a tuple of three 1D vectors of q values (qx, qz, qy)
+        :return:
+         - an array (if a single array was provided) or a tuple of arrays interpolated on an orthogonal grid
+           (same length as the number of input arrays)
+         - a tuple of three 1D vectors of q values (qx, qz, qy)
         """
         valid_name = 'Setup.ortho_reciprocal'
-        # check that arrays is a tuple of 3D arrays
+        #############################################
+        # check that arrays is a tuple of 3D arrays #
+        #############################################
         if isinstance(arrays, np.ndarray):
             arrays = (arrays,)
         valid.valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray, min_length=1,
@@ -1345,13 +1448,19 @@ class Setup(object):
         nb_arrays = len(arrays)
         nbz, nby, nbx = ref_shape
 
-        # check and load kwargs
+        #########################
+        # check and load kwargs #
+        #########################
         valid.valid_kwargs(kwargs=kwargs,
                            allowed_kwargs={'title', 'scale', 'width_z', 'width_y', 'width_x'},
                            name='Setup.orthogonalize')
         title = kwargs.get('title', ('Object',)*nb_arrays)
+        if isinstance(title, str):
+            title = (title,) * nb_arrays
         valid.valid_container(title, container_types=(tuple, list), length=nb_arrays, item_types=str, name=valid_name)
         scale = kwargs.get('scale', ('log',)*nb_arrays)
+        if isinstance(scale, str):
+            scale = (scale,) * nb_arrays
         valid.valid_container(scale, container_types=(tuple, list), length=nb_arrays, name=valid_name)
         if any(val not in {'log', 'linear'} for val in scale):
             raise ValueError("scale should be either 'log' or 'linear'")
@@ -1366,7 +1475,9 @@ class Setup(object):
         valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
                          name=valid_name)
 
-        # check some parameters
+        #########################
+        # check some parameters #
+        #########################
         if isinstance(fill_value, Real):
             fill_value = (fill_value,) * nb_arrays
         valid.valid_container(fill_value, container_types=(tuple, list, np.ndarray), length=nb_arrays, item_types=Real,
@@ -1380,7 +1491,9 @@ class Setup(object):
                               name=valid_name)
         reference_axis = np.array(reference_axis)
 
-        # calculate the transformation matrix (the unit is 1/nm)
+        ##########################################################
+        # calculate the transformation matrix (the unit is 1/nm) #
+        ##########################################################
         transfer_matrix, q_offset = self.transformation_matrix(array_shape=ref_shape, tilt_angle=self.tilt_angle,
                                                                direct_space=False, pixel_x=self.pixel_x,
                                                                pixel_y=self.pixel_y, verbose=verbose)
@@ -1427,7 +1540,7 @@ class Setup(object):
                 print(f'\n  Aligning Q along {reference_axis} (x,y,z)')
 
             # calculate the rotation matrix from the crystal frame to the laboratory frame
-            # (inverse rotation to have qz along q)
+            # (inverse rotation to have reference_axis along q)
             rotation_matrix =\
                 util.rotation_matrix_3d(axis_to_align=reference_axis,
                                         reference_axis=np.array([q_along_x_com, q_along_y_com, q_along_z_com]) / qnorm)
@@ -1472,11 +1585,12 @@ class Setup(object):
         if verbose:
             print(f"\n  initial shape = ({nbz},{nby},{nbx})\n  output shape  = ({nz_output},{ny_output},{nx_output})")
 
+        #####################################################################################################
+        # define the interpolation qx qz qy 1D vectors in 1/nm, the reference being the center of the array #
+        #####################################################################################################
+        # the usual frame is used for q values: qx downstream, qz vertical up, qy outboard
         # this assumes that the center of mass of the diffraction pattern was at the center of the array
         # TODO : correct this if the diffraction pattern is not centered
-
-        # define the interpolation qx qz qy 1D vectors in 1/nm, the reference being the center of the array
-        # the usual frame is used for q values: qx downstream, qz vertical up, qy outboard
         qx = np.arange(-nz_output // 2, nz_output // 2, 1) * dq_along_z  # along z downstream
         qz = np.arange(-ny_output // 2, ny_output // 2, 1) * dq_along_y  # along y vertical up
         qy = np.arange(-nx_output // 2, nx_output // 2, 1) * dq_along_x  # along x outboard
@@ -1523,6 +1637,8 @@ class Setup(object):
         qz = (qz + q_offset[1]) / 10  # along y vertical up
         qy = (qy + q_offset[0]) / 10  # along x outboard
 
+        if nb_arrays == 1:
+            output_arrays = output_arrays[0]  # return the array instead of the tuple
         return output_arrays, (qx, qz, qy)
 
     def orthogonalize_vector(self, vector, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
