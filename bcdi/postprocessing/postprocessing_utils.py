@@ -1197,18 +1197,22 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
                                               ((np.rint(endpoint[1])-idy) * voxel_size[1])**2 +
                                               ((np.rint(endpoint[2])-idx) * voxel_size[2])**2)
 
-    ###################
-    # debugging plots #
-    ###################
+    ##################
+    # debugging plot #
+    ##################
     if debugging:
         print(f"Optical path calculation, support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):"
               f"{min_z}, {max_z}, {min_y}, {max_y}, {min_x}, {max_x}")
         gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x, vmin=0, vmax=1,
                             sum_frames=False, title='Support for optical path', is_orthogonal=True,
                             reciprocal_space=False)
-        gu.multislices_plot(path, width_z=width_z, width_y=width_y, width_x=width_x, plot_colorbar=True, vmin=0,
-                            title=f'Optical path {direction} (nm)' + direction, is_orthogonal=True,
-                            reciprocal_space=False)
+
+    ###########################################
+    # apply a mean filter to reduce artefacts #
+    ###########################################
+    # the path should be averaged only in the support defined by the isosurface
+    path = mean_filter(array=path, support=support, half_width=1, title='Optical path', debugging=debugging)
+
     return path
 
 
@@ -1274,32 +1278,59 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_ph
     return strain
 
 
-def mean_filter(phase, support, half_width=0, width_z=None, width_y=None, width_x=None,
-                phase_range=np.pi, debugging=False):
+def mean_filter(array, support, half_width=0, width_z=None, width_y=None, width_x=None,
+                vmin=np.nan, vmax=np.nan, title='Object', debugging=False):
     """
-    Apply a mean filter to the phase (spatial average), taking care of the surface.
+    Apply a mean filter to an object defined by a support, taking care of the object's surface.
 
-    :param phase: phase to be averaged
+    :param array: 3D array to be averaged
     :param support: support used for averaging
     :param half_width: half_width of the 2D square averaging window, 0 means no averaging, 1 is one pixel away...
     :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
     :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
     :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param phase_range: range for plotting the phase, [-pi pi] by default
-    :param debugging: set to True to see plots
-    :type debugging: bool
-    :return: averaged phase
+    :param vmin: real number, lower boundary for the colorbar of the plots
+    :param vmax: real number, higher boundary for the colorbar of the plots
+    :param title: str, title for the plots
+    :param debugging: bool, True to see plots
+    :return: averaged array of the same shape as the input array
     """
+    #########################
+    # check some parameters #
+    #########################
+    valid_name = 'postprocessing_utils.mean_filter'
+    if not isinstance(array, np.ndarray):
+        raise TypeError('array should be a numpy array')
+    if array.ndim != 3:
+        raise ValueError('array should be 3D')
+    if not isinstance(support, np.ndarray):
+        raise TypeError('support should be a numpy array')
+    if support.shape != array.shape:
+        raise ValueError('the support should have the same shape as the array')
+    valid.valid_item(half_width, allowed_types=int, min_included=0, name=valid_name)
+    valid.valid_container(title, container_types=str, name=valid_name)
+    valid.valid_item(vmin, allowed_types=Real, name=valid_name)
+    valid.valid_item(vmax, allowed_types=Real, name=valid_name)
+    valid.valid_item(debugging, allowed_types=bool, name=valid_name)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+
+    #########################
+    # apply the mean filter #
+    #########################
     if half_width != 0:
         if debugging:
-            gu.multislices_plot(phase, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-phase_range, vmax=phase_range,
-                                title='Phase before averaging', plot_colorbar=True)
+            gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, vmin=vmin, vmax=vmax,
+                                title=title + ' before averaging', plot_colorbar=True)
             gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Support for averaging')
 
         nonzero_pixels = np.argwhere(support != 0)
-        new_values = np.zeros((nonzero_pixels.shape[0], 1), dtype=phase.dtype)
+        new_values = np.zeros((nonzero_pixels.shape[0], 1), dtype=array.dtype)
         counter = 0
         for indx in range(nonzero_pixels.shape[0]):
             piz = nonzero_pixels[indx, 0]
@@ -1308,7 +1339,7 @@ def mean_filter(phase, support, half_width=0, width_z=None, width_y=None, width_
             tempo_support = support[piz-half_width:piz+half_width+1, piy-half_width:piy+half_width+1,
                                     pix-half_width:pix+half_width+1]
             nb_points = tempo_support.sum()
-            temp_phase = phase[piz-half_width:piz+half_width+1, piy-half_width:piy+half_width+1,
+            temp_phase = array[piz-half_width:piz+half_width+1, piy-half_width:piy+half_width+1,
                                pix-half_width:pix+half_width+1]
             if temp_phase.size != 0:
                 value = temp_phase[np.nonzero(tempo_support)].sum()/nb_points
@@ -1316,14 +1347,13 @@ def mean_filter(phase, support, half_width=0, width_z=None, width_y=None, width_
             else:
                 counter = counter + 1
         for indx in range(nonzero_pixels.shape[0]):
-            phase[nonzero_pixels[indx, 0], nonzero_pixels[indx, 1], nonzero_pixels[indx, 2]] = new_values[indx]
+            array[nonzero_pixels[indx, 0], nonzero_pixels[indx, 1], nonzero_pixels[indx, 2]] = new_values[indx]
         if debugging:
-            gu.multislices_plot(phase, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-phase_range, vmax=phase_range,
-                                title='Phase after averaging', plot_colorbar=True)
+            gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, vmin=vmin, vmax=vmax,
+                                title=title + ' after averaging', plot_colorbar=True)
         if counter != 0:
             print("There were", counter, "voxels for which phase could not be averaged")
-    return phase
+    return array
 
 
 def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
