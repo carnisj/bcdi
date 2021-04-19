@@ -88,7 +88,7 @@ isosurface_strain = 0.1  # threshold use for removing the outer layer (strain is
 strain_method = 'default'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
 # magnitude value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
-offset_origin = None  # the phase at this voxel will be set to phase_offset, None otherwise
+phase_offset_origin = None  # the phase at this voxel will be set to phase_offset, None otherwise
 offset_method = 'mean'  # 'COM' or 'mean', method for removing the offset in the phase
 centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 # TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
@@ -418,7 +418,7 @@ if debug:
 support = np.zeros(amp.shape)
 support[amp > isosurface_strain*amp.max()] = 1
 phase = pu.remove_offset(array=phase, support=support, offset_method=offset_method, user_offset=phase_offset,
-                         offset_origin=offset_origin, title='Phase', debugging=debug)
+                         offset_origin=phase_offset_origin, title='Phase', debugging=debug)
 del support
 gc.collect()
 
@@ -663,7 +663,7 @@ print('\nPhase offset removal')
 support = np.zeros(amp.shape)
 support[amp > isosurface_strain*amp.max()] = 1
 phase = pu.remove_offset(array=phase, support=support, offset_method=offset_method, user_offset=phase_offset,
-                         offset_origin=offset_origin, title='Orthogonal phase', debugging=debug,
+                         offset_origin=phase_offset_origin, title='Orthogonal phase', debugging=debug,
                          reciprocal_space=False, is_orthogonal=True)
 del support
 gc.collect()
