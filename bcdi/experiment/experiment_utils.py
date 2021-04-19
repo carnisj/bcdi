@@ -1390,13 +1390,13 @@ class Setup(object):
             output_arrays.append(ortho_array)
 
             if debugging[idx]:
-                gu.multislices_plot(abs(array), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                gu.multislices_plot(abs(array), sum_frames=False, width_z=width_z, width_y=width_y, width_x=width_x,
                                     reciprocal_space=False, is_orthogonal=False, scale='linear',
                                     title=title[idx] + ' in detector frame')
 
-                gu.multislices_plot(abs(ortho_array), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                gu.multislices_plot(abs(ortho_array), sum_frames=False, width_z=width_z, width_y=width_y, width_x=width_x,
                                     reciprocal_space=False, is_orthogonal=True, scale='linear',
-                                    title=title[idx] + ' in laboratory frame')
+                                    title=title[idx] + ' in crystal frame')
 
         if nb_arrays == 1:
             output_arrays = output_arrays[0]  # return the array instead of the tuple
