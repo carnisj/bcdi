@@ -1247,8 +1247,7 @@ class Setup(object):
         # check and load kwargs #
         #########################
         valid.valid_kwargs(kwargs=kwargs,
-                           allowed_kwargs={'title', 'scale', 'width_z', 'width_y', 'width_x'},
-                           name='Setup.orthogonalize')
+                           allowed_kwargs={'title', 'width_z', 'width_y', 'width_x'}, name=valid_name)
         title = kwargs.get('title', ('Object',)*nb_arrays)
         if isinstance(title, str):
             title = (title,) * nb_arrays
