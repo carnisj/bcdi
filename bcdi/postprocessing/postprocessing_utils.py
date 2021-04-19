@@ -439,33 +439,59 @@ def calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=None, width_y=
     return mycoord
 
 
-def center_com(array, width_z=None, width_y=None, width_x=None, debugging=False):
+def center_com(array, debugging=False, **kwargs):
     """
     Center array based on center_of_mass(abs(array)) using pixel shift.
 
     :param array: 3D array to be centered based on the center of mass of abs(array)
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param debugging: set to True to see plots
-    :type debugging: bool
+    :param debugging: boolean, True to see plots
+    :param kwargs:
+     - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+     - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+     - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
     :return: array centered by pixel shift
     """
+    #########################
+    # check and load kwargs #
+    #########################
+    valid_name = 'postprocessing_utils.center_com'
+    valid.valid_kwargs(kwargs=kwargs,
+                       allowed_kwargs={'width_z', 'width_y', 'width_x'}, name=valid_name)
+    width_z = kwargs.get('width_z', None)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_y = kwargs.get('width_y', None)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_x = kwargs.get('width_x', None)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+
+    #########################
+    # check some parameters #
+    #########################
     if array.ndim != 3:
         raise ValueError('array should be a 3D array')
 
+    #########################################
+    # find the offset of the center of mass #
+    #########################################
     nbz, nby, nbx = array.shape
+    piz, piy, pix = center_of_mass(abs(array))
+    offset_z = int(np.rint(nbz / 2.0 - piz))
+    offset_y = int(np.rint(nby / 2.0 - piy))
+    offset_x = int(np.rint(nbx / 2.0 - pix))
 
     if debugging:
         gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before COM centering')
 
-    piz, piy, pix = center_of_mass(abs(array))
-    print("center of mass at (z, y, x): (", str('{:.2f}'.format(piz)), ',',
-          str('{:.2f}'.format(piy)), ',', str('{:.2f}'.format(pix)), ')')
-    offset_z = int(np.rint(nbz / 2.0 - piz))
-    offset_y = int(np.rint(nby / 2.0 - piy))
-    offset_x = int(np.rint(nbx / 2.0 - pix))
-    print("center of mass offset: (", offset_z, ',', offset_y, ',', offset_x, ') pixels')
+        print("center of mass at (z, y, x): (", str('{:.2f}'.format(piz)), ',',
+              str('{:.2f}'.format(piy)), ',', str('{:.2f}'.format(pix)), ')')
+        print("center of mass offset: (", offset_z, ',', offset_y, ',', offset_x, ') pixels')
+
+    #####################
+    # center the object #
+    #####################
     array = np.roll(array, (offset_z, offset_y, offset_x), axis=(0, 1, 2))
 
     if debugging:
@@ -473,32 +499,58 @@ def center_com(array, width_z=None, width_y=None, width_x=None, debugging=False)
     return array
 
 
-def center_max(array, width_z=None, width_y=None, width_x=None, debugging=False):
+def center_max(array, debugging=False, **kwargs):
     """
     Center array based on max(abs(array)) using pixel shift.
 
     :param array: 3D array to be centered based on max(abs(array))
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param debugging: set to True to see plots
-    :type debugging: bool
+    :param debugging: boolean, True to see plots
+    :param kwargs:
+     - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+     - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+     - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
     :return: array centered by pixel shift
     """
+    #########################
+    # check and load kwargs #
+    #########################
+    valid_name = 'postprocessing_utils.center_max'
+    valid.valid_kwargs(kwargs=kwargs,
+                       allowed_kwargs={'width_z', 'width_y', 'width_x'}, name=valid_name)
+    width_z = kwargs.get('width_z', None)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_y = kwargs.get('width_y', None)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_x = kwargs.get('width_x', None)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+
+    #########################
+    # check some parameters #
+    #########################
     if array.ndim != 3:
         raise ValueError('array should be a 3D array')
 
+    ##################################################################
+    # find the offset of the max relative to the center of the array #
+    ##################################################################
     nbz, nby, nbx = array.shape
-
-    if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before max centering')
-
     piz, piy, pix = np.unravel_index(abs(array).argmax(), array.shape)
-    print("Max at (z, y, x): (", piz, ',', piy, ',', pix, ')')
     offset_z = int(np.rint(nbz / 2.0 - piz))
     offset_y = int(np.rint(nby / 2.0 - piy))
     offset_x = int(np.rint(nbx / 2.0 - pix))
-    print("Max offset: (", offset_z, ',', offset_y, ',', offset_x, ') pixels')
+
+    if debugging:
+        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before max centering')
+        print("Max at (z, y, x): (", piz, ',', piy, ',', pix, ')')
+
+        print("Max offset: (", offset_z, ',', offset_y, ',', offset_x, ') pixels')
+
+    #####################
+    # center the object #
+    #####################
     array = np.roll(array, (offset_z, offset_y, offset_x), axis=(0, 1, 2))
 
     if debugging:
@@ -1109,8 +1161,6 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     max_y = indices_support[1].max() + 1  # last point not included in range()
     min_x = indices_support[2].min()
     max_x = indices_support[2].max() + 1  # last point not included in range()
-    print(f"Support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):{min_z}, {max_z}, {min_y}, {max_y},"
-          f" {min_x}, {max_x}")
 
     #############################################
     # normalize k, now it is in units of voxels #
@@ -1151,6 +1201,8 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     # debugging plots #
     ###################
     if debugging:
+        print(f"Optical path calculation, support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):"
+              f"{min_z}, {max_z}, {min_y}, {max_y}, {min_x}, {max_x}")
         gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x, vmin=0, vmax=1,
                             sum_frames=False, title='Support for optical path', is_orthogonal=True,
                             reciprocal_space=False)
