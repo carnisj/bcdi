@@ -825,10 +825,11 @@ def find_crop_center(array_shape, crop_shape, pivot):
     return crop_center
 
 
-def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False):
+def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=False):
     """
-    Find the meaningful range of the data, in order to reduce the memory consumption when manipulating the object. The
-    range can be larger than the initial data size, which then will need to be padded.
+    Find the meaningful range of the array where it is larger than the threshold, in order to reduce the memory
+    consumption in latter processing. The range can be larger than the initial data size, which then will need to be
+    padded.
 
     :param array: the complex 3D reconstruction
     :param plot_margin: user-defined margin to add to the minimum range of the data
@@ -840,10 +841,25 @@ def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False)
      - xrange: half size of the data range to use in the third axis (X)
     """
     nbz, nby, nbx = array.shape
+    #########################
+    # check some parameters #
+    #########################
+    valid_name = 'postprocessing_utils.find_datarange'
+    if not isinstance(array, np.ndarray):
+        raise TypeError('array should be a numpy ndarray')
+    if array.ndim != 3:
+        raise ValueError('array should be 3D')
+    if isinstance(plot_margin, Number):
+        plot_margin = (plot_margin,) * 3
+    valid.valid_container(plot_margin, container_types=(tuple, list, np.ndarray), length=3, item_types=int,
+                          name=valid_name)
+    valid.valid_item(amplitude_threshold, allowed_types=Real, min_included=0, name=valid_name)
 
+    #########################################################
+    # find the relevant range where the support is non-zero #
+    #########################################################
     if keep_size:
         return nbz // 2, nby // 2, nbx // 2
-
     else:
         support = np.zeros((nbz, nby, nbx))
         support[abs(array) > amplitude_threshold * abs(array).max()] = 1
@@ -859,9 +875,14 @@ def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False)
         x = x * support
         min_x = min(int(np.min(x[np.nonzero(x)])), nbx - int(np.max(x[np.nonzero(x)])))
 
-        zrange = (nbz // 2 - min_z) + plot_margin[0]
-        yrange = (nby // 2 - min_y) + plot_margin[1]
-        xrange = (nbx // 2 - min_x) + plot_margin[2]
+        zrange = (nbz // 2 - min_z)
+        yrange = (nby // 2 - min_y)
+        xrange = (nbx // 2 - min_x)
+
+        if plot_margin is not None:
+            zrange += plot_margin[0]
+            yrange += plot_margin[1]
+            xrange += plot_margin[2]
 
         return zrange, yrange, xrange
 
