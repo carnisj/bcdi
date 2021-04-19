@@ -136,7 +136,7 @@ template_imagefile = '_master.h5'
 ###################################################
 # parameters related to the refraction correction #
 ###################################################
-correct_refraction = False  # True for correcting the phase shift due to refraction
+correct_refraction = True  # True for correcting the phase shift due to refraction
 optical_path_method = 'threshold'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove only outer layers even if
 # the amplitude is lower than isosurface_strain inside the crystal
@@ -499,12 +499,10 @@ if save_raw:
                    voxel_size=(voxel_z, voxel_y, voxel_x), tuple_array=(abs(avg_obj), np.angle(avg_obj)),
                    tuple_fieldnames=('amp', 'phase'), amplitude_threshold=0.01)
 
-############################################################################
-# calculate q, kin , kout from angles and energy (in the laboratory frame) #
-############################################################################
-kin = 2*np.pi/setup.wavelength * setup.beam_direction  # in laboratory frame z downstream, y vertical, x outboard
-kout = setup.exit_wavevector  # in laboratory frame z downstream, y vertical, x outboard
-q = (kout - kin) * 1e-10  # (1/A), in the laboratory frame z downstream, y vertical, x outboard
+#########################################################
+# calculate q of the Bragg peak in the laboratory frame #
+#########################################################
+q = setup.q_laboratory  # (1/A), in the laboratory frame z downstream, y vertical, x outboard
 angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=axis_to_array_xyz[ref_axis_q])
 print(f"\nDiffusion vector in the laboratory frame (z*, y*, x*): ({q[0]:.4f} 1/A, {q[1]:.4f} 1/A, {q[2]:.4f} 1/A)")
 print(f"\nAngle between q and {ref_axis_q} = {angle:.2f} deg")
@@ -517,12 +515,6 @@ q = q / qnorm
 planar_dist = 2*np.pi/qnorm  # qnorm should be in angstroms
 print(f"Wavevector transfer: {qnorm:.4f} 1/A")
 print(f"Atomic planar distance: {planar_dist:.4f} A")
-
-if get_temperature:
-    temperature = pu.bragg_temperature(spacing=planar_dist, reflection=reflection, spacing_ref=reference_spacing,
-                                       temperature_ref=reference_temperature, use_q=False, material="Pt")
-else:
-    temperature = None
 
 planar_dist = planar_dist / 10  # switch to nm
 
@@ -560,7 +552,7 @@ else:  # data already orthogonalized using xrayutilities or the linearized trans
     dy_real = 2 * np.pi / abs(qz.max() - qz.min()) / 10  # in nm qz=y in nexus convention
     dx_real = 2 * np.pi / abs(qy.max() - qy.min()) / 10  # in nm qy=x in nexus convention
     dz_real = 2 * np.pi / abs(qx.max() - qx.min()) / 10  # in nm qx=z in nexus convention
-    print(f'direct space voxel size from q values: {dz_real:.2f}nm, {dy_real:.2f}nm, {dx_real:.2f}nm')
+    print(f'direct space voxel size from q values: ({dz_real:.2f} nm, {dy_real:.2f} nm, {dx_real:.2f} nm)')
     if fix_voxel:
         voxel_size = fix_voxel
         print(f'Direct space pixel size for the interpolation: {voxel_size} (nm)')
@@ -614,6 +606,8 @@ if correct_refraction:  # or correct_absorption:
     bulk = pu.find_bulk(amp=amp, support_threshold=threshold_unwrap_refraction, method=optical_path_method,
                         debugging=debug)
 
+    kin = setup.incident_wavevector
+    kout = setup.exit_wavevector
     # kin and kout were calculated in the laboratory frame, but after the geometric transformation of the crystal, this
     # latter is always in the crystal frame (for simpler strain calculation). We need to transform kin and kout back
     # into the crystal frame (also, xrayutilities output is in crystal frame)
@@ -790,6 +784,8 @@ fig.text(0.60, 0.20, f'correlation threshold={correlation_threshold}', size=20)
 fig.text(0.60, 0.15, f'average over {avg_counter} reconstruction(s)', size=20)
 fig.text(0.60, 0.10, f'Planar distance={planar_dist:.5f} nm', size=20)
 if get_temperature:
+    temperature = pu.bragg_temperature(spacing=planar_dist, reflection=reflection, spacing_ref=reference_spacing,
+                                       temperature_ref=reference_temperature, use_q=False, material="Pt")
     fig.text(0.60, 0.05, f'Estimated T={temperature} C', size=20)
 if save:
     plt.savefig(detector.savedir + f'S{scan}_amp' + comment + '.png')

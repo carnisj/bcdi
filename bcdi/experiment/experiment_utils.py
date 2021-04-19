@@ -776,7 +776,7 @@ class Setup(object):
     def exit_wavevector(self):
         """
         Calculate the exit wavevector kout depending on the setup parameters, in the laboratory frame (z downstream,
-         y vertical, x outboard).
+         y vertical, x outboard). The unit is 1/m
 
         :return: kout vector
         """
@@ -859,6 +859,16 @@ class Setup(object):
         else:  # self.rocking_angle == 'energy'
             # there is no sample rocking for energy scans, hence the grazing angle value do not matter
             self._grazing_angle = None
+
+    @property
+    def incident_wavevector(self):
+        """
+        Calculate the incident wavevector kin depending on the setup parameters, in the laboratory frame (z downstream,
+         y vertical, x outboard). The unit is 1/m.
+
+        :return: kin vector
+        """
+        return 2*np.pi/self.wavelength * self.beam_direction
 
     @property
     def inplane_angle(self):
@@ -976,6 +986,16 @@ class Setup(object):
             raise ValueError('pixel_y should be a strictly positive number in m')
         else:
             self._pixel_y = value
+
+    @property
+    def q_laboratory(self):
+        """
+        Calculate the diffusion vector in the laboratory frame (z downstream, y vertical up, x outboard). The unit is
+        1/A.
+
+        :return: a tuple of three vectors components.
+        """
+        return (self.exit_wavevector - self.incident_wavevector) * 1e-10
 
     @property
     def rocking_angle(self):
