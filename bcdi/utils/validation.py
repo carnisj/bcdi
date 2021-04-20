@@ -93,7 +93,7 @@ def valid_container(obj, container_types, length=None, min_length=None, max_leng
 
     # check the type of obj
     if obj is not None and not isinstance(obj, container_types):
-        raise TypeError(f'type({name})={type(obj)}, allowed is {container_types}')
+        raise TypeError(f'{name}: type(container)={type(obj)}, allowed is {container_types}')
 
     # check the length of obj
     if obj is not None and length is not None:
