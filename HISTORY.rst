@@ -1,6 +1,8 @@
 Version 0.1.0
 -------------
 
+* Feature: implement publication/bcdi_diffpattern_from_reconstruction.py, to compare with the experimental measurement in the crystal frame
+
 * Refactor: simplify PRTF calculations
 
 * Feature: implement the inplane rocking curve at CRISTAL
