@@ -71,8 +71,6 @@ keep_size = False  # True to keep the initial array size for orthogonalization (
 fix_voxel = 5  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
 # provided, the voxel size will be identical is all 3 directions. Set it to None to use the default voxel size
 # (calculated from q values, it will be different in each dimension).
-plot_margin = (60, 60, 60)  # (z, y, x) margin in pixel to leave outside the support in each direction when cropping,
-# it can be negative. It is useful in order to avoid cutting the object during the orthogonalization.
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
