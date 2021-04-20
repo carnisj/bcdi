@@ -7,9 +7,11 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
+import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
+from numbers import Real
+import numpy as np
 import pathlib
 import tkinter as tk
 from tkinter import filedialog
@@ -19,6 +21,7 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.validation as valid
 
 helptext = """
 Template for figures of the following article: 
@@ -32,14 +35,14 @@ For q values, the convention is (qx downstream, qz vertical up, qy outboard).
 scan = 2  # spec scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
-datadir = root_folder + sample_name + str(scan) + '_pearson97.5_newpsf/'
+datadir = root_folder + sample_name + str(scan) + '_pearson97.5_newpsf/pynx/'
 photon_threshold = 0  # everything < this value will be set to 0
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Used for plot labels
 ##############################
 # settings related to saving #
 ##############################
-savedir = datadir + 'diffraction pattern/' # path of the saving directory
+savedir = datadir + 'test/'  # results will be saved here, if None it will default to datadir
 save_qyqz = True  # True to save the strain in QyQz plane
 save_qyqx = True  # True to save the strain in QyQx plane
 save_qzqx = True  # True to save the strain in QzQx plane
@@ -48,10 +51,10 @@ comment = ''  # should start with _
 ##########################
 # settings for the plots #
 ##########################
-plot_symmetrical = True  # if False, will not use the parameter half_range
+plot_symmetrical = False  # if False, will not use the parameter half_range
 half_range = (None, None, None)  # tuple of three pixel numbers, half-range in each direction. Use None to use the
 # maximum symmetrical data range along one direction e.g. [20, None, None]
-colorbar_range = (0, 4.5)  # [vmin, vmax] log scale in photon counts
+colorbar_range = None  # (0, 4.5)  # [vmin, vmax] log scale in photon counts, leave None for default.
 grey_background = False  # True to set nans to grey in the plots
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 4  # in plots
@@ -65,17 +68,22 @@ num_ticks = 5  # number of ticks to use in axes when tick_spacing is not defined
 ####################
 # Check parameters #
 ####################
+valid_name = 'bcdi_plot_diffpattern_2D'
+valid.valid_item(save_sum, allowed_types=bool, name=valid_name)
 if save_sum:
     comment = comment + '_sum'
-numticks_colorbar = int(np.floor(colorbar_range[1] - colorbar_range[0] + 1))
-try:
-    assert len(tick_spacing) == 3, 'tick_spacing should be a tuple of three numbers'
-except TypeError:  # a single number was provided
-    tick_spacing = (tick_spacing, tick_spacing, tick_spacing)
+valid.valid_container(colorbar_range, container_types=(tuple, list, np.ndarray), item_types=Real, length=2,
+                      allow_none=True, name=valid_name)
+if isinstance(tick_spacing, Real):
+    tick_spacing = (tick_spacing,) * 3
+valid.valid_container(tick_spacing, container_types=(tuple, list, np.ndarray), allow_none=True, item_types=Real,
+                      min_excluded=0, name=valid_name)
+valid.valid_item(num_ticks, allowed_types=int, min_excluded=0, name=valid_name)
 if is_orthogonal:
     labels = ('Qx', 'Qz', 'Qy')
 else:
     labels = ('rocking angle', 'detector Y', 'detector X')
+savedir = savedir or datadir
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
 ###################
@@ -87,6 +95,7 @@ else:
     bad_color = '1.0'  # white background
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
+mpl.rcParams['axes.linewidth'] = tick_width  # set the linewidth globally
 
 #############
 # load data #
@@ -127,8 +136,8 @@ for idx, val in enumerate(half_range):
 print('Plotting symmetrical ranges:', plot_symmetrical)
 print('Plotting range from the center of mass:', plot_range)
 
-gu.multislices_plot(array=data, sum_frames=True, scale='log', cmap=my_cmap, vmin=colorbar_range[0],
-                    vmax=colorbar_range[1], reciprocal_space=True, is_orthogonal=is_orthogonal)
+gu.multislices_plot(array=data, sum_frames=True, scale='log', cmap=my_cmap, reciprocal_space=True,
+                    is_orthogonal=is_orthogonal)
 
 ################################
 # optionally load the q values #
@@ -154,16 +163,21 @@ else:
     # crop the q values to the region of interest used in plots
     q_range = (0, plot_range[0] + plot_range[1], 0, plot_range[2] + plot_range[3], 0, plot_range[4] + plot_range[5])
 
-print('q range:', q_range)
+print('q range:', [f'{val:.4f}' for val in q_range])
 
-##############################
-# define the ticks positions #
-##############################
+#############################################################
+# define the positions of the axes ticks and colorbar ticks #
+#############################################################
 # use 5 ticks by default if tick_spacing is None for the axis
 pixel_spacing = ((tick_spacing[0] or (q_range[1]-q_range[0])/num_ticks),
                  (tick_spacing[1] or (q_range[3]-q_range[2])/num_ticks),
                  (tick_spacing[2] or (q_range[5]-q_range[4])/num_ticks))
 print('Pixel spacing:', pixel_spacing)
+
+if colorbar_range is None:  # use rounded acceptable values
+    colorbar_range = (np.ceil(np.median(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))]))),
+                      np.ceil(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))].max())))
+numticks_colorbar = int(np.floor(colorbar_range[1] - colorbar_range[0] + 1))
 
 ############################
 # plot views in QyQz plane #
@@ -190,10 +204,6 @@ if save_qyqz:
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
     ax0.invert_yaxis()  # qz is pointing up
-    ax0.spines['right'].set_linewidth(tick_width)
-    ax0.spines['left'].set_linewidth(tick_width)
-    ax0.spines['top'].set_linewidth(tick_width)
-    ax0.spines['bottom'].set_linewidth(tick_width)
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
     plt.axis('scaled')
@@ -229,10 +239,6 @@ if save_qyqx:
         ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
-    ax0.spines['right'].set_linewidth(tick_width)
-    ax0.spines['left'].set_linewidth(tick_width)
-    ax0.spines['top'].set_linewidth(tick_width)
-    ax0.spines['bottom'].set_linewidth(tick_width)
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
     plt.axis('scaled')
@@ -268,10 +274,6 @@ if save_qzqx:
         ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
-    ax0.spines['right'].set_linewidth(tick_width)
-    ax0.spines['left'].set_linewidth(tick_width)
-    ax0.spines['top'].set_linewidth(tick_width)
-    ax0.spines['bottom'].set_linewidth(tick_width)
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
     plt.axis('scaled')
