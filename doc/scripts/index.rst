@@ -385,14 +385,6 @@ bcdi_coefficient_variation.py
    :end-before: """
    :language: rst
 
-bcdi_plot_strain.py
-^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/scripts/publication/bcdi_plot_strain.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
 bcdi_compa_simu_exp.py
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -401,6 +393,13 @@ bcdi_compa_simu_exp.py
    :end-before: """
    :language: rst
 
+bcdi_diffpattern_from_reconstruction.py
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/publication/bcdi_diffpattern_from_reconstruction.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
 
 bcdi_diffpattern_isosurf_3D.py
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -414,6 +413,14 @@ bcdi_plot_diffpattern_2D.py
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../bcdi/scripts/publication/bcdi_plot_diffpattern_2D.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_plot_strain.py
+^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../bcdi/scripts/publication/bcdi_plot_strain.py
    :start-after: helptext
    :end-before: """
    :language: rst
