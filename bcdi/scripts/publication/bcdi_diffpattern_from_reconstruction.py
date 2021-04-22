@@ -15,9 +15,10 @@ from numbers import Real
 import numpy as np
 from numpy.fft import fftn, fftshift
 import pathlib
+from scipy.ndimage.measurements import center_of_mass
+import sys
 import tkinter as tk
 from tkinter import filedialog
-import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -41,8 +42,9 @@ root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
 datadir = root_folder + sample_name + str(scan) + '_newpsf/result/'
 voxel_sizes = 5  # number (if identical for all dimensions) or tuple of 3 voxel sizes in nm
-mode_factor = 0.2740  # correction factor due to mode decomposition, leave None if no correction is needed
-# the diffraction intensity will be multiplied by the square of this factor
+peak_value = 189456  # correction due to the loss of normalization with the mode decomposition, leave None otherwise.
+# The diffraction intensity will be normalized so that the integrated intensity in a ROI of 7x7x7 voxels around the
+# center of mass of the Bragg peak equals this value.
 # mode_factor = 0.2740 dataset_1_newpsf
 # mode_factor = 0.2806 dataset_1_nopsf
 # mode_factor = 0.2744 dataset_2_pearson97.5_newpsf
@@ -66,7 +68,7 @@ tick_length = 8  # in plots
 tick_width = 2  # in plots
 tick_spacing = (0.025, 0.025, 0.025)  # tuple of three numbers, in 1/A. Leave None for default.
 num_ticks = 5  # number of ticks to use in axes when tick_spacing is not defined
-colorbar_range = (-1, 4)  # (vmin, vmax) log scale in photon counts, leave None for default.
+colorbar_range = (-1, 5)  # (vmin, vmax) log scale in photon counts, leave None for default.
 debug = False  # True to see more plots
 grey_background = False  # True to set nans to grey in the plots
 ##################################
@@ -87,9 +89,8 @@ valid.valid_container(voxel_sizes, container_types=(list, tuple, np.ndarray), le
 
 valid.valid_container(padding_shape, container_types=(tuple, list, np.ndarray), item_types=int, min_excluded=0,
                       length=3, name=valid_name)
-if mode_factor is None:
-    mode_factor = 1
-valid.valid_item(mode_factor, allowed_types=Real, min_excluded=0, name=valid_name)
+
+valid.valid_item(peak_value, allowed_types=Real, min_excluded=0, allow_none=True, name=valid_name)
 
 valid.valid_container((load_qvalues, save_qyqz, save_qyqx, save_qzqx, save_sum, debug, grey_background),
                       container_types=tuple, item_types=bool, name=valid_name)
@@ -193,7 +194,17 @@ obj = pu.crop_pad(array=obj, output_shape=padding_shape, debugging=debug)
 #####################################
 data = fftshift(fftn(obj)) / np.sqrt(reduce(lambda x, y: x*y, padding_shape))  # complex diffraction amplitude
 data = abs(np.multiply(data, np.conjugate(data)))  # diffraction intensity
-data = data * mode_factor**2  # correction due to the loss of the normalization with mode decomposition
+
+zcom, ycom, xcom = com = tuple(map(lambda x: int(np.rint(x)), center_of_mass(data)))
+print('Center of mass of the diffraction pattern at pixel:', zcom, ycom, xcom)
+print(f"\nintensity in a ROI of 7x7x7 voxels centered on the COM:"
+      f" {int(data[zcom-3:zcom+4, ycom-3:ycom+4, xcom-3:xcom+4].sum())}")
+
+if peak_value is not None:
+    data = data / data[zcom-3:zcom+4, ycom-3:ycom+4, xcom-3:xcom+4].sum() * peak_value
+    print(f"Normalizing the data to peak_value, new intensity in the 7x7x7 ROI = "
+          f"{int(data[zcom-3:zcom+4, ycom-3:ycom+4, xcom-3:xcom+4].sum())}")
+    # correction due to the loss of the normalization with mode decomposition
 
 #############################################################
 # define the positions of the axes ticks and colorbar ticks #
