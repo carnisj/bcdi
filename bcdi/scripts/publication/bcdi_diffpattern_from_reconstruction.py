@@ -24,8 +24,15 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.validation as valid
 
 helptext = """
-Calculate the diffraction pattern corresponding to a reconstructed 3D crystal (output of phase retrieval), after 
-padding it to the desired shape. The reconstructed crystal file should be a .NPZ with field names 'amp' for the modulus 
+Calculate the diffraction pattern corresponding to a reconstructed 3D crystal (output of phase retrieval). The crystal 
+is expected to be expressed in an orthonormal frame, and voxel sizes must be provided (voxel sizes can be different in 
+each dimension). 
+
+If q values are provided, the crystal will be resampled so that the extent in q given by the direct space voxel sizes 
+matches the extent defined by q values. If q values are not provided, the crystal is padded to the user-defined shape 
+before calculating the diffraction pattern.
+
+The reconstructed crystal file should be a .NPZ with field names 'amp' for the modulus 
 and 'displacement' for the phase. Corresponding q values can be loaded optionally.
 """
 
@@ -33,17 +40,14 @@ scan = 2  # scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
 datadir = root_folder + sample_name + str(scan) + '_pearson97.5_newpsf/pynx/'
-original_shape = (392, 420, 256)  # the reconstruction will be padded to that shape before calculating its diffraction
-# pattern (shape of the diffraction pattern before phase retrieval)
-# first dataset (168, 1024, 800)
-# second dataset (168, 1024, 800)
+voxel_sizes = 5  # number (if identical for all dimensions) or tuple of 3 voxel sizes in nm
 mode_factor = 0.2740  # correction factor due to mode decomposition, leave None if no correction is needed
 # the diffraction intensity will be multiplied by the square of this factor
 # mode_factor = 0.2740 dataset_1_newpsf
 # mode_factor = 0.2806 dataset_1_nopsf
 # mode_factor = 0.2744 dataset_2_pearson97.5_newpsf
-is_orthogonal = True  # True if the recosntructed crystal is in n orthonormal frame
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
+padding_shape = (392, 420, 256)  # the object is padded to that shape before calculating its diffraction pattern
 ##############################
 # settings related to saving #
 ##############################
@@ -75,7 +79,12 @@ valid_name = 'diffpattern_from_reconstruction'
 savedir = savedir or datadir
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
-valid.valid_container(original_shape, container_types=(tuple, list, np.ndarray), item_types=int, min_excluded=0,
+if isinstance(voxel_sizes, Real):
+    voxel_sizes = (voxel_sizes,) * 3
+valid.valid_container(voxel_sizes, container_types=(list, tuple, np.ndarray), length=3, item_types=Real, min_excluded=0,
+                      name=valid_name)
+
+valid.valid_container(padding_shape, container_types=(tuple, list, np.ndarray), item_types=int, min_excluded=0,
                       length=3, name=valid_name)
 if mode_factor is None:
     mode_factor = 1
@@ -115,10 +124,7 @@ else:
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
 
-if is_orthogonal:
-    labels = ('Qx', 'Qz', 'Qy')
-else:
-    labels = ('rocking angle', 'detector Y', 'detector X')
+labels = ('Qx', 'Qz', 'Qy')
 
 if load_qvalues:
     draw_ticks = True
@@ -141,25 +147,11 @@ if amp.ndim != 3:
     raise ValueError('3D arrays are expected')
 
 gu.multislices_plot(array=amp, sum_frames=False, scale='linear', plot_colorbar=True, reciprocal_space=False,
-                    is_orthogonal=is_orthogonal, title='Modulus')
-
-####################################################################
-# calculate the complex amplitude  and pad it to the desired shape #
-####################################################################
-obj = amp * np.exp(1j * phase)
-obj = pu.crop_pad(array=obj, output_shape=original_shape, debugging=debug)
-
-#####################################
-# calculate the diffraction pattern #
-#####################################
-data = fftshift(fftn(obj)) / np.sqrt(reduce(lambda x, y: x*y, original_shape))  # complex diffraction amplitude
-data = abs(np.multiply(data, np.conjugate(data)))  # diffraction intensity
-data = data * mode_factor**2  # correction due to the loss of the normalization with mode decomposition
+                    is_orthogonal=True, title='Modulus')
 
 ################################
 # optionally load the q values #
 ################################
-nbz, nby, nbx = data.shape
 if load_qvalues:
     file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the q values",
                                            filetypes=[("NPZ", "*.npz")])
@@ -168,13 +160,33 @@ if load_qvalues:
     qz = q_values['qz']
     qy = q_values['qy']
     print('Loaded: qx shape:', qx.shape, 'qz shape:', qz.shape, 'qy shape:', qy.shape)
-    if not (*qx.shape, *qz.shape, *qy.shape) == data.shape:
-        raise ValueError('q values and data shape are incompatible')
     q_range = (qx.min(), qx.max(), qz.min(), qz.max(), qy.min(), qy.max())
 else:
-    q_range = (0, nbz, 0, nby, 0, nbx)
+    q_range = (0, padding_shape[0], 0, padding_shape[1], 0, padding_shape[2])
 
 print('q range:', [f'{val:.4f}' for val in q_range])
+
+################################################
+# resample the object to match the extent in q #
+################################################
+obj = amp * np.exp(1j * phase)
+if load_qvalues:
+    new_voxelsizes = [2*np.pi/(10*q_range[2*idx+1]-10*q_range[2*idx]) for idx in range(3)]
+    print(f"Regridding with the new voxel sizes = "
+          f"({new_voxelsizes[0]:.2f} nm, {new_voxelsizes[1]:.2f} nm, {new_voxelsizes[2]:.2f} nm)")
+    obj = pu.regrid(array=obj, old_voxelsize=voxel_sizes, new_voxelsize=new_voxelsizes)
+
+#######################################
+# pad the object to the desired shape #
+#######################################
+obj = pu.crop_pad(array=obj, output_shape=padding_shape, debugging=debug)
+
+#####################################
+# calculate the diffraction pattern #
+#####################################
+data = fftshift(fftn(obj)) / np.sqrt(reduce(lambda x, y: x*y, padding_shape))  # complex diffraction amplitude
+data = abs(np.multiply(data, np.conjugate(data)))  # diffraction intensity
+data = data * mode_factor**2  # correction due to the loss of the normalization with mode decomposition
 
 #############################################################
 # define the positions of the axes ticks and colorbar ticks #
@@ -200,8 +212,8 @@ if save_qyqz:
         plt0 = ax0.imshow(np.log10(data.sum(axis=0)), cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[4], q_range[5], q_range[3], q_range[2]])
     else:
-        plt0 = ax0.imshow(np.log10(data[nbz//2, :, :]), cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
-                          extent=[q_range[4], q_range[5], q_range[3], q_range[2]])
+        plt0 = ax0.imshow(np.log10(data[padding_shape[0]//2, :, :]), cmap=my_cmap, vmin=colorbar_range[0],
+                          vmax=colorbar_range[1], extent=[q_range[4], q_range[5], q_range[3], q_range[2]])
     ax0.invert_yaxis()  # qz is pointing up
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
@@ -221,8 +233,8 @@ if save_qyqx:
         plt0 = ax0.imshow(np.log10(data.sum(axis=1)), cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[4], q_range[5], q_range[1], q_range[0]])
     else:
-        plt0 = ax0.imshow(np.log10(data[:, nby//2, :]), cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
-                          extent=[q_range[4], q_range[5], q_range[1], q_range[0]])
+        plt0 = ax0.imshow(np.log10(data[:, padding_shape[1]//2, :]), cmap=my_cmap, vmin=colorbar_range[0],
+                          vmax=colorbar_range[1], extent=[q_range[4], q_range[5], q_range[1], q_range[0]])
 
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
@@ -242,8 +254,8 @@ if save_qzqx:
         plt0 = ax0.imshow(np.log10(data.sum(axis=2)), cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
     else:
-        plt0 = ax0.imshow(np.log10(data[:, :, nbx//2]), cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
-                          extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
+        plt0 = ax0.imshow(np.log10(data[:, :, padding_shape[2]//2]), cmap=my_cmap, vmin=colorbar_range[0],
+                          vmax=colorbar_range[1], extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
 
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
@@ -255,4 +267,3 @@ if save_qzqx:
 
 plt.ioff()
 plt.show()
-
