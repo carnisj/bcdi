@@ -64,9 +64,9 @@ comment = ''  # string to add to the filename when saving, should start with "_"
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
-tick_spacing = None  # (0.025, 0.025, 0.025)  # tuple of three numbers, in 1/A. Leave None for default.
+tick_spacing = (0.05, 0.05, 0.05)  # tuple of three numbers, in 1/A. Leave None for default.
 num_ticks = 5  # number of ticks to use in axes when tick_spacing is not defined
-colorbar_range = (0, 4.5)  # (vmin, vmax) log scale in photon counts, leave None for default.
+colorbar_range = (-1, 4.5)  # (vmin, vmax) log scale in photon counts, leave None for default.
 debug = False  # True to see more plots
 grey_background = False  # True to set nans to grey in the plots
 ##################################
@@ -134,6 +134,7 @@ if load_qvalues:
 else:
     draw_ticks = False
     unit = ' pixels'
+    tick_spacing = (None, None, None)
 
 ##################################
 # load the reconstructed crystal #
