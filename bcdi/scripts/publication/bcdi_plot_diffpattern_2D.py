@@ -244,7 +244,7 @@ if save_qyqx:
     gu.colorbar(plt0, numticks=numticks_colorbar)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[0],
-               filename=sample_name + str(scan) + comment + '_fromrec_qyqx',
+               filename=sample_name + str(scan) + comment + '_qyqx',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
                left=draw_ticks, right=False, bottom=draw_ticks, top=False)
 
@@ -270,7 +270,7 @@ if save_qzqx:
     gu.colorbar(plt0, numticks=numticks_colorbar)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[1], ylabels=labels[0],
-               filename=sample_name + str(scan) + comment + '_fromrec_qzqx',
+               filename=sample_name + str(scan) + comment + '_qzqx',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
                left=draw_ticks, right=False, bottom=draw_ticks, top=False)
 
