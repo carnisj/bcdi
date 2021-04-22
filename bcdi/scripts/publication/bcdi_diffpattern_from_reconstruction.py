@@ -37,12 +37,12 @@ The reconstructed crystal file should be a .NPZ with field names 'amp' for the m
 and 'displacement' for the phase. Corresponding q values can be loaded optionally.
 """
 
-scan = 2  # scan number
+scan = 1  # scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
-datadir = root_folder + sample_name + str(scan) + '_pearson97.5_newpsf/result/'
+datadir = root_folder + sample_name + str(scan) + '_newpsf/result/'
 voxel_sizes = 5  # number (if identical for all dimensions) or tuple of 3 voxel sizes in nm
-peak_value = 242428
+peak_value = 189456
 # 189456  # dataset 1
 # 242428  # dataset 2
 # correction due to the loss of normalization with the mode decomposition, leave None otherwise.
@@ -52,7 +52,7 @@ peak_value = 242428
 # mode_factor = 0.2806 dataset_1_nopsf
 # mode_factor = 0.2744 dataset_2_pearson97.5_newpsf
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
-padding_shape = (360, 512, 400)  # the object is padded to that shape before calculating its diffraction pattern.
+padding_shape = (300, 512, 400)  # the object is padded to that shape before calculating its diffraction pattern.
 # It will be overrident if it does not match the shape defined by q values.
 ##############################
 # settings related to saving #
@@ -61,7 +61,7 @@ savedir = datadir + 'diffpattern_from_reconstruction/'  # results will be saved 
 save_qyqz = True  # True to save the strain in QyQz plane
 save_qyqx = True  # True to save the strain in QyQx plane
 save_qzqx = True  # True to save the strain in QzQx plane
-save_sum = True  # True to save the summed diffraction pattern in the detector, False to save the central slice only
+save_sum = False  # True to save the summed diffraction pattern in the detector, False to save the central slice only
 comment = ''  # string to add to the filename when saving, should start with "_"
 ##########################
 # settings for the plots #
@@ -71,7 +71,7 @@ tick_length = 8  # in plots
 tick_width = 2  # in plots
 tick_spacing = (0.025, 0.025, 0.025)  # tuple of three numbers, in 1/A. Leave None for default.
 num_ticks = 5  # number of ticks to use in axes when tick_spacing is not defined
-colorbar_range = (-1, 5)  # (vmin, vmax) log scale in photon counts, leave None for default.
+colorbar_range = (-1, 3)  # (vmin, vmax) log scale in photon counts, leave None for default.
 debug = False  # True to see more plots
 grey_background = False  # True to set nans to grey in the plots
 ##################################
@@ -100,7 +100,9 @@ valid.valid_container((load_qvalues, save_qyqz, save_qyqx, save_qzqx, save_sum, 
 
 if len(comment) != 0 and not comment.startswith('_'):
     comment = '_' + comment
-
+if save_sum:
+    comment = comment + '_sum'
+    
 if tick_direction not in {'out', 'in', 'inout'}:
     raise ValueError("tick_direction should be 'out', 'in' or 'inout'")
 valid.valid_item(tick_length, allowed_types=int, min_excluded=0, name=valid_name)
