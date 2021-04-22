@@ -39,20 +39,20 @@ and 'displacement' for the phase. Corresponding q values can be loaded optionall
 scan = 1  # scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
-datadir = root_folder + sample_name + str(scan) + '_newpsf/test/'
+datadir = root_folder + sample_name + str(scan) + '_newpsf/result/'
 voxel_sizes = 5  # number (if identical for all dimensions) or tuple of 3 voxel sizes in nm
 mode_factor = 0.2740  # correction factor due to mode decomposition, leave None if no correction is needed
 # the diffraction intensity will be multiplied by the square of this factor
 # mode_factor = 0.2740 dataset_1_newpsf
 # mode_factor = 0.2806 dataset_1_nopsf
 # mode_factor = 0.2744 dataset_2_pearson97.5_newpsf
-load_qvalues = False  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
-padding_shape = (320, 512, 400)  # the object is padded to that shape before calculating its diffraction pattern.
+load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
+padding_shape = (300, 512, 400)  # the object is padded to that shape before calculating its diffraction pattern.
 # It will be overrident if it does not match the shape defined by q values.
 ##############################
 # settings related to saving #
 ##############################
-savedir = datadir + 'test/'  # results will be saved here, if None it will default to datadir
+savedir = datadir + 'diffpattern_from_reconstruction/'  # results will be saved here, if None it will default to datadir
 save_qyqz = True  # True to save the strain in QyQz plane
 save_qyqx = True  # True to save the strain in QyQx plane
 save_qzqx = True  # True to save the strain in QzQx plane
@@ -62,11 +62,11 @@ comment = ''  # string to add to the filename when saving, should start with "_"
 # settings for the plots #
 ##########################
 tick_direction = 'out'  # 'out', 'in', 'inout'
-tick_length = 10  # in plots
+tick_length = 8  # in plots
 tick_width = 2  # in plots
-tick_spacing = (0.05, 0.05, 0.05)  # tuple of three numbers, in 1/A. Leave None for default.
+tick_spacing = (0.025, 0.025, 0.025)  # tuple of three numbers, in 1/A. Leave None for default.
 num_ticks = 5  # number of ticks to use in axes when tick_spacing is not defined
-colorbar_range = (-1, 4.5)  # (vmin, vmax) log scale in photon counts, leave None for default.
+colorbar_range = (-1, 4)  # (vmin, vmax) log scale in photon counts, leave None for default.
 debug = False  # True to see more plots
 grey_background = False  # True to set nans to grey in the plots
 ##################################
@@ -234,7 +234,7 @@ if save_qyqz:
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[1],
                filename=sample_name + str(scan) + comment + '_fromrec_qyqz',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
+               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
 
 ############################
 # plot views in QyQx plane #
@@ -248,7 +248,7 @@ if save_qyqx:
     else:
         plt0 = ax0.imshow(np.log10(data[:, padding_shape[1]//2, :]), cmap=my_cmap, vmin=colorbar_range[0],
                           vmax=colorbar_range[1], extent=[q_range[4], q_range[5], q_range[1], q_range[0]])
-
+    ax0.invert_yaxis()  # qx is pointing up
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[0]))
     gu.colorbar(plt0, numticks=numticks_colorbar)
@@ -256,7 +256,7 @@ if save_qyqx:
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[0],
                filename=sample_name + str(scan) + comment + '_fromrec_qyqx',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
+               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
 
 ############################
 # plot views in QzQx plane #
@@ -270,7 +270,7 @@ if save_qzqx:
     else:
         plt0 = ax0.imshow(np.log10(data[:, :, padding_shape[2]//2]), cmap=my_cmap, vmin=colorbar_range[0],
                           vmax=colorbar_range[1], extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
-
+    ax0.invert_yaxis()  # qx is pointing up
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[1]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[0]))
     gu.colorbar(plt0, numticks=numticks_colorbar)
@@ -278,7 +278,7 @@ if save_qzqx:
                tick_direction=tick_direction, label_size=16, xlabels=labels[1], ylabels=labels[0],
                filename=sample_name + str(scan) + comment + '_fromrec_qzqx',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
+               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
 
 plt.ioff()
 plt.show()
