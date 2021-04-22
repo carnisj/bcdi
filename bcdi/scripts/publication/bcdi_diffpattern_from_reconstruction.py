@@ -231,8 +231,9 @@ if save_qyqz:
     gu.colorbar(plt0, numticks=numticks_colorbar)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[1],
-               filename=sample_name + str(scan) + comment + '_fromrec_qyqz', labelbottom=True, labelleft=True,
-               labelright=False, labeltop=False, left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
+               filename=sample_name + str(scan) + comment + '_fromrec_qyqz',
+               labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 ############################
 # plot views in QyQx plane #
@@ -252,8 +253,9 @@ if save_qyqx:
     gu.colorbar(plt0, numticks=numticks_colorbar)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[0],
-               filename=sample_name + str(scan) + comment + '_fromrec_qyqx', labelbottom=True, labelleft=True,
-               labelright=False, labeltop=False, left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
+               filename=sample_name + str(scan) + comment + '_fromrec_qyqx',
+               labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 ############################
 # plot views in QzQx plane #
@@ -273,8 +275,9 @@ if save_qzqx:
     gu.colorbar(plt0, numticks=numticks_colorbar)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[1], ylabels=labels[0],
-               filename=sample_name + str(scan) + comment + '_fromrec_qzqx', labelbottom=True, labelleft=True,
-               labelright=False, labeltop=False, left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
+               filename=sample_name + str(scan) + comment + '_fromrec_qzqx',
+               labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 plt.ioff()
 plt.show()
