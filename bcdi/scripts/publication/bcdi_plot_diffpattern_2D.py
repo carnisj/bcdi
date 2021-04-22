@@ -134,9 +134,10 @@ except TypeError:
     raise TypeError('half-range should be a tuple of three pixel numbers')
 
 nbz, nby, nbx = data.shape
-zcom, ycom, xcom = center_of_mass(data)
-zcom, ycom, xcom = int(np.rint(zcom)), int(np.rint(ycom)), int(np.rint(xcom))
+zcom, ycom, xcom = com = tuple(map(lambda x: int(np.rint(x)), center_of_mass(data)))
 print('Center of mass of the diffraction pattern at pixel:', zcom, ycom, xcom)
+print(f"\nintensity in a ROI of 7x7x7 voxels centered on the COM:"
+      f" {int(data[zcom-3:zcom+4, ycom-3:ycom+4, xcom-3:xcom+4].sum())}")
 plot_range = []
 if plot_symmetrical:
     max_range = (min(zcom, nbz-zcom), min(zcom, nbz-zcom),
@@ -148,7 +149,7 @@ else:
 for idx, val in enumerate(half_range):
     plot_range.append(min(val or max_range[2*idx], max_range[2*idx]))
     plot_range.append(min(val or max_range[2*idx+1], max_range[2*idx+1]))
-print('Plotting symmetrical ranges:', plot_symmetrical)
+print('\nPlotting symmetrical ranges:', plot_symmetrical)
 print('Plotting range from the center of mass:', plot_range)
 
 gu.multislices_plot(array=data, sum_frames=True, scale='log', cmap=my_cmap, reciprocal_space=True,
