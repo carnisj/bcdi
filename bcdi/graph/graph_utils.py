@@ -951,6 +951,21 @@ def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False)
     return cut
 
 
+def load_check_kwargs(nb_plots, **kwargs):
+    """
+    Load and check parameters related to plots from the kwargs dictionnary. If these parameters are going to be
+    provided to several plots, there are trasnformed to tuple of the corresponding length.
+
+    :param nb_plots: number of plots to which these parameters should be provided
+    :param kwargs: a dictionnary of kwargs
+    :return:
+    """
+    if not isinstance(kwargs, dict):
+        raise TypeError(f'kwargs should be a dictionnary, got {type(kwargs)}')
+    # TODO
+    pass
+
+
 def loop_thru_scan(key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vmin=None, vmax=None):
     """
     Update the plot while removing the parasitic diffraction intensity in 3D dataset

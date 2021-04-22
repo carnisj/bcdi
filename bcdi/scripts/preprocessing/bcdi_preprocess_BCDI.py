@@ -482,16 +482,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         npz_key = data.files
         data = data[npz_key[0]]
         nz, ny, nx = np.shape(data)
-        # from numpy.fft import fftn, fftshift
-        # print('data.shape before padding', data.shape)
-        # # first dataset (168, 1024, 800)
-        # data = pu.crop_pad(array=data, output_shape=(224, 1024, 800), debugging=False)
-        # data = fftshift(fftn(data)) / (np.sqrt(224) * np.sqrt(1024) * np.sqrt(800))  # complex amplitude
-        # # second dataset (168, 1024, 800)
-        # data = abs(np.multiply(data, np.conjugate(data)))  # intensity
-        # # data = data * 0.2740**2  # dataset_1_newpsf   due to mode decomposition
-        # # data = data * 0.2806**2  # dataset_1_nopsf   due to mode decomposition
-        # data = data * 0.2744**2  # dataset_2_pearson97.5_newpsf   due to mode decomposition
+        
         # check that the ROI is correctly defined
         detector.roi = roi_detector or [0, ny, 0, nx]
         print('Detector ROI:', detector.roi)

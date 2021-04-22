@@ -1631,7 +1631,8 @@ class Setup(object):
         nz_output, ny_output, nx_output = smaller_primes((nz_output, ny_output, nx_output), maxprime=7,
                                                          required_dividers=(2,))
         if verbose:
-            print(f"\nInitial shape = ({nbz},{nby},{nbx})\nOutput shape  = ({nz_output},{ny_output},{nx_output})")
+            print(f"\nInitial shape = ({nbz},{nby},{nbx})\nOutput shape  = ({nz_output},{ny_output},{nx_output})"
+                  f" (satisfying FFT shape requirements)")
 
         #####################################################################################################
         # define the interpolation qx qz qy 1D vectors in 1/nm, the reference being the center of the array #
