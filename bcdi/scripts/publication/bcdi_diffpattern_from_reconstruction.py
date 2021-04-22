@@ -36,18 +36,19 @@ The reconstructed crystal file should be a .NPZ with field names 'amp' for the m
 and 'displacement' for the phase. Corresponding q values can be loaded optionally.
 """
 
-scan = 2  # scan number
+scan = 1  # scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
-datadir = root_folder + sample_name + str(scan) + '_pearson97.5_newpsf/pynx/'
+datadir = root_folder + sample_name + str(scan) + '_newpsf/test/'
 voxel_sizes = 5  # number (if identical for all dimensions) or tuple of 3 voxel sizes in nm
 mode_factor = 0.2740  # correction factor due to mode decomposition, leave None if no correction is needed
 # the diffraction intensity will be multiplied by the square of this factor
 # mode_factor = 0.2740 dataset_1_newpsf
 # mode_factor = 0.2806 dataset_1_nopsf
 # mode_factor = 0.2744 dataset_2_pearson97.5_newpsf
-load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
-padding_shape = (392, 420, 256)  # the object is padded to that shape before calculating its diffraction pattern
+load_qvalues = False  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
+padding_shape = (320, 512, 400)  # the object is padded to that shape before calculating its diffraction pattern.
+# It will be overrident if it does not match the shape defined by q values.
 ##############################
 # settings related to saving #
 ##############################
@@ -63,7 +64,7 @@ comment = ''  # string to add to the filename when saving, should start with "_"
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
-tick_spacing = (0.025, 0.025, 0.025)  # tuple of three numbers, in 1/A. Leave None for default.
+tick_spacing = None  # (0.025, 0.025, 0.025)  # tuple of three numbers, in 1/A. Leave None for default.
 num_ticks = 5  # number of ticks to use in axes when tick_spacing is not defined
 colorbar_range = (0, 4.5)  # (vmin, vmax) log scale in photon counts, leave None for default.
 debug = False  # True to see more plots
@@ -90,6 +91,7 @@ if mode_factor is None:
     mode_factor = 1
 valid.valid_item(mode_factor, allowed_types=Real, min_excluded=0, name=valid_name)
 
+valid.valid_item(load_qvalues, allowed_types=bool, name=valid_name)
 valid.valid_item(save_qyqz, allowed_types=bool, name=valid_name)
 valid.valid_item(save_qyqx, allowed_types=bool, name=valid_name)
 valid.valid_item(save_qzqx, allowed_types=bool, name=valid_name)
@@ -101,7 +103,7 @@ if tick_direction not in {'out', 'in', 'inout'}:
     raise ValueError("tick_direction should be 'out', 'in' or 'inout'")
 valid.valid_item(tick_length, allowed_types=int, min_excluded=0, name=valid_name)
 valid.valid_item(tick_width, allowed_types=int, min_excluded=0, name=valid_name)
-if isinstance(tick_spacing, Real):
+if isinstance(tick_spacing, Real) or tick_spacing is None:
     tick_spacing = (tick_spacing,) * 3
 valid.valid_container(tick_spacing, container_types=(tuple, list, np.ndarray), allow_none=True, item_types=Real,
                       min_excluded=0, name=valid_name)
@@ -128,8 +130,10 @@ labels = ('Qx', 'Qz', 'Qy')
 
 if load_qvalues:
     draw_ticks = True
+    unit = ' 1/A'
 else:
     draw_ticks = False
+    unit = ' pixels'
 
 ##################################
 # load the reconstructed crystal #
@@ -159,12 +163,14 @@ if load_qvalues:
     qx = q_values['qx']
     qz = q_values['qz']
     qy = q_values['qy']
-    print('Loaded: qx shape:', qx.shape, 'qz shape:', qz.shape, 'qy shape:', qy.shape)
+    qvalues_shape = (*qx.shape, *qz.shape, *qy.shape)
+
     q_range = (qx.min(), qx.max(), qz.min(), qz.max(), qy.min(), qy.max())
 else:
     q_range = (0, padding_shape[0], 0, padding_shape[1], 0, padding_shape[2])
+    qvalues_shape = padding_shape
 
-print('q range:', [f'{val:.4f}' for val in q_range])
+print('\nq range:', [f'{val:.4f}' for val in q_range])
 
 ################################################
 # resample the object to match the extent in q #
@@ -172,13 +178,17 @@ print('q range:', [f'{val:.4f}' for val in q_range])
 obj = amp * np.exp(1j * phase)
 if load_qvalues:
     new_voxelsizes = [2*np.pi/(10*q_range[2*idx+1]-10*q_range[2*idx]) for idx in range(3)]
-    print(f"Regridding with the new voxel sizes = "
+    print(f"\nRegridding with the new voxel sizes = "
           f"({new_voxelsizes[0]:.2f} nm, {new_voxelsizes[1]:.2f} nm, {new_voxelsizes[2]:.2f} nm)")
     obj = pu.regrid(array=obj, old_voxelsize=voxel_sizes, new_voxelsize=new_voxelsizes)
 
 #######################################
 # pad the object to the desired shape #
 #######################################
+if qvalues_shape != padding_shape:
+    print(f'\nThe shape defined by q_values {qvalues_shape} is different from padding_shape {padding_shape}')
+    print(f"Overriding padding_shape with {qvalues_shape}")
+    padding_shape = qvalues_shape
 obj = pu.crop_pad(array=obj, output_shape=padding_shape, debugging=debug)
 
 #####################################
@@ -192,10 +202,11 @@ data = data * mode_factor**2  # correction due to the loss of the normalization 
 # define the positions of the axes ticks and colorbar ticks #
 #############################################################
 # use 5 ticks by default if tick_spacing is None for the axis
-pixel_spacing = ((tick_spacing[0] or (q_range[1]-q_range[0])/num_ticks),
-                 (tick_spacing[1] or (q_range[3]-q_range[2])/num_ticks),
-                 (tick_spacing[2] or (q_range[5]-q_range[4])/num_ticks))
-print('Pixel spacing:', pixel_spacing)
+tick_spacing = ((tick_spacing[0] or (q_range[1]-q_range[0])/num_ticks),
+                (tick_spacing[1] or (q_range[3]-q_range[2])/num_ticks),
+                (tick_spacing[2] or (q_range[5]-q_range[4])/num_ticks))
+
+print('\nTick spacing:', [f'{val:.3f} {unit}' for val in tick_spacing])
 
 if colorbar_range is None:  # use rounded acceptable values
     colorbar_range = (np.ceil(np.median(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))]))),
@@ -206,7 +217,7 @@ numticks_colorbar = int(np.floor(colorbar_range[1] - colorbar_range[0] + 1))
 # plot views in QyQz plane #
 ############################
 if save_qyqz:
-    fig, ax0 = plt.subplots(1, 1)
+    fig, ax0 = plt.subplots(1, 1, figsize=(9, 6))
     if save_sum:
         # extent (left, right, bottom, top)
         plt0 = ax0.imshow(np.log10(data.sum(axis=0)), cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
@@ -215,8 +226,8 @@ if save_qyqz:
         plt0 = ax0.imshow(np.log10(data[padding_shape[0]//2, :, :]), cmap=my_cmap, vmin=colorbar_range[0],
                           vmax=colorbar_range[1], extent=[q_range[4], q_range[5], q_range[3], q_range[2]])
     ax0.invert_yaxis()  # qz is pointing up
-    ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
-    ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
+    ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[2]))
+    ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[1]))
     gu.colorbar(plt0, numticks=numticks_colorbar)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[1],
@@ -227,7 +238,7 @@ if save_qyqz:
 # plot views in QyQx plane #
 ############################
 if save_qyqx:
-    fig, ax0 = plt.subplots(1, 1)
+    fig, ax0 = plt.subplots(1, 1, figsize=(9, 6))
     if save_sum:
         # extent (left, right, bottom, top)
         plt0 = ax0.imshow(np.log10(data.sum(axis=1)), cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
@@ -236,8 +247,8 @@ if save_qyqx:
         plt0 = ax0.imshow(np.log10(data[:, padding_shape[1]//2, :]), cmap=my_cmap, vmin=colorbar_range[0],
                           vmax=colorbar_range[1], extent=[q_range[4], q_range[5], q_range[1], q_range[0]])
 
-    ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
-    ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
+    ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[2]))
+    ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[0]))
     gu.colorbar(plt0, numticks=numticks_colorbar)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[0],
@@ -248,7 +259,7 @@ if save_qyqx:
 # plot views in QzQx plane #
 ############################
 if save_qzqx:
-    fig, ax0 = plt.subplots(1, 1)
+    fig, ax0 = plt.subplots(1, 1, figsize=(9, 6))
     if save_sum:
         # extent (left, right, bottom, top)
         plt0 = ax0.imshow(np.log10(data.sum(axis=2)), cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
@@ -257,8 +268,8 @@ if save_qzqx:
         plt0 = ax0.imshow(np.log10(data[:, :, padding_shape[2]//2]), cmap=my_cmap, vmin=colorbar_range[0],
                           vmax=colorbar_range[1], extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
 
-    ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
-    ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
+    ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[1]))
+    ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[0]))
     gu.colorbar(plt0, numticks=numticks_colorbar)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[1], ylabels=labels[0],
