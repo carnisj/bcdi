@@ -91,11 +91,9 @@ if mode_factor is None:
     mode_factor = 1
 valid.valid_item(mode_factor, allowed_types=Real, min_excluded=0, name=valid_name)
 
-valid.valid_item(load_qvalues, allowed_types=bool, name=valid_name)
-valid.valid_item(save_qyqz, allowed_types=bool, name=valid_name)
-valid.valid_item(save_qyqx, allowed_types=bool, name=valid_name)
-valid.valid_item(save_qzqx, allowed_types=bool, name=valid_name)
-valid.valid_item(save_sum, allowed_types=bool, name=valid_name)
+valid.valid_container((load_qvalues, save_qyqz, save_qyqx, save_qzqx, save_sum, debug, grey_background),
+                      container_types=tuple, item_types=bool, name=valid_name)
+
 if len(comment) != 0 and not comment.startswith('_'):
     comment = '_' + comment
 
@@ -110,8 +108,6 @@ valid.valid_container(tick_spacing, container_types=(tuple, list, np.ndarray), a
 valid.valid_item(num_ticks, allowed_types=int, min_excluded=0, name=valid_name)
 valid.valid_container(colorbar_range, container_types=(tuple, list, np.ndarray), item_types=Real, length=2,
                       allow_none=True, name=valid_name)
-valid.valid_item(debug, allowed_types=bool, name=valid_name)
-valid.valid_item(grey_background, allowed_types=bool, name=valid_name)
 
 #############################
 # define default parameters #
