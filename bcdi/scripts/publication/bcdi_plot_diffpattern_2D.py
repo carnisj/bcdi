@@ -169,10 +169,10 @@ print('q range:', [f'{val:.4f}' for val in q_range])
 # define the positions of the axes ticks and colorbar ticks #
 #############################################################
 # use 5 ticks by default if tick_spacing is None for the axis
-pixel_spacing = ((tick_spacing[0] or (q_range[1]-q_range[0])/num_ticks),
+tick_spacing = ((tick_spacing[0] or (q_range[1]-q_range[0])/num_ticks),
                  (tick_spacing[1] or (q_range[3]-q_range[2])/num_ticks),
                  (tick_spacing[2] or (q_range[5]-q_range[4])/num_ticks))
-print('Pixel spacing:', pixel_spacing)
+print('Tick spacing:', tick_spacing)
 
 if colorbar_range is None:  # use rounded acceptable values
     colorbar_range = (np.ceil(np.median(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))]))),
@@ -204,8 +204,8 @@ if save_qyqz:
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
     ax0.invert_yaxis()  # qz is pointing up
-    ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
-    ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
+    ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[2]))
+    ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[1]))
     plt.axis('scaled')
     fig.savefig(savedir + sample_name + str(scan) + comment + '_qyqz.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
@@ -239,8 +239,8 @@ if save_qyqx:
         ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
-    ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[2]))
-    ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
+    ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[2]))
+    ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[0]))
     plt.axis('scaled')
     fig.savefig(savedir + sample_name + str(scan) + comment + '_qyqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
@@ -274,8 +274,8 @@ if save_qzqx:
         ax0.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False,
                         labelbottom=False, labelleft=False, direction=tick_direction,
                         length=tick_length, width=tick_width)
-    ax0.xaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[1]))
-    ax0.yaxis.set_major_locator(ticker.MultipleLocator(pixel_spacing[0]))
+    ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[1]))
+    ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[0]))
     plt.axis('scaled')
     fig.savefig(savedir + sample_name + str(scan) + comment + '_qzqx.png', bbox_inches="tight")
     gu.colorbar(plt0, numticks=numticks_colorbar)
