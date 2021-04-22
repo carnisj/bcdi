@@ -74,7 +74,7 @@ if save_sum:
     comment = comment + '_sum'
 valid.valid_container(colorbar_range, container_types=(tuple, list, np.ndarray), item_types=Real, length=2,
                       allow_none=True, name=valid_name)
-if isinstance(tick_spacing, Real):
+if isinstance(tick_spacing, Real) or tick_spacing is None:
     tick_spacing = (tick_spacing,) * 3
 valid.valid_container(tick_spacing, container_types=(tuple, list, np.ndarray), allow_none=True, item_types=Real,
                       min_excluded=0, name=valid_name)
