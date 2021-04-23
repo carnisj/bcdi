@@ -46,7 +46,7 @@ savedir = datadir  # results will be saved here, if None it will default to data
 save_qyqz = True  # True to save the strain in QyQz plane
 save_qyqx = True  # True to save the strain in QyQx plane
 save_qzqx = True  # True to save the strain in QzQx plane
-save_sum = True  # True to save the summed diffraction pattern in the detector, False to save the central slice only
+save_sum = False  # True to save the summed diffraction pattern in the detector, False to save the central slice only
 comment = ''  # should start with _
 ##########################
 # settings for the plots #
@@ -54,7 +54,7 @@ comment = ''  # should start with _
 plot_symmetrical = False  # if False, will not use the parameter half_range
 half_range = (None, None, None)  # tuple of three pixel numbers, half-range in each direction. Use None to use the
 # maximum symmetrical data range along one direction e.g. [20, None, None]
-colorbar_range = (-1, 5)  # [vmin, vmax] log scale in photon counts, leave None for default.
+colorbar_range = (-1, 3)  # [vmin, vmax] log scale in photon counts, leave None for default.
 grey_background = False  # True to set nans to grey in the plots
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
@@ -220,7 +220,7 @@ if save_qyqz:
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[1],
                filename=sample_name + str(scan) + comment + '_qyqz',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 ############################
 # plot views in QyQx plane #
@@ -246,7 +246,7 @@ if save_qyqx:
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[0],
                filename=sample_name + str(scan) + comment + '_qyqx',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 ############################
 # plot views in QzQx plane #
@@ -272,7 +272,7 @@ if save_qzqx:
                tick_direction=tick_direction, label_size=16, xlabels=labels[1], ylabels=labels[0],
                filename=sample_name + str(scan) + comment + '_qzqx',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 plt.ioff()
 plt.show()

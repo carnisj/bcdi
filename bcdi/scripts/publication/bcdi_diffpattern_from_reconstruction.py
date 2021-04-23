@@ -37,12 +37,12 @@ The reconstructed crystal file should be a .NPZ with field names 'amp' for the m
 and 'displacement' for the phase. Corresponding q values can be loaded optionally.
 """
 
-scan = 1  # scan number
+scan = 2  # scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
-datadir = root_folder + sample_name + str(scan) + '_newpsf/result/'
+datadir = root_folder + sample_name + str(scan) + '_pearson97.5_newpsf/result/'
 voxel_sizes = 5  # number (if identical for all dimensions) or tuple of 3 voxel sizes in nm
-peak_value = 189456
+peak_value = 242428
 # 189456  # dataset 1
 # 242428  # dataset 2
 # correction due to the loss of normalization with the mode decomposition, leave None otherwise.
@@ -52,7 +52,7 @@ peak_value = 189456
 # mode_factor = 0.2806 dataset_1_nopsf
 # mode_factor = 0.2744 dataset_2_pearson97.5_newpsf
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
-padding_shape = (300, 512, 400)  # the object is padded to that shape before calculating its diffraction pattern.
+padding_shape = (360, 512, 400)  # the object is padded to that shape before calculating its diffraction pattern.
 # It will be overrident if it does not match the shape defined by q values.
 ##############################
 # settings related to saving #
@@ -246,7 +246,7 @@ if save_qyqz:
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[1],
                filename=sample_name + str(scan) + comment + '_fromrec_qyqz',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 ############################
 # plot views in QyQx plane #
@@ -268,7 +268,7 @@ if save_qyqx:
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[0],
                filename=sample_name + str(scan) + comment + '_fromrec_qyqx',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 ############################
 # plot views in QzQx plane #
@@ -290,7 +290,7 @@ if save_qzqx:
                tick_direction=tick_direction, label_size=16, xlabels=labels[1], ylabels=labels[0],
                filename=sample_name + str(scan) + comment + '_fromrec_qzqx',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 plt.ioff()
 plt.show()
