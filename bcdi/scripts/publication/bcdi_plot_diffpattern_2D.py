@@ -32,10 +32,10 @@ For everything else than q values, the convention is the CXI convention: (z down
 For q values, the convention is (qx downstream, qz vertical up, qy outboard).
 """
 
-scan = 1  # spec scan number
+scan = 2  # spec scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
-datadir = root_folder + sample_name + str(scan) + '_newpsf/result/diffpattern/'
+datadir = root_folder + sample_name + str(scan) + '_pearson97.5_newpsf/result/diffpattern/'
 photon_threshold = 0  # everything < this value will be set to 0
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Used for plot labels
@@ -106,9 +106,11 @@ else:
 
 if load_qvalues:
     draw_ticks = True
+    cbar_pad = 0.2  # pad value for the offset of the colorbar, to avoid overlapping with ticks
     unit = ' 1/A'
 else:
     draw_ticks = False
+    cbar_pad = 0.1  # pad value for the offset of the colorbar, to avoid overlapping with ticks
     unit = ' pixels'
     tick_spacing = (None, None, None)
 
@@ -215,7 +217,7 @@ if save_qyqz:
     ax0.invert_yaxis()  # qz is pointing up
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[1]))
-    gu.colorbar(plt0, numticks=numticks_colorbar)
+    gu.colorbar(plt0, numticks=numticks_colorbar, pad=cbar_pad)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[1],
                filename=sample_name + str(scan) + comment + '_qyqz',
@@ -241,7 +243,7 @@ if save_qyqx:
     ax0.invert_yaxis()  # qx is pointing up
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[0]))
-    gu.colorbar(plt0, numticks=numticks_colorbar)
+    gu.colorbar(plt0, numticks=numticks_colorbar, pad=cbar_pad)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[0],
                filename=sample_name + str(scan) + comment + '_qyqx',
@@ -267,7 +269,7 @@ if save_qzqx:
     ax0.invert_yaxis()  # qx is pointing up
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[1]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[0]))
-    gu.colorbar(plt0, numticks=numticks_colorbar)
+    gu.colorbar(plt0, numticks=numticks_colorbar, pad=cbar_pad)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[1], ylabels=labels[0],
                filename=sample_name + str(scan) + comment + '_qzqx',
