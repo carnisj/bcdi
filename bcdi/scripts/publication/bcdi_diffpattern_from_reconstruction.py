@@ -37,12 +37,13 @@ The reconstructed crystal file should be a .NPZ with field names 'amp' for the m
 and 'displacement' for the phase. Corresponding q values can be loaded optionally.
 """
 
-scan = 2  # scan number
+scan = 1  # scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
-datadir = root_folder + sample_name + str(scan) + '_pearson97.5_newpsf/result/'
+datadir = root_folder + sample_name + str(scan) + '_newpsf/result/'
 voxel_sizes = 5  # number (if identical for all dimensions) or tuple of 3 voxel sizes in nm
-peak_value = 242428
+flip_phase = True  # True to flip the phase (-1*phase is saved in the field 'displacement' of the NPZ file)
+peak_value = 189456
 # 189456  # dataset 1
 # 242428  # dataset 2
 # correction due to the loss of normalization with the mode decomposition, leave None otherwise.
@@ -52,7 +53,7 @@ peak_value = 242428
 # mode_factor = 0.2806 dataset_1_nopsf
 # mode_factor = 0.2744 dataset_2_pearson97.5_newpsf
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
-padding_shape = (360, 512, 400)  # the object is padded to that shape before calculating its diffraction pattern.
+padding_shape = (300, 512, 400)  # the object is padded to that shape before calculating its diffraction pattern.
 # It will be overrident if it does not match the shape defined by q values.
 ##############################
 # settings related to saving #
@@ -95,7 +96,7 @@ valid.valid_container(padding_shape, container_types=(tuple, list, np.ndarray), 
 
 valid.valid_item(peak_value, allowed_types=Real, min_excluded=0, allow_none=True, name=valid_name)
 
-valid.valid_container((load_qvalues, save_qyqz, save_qyqx, save_qzqx, save_sum, debug, grey_background),
+valid.valid_container((load_qvalues, flip_phase, save_qyqz, save_qyqx, save_qzqx, save_sum, debug, grey_background),
                       container_types=tuple, item_types=bool, name=valid_name)
 
 if len(comment) != 0 and not comment.startswith('_'):
@@ -151,6 +152,8 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the rec
                                        filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
 phase = npzfile['displacement']
+if flip_phase:
+    phase = -1 * phase
 amp = npzfile['amp']
 if amp.ndim != 3:
     raise ValueError('3D arrays are expected')
@@ -213,6 +216,21 @@ if peak_value is not None:
           f"{int(data[zcom-3:zcom+4, ycom-3:ycom+4, xcom-3:xcom+4].sum())}")
     # correction due to the loss of the normalization with mode decomposition
 
+################
+# contour plot #
+################
+if colorbar_range is None:  # use rounded acceptable values
+    colorbar_range = (np.ceil(np.median(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))]))),
+                      np.ceil(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))].max())))
+if load_qvalues:
+    fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=save_sum, title='Diffraction pattern',
+                                  levels=np.linspace(colorbar_range[0], colorbar_range[1], 150, endpoint=True),
+                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+else:
+    fig, _, _ = gu.multislices_plot(data, sum_frames=save_sum, scale='log', plot_colorbar=True, vmin=colorbar_range[0],
+                                    vmax=colorbar_range[1], title='Diffraction pattern', is_orthogonal=True,
+                                    reciprocal_space=True)
+
 #############################################################
 # define the positions of the axes ticks and colorbar ticks #
 #############################################################
@@ -223,9 +241,6 @@ tick_spacing = ((tick_spacing[0] or (q_range[1]-q_range[0])/num_ticks),
 
 print('\nTick spacing:', [f'{val:.3f} {unit}' for val in tick_spacing])
 
-if colorbar_range is None:  # use rounded acceptable values
-    colorbar_range = (np.ceil(np.median(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))]))),
-                      np.ceil(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))].max())))
 numticks_colorbar = int(np.floor(colorbar_range[1] - colorbar_range[0] + 1))
 
 ############################
