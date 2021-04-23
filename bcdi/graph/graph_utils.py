@@ -69,7 +69,7 @@ class Colormap(object):
         self.cmap.set_bad(color=self.bad_color)
 
 
-def colorbar(mappable, scale='linear', numticks=10, label=None):
+def colorbar(mappable, scale='linear', numticks=10, label=None, pad=0.05):
     """
     Generate a colorbar whose height (or width) in sync with the master axes.
 
@@ -77,6 +77,7 @@ def colorbar(mappable, scale='linear', numticks=10, label=None):
     :param scale: 'linear' or 'log', used for tick location
     :param numticks: number of ticks for the colorbar
     :param label: label for the colorbar
+    :param pad: float (default 0.05). Fraction of original axes between colorbar and new image axes.
     :return: the colorbar instance
     """
     last_axes = plt.gca()
@@ -86,7 +87,7 @@ def colorbar(mappable, scale='linear', numticks=10, label=None):
         ax = mappable.ax
     fig = ax.figure
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cax = divider.append_axes("right", size="5%", pad=pad)
     cbar = fig.colorbar(mappable, cax=cax)
     if scale == 'linear':
         cbar.locator = ticker.LinearLocator(numticks=numticks)
