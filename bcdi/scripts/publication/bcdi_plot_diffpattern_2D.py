@@ -32,10 +32,10 @@ For everything else than q values, the convention is the CXI convention: (z down
 For q values, the convention is (qx downstream, qz vertical up, qy outboard).
 """
 
-scan = 2  # spec scan number
+scan = 1  # spec scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
-datadir = root_folder + sample_name + str(scan) + '_pearson97.5_newpsf/result/diffpattern/'
+datadir = root_folder + sample_name + str(scan) + '_newpsf/result/diffpattern/'
 photon_threshold = 0  # everything < this value will be set to 0
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Used for plot labels
@@ -266,7 +266,7 @@ if save_qzqx:
                                         ycom - plot_range[2]:ycom + plot_range[3], xcom]),
                           cmap=my_cmap, vmin=colorbar_range[0], vmax=colorbar_range[1],
                           extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
-    ax0.invert_yaxis()  # qx is pointing up
+    # qx is pointing down (the image will be rotated manually by 90 degrees)
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[1]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[0]))
     gu.colorbar(plt0, numticks=numticks_colorbar, pad=cbar_pad)
