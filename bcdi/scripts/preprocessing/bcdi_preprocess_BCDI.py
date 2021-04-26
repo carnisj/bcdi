@@ -46,21 +46,21 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 128  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
+scans = 292  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # folder of the experiment, where all scans are stored
-save_dir = root_folder + 'PtNP1_00128/pynx/lin_crystal/'  # images will be saved here, leave it to None otherwise
+root_folder = "C:/Users/Jerome/Documents/data/P10_Longfei_Nov2020/data/"  # folder of the experiment, where all scans are stored
+save_dir = None  # images will be saved here, leave it to None otherwise
 data_dirname = None  # leave None to use the beamline default, '' empty string when there is no subfolder
 # (data directly in the scan folder), or a non-empty string for the subfolder name
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
-sample_name = "PtNP1"  # str or list of str of sample names (string in front of the scan number in the folder name).
+sample_name = "B10_syn_S1"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (1, 4, 4)  # binning to apply to the data
+binning = (1, 2, 2)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
@@ -143,9 +143,9 @@ linearity_func = None  # lambda array_1d: (array_1d*(7.484e-22*array_1d**4 - 3.4
 # (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 + 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
 # linearity correction for the detector, leave None otherwise.
 # You can use def instead of a lambda expression but the input array should be 1d (flattened 2D detector array).
-x_bragg = 1355  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 796   # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg - 400, y_bragg + 400, x_bragg - 400, x_bragg + 400]  #
+x_bragg = 1342  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 833   # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = [y_bragg - 256, y_bragg + 256, x_bragg - 300, x_bragg + 300]  #
 # [Vstart, Vstop, Hstart, Hstop]
 # leave None to use the full detector. Use with center_fft='skip' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
@@ -175,7 +175,7 @@ fill_value_mask = 0  # 0 (not masked) or 1 (masked). It will define how the pixe
 beam_direction = (1, 0, 0)  # beam direction in the laboratory frame (downstream, vertical up, outboard)
 sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
-sdd = 1.83  # in m, sample to detector distance in m
+sdd = 1.84  # in m, sample to detector distance in m
 energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
@@ -192,9 +192,9 @@ custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta":
 align_q = True  # used only when interp_method is 'linearization', if True it rotates the crystal to align q
 # along one axis of the array
 ref_axis_q = "y"  # q will be aligned along that axis
-outofplane_angle = 39.0870  # detector angle in deg (rotation around x outboard, typically delta),
+outofplane_angle = 42.6187  # detector angle in deg (rotation around x outboard, typically delta),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
-inplane_angle = -1.0270  # detector angle in deg(rotation around y vertical up, typically gamma),
+inplane_angle = -0.0058  # detector angle in deg(rotation around y vertical up, typically gamma),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
 ################################################################################
 # parameters when orthogonalizing the data before phasing  using xrayutilities #
@@ -461,7 +461,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             # load the goniometer positions needed in the calculation of the transformation matrix
             tilt_angle, setup.grazing_angle, inplane, outofplane =\
                 pru.goniometer_values(logfile=logfile, scan_number=scan_nb, setup=setup, follow_bragg=follow_bragg)
-            setup.tilt_angle = tilt_angle[1] - tilt_angle[0]
+            setup.tilt_angle = (tilt_angle[1:] - tilt_angle[0:-1]).mean()
             # override detector motor positions if the corrected values (taking into account the direct beam position)
             # are provided by the user
             setup.inplane_angle = inplane_angle if inplane_angle is not None else inplane
