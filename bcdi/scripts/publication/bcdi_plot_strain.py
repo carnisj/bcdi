@@ -65,7 +65,7 @@ flag_support = False  # True to plot and save the support
 
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
 xmin_histo = 0.02  # array values <= xmin_histo*array.max() will not be plotted to avoid the peak at 0
-ylim_histo = (1, 1000)  # tuple of two numbers (ymin, ymax) for the limits of the y axis in the histogram plot
+ylim_histo = (1, 800)  # tuple of two numbers (ymin, ymax) for the limits of the y axis in the histogram plot
 vline_hist = None  # [0.375, 0.451, 0.505, 0.541]
 # list of vertical lines to plot in the amplitude histogram, leave None otherwise
 
@@ -108,8 +108,12 @@ valid.valid_item(xmin_histo, allowed_types=Real, min_included=0, name='xmin_hist
 valid.valid_container(obj=vline_hist, container_types=(list, tuple, np.ndarray, set), min_excluded=0, allow_none=True,
                       item_types=Real, name='vline_hist')
 
-valid.valid_container(ylim_histo, container_types=(tuple, list, np.ndarray), item_types=Real, length=2, min_excluded=0,
-                      name='ylim_histo')
+if amp_histogram_Yaxis == 'linear':
+    valid.valid_container(ylim_histo, container_types=(tuple, list, np.ndarray), item_types=Real, length=2,
+                          min_included=0, name='ylim_histo')
+else:
+    valid.valid_container(ylim_histo, container_types=(tuple, list, np.ndarray), item_types=Real, length=2,
+                          min_excluded=0, name='ylim_histo')
 if ylim_histo[1] <= ylim_histo[0]:
     raise ValueError('ylim_histo[0] should be strictly smaller than ylim_histo[1]')
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
