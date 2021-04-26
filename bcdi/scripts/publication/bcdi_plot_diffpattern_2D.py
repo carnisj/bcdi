@@ -32,21 +32,21 @@ For everything else than q values, the convention is the CXI convention: (z down
 For q values, the convention is (qx downstream, qz vertical up, qy outboard).
 """
 
-scan = 1  # spec scan number
-root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
-sample_name = "dataset_"
-datadir = root_folder + sample_name + str(scan) + '_newpsf/result/diffpattern/'
+scan = 292  # spec scan number
+root_folder = "C:/Users/Jerome/Documents/data/P10_Longfei_Nov2020/data/"
+sample_name = "B10_syn_S1"
+datadir = root_folder + sample_name + f"_{scan:05d}" + '/pynx/'
 photon_threshold = 0  # everything < this value will be set to 0
 load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 is_orthogonal = True  # True if the data is in the qx qy qz orthogonal frame. Used for plot labels
 ##############################
 # settings related to saving #
 ##############################
-savedir = datadir  # results will be saved here, if None it will default to datadir
+savedir = datadir + 'diffpattern/'  # results will be saved here, if None it will default to datadir
 save_qyqz = True  # True to save the strain in QyQz plane
 save_qyqx = True  # True to save the strain in QyQx plane
 save_qzqx = True  # True to save the strain in QzQx plane
-save_sum = False  # True to save the summed diffraction pattern in the detector, False to save the central slice only
+save_sum = True  # True to save the summed diffraction pattern in the detector, False to save the central slice only
 comment = ''  # should start with _
 ##########################
 # settings for the plots #
@@ -54,7 +54,7 @@ comment = ''  # should start with _
 plot_symmetrical = False  # if False, will not use the parameter half_range
 half_range = (None, None, None)  # tuple of three pixel numbers, half-range in each direction. Use None to use the
 # maximum symmetrical data range along one direction e.g. [20, None, None]
-colorbar_range = (-1, 3)  # [vmin, vmax] log scale in photon counts, leave None for default.
+colorbar_range = (0, 6)  # [vmin, vmax] log scale in photon counts, leave None for default.
 grey_background = False  # True to set nans to grey in the plots
 tick_direction = 'out'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
@@ -84,6 +84,8 @@ valid.valid_container((load_qvalues, save_qyqz, save_qyqx, save_qzqx, save_sum, 
                       container_types=tuple, item_types=bool, name=valid_name)
 
 savedir = savedir or datadir
+if not savedir.endswith('/'):
+    savedir += '/'
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
 #############################
