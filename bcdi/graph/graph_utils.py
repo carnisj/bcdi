@@ -7,7 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-from numbers import Real
+from numbers import Number, Real
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -1138,22 +1138,24 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     if vmax is None:
         vmax = scalars.max()
 
-    valid.valid_container(fig_size, container_types=(tuple, list), length=2, item_types=int, min_excluded=0,
+    valid.valid_container(fig_size, container_types=(tuple, list), length=2, item_types=Real, min_excluded=0,
                           name='fig_size')
 
+    if isinstance(azimuth, Number):  # convert it to a tuple
+        azimuth = (azimuth,)
     valid.valid_container(azimuth, container_types=(tuple, list), min_length=1, item_types=Real,
                           name='azimuth')
     nb_plots = len(azimuth)
 
-    if isinstance(elevation, Real):
+    if isinstance(elevation, Number):
         elevation = (elevation,) * nb_plots
     valid.valid_container(elevation, container_types=(tuple, list), length=nb_plots, item_types=Real,
                           name='elevation')
-    if isinstance(roll, Real):
+    if isinstance(roll, Number):
         roll = (roll,) * nb_plots
     valid.valid_container(roll, container_types=(tuple, list), length=nb_plots, item_types=Real,
                           name='roll')
-    if isinstance(distance, Real):
+    if isinstance(distance, Number):
         distance = (distance,) * nb_plots
     valid.valid_container(distance, container_types=(tuple, list), length=nb_plots, item_types=Real,
                           name='distance')
@@ -1241,27 +1243,31 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
     if vmax is None:
         vmax = scalars.max()
 
-    valid.valid_container(fig_size, container_types=(tuple, list), length=2, item_types=int, min_excluded=0,
-                          name='graph_utils.mlab_contour3d')
+    valid.valid_container(fig_size, container_types=(tuple, list), length=2, item_types=Real, min_excluded=0,
+                          name='fig_size')
 
+    if isinstance(azimuth, Number):  # convert it to a tuple
+        azimuth = (azimuth,)
+    valid.valid_container(azimuth, container_types=(tuple, list), min_length=1, item_types=Real,
+                          name='azimuth')
     nb_plots = len(azimuth)
 
-    if isinstance(elevation, Real):
+    if isinstance(elevation, Number):
         elevation = (elevation,) * nb_plots
     valid.valid_container(elevation, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
-    if isinstance(roll, Real):
+                          name='elevation')
+    if isinstance(roll, Number):
         roll = (roll,) * nb_plots
     valid.valid_container(roll, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
-    if isinstance(distance, Real):
+                          name='roll')
+    if isinstance(distance, Number):
         distance = (distance,) * nb_plots
     valid.valid_container(distance, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
+                          name='distance')
     if isinstance(title, str):
         title = tuple(title + '_' + str(idx) for idx in range(nb_plots))
     valid.valid_container(title, container_types=(tuple, list), length=nb_plots, item_types=str,
-                          name='graph_utils.mlab_contour3d')
+                          name='title')
 
     ##############################
     # create the points3d figure #
