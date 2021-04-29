@@ -1171,9 +1171,20 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     cbar = None
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if color is None:
-        mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
+        contour3d = mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax,
+                                   colormap=colormap)
     else:
-        mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax, color=color)
+        contour3d = mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax,
+                                   color=color)
+
+    # Update the look up table (LUT) of the contour3d object. The lut is a 255x4 array, with the columns representing
+    # RGBA (red, green, blue, alpha) coded with integers going from 255 to 0.
+
+    # set the color and transparency for nans
+    contour3d.module_manager.scalar_lut_manager.lut.nan_color = 0, 0, 0, 1
+
+    # We need to force update of the figure now that we have changed the LUT.
+    mlab.draw()
 
     #################################
     # loop over the different views #
@@ -1275,7 +1286,16 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
     ax = None
     cbar = None
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
-    mlab.points3d(x, y, z, scalars, mode=mode, opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
+    points3d = mlab.points3d(x, y, z, scalars, mode=mode, opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
+
+    # Update the look up table (LUT) of the points3d object. The lut is a 255x4 array, with the columns representing
+    # RGBA (red, green, blue, alpha) coded with integers going from 255 to 0.
+
+    # set the color and transparency for nans
+    points3d.module_manager.scalar_lut_manager.lut.nan_color = 0, 0, 0, 1
+
+    # We need to force update of the figure now that we have changed the LUT.
+    mlab.draw()
 
     #################################
     # loop over the different views #
