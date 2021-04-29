@@ -44,6 +44,7 @@ crop_symmetric = False  # if True, will crop the data ot the largest symmetrical
 tick_spacing = 0.05  # in 1/nm, spacing between ticks
 contours = [-0.1, 0.5, 1.5, 3]  # contours for the isosurface in log scale.
 # contours = [3.6, 4.05, 4.5, 4.95, 5.4]  # gold_2_2_2_00022
+cmap = 'hsv'  # valid colormap name, e.g. 'hsv'
 fig_size = (500, 500)  # figure size in pixels (horizontal, vertical)
 distance = 0.5  # distance of the camera in q, leave None for default
 debug = True  # True to see contour plots for debugging
@@ -193,7 +194,7 @@ else:
 # in CXI convention, z is downstream, y vertical and x outboard
 # for q: classical convention qx downstream, qz vertical and qy outboard
 myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
-mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(data), contours=contours, opacity=0.2, colormap='hsv',
+mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(data), contours=contours, opacity=0.2, colormap=cmap,
                vmin=0, vmax=np.ceil(np.log10(data.max())))
 if distance:
     mlab.view(azimuth=38, elevation=63, distance=distance)
