@@ -10,6 +10,7 @@
 import numpy as np
 import moviepy.editor as mpy
 from mayavi import mlab
+import pathlib
 import tkinter as tk
 from tkinter import filedialog
 from scipy.interpolate import RegularGridInterpolator
@@ -30,22 +31,22 @@ The diffraction pattern is supposed to be in an orthonormal frame and q values n
 Optionally creates a movie from a 3D real space reconstruction in each direction. This requires moviepy.
 """
 
-scan = 1053    # spec scan number
-root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
-sample_name = "S"
-homedir = root_folder + sample_name + str(scan) + "/pynx/"
-savedir = homedir  # saving directory
+scan = 1    # spec scan number
+root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
+sample_name = "dataset_"
+homedir = root_folder + sample_name + str(scan) + "_newpsf/result/"
+savedir = homedir + '3D_diffpattern/'  # saving directory
 comment = ""  # should start with _
 binning = (2, 2, 2)  # binning for the measured diffraction pattern in each dimension
 geometry = 'Bragg'  # 'SAXS' or 'Bragg'
 crop_symmetric = False  # if True, will crop the data ot the largest symmetrical range around the direct beam
 # (geometry = 'SAXS') or the Brapp peak (geometry = 'Bragg')
 tick_spacing = 0.05  # in 1/nm, spacing between ticks
-contours = [0.75, 1.25, 2, 4]  # contours for the isosurface in log scale
+contours = [-0.1, 0.5, 1.5, 3]  # contours for the isosurface in log scale.
 # contours = [3.6, 4.05, 4.5, 4.95, 5.4]  # gold_2_2_2_00022
 fig_size = (500, 500)  # figure size in pixels (horizontal, vertical)
-distance = 1  # distance of the camera in q, leave None for default
-debug = False  # True to see contour plots for debugging
+distance = 0.5  # distance of the camera in q, leave None for default
+debug = True  # True to see contour plots for debugging
 ##########################
 # settings for the movie #
 ##########################
@@ -68,6 +69,13 @@ def rotate_scene(t):
     mlab.view(azimuth=360/duration*t, elevation=63, distance=distance)
     return mlab.screenshot(figure=myfig, mode='rgb', antialiased=True)  # return a RGB image
 
+
+#########################
+# check some parameters #
+#########################
+if not savedir.endswith('/'):
+    savedir += '/'
+pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
 #############
 # load data #
@@ -163,11 +171,16 @@ if debug:
                       levels=np.linspace(0, np.ceil(np.log10(data.max())), 150, endpoint=True),
                       plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
 
+###################
+# filter out nans #
+###################
+data[np.isnan(data)] = 1e-20
+data[data == 0] = 1e-20
+
 #########################################
 # plot 3D isosurface (perspective view) #
 #########################################
 data = np.flip(data, 2)  # mayavi expects xyz, data order is downstream/upward/outboard
-data[data == 0] = np.nan
 if crop_symmetric:
     grid_qx, grid_qz, grid_qy = np.mgrid[qx_com-tick_spacing*half_labels:qx_com+tick_spacing*half_labels:1j * nz,
                                          qz_com-tick_spacing*half_labels:qz_com+tick_spacing*half_labels:1j * ny,
@@ -181,7 +194,7 @@ else:
 # for q: classical convention qx downstream, qz vertical and qy outboard
 myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
 mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(data), contours=contours, opacity=0.2, colormap='hsv',
-               vmin=0, vmax=np.ceil(np.log10(data[~np.isnan(data)].max())))
+               vmin=0, vmax=np.ceil(np.log10(data.max())))
 if distance:
     mlab.view(azimuth=38, elevation=63, distance=distance)
 else:
