@@ -50,7 +50,7 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space, or data[z
 scan = 128  # spec scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 # folder of the experiment, where all scans are stored
-save_dir = root_folder + 'dataset_1_newpsf/test/'
+save_dir = root_folder + 'dataset_1_newpsf/orientation/'
 # images will be saved here, leave it to None otherwise (default to data directory's parent)
 sample_name = "PtNP1"  # "S"  # string in front of the scan number in the folder name.
 comment = ''  # comment in filenames, should start with _
@@ -239,6 +239,11 @@ valid.valid_container(output_size, container_types=(tuple, list, np.ndarray), le
                       item_types=int, name=valid_name)
 axis_to_array_xyz = {'x': np.array([1, 0, 0]), 'y': np.array([0, 1, 0]), 'z': np.array([0, 0, 1])}  # in xyz order
 
+if isinstance(save_dir, str) and not save_dir.endswith('/'):
+    save_dir += '/'
+
+if len(comment) != 0 and not comment.startswith('_'):
+    comment = '_' + comment
 comment = comment + '_' + str(isosurface_strain)
 
 ###################
