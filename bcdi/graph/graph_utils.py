@@ -1139,26 +1139,28 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
         vmax = scalars.max()
 
     valid.valid_container(fig_size, container_types=(tuple, list), length=2, item_types=int, min_excluded=0,
-                          name='graph_utils.mlab_contour3d')
+                          name='fig_size')
 
+    valid.valid_container(azimuth, container_types=(tuple, list), min_length=1, item_types=Real,
+                          name='azimuth')
     nb_plots = len(azimuth)
 
     if isinstance(elevation, Real):
         elevation = (elevation,) * nb_plots
     valid.valid_container(elevation, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
+                          name='elevation')
     if isinstance(roll, Real):
         roll = (roll,) * nb_plots
     valid.valid_container(roll, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
+                          name='roll')
     if isinstance(distance, Real):
         distance = (distance,) * nb_plots
     valid.valid_container(distance, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
+                          name='distance')
     if isinstance(title, str):
         title = tuple(title + '_' + str(idx) for idx in range(nb_plots))
     valid.valid_container(title, container_types=(tuple, list), length=nb_plots, item_types=str,
-                          name='graph_utils.mlab_contour3d')
+                          name='title')
 
     ###############################
     # create the contour3d figure #
