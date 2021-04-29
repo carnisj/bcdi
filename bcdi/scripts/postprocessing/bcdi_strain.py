@@ -751,8 +751,8 @@ gc.collect()
 # plot slices of the results #
 ##############################
 pixel_spacing = [tick_spacing / vox for vox in voxel_size]
-print(f'\nPhase extent without / with thresholding the modulus: {phase.max()-phase.min():.2f},'
-      f'{phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min():.2f}')
+print(f'\nPhase extent without / with thresholding the modulus (threshold={isosurface_strain}): '
+      f'{phase.max()-phase.min():.2f} rad, {phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min():.2f} rad')
 piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
 print(f'phase.max() = {phase[np.nonzero(bulk)].max():.2f} at voxel ({piz}, {piy}, {pix})')
 strain[bulk == 0] = np.nan
