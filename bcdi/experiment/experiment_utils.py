@@ -517,15 +517,22 @@ class Diffractometer(object):
         :param circle: valid circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}.
          + for a counter-clockwise rotation, - for a clockwise rotation.
         """
-        if list_name not in Diffractometer.valid_names.keys():
-            raise NotImplementedError(f"'{list_name}' is not implemented,"
-                                      f" available are {list(Diffractometer.valid_names.keys())}")
+        Diffractometer.valid_name(list_name)
         nb_circles = len(self.__getattribute__(Diffractometer.valid_names[list_name]))
         valid.valid_item(index, allowed_types=int, min_included=0, max_included=nb_circles, name='index')
         if circle not in Diffractometer.valid_circles:
             raise ValueError(f'{circle} is not in the list of valid circles:'
                              f' {list(Diffractometer.valid_circles)}')
         self.__getattribute__(Diffractometer.valid_names[list_name]).insert(index, circle)
+
+    def get_circles(self, list_name):
+        """
+        Return the list of circles for list_name
+
+        :param list_name: 'sample' or 'detector'
+        """
+        Diffractometer.valid_name(list_name)
+        return self.__getattribute__(Diffractometer.valid_names[list_name])
 
     def remove_circle(self, list_name, index):
         """
@@ -551,9 +558,7 @@ class Diffractometer(object):
          same length as the number of circles for list_name
         :return: the rotation matrix as a numpy ndarray of shape (3, 3)
         """
-        if list_name not in Diffractometer.valid_names.keys():
-            raise NotImplementedError(f"'{list_name}' is not implemented,"
-                                      f" available are {list(Diffractometer.valid_names.keys())}")
+        Diffractometer.valid_name(list_name)
         nb_circles = len(self.__getattribute__(Diffractometer.valid_names[list_name]))
         if isinstance(angles, Number):
             angles = (angles,)
@@ -567,8 +572,26 @@ class Diffractometer(object):
         # calculate the total tranformation matrix by rotating back from outer circles to inner circles
         return np.array(reduce(lambda x, y: np.matmul(x, y), rotation_matrices))
 
+    @staticmethod
+    def valid_name(list_name):
+        """
+        Check that the value of list_name is allowed.
+
+        :param list_name: 'sample' or 'detector'
+        """
+        if list_name not in Diffractometer.valid_names.keys():
+            raise NotImplementedError(f"'{list_name}' is not implemented,"
+                                      f" available are {list(Diffractometer.valid_names.keys())}")
+
 
 class RotationMatrix(object):
+    """
+    Class defining a rotation matrix given the rotation axis and the angle.
+
+    :param circle: circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. The letter represents the rotation axis.
+     + for a counter-clockwise rotation, - for a clockwise rotation.
+    :param angle: angular value in degrees to be used in the calculation of the rotation matrix
+    """
     valid_circles = {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}  # + counter-clockwise, - clockwise
 
     def __init__(self, circle, angle):
@@ -605,7 +628,22 @@ class RotationMatrix(object):
         self._circle = value
 
     def get_matrix(self):
-        pass
+        if self.circle[1] == '+':
+            rot_dir = 1
+        else:
+            rot_dir = -1
+
+        if self.circle[0] == 'x':
+            pass
+        elif self.circle[0] == 'y':
+            pass
+        elif self.circle[0] == 'z':
+            pass
+        else:
+            raise ValueError(f'{self.circle} is not in the list of valid circles:'
+                             f' {list(RotationMatrix.valid_circles)}')
+        return 0
+
 
 class Setup(object):
     """
@@ -625,7 +663,6 @@ class Setup(object):
     :param pixel_x: detector horizontal pixel size, in meters.
     :param pixel_y: detector vertical pixel size, in meters.
     :param kwargs:
-
      - 'direct_beam': tuple of two real numbers indicating the position of the direct beam in pixels at zero
        detector angles.
      - 'filtered_data': boolean, True if the data and the mask to be loaded were already preprocessed.
