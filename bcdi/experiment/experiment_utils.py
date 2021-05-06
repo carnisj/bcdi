@@ -584,6 +584,13 @@ class Diffractometer(object):
                                       f" available are {list(Diffractometer.valid_names.keys())}")
 
 
+class DiffractometerID01(Diffractometer):
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = []
+        self._detector_circles = []
+
+
 class RotationMatrix(object):
     """
     Class defining a rotation matrix given the rotation axis and the angle.
