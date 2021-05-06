@@ -498,8 +498,8 @@ class Detector(object):
 
 class Diffractometer(object):
     """
-    Class for defining diffractometers.
-
+    Class for defining diffractometers. The frame used is the laboratory frame with the CXI convention (z downstream,
+    y vertical up, x outboard).
     """
     valid_circles = {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}  # + counter-clockwise, - clockwise
     valid_names = {'sample': '_sample_circles', 'detector': '_detector_circles'}
