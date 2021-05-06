@@ -7,7 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-from numbers import Real
+from numbers import Number, Real
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -69,7 +69,7 @@ class Colormap(object):
         self.cmap.set_bad(color=self.bad_color)
 
 
-def colorbar(mappable, scale='linear', numticks=10, label=None):
+def colorbar(mappable, scale='linear', numticks=10, label=None, pad=0.05):
     """
     Generate a colorbar whose height (or width) in sync with the master axes.
 
@@ -77,6 +77,7 @@ def colorbar(mappable, scale='linear', numticks=10, label=None):
     :param scale: 'linear' or 'log', used for tick location
     :param numticks: number of ticks for the colorbar
     :param label: label for the colorbar
+    :param pad: float (default 0.05). Fraction of original axes between colorbar and new image axes.
     :return: the colorbar instance
     """
     last_axes = plt.gca()
@@ -86,7 +87,7 @@ def colorbar(mappable, scale='linear', numticks=10, label=None):
         ax = mappable.ax
     fig = ax.figure
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cax = divider.append_axes("right", size="5%", pad=pad)
     cbar = fig.colorbar(mappable, cax=cax)
     if scale == 'linear':
         cbar.locator = ticker.LinearLocator(numticks=numticks)
@@ -1137,27 +1138,31 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     if vmax is None:
         vmax = scalars.max()
 
-    valid.valid_container(fig_size, container_types=(tuple, list), length=2, item_types=int, min_excluded=0,
-                          name='graph_utils.mlab_contour3d')
+    valid.valid_container(fig_size, container_types=(tuple, list), length=2, item_types=Real, min_excluded=0,
+                          name='fig_size')
 
+    if isinstance(azimuth, Number):  # convert it to a tuple
+        azimuth = (azimuth,)
+    valid.valid_container(azimuth, container_types=(tuple, list), min_length=1, item_types=Real,
+                          name='azimuth')
     nb_plots = len(azimuth)
 
-    if isinstance(elevation, Real):
+    if isinstance(elevation, Number):
         elevation = (elevation,) * nb_plots
     valid.valid_container(elevation, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
-    if isinstance(roll, Real):
+                          name='elevation')
+    if isinstance(roll, Number):
         roll = (roll,) * nb_plots
     valid.valid_container(roll, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
-    if isinstance(distance, Real):
+                          name='roll')
+    if isinstance(distance, Number):
         distance = (distance,) * nb_plots
     valid.valid_container(distance, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
+                          name='distance')
     if isinstance(title, str):
         title = tuple(title + '_' + str(idx) for idx in range(nb_plots))
     valid.valid_container(title, container_types=(tuple, list), length=nb_plots, item_types=str,
-                          name='graph_utils.mlab_contour3d')
+                          name='title')
 
     ###############################
     # create the contour3d figure #
@@ -1166,9 +1171,20 @@ def mlab_contour3d(x, y, z, scalars, contours, extent, nb_labels, fig_size=(400,
     cbar = None
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
     if color is None:
-        mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
+        contour3d = mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax,
+                                   colormap=colormap)
     else:
-        mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax, color=color)
+        contour3d = mlab.contour3d(x, y, z, scalars, contours=contours, opacity=opacity, vmin=vmin, vmax=vmax,
+                                   color=color)
+
+    # Update the look up table (LUT) of the contour3d object. The lut is a 255x4 array, with the columns representing
+    # RGBA (red, green, blue, alpha) coded with integers going from 255 to 0.
+
+    # set the color and transparency for nans
+    contour3d.module_manager.scalar_lut_manager.lut.nan_color = 0, 0, 0, 1
+
+    # We need to force update of the figure now that we have changed the LUT.
+    mlab.draw()
 
     #################################
     # loop over the different views #
@@ -1238,27 +1254,31 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
     if vmax is None:
         vmax = scalars.max()
 
-    valid.valid_container(fig_size, container_types=(tuple, list), length=2, item_types=int, min_excluded=0,
-                          name='graph_utils.mlab_contour3d')
+    valid.valid_container(fig_size, container_types=(tuple, list), length=2, item_types=Real, min_excluded=0,
+                          name='fig_size')
 
+    if isinstance(azimuth, Number):  # convert it to a tuple
+        azimuth = (azimuth,)
+    valid.valid_container(azimuth, container_types=(tuple, list), min_length=1, item_types=Real,
+                          name='azimuth')
     nb_plots = len(azimuth)
 
-    if isinstance(elevation, Real):
+    if isinstance(elevation, Number):
         elevation = (elevation,) * nb_plots
     valid.valid_container(elevation, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
-    if isinstance(roll, Real):
+                          name='elevation')
+    if isinstance(roll, Number):
         roll = (roll,) * nb_plots
     valid.valid_container(roll, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
-    if isinstance(distance, Real):
+                          name='roll')
+    if isinstance(distance, Number):
         distance = (distance,) * nb_plots
     valid.valid_container(distance, container_types=(tuple, list), length=nb_plots, item_types=Real,
-                          name='graph_utils.mlab_contour3d')
+                          name='distance')
     if isinstance(title, str):
         title = tuple(title + '_' + str(idx) for idx in range(nb_plots))
     valid.valid_container(title, container_types=(tuple, list), length=nb_plots, item_types=str,
-                          name='graph_utils.mlab_contour3d')
+                          name='title')
 
     ##############################
     # create the points3d figure #
@@ -1266,7 +1286,16 @@ def mlab_points3d(x, y, z, scalars, extent, nb_labels, fig_size=(400, 350), azim
     ax = None
     cbar = None
     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
-    mlab.points3d(x, y, z, scalars, mode=mode, opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
+    points3d = mlab.points3d(x, y, z, scalars, mode=mode, opacity=opacity, vmin=vmin, vmax=vmax,  colormap=colormap)
+
+    # Update the look up table (LUT) of the points3d object. The lut is a 255x4 array, with the columns representing
+    # RGBA (red, green, blue, alpha) coded with integers going from 255 to 0.
+
+    # set the color and transparency for nans
+    points3d.module_manager.scalar_lut_manager.lut.nan_color = 0, 0, 0, 1
+
+    # We need to force update of the figure now that we have changed the LUT.
+    mlab.draw()
 
     #################################
     # loop over the different views #

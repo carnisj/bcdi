@@ -34,15 +34,15 @@ It is necessary to know the voxel size of the reconstruction in order to put tic
 """
 
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"
-savedir = datadir + '/figures/test/'
+datadir = "C:/Users/Jerome/Documents/data/P10_Longfei_Nov2020/data/B10_syn_S1_00292/result/"
+savedir = datadir + '/figures/'
 comment = ''   # should start with _
 simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
-strain_isosurface = 0.01  # amplitude below this value will be set to 0
+strain_isosurface = 0.7  # amplitude below this value will be set to 0
 
-voxel_size = 5.0  # in nm
-tick_spacing = 25  # for plots, in nm
-field_of_view = 200  # in nm, can be larger than the total width (the array will be padded)
+voxel_size = 10.0  # in nm
+tick_spacing = 50  # for plots, in nm
+field_of_view = 650  # in nm, can be larger than the total width (the array will be padded)
 
 tick_direction = 'in'  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
@@ -58,14 +58,15 @@ save_YZ = True  # True to save the view in YZ plane
 save_XZ = True  # True to save the view in XZ plane
 save_XY = True  # True to save the view in XY plane
 
-flag_strain = False  # True to plot and save the strain
-flag_phase = False  # True to plot and save the phase
+flag_strain = True  # True to plot and save the strain
+flag_phase = True  # True to plot and save the phase
 flag_amp = True  # True to plot and save the amplitude
 flag_support = False  # True to plot and save the support
 
 amp_histogram_Yaxis = 'linear'  # 'log' or 'linear', Y axis scale for the amplitude histogram
-min_histo = 0  # array values <= min_histo*array.max() will not be plotted to avoid the peak at 0
-vline_hist = [0.375, 0.451, 0.505, 0.541]
+xmin_histo = 0.02  # array values <= xmin_histo*array.max() will not be plotted to avoid the peak at 0
+ylim_histo = (1, 800)  # tuple of two numbers (ymin, ymax) for the limits of the y axis in the histogram plot
+vline_hist = None  # [0.375, 0.451, 0.505, 0.541]
 # list of vertical lines to plot in the amplitude histogram, leave None otherwise
 
 flag_linecut = False  # True to plot and save a linecut of the phase
@@ -91,7 +92,6 @@ my_cmap = colormap.cmap
 #########################
 # check some parameters #
 #########################
-valid_name = 'plot_strain'
 if not isinstance(strain_range, Real):
     if not strain_range == 'minmax':
         raise ValueError(f'Incorrect setting {strain_range} for the parameter "strain_range"')
@@ -104,10 +104,18 @@ if not isinstance(phase_range, Real):
 else:
     phase_min, phase_max = -phase_range, phase_range
 
-valid.valid_item(min_histo, allowed_types=Real, min_included=0, name=valid_name)
+valid.valid_item(xmin_histo, allowed_types=Real, min_included=0, name='xmin_histo')
 valid.valid_container(obj=vline_hist, container_types=(list, tuple, np.ndarray, set), min_excluded=0, allow_none=True,
-                      item_types=Real, name=valid_name)
+                      item_types=Real, name='vline_hist')
 
+if amp_histogram_Yaxis == 'linear':
+    valid.valid_container(ylim_histo, container_types=(tuple, list, np.ndarray), item_types=Real, length=2,
+                          min_included=0, name='ylim_histo')
+else:
+    valid.valid_container(ylim_histo, container_types=(tuple, list, np.ndarray), item_types=Real, length=2,
+                          min_excluded=0, name='ylim_histo')
+if ylim_histo[1] <= ylim_histo[0]:
+    raise ValueError('ylim_histo[0] should be strictly smaller than ylim_histo[1]')
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
 #############
@@ -255,16 +263,12 @@ if flag_amp:
         fig.savefig(savedir + 'amp_XY' + comment + '_colorbar.png', bbox_inches="tight")
 
     fig, ax = plt.subplots(1, 1)
-    ax.hist(ref_amp[ref_amp > min_histo*ref_amp.max()].flatten(), bins=250)
+    ax.hist(ref_amp[ref_amp > xmin_histo*ref_amp.max()].flatten(), bins=250)
     # avoid the peak for very low noise amplitudes
-    ax.set_xlim(left=0)
-    ax.set_ylim(bottom=1)
+    ax.set_xlim(left=xmin_histo)
     if amp_histogram_Yaxis == 'log':
         ax.set_yscale('log')
-        ax.set_ylim(bottom=1)
-        ax.set_ylim(top=100000)
-    else:
-        ax.set_ylim(bottom=0, top=150)
+    ax.set_ylim(bottom=ylim_histo[0], top=ylim_histo[1])
     ax.tick_params(labelbottom=False, labelleft=False, direction='out', length=tick_length, width=tick_width)
     ax.spines['right'].set_linewidth(tick_width)
     ax.spines['left'].set_linewidth(tick_width)

@@ -27,6 +27,7 @@ import tkinter as tk
 from tkinter import filedialog
 import xrayutilities as xu
 sys.path.append('D:/myscripts/bcdi/')
+sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.experiment.experiment_utils as exp
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -3682,7 +3683,8 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
             print('phi', phi)
             nb_steps = len(eta)
-            tilt_angle = eta[1] - eta[0]
+
+            tilt_angle = (eta[1:] - eta[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
@@ -3696,7 +3698,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
             print('eta', eta)
             nb_steps = len(phi)
-            tilt_angle = phi[1] - phi[0]
+            tilt_angle = (phi[1:] - phi[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
@@ -3723,7 +3725,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         print('beta', beta)
         if setup.rocking_angle == 'inplane':  # mu rocking curve
             nb_steps = len(mu)
-            tilt_angle = mu[1] - mu[0]
+            tilt_angle = (mu[1:] - mu[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
@@ -3747,7 +3749,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         phi = phi - setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             nb_steps = len(mgomega)
-            tilt_angle = mgomega[1] - mgomega[0]
+            tilt_angle = (mgomega[1:] - mgomega[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
@@ -3761,7 +3763,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
             print('mgomega', mgomega)
             nb_steps = len(phi)
-            tilt_angle = phi[1] - phi[0]
+            tilt_angle = (phi[1:] - phi[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
@@ -3788,7 +3790,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         if setup.rocking_angle == 'outofplane':  # om rocking curve
             print('phi', phi)
             nb_steps = len(om)
-            tilt_angle = om[1] - om[0]
+            tilt_angle = (om[1:] - om[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
@@ -3802,7 +3804,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
             print('om', om)
             nb_steps = len(phi)
-            tilt_angle = phi[1] - phi[0]
+            tilt_angle = (phi[1:] - phi[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
@@ -3825,7 +3827,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         theta = theta - setup.sample_offsets[2]  # sample_offsets[2] is the rotation around the outboard axis
         if setup.rocking_angle == 'outofplane':  # theta rocking curve
             nb_steps = len(theta)
-            tilt_angle = theta[1] - theta[0]
+            tilt_angle = (theta[1:] - theta[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
@@ -3838,7 +3840,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
             nb_steps = len(phi)
-            tilt_angle = phi[1] - phi[0]
+            tilt_angle = (phi[1:] - phi[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
@@ -3865,7 +3867,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         phi = phi - setup.sample_offsets[2]  # phi is the incident angle at 34ID
         if setup.rocking_angle == 'outofplane':  # phi rocking curve
             nb_steps = len(phi)
-            tilt_angle = phi[1] - phi[0]
+            tilt_angle = (phi[1:] - phi[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
@@ -3878,7 +3880,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
         elif setup.rocking_angle == 'inplane':  # theta rocking curve
             nb_steps = len(theta)
-            tilt_angle = theta[1] - theta[0]
+            tilt_angle = (theta[1:] - theta[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)

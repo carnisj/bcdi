@@ -1,3 +1,21 @@
+Version 0.1.2
+-------------
+
+* Refactor: show only necessary plots and console output in strain.py
+
+* Refactor: create Setup calculated properties and transfer calculations in scripts to these properties
+
+* Refactor: perform the geometrical transformation and rotation of the reconstructed crystal in a single step
+
+* Refactor: perform the geometrical transformation and rotation of the diffraction pattern in a single step
+
+* Bug: provide voxel sizes in the correct order when rotating the diffraction pattern in preprocess_bcdi.py
+
+Version 0.1.1
+-------------
+
+* code cleaning
+
 Version 0.1.0
 -------------
 

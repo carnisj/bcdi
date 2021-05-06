@@ -42,6 +42,7 @@ root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "dataset_"
 datadir = root_folder + sample_name + str(scan) + '_newpsf/result/'
 voxel_sizes = 5  # number (if identical for all dimensions) or tuple of 3 voxel sizes in nm
+flip_phase = True  # True to flip the phase (-1*phase is saved in the field 'displacement' of the NPZ file)
 peak_value = 189456
 # 189456  # dataset 1
 # 242428  # dataset 2
@@ -95,7 +96,7 @@ valid.valid_container(padding_shape, container_types=(tuple, list, np.ndarray), 
 
 valid.valid_item(peak_value, allowed_types=Real, min_excluded=0, allow_none=True, name=valid_name)
 
-valid.valid_container((load_qvalues, save_qyqz, save_qyqx, save_qzqx, save_sum, debug, grey_background),
+valid.valid_container((load_qvalues, flip_phase, save_qyqz, save_qyqx, save_qzqx, save_sum, debug, grey_background),
                       container_types=tuple, item_types=bool, name=valid_name)
 
 if len(comment) != 0 and not comment.startswith('_'):
@@ -132,9 +133,11 @@ labels = ('Qx', 'Qz', 'Qy')
 
 if load_qvalues:
     draw_ticks = True
+    cbar_pad = 0.2  # pad value for the offset of the colorbar, to avoid overlapping with ticks
     unit = ' 1/A'
 else:
     draw_ticks = False
+    cbar_pad = 0.1  # pad value for the offset of the colorbar, to avoid overlapping with ticks
     unit = ' pixels'
     tick_spacing = (None, None, None)
 
@@ -149,6 +152,8 @@ file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the rec
                                        filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
 phase = npzfile['displacement']
+if flip_phase:
+    phase = -1 * phase
 amp = npzfile['amp']
 if amp.ndim != 3:
     raise ValueError('3D arrays are expected')
@@ -211,6 +216,21 @@ if peak_value is not None:
           f"{int(data[zcom-3:zcom+4, ycom-3:ycom+4, xcom-3:xcom+4].sum())}")
     # correction due to the loss of the normalization with mode decomposition
 
+################
+# contour plot #
+################
+if colorbar_range is None:  # use rounded acceptable values
+    colorbar_range = (np.ceil(np.median(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))]))),
+                      np.ceil(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))].max())))
+if load_qvalues:
+    fig, _, _ = gu.contour_slices(data, (qx, qz, qy), sum_frames=save_sum, title='Diffraction pattern',
+                                  levels=np.linspace(colorbar_range[0], colorbar_range[1], 150, endpoint=True),
+                                  plot_colorbar=True, scale='log', is_orthogonal=True, reciprocal_space=True)
+else:
+    fig, _, _ = gu.multislices_plot(data, sum_frames=save_sum, scale='log', plot_colorbar=True, vmin=colorbar_range[0],
+                                    vmax=colorbar_range[1], title='Diffraction pattern', is_orthogonal=True,
+                                    reciprocal_space=True)
+
 #############################################################
 # define the positions of the axes ticks and colorbar ticks #
 #############################################################
@@ -221,9 +241,6 @@ tick_spacing = ((tick_spacing[0] or (q_range[1]-q_range[0])/num_ticks),
 
 print('\nTick spacing:', [f'{val:.3f} {unit}' for val in tick_spacing])
 
-if colorbar_range is None:  # use rounded acceptable values
-    colorbar_range = (np.ceil(np.median(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))]))),
-                      np.ceil(np.log10(data[np.logical_and(data != 0, ~np.isnan(data))].max())))
 numticks_colorbar = int(np.floor(colorbar_range[1] - colorbar_range[0] + 1))
 
 ############################
@@ -241,12 +258,12 @@ if save_qyqz:
     ax0.invert_yaxis()  # qz is pointing up
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[1]))
-    gu.colorbar(plt0, numticks=numticks_colorbar)
+    gu.colorbar(plt0, numticks=numticks_colorbar, pad=cbar_pad)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[1],
                filename=sample_name + str(scan) + comment + '_fromrec_qyqz',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 ############################
 # plot views in QyQx plane #
@@ -263,12 +280,12 @@ if save_qyqx:
     ax0.invert_yaxis()  # qx is pointing up
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[2]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[0]))
-    gu.colorbar(plt0, numticks=numticks_colorbar)
+    gu.colorbar(plt0, numticks=numticks_colorbar, pad=cbar_pad)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[2], ylabels=labels[0],
                filename=sample_name + str(scan) + comment + '_fromrec_qyqx',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 ############################
 # plot views in QzQx plane #
@@ -282,15 +299,15 @@ if save_qzqx:
     else:
         plt0 = ax0.imshow(np.log10(data[:, :, padding_shape[2]//2]), cmap=my_cmap, vmin=colorbar_range[0],
                           vmax=colorbar_range[1], extent=[q_range[2], q_range[3], q_range[1], q_range[0]])
-    ax0.invert_yaxis()  # qx is pointing up
+    # qx is pointing down (the image will be rotated manually by 90 degrees)
     ax0.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[1]))
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing[0]))
-    gu.colorbar(plt0, numticks=numticks_colorbar)
+    gu.colorbar(plt0, numticks=numticks_colorbar, pad=cbar_pad)
     gu.savefig(savedir=savedir, figure=fig, axes=ax0, tick_width=tick_width, tick_length=tick_length,
                tick_direction=tick_direction, label_size=16, xlabels=labels[1], ylabels=labels[0],
                filename=sample_name + str(scan) + comment + '_fromrec_qzqx',
                labelbottom=draw_ticks, labelleft=draw_ticks, labelright=False, labeltop=False,
-               left=draw_ticks, right=False, bottom=draw_ticks, top=False)
+               left=draw_ticks, right=draw_ticks, bottom=draw_ticks, top=draw_ticks)
 
 plt.ioff()
 plt.show()
