@@ -3,8 +3,8 @@
 .. toctree::
    :maxdepth: 2
 
-:mod:`bcdi.preprocessing`: Preparation of BCDI data for phasing
-===============================================================
+:mod:`bcdi.preprocessing`: Preprocessing of (B)CDI data for phasing
+===================================================================
 
 .. include:: ../../../README.rst
    :start-after: bcdi.preprocessing section
@@ -13,6 +13,8 @@
 API Reference
 -------------
 
+preprocessing_utils
+^^^^^^^^^^^^^^^^^^^
+
 .. automodule:: bcdi.preprocessing.preprocessing_utils
    :members:
-

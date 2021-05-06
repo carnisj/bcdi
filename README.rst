@@ -7,15 +7,15 @@ Introduction
 
 BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:
 
-* pre-processing BCDI and forward CDI data (masking aliens, detector gaps...) before phase retrieval
+* pre-processing BCDI and forward CDI data (masking aliens, detector gaps ...) before phase retrieval
 
 * post-processing phased data (phase offset and phase ramp removal, averaging, apodization, ...)
 
-* data analysis on diffraction data (stereographic projection, angular cross-correlation analysis)
+* data analysis on diffraction data (stereographic projection, angular cross-correlation analysis, domain orientation fitting ...)
 
-* data analysis on phased data (resolution calculation, statistics on the retrieved strain...)
+* data analysis on phased data (resolution calculation, statistics on the retrieved strain ...)
 
-* simulation of diffraction intensity (including noise, detector gaps, displacement fields...)
+* simulation of diffraction intensity (including noise, detector gaps, displacement field ...)
 
 * creating figures for publication using templates
 
@@ -43,7 +43,7 @@ BCDI can be used as a python library with the following main modules:
 
 8) :mod:`bcdi.utils`: data loading, fitting functions ...
 
-8) :mod:`bcdi.xcca`: X-ray cross-correlation analysis related methods
+9) :mod:`bcdi.xcca`: X-ray cross-correlation analysis related methods
 
 Acknowledgment and third party packages
 =======================================
@@ -84,9 +84,11 @@ The following third-party packages are required:
 
 * lmfit: for scripts performing fits
 
+* pytest if you want to execute the tests
+
 * pytables: when loading the dictionnary for SIXS data
 
-* imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/) for creating movies
+* moviepy, imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/) for creating movies
 
 Download & Installation
 =======================
@@ -102,7 +104,7 @@ Changelog
 =========
 
 .. include:: ../HISTORY.rst
-  :end-before: Version 0.0.6
+  :end-before: Version 0.0.8
 
 See the full :doc:`Changelog<changelog>`
 
@@ -159,14 +161,17 @@ This module provides a class and methods for the definition of the experimental 
 The geometry of the following beamlines is implemented:
 
  * ID01 (ESRF)
- * P10 (PETRAIII)
- * 34ID-C (APS): only for postprocessing
+ * P10 (PETRA III)
  * CRISTAL (SOLEIL)
- * SIXS (SOLEIL) 
+ * SIXS (SOLEIL)
+ * NANOMAX (MAX IV)
+ * 34ID-C (APS): only for postprocessing
 
 The following detectors are implemented:
 
  * Maxipix
+ * Timepix
+ * Merlin
  * Eiger2M
  * Eiger4M
 

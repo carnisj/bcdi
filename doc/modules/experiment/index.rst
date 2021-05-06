@@ -3,8 +3,8 @@
 .. toctree::
    :maxdepth: 2
 
-:mod:`bcdi.experiment`: Definition of the experimental setup
-============================================================
+:mod:`bcdi.experiment`: Description of the experimental setup
+=============================================================
 
 .. include:: ../../../README.rst
    :start-after: bcdi.experiment section
@@ -13,5 +13,11 @@
 API Reference
 -------------
 
-.. automodule:: bcdi.experiment.experiment_utils
+experiment_utils
+^^^^^^^^^^^^^^^^
+
+.. autoclass:: bcdi.experiment.experiment_utils.Detector
+   :members:
+
+.. autoclass:: bcdi.experiment.experiment_utils.Setup
    :members:

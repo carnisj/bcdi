@@ -13,6 +13,8 @@
 API Reference
 -------------
 
+simulation_utils
+^^^^^^^^^^^^^^^^
+
 .. automodule:: bcdi.simulation.simulation_utils
    :members:
-

@@ -6,76 +6,777 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-import bcdi.graph.graph_utils as gu
-from scipy.interpolate import RegularGridInterpolator
 import gc
+from math import isclose
+from numbers import Real
+import numpy as np
+import os
+import pathlib
+from scipy.interpolate import RegularGridInterpolator
+import sys
+import warnings
+sys.path.append('D:/myscripts/bcdi/')
+import bcdi.graph.graph_utils as gu
+import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.utilities as util
+import bcdi.utils.validation as valid
 
 
-class SetupPostprocessing(object):
+class Detector(object):
     """
-    Class to handle the experimental geometry for postprocessing.
+    Class to handle the configuration of the detector used for data acquisition.
+
+    :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}
+    :param datadir: directory where the data files are located
+    :param savedir: directory where to save the results
+    :param template_imagefile: beamline-dependent template for the data files
+
+     - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+     - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+     - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+     - Cristal: 'S%d.nxs'
+     - P10: '_master.h5'
+     - NANOMAX: '%06d.h5'
+     - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+    :param specfile: template for the log file or the data file depending on the beamline
+    :param roi: region of interest of the detector used for analysis
+    :param sum_roi: region of interest of the detector used for calculated an integrated intensity
+    :param binning: binning factor of the 3D dataset
+     (stacking dimension, detector vertical axis, detector horizontal axis)
+    :param kwargs:
+
+     - 'is_series': boolean, True is the measurement is a series at PETRAIII P10 beamline
+     - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
+     - 'preprocessing_binning': tuple of the three binning factors used in a previous preprocessing step
+     - 'offsets': tuple or list, sample and detector offsets corresponding to the parameter delta
+       in xrayutilities hxrd.Ang2Q.area method
+     - 'linearity_func': function to apply to each pixel of the detector in order to compensate the deviation of the
+       detector linearity for large intensities.
     """
-    def __init__(self, beamline, energy, outofplane_angle, inplane_angle, tilt_angle, rocking_angle, distance,
-                 grazing_angle=0, pixel_x=55e-6, pixel_y=55e-6):
-        """
-        Initialize parameters of the experiment.
+    def __init__(self, name, rootdir=None, datadir=None, savedir=None, template_file=None, template_imagefile=None,
+                 specfile=None, sample_name=None, roi=None, sum_roi=None, binning=(1, 1, 1), **kwargs):
+        # the detector name should be initialized first, other properties are depending on it
+        self.name = name
 
-        :param beamline: name of the beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL'
-        :param energy: X-ray energy in eV
-        :param outofplane_angle: out of plane angle of the detector in degrees
-        :param inplane_angle: inplane angle of the detector in degrees
-        :param tilt_angle: angular step of the sample during the rocking curve, in degrees
-        :param rocking_angle: name of the angle which is tilted during the rocking curve, 'outofplane' or 'inplane'
-        :param distance: sample to detector distance in meters
-        :param grazing_angle: grazing angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
-        :param pixel_x: horizontal pixel size, in meters
-        :param pixel_y: vertical pixel size, in meters
-        """
-        self.beamline = beamline  # string
-        self.energy = energy  # in eV
-        self.wavelength = 12.398 * 1e-7 / energy  # in m
-        self.outofplane_angle = outofplane_angle  # in degrees
-        self.inplane_angle = inplane_angle  # in degrees
-        self.tilt_angle = tilt_angle  # in degrees
-        self.rocking_angle = rocking_angle  # string
-        self.grazing_angle = grazing_angle  # string
-        self.distance = distance  # in meters
-        self.pixel_x = pixel_x  # in meters
-        self.pixel_y = pixel_y  # in meters
+        valid.valid_kwargs(kwargs=kwargs,
+                           allowed_kwargs={'is_series', 'nb_pixel_x', 'nb_pixel_y', 'preprocessing_binning', 'offsets',
+                                           'linearity_func'},
+                           name='Detector.__init__')
 
-    def rotation_direction(self):
-        """
-        Define a coefficient +/- 1 depending on the detector rotation direction and the detector inplane orientation.
+        # load the kwargs
+        self.is_series = kwargs.get('is_series', False)
+        self.preprocessing_binning = kwargs.get('preprocessing_binning', None) or (1, 1, 1)
+        self.nb_pixel_x = kwargs.get('nb_pixel_x', None)
+        self.nb_pixel_y = kwargs.get('nb_pixel_y', None)
+        self.offsets = kwargs.get('offsets', None)  # delegate the test to xrayutilities
+        linearity_func = kwargs.get('linearity_func', None)
+        if linearity_func is not None and not callable(linearity_func):
+            raise TypeError(f'linearity_func should be a function, got {type(linearity_func)}')
+        self._linearity_func = linearity_func
 
-        :return: a coefficient  which is 1 for anticlockwise rotation or -1 for clockwise rotation.
+        # load other positional arguments
+        self.binning = binning
+        self.roi = roi
+        self.sum_roi = sum_roi
+        # parameters related to data path
+        self.rootdir = rootdir
+        self.datadir = datadir
+        self.savedir = savedir
+        self.sample_name = sample_name
+        self.template_file = template_file
+        self.template_imagefile = template_imagefile
+        self.specfile = specfile
+
+    @property
+    def binning(self):
         """
-        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
-            # gamma is anti-clockwise
-            coeff_inplane = 1
-            # TODO: check this
-        elif self.beamline == 'ID01':
-            # nu is clockwise, we see the detector from downstream (behind)
-            coeff_inplane = -1
-        elif self.beamline == '34ID':
-            coeff_inplane = 1
-            # gamma is anti-clockwise
-            # TODO: check this
-        elif self.beamline == 'P10':
-            coeff_inplane = -1
-            # gamma is anti-clockwise, we see the detector from the front
-        elif self.beamline == 'CRISTAL':
-            coeff_inplane = 1
-            # gamma is anti-clockwise
-            # TODO: check this
+        Tuple of three positive integers corresponding to the binning of the data used in phase retrieval
+         (stacking dimension, detector vertical axis, detector horizontal axis). To declare an additional binning factor
+         due to a previous preprocessing step, use the kwarg 'preprocessing_binning' instead.
+        """
+        return self._binning
+
+    @binning.setter
+    def binning(self, value):
+        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=int, min_excluded=0,
+                              name='Detector.binning')
+        self._binning = value
+
+    @property
+    def counter(self):
+        """
+        Name of the counter for the image number.
+        """
+        counter_dict = {'Maxipix': 'mpx4inr', 'Eiger2M': 'ei2minr', 'Eiger4M': None, 'Timepix': None, 'Merlin': 'alba2'}
+        return counter_dict.get(self.name, None)
+
+    @ property
+    def datadir(self):
+        """
+        Name of the data directory
+        """
+        return self._datadir
+
+    @datadir.setter
+    def datadir(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.datadir')
+        self._datadir = value
+
+    @property
+    def is_series(self):
+        """
+        Boolean, True for a series measurement at PETRAIII P10
+        """
+        return self._is_series
+
+    @is_series.setter
+    def is_series(self, value):
+        if not isinstance(value, bool):
+            raise TypeError('is_series should be a boolean')
         else:
-            raise ValueError('setup parameter: ', self.beamline, 'not defined')
-        return coeff_inplane
+            self._is_series = value
 
+    @property
+    def name(self):
+        """
+        Name of the detector: 'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'
+        """
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        if value not in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}:
+            raise ValueError("Name should be in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}")
+        else:
+            self._name = value
+
+    @property
+    def nb_pixel_x(self):
+        """
+        Horizontal number of pixels of the detector, taking into account an eventual preprocessing binning.
+        """
+        return self._nb_pixel_x
+
+    @nb_pixel_x.setter
+    def nb_pixel_x(self, value):
+        if value is None:
+            value = self.pix_number[1]
+        if not isinstance(value, int):
+            raise TypeError('nb_pixel_x should be a positive integer')
+        elif value <= 0:
+            raise ValueError('nb_pixel_x should be a positive integer')
+        else:
+            self._nb_pixel_x = value // self.preprocessing_binning[2]
+
+    @property
+    def nb_pixel_y(self):
+        """
+        Vertical number of pixels of the detector, taking into account an eventual preprocessing binning.
+        """
+        return self._nb_pixel_y
+
+    @nb_pixel_y.setter
+    def nb_pixel_y(self, value):
+        if value is None:
+            value = self.pix_number[0]
+        if not isinstance(value, int):
+            raise TypeError('nb_pixel_y should be a positive integer')
+        elif value <= 0:
+            raise ValueError('nb_pixel_y should be a positive integer')
+        else:
+            self._nb_pixel_y = value // self.preprocessing_binning[1]
+
+    @property
+    def pixelsize_x(self):
+        """
+        Horizontal pixel size of the detector after taking into account binning.
+        """
+        return self.unbinned_pixel[1] * self.preprocessing_binning[2] * self.binning[2]
+
+    @property
+    def pixelsize_y(self):
+        """
+        Vertical pixel size of the detector after taking into account binning.
+        """
+        return self.unbinned_pixel[0] * self.preprocessing_binning[1] * self.binning[1]
+
+    @property
+    def pix_number(self):
+        """
+        Number of pixels (vertical, horizontal) of the unbinned detector.
+        """
+        if self.name == 'Maxipix':
+            number = (516, 516)
+        elif self.name == 'Timepix':
+            number = (256, 256)
+        elif self.name == 'Merlin':
+            number = (515, 515)
+        elif self.name == 'Eiger2M':
+            number = (2164, 1030)
+        elif self.name == 'Eiger4M':
+            number = (2167, 2070)
+        else:
+            number = None
+        return number
+
+    @property
+    def preprocessing_binning(self):
+        """
+        Tuple of three positive integers corresponding to the binning factor of the data used in a previous
+         preprocessing step (stacking dimension, detector vertical axis, detector horizontal axis).
+        """
+        return self._preprocessing_binning
+
+    @preprocessing_binning.setter
+    def preprocessing_binning(self, value):
+        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=int, min_excluded=0,
+                              name='Detector.preprocessing_binning')
+        self._preprocessing_binning = value
+
+    @property
+    def roi(self):
+        """
+        Region of interest of the detector to be used [y_start, y_stop, x_start, x_stop]
+        """
+        return self._roi
+
+    @roi.setter
+    def roi(self, value):
+        if not value:  # None or empty list/tuple
+            value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+        valid.valid_container(value, container_types=(tuple, list), length=4, item_types=int, name='Detector.roi')
+        self._roi = value
+
+    @property
+    def rootdir(self):
+        """
+        Name of the root directory, which englobes all scans
+        """
+        return self._rootdir
+
+    @rootdir.setter
+    def rootdir(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.rootdir')
+        self._rootdir = value
+
+    @property
+    def sample_name(self):
+        """
+        Name of the sample
+        """
+        return self._sample_name
+
+    @sample_name.setter
+    def sample_name(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.sample_name')
+        self._sample_name = value
+
+    @property
+    def savedir(self):
+        """
+        Name of the saving directory
+        """
+        return self._savedir
+
+    @savedir.setter
+    def savedir(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.savedir')
+        self._savedir = value
+
+    @property
+    def scandir(self):
+        """
+        Path of the scan, typically it is the parent folder of the data folder
+        """
+        if self.datadir:
+            dir_path = os.path.abspath(os.path.join(self.datadir, os.pardir)) + '/'
+            return dir_path.replace('\\', '/')
+
+    @property
+    def sum_roi(self):
+        """
+        Region of interest of the detector used for integrating the intensity [y_start, y_stop, x_start, x_stop]
+        """
+        return self._sum_roi
+
+    @sum_roi.setter
+    def sum_roi(self, value):
+        if not value:  # None or empty list/tuple
+            if not self.roi:
+                value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+            else:
+                value = self.roi
+        valid.valid_container(value, container_types=(tuple, list), length=4, item_types=int, name='Detector.sum_roi')
+        self._sum_roi = value
+
+    @property
+    def template_file(self):
+        """
+        Template that can be used to generate template_imagefile.
+        """
+        return self._template_file
+
+    @template_file.setter
+    def template_file(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.template_file')
+        self._template_file = value
+
+    @property
+    def template_imagefile(self):
+        """
+        Name of the data file.
+        """
+        return self._template_imagefile
+
+    @template_imagefile.setter
+    def template_imagefile(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.imagefile')
+        self._template_imagefile = value
+
+    @property
+    def unbinned_pixel(self):
+        """
+        Pixel size (vertical, horizontal) of the unbinned detector in meters.
+        """
+        if self.name in {'Maxipix', 'Timepix', 'Merlin'}:
+            pix = (55e-06, 55e-06)
+        elif self.name in {'Eiger2M', 'Eiger4M'}:
+            pix = (75e-06, 75e-06)
+        else:
+            pix = None
+        return pix
+
+    def __repr__(self):
+        """
+        Representation string of the Detector instance.
+        """
+        return (f"{self.__class__.__name__}(name='{self.name}', unbinned_pixel={self.unbinned_pixel}, "
+                f"nb_pixel_x={self.nb_pixel_x}, nb_pixel_y={self.nb_pixel_y}, binning={self.binning},\n"
+                f"roi={self.roi}, sum_roi={self.sum_roi}, preprocessing_binning={self.preprocessing_binning}, "
+                f"is_series={self.is_series}\nrootdir = {self.rootdir},\ndatadir = {self.datadir},\n"
+                f"scandir = {self.scandir},\nsavedir = {self.savedir},\nsample_name = {self.sample_name},"
+                f" template_file = {self.template_file}, template_imagefile = {self.template_imagefile},"
+                f" specfile = {self.specfile},\n")
+
+    def mask_detector(self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None):
+        """
+        Mask data measured with a 2D detector (flatfield, background, hotpixels, gaps).
+
+        :param data: the 2D data to mask
+        :param mask: the 2D mask to be updated
+        :param nb_img: number of images summed to yield the 2D data (e.g. in a series measurement)
+        :param flatfield: the 2D flatfield array to be multiplied with the data
+        :param background: a 2D array to be subtracted to the data
+        :param hotpixels: a 2D array with hotpixels to be masked (1=hotpixel, 0=normal pixel)
+        :return: the masked data and the updated mask
+        """
+        assert isinstance(data, np.ndarray) and isinstance(mask, np.ndarray), 'data and mask should be numpy arrays'
+        if data.ndim != 2 or mask.ndim != 2:
+            raise ValueError('data and mask should be 2D arrays')
+
+        if data.shape != mask.shape:
+            raise ValueError('data and mask must have the same shape\n data is ', data.shape,
+                             ' while mask is ', mask.shape)
+
+        # linearity correction
+        if self._linearity_func is not None:
+            data = data.astype(float)
+            nby, nbx = data.shape
+            data = self._linearity_func(data.flatten()).reshape((nby, nbx))
+
+        # flatfield correction
+        if flatfield is not None:
+            if flatfield.shape != data.shape:
+                raise ValueError('flatfield and data must have the same shape\n data is ', flatfield.shape,
+                                 ' while data is ', data.shape)
+            data = np.multiply(flatfield, data)
+
+        # remove the background
+        if background is not None:
+            if background.shape != data.shape:
+                raise ValueError('background and data must have the same shape\n data is ', background.shape,
+                                 ' while data is ', data.shape)
+            data = data - background
+
+        # mask hotpixels
+        if hotpixels is not None:
+            if hotpixels.shape != data.shape:
+                raise ValueError('hotpixels and data must have the same shape\n data is ', hotpixels.shape,
+                                 ' while data is ', data.shape)
+            data[hotpixels == 1] = 0
+            mask[hotpixels == 1] = 1
+
+        if self.name == 'Eiger2M':
+            data[:, 255: 259] = 0
+            data[:, 513: 517] = 0
+            data[:, 771: 775] = 0
+            data[0: 257, 72: 80] = 0
+            data[255: 259, :] = 0
+            data[511: 552, :0] = 0
+            data[804: 809, :] = 0
+            data[1061: 1102, :] = 0
+            data[1355: 1359, :] = 0
+            data[1611: 1652, :] = 0
+            data[1905: 1909, :] = 0
+            data[1248:1290, 478] = 0
+            data[1214:1298, 481] = 0
+            data[1649:1910, 620:628] = 0
+
+            mask[:, 255: 259] = 1
+            mask[:, 513: 517] = 1
+            mask[:, 771: 775] = 1
+            mask[0: 257, 72: 80] = 1
+            mask[255: 259, :] = 1
+            mask[511: 552, :] = 1
+            mask[804: 809, :] = 1
+            mask[1061: 1102, :] = 1
+            mask[1355: 1359, :] = 1
+            mask[1611: 1652, :] = 1
+            mask[1905: 1909, :] = 1
+            mask[1248:1290, 478] = 1
+            mask[1214:1298, 481] = 1
+            mask[1649:1910, 620:628] = 1
+
+            # mask hot pixels
+            mask[data > 1e6 * nb_img] = 1
+            data[data > 1e6 * nb_img] = 0
+
+        elif self.name == 'Eiger4M':
+            data[:, 0:1] = 0
+            data[:, -1:] = 0
+            data[0:1, :] = 0
+            data[-1:, :] = 0
+            data[:, 1029:1041] = 0
+            data[513:552, :] = 0
+            data[1064:1103, :] = 0
+            data[1615:1654, :] = 0
+
+            mask[:, 0:1] = 1
+            mask[:, -1:] = 1
+            mask[0:1, :] = 1
+            mask[-1:, :] = 1
+            mask[:, 1029:1041] = 1
+            mask[513:552, :] = 1
+            mask[1064:1103, :] = 1
+            mask[1615:1654, :] = 1
+
+            # mask hot pixels, 4000000000 for the Eiger4M
+            mask[data > 4000000000 * nb_img] = 1
+            data[data > 4000000000 * nb_img] = 0
+
+        elif self.name == 'Maxipix':
+            data[:, 255:261] = 0
+            data[255:261, :] = 0
+
+            mask[:, 255:261] = 1
+            mask[255:261, :] = 1
+
+            # mask hot pixels
+            mask[data > 1e6 * nb_img] = 1
+            data[data > 1e6 * nb_img] = 0
+
+        elif self.name == 'Merlin':
+            data[:, 255:260] = 0
+            data[255:260, :] = 0
+
+            mask[:, 255:260] = 1
+            mask[255:260, :] = 1
+
+            # mask hot pixels
+            mask[data > 1e6 * nb_img] = 1
+            data[data > 1e6 * nb_img] = 0
+
+        elif self.name == 'Timepix':
+            pass  # no gaps
+
+        else:
+            raise NotImplementedError('Detector not implemented')
+
+        return data, mask
+
+
+class Setup(object):
+    """
+    Class for defining the experimental geometry.
+
+    :param beamline: name of the beamline, among {'ID01','SIXS_2018','SIXS_2019','34ID','P10','CRISTAL','NANOMAX'}
+    :param beam_direction: direction of the incident X-ray beam in the frame (z downstream,y vertical up,x outboard)
+    :param energy: energy setting of the beamline, in eV.
+    :param distance: sample to detector distance, in m.
+    :param outofplane_angle: vertical detector angle, in degrees.
+    :param inplane_angle: horizontal detector angle, in degrees.
+    :param tilt_angle: angular step of the rocking curve, in degrees.
+    :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane', 'energy'}
+    :param grazing_angle: motor positions for the goniometer circles below the rocking angle. It should be a
+     list/tuple of lenght 1 for out-of-plane rocking curves (the chi motor value) and length 2 for inplane rocking
+     curves (the chi and omega/om/eta motor values).
+    :param pixel_x: detector horizontal pixel size, in meters.
+    :param pixel_y: detector vertical pixel size, in meters.
+    :param kwargs:
+
+     - 'direct_beam': tuple of two real numbers indicating the position of the direct beam in pixels at zero
+       detector angles.
+     - 'filtered_data': boolean, True if the data and the mask to be loaded were already preprocessed.
+     - 'custom_scan': boolean, True is the scan does not follow the beamline's usual directory format.
+     - 'custom_images': list of images numbers when the scan does no follow the beamline's usual directory format.
+     - 'custom_monitor': list of monitor values when the scan does no follow the beamline's usual directory format.
+       The number of values should be equal to the number of elements in custom_images.
+     - 'custom_motors': list of motor values when the scan does no follow the beamline's usual directory format.
+     - 'sample_inplane': sample inplane reference direction along the beam at 0 angles in xrayutilities frame
+       (x is downstream, y outboard, and z vertical up at zero incident angle).
+     - 'sample_outofplane': surface normal of the sample at 0 angles in xrayutilities frame
+       (x is downstream, y outboard, and z vertical up at zero incident angle).
+     - 'sample_offsets': list or tuple of three angles in degrees, corresponding to the offsets of the sample
+       goniometers around (downstream, vertical up, outboard). Convention: the sample offsets will be subtracted to
+       the motor values.
+     - 'offset_inplane': inplane offset of the detector defined as the outer angle in xrayutilities area detector
+       calibration.
+     - 'actuators': optional dictionary that can be used to define the entries corresponding to actuators in data files
+       (useful at CRISTAL where the location of data keeps changing)
+    """
+    def __init__(self, beamline, beam_direction=(1, 0, 0), energy=None, distance=None, outofplane_angle=None,
+                 inplane_angle=None, tilt_angle=None, rocking_angle=None, grazing_angle=None, pixel_x=None,
+                 pixel_y=None, **kwargs):
+
+        valid.valid_kwargs(kwargs=kwargs,
+                           allowed_kwargs={'direct_beam', 'filtered_data', 'custom_scan', 'custom_images',
+                                           'custom_monitor', 'custom_motors', 'sample_inplane', 'sample_outofplane',
+                                           'sample_offsets', 'offset_inplane', 'actuators'},
+                           name='Setup.__init__')
+
+        # kwargs for preprocessing forward CDI data
+        self.direct_beam = kwargs.get('direct_beam', None)
+        # kwargs for loading and preprocessing data
+        self.sample_offsets = kwargs.get('sample_offsets', (0, 0, 0))
+        self.filtered_data = kwargs.get('filtered_data', False)  # boolean
+        self.custom_scan = kwargs.get('custom_scan', False)  # boolean
+        self.custom_images = kwargs.get('custom_images', None)  # list or tuple
+        self.custom_monitor = kwargs.get('custom_monitor', None)  # list or tuple
+        self.custom_motors = kwargs.get('custom_motors', None)  # dictionnary
+        self.actuators = kwargs.get('actuators', {})  # list or tuple
+        # kwargs for xrayutilities, delegate the test on their values to xrayutilities
+        self.sample_inplane = kwargs.get('sample_inplane', (1, 0, 0))
+        self.sample_outofplane = kwargs.get('sample_outofplane', (0, 0, 1))
+        self.offset_inplane = kwargs.get('offset_inplane', 0)
+
+        # load positional arguments corresponding to instance properties
+        self.beamline = beamline
+        self.beam_direction = beam_direction
+        self.energy = energy
+        self.distance = distance
+        self.outofplane_angle = outofplane_angle
+        self.inplane_angle = inplane_angle
+        self.tilt_angle = tilt_angle
+        self.rocking_angle = rocking_angle
+        self.grazing_angle = grazing_angle
+        self.pixel_x = pixel_x
+        self.pixel_y = pixel_y
+
+    @property
+    def actuators(self):
+        """
+        Optional dictionary that can be used to define the entries corresponding to actuators in data files
+        (useful at CRISTAL where the location of data keeps changing)
+        """
+        return self._actuators
+
+    @actuators.setter
+    def actuators(self, value):
+        if value is None:
+            value = {}
+        valid.valid_container(value, container_types=dict, item_types=str, name='Setup.actuators')
+        self._actuators = value
+
+    @property
+    def beam_direction(self):
+        """
+        Direction of the incident X-ray beam in the frame (z downstream, y vertical up, x outboard).
+        """
+        return self._beam_direction
+
+    @beam_direction.setter
+    def beam_direction(self, value):
+        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=Real,
+                              name='Setup.beam_direction')
+        if np.linalg.norm(value) == 0:
+            raise ValueError('At least of component of beam_direction should be non null.')
+        else:
+            self._beam_direction = value / np.linalg.norm(value)
+
+    @property
+    def beam_direction_xrutils(self):
+        """
+        Direction of the incident X-ray beam in the frame of xrayutilities (x downstream, y outboard, z vertical up).
+        """
+        u, v, w = self._beam_direction  # (u downstream, v vertical up, w outboard)
+        return u, w, v
+
+    @property
+    def beamline(self):
+        """
+        Name of the beamline.
+        """
+        return self._beamline
+
+    @beamline.setter
+    def beamline(self, value):
+        if value not in {'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL', 'NANOMAX'}:
+            raise ValueError(f'Beamline {value} not supported')
+        else:
+            self._beamline = value
+
+    @property
+    def custom_images(self):
+        """
+        List of images numbers when the scan does no follow the beamline's usual directory format.
+        """
+        return self._custom_images
+
+    @custom_images.setter
+    def custom_images(self, value):
+        if not self._custom_scan:
+            self._custom_images = None
+        else:
+            valid.valid_container(value, container_types=(tuple, list), min_length=1, item_types=int,
+                                  name='Setup.custom_images')
+            self._custom_images = value
+
+    @property
+    def custom_monitor(self):
+        """
+        List of monitor values when the scan does no follow the beamline's usual directory format. The number of values
+         should be equal to the number of elements in custom_images.
+        """
+        return self._custom_monitor
+
+    @custom_monitor.setter
+    def custom_monitor(self, value):
+        if not self._custom_scan:
+            self._custom_monitor = None
+        else:
+            if value is None:
+                value = np.ones(len(self._custom_images))
+            valid.valid_container(value, container_types=(tuple, list, np.ndarray), length=len(self._custom_images),
+                                  item_types=Real, name='Setup.custom_monitor')
+            self._custom_monitor = value
+
+    @property
+    def custom_motors(self):
+        """
+        List of motor values when the scan does no follow the beamline's usual directory format.
+        """
+        return self._custom_motors
+
+    @custom_motors.setter
+    def custom_motors(self, value):
+        if not self._custom_scan:
+            self._custom_motors = None
+        else:
+            if not isinstance(value, dict):
+                raise TypeError('custom_monitor should be a dictionnary of "motor_name": motor_positions pairs')
+            else:
+                self._custom_motors = value
+
+    @property
+    def custom_scan(self):
+        """
+        Boolean, True is the scan does not follow the beamline's usual directory format.
+        """
+        return self._custom_scan
+
+    @custom_scan.setter
+    def custom_scan(self, value):
+        if not isinstance(value, bool):
+            raise TypeError('custom_scan should be a boolean')
+        else:
+            self._custom_scan = value
+
+    @property
+    def detector_hor(self):
+        """
+        Defines the horizontal detector orientation for xrayutilities depending on the beamline.
+         The frame convention of xrayutilities is the following: x downstream, y outboard, z vertical up.
+        """
+        if self.beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX'}:
+            # we look at the detector from downstream, detector X along the outboard direction
+            return 'y+'
+        else:  # 'P10', '34ID'
+            # we look at the detector from upstream, detector X opposite to the outboard direction
+            return 'y-'
+
+    @property
+    def detector_ver(self):
+        """
+        Defines the vertical detector orientation for xrayutilities depending on the beamline.
+         The frame convention of xrayutilities is the following: x downstream, y outboard, z vertical up.
+        """
+        if self.beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX', 'P10', '34ID'}:
+            # origin is at the top, detector Y along vertical down
+            return 'z-'
+        else:
+            return 'z+'
+
+    @property
+    def direct_beam(self):
+        """
+        Tuple of two real numbers indicating the position of the direct beam in pixels at zero detector angles.
+        """
+        return self._direct_beam
+
+    @direct_beam.setter
+    def direct_beam(self, value):
+        if value is not None:
+            valid.valid_container(value, container_types=(tuple, list), length=2, item_types=Real,
+                                  name='Setup.direct_beam')
+        self._direct_beam = value
+
+    @property
+    def distance(self):
+        """
+        Sample to detector distance, in m
+        """
+        return self._distance
+
+    @distance.setter
+    def distance(self, value):
+        if value is None:
+            self._distance = value
+        elif not isinstance(value, Real):
+            raise TypeError('distance should be a number in m')
+        elif value <= 0:
+            raise ValueError('distance should be a strictly positive number in m')
+        else:
+            self._distance = value
+
+    @property
+    def energy(self):
+        """
+        Energy setting of the beamline, in eV.
+        """
+        return self._energy
+
+    @energy.setter
+    def energy(self, value):
+        if value is None:
+            self._energy = value
+        elif isinstance(value, Real):
+            if value <= 0:
+                raise ValueError('energy should be strictly positive, in eV')
+            self._energy = value
+        elif isinstance(value, (list, tuple, np.ndarray)):
+            if len(value) == 0:
+                raise ValueError('energy should be a number or a non-empty list of numbers in eV')
+            if any(val<=0 for val in value):
+                raise ValueError('energy should be strictly positive, in eV')
+            self._energy = value
+        else:
+            raise TypeError('energy should be a number or a list of numbers, in eV')
+
+    @property
     def exit_wavevector(self):
         """
-        Calculate the exit wavevector kout depending on the setup parameters, in laboratory frame (z downstream,
-         y vertical, x outboard).
+        Calculate the exit wavevector kout depending on the setup parameters, in the laboratory frame (z downstream,
+         y vertical, x outboard). The unit is 1/m
 
         :return: kout vector
         """
@@ -97,6 +798,12 @@ class SetupPostprocessing(object):
                 [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
                  np.sin(np.pi * self.outofplane_angle / 180),  # y
                  np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == 'NANOMAX':
+            # gamma is clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 -np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
         elif self.beamline == 'P10':
             # gamma is anti-clockwise
             kout = 2 * np.pi / self.wavelength * np.array(
@@ -113,6 +820,1433 @@ class SetupPostprocessing(object):
             raise ValueError('setup parameter: ', self.beamline, 'not defined')
         return kout
 
+    @property
+    def filtered_data(self):
+        """
+        Boolean, True if the data and the mask to be loaded were already preprocessed.
+        """
+        return self._filtered_data
+
+    @filtered_data.setter
+    def filtered_data(self, value):
+        if not isinstance(value, bool):
+            raise TypeError('filtered_data should be a boolean')
+        else:
+            self._filtered_data = value
+
+    @property
+    def grazing_angle(self):
+        """
+        Motor positions for the goniometer circles below the rocking angle. It should be a list/tuple of lenght 1 for
+         out-of-plane rocking curves (the chi motor value) and length 2 for inplane rocking curves
+         (the chi and omega/om/eta motor values).
+        """
+        return self._grazing_angle
+
+    @grazing_angle.setter
+    def grazing_angle(self, value):
+        if self.rocking_angle == 'outofplane':
+            # only the chi angle (rotation around z, below the rocking angle omega/om/eta) is needed
+            valid.valid_container(value, container_types=(tuple, list), length=1, item_types=Real, allow_none=True,
+                                  name='Setup.grazing_angle')
+            self._grazing_angle = value
+        elif self.rocking_angle == 'inplane':
+            # two values needed: the chi angle and the omega/om/eta angle (rotations respectively around z and x,
+            # below the rocking angle phi)
+            valid.valid_container(value, container_types=(tuple, list), length=2, item_types=Real, allow_none=True,
+                                  name='Setup.grazing_angle')
+            self._grazing_angle = value
+        else:  # self.rocking_angle == 'energy'
+            # there is no sample rocking for energy scans, hence the grazing angle value do not matter
+            self._grazing_angle = None
+
+    @property
+    def incident_wavevector(self):
+        """
+        Calculate the incident wavevector kin depending on the setup parameters, in the laboratory frame (z downstream,
+         y vertical, x outboard). The unit is 1/m.
+
+        :return: kin vector
+        """
+        return 2*np.pi/self.wavelength * self.beam_direction
+
+    @property
+    def inplane_angle(self):
+        """
+        Horizontal detector angle, in degrees.
+        """
+        return self._inplane_angle
+
+    @inplane_angle.setter
+    def inplane_angle(self, value):
+        if not isinstance(value, Real) and value is not None:
+            raise TypeError('inplane_angle should be a number in degrees')
+        else:
+            self._inplane_angle = value
+
+    @property
+    def inplane_coeff(self):
+        """
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction and the detector inplane
+         orientation. The frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up.
+         See postprocessing/scripts/correct_angles_detector.py for an example.
+
+        :return: +1 or -1
+        """
+        if self.detector_hor == 'y+':
+            hor_coeff = 1
+        else:  # 'y-'
+            hor_coeff = -1
+
+        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+            # gamma is anti-clockwise, we see the detector from downstream
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'ID01':
+            # nu is clockwise, we see the detector from downstream
+            coeff_inplane = -1 * hor_coeff
+        elif self.beamline == '34ID':
+            # delta is anti-clockwise, we see the detector from the front
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'P10':
+            # gamma is anti-clockwise, we see the detector from the front
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'CRISTAL':
+            # gamma is anti-clockwise, we see the detector from downstream
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'NANOMAX':
+            # gamma is clockwise, we see the detector from downstream
+            coeff_inplane = -1 * hor_coeff
+        else:
+            raise ValueError('setup parameter: ', self.beamline, 'not defined')
+        return coeff_inplane
+
+    @property
+    def outofplane_angle(self):
+        """
+        Vertical detector angle, in degrees.
+        """
+        return self._outofplane_angle
+
+    @outofplane_angle.setter
+    def outofplane_angle(self, value):
+        if not isinstance(value, Real) and value is not None:
+            raise TypeError('outofplane_angle should be a number in degrees')
+        else:
+            self._outofplane_angle = value
+
+    @property
+    def outofplane_coeff(self):
+        """
+        Define a coefficient +/- 1 depending on the detector out of plane rotation direction and the detector out of
+         plane orientation. The frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up.
+         See postprocessing/scripts/correct_angles_detector.py for an example.
+
+        :return: +1 or -1
+        """
+        if self.detector_ver == 'z+':  # origin of pixels at the bottom
+            ver_coeff = 1
+        else:  # 'z-'  origin of pixels at the top
+            ver_coeff = -1
+        # the out of plane detector rotation is clockwise for all beamlines
+        coeff_outofplane = -1 * ver_coeff
+        return coeff_outofplane
+
+    @property
+    def pixel_x(self):
+        """
+        Detector horizontal pixel size, in meters.
+        """
+        return self._pixel_x
+
+    @pixel_x.setter
+    def pixel_x(self, value):
+        if value is None:
+            self._pixel_x = value
+        elif not isinstance(value, Real):
+            raise TypeError('pixel_x should be a number in m')
+        elif value <= 0:
+            raise ValueError('pixel_x should be a strictly positive number in m')
+        else:
+            self._pixel_x = value
+
+    @property
+    def pixel_y(self):
+        """
+        Detector vertical pixel size, in meters.
+        """
+        return self._pixel_y
+
+    @pixel_y.setter
+    def pixel_y(self, value):
+        if value is None:
+            self._pixel_y = value
+        elif not isinstance(value, Real):
+            raise TypeError('pixel_y should be a number in m')
+        elif value <= 0:
+            raise ValueError('pixel_y should be a strictly positive number in m')
+        else:
+            self._pixel_y = value
+
+    @property
+    def q_laboratory(self):
+        """
+        Calculate the diffusion vector in the laboratory frame (z downstream, y vertical up, x outboard). The unit is
+        1/A.
+
+        :return: a tuple of three vectors components.
+        """
+        return (self.exit_wavevector - self.incident_wavevector) * 1e-10
+
+    @property
+    def rocking_angle(self):
+        """
+        Angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
+        """
+        return self._rocking_angle
+
+    @rocking_angle.setter
+    def rocking_angle(self, value):
+        if value is None:
+            self._rocking_angle = value
+        elif not isinstance(value, str):
+            raise TypeError('rocking_angle should be a str')
+        elif value not in {'outofplane', 'inplane', 'energy'}:
+            raise ValueError('rocking_angle can take only the value "outofplane", "inplane" or "energy"')
+        else:
+            self._rocking_angle = value
+
+    @property
+    def sample_offsets(self):
+        """
+        List or tuple of three angles in degrees, corresponding to the offsets of the sample goniometers around
+        (downstream, vertical up, outboard). Convention: the sample offsets will be subtracted to the motor values.
+        """
+        return self._sample_offsets
+
+    @sample_offsets.setter
+    def sample_offsets(self, value):
+        valid.valid_container(value, container_types=(tuple, list), length=3, item_types=Real,
+                              name='Setup.sample_offsets')
+        self._sample_offsets = value
+
+    @property
+    def tilt_angle(self):
+        """
+        Angular step of the rocking curve, in degrees.
+        """
+        return self._tilt_angle
+
+    @tilt_angle.setter
+    def tilt_angle(self, value):
+        if not isinstance(value, Real) and value is not None:
+            raise TypeError('tilt_angle should be a number in degrees')
+        else:
+            self._tilt_angle = value
+
+    @property
+    def wavelength(self):
+        """
+        Wavelength in meters.
+        """
+        if self.energy:
+            return 12.398 * 1e-7 / self.energy  # in m
+
+    def __repr__(self):
+        """
+        Representation string of the Setup instance.
+        """
+        return (f"{self.__class__.__name__}(beamline='{self.beamline}', beam_direction={self.beam_direction}, "
+                f"energy={self.energy}, distance={self.distance}, outofplane_angle={self.outofplane_angle},\n"
+                f"inplane_angle={self.inplane_angle}, tilt_angle={self.tilt_angle}, "
+                f"rocking_angle='{self.rocking_angle}', grazing_angle={self.grazing_angle}, pixel_x={self.pixel_x},\n"
+                f"pixel_y={self.pixel_y}, direct_beam={self.direct_beam}, sample_offsets={self.sample_offsets}, "
+                f"filtered_data={self.filtered_data}, custom_scan={self.custom_scan},\n"
+                f"custom_images={self.custom_images},\ncustom_monitor={self.custom_monitor},\n"
+                f"custom_motors={self.custom_motors},\n"
+                f"sample_inplane={self.sample_inplane}, sample_outofplane={self.sample_outofplane}, "
+                f"offset_inplane={self.offset_inplane})")
+
+    def detector_frame(self, obj, voxel_size, width_z=None, width_y=None, width_x=None,
+                       debugging=False, **kwargs):
+        """
+        Interpolate the orthogonal object back into the non-orthogonal detector frame
+
+        :param obj: real space object, in the orthogonal laboratory frame
+        :param voxel_size: voxel size of the original object, number of list/tuple of three numbers
+        :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+        :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+        :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :param debugging: True to show plots before and after interpolation
+        :param kwargs:
+         - 'title': title for the debugging plots
+        :return: object interpolated on an orthogonal grid
+        """
+        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'title'}, name='Setup.detector_frame')
+        title = kwargs.get('title', 'Object')
+
+        if isinstance(voxel_size, Real):
+            voxel_size = (voxel_size, voxel_size, voxel_size)
+        valid.valid_container(obj=voxel_size, container_types=(tuple, list), length=3, item_types=Real,
+                              min_excluded=0, name='Setup.detector_frame')
+
+        nbz, nby, nbx = obj.shape
+
+        if debugging:
+            gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                title=title + ' before interpolation\n')
+
+        ortho_matrix = self.transformation_matrix(array_shape=(nbz, nby, nbx), tilt_angle=self.tilt_angle,
+                                                  pixel_x=self.pixel_x, pixel_y=self.pixel_y)
+
+        ################################################
+        # interpolate the data into the detector frame #
+        ################################################
+        myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1),
+                                    np.arange(-nby // 2, nby // 2, 1),
+                                    np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
+
+        new_x = ortho_matrix[0, 0] * myx + ortho_matrix[0, 1] * myy + ortho_matrix[0, 2] * myz
+        new_y = ortho_matrix[1, 0] * myx + ortho_matrix[1, 1] * myy + ortho_matrix[1, 2] * myz
+        new_z = ortho_matrix[2, 0] * myx + ortho_matrix[2, 1] * myy + ortho_matrix[2, 2] * myz
+        del myx, myy, myz
+        # la partie rgi est sure: c'est la taille de l'objet orthogonal de depart
+        rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2) * voxel_size[0],
+                                       np.arange(-nby // 2, nby // 2) * voxel_size[1],
+                                       np.arange(-nbx // 2, nbx // 2) * voxel_size[2]),
+                                      obj, method='linear', bounds_error=False, fill_value=0)
+        detector_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                           new_x.reshape((1, new_z.size)))).transpose())
+        detector_obj = detector_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
+
+        if debugging:
+            gu.multislices_plot(abs(detector_obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                title=title + ' interpolated in detector frame\n')
+
+        return detector_obj
+
+    def init_paths(self, detector, sample_name, scan_number, root_folder, save_dir, specfile_name, template_imagefile,
+                   data_dirname=None, save_dirname='result', create_savedir=False, verbose=False):
+        """
+        Update the detector instance with initialized paths and template for filenames depending on the beamline
+
+        :param detector: instance of the Class Detector
+        :param sample_name: string in front of the scan number in the data folder name.
+        :param scan_number: the scan number
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param save_dir: path of the directory where to save the analysis results, can be None
+        :param specfile_name: beamline-dependent string
+         - ID01: name of the spec file without '.spec'
+         - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary (e.g. root_folder+'alias_dict_2019.txt')
+         - empty string for all other beamlines
+        :param template_imagefile: beamline-dependent template for the data files
+         - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+         - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+         - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+         - Cristal: 'S%d.nxs'
+         - P10: '_master.h5'
+         - NANOMAX: '%06d.h5'
+         - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+        :param data_dirname: name of the data folder, if None it will use the beamline default, if it is an empty
+         string, it will look for the data directly into the scan folder (no subfolder)
+        :param save_dirname: name of the saving folder, by default 'save_dir/result/' will be created
+        :param create_savedir: boolean, True to create the saving folder if it does not exist
+        :param verbose: True to print the paths
+        """
+        if not isinstance(detector, Detector):
+            raise TypeError('detector should be an instance of the Class Detector')
+
+        if not isinstance(scan_number, int):
+            raise TypeError('scan_number should be an integer')
+
+        if not isinstance(sample_name, str):
+            raise TypeError('sample_name should be a string')
+
+        # check that the provided folder names are not an empty string
+        valid.valid_container(save_dirname, container_types=str, min_length=1, name='Setup.init_paths')
+        valid.valid_container(data_dirname, container_types=str, min_length=0, allow_none=True,
+                              name='Setup.init_paths')
+        detector.rootdir, detector.sample_name, detector.template_file = root_folder, sample_name, template_imagefile
+
+        if self.beamline == 'P10':
+            specfile = sample_name + '_{:05d}'.format(scan_number)
+            homedir = root_folder + specfile + '/'
+            default_dirname = 'e4m/'
+            template_imagefile = specfile + template_imagefile
+        elif self.beamline == 'NANOMAX':
+            homedir = root_folder + sample_name + '{:06d}'.format(scan_number) + '/'
+            default_dirname = 'data/'
+            specfile = specfile_name
+        elif self.beamline in {'SIXS_2018', 'SIXS_2019'}:
+            homedir = root_folder + sample_name + str(scan_number) + '/'
+            default_dirname = "data/"
+            if specfile_name is None:  # default to the alias dictionnary located within the package
+                specfile_name = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir,
+                                                             'preprocessing/alias_dict_2021.txt'))
+            specfile = specfile_name
+        else:
+            homedir = root_folder + sample_name + str(scan_number) + '/'
+            default_dirname = "data/"
+            specfile = specfile_name
+
+        if data_dirname is not None:
+            if len(data_dirname) == 0:  # no subfolder
+                datadir = homedir
+            else:
+                datadir = homedir + data_dirname
+        else:
+            datadir = homedir + default_dirname
+
+        if save_dir:
+            savedir = save_dir
+        else:
+            savedir = homedir + save_dirname + '/'
+
+        if not savedir.endswith('/'):
+            savedir += '/'
+        if not datadir.endswith('/'):
+            datadir += '/'
+
+        detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
+            savedir, datadir, specfile, template_imagefile
+
+        if create_savedir:
+            pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
+
+        if verbose:
+            if not self.custom_scan:
+                print(f"datadir = '{datadir}'\nsavedir = '{savedir}'\ntemplate_imagefile = '{template_imagefile}'\n")
+            else:
+                print(f"rootdir = '{root_folder}'\nsavedir = '{savedir}'\nsample_name = '{detector.sample_name}'\n"
+                      f"template_imagefile = '{detector.template_file}'\n")
+
+    def ortho_directspace(self, arrays, q_com, initial_shape=None, voxel_size=None, fill_value=0,
+                          reference_axis=(0, 1, 0), verbose=True, debugging=False, **kwargs):
+        """
+        Interpolate arrays (direct space output of the phase retrieval) in the orthogonal reference frame where q_com
+        is aligned onto the array axis reference_axis.
+
+        :param arrays: tuple of 3D arrays of the same shape (output of the phase retrieval), in the detector frame
+        :param q_com: tuple of 3 vector components for the q values of the center of mass of the Bragg peak,
+         expressed in an orthonormal frame x y z
+        :param initial_shape: shape of the FFT used for phasing
+        :param voxel_size: number or list of three user-defined voxel sizes for the interpolation, in nm.
+         If a single number is provided, the voxel size will be identical in all directions.
+        :param fill_value: tuple of real numbers, fill_value parameter for the RegularGridInterpolator, same length as
+         the number of arrays
+        :param reference_axis: 3D vector along which q will be aligned, expressed in an orthonormal frame x y z
+        :param verbose: True to have printed comments
+        :param debugging: tuple of booleans of the same length as the number of input arrays, True to show plots before
+         and after interpolation
+        :param kwargs:
+         - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :return:
+         - an array (if a single array was provided) or a tuple of arrays interpolated on an orthogonal grid
+           (same length as the number of input arrays)
+         - a tuple of 3 voxels size for the interpolated arrays
+        """
+        valid_name = 'Setup.ortho_directspace'
+        #############################################
+        # check that arrays is a tuple of 3D arrays #
+        #############################################
+        if isinstance(arrays, np.ndarray):
+            arrays = (arrays,)
+        valid.valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray, min_length=1,
+                              name=valid_name)
+        if any(array.ndim != 3 for array in arrays):
+            raise ValueError('all arrays should be 3D ndarrays of the same shape')
+        ref_shape = arrays[0].shape
+        if any(array.shape != ref_shape for array in arrays):
+            raise ValueError('all arrays should be 3D ndarrays of the same shape')
+        nb_arrays = len(arrays)
+        input_shape = arrays[0].shape  # could be smaller than the shape used in phase retrieval,
+        # if the object was cropped around the support
+
+        #########################
+        # check and load kwargs #
+        #########################
+        valid.valid_kwargs(kwargs=kwargs,
+                           allowed_kwargs={'title', 'width_z', 'width_y', 'width_x'}, name=valid_name)
+        title = kwargs.get('title', ('Object',)*nb_arrays)
+        if isinstance(title, str):
+            title = (title,) * nb_arrays
+        valid.valid_container(title, container_types=(tuple, list), length=nb_arrays, item_types=str, name=valid_name)
+        width_z = kwargs.get('width_z', None)
+        valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                         name=valid_name)
+        width_y = kwargs.get('width_y', None)
+        valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                         name=valid_name)
+        width_x = kwargs.get('width_x', None)
+        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                         name=valid_name)
+
+        #########################
+        # check some parameters #
+        #########################
+        valid.valid_container(q_com, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name=valid_name)
+        if np.linalg.norm(q_com) == 0:
+            raise ValueError('q_com should be a non zero vector')
+
+        if isinstance(fill_value, Real):
+            fill_value = (fill_value,) * nb_arrays
+        valid.valid_container(fill_value, container_types=(tuple, list, np.ndarray), length=nb_arrays, item_types=Real,
+                              name=valid_name)
+        if isinstance(debugging, bool):
+            debugging = (debugging,) * nb_arrays
+        valid.valid_container(debugging, container_types=(tuple, list), length=nb_arrays, item_types=bool,
+                              name=valid_name)
+        valid.valid_container(q_com, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name=valid_name)
+        q_com = np.array(q_com)
+        valid.valid_container(reference_axis, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name=valid_name)
+        reference_axis = np.array(reference_axis)
+        if not any((reference_axis == val).all() for val in
+                   (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))):
+            raise NotImplemented('strain calculation along directions other than array axes is not implemented')
+
+        if not initial_shape:
+            initial_shape = input_shape
+        else:
+            valid.valid_container(initial_shape, container_types=(tuple, list), length=3, item_types=int,
+                                  min_excluded=0, name='Setup.orthogonalize')
+
+        ######################################################################################################
+        # calculate the direct space voxel sizes in nm based on the FFT window shape used in phase retrieval #
+        ######################################################################################################
+        dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(initial_shape, tilt_angle=abs(self.tilt_angle),
+                                                                    pixel_x=self.pixel_x, pixel_y=self.pixel_y)
+        if verbose:
+            print(f"Sampling in the laboratory frame (z, y, x): ",
+                  f"({dz_realspace:.2f} nm, {dy_realspace:.2f} nm, {dx_realspace:.2f} nm)")
+
+        if input_shape != initial_shape:
+            # recalculate the tilt and pixel sizes to accomodate a shape change
+            tilt = self.tilt_angle * initial_shape[0] / input_shape[0]
+            pixel_y = self.pixel_y * initial_shape[1] / input_shape[1]
+            pixel_x = self.pixel_x * initial_shape[2] / input_shape[2]
+            if verbose:
+                print('Tilt, pixel_y, pixel_x based on the shape of the cropped array:',
+                      f"({tilt:.4f} deg, {pixel_y * 1e6:.2f} um, {pixel_x * 1e6:.2f} um)")
+
+            # sanity check, the direct space voxel sizes calculated below should be equal to the original ones
+            dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(input_shape, tilt_angle=abs(tilt),
+                                                                        pixel_x=pixel_x, pixel_y=pixel_y)
+            if verbose:
+                print('Sanity check, recalculated direct space voxel sizes (z, y, x): ',
+                      f"({dz_realspace:.2f} nm, {dy_realspace:.2f} nm, {dx_realspace:.2f} nm)")
+        else:
+            tilt = self.tilt_angle
+            pixel_y = self.pixel_y
+            pixel_x = self.pixel_x
+
+        if not voxel_size:
+            voxel_size = dz_realspace, dy_realspace, dx_realspace  # in nm
+        else:
+            if isinstance(voxel_size, Real):
+                voxel_size = (voxel_size, voxel_size, voxel_size)
+            assert isinstance(voxel_size, (tuple, list)) and len(voxel_size) == 3 and\
+                all(val > 0 for val in voxel_size), 'voxel_size should be a list/tuple of three positive numbers in nm'
+
+        ######################################################################
+        # calculate the transformation matrix based on the beamline geometry #
+        ######################################################################
+        transfer_matrix = self.transformation_matrix(array_shape=input_shape, tilt_angle=tilt,
+                                                     pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
+
+        ################################################################################
+        # calculate the rotation matrix from the crystal frame to the laboratory frame #
+        ################################################################################
+        # (inverse rotation to have reference_axis along q)
+        rotation_matrix = \
+            util.rotation_matrix_3d(axis_to_align=reference_axis, reference_axis=q_com/np.linalg.norm(q_com))
+        # rotation_matrix = np.identity(3)
+        ####################################################################################
+        # calculate the full transfer matrix including the rotation into the crystal frame #
+        ####################################################################################
+        transfer_matrix = np.matmul(rotation_matrix, transfer_matrix)
+        # transfer_matrix is the transformation matrix of the direct space coordinates
+        # the spacing in the crystal frame is therefore given by the rows of the matrix
+        d_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
+        d_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
+        d_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
+
+        ############################################################################################
+        # find the shape of the output array that fits the extent of the data after transformation #
+        ############################################################################################
+
+        # calculate the voxel coordinates of the data points in the laboratory frame
+        myz, myy, myx = np.meshgrid(np.arange(-input_shape[0] // 2, input_shape[0] // 2, 1),
+                                    np.arange(-input_shape[1] // 2, input_shape[1] // 2, 1),
+                                    np.arange(-input_shape[2] // 2, input_shape[2] // 2, 1), indexing='ij')
+
+        pos_along_x = transfer_matrix[0, 0] * myx + transfer_matrix[0, 1] * myy + transfer_matrix[0, 2] * myz
+        pos_along_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
+        pos_along_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
+
+        if verbose:
+            print("\nCalculating the shape of the output array fitting the data extent after transformation:"
+                  f"\nSampling in the crystal frame (axis 0, axis 1, axis 2):    "
+                  f"({d_along_z:.2f} nm, {d_along_y:.2f} nm, {d_along_x:.2f} nm)")
+        # these positions are not equally spaced, we just extract the data extent from them
+        nx_output = int(np.rint((pos_along_x.max() - pos_along_x.min()) / d_along_x))
+        ny_output = int(np.rint((pos_along_y.max() - pos_along_y.min()) / d_along_y))
+        nz_output = int(np.rint((pos_along_z.max() - pos_along_z.min()) / d_along_z))
+
+        # add some margin to the output shape for easier visualization
+        nx_output += 10
+        ny_output += 10
+        nz_output += 10
+        del pos_along_x, pos_along_y, pos_along_z
+        gc.collect()
+
+        #########################################
+        # calculate the interpolation positions #
+        #########################################
+        # this assumes that the diffraction pattern is in the center of the array
+        # TODO : correct this if the diffraction pattern is not in the center of the array
+        myz, myy, myx = np.meshgrid(np.arange(-nz_output // 2, nz_output // 2, 1) * voxel_size[0],
+                                    np.arange(-ny_output // 2, ny_output // 2, 1) * voxel_size[1],
+                                    np.arange(-nx_output // 2, nx_output // 2, 1) * voxel_size[2],
+                                    indexing='ij')
+
+        # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
+        # in RGI, we want to calculate the coordinates that would have a grid of the laboratory frame expressed in the
+        # detector frame, i.e. one has to inverse the transformation matrix.
+        transfer_imatrix = np.linalg.inv(transfer_matrix)
+        new_x = transfer_imatrix[0, 0] * myx + transfer_imatrix[0, 1] * myy + transfer_imatrix[0, 2] * myz
+        new_y = transfer_imatrix[1, 0] * myx + transfer_imatrix[1, 1] * myy + transfer_imatrix[1, 2] * myz
+        new_z = transfer_imatrix[2, 0] * myx + transfer_imatrix[2, 1] * myy + transfer_imatrix[2, 2] * myz
+        del myx, myy, myz
+        gc.collect()
+
+        ######################
+        # interpolate arrays #
+        ######################
+        output_arrays = []
+        for idx, array in enumerate(arrays):
+            rgi = RegularGridInterpolator((np.arange(-input_shape[0] // 2, input_shape[0] // 2, 1),
+                                           np.arange(-input_shape[1] // 2, input_shape[1] // 2, 1),
+                                           np.arange(-input_shape[2] // 2, input_shape[2] // 2, 1)), array,
+                                          method='linear', bounds_error=False, fill_value=fill_value[idx])
+            ortho_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                              new_x.reshape((1, new_z.size)))).transpose())
+            ortho_array = ortho_array.reshape((nz_output, ny_output, nx_output)).astype(array.dtype)
+            output_arrays.append(ortho_array)
+
+            if debugging[idx]:
+                gu.multislices_plot(abs(array), sum_frames=False, width_z=width_z, width_y=width_y, width_x=width_x,
+                                    reciprocal_space=False, is_orthogonal=False, scale='linear',
+                                    title=title[idx] + ' in detector frame')
+
+                gu.multislices_plot(abs(ortho_array), sum_frames=False, width_z=width_z, width_y=width_y, width_x=width_x,
+                                    reciprocal_space=False, is_orthogonal=True, scale='linear',
+                                    title=title[idx] + ' in crystal frame')
+
+        if nb_arrays == 1:
+            output_arrays = output_arrays[0]  # return the array instead of the tuple
+        return output_arrays, voxel_size
+
+    def ortho_reciprocal(self, arrays, fill_value=0, align_q=False, reference_axis=(0, 1, 0), verbose=True,
+                         debugging=False, **kwargs):
+        """
+        Interpolate arrays in the orthogonal laboratory frame (z/qx downstream, y/qz vertical up, x/qy outboard)
+        or crystal frame (q aligned along one array axis). The ouput shape will be increased in order to keep the same
+        range in q in each direction. The sampling in q is defined as the norm of the rows of the transformation matrix.
+
+        :param arrays: tuple of 3D arrays of the same shape (e.g.: reciprocal space diffraction pattern and mask),
+         in the detector frame
+        :param fill_value: tuple of real numbers, fill_value parameter for the RegularGridInterpolator, same length as
+         the number of arrays
+        :param align_q: boolean, if True the data will be rotated such that q is along reference_axis, and q values
+         will be calculated in the pseudo crystal frame.
+        :param reference_axis: 3D vector along which q will be aligned, expressed in an orthonormal frame x y z
+        :param verbose: True to have printed comments
+        :param debugging: tuple of booleans of the same length as the number of input arrays, True to show plots before
+         and after interpolation
+        :param kwargs:
+         - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
+         - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging plots, same length as the
+           number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :return:
+         - an array (if a single array was provided) or a tuple of arrays interpolated on an orthogonal grid
+           (same length as the number of input arrays)
+         - a tuple of three 1D vectors of q values (qx, qz, qy)
+        """
+        valid_name = 'Setup.ortho_reciprocal'
+        #############################################
+        # check that arrays is a tuple of 3D arrays #
+        #############################################
+        if isinstance(arrays, np.ndarray):
+            arrays = (arrays,)
+        valid.valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray, min_length=1,
+                              name=valid_name)
+        if any(array.ndim != 3 for array in arrays):
+            raise ValueError('all arrays should be 3D ndarrays of the same shape')
+        ref_shape = arrays[0].shape
+        if any(array.shape != ref_shape for array in arrays):
+            raise ValueError('all arrays should be 3D ndarrays of the same shape')
+        nb_arrays = len(arrays)
+        nbz, nby, nbx = ref_shape
+
+        #########################
+        # check and load kwargs #
+        #########################
+        valid.valid_kwargs(kwargs=kwargs,
+                           allowed_kwargs={'title', 'scale', 'width_z', 'width_y', 'width_x'},
+                           name='Setup.orthogonalize')
+        title = kwargs.get('title', ('Object',)*nb_arrays)
+        if isinstance(title, str):
+            title = (title,) * nb_arrays
+        valid.valid_container(title, container_types=(tuple, list), length=nb_arrays, item_types=str, name=valid_name)
+        scale = kwargs.get('scale', ('log',)*nb_arrays)
+        if isinstance(scale, str):
+            scale = (scale,) * nb_arrays
+        valid.valid_container(scale, container_types=(tuple, list), length=nb_arrays, name=valid_name)
+        if any(val not in {'log', 'linear'} for val in scale):
+            raise ValueError("scale should be either 'log' or 'linear'")
+
+        width_z = kwargs.get('width_z', None)
+        valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                         name=valid_name)
+        width_y = kwargs.get('width_y', None)
+        valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                         name=valid_name)
+        width_x = kwargs.get('width_x', None)
+        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                         name=valid_name)
+
+        #########################
+        # check some parameters #
+        #########################
+        if isinstance(fill_value, Real):
+            fill_value = (fill_value,) * nb_arrays
+        valid.valid_container(fill_value, container_types=(tuple, list, np.ndarray), length=nb_arrays, item_types=Real,
+                              name=valid_name)
+        if isinstance(debugging, bool):
+            debugging = (debugging,) * nb_arrays
+        valid.valid_container(debugging, container_types=(tuple, list), length=nb_arrays, item_types=bool,
+                              name=valid_name)
+        valid.valid_item(align_q, allowed_types=bool, name=valid_name)
+        valid.valid_container(reference_axis, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name=valid_name)
+        reference_axis = np.array(reference_axis)
+
+        ##########################################################
+        # calculate the transformation matrix (the unit is 1/nm) #
+        ##########################################################
+        transfer_matrix, q_offset = self.transformation_matrix(array_shape=ref_shape, tilt_angle=self.tilt_angle,
+                                                               direct_space=False, pixel_x=self.pixel_x,
+                                                               pixel_y=self.pixel_y, verbose=verbose)
+
+        # the voxel size in q in the laboratory frame is given by the rows of the transformation matrix
+        # (the unit is 1/nm)
+        dq_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
+        dq_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
+        dq_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
+
+        ############################################################################################
+        # find the shape of the output array that fits the extent of the data after transformation #
+        ############################################################################################
+
+        # calculate the q coordinates of the data points in the laboratory frame
+        myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1),
+                                    np.arange(-nby // 2, nby // 2, 1),
+                                    np.arange(-nbx // 2, nbx // 2, 1), indexing='ij')
+
+        q_along_x = transfer_matrix[0, 0] * myx + transfer_matrix[0, 1] * myy + transfer_matrix[0, 2] * myz
+        q_along_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
+        q_along_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
+        if verbose:
+            print("\nInterpolating:"
+                  f"\nSampling in q in the laboratory frame (z*, y*, x*):    "
+                  f"({dq_along_z:.5f} 1/nm, {dq_along_y:.5f} 1/nm, {dq_along_x:.5f} 1/nm)")
+        # these q values are not equally spaced, we just extract the q extent from them
+        nx_output = int(np.rint((q_along_x.max() - q_along_x.min()) / dq_along_x))
+        ny_output = int(np.rint((q_along_y.max() - q_along_y.min()) / dq_along_y))
+        nz_output = int(np.rint((q_along_z.max() - q_along_z.min()) / dq_along_z))
+
+        if align_q:
+            #######################################################################
+            # find the shape of the output array that fits the extent of the data #
+            # after rotating further these q values in a pseudo crystal frame     #
+            #######################################################################
+            # the center of mass of the diffraction should be in the center of the array!
+            # TODO: implement any offset of the center of mass
+            q_along_z_com = q_along_z[nbz//2, nby//2, nbx//2] + q_offset[2]  # q_offset in the order xyz
+            q_along_y_com = q_along_y[nbz//2, nby//2, nbx//2] + q_offset[1]
+            q_along_x_com = q_along_x[nbz//2, nby//2, nbx//2] + q_offset[0]
+            qnorm = np.linalg.norm(np.array([q_along_x_com, q_along_y_com, q_along_z_com]))  # in 1/A
+            if verbose:
+                print(f'\nAligning Q along {reference_axis} (x,y,z)')
+
+            # calculate the rotation matrix from the crystal frame to the laboratory frame
+            # (inverse rotation to have reference_axis along q)
+            rotation_matrix =\
+                util.rotation_matrix_3d(axis_to_align=reference_axis,
+                                        reference_axis=np.array([q_along_x_com, q_along_y_com, q_along_z_com]) / qnorm)
+
+            # calculate the full transfer matrix including the rotation into the crystal frame
+            transfer_matrix = np.matmul(rotation_matrix, transfer_matrix)
+
+            # the voxel size in q in the laboratory frame is given by the rows of the transformation matrix
+            # (the unit is 1/nm)
+            dq_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
+            dq_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
+            dq_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
+
+            # calculate the new offset in the crystal frame (inverse rotation to have qz along q)
+            offset_crystal = \
+                pu.rotate_vector(vectors=q_offset, axis_to_align=reference_axis,
+                                 reference_axis=np.array([q_along_x_com, q_along_y_com, q_along_z_com]) / qnorm)
+            q_offset = offset_crystal[::-1]  # offset_crystal is in the order z, y, x
+
+            # calculate the q coordinates of the data points in the crystal frame
+            q_along_x = transfer_matrix[0, 0] * myx + transfer_matrix[0, 1] * myy + transfer_matrix[0, 2] * myz
+            q_along_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
+            q_along_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
+
+            # these q values are not equally spaced, we just extract the q extent from them
+            nx_output = int(np.rint((q_along_x.max() - q_along_x.min()) / dq_along_x))
+            ny_output = int(np.rint((q_along_y.max() - q_along_y.min()) / dq_along_y))
+            nz_output = int(np.rint((q_along_z.max() - q_along_z.min()) / dq_along_z))
+
+            if verbose:
+                print(f"\nSampling in q in the crystal frame (axis 0, axis 1, axis 2):    "
+                      f"({dq_along_z:.5f} 1/nm, {dq_along_y:.5f} 1/nm, {dq_along_x:.5f} 1/nm)")
+
+        del q_along_x, q_along_y, q_along_z, myx, myy, myz
+        gc.collect()
+
+        ##########################################################
+        # crop the output shape in order to fit FFT requirements #
+        ##########################################################
+        nz_output, ny_output, nx_output = smaller_primes((nz_output, ny_output, nx_output), maxprime=7,
+                                                         required_dividers=(2,))
+        if verbose:
+            print(f"\nInitial shape = ({nbz},{nby},{nbx})\nOutput shape  = ({nz_output},{ny_output},{nx_output})"
+                  f" (satisfying FFT shape requirements)")
+
+        #####################################################################################################
+        # define the interpolation qx qz qy 1D vectors in 1/nm, the reference being the center of the array #
+        #####################################################################################################
+        # the usual frame is used for q values: qx downstream, qz vertical up, qy outboard
+        # this assumes that the center of mass of the diffraction pattern was at the center of the array
+        # TODO : correct this if the diffraction pattern is not centered
+        qx = np.arange(-nz_output // 2, nz_output // 2, 1) * dq_along_z  # along z downstream
+        qz = np.arange(-ny_output // 2, ny_output // 2, 1) * dq_along_y  # along y vertical up
+        qy = np.arange(-nx_output // 2, nx_output // 2, 1) * dq_along_x  # along x outboard
+
+        myz, myy, myx = np.meshgrid(qx, qz, qy, indexing='ij')
+
+        # transfer_matrix is the transformation matrix from the detector coordinates to the laboratory/crystal frame
+        # in RGI, we want to calculate the coordinates that would have a grid of the laboratory/crystal frame expressed
+        # in the detector frame, i.e. one has to inverse the transformation matrix.
+        transfer_imatrix = np.linalg.inv(transfer_matrix)
+        new_x = transfer_imatrix[0, 0] * myx + transfer_imatrix[0, 1] * myy + transfer_imatrix[0, 2] * myz
+        new_y = transfer_imatrix[1, 0] * myx + transfer_imatrix[1, 1] * myy + transfer_imatrix[1, 2] * myz
+        new_z = transfer_imatrix[2, 0] * myx + transfer_imatrix[2, 1] * myy + transfer_imatrix[2, 2] * myz
+        del myx, myy, myz
+        gc.collect()
+
+        ######################
+        # interpolate arrays #
+        ######################
+        output_arrays = []
+        for idx, array in enumerate(arrays):
+            # convert array type to float, for integers the interpolation can lead to artefacts
+            array = array.astype(float)
+            rgi = RegularGridInterpolator((np.arange(-nbz // 2, nbz // 2), np.arange(-nby // 2, nby // 2),
+                                           np.arange(-nbx // 2, nbx // 2)), array, method='linear',
+                                          bounds_error=False, fill_value=fill_value[idx])
+            ortho_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                              new_x.reshape((1, new_z.size)))).transpose())
+            ortho_array = ortho_array.reshape((nz_output, ny_output, nx_output)).astype(array.dtype)
+            output_arrays.append(ortho_array)
+
+            if debugging[idx]:
+                gu.multislices_plot(abs(array), sum_frames=True, scale=scale, plot_colorbar=True, width_z=width_z,
+                                    width_y=width_y, width_x=width_x, is_orthogonal=False, reciprocal_space=True,
+                                    vmin=0, title=title[idx] + ' in detector frame')
+                gu.multislices_plot(abs(ortho_array), sum_frames=True, scale=scale[idx], plot_colorbar=True,
+                                    width_z=width_z, width_y=width_y, width_x=width_x, is_orthogonal=True,
+                                    reciprocal_space=True, vmin=0,
+                                    title=title[idx] + ' in the orthogonal frame')
+
+        # add the offset due to the detector angles to qx qz qy vectors, convert them to 1/A
+        # the offset components are in the order (x/qy, y/qz, z/qx)
+        qx = (qx + q_offset[2]) / 10  # along z downstream
+        qz = (qz + q_offset[1]) / 10  # along y vertical up
+        qy = (qy + q_offset[0]) / 10  # along x outboard
+
+        if nb_arrays == 1:
+            output_arrays = output_arrays[0]  # return the array instead of the tuple
+        return output_arrays, (qx, qz, qy)
+
+    def orthogonalize_vector(self, vector, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
+        """
+        Calculate the coordinates of the vector in the laboratory frame.
+
+        :param vector: tuple of 3 coordinates, vector to be transformed in the detector frame
+        :param array_shape: shape of the 3D array to orthogonalize
+        :param tilt_angle: angular step during the rocking curve, in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        :param verbose: True to have printed comments
+        :return: tuple of 3 numbers, the coordinates of the vector expressed in the laboratory frame
+        """
+        valid.valid_container(array_shape, container_types=(tuple, list), length=3, item_types=int,
+                              min_excluded=0, name='Setup.orthogonalize_vector')
+
+        ortho_matrix = self.transformation_matrix(array_shape=array_shape, tilt_angle=tilt_angle,
+                                                  pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
+        # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
+        # Here, we want to calculate the coordinates that would have a vector of the laboratory frame expressed in the
+        # detector frame, i.e. one has to inverse the transformation matrix.
+        ortho_imatrix = np.linalg.inv(ortho_matrix)
+        new_x = ortho_imatrix[0, 0] * vector[2] + ortho_imatrix[0, 1] * vector[1] + ortho_imatrix[0, 2] * vector[0]
+        new_y = ortho_imatrix[1, 0] * vector[2] + ortho_imatrix[1, 1] * vector[1] + ortho_imatrix[1, 2] * vector[0]
+        new_z = ortho_imatrix[2, 0] * vector[2] + ortho_imatrix[2, 1] * vector[1] + ortho_imatrix[2, 2] * vector[0]
+        return new_z, new_y, new_x
+
+    def transformation_matrix(self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space=True, verbose=True):
+        """
+        Calculate the transformation matrix from the detector frame to the laboratory frame. For direct space, the
+        length scale is in nm, for reciprocal space, it is in 1/nm.
+
+        :param array_shape: shape of the 3D array to orthogonalize
+        :param tilt_angle: angular step during the rocking curve, in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        :param direct_space: True in order to return the transformation matrix in direct space
+        :param verbose: True to have printed comments
+        :return:
+         - the transformation matrix from the detector frame to the laboratory frame
+         - the q offset (3D vector) if direct_space is False.
+        """
+        if verbose:
+            print(f'\nout-of plane detector angle={self.outofplane_angle:.3f} deg,'
+                  f' inplane_angle={self.inplane_angle:.3f} deg')
+        wavelength = self.wavelength * 1e9  # convert to nm
+        distance = self.distance * 1e9  # convert to nm
+        pixel_x = pixel_x * 1e9  # convert to nm
+        pixel_y = pixel_y * 1e9  # convert to nm
+        outofplane = np.radians(self.outofplane_angle)
+        inplane = np.radians(self.inplane_angle)
+        grazing_angle = [np.radians(val) for val in self.grazing_angle]
+        lambdaz = wavelength * distance
+        mymatrix = np.zeros((3, 3))
+        tilt = np.radians(tilt_angle)
+        q_offset = np.zeros(3)  # TODO: calculate the q offset for all geometries
+        nbz, nby, nbx = array_shape
+        if self.detector_hor == 'y-':  # inboard,  as it should be in the CXI convention
+            hor_coeff = 1
+        else:  # 'y+', outboard,  opposite to what it should be in the CXI convention
+            hor_coeff = -1
+        if self.detector_ver == 'z-':  # vertical down,  as it should be in the CXI convention
+            ver_coeff = 1
+        else:  # 'z+', vertical up,  opposite to what it should be in the CXI convention
+            ver_coeff = -1
+
+        if self.beamline == 'ID01':
+            if verbose:
+                print('using ESRF ID01 PSIC geometry')
+            if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+                raise NotImplementedError('Non-zero chi is not implemented for ID01')
+            if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+                if verbose:
+                    print('rocking angle is eta')
+                # rocking eta angle clockwise around x (phi does not matter, above eta)
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * hor_coeff *\
+                    np.array([-pixel_x * np.cos(inplane),
+                              0,
+                              -pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * ver_coeff *\
+                    np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
+                              -pixel_y * np.cos(outofplane),
+                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz *\
+                    np.array([0,
+                              tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
+                              tilt * distance * np.sin(outofplane)])
+                q_offset[0] = -2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
+            elif self.rocking_angle == "inplane":
+                if verbose:
+                    print(f'rocking angle is phi, eta={grazing_angle[1]*180/np.pi:.3f} deg')
+                # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * hor_coeff *\
+                    np.array([-pixel_x * np.cos(inplane),
+                              0,
+                              -pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * ver_coeff *\
+                    np.array([-pixel_y * np.sin(inplane) * np.sin(outofplane),
+                              -pixel_y * np.cos(outofplane),
+                              pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
+                    np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) +
+                             np.cos(grazing_angle[1]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
+                             np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
+                             np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
+                q_offset[0] = -2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
+        if self.beamline == 'P10':
+            if verbose:
+                print('using PETRAIII P10 geometry')
+            if self.rocking_angle == "outofplane":
+                if verbose:
+                    print(f'rocking angle is omega, chi={grazing_angle[0]*180/np.pi:.3f} deg')
+                # rocking omega angle clockwise around x at mu=0, chi potentially non zero (chi below omega)
+                # (phi does not matter, above eta)
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
+                              0,
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
+                    np.array([np.sin(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
+                              np.cos(grazing_angle[0]) * (1 - np.cos(inplane) * np.cos(outofplane)),
+                              (np.sin(outofplane) * np.cos(grazing_angle[0]) -
+                               np.cos(outofplane) * np.sin(inplane) * np.sin(grazing_angle[0]))])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
+            elif self.rocking_angle == "inplane":
+                if verbose:
+                    print(f'rocking angle is phi, omega={grazing_angle[1]*180/np.pi:.3f} deg,'
+                          f' chi={grazing_angle[0]*180/np.pi:.3f} deg')
+
+                # rocking phi angle clockwise around y, omega and chi potentially non zero (chi below omega below phi)
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
+                              0,
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
+                    np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) +
+                              np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
+                              (-np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane) +
+                              np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
+                              (-np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(inplane)*np.cos(outofplane) -
+                               np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(outofplane))])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
+        if self.beamline == 'NANOMAX':
+            if verbose:
+                print('using NANOMAX geometry')
+            if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+                raise NotImplementedError('Non-zero chi is not implemented for NANOMAX')
+            if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+                if verbose:
+                    print('rocking angle is theta')
+                # rocking theta angle clockwise around x (phi does not matter, above eta)
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
+                              0,
+                              -np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([-np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
+                    np.array([0,
+                              1 - np.cos(inplane) * np.cos(outofplane),
+                              np.sin(outofplane)])
+                q_offset[0] = -2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
+            elif self.rocking_angle == "inplane":
+                if verbose:
+                    print(f'rocking angle is phi, theta={grazing_angle[1]*180/np.pi:.3f} deg')
+                # rocking phi angle clockwise around y, incident angle theta is non zero (theta below phi)
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
+                              0,
+                              -np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([-np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
+                    np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) +
+                               np.cos(grazing_angle[1]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
+                              np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
+                              np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
+                q_offset[0] = -2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
+        if self.beamline == '34ID':
+            if verbose:
+                print('using APS 34ID geometry')
+            if self.rocking_angle == "outofplane":
+                if verbose:
+                    print(f'rocking angle is phi, chi={grazing_angle[0] * 180 / np.pi:.3f} deg')
+                # rocking phi angle anti-clockwise around x (theta does not matter, above phi)
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
+                              0,
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
+                    np.array([np.sin(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
+                              np.cos(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
+                              -(np.sin(outofplane) * np.cos(grazing_angle[0]) +
+                                np.cos(outofplane) * np.sin(inplane) * np.sin(grazing_angle[0]))])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
+            elif self.rocking_angle == "inplane":
+                if verbose:
+                    print(f'rocking angle is theta, phi={grazing_angle[1]*180/np.pi:.3f} deg,'
+                          f' chi={grazing_angle[0]*180/np.pi:.3f} deg')
+                # rocking theta angle anti-clockwise around y, incident angle is non zero (theta is above phi)
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff * \
+                    np.array([-np.cos(inplane),
+                              0,
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff * \
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
+                    np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) -
+                              np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
+                              (-np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane) +
+                              np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
+                              (np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(inplane)*np.cos(outofplane) -
+                               np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(outofplane))])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
+        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+            if verbose:
+                print('using SIXS geometry')
+            if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+                raise NotImplementedError('Non-zero chi is not implemented for SIXS')
+            if self.rocking_angle == "inplane":
+                if verbose:
+                    print(f'rocking angle is mu, beta={grazing_angle[1] * 180 / np.pi:.3f} deg')
+
+                # rocking mu angle anti-clockwise around y
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
+                              np.sin(grazing_angle[1]) * np.sin(inplane),
+                              np.cos(grazing_angle[1]) * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              (np.sin(grazing_angle[1]) * np.cos(inplane) * np.sin(outofplane)
+                               - np.cos(grazing_angle[1]) * np.cos(outofplane)),
+                              (np.cos(grazing_angle[1]) * np.cos(inplane) * np.sin(outofplane)
+                               + np.sin(grazing_angle[1]) * np.cos(outofplane))])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
+                    np.array([np.cos(grazing_angle[1]) - np.cos(inplane) * np.cos(outofplane),
+                              np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
+                              np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance *\
+                    (np.cos(grazing_angle[1]) * np.sin(outofplane) +
+                     np.sin(grazing_angle[1]) * np.cos(inplane) * np.cos(outofplane))
+                q_offset[2] = 2 * np.pi / lambdaz * distance *\
+                    (np.cos(grazing_angle[1]) * np.cos(inplane) * np.cos(outofplane) -
+                     np.sin(grazing_angle[1]) * np.sin(outofplane) - 1)
+            else:
+                raise NotImplementedError('out of plane rocking curve not implemented for SIXS')
+
+        if self.beamline == 'CRISTAL':
+            if verbose:
+                print('using CRISTAL geometry')
+            if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+                raise NotImplementedError('Non-zero chi is not implemented for CRISTAL')
+            if self.rocking_angle == "outofplane":
+                if verbose:
+                    print('rocking angle is mgomega')
+                # rocking mgomega angle clockwise around x
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
+                              0,
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
+                    np.array([0,
+                              1 - np.cos(inplane) * np.cos(outofplane),
+                              np.sin(outofplane)])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+            elif self.rocking_angle == "inplane":
+                if verbose:
+                    print(f'rocking angle is phi, mgomega={grazing_angle[1]*180/np.pi:.3f} deg')
+                # rocking phi angle anti-clockwise around y, incident angle mgomega is non zero (mgomega below phi)
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
+                              0,
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
+                    np.array([(-np.sin(grazing_angle[1]) * np.sin(outofplane) -
+                               np.cos(grazing_angle[1]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
+                              np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
+                              np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
+        if direct_space:  # length scale in nm
+            # for a discrete FT, the dimensions of the basis vectors after the transformation are related to the total
+            # domain size
+            mymatrix[:, 0] = nbx * mymatrix[:, 0]
+            mymatrix[:, 1] = nby * mymatrix[:, 1]
+            mymatrix[:, 2] = nbz * mymatrix[:, 2]
+            return 2 * np.pi * np.linalg.inv(mymatrix).transpose()
+        else:
+            # reciprocal length scale in  1/nm
+            return mymatrix, q_offset
+
+    def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
+        """
+        Calculate the direct space voxel sizes in the laboratory frame (z downstream, y vertical up, x outboard).
+
+        :param array_shape: shape of the 3D array to orthogonalize
+        :param tilt_angle: angular step during the rocking curve, in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        :param verbose: True to have printed comments
+        :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
+        """
+        valid.valid_container(array_shape, container_types=(tuple, list), length=3, item_types=int,
+                              min_excluded=0, name='Setup.voxel_sizes')
+
+        transfer_matrix = self.transformation_matrix(array_shape=array_shape, tilt_angle=tilt_angle,
+                                                     direct_space=True, pixel_x=pixel_x, pixel_y=pixel_y,
+                                                     verbose=verbose)
+        # transfer_matrix is the transformation matrix of the direct space coordinates (its columns are the
+        # non-orthogonal basis vectors reciprocal to the detector frame)
+        # the spacing in the laboratory frame is therefore given by the rows of the matrix
+        dx = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
+        dy = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
+        dz = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
+
+        if verbose:
+            print(f'Direct space voxel size (z, y, x) = ({dz:.2f}, {dy:.2f}, {dx:.2f}) (nm)')
+        return dz, dy, dx
+
+    def voxel_sizes_detector(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
+        """
+        Calculate the direct space voxel sizes in the detector frame
+         (z rocking angle, y detector vertical axis, x detector horizontal axis).
+
+        :param array_shape: shape of the 3D array used in phase retrieval
+        :param tilt_angle: angular step during the rocking curve, in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        :param verbose: True to have printed comments
+        :return: the direct space voxel sizes in nm, in the detector frame (voxel_z, voxel_y, voxel_x)
+        """
+        voxel_z = self.wavelength / (array_shape[0] * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
+        voxel_y = self.wavelength * self.distance / (array_shape[1] * pixel_y) * 1e9  # in nm
+        voxel_x = self.wavelength * self.distance / (array_shape[2] * pixel_x) * 1e9  # in nm
+        if verbose:
+            print('voxelsize_z, voxelsize_y, voxelsize_x='
+                  '({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)'.format(voxel_z, voxel_y, voxel_x))
+        return voxel_z, voxel_y, voxel_x
+
+
+def higher_primes(number, maxprime=13, required_dividers=(4,)):
+    """
+    Find the closest integer >=n (or list/array of integers), for which the largest prime divider is <=maxprime,
+    and has to include some dividers. The default values for maxprime is the largest integer accepted
+    by the clFFT library for OpenCL GPU FFT. Adapted from PyNX.
+
+    :param number: the integer number
+    :param maxprime: the largest prime factor acceptable
+    :param required_dividers: a list of required dividers for the returned integer.
+    :return: the integer (or list/array of integers) fulfilling the requirements
+    """
+    if isinstance(number, (list, tuple, np.ndarray)):
+        vn = []
+        for i in number:
+            limit = i
+            assert (i > 1 and maxprime <= i)
+            while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
+                i = i + 1
+                if i == limit:
+                    return limit
+            vn.append(i)
+        if isinstance(number, np.ndarray):
+            return np.array(vn)
+        return vn
+    else:
+        limit = number
+        assert (number > 1 and maxprime <= number)
+        while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
+            number = number + 1
+            if number == limit:
+                return limit
+        return number
+
+
+def primes(number):
+    """
+    Returns the prime decomposition of n as a list. Adapted from PyNX.
+
+    :param number: the integer to be decomposed
+    :return: the list of prime dividers of number
+    """
+    valid.valid_item(number, allowed_types=int, min_excluded=0, name='preprocessing_utils.primes')
+    list_primes = [1]
+    i = 2
+    while i * i <= number:
+        while number % i == 0:
+            list_primes.append(i)
+            number //= i
+        i += 1
+    if number > 1:
+        list_primes.append(number)
+    return list_primes
+
+
+def smaller_primes(number, maxprime=13, required_dividers=(4,)):
+    """
+    Find the closest integer <=n (or list/array of integers), for which the largest prime divider is <=maxprime,
+    and has to include some dividers. The default values for maxprime is the largest integer accepted
+    by the clFFT library for OpenCL GPU FFT. Adapted from PyNX.
+
+    :param number: the integer number
+    :param maxprime: the largest prime factor acceptable
+    :param required_dividers: a list of required dividers for the returned integer.
+    :return: the integer (or list/array of integers) fulfilling the requirements
+    """
+    if isinstance(number, (list, tuple, np.ndarray)):
+        vn = []
+        for i in number:
+            assert (i > 1 and maxprime <= i), "Number is < " + str(maxprime)
+            while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
+                i = i - 1
+                if i == 0:
+                    return 0
+            vn.append(i)
+        if isinstance(number, np.ndarray):
+            return np.array(vn)
+        return vn
+    else:
+        assert (number > 1 and maxprime <= number), "Number is < " + str(maxprime)
+        while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
+            number = number - 1
+            if number == 0:
+                return 0
+        return number
+
+
+def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
+    """
+    Check if the largest prime divider is <=maxprime, and optionally includes some dividers. Adapted from PyNX.
+
+    :param number: the integer number for which the prime decomposition will be checked
+    :param maxprime: the maximum acceptable prime number. This defaults to the largest integer accepted by the clFFT
+        library for OpenCL GPU FFT.
+    :param required_dividers: list of required dividers in the prime decomposition. If None, this check is skipped.
+    :return: True if the conditions are met.
+    """
+    p = primes(number)
+    if max(p) > maxprime:
+        return False
+    if required_dividers is not None:
+        for k in required_dividers:
+            if number % k != 0:
+                return False
+    return True
+
+
+class SetupPostprocessing(object):
+    """
+    Class to handle the experimental geometry for postprocessing.
+    """
+    def __init__(self, beamline, energy, outofplane_angle, inplane_angle, tilt_angle, rocking_angle, distance,
+                 grazing_angle=0, pixel_x=55e-6, pixel_y=55e-6):
+        """
+        Initialize parameters of the experiment.
+
+        :param beamline: name of the beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL', 'NANOMAX'
+        :param energy: X-ray energy in eV
+        :param outofplane_angle: out of plane angle of the detector in degrees
+        :param inplane_angle: inplane angle of the detector in degrees
+        :param tilt_angle: angular step of the sample during the rocking curve, in degrees
+        :param rocking_angle: name of the angle which is tilted during the rocking curve, 'outofplane' or 'inplane'
+        :param distance: sample to detector distance in meters
+        :param grazing_angle: grazing angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS), in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        """
+        warnings.warn("deprecated, use the class Setup instead", DeprecationWarning)
+        self.beamline = beamline  # string
+        self.energy = energy  # in eV
+        self.wavelength = 12.398 * 1e-7 / energy  # in m
+        self.outofplane_angle = outofplane_angle  # in degrees
+        self.inplane_angle = inplane_angle  # in degrees
+        self.tilt_angle = tilt_angle  # in degrees
+        self.rocking_angle = rocking_angle  # string
+        self.grazing_angle = grazing_angle  # in degrees
+        self.distance = distance  # in meters
+        self.pixel_x = pixel_x  # in meters
+        self.pixel_y = pixel_y  # in meters
+
+        #############################################################
+        # detector orientation convention depending on the beamline #
+        #############################################################
+        # the frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up
+
+        # horizontal axis:
+        if beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX'}:
+            # we look at the detector from downstream, detector X along the outboard direction
+            self.detector_hor = 'y+'
+        else:  # 'P10', '34ID'
+            # we look at the detector from upstream, detector X opposite to the outboard direction
+            self.detector_hor = 'y-'
+
+        # vertical axis:
+        # origin is at the top, detector Y along vertical down
+        self.detector_ver = 'z-'
+
+    def __repr__(self):
+        """
+        :return: a nicely formatted representation string
+        """
+        return f"{self.__class__.__name__}: beamline={self.beamline}, energy={self.energy}eV," \
+               f" sample to detector distance={self.distance}m, pixel size (VxH)=({self.pixel_y},{self.pixel_x})"
+
     def detector_frame(self, obj, voxelsize, width_z=None, width_y=None, width_x=None,
                        debugging=False, **kwargs):
         """
@@ -128,15 +2262,11 @@ class SetupPostprocessing(object):
          - 'title': title for the debugging plots
         :return: object interpolated on an orthogonal grid
         """
+        title = kwargs.get('title', 'Object')
+
         for k in kwargs.keys():
-            if k in ['title']:
-                title = kwargs['title']
-            else:
-                raise Exception("unknown keyword argument given: allowed is 'title'")
-        try:
-            title
-        except NameError:  # title not declared
-            title = 'Object'
+            if k not in {'title'}:
+                raise Exception("unknown keyword argument given:", k)
 
         nbz, nby, nbx = obj.shape
 
@@ -173,8 +2303,90 @@ class SetupPostprocessing(object):
 
         return detector_obj
 
+    def exit_wavevector(self):
+        """
+        Calculate the exit wavevector kout depending on the setup parameters, in laboratory frame (z downstream,
+         y vertical, x outboard).
+
+        :return: kout vector
+        """
+        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+            # gamma is anti-clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == 'ID01':
+            # nu is clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 -np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == '34ID':
+            # gamma is anti-clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == 'NANOMAX':
+            # gamma is clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 -np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == 'P10':
+            # gamma is anti-clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        elif self.beamline == 'CRISTAL':
+            # gamma is anti-clockwise
+            kout = 2 * np.pi / self.wavelength * np.array(
+                [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
+                 np.sin(np.pi * self.outofplane_angle / 180),  # y
+                 np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
+        else:
+            raise ValueError('setup parameter: ', self.beamline, 'not defined')
+        return kout
+
+    def inplane_coeff(self):
+        """
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction and the detector inplane
+         orientation. The frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up.
+         See postprocessing/scripts/correct_angles_detector.py for an example.
+
+        :return: +1 or -1
+        """
+        if self.detector_hor == 'y+':
+            hor_coeff = 1
+        else:  # 'y-'
+            hor_coeff = -1
+
+        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+            # gamma is anti-clockwise, we see the detector from downstream
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'ID01':
+            # nu is clockwise, we see the detector from downstream
+            coeff_inplane = -1 * hor_coeff
+        elif self.beamline == '34ID':
+            # delta is anti-clockwise, we see the detector from the front
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'P10':
+            # gamma is anti-clockwise, we see the detector from the front
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'CRISTAL':
+            # gamma is anti-clockwise, we see the detector from downstream
+            coeff_inplane = 1 * hor_coeff
+        elif self.beamline == 'NANOMAX':
+            # gamma is clockwise, we see the detector from downstream
+            coeff_inplane = -1 * hor_coeff
+        else:
+            raise ValueError('setup parameter: ', self.beamline, 'not defined')
+        return coeff_inplane
+
     def orthogonalize(self, obj, initial_shape=(), voxel_size=np.nan, width_z=None, width_y=None,
-                      width_x=None, debugging=False, **kwargs):
+                      width_x=None, verbose=True, debugging=False, **kwargs):
         """
         Interpolate obj on the orthogonal reference frame defined by the setup.
 
@@ -184,20 +2396,17 @@ class SetupPostprocessing(object):
         :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
         :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
         :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :param verbose: True to have printed comments
         :param debugging: True to show plots before and after interpolation
         :param kwargs:
          - 'title': title for the debugging plots
         :return: object interpolated on an orthogonal grid
         """
+        title = kwargs.get('title', 'Object')
+
         for k in kwargs.keys():
-            if k in ['title']:
-                title = kwargs['title']
-            else:
-                raise Exception("unknown keyword argument given: allowed is 'title'")
-        try:
-            title
-        except NameError:  # title not declared
-            title = 'Object'
+            if k not in {'title'}:
+                raise Exception("unknown keyword argument given:", k)
 
         if len(initial_shape) == 0:
             initial_shape = obj.shape
@@ -206,33 +2415,37 @@ class SetupPostprocessing(object):
             gu.multislices_plot(abs(obj), sum_frames=True, width_z=width_z, width_y=width_y, width_x=width_x,
                                 title=title+' in detector frame')
 
-        tilt_sign = np.sign(self.tilt_angle)
-        wavelength = 12.398 * 1e-7 / self.energy  # in m
+        # estimate the direct space voxel sizes in nm based on the FFT window shape used in phase retrieval
+        dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(initial_shape, tilt_angle=abs(self.tilt_angle),
+                                                                    pixel_x=self.pixel_x, pixel_y=self.pixel_y)
 
-        dz_realspace = wavelength / (initial_shape[0] * abs(self.tilt_angle) * np.pi / 180) * 1e9  # in nm
-        dy_realspace = wavelength * self.distance / (initial_shape[1] * self.pixel_y) * 1e9  # in nm
-        dx_realspace = wavelength * self.distance / (initial_shape[2] * self.pixel_x) * 1e9  # in nm
-        print('Real space pixel size (z, y, x) based on initial FFT shape: (',
-              str('{:.2f}'.format(dz_realspace)), 'nm,',
-              str('{:.2f}'.format(dy_realspace)), 'nm,',
-              str('{:.2f}'.format(dx_realspace)), 'nm )')
+        if verbose:
+            print('Direct space voxel sizes (z, y, x) based on initial FFT shape: (',
+                  str('{:.2f}'.format(dz_realspace)), 'nm,',
+                  str('{:.2f}'.format(dy_realspace)), 'nm,',
+                  str('{:.2f}'.format(dx_realspace)), 'nm )')
 
         nbz, nby, nbx = obj.shape  # could be smaller if the object was cropped around the support
         if nbz != initial_shape[0] or nby != initial_shape[1] or nbx != initial_shape[2]:
-            tilt = tilt_sign * wavelength / (nbz * dz_realspace * np.pi / 180) * 1e9  # in m
-            pixel_y = wavelength * self.distance / (nby * dy_realspace) * 1e9  # in m
-            pixel_x = wavelength * self.distance / (nbx * dx_realspace) * 1e9  # in m
-            print('Tilt, pixel_y, pixel_x based on actual array shape: (',
-                  str('{:.4f}'.format(tilt)), 'deg,',
-                  str('{:.2f}'.format(pixel_y * 1e6)), 'um,',
-                  str('{:.2f}'.format(pixel_x * 1e6)), 'um)')
-            dz_realspace = wavelength / (nbz * abs(tilt) * np.pi / 180) * 1e9  # in nm
-            dy_realspace = wavelength * self.distance / (nby * pixel_y) * 1e9  # in nm
-            dx_realspace = wavelength * self.distance / (nbx * pixel_x) * 1e9  # in nm
-            print('New real space pixel size (z, y, x) based on actual array shape: (',
-                  str('{:.2f}'.format(dz_realspace)), ' nm,',
-                  str('{:.2f}'.format(dy_realspace)), 'nm,',
-                  str('{:.2f}'.format(dx_realspace)), 'nm )')
+            # recalculate the tilt and pixel sizes to accomodate a shape change
+            tilt = self.tilt_angle * initial_shape[0] / nbz
+            pixel_y = self.pixel_y * initial_shape[1] / nby
+            pixel_x = self.pixel_x * initial_shape[2] / nbx
+            if verbose:
+                print('Tilt, pixel_y, pixel_x based on cropped array shape: (',
+                      str('{:.4f}'.format(tilt)), 'deg,',
+                      str('{:.2f}'.format(pixel_y * 1e6)), 'um,',
+                      str('{:.2f}'.format(pixel_x * 1e6)), 'um)')
+
+            # sanity check, the direct space voxel sizes calculated below should be equal to the original ones
+            dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes((nbz, nby, nbx),
+                                                                        tilt_angle=abs(tilt),
+                                                                        pixel_x=pixel_x, pixel_y=pixel_y)
+            if verbose:
+                print('Sanity check, recalculated direct space voxel sizes: (',
+                      str('{:.2f}'.format(dz_realspace)), ' nm,',
+                      str('{:.2f}'.format(dy_realspace)), 'nm,',
+                      str('{:.2f}'.format(dx_realspace)), 'nm )')
         else:
             tilt = self.tilt_angle
             pixel_y = self.pixel_y
@@ -244,7 +2457,7 @@ class SetupPostprocessing(object):
             voxel = voxel_size
 
         ortho_matrix = self.update_coords(array_shape=(nbz, nby, nbx), tilt_angle=tilt,
-                                          pixel_x=pixel_x, pixel_y=pixel_y)
+                                          pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
 
         ###############################################################
         # Vincent Favre-Nicolin's method using inverse transformation #
@@ -252,6 +2465,10 @@ class SetupPostprocessing(object):
         myz, myy, myx = np.meshgrid(np.arange(-nbz // 2, nbz // 2, 1) * voxel,
                                     np.arange(-nby // 2, nby // 2, 1) * voxel,
                                     np.arange(-nbx // 2, nbx // 2, 1) * voxel, indexing='ij')
+
+        # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
+        # in RGI, we want to calculate the coordinates that would have a grid of the laboratory frame expressed in the
+        # detector frame, i.e. one has to inverse the transformation matrix.
         ortho_imatrix = np.linalg.inv(ortho_matrix)
         new_x = ortho_imatrix[0, 0] * myx + ortho_imatrix[0, 1] * myy + ortho_imatrix[0, 2] * myz
         new_y = ortho_imatrix[1, 0] * myx + ortho_imatrix[1, 1] * myy + ortho_imatrix[1, 2] * myz
@@ -271,7 +2488,48 @@ class SetupPostprocessing(object):
                                 title=title+' in the orthogonal laboratory frame')
         return ortho_obj, voxel
 
-    def update_coords(self, array_shape, tilt_angle, pixel_x, pixel_y):
+    def orthogonalize_vector(self, vector, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
+        """
+        Calculate the direct space voxel sizes in the laboratory frame (z downstream, y vertical up, x outboard).
+
+        :param vector: tuple of 3 coordinates, vector to be transformed in the detector frame
+        :param array_shape: shape of the 3D array to orthogonalize
+        :param tilt_angle: angular step during the rocking curve, in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        :param verbose: True to have printed comments
+        :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
+        """
+        ortho_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
+                                          pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
+        # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
+        # Here, we want to calculate the coordinates that would have a vector of the laboratory frame expressed in the
+        # detector frame, i.e. one has to inverse the transformation matrix.
+        ortho_imatrix = np.linalg.inv(ortho_matrix)
+        new_x = ortho_imatrix[0, 0] * vector[2] + ortho_imatrix[0, 1] * vector[1] + ortho_imatrix[0, 2] * vector[0]
+        new_y = ortho_imatrix[1, 0] * vector[2] + ortho_imatrix[1, 1] * vector[1] + ortho_imatrix[1, 2] * vector[0]
+        new_z = ortho_imatrix[2, 0] * vector[2] + ortho_imatrix[2, 1] * vector[1] + ortho_imatrix[2, 2] * vector[0]
+        return new_z, new_y, new_x
+
+    def outofplane_coeff(self):
+        """
+        Define a coefficient +/- 1 depending on the detector out of plane rotation direction and the detector out of
+         plane orientation. The frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up.
+         See postprocessing/scripts/correct_angles_detector.py for an example.
+
+        :return: +1 or -1
+        """
+        if self.detector_ver == 'z+':  # origin of pixels at the bottom
+            ver_coeff = 1
+        else:  # 'z-'  origin of pixels at the top
+            ver_coeff = -1
+
+        # the out of plane detector rotation is clockwise for all beamlines
+        coeff_outofplane = -1 * ver_coeff
+
+        return coeff_outofplane
+
+    def update_coords(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=True):
         """
         Calculate the pixel non-orthogonal coordinates in the orthogonal reference frame.
 
@@ -279,6 +2537,7 @@ class SetupPostprocessing(object):
         :param tilt_angle: angular step during the rocking curve, in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
+        :param verbose: True to have printed comments
         :return: the transfer matrix from the detector frame to the laboratory frame
         """
         wavelength = self.wavelength * 1e9  # convert to nm
@@ -295,9 +2554,11 @@ class SetupPostprocessing(object):
         nbz, nby, nbx = array_shape
 
         if self.beamline == 'ID01':
-            print('using ESRF ID01 PSIC geometry')
+            if verbose:
+                print('using ESRF ID01 PSIC geometry')
             if self.rocking_angle == "outofplane":
-                print('rocking angle is eta')
+                if verbose:
+                    print('rocking angle is eta')
                 # rocking eta angle clockwise around x (phi does not matter, above eta)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -310,7 +2571,8 @@ class SetupPostprocessing(object):
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
             elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                print('rocking angle is phi, eta=0')
+                if verbose:
+                    print('rocking angle is phi, eta=0')
                 # rocking phi angle clockwise around y, assuming incident angle eta is zero (eta below phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -323,7 +2585,8 @@ class SetupPostprocessing(object):
                      0,
                      tilt * distance * np.sin(inplane) * np.cos(outofplane)])
             elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
-                print('rocking angle is phi, with eta non zero')
+                if verbose:
+                    print('rocking angle is phi, with eta non zero')
                 # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -334,12 +2597,14 @@ class SetupPostprocessing(object):
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
                     np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
                              np.cos(mygrazing_angle) * (np.cos(inplane) * np.cos(outofplane) - 1)),
-                             np.sin(mygrazing_angle) * np.sin(inplane) * np.sin(outofplane),
+                             np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
                              np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
         if self.beamline == 'P10':
-            print('using PETRAIII P10 geometry')
+            if verbose:
+                print('using PETRAIII P10 geometry')
             if self.rocking_angle == "outofplane":
-                print('rocking angle is omega')
+                if verbose:
+                    print('rocking angle is omega')
                 # rocking omega angle clockwise around x at mu=0 (phi does not matter, above eta)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([-pixel_x * np.cos(inplane),
                                                                        0,
@@ -352,8 +2617,9 @@ class SetupPostprocessing(object):
                                                                            outofplane)),
                                                                        tilt * distance * np.sin(outofplane)])
             elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                print('rocking angle is mu')
-                # rocking mu angle anti-clockwise around y, mu below all other sample rotations
+                if verbose:
+                    print('rocking angle is phi, omega=0')
+                # rocking phi angle clockwise around y, incident angle omega is zero (omega below phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([-pixel_x * np.cos(inplane),
                                                                        0,
                                                                        pixel_x * np.sin(inplane)])
@@ -361,16 +2627,79 @@ class SetupPostprocessing(object):
                                                                        -pixel_y * np.cos(outofplane),
                                                                        pixel_y * np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
-                    [tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
+                    [tilt * distance * (np.cos(inplane) * np.cos(outofplane) - 1),
+                     0,
+                     - tilt * distance * np.sin(inplane) * np.cos(outofplane)])
+
+            elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
+                if verbose:
+                    print('rocking angle is phi, with omega non zero')
+                # rocking phi angle clockwise around y, incident angle omega is non zero (omega below phi)
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([-pixel_x * np.cos(inplane),
+                                                                       0,
+                                                                       pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       -pixel_y * np.cos(outofplane),
+                                                                       pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
+                    np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
+                             np.cos(mygrazing_angle) * (np.cos(inplane) * np.cos(outofplane) - 1)),
+                             - np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
+                             - np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
+
+        if self.beamline == 'NANOMAX':
+            if verbose:
+                print('using NANOMAX geometry')
+            if self.rocking_angle == "outofplane":
+                if verbose:
+                    print('rocking angle is theta')
+                # rocking eta angle clockwise around x (phi does not matter, above eta)
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
+                                                                       0,
+                                                                       pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       pixel_y * np.cos(outofplane),
+                                                                       -pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array([0,
+                                                                       tilt * distance * (1 - np.cos(inplane) * np.cos(
+                                                                           outofplane)),
+                                                                       tilt * distance * np.sin(outofplane)])
+            elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
+                if verbose:
+                    print('rocking angle is phi, theta=0')
+                # rocking phi angle clockwise around y, assuming incident angle eta is zero (eta below phi)
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
+                                                                       0,
+                                                                       pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       pixel_y * np.cos(outofplane),
+                                                                       -pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * np.array(
+                    [-tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
                      0,
                      tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-            else:
-                raise ValueError('inplane rocking for phi not yet implemented for P10')
+            elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
+                if verbose:
+                    print('rocking angle is phi, with theta non zero')
+                # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
+                mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
+                                                                       0,
+                                                                       pixel_x * np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi * nby / lambdaz * np.array([pixel_y * np.sin(inplane) * np.sin(outofplane),
+                                                                       pixel_y * np.cos(outofplane),
+                                                                       -pixel_y * np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
+                    np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
+                               np.cos(mygrazing_angle) * (np.cos(inplane) * np.cos(outofplane) - 1)),
+                              np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
+                              np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
 
         if self.beamline == '34ID':
-            print('using APS 34ID geometry')
+            if verbose:
+                print('using APS 34ID geometry')
             if self.rocking_angle == "outofplane":
-                print('rocking angle is phi')
+                if verbose:
+                    print('rocking angle is phi')
                 # rocking phi angle anti-clockwise around x (theta does not matter, above phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -384,7 +2713,8 @@ class SetupPostprocessing(object):
                                                                        -tilt * distance * np.sin(outofplane)])
 
             elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
-                print('rocking angle is theta, with phi non zero')
+                if verbose:
+                    print('rocking angle is theta, with phi non zero')
                 # rocking theta angle anti-clockwise around y, incident angle is non zero (theta is above phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -395,11 +2725,12 @@ class SetupPostprocessing(object):
                 mymatrix[:, 2] = 2 * np.pi * nbz / lambdaz * tilt * distance * \
                     np.array([(np.sin(mygrazing_angle) * np.sin(outofplane) +
                               np.cos(mygrazing_angle) * (1 - np.cos(inplane) * np.cos(outofplane))),
-                              -np.sin(mygrazing_angle) * np.sin(inplane) * np.sin(outofplane),
+                              -np.sin(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane),
                               np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
 
             elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                print('rocking angle is theta, phi=0')
+                if verbose:
+                    print('rocking angle is theta, phi=0')
                 # rocking theta angle anti-clockwise around y, assuming incident angle is zero (theta is above phi)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -412,9 +2743,11 @@ class SetupPostprocessing(object):
                      0,
                      tilt * distance * np.sin(inplane) * np.cos(outofplane)])
         if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
-            print('using SIXS geometry')
+            if verbose:
+                print('using SIXS geometry')
             if self.rocking_angle == "inplane" and mygrazing_angle != 0:
-                print('rocking angle is mu, with beta non zero')
+                if verbose:
+                    print('rocking angle is mu, with beta non zero')
                 # rocking mu angle anti-clockwise around y
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * pixel_x * np.array([np.cos(inplane),
                                                                                  -np.sin(mygrazing_angle) * np.sin(
@@ -433,7 +2766,8 @@ class SetupPostprocessing(object):
                                 np.cos(mygrazing_angle) * np.sin(inplane) * np.cos(outofplane)])
 
             elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                print('rocking angle is mu, beta=0')
+                if verbose:
+                    print('rocking angle is mu, beta=0')
                 # rocking th angle anti-clockwise around y, assuming incident angle is zero (th above tilt)
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -446,9 +2780,11 @@ class SetupPostprocessing(object):
                      0,
                      tilt * distance * np.sin(inplane) * np.cos(outofplane)])
         if self.beamline == 'CRISTAL':
-            print('using CRISTAL geometry')
+            if verbose:
+                print('using CRISTAL geometry')
             if self.rocking_angle == "outofplane":
-                print('rocking angle is komega')
+                if verbose:
+                    print('rocking angle is komega')
                 # rocking tilt angle clockwise around x
                 mymatrix[:, 0] = 2 * np.pi * nbx / lambdaz * np.array([pixel_x * np.cos(inplane),
                                                                        0,
@@ -464,14 +2800,59 @@ class SetupPostprocessing(object):
         transfer_matrix = 2 * np.pi * np.linalg.inv(mymatrix).transpose()
         return transfer_matrix
 
+    def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
+        """
+        Calculate the direct space voxel sizes in the laboratory frame (z downstream, y vertical up, x outboard).
+
+        :param array_shape: shape of the 3D array to orthogonalize
+        :param tilt_angle: angular step during the rocking curve, in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        :param verbose: True to have printed comments
+        :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
+        """
+        transfer_matrix = self.update_coords(array_shape=array_shape, tilt_angle=tilt_angle,
+                                             pixel_x=pixel_x, pixel_y=pixel_y, verbose=verbose)
+        rec_matrix = 2 * np.pi * np.linalg.inv(transfer_matrix).transpose()
+        qx_range = np.linalg.norm(rec_matrix[0, :])
+        qy_range = np.linalg.norm(rec_matrix[1, :])
+        qz_range = np.linalg.norm(rec_matrix[2, :])
+        if verbose:
+            print('q_range_z, q_range_y, q_range_x=({0:.5f}, {1:.5f}, {2:.5f}) (1/nm)'.format(qz_range, qy_range,
+                                                                                              qx_range))
+            print('voxelsize_z, voxelsize_y, voxelsize_x='
+                  '({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)'.format(2 * np.pi / qz_range, 2 * np.pi / qy_range,
+                                                              2 * np.pi / qx_range))
+        return 2 * np.pi / qz_range, 2 * np.pi / qy_range, 2 * np.pi / qx_range
+
+    def voxel_sizes_detector(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
+        """
+        Calculate the direct space voxel sizes in the detector frame
+         (z rocking angle, y detector vertical axis, x detector horizontal axis).
+
+        :param array_shape: shape of the 3D array used in phase retrieval
+        :param tilt_angle: angular step during the rocking curve, in degrees
+        :param pixel_x: horizontal pixel size, in meters
+        :param pixel_y: vertical pixel size, in meters
+        :param verbose: True to have printed comments
+        :return: the direct space voxel sizes in nm, in the detector frame (voxel_z, voxel_y, voxel_x)
+        """
+        voxel_z = self.wavelength / (array_shape[0] * abs(tilt_angle) * np.pi / 180) * 1e9  # in nm
+        voxel_y = self.wavelength * self.distance / (array_shape[1] * pixel_y) * 1e9  # in nm
+        voxel_x = self.wavelength * self.distance / (array_shape[2] * pixel_x) * 1e9  # in nm
+        if verbose:
+            print('voxelsize_z, voxelsize_y, voxelsize_x='
+                  '({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)'.format(voxel_z, voxel_y, voxel_x))
+        return voxel_z, voxel_y, voxel_x
+
 
 class SetupPreprocessing(object):
     """
     Class to handle the experimental geometry for preprocessing.
     """
-    def __init__(self, beamline, rocking_angle=None, distance=1, energy=8000, direct_beam=(0, 0), beam_direction=(1, 0, 0),
-                 sample_inplane=(1, 0, 0), sample_outofplane=(0, 0, 1), sample_offsets=(0, 0, 0), offset_inplane=0,
-                 **kwargs):
+    def __init__(self, beamline, rocking_angle=None, distance=1, energy=8000, direct_beam=(0, 0),
+                 beam_direction=(1, 0, 0), sample_inplane=(1, 0, 0), sample_outofplane=(0, 0, 1),
+                 sample_offsets=(0, 0, 0), offset_inplane=0, **kwargs):
         """
         Initialize parameters of the experiment.
 
@@ -494,54 +2875,19 @@ class SetupPreprocessing(object):
          - 'custom_monitor' = list of monitor values for normalization for the custom_scan
          - 'custom_motors' = dictionnary of motors values during the scan
         """
+        warnings.warn("deprecated, use the class Setup instead", DeprecationWarning)
         for k in kwargs.keys():
-            if k in ['filtered_data']:
-                filtered_data = kwargs['filtered_data']
-            elif k in ['is_orthogonal']:
-                is_orthogonal = kwargs['is_orthogonal']
-            elif k in ['custom_scan']:
-                custom_scan = kwargs['custom_scan']
-            elif k in ['custom_images']:
-                custom_images = kwargs['custom_images']
-            elif k in ['custom_monitor']:
-                custom_monitor = kwargs['custom_monitor']
-            elif k in ['custom_motors']:
-                custom_motors = kwargs['custom_motors']
-            else:
-                raise Exception("unknown keyword argument given: allowed is"
-                                "'custom_images', 'custom_monitor', 'custom_motors'")
-        try:
-            filtered_data
-        except NameError:  # filtered_data not declared
-            filtered_data = False
-        try:
-            is_orthogonal
-        except NameError:  # is_orthogonal not declared
-            is_orthogonal = False
-        try:
-            custom_scan
-        except NameError:  # custom_scan not declared
-            custom_scan = False
-        try:
-            custom_images
-        except NameError:  # custom_images not declared
-            custom_images = []
-        try:
-            custom_monitor
-        except NameError:  # custom_monitor not declared
-            custom_monitor = []
-        try:
-            custom_motors
-        except NameError:  # custom_motors not declared
-            custom_motors = {}
+            if k not in {'filtered_data', 'is_orthogonal', 'custom_scan', 'custom_images', 'custom_monitor',
+                         'custom_motors'}:
+                raise Exception("unknown keyword argument given:", k)
 
         self.beamline = beamline  # string
-        self.filtered_data = filtered_data  # boolean
-        self.is_orthogonal = is_orthogonal
-        self.custom_scan = custom_scan  # boolean
-        self.custom_images = custom_images  # list
-        self.custom_monitor = custom_monitor  # list
-        self.custom_motors = custom_motors  # dictionnary
+        self.filtered_data = kwargs.get('filtered_data', False)  # boolean
+        self.is_orthogonal = kwargs.get('is_orthogonal', False)  # boolean
+        self.custom_scan = kwargs.get('custom_scan', False)  # boolean
+        self.custom_images = kwargs.get('custom_images', [])  # list
+        self.custom_monitor = kwargs.get('custom_monitor', [])  # list
+        self.custom_motors = kwargs.get('custom_motors', {})  # dictionnary
         self.energy = energy  # in eV
         self.wavelength = 12.398 * 1e-7 / energy  # in m
         self.rocking_angle = rocking_angle  # string
@@ -553,132 +2899,30 @@ class SetupPreprocessing(object):
         self.sample_offsets = sample_offsets  # tuple
         self.offset_inplane = offset_inplane  # in degrees
 
-        # detector orientation convention depending on the beamline
-        # the frame convetion is the one of xrayutilities: x downstream, y outboard, z vertical up
-        if beamline in ['ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL']:  # we look at the detector from downstream
+        #############################################################
+        # detector orientation convention depending on the beamline #
+        #############################################################
+        # the frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up
+
+        # horizontal axis:
+        if beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX'}:
+            # we look at the detector from downstream, detector X along the outboard direction
             self.detector_hor = 'y+'
-        else:  # 'P10', '34ID', we look at the detector from upstream
+        else:  # 'P10', '34ID'
+            # we look at the detector from upstream, detector X opposite to the outboard direction
             self.detector_hor = 'y-'
+
+        # vertical axis:
+        # origin is at the top, detector Y along vertical down
         self.detector_ver = 'z-'
 
-
-class Detector(object):
-    """
-    Class to handle the configuration of the detector used for data acquisition.
-    """
-    def __init__(self, name, datadir='', savedir='', template_imagefile='', roi=(), sum_roi=(), binning=(1, 1, 1),
-                 **kwargs):
+    def __repr__(self):
         """
-        Initialize parameters of the detector.
-
-        :param name: name of the detector: 'Maxipix'or 'Eiger2M' or 'Eiger4M'
-        :param datadir: directory where the data is saved
-        :param savedir: directory where to save files if needed
-        :param template_imagefile: template for the name of image files
-         - ID01: 'data_mpx4_%05d.edf.gz'
-         - SIXS: 'spare_ascan_mu_%05d.nxs'
-         - Cristal: 'S%d.nxs'
-         - P10: sample_name + str('{:05d}'.format(scans[scan_nb])) + '_data_%06d.h5'
-        :param roi: region of interest in the detector, use [] to use the full detector
-        :param sum_roi: optional region of interest used for calculated an integrated intensity
-        :param binning: binning of the 3D dataset (stacking dimension, detector vertical axis, detector horizontal axis)
-        :param kwargs:
-         - 'is_series' = boolean, True is the measurement is a series at P10 beamline
-         - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
-         - 'previous_binning': tuple or list of the three binning factors for reloaded binned data
+        :return: a nicely formatted representation string
         """
-        for k in kwargs.keys():
-            if k in ['is_series']:
-                self.is_series = kwargs['is_series']
-            elif k in ['nb_pixel_x']:
-                nb_pixel_x = kwargs['nb_pixel_x']
-            elif k in ['nb_pixel_y']:
-                nb_pixel_y = kwargs['nb_pixel_y']
-            elif k in ['previous_binning']:
-                previous_binning = kwargs['previous_binning']
-            else:
-                raise Exception("unknown keyword argument given:", k)
+        return f"{self.__class__.__name__}: beamline={self.beamline}, energy={self.energy}eV," \
+               f" sample to detector distance={self.distance}m"
 
-        try:
-            previous_binning
-        except NameError:  # previous_binning not declared
-            previous_binning = (1, 1, 1)
-        self.previous_binning = previous_binning
-        
-        self.name = name  # string
-        self.offsets = ()
-        if name == 'Maxipix':
-            try:
-                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 516 // previous_binning[2]
-            try:
-                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
-            except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 516 // previous_binning[1]
-            self.pixelsize_x = 55e-06  # m
-            self.pixelsize_y = 55e-06  # m
-            self.counter = 'mpx4inr'
-        elif name == 'Eiger2M':
-            try:
-                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 1030 // previous_binning[2]
-            try:
-                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
-            except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 2164 // previous_binning[1]
-            self.pixelsize_x = 75e-06  # m
-            self.pixelsize_y = 75e-06  # m
-            self.counter = 'ei2minr'
-        elif name == 'Eiger4M':
-            try:
-                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 2070 // previous_binning[2]
-            try:
-                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
-            except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 2167 // previous_binning[1]
-            self.pixelsize_x = 75e-06  # m
-            self.pixelsize_y = 75e-06  # m
-            self.counter = ''  # unused
-        elif name == 'Timepix':
-            try:
-                self.nb_pixel_x = nb_pixel_x // previous_binning[2]
-            except NameError:  # nb_pixel_x not declared
-                self.nb_pixel_x = 256 // previous_binning[2]
-            try:
-                self.nb_pixel_y = nb_pixel_y // previous_binning[1]
-            except NameError:  # nb_pixel_y not declared
-                self.nb_pixel_y = 256 // previous_binning[1]
-            self.pixelsize_x = 55e-06  # m
-            self.pixelsize_y = 55e-06  # m
-            self.counter = ''  # unused
-        else:
-            raise ValueError('Unknown detector name')
 
-        # define paths
-        self.datadir = datadir
-        self.savedir = savedir
-        self.template_imagefile = template_imagefile
-
-        # define regions of interest
-        if len(roi) == 0:
-            self.roi = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-        elif len(roi) == 4:
-            self.roi = roi
-        else:
-            raise ValueError("Incorrect value for parameter 'roi'")
-
-        if len(sum_roi) == 0:
-            self.sum_roi = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-        elif len(sum_roi) == 4:
-            self.sum_roi = sum_roi
-        else:
-            raise ValueError("Incorrect value for parameter 'sum_roi'")
-
-        # define binning and correct the pixel sizes taking into account past and future binning
-        self.binning = binning  # (stacking dimension, detector vertical axis, detector horizontal axis)
-        self.pixelsize_y = self.pixelsize_y * self.previous_binning[1] * self.binning[1]
-        self.pixelsize_x = self.pixelsize_x * self.previous_binning[2] * self.binning[2]
+if __name__ == "__main__":
+    print(help(Detector))

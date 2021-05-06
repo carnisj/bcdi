@@ -13,5 +13,8 @@
 API Reference
 -------------
 
+algorithms_utils
+^^^^^^^^^^^^^^^^
+
 .. automodule:: bcdi.algorithms.algorithms_utils
    :members:

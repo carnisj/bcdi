@@ -47,7 +47,7 @@ def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debuggin
         raise ValueError("origin should be a tuple of 3 elements")
 
     if np.isnan(nb_bins):
-        nb_bins = nz // 4
+        nb_bins = 250
 
     # calculate the matrix of distances from the origin of reciprocal space
     distances = np.sqrt((qx[:, np.newaxis, np.newaxis] - qx[origin[0]]) ** 2 +
@@ -74,7 +74,7 @@ def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debuggin
         ang_avg[index] = temp_data[np.logical_and((~np.isnan(temp_data)), (temp_mask != 1))].mean()
         ang_median[index] = np.median(temp_data[np.logical_and((~np.isnan(temp_data)), (temp_mask != 1))])
 
-    q_axis = q_axis[:-1]
+    q_axis = q_axis[:-1] + (q_axis[1]-q_axis[0])/2
 
     # prepare for masking arrays - 'conventional' arrays won't do it
     y_mean = np.ma.array(ang_avg)
@@ -86,22 +86,26 @@ def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debuggin
     return q_axis, y_mean_masked, y_median_masked
 
 
-def calc_ccf(point, q2_name, bin_values, polar_azi_int):
+def calc_ccf_polar(point, q1_name, q2_name, bin_values, polar_azi_int):
     """
     Calculate for the cross-correlation of point with all other points at the second q value and sort the result.
 
     :param point: the reference point
+    :param q1_name: key for the first q value in the dictionnary polar_azi_int
     :param q2_name: key for the second q value in the dictionnary polar_azi_int
-    :param bin_values: angular bin values where to calculate the cross-correlation
-    :param polar_azi_int: a dictionnary with fields 'q1' (and 'q2' if different from q1). Each field contains three 1D
+    :param bin_values: in radians, angular bin values where to calculate the cross-correlation
+    :param polar_azi_int: a dictionnary with fields 'q1', 'q2', ... Each field contains three 1D
      arrays: polar angle, azimuthal angle and intensity values for each point
     :return: the sorted cross-correlation values, angular bins indices and number of points contributing to the angular
      bins
     """
     # calculate the angle between the current point and all points from the second q value (delta in [0 pi])
-    delta_val = np.arccos(np.sin(polar_azi_int['q1'][point, 0]) * np.sin(polar_azi_int[q2_name][:, 0]) *
-                          np.cos(polar_azi_int[q2_name][:, 1] - polar_azi_int['q1'][point, 1]) +
-                          np.cos(polar_azi_int['q1'][point, 0]) * np.cos(polar_azi_int[q2_name][:, 0]))
+    delta_val = np.arccos(np.sin(polar_azi_int[q1_name][point, 0]) * np.sin(polar_azi_int[q2_name][:, 0]) *
+                          np.cos(polar_azi_int[q2_name][:, 1] - polar_azi_int[q1_name][point, 1]) +
+                          np.cos(polar_azi_int[q1_name][point, 0]) * np.cos(polar_azi_int[q2_name][:, 0]))
+
+    # It can happen that the value in the arccos is outside [-1, 1] because of the limited floating precision of Python,
+    # which result in delta_val = nan. These points would contribute to the 0 and 180 degrees CCF, and can be neglected.
 
     # find the nearest angular bin value for each value of the array delta
     nearest_indices = util.find_nearest(test_values=delta_val, reference_array=bin_values,
@@ -117,8 +121,48 @@ def calc_ccf(point, q2_name, bin_values, polar_azi_int):
     # calculate the contribution to the cross-correlation for bins in counter_indices
     ccf_uniq_val = np.zeros(len(counter_indices))
     for idx in range(len(counter_indices)):
-        ccf_uniq_val[idx] = (polar_azi_int['q1'][point, 2] *
+        ccf_uniq_val[idx] = (polar_azi_int[q1_name][point, 2] *
                              polar_azi_int[q2_name][nearest_indices == counter_indices[idx], 2]).sum()
+
+    return ccf_uniq_val, counter_val, counter_indices
+
+
+def calc_ccf_rect(point, q1_name, q2_name, bin_values, q_int):
+    """
+    Calculate for the cross-correlation of point with all other points at the second q value and sort the result.
+
+    :param point: the reference point
+    :param q1_name: key for the first q value in the dictionnary polar_azi_int
+    :param q2_name: key for the second q value in the dictionnary polar_azi_int
+    :param bin_values: in radians, angular bin values where to calculate the cross-correlation
+    :param q_int: a dictionnary with fields 'q1', 'q2', ... Each field contains four 1D
+     arrays: qx, qy, qz and intensity values for each point
+    :return: the sorted cross-correlation values, angular bins indices and number of points contributing to the angular
+     bins
+    """
+    # calculate the angle between the current point and all points from the second q value (delta in [0 pi])
+    delta_val = np.arccos(np.divide(np.dot(q_int[q2_name][:, 0:3], q_int[q1_name][point, 0:3]),
+                                    np.linalg.norm(q_int[q2_name][:, 0:3], axis=1) *
+                                    np.linalg.norm(q_int[q1_name][point, 0:3])))
+    # It can happen that the value in the arccos is outside [-1, 1] because of the limited floating precision of Python,
+    # which result in delta_val = nan. These points would contribute to the 0 and 180 degrees CCF, and can be neglected.
+
+    # find the nearest angular bin value for each value of the array delta
+    nearest_indices = util.find_nearest(test_values=delta_val, reference_array=bin_values,
+                                        width=bin_values[1]-bin_values[0])
+
+    # update the counter of bin indices
+    counter_indices, counter_val = np.unique(nearest_indices, return_counts=True)  # counter_indices are sorted
+
+    # filter out -1 indices which correspond to no neighbour in the range defined by width in find_nearest()
+    counter_val = np.delete(counter_val, np.argwhere(counter_indices == -1))
+    counter_indices = np.delete(counter_indices, np.argwhere(counter_indices == -1))
+
+    # calculate the contribution to the cross-correlation for bins in counter_indices
+    ccf_uniq_val = np.zeros(len(counter_indices))
+    for idx in range(len(counter_indices)):
+        ccf_uniq_val[idx] = (q_int[q1_name][point, 3] *
+                             q_int[q2_name][nearest_indices == counter_indices[idx], 3]).sum()
 
     return ccf_uniq_val, counter_val, counter_indices
 

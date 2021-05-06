@@ -1,6 +1,61 @@
-* Feature: implement the 3D angular X-ray cross-correlation analysis in xcca/scripts/xcca_3D.py
+Version 0.1.0
+-------------
 
-* Refactor: allow the reloading of binned data and its orthogonalization in preprocess_cdi_combined.py and preprocess_bcdi_combined.py
+* Feature: implement publication/bcdi_diffpattern_from_reconstruction.py, to compare with the experimental measurement in the crystal frame
+
+* Refactor: simplify PRTF calculations
+
+* Feature: implement the inplane rocking curve at CRISTAL
+
+* Feature: implement graph_utils.savefig to save figures for publication with and without labels
+
+* Feature: implement angular_profile.py to calculate the width of linecuts through the center of mass of a 2D object at different angles
+
+* Feature: implement line_profile.py to calculate line profiles along particular directions in 2D or 3D objects
+
+Version 0.0.10a2
+----------------
+
+* Feature: implement interpolate_cdi.py, to interpolate the intensity of masked voxels using the centrosymmetry property
+
+* Feature: implement the interpolation of the reciprocal space data in the laboratory frame using the linearized transformation matrix
+
+* Refactor: update the calculation of the transformation matrices when chi is non-zero
+
+* Feature: allow different voxel sizes in each dimension in strain.py (NOT BACK COMPATIBLE)
+
+* Feature: implement validation functions in utils.validation.py for commonly used parameters, implement related unit tests
+
+* Refactor: merge the class SetupPostprocessing and SetupPreprocessing in a single class Setup due to code redundances
+
+* Feature: implement linecut_diffpattern.py, a GUI to get a linecut of a 3D diffraction pattern along a desired direction
+
+* Feature: add a GUI to prtf_bcdi.py, to get a linecut of the 3D PRTF along a desired direction
+
+* Feature: implement center_of_rotation.py, to calculate the distance of the crystal to the center of rotation
+
+* Bug: in facet_strain.py, solve bugs in plane fitting when the facet is parallel to an axis
+
+* Feature: implement rotate_scan.py, to rotate a 3D reciprocal space map around a vector
+
+* Refactor: in modes_decomposition.py, implement skipping alignment between datasets or aligning based on a support
+
+Version 0.0.9
+-------------
+
+* Feature: implement support for MAXIV NANOMAX beamline
+
+* Feature: implement rocking_curves.py to follow the evolution of the Bragg peak between several rocking curves
+
+* Feature: implement flatten_modulus.py to remove low frequency artefacts in the modulus reconstructed by phase retrieval
+
+* Feature: implement xcca_3D_map.py to calculate the angular cross-correlation CCF(q,q) over a range in q
+
+* Feature: implement view_ccf.py and view_ccf_map.py to plot the cross-correlation function output
+
+* Feature: implement the 3D angular X-ray cross-correlation analysis
+
+* Refactor: allow the reloading of binned data and its orthogonalization in preprocess_cdi.py and preprocess_bcdi.py
 
 * Feature: implement crop_npz.py to crop combined stacked data to the desired size
 
@@ -10,7 +65,7 @@
 
 * Refactor: when gridding forward CDI data, reverse the rotation direction to compensate the rotation of Ewald sphere
 
-* Refactor: converted /postprocessing/scripts/extract_bulk_surface.py
+* Refactor: updated extract_bulk_surface.py to use module functions
 
 * Bug: treat correctly the case angle=pi/2 during the interpolation of CDI data onto the laboratory frame
 
@@ -24,9 +79,7 @@
 
 * Feature: add the option of restarting masking the aliens during preprocessing, not back compatible with previous versions
 
-* Refactor: rename prepare_(b)cdi_mask.py preprocess_(b)cdi_sequential.py
-
-* Feature: implement simultaneous masking over the 3 axes in two new preprocessing scripts preprocess_(b)cdi_combinedl.py
+* Feature: implement simultaneous masking over the 3 axes in two new preprocessing scripts preprocess_bcdi.py and preprocess_cdi.py
 
 * Feature: implement domain_orientation.py to find the orientation of domains in a 3D forward CDI dataset of mesocrystal
 

@@ -10,7 +10,38 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 import sys
 sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
+sys.path.append('D:/myscripts/bcdi/')
 import bcdi.utils.utilities as util
+
+
+def angle_vectors(ref_vector, test_vector,
+                  basis_vectors=(np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))):
+    """
+    Calculate the angle between two vectors expressed in a defined basis, using the Gram matrix.
+
+    :param ref_vector: reference vector
+    :param test_vector: vector for which the angle relative to the reference vector should be calculated
+    :param basis_vectors: tuple of the three components of the basis vectors expressed in the orthonormal basis.
+     The convention used for the orthonormal basis is ([1, 0, 0], [0, 1, 0], [0, 0, 1]).
+    :return: the angle in degrees
+    """
+    ref_vector = np.asarray(ref_vector)
+    test_vector = np.asarray(test_vector)
+
+    b1 = np.asarray(basis_vectors[0])
+    b2 = np.asarray(basis_vectors[1])
+    b3 = np.asarray(basis_vectors[2])
+
+    gram_matrix = np.array([[np.dot(b1, b1), np.dot(b1, b2), np.dot(b1, b3)],
+                            [np.dot(b2, b1), np.dot(b2, b2), np.dot(b2, b3)],
+                            [np.dot(b3, b1), np.dot(b3, b2), np.dot(b3, b3)]])
+
+    cos = test_vector.dot(gram_matrix).dot(ref_vector) / (np.sqrt(ref_vector.dot(gram_matrix).dot(ref_vector)) *
+                                                          np.sqrt(test_vector.dot(gram_matrix).dot(test_vector)))
+    if abs(cos) > 1:  # may append because of the limited precision in floating point calculation
+        cos = np.rint(cos)
+    angle = 180 / np.pi * np.arccos(cos)
+    return angle
 
 
 def assign_peakshape(array_shape, lattice_list, peak_shape, pivot):
@@ -93,9 +124,9 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
                 # simple cubic unit cell with two point basis (0,0,0), (0.5,0.5,0.5)
                 struct_factor = np.real(1 + np.exp(1j*np.pi*(h+k+l)))
                 if struct_factor != 0:  # find the position of the pixel nearest to q_bragg
-                    pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param)
-                    pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
-                    pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
+                    pix_h = util.find_nearest(reference_array=pad_qx, test_values=h * recipr_param)
+                    pix_k = util.find_nearest(reference_array=pad_qy, test_values=k * recipr_param)
+                    pix_l = util.find_nearest(reference_array=pad_qz, test_values=l * recipr_param)
 
                     lattice_list.append([pix_h, pix_l, pix_k])
                     peaks_list.append([h, l, k])
@@ -167,9 +198,9 @@ def bct_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
                 # unit cell with two point basis (0,0,0), (0.5,0.5,0.5), same structure factor as BCC
                 struct_factor = np.real(1 + np.exp(1j*np.pi*(h+k+l)))
                 if struct_factor != 0:  # find the position of the pixel nearest to q_bragg
-                    pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param[0])
-                    pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param[0])
-                    pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param[1])
+                    pix_h = util.find_nearest(reference_array=pad_qx, test_values=h * recipr_param[0])
+                    pix_k = util.find_nearest(reference_array=pad_qy, test_values=k * recipr_param[0])
+                    pix_l = util.find_nearest(reference_array=pad_qz, test_values=l * recipr_param[1])
 
                     lattice_list.append([pix_h, pix_l, pix_k])
                     peaks_list.append([h, l, k])
@@ -229,9 +260,9 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offse
         for k in hkl:  # k outboard along qy
             for l in hkl:  # l vertical up along qz
                 # one atom basis (0,0,0): struct_factor = 1, all peaks are allowed
-                pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param)
-                pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
-                pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
+                pix_h = util.find_nearest(reference_array=pad_qx, test_values=h * recipr_param)
+                pix_k = util.find_nearest(reference_array=pad_qy, test_values=k * recipr_param)
+                pix_l = util.find_nearest(reference_array=pad_qz, test_values=l * recipr_param)
 
                 lattice_list.append([pix_h, pix_l, pix_k])
                 peaks_list.append([h, l, k])
@@ -293,9 +324,9 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
                 # simple cubic unit cell with four point basis (0,0,0), (0.5,0.5,0), (0,0.5,0.5), (0.5,0,0.5)
                 struct_factor = np.real(1 + np.exp(1j*np.pi*(h+k)) + np.exp(1j*np.pi*(h+l)) + np.exp(1j*np.pi*(k+l)))
                 if struct_factor != 0:  # find the position of the pixel nearest to q_bragg
-                    pix_h = util.find_nearest(original_array=pad_qx, array_values=h * recipr_param)
-                    pix_k = util.find_nearest(original_array=pad_qy, array_values=k * recipr_param)
-                    pix_l = util.find_nearest(original_array=pad_qz, array_values=l * recipr_param)
+                    pix_h = util.find_nearest(reference_array=pad_qx, test_values=h * recipr_param)
+                    pix_k = util.find_nearest(reference_array=pad_qy, test_values=k * recipr_param)
+                    pix_l = util.find_nearest(reference_array=pad_qz, test_values=l * recipr_param)
 
                     lattice_list.append([pix_h, pix_l, pix_k])
                     peaks_list.append([h, l, k])
@@ -383,6 +414,45 @@ def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_
     return (pivot_z, pivot_y, pivot_x), pad_offset, (qx, qz, qy), lattice_pos, peaks
 
 
+def reciprocal_lattice(alpha, beta, gamma, a1, a2, a3, input_lattice='direct', verbose=False):
+    """
+    Calculate the reciprocal lattice given the direct space lattice parameters for the most general triclinic lattice.
+
+    :param alpha: in degrees, angle between a2 and a3
+    :param beta: in degrees, angle between a1 and a3
+    :param gamma: in degrees, angle between a1 and a2
+    :param a1: length of the first direct lattice basis vector in nm
+    :param a2: length of the second direct lattice basis vector in nm
+    :param a3: length of the third direct lattice basis vector in nm
+    :param input_lattice: 'direct' or 'reciprocal', used to define the unit for the volume of the unit cell
+    :param verbose: True to print comments
+    :return: the triclinic reciprocal lattice componenets (alpha_r, beta_r, gamma_r, b1, b2, b3)
+    """
+    v1, v2, v3 = triclinic_to_basis(alpha, beta, gamma, a1, a2, a3)
+
+    volume = v1.dot(np.cross(v2, v3))
+    if verbose:
+        if input_lattice == 'direct':
+            print('Volume of the direct space unit cell: {:.6f} nm\u00B3'.format(volume))
+        elif input_lattice == 'reciprocal':
+            print('Volume of the reciprocal unit cell: {:.6f} nm\u207B\u00B3'.format(volume))
+        else:
+            raise ValueError('Unexpected value for input_lattice parameter')
+    w1 = 2 * np.pi / volume * np.cross(v2, v3)
+    w2 = 2 * np.pi / volume * np.cross(v3, v1)
+    w3 = 2 * np.pi / volume * np.cross(v1, v2)
+
+    b1 = np.linalg.norm(w1)
+    b2 = np.linalg.norm(w2)
+    b3 = np.linalg.norm(w3)
+
+    alpha_r = 180 / np.pi * np.arccos(np.dot(w2, w3) / (b2*b3))
+    beta_r = 180 / np.pi * np.arccos(np.dot(w3, w1) / (b3 * b1))
+    gamma_r = 180 / np.pi * np.arccos(np.dot(w1, w2) / (b1 * b2))
+
+    return alpha_r, beta_r, gamma_r, b1, b2, b3
+
+
 def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, euler_angles=(0, 0, 0)):
     """
     Rotate lattice points given Euler angles, the pivot position and an eventual offset of the origin.
@@ -432,8 +502,41 @@ def rotate_lattice(lattice_list, peaks_list, original_shape, pad_offset, pivot, 
     return lattice_pos, peaks
 
 
-if __name__ == "__main__":
-    euler_angles = (-8.75, 33.75, -24.75)
-    rot = Rotation.from_euler('xzy', euler_angles, degrees=True)
-    vector = [0, 0, 1]  # in the frame (x, y, z) or (qx, qy, qz)
-    print(rot.apply(vector))
+def triclinic_to_basis(alpha, beta, gamma, a1, a2, a3):
+    """
+    Calculate the basis vector components in the orthonormal basis [[1, 0, 0], [0, 1, 0], [0, 0, 1]] for the most
+     general triclinic lattice.
+
+    :param alpha: in degrees, angle between a2 and a3
+    :param beta: in degrees, angle between a1 and a3
+    :param gamma: in degrees, angle between a1 and a2
+    :param a1: length of the first basis vector
+    :param a2: length of the second basis vector
+    :param a3: length of the third basis vector
+    :return: the basis vector components expressed in the orthonormal basis as (v1, v2, v3)
+    """
+    v1 = a1 * np.array([1, 0, 0])  # the convention here is to align b1 along [1, 0, 0]
+    v2 = a2 * np.cos(gamma * np.pi / 180) * np.array([1, 0, 0])\
+        + a2 * np.sin(gamma * np.pi / 180) * np.array([0, 1, 0])
+    # b2 is in the plane defined by the vectors [1, 0, 0] and [0, 1, 0]
+    cx = a3 * np.cos(beta * np.pi / 180)
+    cy = a3 * (np.cos(alpha * np.pi / 180) - np.cos(beta * np.pi / 180) * np.cos(gamma * np.pi / 180))\
+        / np.sin(gamma * np.pi / 180)
+    cz = np.sqrt(a3 ** 2 - cx ** 2 - cy ** 2)
+    v3 = cx * np.array([1, 0, 0]) + cy * np.array([0, 1, 0]) + cz * np.array([0, 0, 1])
+    return v1, v2, v3
+
+
+# if __name__ == "__main__":
+#     alpha_r, beta_r, gamma_r, b1, b2, b3 = reciprocal_lattice(alpha=75, beta=75, gamma=90, a1=63.2, a2=63.2, a3=61.2,
+#                                                               input_lattice='direct', verbose=True)
+#     print(alpha_r, beta_r, gamma_r, b1, b2, b3)
+#
+#     alpha, beta, gamma, a1, a2, a3 = reciprocal_lattice(alpha=alpha_r, beta=beta_r, gamma=gamma_r, a1=b1, a2=b2, a3=b3,
+#                                                         input_lattice='reciprocal', verbose=True)
+#     print(alpha, beta, gamma, a1, a2, a3)
+
+#     euler_angles = (-8.75, 33.75, -24.75)
+#     rot = Rotation.from_euler('xzy', euler_angles, degrees=True)
+#     vector = [0, 0, 1]  # in the frame (x, y, z) or (qx, qy, qz)
+#     print(rot.apply(vector))

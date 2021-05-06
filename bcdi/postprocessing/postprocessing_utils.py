@@ -6,28 +6,37 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from functools import reduce
+from numbers import Number, Real
+from math import pi
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 import scipy
 import matplotlib.pyplot as plt
-import sys
-sys.path.append('D:/myscripts/bcdi/')
-import bcdi.graph.graph_utils as gu
-import bcdi.utils.utilities as util
-from bcdi.utils import image_registration as reg
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
 from scipy.stats import multivariate_normal
 from scipy.stats import pearsonr
 import gc
+import sys
+sys.path.append('D:/myscripts/bcdi/')
+import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
+from bcdi.utils import image_registration as reg
+import bcdi.utils.validation as valid
 
 
-def align_obj(reference_obj, obj, precision=1000, debugging=False):
+def align_obj(reference_obj, obj, method='modulus', support_threshold=None, precision=1000, debugging=False):
     """
     Align two arrays using dft registration and subpixel shift.
 
     :param reference_obj: 3D array, reference complex object
     :param obj: 3D array, complex density to average with
+    :param method: 'modulus', 'support' or 'skip'. Object to use for the determination of the shift.
+     If 'support', the parameter 'support_threshold' must also be provided since the binary support is defined by
+     thresholding the normalized modulus.
+    :param support_threshold: all points where the normalized modulus is larger than this value will be set to 1 in the
+     support.
     :param precision: precision for the DFT registration in 1/pixel
     :param debugging: set to True to see plots
     :type debugging: bool
@@ -41,15 +50,34 @@ def align_obj(reference_obj, obj, precision=1000, debugging=False):
         print('crop/pad obj')
         obj = crop_pad(array=obj, output_shape=reference_obj.shape)
 
-    shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(obj), precision=precision)
-    new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output
-    print("    Shift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
-          str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
+    # calculate the shift between the two arrays
+    if method == 'modulus':
+        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(obj), precision=precision)
+    elif method == 'support':
+        ref_support = np.zeros(reference_obj.shape)
+        ref_support[abs(reference_obj) > support_threshold * abs(reference_obj).max()] = 1
+        support = np.zeros(reference_obj.shape)
+        support[abs(obj) > support_threshold * abs(obj).max()] = 1
+        shiftz, shifty, shiftx = reg.getimageregistration(ref_support, support, precision=precision)
+        if debugging:
+            gu.multislices_plot(abs(ref_support), sum_frames=False, title='Reference support')
+            gu.multislices_plot(abs(support), sum_frames=False, title='Support before alignement')
+        del ref_support, support
+    else:  # 'skip'
+        print('\nSkipping alignment')
+        print('\tPearson correlation coefficient = {0:.3f}'.format(pearsonr(np.ndarray.flatten(abs(reference_obj)),
+                                                                            np.ndarray.flatten(abs(obj)))[0]))
+        return obj
 
+    # align obj using subpixel shift
+    new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output
+    print("\tShift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
+          str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
+    print('\tPearson correlation coefficient = {0:.3f}'.format(pearsonr(np.ndarray.flatten(abs(reference_obj)),
+                                                                        np.ndarray.flatten(abs(new_obj)))[0]))
     if debugging:
         gu.multislices_plot(abs(reference_obj), sum_frames=True, title='Reference object')
         gu.multislices_plot(abs(new_obj), sum_frames=True, title='Aligned object')
-
     return new_obj
 
 
@@ -64,59 +92,49 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     :param debugging: set to True to see plots
     :type debugging: bool
     :param kwargs:
-     - if 'normal': sigma and mu of the 3d multivariate normal distribution, tuples of 3 floats
-     - if 'tukey': alpha (shape parameter) of the 3d Tukey window, tuple of 3 floats
+     - for the normal distribution: 'sigma' and 'mu' of the 3d multivariate normal distribution, tuples of 3 floats
+     - for the Tuckey window: 'alpha' (shape parameter) of the 3d Tukey window, tuple of 3 floats
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
     :return: filtered amplitude, phase of the same shape as myamp
     """
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma', 'mu', 'alpha', 'is_orthogonal'},
+                       name='postprocessing_utils.apodize')
+    sigma = kwargs.get('sigma', None)
+    mu = kwargs.get('mu', None)
+    alpha = kwargs.get('alpha', None)
+    is_orthogonal = kwargs.get('is_orthogonal', False)
+
     if amp.ndim != 3 or phase.ndim != 3:
         raise ValueError('amp and phase should be 3D arrays')
     if amp.shape != phase.shape:
         raise ValueError('amp and phase must have the same shape\n'
                          'amp is ', amp.shape, ' while phase is ', phase.shape)
 
-    for k in kwargs.keys():
-        if k in ['sigma']:
-            sigma = kwargs['sigma']
-        elif k in ['mu']:
-            mu = kwargs['mu']
-        elif k in ['alpha']:
-            alpha = kwargs['alpha']
-        else:
-            raise Exception("unknown keyword argument given: allowed is"
-                            "'fix_bragg', 'fix_size', 'pad_size' and 'q_values'")
-
+    # calculate the diffraction pattern of the reconstructed object
     nb_z, nb_y, nb_x = amp.shape
     nbz, nby, nbx = initial_shape
     myobj = crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx))
     del amp, phase
     gc.collect()
     if debugging:
-        plt.figure()
-        plt.imshow(abs(myobj[nbz // 2, :, :]))
-        plt.pause(0.1)
+        gu.multislices_plot(array=abs(myobj), sum_frames=False, plot_colorbar=True, title='modulus before apodization',
+                            reciprocal_space=False, is_orthogonal=is_orthogonal, scale='linear')
+
     my_fft = fftshift(fftn(myobj))
     del myobj
     gc.collect()
     fftmax = abs(my_fft).max()
     print('Max FFT=', fftmax)
     if debugging:
-        plt.figure()
-        plt.imshow(np.log10(abs(my_fft[nbz // 2, :, :])), vmin=0, vmax=np.log10(fftmax))
-        plt.colorbar()
-        plt.pause(0.1)
+        gu.multislices_plot(array=abs(my_fft), sum_frames=False, plot_colorbar=True,
+                            title='diffraction amplitude before apodization',
+                            reciprocal_space=True, is_orthogonal=is_orthogonal, scale='log')
 
     if window_type == 'normal':
         print('Apodization using a 3d multivariate normal window')
-        try:
-            sigma
-        except NameError:  # sigma not declared
-            sigma = np.array([0.3, 0.3, 0.3])
-            print('defaulting sigma parameter')
-        try:
-            mu
-        except NameError:  # mu not declared
-            mu = np.array([0.0, 0.0, 0.0])
-            print('defaulting mu parameter')
+        sigma = sigma or np.array([0.3, 0.3, 0.3])
+        mu = mu or np.array([0.0, 0.0, 0.0])
 
         grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby), np.linspace(-1, 1, nbx),
                                              indexing='ij')
@@ -129,12 +147,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
 
     elif window_type == 'tukey':
         print('Apodization using a 3d Tukey window')
-        try:
-            alpha
-        except NameError:  # alpha not declared
-            alpha = np.array([0.5, 0.5, 0.5])
-            print('defaulting alpha parameter')
-
+        alpha = alpha or np.array([0.5, 0.5, 0.5])
         window = tukey_window(initial_shape, alpha=alpha)
 
     elif window_type == 'blackman':
@@ -150,23 +163,22 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     my_fft = my_fft * fftmax / abs(my_fft).max()
     print('Max apodized FFT after normalization =', abs(my_fft).max())
     if debugging:
-        plt.figure()
-        plt.imshow(np.log10(abs(my_fft[nbz // 2, :, :])), vmin=0, vmax=np.log10(fftmax))
-        plt.colorbar()
-        plt.pause(0.1)
+        gu.multislices_plot(array=abs(my_fft), sum_frames=False, plot_colorbar=True,
+                            title='diffraction amplitude after apodization',
+                            reciprocal_space=True, is_orthogonal=is_orthogonal, scale='log')
+
     myobj = ifftn(ifftshift(my_fft))
     del my_fft
     gc.collect()
     if debugging:
-        plt.figure()
-        plt.imshow(abs(myobj[nbz // 2, :, :]))
-        plt.pause(0.1)
+        gu.multislices_plot(array=abs(myobj), sum_frames=False, plot_colorbar=True, title='modulus after apodization',
+                            reciprocal_space=False, is_orthogonal=is_orthogonal, scale='linear')
     myobj = crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
     return abs(myobj), np.angle(myobj)
 
 
 def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_threshold=0.90, aligning_option='dft',
-                width_z=None, width_y=None, width_x=None, method='reciprocal_space', debugging=False):
+                width_z=None, width_y=None, width_x=None, method='reciprocal_space', debugging=False, **kwargs):
     """
     Average two reconstructions after aligning it, if their cross-correlation is larger than
     correlation_threshold.
@@ -183,8 +195,17 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
     :param method: 'real_space' or 'reciprocal_space', in which space the average will be performed
     :param debugging: set to True to see plots
     :type debugging: bool
+    :param kwargs:
+     - 'reciprocal_space': True if the object is in reciprocal space
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
     :return: the average complex density
     """
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'reciprocal_space', 'is_orthogonal'},
+                       name='postprocessing_utils.average_obj')
+    reciprocal_space = kwargs.get('reciprocal_space', False)
+    is_orthogonal = kwargs.get('is_orthogonal', False)
+
     if obj.ndim != 3 or avg_obj.ndim != 3 or ref_obj.ndim != 3:
         raise ValueError('avg_obj, ref_obj and obj should be 3D arrays')
     if obj.shape != avg_obj.shape or obj.shape != ref_obj.shape:
@@ -197,7 +218,8 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
         avg_obj = ref_obj
         if debugging:
             gu.multislices_plot(abs(avg_obj), width_z=width_z, width_y=width_y, width_x=width_x, plot_colorbar=True,
-                                sum_frames=True, title='Reference object')
+                                sum_frames=True, title='Reference object', reciprocal_space=reciprocal_space,
+                                is_orthogonal=is_orthogonal)
     else:
         myref_support = np.zeros((nbz, nby, nbx))
         myref_support[abs(ref_obj) > support_threshold*abs(ref_obj).max()] = 1
@@ -210,7 +232,7 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
         offset_x = avg_pix - pix
         print("center of mass offset with reference object: (", str('{:.2f}'.format(offset_z)), ',',
               str('{:.2f}'.format(offset_y)), ',', str('{:.2f}'.format(offset_x)), ') pixels')
-        if aligning_option is 'com':
+        if aligning_option == 'com':
             # re-sample data on a new grid based on COM shift of support
             old_z = np.arange(-nbz // 2, nbz // 2)
             old_y = np.arange(-nby // 2, nby // 2)
@@ -244,7 +266,8 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
 
             if debugging:
                 myfig, _, _ = gu.multislices_plot(abs(new_obj), width_z=width_z, width_y=width_y, width_x=width_x,
-                                                  sum_frames=True, plot_colorbar=True, title='Aligned object')
+                                                  sum_frames=True, plot_colorbar=True, title='Aligned object',
+                                                  reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
                 myfig.text(0.60, 0.30, "pearson-correlation = " + str('{:.4f}'.format(correlation)), size=20)
 
             if method == 'real_space':
@@ -257,7 +280,8 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
 
         if debugging:
             gu.multislices_plot(abs(avg_obj), plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                sum_frames=True, title='New averaged object')
+                                sum_frames=True, title='New averaged object', reciprocal_space=reciprocal_space,
+                                is_orthogonal=is_orthogonal)
 
     return avg_obj, avg_flag
 
@@ -274,7 +298,7 @@ def bin_data(array, binning, debugging=False):
     :return: the binned array
     """
     ndim = array.ndim
-    if type(binning) is int:
+    if isinstance(binning, int):
         binning = [binning] * ndim
     else:
         assert ndim == len(binning), "Rebin: number of dimensions does not agree with number of rebin values:" + str(
@@ -415,33 +439,59 @@ def calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=None, width_y=
     return mycoord
 
 
-def center_com(array, width_z=None, width_y=None, width_x=None, debugging=False):
+def center_com(array, debugging=False, **kwargs):
     """
     Center array based on center_of_mass(abs(array)) using pixel shift.
 
     :param array: 3D array to be centered based on the center of mass of abs(array)
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param debugging: set to True to see plots
-    :type debugging: bool
+    :param debugging: boolean, True to see plots
+    :param kwargs:
+     - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+     - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+     - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
     :return: array centered by pixel shift
     """
+    #########################
+    # check and load kwargs #
+    #########################
+    valid_name = 'postprocessing_utils.center_com'
+    valid.valid_kwargs(kwargs=kwargs,
+                       allowed_kwargs={'width_z', 'width_y', 'width_x'}, name=valid_name)
+    width_z = kwargs.get('width_z', None)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_y = kwargs.get('width_y', None)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_x = kwargs.get('width_x', None)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+
+    #########################
+    # check some parameters #
+    #########################
     if array.ndim != 3:
         raise ValueError('array should be a 3D array')
 
+    #########################################
+    # find the offset of the center of mass #
+    #########################################
     nbz, nby, nbx = array.shape
+    piz, piy, pix = center_of_mass(abs(array))
+    offset_z = int(np.rint(nbz / 2.0 - piz))
+    offset_y = int(np.rint(nby / 2.0 - piy))
+    offset_x = int(np.rint(nbx / 2.0 - pix))
 
     if debugging:
         gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before COM centering')
 
-    piz, piy, pix = center_of_mass(abs(array))
-    print("center of mass at (z, y, x): (", str('{:.2f}'.format(piz)), ',',
-          str('{:.2f}'.format(piy)), ',', str('{:.2f}'.format(pix)), ')')
-    offset_z = int(np.rint(nbz / 2.0 - piz))
-    offset_y = int(np.rint(nby / 2.0 - piy))
-    offset_x = int(np.rint(nbx / 2.0 - pix))
-    print("center of mass offset: (", offset_z, ',', offset_y, ',', offset_x, ') pixels')
+        print("center of mass at (z, y, x): (", str('{:.2f}'.format(piz)), ',',
+              str('{:.2f}'.format(piy)), ',', str('{:.2f}'.format(pix)), ')')
+        print("center of mass offset: (", offset_z, ',', offset_y, ',', offset_x, ') pixels')
+
+    #####################
+    # center the object #
+    #####################
     array = np.roll(array, (offset_z, offset_y, offset_x), axis=(0, 1, 2))
 
     if debugging:
@@ -449,32 +499,58 @@ def center_com(array, width_z=None, width_y=None, width_x=None, debugging=False)
     return array
 
 
-def center_max(array, width_z=None, width_y=None, width_x=None, debugging=False):
+def center_max(array, debugging=False, **kwargs):
     """
     Center array based on max(abs(array)) using pixel shift.
 
     :param array: 3D array to be centered based on max(abs(array))
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param debugging: set to True to see plots
-    :type debugging: bool
+    :param debugging: boolean, True to see plots
+    :param kwargs:
+     - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+     - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+     - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
     :return: array centered by pixel shift
     """
+    #########################
+    # check and load kwargs #
+    #########################
+    valid_name = 'postprocessing_utils.center_max'
+    valid.valid_kwargs(kwargs=kwargs,
+                       allowed_kwargs={'width_z', 'width_y', 'width_x'}, name=valid_name)
+    width_z = kwargs.get('width_z', None)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_y = kwargs.get('width_y', None)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_x = kwargs.get('width_x', None)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+
+    #########################
+    # check some parameters #
+    #########################
     if array.ndim != 3:
         raise ValueError('array should be a 3D array')
 
+    ##################################################################
+    # find the offset of the max relative to the center of the array #
+    ##################################################################
     nbz, nby, nbx = array.shape
-
-    if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before max centering')
-
     piz, piy, pix = np.unravel_index(abs(array).argmax(), array.shape)
-    print("Max at (z, y, x): (", piz, ',', piy, ',', pix, ')')
     offset_z = int(np.rint(nbz / 2.0 - piz))
     offset_y = int(np.rint(nby / 2.0 - piy))
     offset_x = int(np.rint(nbx / 2.0 - pix))
-    print("Max offset: (", offset_z, ',', offset_y, ',', offset_x, ') pixels')
+
+    if debugging:
+        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before max centering')
+        print("Max at (z, y, x): (", piz, ',', piy, ',', pix, ')')
+
+        print("Max offset: (", offset_z, ',', offset_y, ',', offset_x, ') pixels')
+
+    #####################
+    # center the object #
+    #####################
     array = np.roll(array, (offset_z, offset_y, offset_x), axis=(0, 1, 2))
 
     if debugging:
@@ -482,16 +558,16 @@ def center_max(array, width_z=None, width_y=None, width_x=None, debugging=False)
     return array
 
 
-def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_center=None, debugging=False):
+def crop_pad(array, output_shape, pad_value=0, pad_start=None, crop_center=None, debugging=False):
     """
     Crop or pad the 3D object depending on output_shape.
 
     :param array: 3D complex array to be padded
     :param output_shape: desired output shape (3D)
-    :param padwith_ones: if True, pad with ones instead of zeros
+    :param pad_value: will pad using this value
     :param pad_start: for padding, tuple of 3 positions in pixel where the original array should be placed.
      If None, padding is symmetric along the respective axis
-    :param crop_center: for cropping, [z, y, x] position in the original array (in pixels) of the center of the ourput
+    :param crop_center: for cropping, [z, y, x] position in the original array (in pixels) of the center of the output
      array. If None, it will be set to the center of the original array
     :param debugging: set to True to see plots
     :type debugging: bool
@@ -512,50 +588,49 @@ def crop_pad(array, output_shape, padwith_ones=False, pad_start=None, crop_cente
     assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
 
     if debugging:
+        print(f'array shape before crop/pad = {array.shape}')
         gu.multislices_plot(abs(array), sum_frames=True, scale='log', title='Before crop/pad')
 
     # crop/pad along axis 0
     if newz >= nbz:  # pad
-        if not padwith_ones:
-            temp_z = np.zeros((output_shape[0], nby, nbx), dtype=array.dtype)
-        else:
-            temp_z = np.ones((output_shape[0], nby, nbx), dtype=array.dtype)
+        temp_z = np.ones((output_shape[0], nby, nbx), dtype=array.dtype) * pad_value
         temp_z[pad_start[0]:pad_start[0]+nbz, :, :] = array
     else:  # crop
-        temp_z = array[crop_center[0] - newz//2:crop_center[0] + newz//2, :, :]
+        assert (crop_center[0] - output_shape[0] // 2 >= 0) and (crop_center[0] + output_shape[0] // 2 <= nbz),\
+            'crop_center[0] incompatible with output_shape[0]'
+        temp_z = array[crop_center[0] - newz//2:crop_center[0] + newz//2 + newz % 2, :, :]
 
     # crop/pad along axis 1
     if newy >= nby:  # pad
-        if not padwith_ones:
-            temp_y = np.zeros((newz, newy, nbx), dtype=array.dtype)
-        else:
-            temp_y = np.ones((newz, newy, nbx), dtype=array.dtype)
+        temp_y = np.ones((newz, newy, nbx), dtype=array.dtype) * pad_value
         temp_y[:, pad_start[1]:pad_start[1]+nby, :] = temp_z
     else:  # crop
-        temp_y = temp_z[:, crop_center[1] - newy//2:crop_center[1] + newy//2, :]
+        assert (crop_center[1] - output_shape[1] // 2 >= 0) and (crop_center[1] + output_shape[1] // 2 <= nby),\
+            'crop_center[1] incompatible with output_shape[1]'
+        temp_y = temp_z[:, crop_center[1] - newy//2:crop_center[1] + newy//2 + newy % 2, :]
 
     # crop/pad along axis 2
     if newx >= nbx:  # pad
-        if not padwith_ones:
-            newobj = np.zeros((newz, newy, newx), dtype=array.dtype)
-        else:
-            newobj = np.ones((newz, newy, newx), dtype=array.dtype)
+        newobj = np.ones((newz, newy, newx), dtype=array.dtype) * pad_value
         newobj[:, :, pad_start[2]:pad_start[2]+nbx] = temp_y
     else:  # crop
-        newobj = temp_y[:, :, crop_center[2] - newx//2:crop_center[2] + newx//2]
+        assert (crop_center[2] - output_shape[2] // 2 >= 0) and (crop_center[2] + output_shape[2] // 2 <= nbx),\
+            'crop_center[2] incompatible with output_shape[2]'
+        newobj = temp_y[:, :, crop_center[2] - newx//2:crop_center[2] + newx//2 + newx % 2]
 
     if debugging:
+        print(f'array shape after crop/pad = {newobj.shape}')
         gu.multislices_plot(abs(newobj), sum_frames=True, scale='log', title='After crop/pad')
     return newobj
 
 
-def crop_pad_2d(array, output_shape, padwith_ones=False, pad_start=None, crop_center=None, debugging=False):
+def crop_pad_2d(array, output_shape, pad_value=0, pad_start=None, crop_center=None, debugging=False):
     """
     Crop or pad the 2D object depending on output_shape.
 
     :param array: 2D complex array to be padded
     :param output_shape: list of desired output shape [y, x]
-    :param padwith_ones: if True, pad with ones instead of zeros
+    :param pad_value: will pad using this value
     :param pad_start: for padding, tuple of 2 positions in pixel where the original array should be placed.
      If None, padding is symmetric along the respective axis
     :param crop_center: for cropping, [y, x] position in the original array (in pixels) of the center of the ourput
@@ -582,36 +657,34 @@ def crop_pad_2d(array, output_shape, padwith_ones=False, pad_start=None, crop_ce
         gu.imshow_plot(abs(array), sum_frames=True, scale='log', title='Before crop/pad')
     # crop/pad along axis 0
     if newy >= nby:  # pad
-        if not padwith_ones:
-            temp_y = np.zeros((output_shape[0], nbx), dtype=array.dtype)
-        else:
-            temp_y = np.ones((output_shape[0], nbx), dtype=array.dtype)
+        temp_y = np.ones((output_shape[0], nbx), dtype=array.dtype) * pad_value
         temp_y[pad_start[0]:pad_start[0]+nby, :] = array
     else:  # crop
-        temp_y = array[crop_center[0] - newy//2:crop_center[0] + newy//2, :]
+        assert (crop_center[0] - output_shape[0] // 2 >= 0) and (crop_center[0] + output_shape[0] // 2 <= nby),\
+            'crop_center[0] incompatible with output_shape[0]'
+        temp_y = array[crop_center[0] - newy//2:crop_center[0] + newy//2 + newy % 2, :]
 
     # crop/pad along axis 1
     if newx >= nbx:  # pad
-        if not padwith_ones:
-            newobj = np.zeros((newy, newx), dtype=array.dtype)
-        else:
-            newobj = np.ones((newy, newx), dtype=array.dtype)
+        newobj = np.ones((newy, newx), dtype=array.dtype) * pad_value
         newobj[:, pad_start[1]:pad_start[1]+nbx] = temp_y
     else:  # crop
-        newobj = temp_y[:, crop_center[1] - newx//2:crop_center[1] + newx//2]
+        assert (crop_center[1] - output_shape[1] // 2 >= 0) and (crop_center[1] + output_shape[1] // 2 <= nbx),\
+            'crop_center[1] incompatible with output_shape[1]'
+        newobj = temp_y[:, crop_center[1] - newx//2:crop_center[1] + newx//2 + newx % 2]
 
     if debugging:
         gu.imshow_plot(abs(array), sum_frames=True, scale='log', title='After crop/pad')
     return newobj
 
 
-def crop_pad_1d(array, output_length, padwith_ones=False, pad_start=None, crop_center=None, extrapolate=False):
+def crop_pad_1d(array, output_length, pad_value=0, pad_start=None, crop_center=None, extrapolate=False):
     """
     Crop or pad the 2D object depending on output_shape.
 
     :param array: 1D complex array to be padded
     :param output_length: int desired output length
-    :param padwith_ones: if True, pad with ones instead of zeros
+    :param pad_value: will pad using this value
     :param pad_start: for padding, position in pixel where the original array should be placed.
      If None, padding is symmetric
     :param crop_center: for cropping, position in pixels in the original array of the center of the ourput
@@ -633,17 +706,16 @@ def crop_pad_1d(array, output_length, padwith_ones=False, pad_start=None, crop_c
 
     if newx >= nbx:  # pad
         if not extrapolate:
-            if not padwith_ones:
-                newobj = np.zeros(output_length, dtype=array.dtype)
-            else:
-                newobj = np.ones(output_length, dtype=array.dtype)
+            newobj = np.ones(output_length, dtype=array.dtype) * pad_value
             newobj[pad_start:pad_start+nbx] = array
         else:
             spacing = array[1] - array[0]
             pad_start = array[0] - ((newx - nbx) // 2) * spacing
             newobj = pad_start + np.arange(newx) * spacing
     else:  # crop
-        newobj = array[crop_center - newx//2:crop_center + newx//2]
+        assert crop_center - output_length // 2 >= 0, 'crop_center incompatible with output_length'
+        assert crop_center + output_length // 2 <= nbx, 'crop_center incompatible with output_length'
+        newobj = array[crop_center - newx//2:crop_center + newx//2 + newx % 2]
 
     return newobj
 
@@ -653,7 +725,7 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
     Apply a filter to the array by convoluting with a filtering kernel.
 
     :param array: 2D or 3D array to be filtered
-    :param filter_name: name of the filter, 'gaussian_highpass'
+    :param filter_name: name of the filter, 'gaussian', 'gaussian_highpass'
     :param kernel_length: length in pixels of the filtering kernel
     :param debugging: True to see a plot of the kernel
     :param kwargs:
@@ -662,34 +734,24 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
     """
     from scipy.signal import convolve
 
-    if array.ndim == 3:
-        ndim = 3
-    elif array.ndim == 2:
-        ndim = 2
-    else:
-        raise ValueError('data should be a 2D or a 3D array')
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma'},
+                       name='postprocessing_utils.filter_3d')
+    sigma = kwargs.get('sigma', None)
 
-    for k in kwargs.keys():
-        if k in ['sigma']:
-            sigma = kwargs['sigma']
-        else:
-            raise Exception("unknown keyword argument given: allowed is 'sigma'")
+    ndim = array.ndim
+    assert ndim in {2, 3}, 'data should be a 2D or a 3D array'
 
     if filter_name == 'gaussian_highpass':
-        try:
-            sigma
-        except NameError:  # sigma not declared
-            print('defaulting sigma to 3')
-            sigma = 3
-
+        sigma = sigma or 3
         kernel = gaussian_kernel(ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging)
-
+        return array - convolve(array, kernel, mode='same')
+    elif filter_name == 'gaussian':
+        sigma = sigma or 0.5
+        kernel = gaussian_kernel(ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging)
+        return convolve(array, kernel, mode='same')
     else:
         raise ValueError('Only the gaussian_kernel is implemented up to now.')
-
-    array = array - convolve(array, kernel, mode='same')
-
-    return array
 
 
 def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=None, width_x=None,
@@ -712,16 +774,14 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=
 
     nbz, nby, nbx = amp.shape
     max_amp = abs(amp).max()
-    mysupport = np.ones((nbz, nby, nbx))
+    support = np.ones((nbz, nby, nbx))
 
     if method == 'threshold':
-        mysupport[abs(amp) < support_threshold * max_amp] = 0
-        mybulk = mysupport
-
+        support[abs(amp) < support_threshold * max_amp] = 0
     else:
-        mysupport[abs(amp) < 0.1 * max_amp] = 0  # predefine a larger support
+        support[abs(amp) < 0.05 * max_amp] = 0  # predefine a larger support
         mykernel = np.ones((9, 9, 9))
-        mycoordination_matrix = calc_coordination(mysupport, kernel=mykernel, debugging=False)
+        mycoordination_matrix = calc_coordination(support, kernel=mykernel, debugging=debugging)
         outer = np.copy(mycoordination_matrix)
         outer[np.nonzero(outer)] = 1
         if mykernel.shape == np.ones((9, 9, 9)).shape:
@@ -773,14 +833,55 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=
             else:
                 print('Surface of object reached after', idx, 'iterations')
                 break
-        mybulk = np.ones((nbz, nby, nbx)) - outer
-    return mybulk
+        support_defect = np.ones((nbz, nby, nbx)) - outer
+        support = np.ones((nbz, nby, nbx))
+        support[abs(amp) < support_threshold * max_amp] = 0
+        # add voxels detected by support_defect
+        support[np.nonzero(support_defect)] = 1
+    return support
 
 
-def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False):
+def find_crop_center(array_shape, crop_shape, pivot):
     """
-    Find the meaningful range of the data, in order to reduce the memory consumption when manipulating the object. The
-    range can be larger than the initial data size, which then will need to be padded.
+    Find the closest voxel to pivot which allows to crop an array of array_shape to crop_shape.
+
+    :param array_shape: initial shape of the array
+    :type array_shape: tuple
+    :param crop_shape: final shape of the array
+    :type crop_shape: tuple
+    :param pivot: position on which the final region of interest dhould be centered (center of mass of the Bragg peak)
+    :type pivot: tuple
+    :return: the voxel position closest to pivot which allows cropping to the defined shape.
+    """
+    valid_name = 'postprocessing_utils.find_crop_center'
+    valid.valid_container(array_shape, container_types=(tuple, list, np.ndarray), min_length=1, item_types=int,
+                          name=valid_name)
+    ndim = len(array_shape)
+    valid.valid_container(crop_shape, container_types=(tuple, list, np.ndarray), length=ndim, item_types=int,
+                          name=valid_name)
+    valid.valid_container(pivot, container_types=(tuple, list, np.ndarray), length=ndim, item_types=int,
+                          name=valid_name)
+    crop_center = np.empty(ndim)
+    for idx, dim in enumerate(range(ndim)):
+        if max(0, pivot[idx] - crop_shape[idx] // 2) == 0:
+            # not enough range on this side of the com
+            crop_center[idx] = crop_shape[idx] // 2
+        else:
+            if min(array_shape[idx], pivot[idx] + crop_shape[idx] // 2) == array_shape[idx]:
+                # not enough range on this side of the com
+                crop_center[idx] = array_shape[idx] - crop_shape[idx] // 2
+            else:
+                crop_center[idx] = pivot[idx]
+
+    crop_center = list(map(lambda x: int(x), crop_center))
+    return crop_center
+
+
+def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=False):
+    """
+    Find the meaningful range of the array where it is larger than the threshold, in order to reduce the memory
+    consumption in latter processing. The range can be larger than the initial data size, which then will need to be
+    padded.
 
     :param array: the complex 3D reconstruction
     :param plot_margin: user-defined margin to add to the minimum range of the data
@@ -792,10 +893,25 @@ def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False)
      - xrange: half size of the data range to use in the third axis (X)
     """
     nbz, nby, nbx = array.shape
+    #########################
+    # check some parameters #
+    #########################
+    valid_name = 'postprocessing_utils.find_datarange'
+    if not isinstance(array, np.ndarray):
+        raise TypeError('array should be a numpy ndarray')
+    if array.ndim != 3:
+        raise ValueError('array should be 3D')
+    if isinstance(plot_margin, Number):
+        plot_margin = (plot_margin,) * 3
+    valid.valid_container(plot_margin, container_types=(tuple, list, np.ndarray), length=3, item_types=int,
+                          name=valid_name)
+    valid.valid_item(amplitude_threshold, allowed_types=Real, min_included=0, name=valid_name)
 
+    #########################################################
+    # find the relevant range where the support is non-zero #
+    #########################################################
     if keep_size:
         return nbz // 2, nby // 2, nbx // 2
-
     else:
         support = np.zeros((nbz, nby, nbx))
         support[abs(array) > amplitude_threshold * abs(array).max()] = 1
@@ -811,9 +927,14 @@ def find_datarange(array, plot_margin, amplitude_threshold=0.1, keep_size=False)
         x = x * support
         min_x = min(int(np.min(x[np.nonzero(x)])), nbx - int(np.max(x[np.nonzero(x)])))
 
-        zrange = (nbz // 2 - min_z) + plot_margin[0]
-        yrange = (nby // 2 - min_y) + plot_margin[1]
-        xrange = (nbx // 2 - min_x) + plot_margin[2]
+        zrange = (nbz // 2 - min_z)
+        yrange = (nby // 2 - min_y)
+        xrange = (nbx // 2 - min_x)
+
+        if plot_margin is not None:
+            zrange += plot_margin[0]
+            yrange += plot_margin[1]
+            xrange += plot_margin[2]
 
         return zrange, yrange, xrange
 
@@ -874,6 +995,8 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     """
 
     from scipy.stats import norm
+    if kernel_length % 2 == 0:
+        raise ValueError('kernel_length should be an even number')
     half_range = kernel_length // 2
     kernel_1d = norm.pdf(np.arange(-half_range, half_range + 1, 1), 0, sigma)
 
@@ -909,23 +1032,41 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     return kernel
 
 
-def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
+def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=False):
     """
     Create a 2D or 3D Gaussian window using scipy.stats.multivariate_normal.
 
     :param window_shape: shape of the window
     :param sigma: float, sigma of the distribution
     :param mu: float, mean of the distribution
+    :param voxel_size: tuple, voxel size in each dimension corresponding to window_shape. If None, it will default to
+     1/window_shape[ii] for each dimension so that it is independent of the shape of the window
     :param debugging: True to see plots
     :return: the Gaussian window
     """
+    valid_name = 'postprocessing_utils.gaussian_window'
+    # check parameters
+    valid.valid_container(window_shape, container_types=(tuple, list, np.ndarray), min_length=2, max_length=3,
+                          min_excluded=0, name=valid_name)
     ndim = len(window_shape)
+    valid.valid_item(sigma, allowed_types=Real, min_excluded=0, name=valid_name)
+    valid.valid_item(mu, allowed_types=Real, name=valid_name)
+    valid.valid_container(voxel_size, container_types=(tuple, list, np.ndarray), length=ndim, allow_none=True,
+                          item_types=Real, min_excluded=0, name=valid_name)
+    valid.valid_item(debugging, allowed_types=bool, name=valid_name)
+
+    # define sigma and mu in ndim
     sigma = np.repeat(sigma, ndim)
     mu = np.repeat(mu, ndim)
 
+    # check the voxel size
+    if voxel_size is None:
+        voxel_size = [1/pixel_nb for pixel_nb in window_shape]
+
     if ndim == 2:
         nby, nbx = window_shape
-        grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nby), np.linspace(-1, 1, nbx),
+        grid_y, grid_x = np.meshgrid(np.linspace(-nby, nby, nby) * voxel_size[0],
+                                     np.linspace(-nbx, nbx, nbx) * voxel_size[1],
                                      indexing='ij')
         covariance = np.diag(sigma ** 2)
         window = multivariate_normal.pdf(np.column_stack([grid_y.flat, grid_x.flat]), mean=mu,
@@ -934,10 +1075,12 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
         gc.collect()
         window = window.reshape((nby, nbx))
 
-    elif ndim == 3:
+    else:  # 3D
         nbz, nby, nbx = window_shape
-        grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby),
-                                             np.linspace(-1, 1, nbx), indexing='ij')
+        grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-nbz, nbz, nbz) * voxel_size[0],
+                                             np.linspace(-nby, nby, nby) * voxel_size[1],
+                                             np.linspace(-nbx, nbx, nbx) * voxel_size[2],
+                                             indexing='ij')
         covariance = np.diag(sigma ** 2)
         window = multivariate_normal.pdf(np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]), mean=mu,
                                          cov=covariance)
@@ -945,8 +1088,9 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
         gc.collect()
         window = window.reshape((nbz, nby, nbx))
 
-    else:
-        raise ValueError('Image should be 2D or 3D')
+    # rescale the gaussian if voxel size was provided
+    if voxel_size is not None:
+        window = window * reduce((lambda x, y: x * y), window_shape)**2
 
     if debugging:
         gu.multislices_plot(array=window, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window',
@@ -955,31 +1099,61 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, debugging=False):
     return window
 
 
-def get_opticalpath(support, direction, k, width_z=None, width_y=None, width_x=None,
-                    debugging=False):
+def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **kwargs):
     """
     Calculate the optical path for refraction/absorption corrections in the crystal. 'k' should be in the same basis
     (crystal or laboratory frame) as the data. For xrayutilities, the data is orthogonalized in crystal frame.
 
     :param support: 3D array, support used for defining the object
     :param direction: "in" or "out" , incident or diffracted wave
-    :param k: vector for the incident or diffracted wave depending on direction (xrayutils_orthogonal=True case)
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param debugging: set to True to see plots
-    :type debugging: bool
-    :return: the optical path, of the same shape as mysupport
+    :param k: vector for the incident or diffracted wave depending on direction, expressed in an orthonormal frame
+     (without taking in to account the different voxel size in each dimension)
+    :param voxel_size: tuple, actual voxel size in z, y, and x (CXI convention)
+    :param debugging: boolena, True to see plots
+    :param kwargs:
+         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :return: the optical path in nm, of the same shape as mysupport
     """
+    valid_name = 'postprocessing_utils.get_opticalpath'
+    #########################
+    # check and load kwargs #
+    #########################
+    valid.valid_kwargs(kwargs=kwargs,
+                       allowed_kwargs={'width_z', 'width_y', 'width_x'}, name=valid_name)
+    width_z = kwargs.get('width_z', None)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_y = kwargs.get('width_y', None)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_x = kwargs.get('width_x', None)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+
+    #########################
+    # check some parameters #
+    #########################
     if support.ndim != 3:
         raise ValueError('support should be a 3D array')
 
+    voxel_size = voxel_size or (1, 1, 1)
+    if isinstance(voxel_size, Number):
+        voxel_size = (voxel_size,) * 3
+    valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real, min_excluded=0,
+                          name=valid_name)
+
+    #####################################################################################################
+    # correct k for the different voxel size in each dimension (k is expressed in an orthonormal basis) #
+    #####################################################################################################
+    k = [k[i] * voxel_size[i] for i in range(3)]
+
+    ###################################################################
+    # find the extent of the object, to optimize the calculation time #
+    ###################################################################
     nbz, nby, nbx = support.shape
     path = np.zeros((nbz, nby, nbx))
-    if debugging:
-        gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x, vmin=0, vmax=1,
-                            sum_frames=False, title='Support for optical path')
-
     indices_support = np.nonzero(support)
     min_z = indices_support[0].min()
     max_z = indices_support[0].max() + 1  # last point not included in range()
@@ -987,116 +1161,176 @@ def get_opticalpath(support, direction, k, width_z=None, width_y=None, width_x=N
     max_y = indices_support[1].max() + 1  # last point not included in range()
     min_x = indices_support[2].min()
     max_x = indices_support[2].max() + 1  # last point not included in range()
-    print("Support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):(",
-          min_z, ',', max_z, ',', min_y, ',', max_y, ',', min_x, ',', max_x, ')')
 
+    #############################################
+    # normalize k, now it is in units of voxels #
+    #############################################
     if direction == "in":
-        k_norm = -1 * k / np.linalg.norm(k)  # we will work with -k_in
-        if (k_norm == np.array([-1, 0, 0])).all():  # data orthogonalized in laboratory frame, k_in along axis 0
-            for idz in range(min_z, max_z, 1):
-                path[idz, :, :] = support[0:idz+1, :, :].sum(axis=0)  # include also the pixel
-            path = np.multiply(path, support)
+        k_norm = -1 / np.linalg.norm(k) * np.asarray(k)  # we will work with -k_in
+    else:  # "out"
+        k_norm = 1 / np.linalg.norm(k) * np.asarray(k)
 
-        else:  # data orthogonalized in crystal frame (xrayutilities), k_in is not along any array axis
-            for idz in range(min_z, max_z, 1):
-                for idy in range(min_y, max_y, 1):
-                    for idx in range(min_x, max_x, 1):
-                        if support[idz, idy, idx] == 1:
-                            stop_flag = False
-                            counter = 1
-                            pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
-                            while not stop_flag:
-                                pixel = pixel + k_norm  # add unitary translation in -k_in direction
-                                coords = np.rint(pixel)
-                                stop_flag = True
-                                if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and\
-                                        (min_x <= coords[2] <= max_x):
-                                    counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
-                                    stop_flag = False
-                            path[idz, idy, idx] = counter
-                        else:  # point outside of the support, optical path = 0
-                            path[idz, idy, idx] = 0
-
-    if direction == "out":
-        k_norm = k / np.linalg.norm(k)
-        for idz in range(min_z, max_z, 1):
-            for idy in range(min_y, max_y, 1):
-                for idx in range(min_x, max_x, 1):
-                    if support[idz, idy, idx] == 1:
+    #############################################
+    # calculate the optical path for each voxel #
+    #############################################
+    for idz in range(min_z, max_z, 1):
+        for idy in range(min_y, max_y, 1):
+            for idx in range(min_x, max_x, 1):
+                stop_flag = False
+                counter = support[idz, idy, idx]  # include also the pixel if it belongs to the support
+                pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
+                # beware, the support could be 0 at some voxel inside the object also, but the loop should
+                # continue until it reaches the end of the box (min_z, max_z, min_y, max_y, min_x, max_x)
+                while not stop_flag:
+                    pixel = pixel + k_norm  # add unitary translation in -k_in direction
+                    coords = np.rint(pixel)
+                    stop_flag = True
+                    if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and\
+                            (min_x <= coords[2] <= max_x):
+                        counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
                         stop_flag = False
-                        counter = 1
-                        pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
-                        while not stop_flag:
-                            pixel = pixel + k_norm  # add unitary translation in k_out direction
-                            coords = np.rint(pixel)
-                            stop_flag = True
-                            if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and \
-                                    (min_x <= coords[2] <= max_x):
-                                counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
-                                stop_flag = False
-                        path[idz, idy, idx] = counter
-                    else:  # point outside of the support, optical path = 0
-                        path[idz, idy, idx] = 0
 
+                # For each voxel, counter is the number of steps along the unitary k vector where the support is
+                # non zero. Now we need to convert this into nm using the voxel size, different in each dimension
+                endpoint = np.array([idz, idy, idx]) + counter * k_norm  # indices of the final voxel
+                path[idz, idy, idx] = np.sqrt(((np.rint(endpoint[0])-idz) * voxel_size[0])**2 +
+                                              ((np.rint(endpoint[1])-idy) * voxel_size[1])**2 +
+                                              ((np.rint(endpoint[2])-idx) * voxel_size[2])**2)
+
+    ##################
+    # debugging plot #
+    ##################
     if debugging:
-        gu.multislices_plot(path, width_z=width_z, width_y=width_y, width_x=width_x,
-                            title='Optical path ' + direction)
+        print(f"Optical path calculation, support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):"
+              f"{min_z}, {max_z}, {min_y}, {max_y}, {min_x}, {max_x}")
+        gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x, vmin=0, vmax=1,
+                            sum_frames=False, title='Support for optical path', is_orthogonal=True,
+                            reciprocal_space=False)
+
+    ###########################################
+    # apply a mean filter to reduce artefacts #
+    ###########################################
+    # the path should be averaged only in the support defined by the isosurface
+    path = mean_filter(array=path, support=support, half_width=1, title='Optical path', debugging=debugging)
+
     return path
 
 
-def get_strain(phase, planar_distance, voxel_size, reference_axis='y'):
+def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_phase=2*pi,
+               method='default', debugging=False):
     """
     Calculate the 3D strain array.
 
     :param phase: 3D phase array (do not forget the -1 sign if the phasing algorithm is python or matlab-based)
     :param planar_distance: the planar distance of the material corresponding to the measured Bragg peak
-    :param voxel_size: the voxel size of the phase array in nm, should be isotropic
+    :param voxel_size: float or tuple of three floats, the voxel size of the phase array in nm
     :param reference_axis: the axis of the array along which q is aligned: 'x', 'y' or 'z' (CXI convention)
+    :param extent_phase: range for phase wrapping, specify it when the phase spans over more than 2*pi
+    :param method: 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
+     value for the strain (Felix Hofmann's method 2019).
+    :param debugging: True to see plots
     :return: the strain 3D array
     """
-    if phase.ndim != 3:
-        raise ValueError('phase should be a 3D array')
+    from bcdi.preprocessing.preprocessing_utils import wrap
 
-    if reference_axis == "x":
-        _, _, strain = np.gradient(planar_distance / (2 * np.pi) * phase,
-                                   voxel_size)  # q is along x after rotating the crystal
-    elif reference_axis == "y":
-        _, strain, _ = np.gradient(planar_distance / (2 * np.pi) * phase,
-                                   voxel_size)  # q is along y after rotating the crystal
-    elif reference_axis == "z":
-        strain, _, _ = np.gradient(planar_distance / (2 * np.pi) * phase,
-                                   voxel_size)  # q is along z after rotating the crystal
-    else:  # default is ref_axis_outplane = "y"
-        raise ValueError("Wrong value for the reference axis, it should be 'x', 'y' or 'z'")
+    assert phase.ndim == 3, 'phase should be a 3D array'
+    assert reference_axis in ('x', 'y', 'z'), "The reference axis should be 'x', 'y' or 'z'"
+    if isinstance(voxel_size, Number):
+        voxel_size = (voxel_size,) * 3
+    valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real,
+                          name='postprocessing_utils.get_strain', min_excluded=0)
+
+    strain = np.inf * np.ones(phase.shape)
+    if method == 'defect':
+        offsets = 2*np.pi / 10 * np.linspace(-10, 10, num=11)
+        print('Strain method = defect, the following phase offsets will be processed:', offsets)
+    else:  # 'default'
+        offsets = (0,)
+
+    for offset in offsets:
+        # offset the phase
+        if method == 'defect':
+            temp_phase = np.copy(phase)
+            temp_phase = temp_phase + offset
+            # wrap again the offseted phase
+            temp_phase = wrap(obj=temp_phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+        else:  # no need to copy the phase, offset = 0
+            temp_phase = phase
+
+        # calculate the strain for this offset
+        if reference_axis == "x":
+            _, _, temp_strain = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
+                                            voxel_size[2])  # q is along x after rotating the crystal
+        elif reference_axis == "y":
+            _, temp_strain, _ = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
+                                            voxel_size[1])  # q is along y after rotating the crystal
+        else:  # "z"
+            temp_strain, _, _ = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
+                                            voxel_size[0])  # q is along z after rotating the crystal
+
+        # update the strain values
+        strain = np.where(abs(strain) < abs(temp_strain), strain, temp_strain)
+        if debugging:
+            gu.multislices_plot(temp_phase, sum_frames=False, title='Offseted phase', vmin=-np.pi, vmax=np.pi,
+                                plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
+            gu.multislices_plot(strain, sum_frames=False, title='strain', vmin=-0.002, vmax=0.002,
+                                plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
     return strain
 
 
-def mean_filter(phase, support, half_width=0, width_z=None, width_y=None, width_x=None,
-                phase_range=np.pi, debugging=False):
+def mean_filter(array, support, half_width=0, width_z=None, width_y=None, width_x=None,
+                vmin=np.nan, vmax=np.nan, title='Object', debugging=False):
     """
-    Apply a mean filter to the phase (spatial average), taking care of the surface.
+    Apply a mean filter to an object defined by a support, taking care of the object's surface.
 
-    :param phase: phase to be averaged
+    :param array: 3D array to be averaged
     :param support: support used for averaging
     :param half_width: half_width of the 2D square averaging window, 0 means no averaging, 1 is one pixel away...
     :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
     :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
     :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param phase_range: range for plotting the phase, [-pi pi] by default
-    :param debugging: set to True to see plots
-    :type debugging: bool
-    :return: averaged phase
+    :param vmin: real number, lower boundary for the colorbar of the plots
+    :param vmax: real number, higher boundary for the colorbar of the plots
+    :param title: str, title for the plots
+    :param debugging: bool, True to see plots
+    :return: averaged array of the same shape as the input array
     """
+    #########################
+    # check some parameters #
+    #########################
+    valid_name = 'postprocessing_utils.mean_filter'
+    if not isinstance(array, np.ndarray):
+        raise TypeError('array should be a numpy array')
+    if array.ndim != 3:
+        raise ValueError('array should be 3D')
+    if not isinstance(support, np.ndarray):
+        raise TypeError('support should be a numpy array')
+    if support.shape != array.shape:
+        raise ValueError('the support should have the same shape as the array')
+    valid.valid_item(half_width, allowed_types=int, min_included=0, name=valid_name)
+    valid.valid_container(title, container_types=str, name=valid_name)
+    valid.valid_item(vmin, allowed_types=Real, name=valid_name)
+    valid.valid_item(vmax, allowed_types=Real, name=valid_name)
+    valid.valid_item(debugging, allowed_types=bool, name=valid_name)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+
+    #########################
+    # apply the mean filter #
+    #########################
     if half_width != 0:
         if debugging:
-            gu.multislices_plot(phase, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-phase_range, vmax=phase_range,
-                                title='Phase before averaging', plot_colorbar=True)
+            gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, vmin=vmin, vmax=vmax,
+                                title=title + ' before averaging', plot_colorbar=True)
             gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Support for averaging')
 
         nonzero_pixels = np.argwhere(support != 0)
-        new_values = np.zeros((nonzero_pixels.shape[0], 1), dtype=phase.dtype)
+        new_values = np.zeros((nonzero_pixels.shape[0], 1), dtype=array.dtype)
         counter = 0
         for indx in range(nonzero_pixels.shape[0]):
             piz = nonzero_pixels[indx, 0]
@@ -1105,7 +1339,7 @@ def mean_filter(phase, support, half_width=0, width_z=None, width_y=None, width_
             tempo_support = support[piz-half_width:piz+half_width+1, piy-half_width:piy+half_width+1,
                                     pix-half_width:pix+half_width+1]
             nb_points = tempo_support.sum()
-            temp_phase = phase[piz-half_width:piz+half_width+1, piy-half_width:piy+half_width+1,
+            temp_phase = array[piz-half_width:piz+half_width+1, piy-half_width:piy+half_width+1,
                                pix-half_width:pix+half_width+1]
             if temp_phase.size != 0:
                 value = temp_phase[np.nonzero(tempo_support)].sum()/nb_points
@@ -1113,14 +1347,13 @@ def mean_filter(phase, support, half_width=0, width_z=None, width_y=None, width_
             else:
                 counter = counter + 1
         for indx in range(nonzero_pixels.shape[0]):
-            phase[nonzero_pixels[indx, 0], nonzero_pixels[indx, 1], nonzero_pixels[indx, 2]] = new_values[indx]
+            array[nonzero_pixels[indx, 0], nonzero_pixels[indx, 1], nonzero_pixels[indx, 2]] = new_values[indx]
         if debugging:
-            gu.multislices_plot(phase, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-phase_range, vmax=phase_range,
-                                title='Phase after averaging', plot_colorbar=True)
+            gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, vmin=vmin, vmax=vmax,
+                                title=title + ' after averaging', plot_colorbar=True)
         if counter != 0:
             print("There were", counter, "voxels for which phase could not be averaged")
-    return phase
+    return array
 
 
 def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
@@ -1191,45 +1424,37 @@ def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
     return modes[:nb_mode], eigenvectors, weights
 
 
-def plane_angle(ref_plane, plane):
+def regrid(array, old_voxelsize, new_voxelsize):
     """
-    Calculate the angle between two crystallographic planes in cubic materials.
-
-    :param ref_plane: measured reflection
-    :param plane: plane for which angle should be calculated
-    :return: the angle in degrees
-    """
-    if np.array_equal(ref_plane, plane):
-        my_angle = 0.0
-    else:
-        my_angle = 180/np.pi*np.arccos(sum(np.multiply(ref_plane, plane)) /
-                                       (np.linalg.norm(ref_plane)*np.linalg.norm(plane)))
-    return my_angle
-
-
-def regrid(array, voxel_zyx, voxel):
-    """
-    Interpolate real space data on a grid with cubic voxels.
+    Interpolate real space data on a grid with a different voxel size.
 
     :param array: 3D array, the object to be interpolated
-    :param voxel_zyx: tuple of actual voxel sizes in z, y, and x (CXI convention)
-    :param voxel: desired voxel size for the interpolation
-    :return: obj interpolated onto a grid with cubic voxels
+    :param old_voxelsize: tuple, actual voxel size in z, y, and x (CXI convention)
+    :param new_voxelsize: tuple, desired voxel size for the interpolation in z, y, and x (CXI convention)
+    :return: obj interpolated using the new voxel sizes
     """
-    from scipy.interpolate import RegularGridInterpolator
-
     if array.ndim != 3:
         raise ValueError('array should be a 3D array')
 
-    nbz, nby, nbx = array.shape
-    dz_realspace, dy_realspace, dx_realspace = voxel_zyx
-    old_z = np.arange(-nbz // 2, nbz // 2, 1) * dz_realspace
-    old_y = np.arange(-nby // 2, nby // 2, 1) * dy_realspace
-    old_x = np.arange(-nbx // 2, nbx // 2, 1) * dx_realspace
+    if isinstance(old_voxelsize, Number):
+        old_voxelsize = (old_voxelsize,) * 3
+    valid.valid_container(old_voxelsize, container_types=(tuple, list), length=3, item_types=Real,
+                          name='postprocessing_utils.regrid', min_excluded=0)
 
-    new_z, new_y, new_x = np.meshgrid(old_z * voxel / dz_realspace,
-                                      old_y * voxel / dy_realspace,
-                                      old_x * voxel / dx_realspace,
+    if isinstance(new_voxelsize, Number):
+        new_voxelsize = (new_voxelsize,) * 3
+    valid.valid_container(new_voxelsize, container_types=(tuple, list), length=3, item_types=Real,
+                          name='postprocessing_utils.regrid', min_excluded=0)
+
+    nbz, nby, nbx = array.shape
+
+    old_z = np.arange(-nbz // 2, nbz // 2, 1) * old_voxelsize[0]
+    old_y = np.arange(-nby // 2, nby // 2, 1) * old_voxelsize[1]
+    old_x = np.arange(-nbx // 2, nbx // 2, 1) * old_voxelsize[2]
+
+    new_z, new_y, new_x = np.meshgrid(old_z * new_voxelsize[0] / old_voxelsize[0],
+                                      old_y * new_voxelsize[1] / old_voxelsize[1],
+                                      old_x * new_voxelsize[2] / old_voxelsize[2],
                                       indexing='ij')
 
     rgi = RegularGridInterpolator((old_z, old_y, old_x), array, method='linear', bounds_error=False, fill_value=0)
@@ -1238,6 +1463,60 @@ def regrid(array, voxel_zyx, voxel):
                                    new_x.reshape((1, new_x.size)))).transpose())
     new_array = new_array.reshape((nbz, nby, nbx)).astype(array.dtype)
     return new_array
+
+
+def remove_offset(array, support, offset_method='COM', user_offset=0, offset_origin=None, title='',
+                  debugging=False, **kwargs):
+    """
+    Remove the offset in a 3D array based on a 3D support.
+
+    :param array: a 3D array
+    :param support: A 3D support of the same shape as array, defining the object
+    :param offset_method: 'COM' or 'mean'. If 'COM', the value of array at the center of mass of the support will be
+     subtracted to the array. If 'mean', the mean value of array on the support will be subtracted to the array.
+    :param user_offset: value to add to the array
+    :param offset_origin: If provided, the value of array at this voxel will be subtracted to the array.
+    :param title: string, used in plot title
+    :param debugging: True to see plots
+    :param kwargs:
+     - 'reciprocal_space': True if the object is in reciprocal space
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
+    :return: the processed array
+    """
+    assert array.ndim == 3 and support.ndim == 3, 'array and support should be 3D arrayse'
+    assert array.shape == support.shape, 'array and support should have the same shape'
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'reciprocal_space', 'is_orthogonal'},
+                       name='postprocessing_utils.average_obj')
+    reciprocal_space = kwargs.get('reciprocal_space', False)
+    is_orthogonal = kwargs.get('is_orthogonal', False)
+
+    if debugging:
+        gu.multislices_plot(array, sum_frames=False, plot_colorbar=True, title=title + ' before offset removal',
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
+
+    if offset_origin is None:  # use offset_method to remove the offset
+        if offset_method == 'COM':
+            zcom, ycom, xcom = center_of_mass(support)
+            zcom, ycom, xcom = int(np.rint(zcom)), int(np.rint(ycom)), int(np.rint(xcom))
+            print("\nCOM at pixels (z, y, x): ", zcom, ycom, xcom)
+            print("Offset at COM(support) of:", str('{:.2f}'.format(array[zcom, ycom, xcom])), "rad")
+            array = array - array[zcom, ycom, xcom] + user_offset
+        elif offset_method == 'mean':
+            array = array - array[support == 1].mean() + user_offset
+        else:
+            raise ValueError('Invalid setting for parameter "offset_method"')
+    else:
+        assert len(offset_origin) == 3, 'offset_origin should be a tuple of three pixel positions'
+        print("\nOrigin for offset removal at pixels (z, y, x): ", offset_origin[0], offset_origin[1], offset_origin[2])
+        print("Offset of ",
+              str('{:.2f}'.format(array[offset_origin[0], offset_origin[1], offset_origin[2]])), "rad")
+        array = array - array[offset_origin[0], offset_origin[1], offset_origin[2]] + user_offset
+
+    if debugging:
+        gu.multislices_plot(array, sum_frames=False, plot_colorbar=True, title=title + ' after offset removal',
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
+    return array
 
 
 def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=None,
@@ -1337,7 +1616,7 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         myobj = crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
         print('Upsampling: shift_z, shift_y, shift_x: (', str('{:.3f}'.format(shiftz)),
               str('{:.3f}'.format(shifty)), str('{:.3f}'.format(shiftx)), ') pixels')
-        return abs(myobj)/abs(myobj).max(), np.angle(myobj)
+        return abs(myobj)/abs(myobj).max(), np.angle(myobj), shiftz, shifty, shiftx
 
     else:  # method='gradient'
 
@@ -1352,10 +1631,12 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupportz = np.zeros((nbz, nby, nbx))
         mysupportz[abs(mygradz) < gradient_threshold] = 1
         mysupportz = mysupportz * mysupport
+        if mysupportz.sum(initial=None) == 0:
+            raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
         myrampz = mygradz[mysupportz == 1].mean()
         if debugging:
-            gu.multislices_plot(mygradz, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-0.2, vmax=0.2, title='Phase gradient along Z')
+            gu.multislices_plot(mygradz, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along Z')
             gu.multislices_plot(mysupportz, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Thresholded support along Z')
         del mysupportz, mygradz
@@ -1366,10 +1647,12 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupporty = np.zeros((nbz, nby, nbx))
         mysupporty[abs(mygrady) < gradient_threshold] = 1
         mysupporty = mysupporty * mysupport
+        if mysupporty.sum(initial=None) == 0:
+            raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
         myrampy = mygrady[mysupporty == 1].mean()
         if debugging:
-            gu.multislices_plot(mygrady, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-0.2, vmax=0.2, title='Phase gradient along Y')
+            gu.multislices_plot(mygrady, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along Y')
             gu.multislices_plot(mysupporty, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Thresholded support along Y')
         del mysupporty, mygrady
@@ -1380,10 +1663,12 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupportx = np.zeros((nbz, nby, nbx))
         mysupportx[abs(mygradx) < gradient_threshold] = 1
         mysupportx = mysupportx * mysupport
+        if mysupportx.sum(initial=None) == 0:
+            raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
         myrampx = mygradx[mysupportx == 1].mean()
         if debugging:
-            gu.multislices_plot(mygradx, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-0.2, vmax=0.2, title='Phase gradient along X')
+            gu.multislices_plot(mygradx, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
+                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along X')
             gu.multislices_plot(mysupportx, width_z=width_z, width_y=width_y, width_x=width_x,
                                 vmin=0, vmax=1, title='Thresholded support along X')
         del mysupportx, mygradx, mysupport
@@ -1392,8 +1677,8 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         myz, myy, myx = np.meshgrid(np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1),
                                     indexing='ij')
 
-        print('Gradient: Phase_ramp_z, Phase_ramp_y, Phase_ramp_x: (', str('{:.3f}'.format(myrampz)),
-              str('{:.3f}'.format(myrampy)), str('{:.3f}'.format(myrampx)), ') rad')
+        print('Gradient: phase_ramp_z, phase_ramp_y, phase_ramp_x: ',
+              f"({myrampz:.3f} rad, {myrampy:.3f} rad, {myrampx:.3f} rad)")
         phase = phase - myz * myrampz - myy * myrampy - myx * myrampx
         return amp, phase, myrampz, myrampy, myrampx
 
@@ -1536,87 +1821,166 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
         return amp, phase, myrampy, myrampx
 
 
-def rotate_crystal(array, axis_to_align, reference_axis, width_z=None, width_y=None, width_x=None,
-                   is_orthogonal=False, reciprocal_space=False, debugging=False):
+def rotate_crystal(arrays, axis_to_align, reference_axis, voxel_size=None, fill_value=0, is_orthogonal=False,
+                   reciprocal_space=False, debugging=False, **kwargs):
     """
-    Rotate myobj to align axis_to_align onto reference_axis.
+    Rotate arrays to align axis_to_align onto reference_axis. The pivot of the rotation is in the center of the arrays.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
     (CXI convention).
 
-    :param array: 3D real array to be rotated
-    :param axis_to_align: the axis of myobj (vector q) x y z
-    :param reference_axis: will align axis_to_align onto this  x y z
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :param arrays: tuple of 3D real arrays of the same shape.
+    :param axis_to_align: the axis to be aligned (e.g. vector q), expressed in an orthonormal frame x y z
+    :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame  x y z
+    :param voxel_size: tuple, voxel size of the 3D array in z, y, and x (CXI convention)
+    :param fill_value: tuple of numeric values used in the RegularGridInterpolator for points outside of the
+     interpolation domain. The length of the tuple should be equal to the number of input arrays.
     :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
-    :param debugging: set to True to see plots before and after rotation
-    :type debugging: bool
-    :return: rotated myobj
+    :param debugging: tuple of booleans of the same length as the number of input arrays, True to see plots before and
+     after rotation
+    :param kwargs:
+     - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
+     - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging plots, same length as the
+       number of arrays
+     - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+     - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+     - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :return: a rotated array (if a single array was provided) or a tuple of rotated arrays (same length as the number
+     of input arrays)
     """
-    if array.ndim != 3:
-        raise ValueError('array should be 3D arrays')
+    valid_name = 'postprocessing_utils.rotate_crystal'
+    # check that arrays is a tuple of 3D arrays
+    if isinstance(arrays, np.ndarray):
+        arrays = (arrays,)
+    valid.valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray, min_length=1,
+                          name=valid_name)
+    if any(array.ndim != 3 for array in arrays):
+        raise ValueError('all arrays should be 3D ndarrays of the same shape')
+    ref_shape = arrays[0].shape
+    if any(array.shape != ref_shape for array in arrays):
+        raise ValueError('all arrays should be 3D ndarrays of the same shape')
+    nb_arrays = len(arrays)
+    nbz, nby, nbx = ref_shape
 
-    nbz, nby, nbx = array.shape
-    if debugging:
-        gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, title='Before rotating',
-                            is_orthogonal=is_orthogonal, reciprocal_space=reciprocal_space)
+    # check some parameters
+    voxel_size = voxel_size or (1, 1, 1)
+    if isinstance(voxel_size, Real):
+        voxel_size = (voxel_size,) * 3
+    valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real,
+                          name='postprocessing_utils.rotate_crystal', min_excluded=0)
+    if isinstance(fill_value, Real):
+        fill_value = (fill_value,) * nb_arrays
+    valid.valid_container(fill_value, container_types=(tuple, list, np.ndarray), length=nb_arrays, item_types=Real,
+                          name=valid_name)
+    if isinstance(debugging, bool):
+        debugging = (debugging,) * nb_arrays
+    valid.valid_container(debugging, container_types=(tuple, list), length=nb_arrays, item_types=bool,
+                          name=valid_name)
 
-    v = np.cross(axis_to_align, reference_axis)
-    skew_sym_matrix = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-    my_rotation_matrix = np.identity(3) +\
-        skew_sym_matrix + np.dot(skew_sym_matrix, skew_sym_matrix) / (1+np.dot(axis_to_align, reference_axis))
-    transfer_matrix = my_rotation_matrix.transpose()
-    old_z = np.arange(-nbz // 2, nbz // 2, 1)
-    old_y = np.arange(-nby // 2, nby // 2, 1)
-    old_x = np.arange(-nbx // 2, nbx // 2, 1)
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs,
+                       allowed_kwargs={'title', 'scale', 'width_z', 'width_y', 'width_x'},
+                       name='Setup.orthogonalize')
+    title = kwargs.get('title', ('Object',)*nb_arrays)
+    valid.valid_container(title, container_types=(tuple, list), length=nb_arrays, item_types=str, name=valid_name)
+    scale = kwargs.get('scale', ('linear',)*nb_arrays)
+    valid.valid_container(scale, container_types=(tuple, list), length=nb_arrays, name=valid_name)
+    if any(val not in {'log', 'linear'} for val in scale):
+        raise ValueError("scale should be either 'log' or 'linear'")
+
+    width_z = kwargs.get('width_z', None)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_y = kwargs.get('width_y', None)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+    width_x = kwargs.get('width_x', None)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
+                     name=valid_name)
+
+    ################################################################################
+    # calculate the rotation matrix which aligns axis_to_align onto reference_axis #
+    ################################################################################
+    rotation_matrix = util.rotation_matrix_3d(axis_to_align, reference_axis)
+
+    # calculate the new indices after transformation
+    old_z = np.arange(-nbz // 2, nbz // 2, 1) * voxel_size[0]
+    old_y = np.arange(-nby // 2, nby // 2, 1) * voxel_size[1]
+    old_x = np.arange(-nbx // 2, nbx // 2, 1) * voxel_size[2]
 
     myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing='ij')
 
-    new_x = transfer_matrix[0, 0] * myx + transfer_matrix[0, 1] * myy + transfer_matrix[0, 2] * myz
-    new_y = transfer_matrix[1, 0] * myx + transfer_matrix[1, 1] * myy + transfer_matrix[1, 2] * myz
-    new_z = transfer_matrix[2, 0] * myx + transfer_matrix[2, 1] * myy + transfer_matrix[2, 2] * myz
-
+    new_x = rotation_matrix[0, 0] * myx + rotation_matrix[0, 1] * myy + rotation_matrix[0, 2] * myz
+    new_y = rotation_matrix[1, 0] * myx + rotation_matrix[1, 1] * myy + rotation_matrix[1, 2] * myz
+    new_z = rotation_matrix[2, 0] * myx + rotation_matrix[2, 1] * myy + rotation_matrix[2, 2] * myz
     del myx, myy, myz
-    rgi = RegularGridInterpolator((old_z, old_y, old_x), array, method='linear', bounds_error=False, fill_value=0)
-    new_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                   new_x.reshape((1, new_z.size)))).transpose())
-    new_array = new_array.reshape((nbz, nby, nbx)).astype(array.dtype)
-    if debugging:
-        gu.multislices_plot(new_array, width_z=width_z, width_y=width_y, width_x=width_x, title='After rotating',
-                            is_orthogonal=is_orthogonal, reciprocal_space=reciprocal_space)
-    return new_array
+    gc.collect()
+
+    ######################
+    # interpolate arrays #
+    ######################
+    output_arrays = []
+    for idx, array in enumerate(arrays):
+        # convert array type to float, for integers the interpolation can lead to artefacts
+        array = array.astype(float)
+
+        # interpolate array onto the new positions
+        rgi = RegularGridInterpolator((old_z, old_y, old_x), array, method='linear', bounds_error=False,
+                                      fill_value=fill_value[idx])
+        rotated_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
+                                            new_x.reshape((1, new_z.size)))).transpose())
+        rotated_array = rotated_array.reshape((nbz, nby, nbx)).astype(array.dtype)
+        output_arrays.append(rotated_array)
+
+        if debugging[idx]:
+            gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x,
+                                title=title[idx] + ' before rotating', is_orthogonal=is_orthogonal, scale=scale[idx],
+                                reciprocal_space=reciprocal_space)
+            gu.multislices_plot(rotated_array, width_z=width_z, width_y=width_y, width_x=width_x,
+                                title=title[idx] + ' after rotating', is_orthogonal=is_orthogonal, scale=scale[idx],
+                                reciprocal_space=reciprocal_space)
+
+    if nb_arrays == 1:
+        output_arrays = output_arrays[0]  # return the array instead of the tuple
+    return output_arrays
 
 
-def rotate_vector(vector, axis_to_align, reference_axis):
+def rotate_vector(vectors, axis_to_align, reference_axis):
     """
-    Calculate vector components in the basis where axis_to_align and reference_axis are aligned.
+    Calculate the vector components (3D) in the basis where axis_to_align and reference_axis are aligned.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
     (CXI convention).
 
-    :param vector: the vector to be rotated  x y z
-    :param axis_to_align: the axis of myobj (vector q) x y z
-    :param reference_axis: will align axis_to_align onto this  x y z
-    :return: rotated vector in CXI convention z y x
+    :param vectors: the vectors to be rotated, tuple of three components (values or 1D-arrays) expressed in an
+     orthonormal frame x y z
+    :param axis_to_align: the axis of myobj (vector q), expressed in an orthonormal frame x y z
+    :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame x y z
+    :return: tuple of three ndarrays in CXI convention z y x, each of shape
+     (vectors[0].size, vectors[1].size, vectors[2].size). If a single vector is provided, returns a 1D array of size 3.
     """
-    if vector.ndim != 1:
-        raise ValueError('vector should be a 1D array')
-    else:
-        if len(vector) != 3:
-            raise ValueError('vector should have 3 elements')
+    # check parameters
+    if isinstance(vectors, np.ndarray):
+        if vectors.ndim == 1:  # a single vecotr was provided
+            vectors = tuple(vectors)
+        else:
+            raise ValueError('vectors should be a tuple of three values/arrays')
+    valid_name = 'postprocessing_utils.rotate_vector'
+    valid.valid_container(vectors, container_types=(tuple, list), length=3, item_types=(np.ndarray, Real),
+                          name=valid_name)
 
-    v = np.cross(axis_to_align, reference_axis)
-    skew_sym_matrix = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-    my_rotation_matrix = np.identity(3) +\
-        skew_sym_matrix + np.dot(skew_sym_matrix, skew_sym_matrix) / (1+np.dot(axis_to_align, reference_axis))
-    transfer_matrix = my_rotation_matrix.transpose()
+    # calculate the rotation matrix which aligns axis_to_align onto reference_axis
+    rotation_matrix = util.rotation_matrix_3d(axis_to_align, reference_axis)
 
-    new_x = transfer_matrix[0, 0] * vector[0] + transfer_matrix[0, 1] * vector[1] + transfer_matrix[0, 2] * vector[2]
-    new_y = transfer_matrix[1, 0] * vector[0] + transfer_matrix[1, 1] * vector[1] + transfer_matrix[1, 2] * vector[2]
-    new_z = transfer_matrix[2, 0] * vector[0] + transfer_matrix[2, 1] * vector[1] + transfer_matrix[2, 2] * vector[2]
+    # calculate the new vector components after transformation
+    myz, myy, myx = np.meshgrid(vectors[2], vectors[1], vectors[0], indexing='ij')
+    new_x = rotation_matrix[0, 0] * myx + rotation_matrix[0, 1] * myy + rotation_matrix[0, 2] * myz
+    new_y = rotation_matrix[1, 0] * myx + rotation_matrix[1, 1] * myy + rotation_matrix[1, 2] * myz
+    new_z = rotation_matrix[2, 0] * myx + rotation_matrix[2, 1] * myy + rotation_matrix[2, 2] * myz
 
-    return np.array([new_z, new_y, new_x])
+    if new_x.size == 1:  # a single vector was given as input, return it in a friendly format
+        return np.array([new_z[0, 0, 0], new_y[0, 0, 0], new_x[0, 0, 0]])
+
+    return new_z, new_y, new_x
 
 
 def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method='variance/mean'):
@@ -1653,16 +2017,16 @@ def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method=
         gc.collect()
 
         # order reconstructions by minimizing the quality factor
-    if sort_method is 'mean_amplitude':    # sort by quality_array[:, 0] first
+    if sort_method == 'mean_amplitude':    # sort by quality_array[:, 0] first
         sorted_obj = np.lexsort((quality_array[:, 3], quality_array[:, 2], quality_array[:, 1], quality_array[:, 0]))
 
-    elif sort_method is 'variance':        # sort by quality_array[:, 1] first
+    elif sort_method == 'variance':        # sort by quality_array[:, 1] first
         sorted_obj = np.lexsort((quality_array[:, 0], quality_array[:, 3], quality_array[:, 2], quality_array[:, 1]))
 
-    elif sort_method is 'variance/mean':   # sort by quality_array[:, 2] first
+    elif sort_method == 'variance/mean':   # sort by quality_array[:, 2] first
         sorted_obj = np.lexsort((quality_array[:, 1], quality_array[:, 0], quality_array[:, 3], quality_array[:, 2]))
 
-    elif sort_method is 'volume':          # sort by quality_array[:, 3] first
+    elif sort_method == 'volume':          # sort by quality_array[:, 3] first
         sorted_obj = np.lexsort((quality_array[:, 2], quality_array[:, 1], quality_array[:, 0], quality_array[:, 3]))
 
     else:  # default case, use the index of dispersion
@@ -1697,18 +2061,29 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
     return tukey3
 
 
-def unwrap(obj, support_threshold, debugging=True):
+def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
     """
     Unwrap the phase of a complex object, based on skimage.restoration.unwrap_phase. A mask can be applied by
      thresholding the modulus of the object.
 
     :param obj: number or array to be wrapped
-    :param support_threshold: threshold used to define a support from abs(obj)
+    :param support_threshold: relative threshold used to define a support from abs(obj)
+    :param seed: int, random seed. Use always the same value if you want a deterministic behavior.
     :param debugging: set to True to see plots
+    :param kwargs:
+     - 'reciprocal_space': True if the object is in reciprocal space
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
     :return: unwrapped phase, unwrapped phase range
     """
     from skimage.restoration import unwrap_phase
     import numpy.ma as ma
+    assert 0 <= support_threshold <= 1, 'support_threshold is a relative threshold, expected value between 0 and 1'
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'reciprocal_space', 'is_orthogonal'},
+                       name='postprocessing_utils.average_obj')
+    reciprocal_space = kwargs.get('reciprocal_space', False)
+    is_orthogonal = kwargs.get('is_orthogonal', False)
+
     ndim = obj.ndim
     unwrap_support = np.ones(obj.shape, dtype=int)
     unwrap_support[abs(obj) > support_threshold * abs(obj).max()] = 0  # 0 is a valid entry for ma.masked_array
@@ -1716,13 +2091,15 @@ def unwrap(obj, support_threshold, debugging=True):
 
     if debugging:
         if ndim == 3:
-            gu.multislices_plot(phase_wrapped.data, plot_colorbar=True, title='Object before unwrapping')
+            gu.multislices_plot(phase_wrapped.data, plot_colorbar=True, title='Object before unwrapping',
+                                reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
 
-    phase_unwrapped = unwrap_phase(phase_wrapped).data
+    phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=seed).data
     phase_unwrapped[np.nonzero(unwrap_support)] = 0
     if debugging:
         if ndim == 3:
-            gu.multislices_plot(phase_unwrapped, plot_colorbar=True, title='Object after unwrapping')
+            gu.multislices_plot(phase_unwrapped, plot_colorbar=True, title='Object after unwrapping',
+                                reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
 
     extent_phase = np.ceil(phase_unwrapped.max() - phase_unwrapped.min())
 
@@ -1730,3 +2107,10 @@ def unwrap(obj, support_threshold, debugging=True):
 
 
 # if __name__ == "__main__":
+#     siz = 100
+#     obj = np.zeros((siz, siz, siz))
+#     obj[siz//2-10:siz//2+11, siz//2-10:siz//2+11, siz//2-10:siz//2+11] = 1
+#     # gu.multislices_plot(obj)
+#     obj_rot = rotate_crystal(array=obj, axis_to_align=(2,2,0), reference_axis=(0,1,0), voxel_size=(10,10,10),
+#                              debugging=True)
+#     plt.show()

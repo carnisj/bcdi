@@ -6,13 +6,116 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import matplotlib.pyplot as plt
+from numbers import Real
 import numpy as np
-from numpy.fft import fftshift
-from skimage.restoration.deconvolution import richardson_lucy
+from scipy.signal import fftconvolve, convolve
 import sys
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.validation as valid
+
+
+def blind_deconvolution_rl(blurred_object, perfect_object, psf, nb_cycles=10, sub_iterations=10, update_psf_first=True,
+                           debugging=False, **kwargs):
+    """
+    Blind deconvolution using Richardson-Lucy algorithm. Estimates of the perfect object and psf have to be provided.
+    See Figure 1 and equations (4) & (5) in  D. A. Fish et al. J. Opt. Soc. Am. A, 12, 58 (1995).
+
+    :param blurred_object: ndarray, measured object with partial coherent illumination
+    :param perfect_object: ndarray, estimate of the object measured by a fully coherent illumination,
+     same shape as blurred_object
+    :param psf: ndarray, estimate of the psf, same shape as blurred_object
+    :param nb_cycles: number of blind deconvolution interations
+    :param sub_iterations: number of iterations of the Richardson-Lucy algorithm during a single blind iteration
+    :param update_psf_first: bool, if True the psf estimate is updated first and then the perfect object estimate
+    :param debugging: True to see plots
+    :param kwargs:
+     - 'scale': tuple, scale for the plots, 'linear' or 'log'
+     - 'reciprocal_space': bool, True if the data is in reciprocal space, False otherwise.
+     - 'is_orthogonal': bool, True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
+     - 'vmin' = tuple of two floats (np.nan to use default), lower boundary for the colorbars
+     - 'vmax' = tuple of two floats (np.nan to use default), higher boundary for the colorbars
+    :return:
+    """
+    validation_name = 'algorithms_utils.psf_rl'
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'scale', 'reciprocal_space', 'is_orthogonal', 'vmin', 'vmax'},
+                       name=validation_name)
+    scale = kwargs.get('scale', ('linear', 'log'))
+    valid.valid_container(scale, container_types=(tuple, list), length=2, name=validation_name)
+    if not all(val in {'log', 'linear'} for val in scale):
+        raise ValueError('"scale" should be either "log" or "linear"')
+    reciprocal_space = kwargs.get('reciprocal_space', True)
+    if not isinstance(reciprocal_space, bool):
+        raise TypeError('"reciprocal_space" should be a boolean')
+    is_orthogonal = kwargs.get('is_orthogonal', True)
+    if not isinstance(is_orthogonal, bool):
+        raise TypeError('"is_orthogonal" should be a boolean')
+    vmin = kwargs.get('vmin', (np.nan, np.nan))
+    valid.valid_container(vmin, container_types=(tuple, list), item_types=Real, name=validation_name)
+    vmax = kwargs.get('vmax', (np.nan, np.nan))
+    valid.valid_container(vmax, container_types=(tuple, list), item_types=Real, name=validation_name)
+
+    # check parameters
+    if not isinstance(blurred_object, np.ndarray):
+        raise TypeError(f"blurred_object should be a ndarray, got {type(blurred_object)}")
+    if not isinstance(perfect_object, np.ndarray):
+        raise TypeError(f"perfect_object should be a ndarray, got {type(perfect_object)}")
+    if not isinstance(psf, np.ndarray):
+        raise TypeError(f"psf should be a ndarray, got {type(psf)}")
+    if not isinstance(debugging, bool):
+        raise TypeError('"debugging" should be a boolean')
+    if not isinstance(update_psf_first, bool):
+        raise TypeError('"update_psf_first" should be a boolean')
+    if perfect_object.shape != blurred_object.shape or psf.shape != blurred_object.shape:
+        raise ValueError('blurred_object, perfect_object and psf should have the same shape')
+
+    ########################
+    # plot initial guesses #
+    ########################
+    if debugging:
+        gu.multislices_plot(perfect_object, scale=scale[0], sum_frames=False, title='guessed perfect object',
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal, vmin=vmin[0], vmax=vmax[0],
+                            plot_colorbar=True)
+
+        gu.multislices_plot(psf, scale=scale[1], sum_frames=False, title='guessed psf', vmin=vmin[1], vmax=vmax[1],
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal,
+                            plot_colorbar=True)
+
+    ###########################################
+    # loop over the blind deconvolution steps #
+    ###########################################
+    for cycle in range(nb_cycles):
+        if update_psf_first:
+            # update the estimate of the psf
+            psf, _ = richardson_lucy(image=blurred_object, psf=perfect_object, iterations=sub_iterations, clip=False,
+                                     guess=psf)
+            # udpate the estimate of the perfect object
+            perfect_object, _ = richardson_lucy(image=blurred_object, psf=psf, iterations=sub_iterations, clip=True,
+                                                guess=perfect_object)
+        else:
+            # udpate the estimate of the perfect object
+            perfect_object, _ = richardson_lucy(image=blurred_object, psf=psf, iterations=sub_iterations, clip=True,
+                                                guess=perfect_object)
+            # update the estimate of the psf
+            psf, _ = richardson_lucy(image=blurred_object, psf=perfect_object, iterations=sub_iterations, clip=False,
+                                     guess=psf)
+    psf = (np.abs(psf) / np.abs(psf).sum()).astype(np.float)
+
+    ###############
+    # plot result #
+    ###############
+    if debugging:
+        gu.multislices_plot(perfect_object, scale=scale[0], sum_frames=False, title='retrieved perfect object',
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal, vmin=vmin[0], vmax=vmax[0],
+                            plot_colorbar=True)
+
+        gu.multislices_plot(psf, scale=scale[1], sum_frames=False, title='retrieved psf', vmin=vmin[1], vmax=vmax[1],
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal,
+                            plot_colorbar=True)
+    return psf
 
 
 def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, debugging=False):
@@ -21,13 +124,17 @@ def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, deb
     where PSF is described as the impulse response of the optical system.
 
     :param image: image to be deconvoluted
-    :param psf: psf to be used as a first guess
+    :param psf: ndarray, psf if known. Leave None to use a Gaussian kernel of shape psf_shape.
     :param psf_shape: shape of the kernel used for deconvolution
     :param iterations: number of iterations for the Richardson-Lucy algorithm
     :param debugging: True to see plots
     :return:
     """
     image = image.astype(np.float)
+    max_img = image.max(initial=None)
+    min_img = image[np.nonzero(image)].min(initial=None)
+    image = image / min_img  # the new min is 1, to avoid dividing by values close to 0
+
     ndim = image.ndim
     if psf is None:
         print('Initializing the psf using a', ndim, 'D multivariate normal window\n')
@@ -38,19 +145,19 @@ def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, deb
         gu.multislices_plot(array=psf, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window',
                             reciprocal_space=False, is_orthogonal=True)
 
-    im_deconv = np.abs(richardson_lucy(image=image, psf=psf, iterations=iterations, clip=False))
+    im_deconv, _ = np.abs(richardson_lucy(image=image, psf=psf, iterations=iterations, clip=False))
+    im_deconv = abs(im_deconv) / abs(im_deconv).max(initial=None) * max_img  # normalize back to max_img
 
     if debugging:
-        image = abs(image) / abs(image) .max()
-        im_deconv = abs(im_deconv) / abs(im_deconv) .max()
+        image = abs(image) / abs(image).max()
+        im_deconv = abs(im_deconv) / abs(im_deconv).max()
         gu.combined_plots(tuple_array=(image, im_deconv), tuple_sum_frames=False, tuple_colorbar=True,
-                          tuple_scale='linear', tuple_width_v=None, tuple_width_h=None, tuple_vmin=0, tuple_vmax=1,
-                          tuple_title=('Before RL', 'After '+str(iterations)+' iterations of RL (normalized)'))
-
+                          tuple_title=('Before RL', 'After '+str(iterations)+' iterations of RL (normalized)'),
+                          tuple_scale='linear', tuple_vmin=0, tuple_vmax=1)
     return im_deconv
 
 
-def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=False):
+def partial_coherence_rl(measured_intensity, coherent_intensity, iterations=20, debugging=False, **kwargs):
     """
     Partial coherence deconvolution using Richardson-Lucy algorithm. See J.N. Clark et al., Nat. Comm. 3, 993 (2012).
 
@@ -58,42 +165,115 @@ def psf_rl(measured_intensity, coherent_intensity, iterations=20, debugging=Fals
     :param coherent_intensity: estimate of the object measured by a fully coherent illumination
     :param iterations: number of iterations for the Richardson-Lucy algorithm
     :param debugging: True to see plots
-    :return:
+    :param kwargs:
+     - 'scale': scale for the plot, 'linear' or 'log'
+     - 'reciprocal_space': True if the data is in reciprocal space, False otherwise.
+     - 'is_orthogonal': set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
+     - 'vmin' = lower boundary for the colorbar. Float or tuple of 3 floats
+     - 'vmax' = [higher boundary for the colorbar. Float or tuple of 3 floats
+     - 'guess': ndarray, initial guess for the psf, of the same shape as measured_intensity
+    :return: the retrieved psf (ndarray), the error metric (1D ndarray of len=iterations)
     """
-    psf = np.abs(richardson_lucy(image=measured_intensity, psf=coherent_intensity, iterations=iterations, clip=False))
-    psf = (psf / psf.sum()).astype(np.float32)
+    validation_name = 'algorithms_utils.psf_rl'
+    # check and load kwargs
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'scale', 'reciprocal_space', 'is_orthogonal', 'vmin', 'vmax',
+                                                      'guess'},
+                       name=validation_name)
+    scale = kwargs.get('scale', 'log')
+    if scale not in {'log', 'linear'}:
+        raise ValueError('"scale" should be either "log" or "linear"')
+    reciprocal_space = kwargs.get('reciprocal_space', True)
+    if not isinstance(reciprocal_space, bool):
+        raise TypeError('"reciprocal_space" should be a boolean')
+    is_orthogonal = kwargs.get('is_orthogonal', True)
+    if not isinstance(is_orthogonal, bool):
+        raise TypeError('"is_orthogonal" should be a boolean')
+    vmin = kwargs.get('vmin', np.nan)
+    valid.valid_item(vmin, allowed_types=Real, name=validation_name)
+    vmax = kwargs.get('vmax', np.nan)
+    valid.valid_item(vmax, allowed_types=Real, name=validation_name)
+    guess = kwargs.get('guess', None)
+    if guess is not None:
+        if not isinstance(guess, np.ndarray):
+            raise TypeError(f"guess should be a ndarray, got {type(guess)}")
+        if guess.shape != measured_intensity.shape:
+            raise ValueError('the guess array should have the same shape as measured_intensity')
+
+    # calculate the psf
+    psf, error = richardson_lucy(image=measured_intensity, psf=coherent_intensity, iterations=iterations,
+                                 clip=False, guess=guess)
+
+    # optional plot
     if debugging:
-        gu.multislices_plot(fftshift(psf), scale='log', sum_frames=False, title='log(psf) in detector frame',
-                            reciprocal_space=True, vmin=-5, is_orthogonal=False, plot_colorbar=True)
-    return psf
+        gu.multislices_plot(psf, scale=scale, sum_frames=False, title='psf', vmin=vmin, vmax=vmax,
+                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal, plot_colorbar=True)
+        _, ax = plt.subplots(figsize=(12, 9))
+        ax.plot(error, 'r.')
+        ax.set_yscale('log')
+        ax.set_xlabel('iteration number')
+        ax.set_ylabel('difference between consecutive iterates')
+    return psf, error
 
 
-# def er:
-#     return
-#
-#
-# def hio:
-#     return
-#
-#
-# def hio_or:
-#     return
-# def raar:
-#     return
+def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
+    """
+    Richardson-Lucy algorithm as implemented in scikit-image.restoration.deconvolution with an additional parameter for
+    the initial guess of the psf.
 
-if __name__ == "__main__":
-    import h5py
-    import matplotlib.pyplot as plt
+    :param image: ndarray, input degraded image (can be N dimensional).
+    :param psf: ndarray, the point spread function.
+    :param iterations: int, number of iterations. This parameter plays the role of regularisation.
+    :param clip: boolean. If true, pixel values of the result above 1 or under -1 are thresholded for skimage
+     pipeline compatibility.
+    :param guess: ndarray, the initial guess for the deconvoluted image. Leave None to use the default
+     (flat array of 0.5)
+    :return: the deconvolved image (ndarray) and the error metric (1D ndarray, len = iterations). The error is given by
+     np.linalg.norm(previous_deconv-new_deconv) / np.linalg.norm(previous_deconv)
+    """
+    # compute the times for direct convolution and the fft method. The fft is of
+    # complexity O(N log(N)) for each dimension and the direct method does
+    # straight arithmetic (and is O(n*k) to add n elements k times)
+    direct_time = np.prod(image.shape + psf.shape)
+    fft_time = np.sum([n*np.log(n) for n in image.shape + psf.shape])
 
-    datadir = 'D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/maximum_likelihood/'
-    filename = 'modes_ml.h5'
-    h5file = h5py.File(datadir+filename, 'r')
-    group_key = list(h5file.keys())[0]
-    subgroup_key = list(h5file[group_key])
-    dataset = h5file['/' + group_key + '/' + subgroup_key[0] + '/data'][0]  # select only first mode
-    dataset = abs(dataset) / abs(dataset).max()
-    # my_psf = pu.tukey_window((10, 10, 10), alpha=(0.6, 0.6, 0.6))
-    output = deconvolution_rl(dataset, psf=None, iterations=10, debugging=True)
-    # psf = pu.gaussian_window(window_shape=(3, 3, 3), sigma=0.7, mu=0.0, debugging=False)
-    # output = deconvolution_rl(output, psf=psf, iterations=20, debugging=True)
-    plt.show()
+    # see whether the fourier transform convolution method or the direct
+    # convolution method is faster (discussed in scikit-image PR #1792)
+    time_ratio = 40.032 * fft_time / direct_time
+
+    if time_ratio <= 1 or len(image.shape) > 2:
+        convolve_method = fftconvolve
+    else:
+        convolve_method = convolve
+
+    image = image.astype(np.float)
+    psf = psf.astype(np.float)
+
+    if guess is not None:
+        if not isinstance(guess, np.ndarray):
+            raise TypeError(f"guess should be a ndarray, got {type(guess)}")
+        if guess.shape != image.shape:
+            raise ValueError('the guess array should have the same shape as the image')
+        im_deconv = guess
+    else:
+        im_deconv = np.full(image.shape, 0.5)
+
+    psf_mirror = psf[::-1, ::-1]
+
+    error = np.empty(iterations)
+    for idx in range(iterations):
+        if (idx % 10) == 0:
+            sys.stdout.write(f'\rRL iteration {idx}')
+            sys.stdout.flush()
+        previous_deconv = np.copy(im_deconv)
+        relative_blur = image / convolve_method(im_deconv, psf, 'same')
+        im_deconv *= convolve_method(relative_blur, psf_mirror, 'same')
+        error[idx] = np.linalg.norm(previous_deconv-im_deconv) / np.linalg.norm(previous_deconv)
+    print('\n')
+    if clip:
+        im_deconv[im_deconv > 1] = 1
+        im_deconv[im_deconv < -1] = -1
+
+    return im_deconv, error
+
+
+# if __name__ == "__main__":

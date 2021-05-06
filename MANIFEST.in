@@ -6,4 +6,5 @@ include doc/make.bat
 include doc/Makefile
 include bcdi/preprocessing/alias_dict_2018.txt
 include bcdi/preprocessing/alias_dict_2019.txt
-include bcdi/data/S978_LLKf000.460_LLK000.508.cxi
+include bcdi/preprocessing/alias_dict_2020.txt
+include bcdi/preprocessing/alias_dict_2021.txt
