@@ -6,9 +6,10 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from functools import reduce
 import gc
 from math import isclose
-from numbers import Real
+from numbers import Number, Real
 import numpy as np
 import os
 import pathlib
@@ -494,6 +495,117 @@ class Detector(object):
 
         return data, mask
 
+
+class Diffractometer(object):
+    """
+    Class for defining diffractometers.
+
+    """
+    valid_circles = {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}  # + counter-clockwise, - clockwise
+    valid_names = {'sample': '_sample_circles', 'detector': '_detector_circles'}
+
+    def __init__(self):
+        self._sample_circles = []
+        self._detector_circles = []
+
+    def add_circle(self, list_name, index, circle):
+        """
+        Add a circle to the list of circles (the most outer circle should be at index 0).
+
+        :param list_name: 'sample' or 'detector'
+        :param index: index where to put the circle in the list
+        :param circle: valid circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}.
+         + for a counter-clockwise rotation, - for a clockwise rotation.
+        """
+        if list_name not in Diffractometer.valid_names.keys():
+            raise NotImplementedError(f"'{list_name}' is not implemented,"
+                                      f" available are {list(Diffractometer.valid_names.keys())}")
+        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[list_name]))
+        valid.valid_item(index, allowed_types=int, min_included=0, max_included=nb_circles, name='index')
+        if circle not in Diffractometer.valid_circles:
+            raise ValueError(f'{circle} is not in the list of valid circles:'
+                             f' {list(Diffractometer.valid_circles)}')
+        self.__getattribute__(Diffractometer.valid_names[list_name]).insert(index, circle)
+
+    def remove_circle(self, list_name, index):
+        """
+        Remove the circle at index from the list of sample circles.
+
+        :param list_name: 'sample' or 'detector'
+        :param index: index of the circle to be removed from the list
+        """
+        if list_name not in Diffractometer.valid_names.keys():
+            raise NotImplementedError(f"'{list_name}' is not implemented,"
+                                      f" available are {list(Diffractometer.valid_names.keys())}")
+        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[list_name]))
+        if nb_circles > 0:
+            valid.valid_item(index, allowed_types=int, min_included=0, max_included=nb_circles-1, name='index')
+            del self.__getattribute__(Diffractometer.valid_names[list_name])[index]
+
+    def rotation_matrix_zero(self, list_name, angles):
+        """
+        Calculate the 3x3 rotation matrix which sends all circles of list_name to zero degrees.
+
+        :param list_name: 'sample' or 'detector'
+        :param angles: list of angular values in degrees of circles during the measurement,
+         same length as the number of circles for list_name
+        :return: the rotation matrix as a numpy ndarray of shape (3, 3)
+        """
+        if list_name not in Diffractometer.valid_names.keys():
+            raise NotImplementedError(f"'{list_name}' is not implemented,"
+                                      f" available are {list(Diffractometer.valid_names.keys())}")
+        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[list_name]))
+        if isinstance(angles, Number):
+            angles = (angles,)
+        valid.valid_container(angles, container_types=(list, tuple, np.ndarray), length=nb_circles, item_types=Real,
+                              name='angles')
+
+        # create a list of rotation matrices corresponding to the circles, index 0 corresponds to the most outer circle
+        rotation_matrices = [RotationMatrix(circle, angles[idx]).get_matrix()
+                             for idx, circle in enumerate(self.__getattribute__(Diffractometer.valid_names[list_name]))]
+
+        # calculate the total tranformation matrix by rotating back from outer circles to inner circles
+        return np.array(reduce(lambda x, y: np.matmul(x, y), rotation_matrices))
+
+
+class RotationMatrix(object):
+    valid_circles = {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}  # + counter-clockwise, - clockwise
+
+    def __init__(self, circle, angle):
+        self.angle = angle
+        self.circle = circle
+
+    @property
+    def angle(self):
+        """
+        Angular value to be used in the calculation of the rotation matrix.
+        """
+        return self._angle
+
+    @angle.setter
+    def angle(self, value):
+        valid.valid_item(value, allowed_types=Real, name='value')
+        if np.isnan(value):
+            raise ValueError('value is a nan')
+        self._angle = value
+
+    @property
+    def circle(self):
+        """
+        Circle definition used for the calculation of the rotation matrix in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}.
+        + for a counter-clockwise rotation, - for a clockwise rotation.
+        """
+        return self._circle
+
+    @circle.setter
+    def circle(self, value):
+        if value not in RotationMatrix.valid_circles:
+            raise ValueError(f'{value} is not in the list of valid circles:'
+                             f' {list(RotationMatrix.valid_circles)}')
+        self._circle = value
+
+    def get_matrix(self):
+        pass
 
 class Setup(object):
     """
@@ -2925,4 +3037,9 @@ class SetupPreprocessing(object):
 
 
 if __name__ == "__main__":
-    print(help(Detector))
+    diff = Diffractometer()
+    print(diff._sample_circles, diff._detector_circles)
+    diff.add_circle('sample', index=0, circle='x-')
+    diff.add_circle('detector', index=0, circle='y-')
+    diff.add_circle('detector', index=0, circle='z-')
+    print(diff._sample_circles, diff._detector_circles)
