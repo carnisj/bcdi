@@ -508,58 +508,57 @@ class Diffractometer(object):
         self._sample_circles = []
         self._detector_circles = []
 
-    def add_circle(self, list_name, index, circle):
+    def add_circle(self, stage_name, index, circle):
         """
         Add a circle to the list of circles (the most outer circle should be at index 0).
 
-        :param list_name: 'sample' or 'detector'
+        :param stage_name: supported stage name, 'sample' or 'detector'
         :param index: index where to put the circle in the list
         :param circle: valid circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}.
          + for a counter-clockwise rotation, - for a clockwise rotation.
         """
-        Diffractometer.valid_name(list_name)
-        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[list_name]))
+        Diffractometer.valid_name(stage_name)
+        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[stage_name]))
         valid.valid_item(index, allowed_types=int, min_included=0, max_included=nb_circles, name='index')
         if circle not in Diffractometer.valid_circles:
             raise ValueError(f'{circle} is not in the list of valid circles:'
                              f' {list(Diffractometer.valid_circles)}')
-        self.__getattribute__(Diffractometer.valid_names[list_name]).insert(index, circle)
+        self.__getattribute__(Diffractometer.valid_names[stage_name]).insert(index, circle)
 
-    def get_circles(self, list_name):
+    def get_circles(self, stage_name):
         """
-        Return the list of circles for list_name
+        Return the list of circles for the stage.
 
-        :param list_name: 'sample' or 'detector'
+        :param stage_name: supported stage name, 'sample' or 'detector'
         """
-        Diffractometer.valid_name(list_name)
-        return self.__getattribute__(Diffractometer.valid_names[list_name])
+        Diffractometer.valid_name(stage_name)
+        return self.__getattribute__(Diffractometer.valid_names[stage_name])
 
-    def remove_circle(self, list_name, index):
+    def remove_circle(self, stage_name, index):
         """
         Remove the circle at index from the list of sample circles.
 
-        :param list_name: 'sample' or 'detector'
+        :param stage_name: supported stage name, 'sample' or 'detector'
         :param index: index of the circle to be removed from the list
         """
-        if list_name not in Diffractometer.valid_names.keys():
-            raise NotImplementedError(f"'{list_name}' is not implemented,"
+        if stage_name not in Diffractometer.valid_names.keys():
+            raise NotImplementedError(f"'{stage_name}' is not implemented,"
                                       f" available are {list(Diffractometer.valid_names.keys())}")
-        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[list_name]))
+        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[stage_name]))
         if nb_circles > 0:
             valid.valid_item(index, allowed_types=int, min_included=0, max_included=nb_circles-1, name='index')
-            del self.__getattribute__(Diffractometer.valid_names[list_name])[index]
+            del self.__getattribute__(Diffractometer.valid_names[stage_name])[index]
 
-    def rotation_matrix_zero(self, list_name, angles):
+    def rotation_matrix_zero(self, stage_name, angles):
         """
-        Calculate the 3x3 rotation matrix which sends all circles of list_name to zero degrees.
+        Calculate the 3x3 rotation matrix which sends all circles of the stage to zero degrees.
 
-        :param list_name: 'sample' or 'detector'
-        :param angles: list of angular values in degrees of circles during the measurement,
-         same length as the number of circles for list_name
+        :param stage_name: supported stage name, 'sample' or 'detector'
+        :param angles: list of angular values in degrees for the stage circles during the measurement
         :return: the rotation matrix as a numpy ndarray of shape (3, 3)
         """
-        Diffractometer.valid_name(list_name)
-        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[list_name]))
+        Diffractometer.valid_name(stage_name)
+        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[stage_name]))
         if isinstance(angles, Number):
             angles = (angles,)
         valid.valid_container(angles, container_types=(list, tuple, np.ndarray), length=nb_circles, item_types=Real,
@@ -567,20 +566,20 @@ class Diffractometer(object):
 
         # create a list of rotation matrices corresponding to the circles, index 0 corresponds to the most outer circle
         rotation_matrices = [RotationMatrix(circle, angles[idx]).get_matrix()
-                             for idx, circle in enumerate(self.__getattribute__(Diffractometer.valid_names[list_name]))]
+                             for idx, circle in enumerate(self.__getattribute__(Diffractometer.valid_names[stage_name]))]
 
         # calculate the total tranformation matrix by rotating back from outer circles to inner circles
         return np.array(reduce(lambda x, y: np.matmul(x, y), rotation_matrices))
 
     @staticmethod
-    def valid_name(list_name):
+    def valid_name(stage_name):
         """
-        Check that the value of list_name is allowed.
+        Check if the stage is defined.
 
-        :param list_name: 'sample' or 'detector'
+        :param stage_name: supported stage name, 'sample' or 'detector'
         """
-        if list_name not in Diffractometer.valid_names.keys():
-            raise NotImplementedError(f"'{list_name}' is not implemented,"
+        if stage_name not in Diffractometer.valid_names.keys():
+            raise NotImplementedError(f"'{stage_name}' is not implemented,"
                                       f" available are {list(Diffractometer.valid_names.keys())}")
 
 
