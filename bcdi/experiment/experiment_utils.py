@@ -549,9 +549,9 @@ class Diffractometer(object):
             valid.valid_item(index, allowed_types=int, min_included=0, max_included=nb_circles-1, name='index')
             del self.__getattribute__(Diffractometer.valid_names[stage_name])[index]
 
-    def rotation_matrix_zero(self, stage_name, angles):
+    def rotation_matrix(self, stage_name, angles):
         """
-        Calculate the 3x3 rotation matrix which sends all circles of the stage to zero degrees.
+        Calculate the 3x3 rotation matrix given by the list of angles corresponding to the stage circles.
 
         :param stage_name: supported stage name, 'sample' or 'detector'
         :param angles: list of angular values in degrees for the stage circles during the measurement
