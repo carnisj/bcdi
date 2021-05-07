@@ -799,6 +799,9 @@ class Setup(object):
         self.pixel_x = pixel_x
         self.pixel_y = pixel_y
 
+        # calculated property
+        self.diffractometer = self.get_diffractometer()
+
     @property
     def actuators(self):
         """
@@ -1350,6 +1353,25 @@ class Setup(object):
                                 title=title + ' interpolated in detector frame\n')
 
         return detector_obj
+
+    def get_diffractometer(self):
+        """
+        Returns a Diffractometer instance depending on the beamline.
+        """
+        if self.beamline == 'ID01':
+            return DiffractometerID01()
+        elif self.beamline in {'SIXS_2018', 'SIXS_2019'}:
+            return DiffractometerSIXS()
+        elif self.beamline == '34ID':
+            return Diffractometer34ID()
+        elif self.beamline == 'P10':
+            return DiffractometerP10()
+        elif self.beamline == 'CRISTAL':
+            return DiffractometerCRISTAL()
+        elif self.beamline == 'NANOMAX':
+            return DiffractometerNANOMAX()
+        else:
+            raise ValueError('Invalid beamline')
 
     def init_paths(self, detector, sample_name, scan_number, root_folder, save_dir, specfile_name, template_imagefile,
                    data_dirname=None, save_dirname='result', create_savedir=False, verbose=False):
