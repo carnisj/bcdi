@@ -1922,7 +1922,7 @@ def init_qconversion(setup):
     elif beamline == 'P10':
         offsets = (0, 0, 0, 0, setup.offset_inplane, 0)  # mu, omega, chi, phi, gamma del
         qconv = xu.experiment.QConversion(['z+', 'y-', 'x+', 'z-'], ['z+', 'y-'], r_i=beam_direction)  # for P10
-        # 4S+2D goniometer (P10 goniometer, sample: mu, omega, chi,phi   detector: gamma, delta
+        # 4S+2D goniometer (P10 goniometer, sample: mu, omega, chi, phi   detector: gamma, delta
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == '34ID':
