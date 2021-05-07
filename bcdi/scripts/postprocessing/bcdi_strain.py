@@ -697,15 +697,16 @@ strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxe
 #########################################################################################
 if data_frame != 'crystal':  # we do not know the geometry of the experiment if the data was already in the crystal
     # frame before phase retrieval, impossible to come back to the laboratory frame
-    if save_frame == 'laboratory':
+    if save_frame in {'laboratory', 'lab_flat_sample'}:
         comment = comment + '_labframe'
         print('Rotating back the crystal in laboratory frame')
         amp, phase, strain = pu.rotate_crystal(arrays=(amp, phase, strain), axis_to_align=axis_to_array_xyz[ref_axis_q],
                                                voxel_size=voxel_size, is_orthogonal=True, reciprocal_space=False,
                                                reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
                                                debugging=(True, False, False), title=('amp', 'phase', 'strain'))
-    elif save_frame == 'lab_flat_sample':
-        comment = comment + '_labframe_flat'
+    if save_frame == 'lab_flat_sample':
+        comment = comment + '_flat'
+        print('Sending sample stage circles to 0')
         sample_angles = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup, stage_name='sample')
         amp, phase, strain = setup.diffractometer.flatten_stage(arrays=(amp, phase, strain), stage_name='sample',
                                                                 angles=sample_angles, voxel_size=voxel_size, q_com=q,
