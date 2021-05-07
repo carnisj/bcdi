@@ -584,11 +584,70 @@ class Diffractometer(object):
                                       f" available are {list(Diffractometer.valid_names.keys())}")
 
 
-class DiffractometerID01(Diffractometer):
+class Diffractometer34ID(Diffractometer):
+    """
+    34ID goniometer, 4S+2D (sample: mu, phi, chi, theta (inplane)   detector: delta (inplane), gamma).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
     def __init__(self):
         super().__init__()
-        self._sample_circles = []
-        self._detector_circles = []
+        self._sample_circles = ['y+', 'x+', 'z-', 'y+']
+        self._detector_circles = ['y+', 'x-']
+
+
+class DiffractometerCRISTAL(Diffractometer):
+    """
+    CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = ['x-', 'y+']
+        self._detector_circles = ['y+', 'x-']
+
+
+class DiffractometerID01(Diffractometer):
+    """
+    ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = ['x-', 'z+', 'y-']
+        self._detector_circles = ['y-', 'x-']
+
+
+class DiffractometerNANOMAX(Diffractometer):
+    """
+    NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = ['x-', 'y-']
+        self._detector_circles = ['y-', 'x-']
+
+
+class DiffractometerP10(Diffractometer):
+    """
+    P10 goniometer, 4S+2D (sample: mu, omega, chi, phi / detector: gamma, delta).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = ['y+', 'x-', 'z+', 'y-']
+        self._detector_circles = ['y+', 'x-']
+
+
+class DiffractometerSIXS(Diffractometer):
+    """
+    SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = ['x-', 'y+']
+        self._detector_circles = ['x-', 'y+', 'x-']
 
 
 class RotationMatrix(object):
