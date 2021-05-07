@@ -1916,7 +1916,7 @@ def init_qconversion(setup):
     elif beamline == 'CRISTAL':
         offsets = (0, 0, setup.offset_inplane, 0)  # mgomega, phi, gamma, delta
         qconv = xu.experiment.QConversion(['y-', 'z+'], ['z+', 'y-'], r_i=beam_direction)  # for CRISTAL
-        # 2S+2D goniometer (CRISTAL goniometer, sample: mgomega, phi    detector: gamma, delta
+        # 2S+2D goniometer (CRISTAL goniometer, sample: mgomega, mgphi    detector: gamma, delta
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'P10':
@@ -3172,7 +3172,7 @@ def motor_positions_cristal(logfile, setup, **kwargs):
     :param kwargs:
      - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
        equal to the number of measured frames. In case of data padding, the length changes.
-    :return: (mgomega, phi, gamma, delta) motor positions
+    :return: (mgomega, mgphi, gamma, delta) motor positions
     """
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
@@ -3195,15 +3195,15 @@ def motor_positions_cristal(logfile, setup, **kwargs):
 
         if setup.rocking_angle == 'outofplane':
             mgomega = scanned_motor  # mgomega is scanned
-            phi = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/',
-                                     actuator_name='i06-c-c07-ex-mg_phi', field_name='position')
+            mgphi = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/',
+                                       actuator_name='i06-c-c07-ex-mg_phi', field_name='position')
             delta = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
                                        actuator_name='I06-C-C07-EX-DIF-DELTA', field_name='position')
             gamma = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
                                        actuator_name='I06-C-C07-EX-DIF-GAMMA', field_name='position')
 
         elif setup.rocking_angle == 'inplane':
-            phi = scanned_motor  # phi is scanned
+            mgphi = scanned_motor  # mgphi is scanned
             mgomega = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/',
                                          actuator_name='i06-c-c07-ex-mg_omega', field_name='position')
             delta = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
@@ -3216,7 +3216,7 @@ def motor_positions_cristal(logfile, setup, **kwargs):
         mgomega = setup.custom_motors["mgomega"]
         delta = setup.custom_motors["delta"]
         gamma = setup.custom_motors["gamma"]
-        phi = setup.custom_motors.get("phi", None)
+        mgphi = setup.custom_motors.get("mgphi", None)
         energy = setup.custom_motors["energy", setup.energy]
 
     # check if mgomega needs to be divided by 1e6 (data taken before the implementation of the correction)
@@ -3225,7 +3225,7 @@ def motor_positions_cristal(logfile, setup, **kwargs):
     elif isinstance(mgomega, (tuple, list, np.ndarray)) and any(abs(val) > 360 for val in mgomega):
         mgomega = mgomega / 1e6
 
-    return mgomega, phi, gamma, delta, energy
+    return mgomega, mgphi, gamma, delta, energy
 
 
 def motor_positions_id01(logfile, scan_number, setup, **kwargs):
