@@ -1223,20 +1223,23 @@ def get_motor_pos(logfile, scan_number, setup, motor_name):
     return motor_pos
 
 
-def goniometer_values(logfile, scan_number, setup, **kwargs):
+def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
     """
     Extract goniometer motor positions for a BCDI rocking scan.
 
     :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
     :param scan_number: the scan number to load
     :param setup: the experimental setup: Class Setup
+    :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
     :param kwargs:
      - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
        equal to the number of measured frames. In case of data padding, the length changes.
      - 'follow_bragg': boolean, True for energy scans where the detector position is changed during the scan to follow
        the Bragg peak.
-    :return: (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
-     corrected values
+    :return: a tuple of angular values in degrees, depending on stage_name:
+     - 'bcdi': (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
+     - 'sample': tuple of angular values for the sample circles, from the most outer to the most inner circle
+     - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
     """
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
@@ -1248,10 +1251,14 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
         assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
             'frames_logical should be a list of values in {-1, 0, 1}'
 
+    # check some parameter
     if not isinstance(setup, exp.Setup):
         raise TypeError('setup should be of type experiment.experiment_utils.Setup')
     valid.valid_item(scan_number, allowed_types=int, min_excluded=0, name='preprocessing_utils.goniometer_values')
+    if stage_name not in {'bcdi', 'sample', 'detector'}:
+        raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
+    # load motor positions
     beamline = setup.beamline
     rocking_angle = setup.rocking_angle
     offsets = setup.sample_offsets  # sample offsets around downstream (chi), vertical up (phi), outboard(eta/omega)
@@ -1268,9 +1275,12 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
             tilt, inplane, outofplane = phi, nu, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+        # ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del)
+        sample_angles = (eta, chi, phi)
+        detector_angles = (nu, delta)
 
     elif setup.beamline == 'P10':
-        om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile=logfile, setup=setup)
+        mu, om, chi, phi, gamma, delta = motor_positions_p10(logfile=logfile, setup=setup)
         if setup.rocking_angle == 'outofplane':  # om rocking curve
             grazing = (chi-offsets[0],)
             tilt, inplane, outofplane = om, gamma, delta
@@ -1280,16 +1290,22 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
+        # P10 goniometer, 4S+2D (sample: mu, omega, chi, phi / detector: gamma, delta)
+        sample_angles = (mu, om, chi, phi)
+        detector_angles = (gamma, delta)
     elif setup.beamline == 'CRISTAL':
-        mgomega, phi, gamma, delta, energy = motor_positions_cristal(logfile, setup)
+        mgomega, mgphi, gamma, delta, energy = motor_positions_cristal(logfile, setup)
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             grazing = (0,)  # no chi at CRISTAL
             tilt, inplane, outofplane = mgomega, gamma[0], delta[0]
         elif rocking_angle == 'inplane':  # phi rocking curve
             grazing = (0, mgomega[0]-offsets[2])  # no chi at CRISTAL
-            tilt, inplane, outofplane = phi, gamma[0], delta[0]
+            tilt, inplane, outofplane = mgphi, gamma[0], delta[0]
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+        # CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta)
+        sample_angles = (mgomega, mgphi)
+        detector_angles = (gamma, delta)
 
     elif setup.beamline in {'SIXS_2018', 'SIXS_2019'}:
         beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile=logfile, setup=setup,
@@ -1301,6 +1317,9 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
             raise NotImplementedError('outofplane rocking curve not implemented for SIXS')
         else:
             raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
+        # SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del)
+        sample_angles = (beta, mu)
+        detector_angles = (beta, gamma, delta)
 
     elif setup.beamline == 'NANOMAX':
         theta, phi, gamma, delta, energy, radius = motor_positions_nanomax(logfile=logfile, setup=setup)
@@ -1312,21 +1331,33 @@ def goniometer_values(logfile, scan_number, setup, **kwargs):
             tilt, inplane, outofplane = phi, gamma, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+        # NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta)
+        sample_angles = (theta, phi)
+        detector_angles = (gamma, delta)
 
     elif beamline == '34ID':
-        mu, tilt, chi, theta, delta, gamma = motor_positions_34id(setup=setup)
+        mu, phi, chi, theta, delta, gamma = motor_positions_34id(setup=setup)
         if rocking_angle == 'outofplane':
             grazing = (chi-offsets[0],)
-            tilt, inplane, outofplane = tilt, delta, gamma  # tilt is the incident angle at 34ID
+            tilt, inplane, outofplane = phi, delta, gamma  # phi is the incident angle at 34ID
         elif rocking_angle == 'inplane':
-            grazing = (chi-offsets[0], tilt-offsets[2])  # tilt is the incident angle at 34ID
+            grazing = (chi-offsets[0], phi-offsets[2])  # phi is the incident angle at 34ID
             tilt, inplane, outofplane = theta, delta, gamma  # theta is the rotation around the vertical axis
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+        # 34ID goniometer, 4S+2D (sample: mu, phi, chi, theta (inplane)   detector: delta (inplane), gamma)
+        sample_angles = (mu, phi, chi, theta)
+        detector_angles = (delta, gamma)
+
     else:
         raise ValueError(f'{setup.beamline} not supported')
 
-    return tilt, grazing, inplane, outofplane
+    if stage_name == 'sample':
+        return sample_angles
+    elif stage_name == 'detector':
+        return detector_angles
+    else:  # default case 'bcdi'
+        return tilt, grazing, inplane, outofplane
 
 
 def grid_bcdi_labframe(data, mask, detector, setup, align_q=False, reference_axis=(0, 1, 0), debugging=False, **kwargs):
@@ -3435,7 +3466,7 @@ def motor_positions_p10(logfile, setup):
         delta = setup.custom_motors["delta"]
         gamma = setup.custom_motors["gamma"]
         mu = setup.custom_motors["mu"]
-    return om, phi, chi, mu, gamma, delta
+    return mu, om, chi, phi, gamma, delta
 
 
 def motor_positions_p10_saxs(logfile, setup):
@@ -3743,10 +3774,10 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(beta, mu, beta, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'CRISTAL':
-        mgomega, phi, gamma, delta, energy =\
+        mgomega, mgphi, gamma, delta, energy =\
             motor_positions_cristal(logfile=logfile, setup=setup, frames_logical=frames_logical)
         mgomega = mgomega - setup.sample_offsets[2]  # sample_offsets[2] is the rotation around the outboard axis
-        phi = phi - setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
+        mgphi = mgphi - setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             nb_steps = len(mgomega)
             tilt_angle = (mgomega[1:] - mgomega[0:-1]).mean()
@@ -3760,28 +3791,28 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
             if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
                 mgomega = mgomega[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
 
-        elif setup.rocking_angle == 'inplane':  # phi rocking curve
+        elif setup.rocking_angle == 'inplane':  # mgphi rocking curve
             print('mgomega', mgomega)
-            nb_steps = len(phi)
-            tilt_angle = (phi[1:] - phi[0:-1]).mean()
+            nb_steps = len(mgphi)
+            tilt_angle = (mgphi[1:] - mgphi[0:-1]).mean()
 
             if nb_steps < nb_frames:  # data has been padded, we suppose it is centered in z dimension
                 pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
                 pad_high = int((nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2))
-                phi = np.concatenate((phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                                      phi,
-                                      phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
+                mgphi = np.concatenate((mgphi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                                        mgphi,
+                                        mgphi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle), axis=0)
             if nb_steps > nb_frames:  # data has been cropped, we suppose it is centered in z dimension
-                phi = phi[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+                mgphi = mgphi[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
 
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
-        mgomega, phi,  gamma, delta, energy = bin_parameters(binning=binning[0], nb_frames=nb_frames,
-                                                             params=[mgomega, phi, gamma, delta, energy])
-        qx, qy, qz = hxrd.Ang2Q.area(mgomega, phi, gamma, delta, en=energy, delta=detector.offsets)
+        mgomega, mgphi,  gamma, delta, energy = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                               params=[mgomega, mgphi, gamma, delta, energy])
+        qx, qy, qz = hxrd.Ang2Q.area(mgomega, mgphi, gamma, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == 'P10':
-        om, phi, chi, mu, gamma, delta = motor_positions_p10(logfile=logfile, setup=setup)
+        mu, om, chi, phi, gamma, delta = motor_positions_p10(logfile=logfile, setup=setup)
         chi = chi - setup.sample_offsets[0]  # sample_offsets[0] is the rotation around the downstream axis
         phi = phi - setup.sample_offsets[1]  # sample_offsets[1] is the rotation around the vertical axis
         om = om - setup.sample_offsets[2]  # sample_offsets[2] is the rotation around the outboard axis
