@@ -565,8 +565,8 @@ class Diffractometer(object):
                               name='angles')
 
         # create a list of rotation matrices corresponding to the circles, index 0 corresponds to the most outer circle
-        rotation_matrices = [RotationMatrix(circle, angles[idx]).get_matrix()
-                             for idx, circle in enumerate(self.__getattribute__(Diffractometer.valid_names[stage_name]))]
+        rotation_matrices = [RotationMatrix(circle, angles[idx]).get_matrix() for idx, circle in
+                             enumerate(self.__getattribute__(Diffractometer.valid_names[stage_name]))]
 
         # calculate the total tranformation matrix by rotating back from outer circles to inner circles
         return np.array(reduce(lambda x, y: np.matmul(x, y), rotation_matrices))
@@ -799,9 +799,6 @@ class Setup(object):
         self.pixel_x = pixel_x
         self.pixel_y = pixel_y
 
-        # calculated property
-        self.diffractometer = self.get_diffractometer()
-
     @property
     def actuators(self):
         """
@@ -947,6 +944,26 @@ class Setup(object):
             return 'z+'
 
     @property
+    def diffractometer(self):
+        """
+        Returns a Diffractometer instance depending on the beamline.
+        """
+        if self.beamline == 'ID01':
+            return DiffractometerID01()
+        elif self.beamline in {'SIXS_2018', 'SIXS_2019'}:
+            return DiffractometerSIXS()
+        elif self.beamline == '34ID':
+            return Diffractometer34ID()
+        elif self.beamline == 'P10':
+            return DiffractometerP10()
+        elif self.beamline == 'CRISTAL':
+            return DiffractometerCRISTAL()
+        elif self.beamline == 'NANOMAX':
+            return DiffractometerNANOMAX()
+        else:
+            raise ValueError('Invalid beamline')
+
+    @property
     def direct_beam(self):
         """
         Tuple of two real numbers indicating the position of the direct beam in pixels at zero detector angles.
@@ -996,7 +1013,7 @@ class Setup(object):
         elif isinstance(value, (list, tuple, np.ndarray)):
             if len(value) == 0:
                 raise ValueError('energy should be a number or a non-empty list of numbers in eV')
-            if any(val<=0 for val in value):
+            if any(val <= 0 for val in value):
                 raise ValueError('energy should be strictly positive, in eV')
             self._energy = value
         else:
@@ -1354,25 +1371,6 @@ class Setup(object):
 
         return detector_obj
 
-    def get_diffractometer(self):
-        """
-        Returns a Diffractometer instance depending on the beamline.
-        """
-        if self.beamline == 'ID01':
-            return DiffractometerID01()
-        elif self.beamline in {'SIXS_2018', 'SIXS_2019'}:
-            return DiffractometerSIXS()
-        elif self.beamline == '34ID':
-            return Diffractometer34ID()
-        elif self.beamline == 'P10':
-            return DiffractometerP10()
-        elif self.beamline == 'CRISTAL':
-            return DiffractometerCRISTAL()
-        elif self.beamline == 'NANOMAX':
-            return DiffractometerNANOMAX()
-        else:
-            raise ValueError('Invalid beamline')
-
     def init_paths(self, detector, sample_name, scan_number, root_folder, save_dir, specfile_name, template_imagefile,
                    data_dirname=None, save_dirname='result', create_savedir=False, verbose=False):
         """
@@ -1692,8 +1690,8 @@ class Setup(object):
                                     reciprocal_space=False, is_orthogonal=False, scale='linear',
                                     title=title[idx] + ' in detector frame')
 
-                gu.multislices_plot(abs(ortho_array), sum_frames=False, width_z=width_z, width_y=width_y, width_x=width_x,
-                                    reciprocal_space=False, is_orthogonal=True, scale='linear',
+                gu.multislices_plot(abs(ortho_array), sum_frames=False, width_z=width_z, width_y=width_y,
+                                    width_x=width_x, reciprocal_space=False, is_orthogonal=True, scale='linear',
                                     title=title[idx] + ' in crystal frame')
 
         if nb_arrays == 1:
