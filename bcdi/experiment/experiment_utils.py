@@ -635,21 +635,34 @@ class RotationMatrix(object):
         self._circle = value
 
     def get_matrix(self):
+        """
+        Calculate the rotation matric for a given circle and angle.
+
+        :return: a numpy ndarray of shape (3, 3)
+        """
+        angle = self.angle * np.pi / 180  # convert from degrees to radians
+
         if self.circle[1] == '+':
             rot_dir = 1
-        else:
+        else:  # '-'
             rot_dir = -1
 
         if self.circle[0] == 'x':
-            pass
+            matrix = np.array([[1, 0, 0],
+                               [0, np.cos(angle), -rot_dir * np.sin(angle)],
+                               [0, rot_dir * np.sin(angle), np.cos(angle)]])
         elif self.circle[0] == 'y':
-            pass
+            matrix = np.array([[np.cos(angle), 0, rot_dir * np.sin(angle)],
+                               [0, 1, 0],
+                               [-rot_dir * np.sin(angle), 0, np.cos(angle)]])
         elif self.circle[0] == 'z':
-            pass
+            matrix = np.array([[np.cos(angle), -rot_dir * np.sin(angle), 0],
+                               [rot_dir * np.sin(angle), np.cos(angle), 0],
+                               [0, 0, 1]])
         else:
             raise ValueError(f'{self.circle} is not in the list of valid circles:'
                              f' {list(RotationMatrix.valid_circles)}')
-        return 0
+        return matrix
 
 
 class Setup(object):
