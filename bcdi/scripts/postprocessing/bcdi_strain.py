@@ -80,8 +80,12 @@ data_frame = 'detector'  # 'crystal' if the data was interpolated into the cryst
 # 'detector' if the data is still in the detector frame
 ref_axis_q = "y"  # axis along which q will be aligned (data_frame= 'detector' or 'laboratory')
 # or is already aligned (data_frame='crystal')
-save_labframe = False  # True to save the data in the laboratory frame instead of the crystal frame:
-# it will be rotated back after the strain calculation (which is done in the crystal frame along ref_axis_q)
+save_frame = 'laboratory'  # 'crystal', 'laboratory' or 'lab_flat_sample'
+# 'crystal' to save the data with q aligned along ref_axis_q
+# 'laboratory' to save the data in the laboratory frame (experimental geometry)
+# 'lab_flat_sample' to save the data in the laboratory frame, with all sample angles rotated back to 0
+# rotations for 'laboratory' and 'lab_flat_sample' are realized after the strain calculation
+# (which is done in the crystal frame along ref_axis_q)
 isosurface_strain = 0.1  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 strain_method = 'default'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
 # magnitude value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
@@ -232,6 +236,14 @@ if ref_axis_q not in {'x', 'y', 'z'}:
 
 if ref_axis not in {'x', 'y', 'z'}:
     raise ValueError("ref_axis should be either 'x', 'y', 'z'")
+
+if save_frame not in {'crystal', 'laboratory', 'lab_flat_sample'}:
+    raise ValueError("save_frame should be either 'crystal', 'laboratory' or 'lab_flat_sample'")
+
+if data_frame == 'crystal' and save_frame != 'crystal':
+    print("data already in the crystal frame before phase retrieval, it is impossible to come back to the laboratory "
+          "frame, parameter 'save_frame' defaulted to 'crystal'")
+    save_frame = 'crystal'
 
 if isinstance(output_size, Real):
     output_size = (output_size,) * 3
@@ -684,14 +696,22 @@ strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxe
 # optionally rotates back the crystal into the laboratory frame (for debugging purpose) #
 #########################################################################################
 if data_frame != 'crystal':  # we do not know the geometry of the experiment if the data was already in the crystal
-    # frame before phase retrieval
-    if save_labframe:
+    # frame before phase retrieval, impossible to come back to the laboratory frame
+    if save_frame == 'laboratory':
         comment = comment + '_labframe'
         print('Rotating back the crystal in laboratory frame')
         amp, phase, strain = pu.rotate_crystal(arrays=(amp, phase, strain), axis_to_align=axis_to_array_xyz[ref_axis_q],
                                                voxel_size=voxel_size, is_orthogonal=True, reciprocal_space=False,
                                                reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
                                                debugging=(True, False, False), title=('amp', 'phase', 'strain'))
+    elif save_frame == 'lab_flat_sample':
+        comment = comment + '_labframe_flat'
+        sample_angles = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup, stage_name='sample')
+        amp, phase, strain = setup.diffractometer.flatten_stage(arrays=(amp, phase, strain), stage_name='sample',
+                                                                angles=sample_angles, voxel_size=voxel_size, q_com=q,
+                                                                is_orthogonal=True, reciprocal_space=False,
+                                                                debugging=(True, False, False),
+                                                                title=('amp', 'phase', 'strain'))
     else:
         comment = comment + '_crystalframe'
 
