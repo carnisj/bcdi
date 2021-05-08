@@ -1821,8 +1821,8 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
         return amp, phase, myrampy, myrampx
 
 
-def rotate_crystal(arrays, axis_to_align, reference_axis, voxel_size=None, fill_value=0, is_orthogonal=False,
-                   reciprocal_space=False, debugging=False, **kwargs):
+def rotate_crystal(arrays, axis_to_align=None, reference_axis=None, voxel_size=None, fill_value=0, rotation_matrix=None,
+                   is_orthogonal=False, reciprocal_space=False, debugging=False, **kwargs):
     """
     Rotate arrays to align axis_to_align onto reference_axis. The pivot of the rotation is in the center of the arrays.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
@@ -1834,6 +1834,7 @@ def rotate_crystal(arrays, axis_to_align, reference_axis, voxel_size=None, fill_
     :param voxel_size: tuple, voxel size of the 3D array in z, y, and x (CXI convention)
     :param fill_value: tuple of numeric values used in the RegularGridInterpolator for points outside of the
      interpolation domain. The length of the tuple should be equal to the number of input arrays.
+    :param rotation_matrix: optional numpy ndarray of shape (3, 3), rotation matrix to apply to arrays
     :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :param debugging: tuple of booleans of the same length as the number of input arrays, True to see plots before and
@@ -1875,6 +1876,18 @@ def rotate_crystal(arrays, axis_to_align, reference_axis, voxel_size=None, fill_
         debugging = (debugging,) * nb_arrays
     valid.valid_container(debugging, container_types=(tuple, list), length=nb_arrays, item_types=bool,
                           name='debugging')
+    if rotation_matrix is None:
+        # 'axis_to_align' and 'reference_axis' need to be declared in order to calculate the rotation matrix
+        valid.valid_container(axis_to_align, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name='axis_to_align')
+        valid.valid_container(reference_axis, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name='reference_axis')
+    else:
+        print('The rotation matrix is provided, parameters "axis_to_align" and "reference_axis" will be discarded')
+        if not isinstance(rotation_matrix, np.ndarray):
+            raise TypeError(f'rotation_matrix should be a numpy ndarray, got {type(rotation_matrix)}')
+        if rotation_matrix.shape != (3, 3):
+            raise ValueError(f'rotation_matrix should be of shape (3, 3), got {rotation_matrix.shape}')
 
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs,
@@ -1900,9 +1913,12 @@ def rotate_crystal(arrays, axis_to_align, reference_axis, voxel_size=None, fill_
     ################################################################################
     # calculate the rotation matrix which aligns axis_to_align onto reference_axis #
     ################################################################################
-    rotation_matrix = util.rotation_matrix_3d(axis_to_align, reference_axis)
+    if rotation_matrix is None:
+        rotation_matrix = util.rotation_matrix_3d(axis_to_align, reference_axis)
 
-    # calculate the new indices after transformation
+    ##################################################
+    # calculate the new indices after transformation #
+    ##################################################
     old_z = np.arange(-nbz // 2, nbz // 2, 1) * voxel_size[0]
     old_y = np.arange(-nby // 2, nby // 2, 1) * voxel_size[1]
     old_x = np.arange(-nbx // 2, nbx // 2, 1) * voxel_size[2]
