@@ -525,6 +525,72 @@ class Diffractometer(object):
                              f' {list(Diffractometer.valid_circles)}')
         self.__getattribute__(Diffractometer.valid_names[stage_name]).insert(index, circle)
 
+    def flatten_sample(self, arrays, voxel_size, angles, q_com, rocking_angle, datadir, fill_value=0,
+                       is_orthogonal=True, reciprocal_space=False, debugging=False, **kwargs):
+        """
+        Rotate arrays such that all circles of the sample stage are at their zero position.
+
+        :param arrays: tuple of 3D real arrays of the same shape.
+        :param voxel_size: tuple, voxel size of the 3D array in z, y, and x (CXI convention)
+        :param angles: tuple of angular values in degrees, one for each circle of the sample stage
+        :param q_com: diffusion vector of the center of mass of the Bragg peak, expressed in an orthonormal frame x y z
+        :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
+        :param datadir: path to the data directory, where the file of the diffraction pattern is located
+        :param fill_value: tuple of numeric values used in the RegularGridInterpolator for points outside of the
+         interpolation domain. The length of the tuple should be equal to the number of input arrays.
+        :param is_orthogonal: set to True is the frame is orthogonal, False otherwise. Used for plot labels.
+        :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
+        :param debugging: tuple of booleans of the same length as the number of input arrays, True to see plots before and
+         after rotation
+        :param kwargs:
+         - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
+         - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging plots, same length as the
+           number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :return: a rotated array (if a single array was provided) or a tuple of rotated arrays (same length as the
+         number of input arrays)
+        """
+        # check that arrays is a tuple of 3D arrays
+        if isinstance(arrays, np.ndarray):
+            arrays = (arrays,)
+        valid.valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray, min_length=1,
+                              name='arrays')
+        if any(array.ndim != 3 for array in arrays):
+            raise ValueError('all arrays should be 3D ndarrays of the same shape')
+        ref_shape = arrays[0].shape
+        if any(array.shape != ref_shape for array in arrays):
+            raise ValueError('all arrays should be 3D ndarrays of the same shape')
+        nb_arrays = len(arrays)
+
+        # check few parameters, the rest will be validated in rotate_crystal
+        valid.valid_container(q_com, container_types=(tuple, list, np.ndarray), length=3, item_types=Real, name='q_com')
+        if np.linalg.norm(q_com) == 0:
+            raise ValueError('the norm of q_com is zero')
+        nb_circles = len(self._sample_circles)
+        valid.valid_container(angles, container_types=(tuple, list), length=nb_circles, name='angles')
+
+        # find the index of the circle which corresponds to the rocking angle
+        rocking_circle = self.get_rocking_circle(rocking_angle=rocking_angle, angles=angles)
+
+        # calculate the angle of the rocking circle corresponding to the center of mass along the stacking axis
+        # of the diffraction pattern (dataset sent to phase retrieval, in the detector frame)
+        central_angle = self.get_central_angle(rocking_values=angles[rocking_circle], datadir=datadir)
+
+        # use this angle in the calculation of the rotation matrix
+        angles[rocking_circle] = central_angle
+
+        # calculate the rotation matrix
+        rotation_matrix = self.rotation_matrix(stage_name='sample', angles=angles)
+
+        # rotate the arrays
+        rotated_arrays = pu.rotate_crystal(arrays=arrays, rotation_matrix=rotation_matrix, voxel_size=voxel_size,
+                                           fill_value=fill_value, debugging=debugging, is_orthogonal=is_orthogonal,
+                                           reciprocal_space=reciprocal_space, **kwargs)
+        rotated_q = pu.rotate_vector()
+        return rotated_arrays, rotated_q
+    
     def get_circles(self, stage_name):
         """
         Return the list of circles for the stage.
@@ -533,6 +599,54 @@ class Diffractometer(object):
         """
         Diffractometer.valid_name(stage_name)
         return self.__getattribute__(Diffractometer.valid_names[stage_name])
+
+    def get_rocking_circle(self, rocking_angle, stage_name, angles):
+        """
+        Find the index of the circle which corresponds to the rocking angle.
+
+        :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
+        :param stage_name: supported stage name, 'sample' or 'detector'
+        :param angles: tuple of angular values in degrees, one for each circle of the sample stage
+        :return: the index of the rocking circles in the list of angles
+        """
+        # check parameters
+        if rocking_angle not in {'outofplane', 'inplane'}:
+            raise ValueError(f'Invalid value {rocking_angle} for rocking_angle,'
+                             f' should be either "inplane" or "outofplane"')
+        Diffractometer.valid_name(stage_name)
+        valid.valid_container(angles, container_types=(tuple, list), name='angles')
+        nb_circles = len(angles)
+
+        # find which angles were scanned
+        candidate_circles = set()
+        for idx in range(nb_circles):
+            if not isinstance(angles[idx], Real):  # not a number, hence a tuple/list/ndarray (cannot be None)
+                candidate_circles.add(idx)
+
+        # exclude arrays with identical values
+        for idx in candidate_circles:
+            if (angles[1:]-angles[:-1]).mean() < 0.0001:  # motor not scanned, just noise in the position readings
+                candidate_circles.remove(idx)
+
+        # check that there is only one candidate remaining
+        if len(candidate_circles) > 1:
+            raise ValueError('Several circles were identified as scanned motors')
+        elif len(candidate_circles) == 0:
+            raise ValueError('No circle was identified as scanned motor')
+        else:  # only one circle was identified as scanned, everything ok
+            index_circle = candidate_circles[0]
+
+        # check that the rotation axis corresponds to the one definec by rocking_angle
+        circles = self.__getattribute__(Diffractometer.valid_names[stage_name])
+        if rocking_angle == 'inplane':
+            if circles[index_circle][0] != 'y':
+                raise ValueError(f"The identified circle '{circles[index_circle]}' is incompatible "
+                                 f"with the parameter '{rocking_angle}'")
+        else:  # 'outofplane'
+            if circles[index_circle][0] != 'x':
+                raise ValueError(f"The identified circle '{circles[index_circle]}' is incompatible "
+                                 f"with the parameter '{rocking_angle}'")
+        return index_circle
 
     def remove_circle(self, stage_name, index):
         """
