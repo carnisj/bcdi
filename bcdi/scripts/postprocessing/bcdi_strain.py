@@ -521,16 +521,18 @@ if save_raw:
 #########################################################
 # calculate q of the Bragg peak in the laboratory frame #
 #########################################################
-q = setup.q_laboratory  # (1/A), in the laboratory frame z downstream, y vertical, x outboard
-angle = simu.angle_vectors(ref_vector=np.array([q[2], q[1], q[0]]), test_vector=axis_to_array_xyz[ref_axis_q])
-print(f"\nDiffusion vector in the laboratory frame (z*, y*, x*): ({q[0]:.4f} 1/A, {q[1]:.4f} 1/A, {q[2]:.4f} 1/A)")
-print(f"\nAngle between q and {ref_axis_q} = {angle:.2f} deg")
+q_lab = setup.q_laboratory  # (1/A), in the laboratory frame z downstream, y vertical, x outboard
+angle = simu.angle_vectors(ref_vector=np.array([q_lab[2], q_lab[1], q_lab[0]]),
+                           test_vector=axis_to_array_xyz[ref_axis_q])
+print(f"\nDiffusion vector in the laboratory frame (z*, y*, x*): "
+      f"({q_lab[0]:.4f} 1/A, {q_lab[1]:.4f} 1/A, {q_lab[2]:.4f} 1/A)")
+print(f"\nAngle between q_lab and {ref_axis_q} = {angle:.2f} deg")
 if debug:
-    print(f"Angle with y in zy plane = {np.arctan(q[0]/q[1])*180/np.pi:.2f} deg")
-    print(f"Angle with y in xy plane = {np.arctan(-q[2]/q[1])*180/np.pi:.2f} deg")
-    print(f"Angle with z in xz plane = {180+np.arctan(q[2]/q[0])*180/np.pi:.2f} deg\n")
-qnorm = np.linalg.norm(q)
-q = q / qnorm
+    print(f"Angle with y in zy plane = {np.arctan(q_lab[0]/q_lab[1])*180/np.pi:.2f} deg")
+    print(f"Angle with y in xy plane = {np.arctan(-q_lab[2]/q_lab[1])*180/np.pi:.2f} deg")
+    print(f"Angle with z in xz plane = {180+np.arctan(q_lab[2]/q_lab[0])*180/np.pi:.2f} deg\n")
+qnorm = np.linalg.norm(q_lab)
+q_lab = q_lab / qnorm
 planar_dist = 2*np.pi/qnorm  # qnorm should be in angstroms
 print(f"Wavevector transfer: {qnorm:.4f} 1/A")
 print(f"Atomic planar distance: {planar_dist:.4f} A")
@@ -551,7 +553,7 @@ if data_frame == 'detector':
         del phase
         gc.collect()
 
-    obj_ortho, voxel_size = setup.ortho_directspace(arrays=avg_obj, q_com=np.array([q[2], q[1], q[0]]),
+    obj_ortho, voxel_size = setup.ortho_directspace(arrays=avg_obj, q_com=np.array([q_lab[2], q_lab[1], q_lab[0]]),
                                                     initial_shape=original_size, voxel_size=fix_voxel,
                                                     reference_axis=axis_to_array_xyz[ref_axis_q],
                                                     fill_value=0, debugging=True, title='amplitude')
@@ -567,7 +569,7 @@ else:  # data already orthogonalized using xrayutilities or the linearized trans
         qy = npzfile['qy']
         qz = npzfile['qz']
     except FileNotFoundError:
-        raise FileNotFoundError('Voxel sizes not provided')
+        raise FileNotFoundError('q values not provided, the voxel size cannot be calculated')
     dy_real = 2 * np.pi / abs(qz.max() - qz.min()) / 10  # in nm qz=y in nexus convention
     dx_real = 2 * np.pi / abs(qy.max() - qy.min()) / 10  # in nm qy=x in nexus convention
     dz_real = 2 * np.pi / abs(qx.max() - qx.min()) / 10  # in nm qx=z in nexus convention
@@ -586,7 +588,7 @@ else:  # data already orthogonalized using xrayutilities or the linearized trans
 
         amp, phase = pu.rotate_crystal(arrays=(abs(obj_ortho), np.angle(obj_ortho)), is_orthogonal=True,
                                        reciprocal_space=False, voxel_size=voxel_size, debugging=(True, False),
-                                       axis_to_align=np.array([q[2], q[1], q[0]]) / np.linalg.norm(q),
+                                       axis_to_align=np.array([q_lab[2], q_lab[1], q_lab[0]]) / np.linalg.norm(q_lab),
                                        reference_axis=axis_to_array_xyz[ref_axis_q],
                                        title=('amp', 'phase'))
 
@@ -632,10 +634,10 @@ if correct_refraction:  # or correct_absorption:
     # into the crystal frame (also, xrayutilities output is in crystal frame)
     kin = pu.rotate_vector(vectors=np.array([kin[2], kin[1], kin[0]]),
                            axis_to_align=axis_to_array_xyz[ref_axis_q],
-                           reference_axis=np.array([q[2], q[1], q[0]]))
+                           reference_axis=np.array([q_lab[2], q_lab[1], q_lab[0]]))
     kout = pu.rotate_vector(vectors=np.array([kout[2], kout[1], kout[0]]),
                             axis_to_align=axis_to_array_xyz[ref_axis_q],
-                            reference_axis=np.array([q[2], q[1], q[0]]))
+                            reference_axis=np.array([q_lab[2], q_lab[1], q_lab[0]]))
 
     # calculate the optical path of the incoming wavevector
     path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=debug)  # path_in already in nm
@@ -699,30 +701,33 @@ strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxe
 #########################################################################################
 # optionally rotates back the crystal into the laboratory frame (for debugging purpose) #
 #########################################################################################
-if data_frame != 'crystal':  # we do not know the geometry of the experiment if the data was already in the crystal
-    # frame before phase retrieval, impossible to come back to the laboratory frame
-    if save_frame in {'laboratory', 'lab_flat_sample'}:
-        comment = comment + '_labframe'
-        print('Rotating back the crystal in laboratory frame')
-        amp, phase, strain = pu.rotate_crystal(arrays=(amp, phase, strain), axis_to_align=axis_to_array_xyz[ref_axis_q],
-                                               voxel_size=voxel_size, is_orthogonal=True, reciprocal_space=False,
-                                               reference_axis=np.array([q[2], q[1], q[0]])/np.linalg.norm(q),
-                                               debugging=(True, False, False), title=('amp', 'phase', 'strain'))
-    if save_frame == 'lab_flat_sample':
-        comment = comment + '_flat'
-        print('Sending sample stage circles to 0')
-        sample_angles = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup, stage_name='sample')
-        (amp, phase, strain), q = setup.diffractometer.flatten_sample(arrays=(amp, phase, strain),
-                                                                      voxel_size=voxel_size,
-                                                                      angles=sample_angles, q_com=q, is_orthogonal=True,
-                                                                      reciprocal_space=False,
-                                                                      rocking_angle=rocking_angle,
-                                                                      index_central_angle=index_central_angle,
-                                                                      debugging=(True, False, False),
-                                                                      title=('amp', 'phase', 'strain'))
-    else:
-        comment = comment + '_crystalframe'
-        # TODO: do we need to rotate q into the crystal frame to cross-check that everything is right?
+if save_frame in {'laboratory', 'lab_flat_sample'}:
+    comment = comment + '_labframe'
+    print('Rotating back the crystal in laboratory frame')
+    amp, phase, strain = \
+        pu.rotate_crystal(arrays=(amp, phase, strain), axis_to_align=axis_to_array_xyz[ref_axis_q],
+                          voxel_size=voxel_size, is_orthogonal=True, reciprocal_space=False,
+                          reference_axis=np.array([q_lab[2], q_lab[1], q_lab[0]])/np.linalg.norm(q_lab),
+                          debugging=(True, False, False), title=('amp', 'phase', 'strain'))
+    # q_lab is already in the laboratory frame
+    q_final = q_lab
+
+if save_frame == 'lab_flat_sample':
+    comment = comment + '_flat'
+    print('Sending sample stage circles to 0')
+    sample_angles = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup, stage_name='sample')
+    (amp, phase, strain), q_final =\
+        setup.diffractometer.flatten_sample(arrays=(amp, phase, strain), voxel_size=voxel_size,
+                                            angles=sample_angles, q_com=q_lab, is_orthogonal=True,
+                                            reciprocal_space=False, rocking_angle=rocking_angle,
+                                            index_central_angle=index_central_angle, debugging=(True, False, False),
+                                            title=('amp', 'phase', 'strain'))
+if save_frame == 'crystal':
+    # rotate also q_lab to have it along ref_axis_q, as a cross-check
+    comment = comment + '_crystalframe'
+    q_final = pu.rotate_vector(vectors=qlab,
+                               axis_to_align=np.array([q_lab[2], q_lab[1], q_lab[0]]) / np.linalg.norm(q_lab),
+                               reference_axis=axis_to_array_xyz[ref_axis_q])
 
 ##########################################################################################
 # rotates the crystal e.g. for easier slicing of the result along a particular direction #
@@ -734,7 +739,10 @@ if align_axis:
                                            axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
                                            voxel_size=voxel_size, debugging=(True, False, False),
                                            is_orthogonal=True, reciprocal_space=False, title=('amp', 'phase', 'strain'))
-    # TODO rotate q accordingly
+    # rotate q accordingly
+    q_final = pu.rotate_vector(vectors=q_final,
+                               axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
+                               reference_axis=axis_to_array_xyz[ref_axis])
 
 ##############################################
 # pad array to fit the output_size parameter #
@@ -753,10 +761,10 @@ bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method='thresh
 if save:
     if invert_phase:
         np.savez_compressed(detector.savedir + 'S' + str(scan) + "_amp" + phase_fieldname + "strain" + comment,
-                            amp=amp, displacement=phase, bulk=bulk, strain=strain)
+                            amp=amp, displacement=phase, bulk=bulk, strain=strain, q_com=q_final)
     else:
         np.savez_compressed(detector.savedir + 'S' + str(scan) + "_amp" + phase_fieldname + "strain" + comment,
-                            amp=amp, phase=phase, bulk=bulk, strain=strain)
+                            amp=amp, phase=phase, bulk=bulk, strain=strain, q_com=q_final)
 
     # save amp & phase to VTK
     # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
