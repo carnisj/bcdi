@@ -86,6 +86,9 @@ save_frame = 'laboratory'  # 'crystal', 'laboratory' or 'lab_flat_sample'
 # 'lab_flat_sample' to save the data in the laboratory frame, with all sample angles rotated back to 0
 # rotations for 'laboratory' and 'lab_flat_sample' are realized after the strain calculation
 # (which is done in the crystal frame along ref_axis_q)
+index_central_angle = 40  # only used when save_frame = 'lab_flat_sample'. index of the frame of the diffraction pattern
+# corresponding to the center of mass along the stacking axis. The index is for the uncropped data, otherwise angles
+# will not match anymore.
 isosurface_strain = 0.1  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 strain_method = 'default'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
 # magnitude value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
@@ -239,7 +242,8 @@ if ref_axis not in {'x', 'y', 'z'}:
 
 if save_frame not in {'crystal', 'laboratory', 'lab_flat_sample'}:
     raise ValueError("save_frame should be either 'crystal', 'laboratory' or 'lab_flat_sample'")
-
+elif save_frame == 'lab_flat_sample':
+    valid.valid_item(index_central_angle, allowed_types=int, min_included=0, name='index_central_angle')
 if data_frame == 'crystal' and save_frame != 'crystal':
     print("data already in the crystal frame before phase retrieval, it is impossible to come back to the laboratory "
           "frame, parameter 'save_frame' defaulted to 'crystal'")
@@ -708,13 +712,17 @@ if data_frame != 'crystal':  # we do not know the geometry of the experiment if 
         comment = comment + '_flat'
         print('Sending sample stage circles to 0')
         sample_angles = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup, stage_name='sample')
-        amp, phase, strain = setup.diffractometer.flatten_stage(arrays=(amp, phase, strain), stage_name='sample',
-                                                                angles=sample_angles, voxel_size=voxel_size, q_com=q,
-                                                                is_orthogonal=True, reciprocal_space=False,
-                                                                debugging=(True, False, False),
-                                                                title=('amp', 'phase', 'strain'))
+        (amp, phase, strain), q = setup.diffractometer.flatten_sample(arrays=(amp, phase, strain),
+                                                                      voxel_size=voxel_size,
+                                                                      angles=sample_angles, q_com=q, is_orthogonal=True,
+                                                                      reciprocal_space=False,
+                                                                      rocking_angle=rocking_angle,
+                                                                      index_central_angle=index_central_angle,
+                                                                      debugging=(True, False, False),
+                                                                      title=('amp', 'phase', 'strain'))
     else:
         comment = comment + '_crystalframe'
+        # TODO: do we need to rotate q into the crystal frame to cross-check that everything is right?
 
 ##########################################################################################
 # rotates the crystal e.g. for easier slicing of the result along a particular direction #
@@ -726,6 +734,7 @@ if align_axis:
                                            axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
                                            voxel_size=voxel_size, debugging=(True, False, False),
                                            is_orthogonal=True, reciprocal_space=False, title=('amp', 'phase', 'strain'))
+    # TODO rotate q accordingly
 
 ##############################################
 # pad array to fit the output_size parameter #
