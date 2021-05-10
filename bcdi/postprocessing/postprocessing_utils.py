@@ -1960,7 +1960,7 @@ def rotate_crystal(arrays, axis_to_align=None, reference_axis=None, voxel_size=N
     return output_arrays
 
 
-def rotate_vector(vectors, axis_to_align, reference_axis):
+def rotate_vector(vectors, axis_to_align, reference_axis, rotation_matrix=None):
     """
     Calculate the vector components (3D) in the basis where axis_to_align and reference_axis are aligned.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
@@ -1970,6 +1970,7 @@ def rotate_vector(vectors, axis_to_align, reference_axis):
      orthonormal frame x y z
     :param axis_to_align: the axis of myobj (vector q), expressed in an orthonormal frame x y z
     :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame x y z
+    :param rotation_matrix: optional numpy ndarray of shape (3, 3), rotation matrix to apply to arrays
     :return: tuple of three ndarrays in CXI convention z y x, each of shape
      (vectors[0].size, vectors[1].size, vectors[2].size). If a single vector is provided, returns a 1D array of size 3.
     """
@@ -1982,9 +1983,24 @@ def rotate_vector(vectors, axis_to_align, reference_axis):
     valid_name = 'postprocessing_utils.rotate_vector'
     valid.valid_container(vectors, container_types=(tuple, list), length=3, item_types=(np.ndarray, Real),
                           name=valid_name)
+    if rotation_matrix is None:
+        # 'axis_to_align' and 'reference_axis' need to be declared in order to calculate the rotation matrix
+        valid.valid_container(axis_to_align, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name='axis_to_align')
+        valid.valid_container(reference_axis, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+                              name='reference_axis')
+    else:
+        print('The rotation matrix is provided, parameters "axis_to_align" and "reference_axis" will be discarded')
+        if not isinstance(rotation_matrix, np.ndarray):
+            raise TypeError(f'rotation_matrix should be a numpy ndarray, got {type(rotation_matrix)}')
+        if rotation_matrix.shape != (3, 3):
+            raise ValueError(f'rotation_matrix should be of shape (3, 3), got {rotation_matrix.shape}')
 
-    # calculate the rotation matrix which aligns axis_to_align onto reference_axis
-    rotation_matrix = util.rotation_matrix_3d(axis_to_align, reference_axis)
+    ################################################################################
+    # calculate the rotation matrix which aligns axis_to_align onto reference_axis #
+    ################################################################################
+    if rotation_matrix is None:
+        rotation_matrix = util.rotation_matrix_3d(axis_to_align, reference_axis)
 
     # calculate the new vector components after transformation
     myz, myy, myx = np.meshgrid(vectors[2], vectors[1], vectors[0], indexing='ij')
