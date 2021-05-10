@@ -28,20 +28,20 @@ It is usefull when you want to localize the Bragg peak for ROI determination.
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 """
 
-scan = 76
-root_folder = "D:/data/CRISTAL_March2021/"
-sample_name = "S"  # string in front of the scan number in the folder name
-save_dir = None  # images will be saved here, leave it to None otherwise (default to data directory's parent)
+scan = 128
+root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
+sample_name = "PtNP1"  # string in front of the scan number in the folder name
+save_dir = root_folder + 'dataset_1_newpsf/test/'  # images will be saved here, leave it to None otherwise (default to data directory's parent)
 save_mask = False  # set to True to save the mask
-debug = False  # True to see more plots
+debug = True  # True to see more plots
 binning = (1, 1, 1)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ###############################
 # beamline related parameters #
 ###############################
-beamline = 'CRISTAL'  # name of the beamline, used for data loading and normalization by monitor
+beamline = 'P10'  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX'
-actuators = {'rocking_angle': 'actuator_1_3'}
+actuators = None  # {'rocking_angle': 'actuator_1_3'}
 # Optional dictionary that can be used to define the entries corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
@@ -54,8 +54,8 @@ custom_motors = {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "p
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 
-rocking_angle = "inplane"  # "outofplane" or "inplane"
-is_series = False  # specific to series measurement at P10
+rocking_angle = "outofplane"  # "outofplane" or "inplane"
+is_series = True  # specific to series measurement at P10
 specfile_name = ''
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
@@ -64,20 +64,21 @@ specfile_name = ''
 ###############################
 # detector related parameters #
 ###############################
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M" or 'Merlin'
-x_bragg = 134  # horizontal pixel number of the Bragg peak, leave None for automatic detection (using the max)
-y_bragg = 162  # vertical pixel number of the Bragg peak, leave None for automatic detection (using the max)
-roi_detector = None  # [y_bragg - 100, y_bragg + 100, x_bragg - 100, x_bragg + 100]
+detector = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M" or 'Merlin'
+x_bragg = 1355  # horizontal pixel number of the Bragg peak, leave None for automatic detection (using the max)
+y_bragg = 796  # vertical pixel number of the Bragg peak, leave None for automatic detection (using the max)
+roi_detector = [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
 # [Vstart, Vstop, Hstart, Hstop]
 # leave None to use the full detector. Use with center_fft='skip' if you want this exact size.
 peak_method = 'max'  # Bragg peak determination: 'max', 'com' or 'maxcom'.
-high_threshold = 150000  # everything above will be considered as hotpixel
-hotpixels_file = root_folder + 'hotpixels_cristal.npz'  # root_folder + 'merlin_mask_190222_14keV.h5'  #
+normalize = 'monitor'  # 'monitor' to return the default monitor values, 'skip' to do nothing
+high_threshold = 500000  # everything above will be considered as hotpixel
+hotpixels_file = ''  # root_folder + 'hotpixels_cristal.npz'  # root_folder + 'merlin_mask_190222_14keV.h5'  #
 flatfield_file = ''  # root_folder + "flatfield_maxipix_8kev.npz"  #
-template_imagefile = 'mgphi-2021_%04d.nxs'
+template_imagefile = '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -106,12 +107,14 @@ colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
 plt.ion()
 
-##############################
-# initialize some parameters #
-##############################
+########################################
+# initialize and check some parameters #
+########################################
 save_dirname = 'pynxraw'
 flatfield = pru.load_flatfield(flatfield_file)
 hotpix_array = pru.load_hotpixels(hotpixels_file)
+if normalize not in {'skip', 'monitor'}:
+    raise ValueError(f"Invalid setting {normalize} for normalize, allowed values are 'skip' and 'monitor'")
 
 #######################
 # Initialize detector #
@@ -154,7 +157,7 @@ logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, r
 #################
 data, mask, monitor, frames_logical = pru.load_data(logfile=logfile, scan_number=scan, detector=detector,
                                                     setup=setup, flatfield=flatfield, hotpixels=hotpix_array,
-                                                    debugging=debug)
+                                                    normalize=normalize, debugging=debug)
 
 numz, numy, numx = data.shape
 print(f'Data shape: ({numz}, {numy}, {numx})')
