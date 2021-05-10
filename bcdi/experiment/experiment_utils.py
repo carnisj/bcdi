@@ -6,9 +6,10 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from functools import reduce
 import gc
 from math import isclose
-from numbers import Real
+from numbers import Number, Real
 import numpy as np
 import os
 import pathlib
@@ -495,6 +496,347 @@ class Detector(object):
         return data, mask
 
 
+class Diffractometer(object):
+    """
+    Class for defining diffractometers. The frame used is the laboratory frame with the CXI convention (z downstream,
+    y vertical up, x outboard).
+    """
+    valid_circles = {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}  # + counter-clockwise, - clockwise
+    valid_names = {'sample': '_sample_circles', 'detector': '_detector_circles'}
+
+    def __init__(self):
+        self._sample_circles = []
+        self._detector_circles = []
+
+    def add_circle(self, stage_name, index, circle):
+        """
+        Add a circle to the list of circles (the most outer circle should be at index 0).
+
+        :param stage_name: supported stage name, 'sample' or 'detector'
+        :param index: index where to put the circle in the list
+        :param circle: valid circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}.
+         + for a counter-clockwise rotation, - for a clockwise rotation.
+        """
+        Diffractometer.valid_name(stage_name)
+        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[stage_name]))
+        valid.valid_item(index, allowed_types=int, min_included=0, max_included=nb_circles, name='index')
+        if circle not in Diffractometer.valid_circles:
+            raise ValueError(f'{circle} is not in the list of valid circles:'
+                             f' {list(Diffractometer.valid_circles)}')
+        self.__getattribute__(Diffractometer.valid_names[stage_name]).insert(index, circle)
+
+    def flatten_sample(self, arrays, voxel_size, angles, q_com, rocking_angle, index_central_angle, fill_value=0,
+                       is_orthogonal=True, reciprocal_space=False, debugging=False, **kwargs):
+        """
+        Rotate arrays such that all circles of the sample stage are at their zero position.
+
+        :param arrays: tuple of 3D real arrays of the same shape.
+        :param voxel_size: tuple, voxel size of the 3D array in z, y, and x (CXI convention)
+        :param angles: tuple of angular values in degrees, one for each circle of the sample stage
+        :param q_com: diffusion vector of the center of mass of the Bragg peak, expressed in an orthonormal frame x y z
+        :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
+        :param index_central_angle: index of the angle of the rocking circle corresponding to the center of mass along
+        the stacking axis of the diffraction pattern (full measurement dataset, in the detector frame)
+        :param fill_value: tuple of numeric values used in the RegularGridInterpolator for points outside of the
+         interpolation domain. The length of the tuple should be equal to the number of input arrays.
+        :param is_orthogonal: set to True is the frame is orthogonal, False otherwise. Used for plot labels.
+        :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
+        :param debugging: tuple of booleans of the same length as the number of input arrays, True to see plots before and
+         after rotation
+        :param kwargs:
+         - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
+         - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging plots, same length as the
+           number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :return: a rotated array (if a single array was provided) or a tuple of rotated arrays (same length as the
+         number of input arrays)
+        """
+        # check that arrays is a tuple of 3D arrays
+        if isinstance(arrays, np.ndarray):
+            arrays = (arrays,)
+        valid.valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray, min_length=1,
+                              name='arrays')
+        if any(array.ndim != 3 for array in arrays):
+            raise ValueError('all arrays should be 3D ndarrays of the same shape')
+        ref_shape = arrays[0].shape
+        if any(array.shape != ref_shape for array in arrays):
+            raise ValueError('all arrays should be 3D ndarrays of the same shape')
+
+        # check few parameters, the rest will be validated in rotate_crystal
+        valid.valid_container(q_com, container_types=(tuple, list, np.ndarray), length=3, item_types=Real, name='q_com')
+        if np.linalg.norm(q_com) == 0:
+            raise ValueError('the norm of q_com is zero')
+        nb_circles = len(self._sample_circles)
+        valid.valid_container(angles, container_types=(tuple, list), length=nb_circles, name='angles')
+
+        # find the index of the circle which corresponds to the rocking angle
+        rocking_circle = self.get_rocking_circle(rocking_angle=rocking_angle, stage_name='sample', angles=angles)
+
+        # get the angle of the rocking circle corresponding to the center of mass along the stacking axis
+        # of the diffraction pattern
+        central_angle = angles[rocking_circle][index_central_angle]
+
+        # use this angle in the calculation of the rotation matrix
+        angles[rocking_circle] = central_angle
+
+        # calculate the rotation matrix
+        rotation_matrix = self.rotation_matrix(stage_name='sample', angles=angles)
+
+        # rotate the arrays
+        rotated_arrays = pu.rotate_crystal(arrays=arrays, rotation_matrix=rotation_matrix, voxel_size=voxel_size,
+                                           fill_value=fill_value, debugging=debugging, is_orthogonal=is_orthogonal,
+                                           reciprocal_space=reciprocal_space, **kwargs)
+        rotated_q = pu.rotate_vector()  # TODO
+        return rotated_arrays, rotated_q
+    
+    def get_circles(self, stage_name):
+        """
+        Return the list of circles for the stage.
+
+        :param stage_name: supported stage name, 'sample' or 'detector'
+        """
+        Diffractometer.valid_name(stage_name)
+        return self.__getattribute__(Diffractometer.valid_names[stage_name])
+
+    def get_rocking_circle(self, rocking_angle, stage_name, angles):
+        """
+        Find the index of the circle which corresponds to the rocking angle.
+
+        :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
+        :param stage_name: supported stage name, 'sample' or 'detector'
+        :param angles: tuple of angular values in degrees, one for each circle of the sample stage
+        :return: the index of the rocking circles in the list of angles
+        """
+        # check parameters
+        if rocking_angle not in {'outofplane', 'inplane'}:
+            raise ValueError(f'Invalid value {rocking_angle} for rocking_angle,'
+                             f' should be either "inplane" or "outofplane"')
+        Diffractometer.valid_name(stage_name)
+        valid.valid_container(angles, container_types=(tuple, list), name='angles')
+        nb_circles = len(angles)
+
+        # find which angles were scanned
+        candidate_circles = set()
+        for idx in range(nb_circles):
+            if not isinstance(angles[idx], Real):  # not a number, hence a tuple/list/ndarray (cannot be None)
+                candidate_circles.add(idx)
+
+        # exclude arrays with identical values
+        for idx in candidate_circles:
+            if (angles[1:]-angles[:-1]).mean() < 0.0001:  # motor not scanned, just noise in the position readings
+                candidate_circles.remove(idx)
+
+        # check that there is only one candidate remaining
+        if len(candidate_circles) > 1:
+            raise ValueError('Several circles were identified as scanned motors')
+        elif len(candidate_circles) == 0:
+            raise ValueError('No circle was identified as scanned motor')
+        else:  # only one circle was identified as scanned, everything ok
+            index_circle = candidate_circles[0]
+
+        # check that the rotation axis corresponds to the one definec by rocking_angle
+        circles = self.__getattribute__(Diffractometer.valid_names[stage_name])
+        if rocking_angle == 'inplane':
+            if circles[index_circle][0] != 'y':
+                raise ValueError(f"The identified circle '{circles[index_circle]}' is incompatible "
+                                 f"with the parameter '{rocking_angle}'")
+        else:  # 'outofplane'
+            if circles[index_circle][0] != 'x':
+                raise ValueError(f"The identified circle '{circles[index_circle]}' is incompatible "
+                                 f"with the parameter '{rocking_angle}'")
+        return index_circle
+
+    def remove_circle(self, stage_name, index):
+        """
+        Remove the circle at index from the list of sample circles.
+
+        :param stage_name: supported stage name, 'sample' or 'detector'
+        :param index: index of the circle to be removed from the list
+        """
+        if stage_name not in Diffractometer.valid_names.keys():
+            raise NotImplementedError(f"'{stage_name}' is not implemented,"
+                                      f" available are {list(Diffractometer.valid_names.keys())}")
+        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[stage_name]))
+        if nb_circles > 0:
+            valid.valid_item(index, allowed_types=int, min_included=0, max_included=nb_circles-1, name='index')
+            del self.__getattribute__(Diffractometer.valid_names[stage_name])[index]
+
+    def rotation_matrix(self, stage_name, angles):
+        """
+        Calculate the 3x3 rotation matrix given by the list of angles corresponding to the stage circles.
+
+        :param stage_name: supported stage name, 'sample' or 'detector'
+        :param angles: list of angular values in degrees for the stage circles during the measurement
+        :return: the rotation matrix as a numpy ndarray of shape (3, 3)
+        """
+        Diffractometer.valid_name(stage_name)
+        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[stage_name]))
+        if isinstance(angles, Number):
+            angles = (angles,)
+        valid.valid_container(angles, container_types=(list, tuple, np.ndarray), length=nb_circles, item_types=Real,
+                              name='angles')
+
+        # create a list of rotation matrices corresponding to the circles, index 0 corresponds to the most outer circle
+        rotation_matrices = [RotationMatrix(circle, angles[idx]).get_matrix() for idx, circle in
+                             enumerate(self.__getattribute__(Diffractometer.valid_names[stage_name]))]
+
+        # calculate the total tranformation matrix by rotating back from outer circles to inner circles
+        return np.array(reduce(lambda x, y: np.matmul(x, y), rotation_matrices))
+
+    @staticmethod
+    def valid_name(stage_name):
+        """
+        Check if the stage is defined.
+
+        :param stage_name: supported stage name, 'sample' or 'detector'
+        """
+        if stage_name not in Diffractometer.valid_names.keys():
+            raise NotImplementedError(f"'{stage_name}' is not implemented,"
+                                      f" available are {list(Diffractometer.valid_names.keys())}")
+
+
+class Diffractometer34ID(Diffractometer):
+    """
+    34ID goniometer, 4S+2D (sample: mu, phi, chi, theta (inplane)   detector: delta (inplane), gamma).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = ['y+', 'x+', 'z-', 'y+']
+        self._detector_circles = ['y+', 'x-']
+
+
+class DiffractometerCRISTAL(Diffractometer):
+    """
+    CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = ['x-', 'y+']
+        self._detector_circles = ['y+', 'x-']
+
+
+class DiffractometerID01(Diffractometer):
+    """
+    ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = ['x-', 'z+', 'y-']
+        self._detector_circles = ['y-', 'x-']
+
+
+class DiffractometerNANOMAX(Diffractometer):
+    """
+    NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = ['x-', 'y-']
+        self._detector_circles = ['y-', 'x-']
+
+
+class DiffractometerP10(Diffractometer):
+    """
+    P10 goniometer, 4S+2D (sample: mu, omega, chi, phi / detector: gamma, delta).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = ['y+', 'x-', 'z+', 'y-']
+        self._detector_circles = ['y+', 'x-']
+
+
+class DiffractometerSIXS(Diffractometer):
+    """
+    SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    """
+    def __init__(self):
+        super().__init__()
+        self._sample_circles = ['x-', 'y+']
+        self._detector_circles = ['x-', 'y+', 'x-']
+
+
+class RotationMatrix(object):
+    """
+    Class defining a rotation matrix given the rotation axis and the angle.
+
+    :param circle: circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. The letter represents the rotation axis.
+     + for a counter-clockwise rotation, - for a clockwise rotation.
+    :param angle: angular value in degrees to be used in the calculation of the rotation matrix
+    """
+    valid_circles = {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}  # + counter-clockwise, - clockwise
+
+    def __init__(self, circle, angle):
+        self.angle = angle
+        self.circle = circle
+
+    @property
+    def angle(self):
+        """
+        Angular value to be used in the calculation of the rotation matrix.
+        """
+        return self._angle
+
+    @angle.setter
+    def angle(self, value):
+        valid.valid_item(value, allowed_types=Real, name='value')
+        if np.isnan(value):
+            raise ValueError('value is a nan')
+        self._angle = value
+
+    @property
+    def circle(self):
+        """
+        Circle definition used for the calculation of the rotation matrix in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}.
+        + for a counter-clockwise rotation, - for a clockwise rotation.
+        """
+        return self._circle
+
+    @circle.setter
+    def circle(self, value):
+        if value not in RotationMatrix.valid_circles:
+            raise ValueError(f'{value} is not in the list of valid circles:'
+                             f' {list(RotationMatrix.valid_circles)}')
+        self._circle = value
+
+    def get_matrix(self):
+        """
+        Calculate the rotation matric for a given circle and angle.
+
+        :return: a numpy ndarray of shape (3, 3)
+        """
+        angle = self.angle * np.pi / 180  # convert from degrees to radians
+
+        if self.circle[1] == '+':
+            rot_dir = 1
+        else:  # '-'
+            rot_dir = -1
+
+        if self.circle[0] == 'x':
+            matrix = np.array([[1, 0, 0],
+                               [0, np.cos(angle), -rot_dir * np.sin(angle)],
+                               [0, rot_dir * np.sin(angle), np.cos(angle)]])
+        elif self.circle[0] == 'y':
+            matrix = np.array([[np.cos(angle), 0, rot_dir * np.sin(angle)],
+                               [0, 1, 0],
+                               [-rot_dir * np.sin(angle), 0, np.cos(angle)]])
+        elif self.circle[0] == 'z':
+            matrix = np.array([[np.cos(angle), -rot_dir * np.sin(angle), 0],
+                               [rot_dir * np.sin(angle), np.cos(angle), 0],
+                               [0, 0, 1]])
+        else:
+            raise ValueError(f'{self.circle} is not in the list of valid circles:'
+                             f' {list(RotationMatrix.valid_circles)}')
+        return matrix
+
+
 class Setup(object):
     """
     Class for defining the experimental geometry.
@@ -513,7 +855,6 @@ class Setup(object):
     :param pixel_x: detector horizontal pixel size, in meters.
     :param pixel_y: detector vertical pixel size, in meters.
     :param kwargs:
-
      - 'direct_beam': tuple of two real numbers indicating the position of the direct beam in pixels at zero
        detector angles.
      - 'filtered_data': boolean, True if the data and the mask to be loaded were already preprocessed.
@@ -717,6 +1058,26 @@ class Setup(object):
             return 'z+'
 
     @property
+    def diffractometer(self):
+        """
+        Returns a Diffractometer instance depending on the beamline.
+        """
+        if self.beamline == 'ID01':
+            return DiffractometerID01()
+        elif self.beamline in {'SIXS_2018', 'SIXS_2019'}:
+            return DiffractometerSIXS()
+        elif self.beamline == '34ID':
+            return Diffractometer34ID()
+        elif self.beamline == 'P10':
+            return DiffractometerP10()
+        elif self.beamline == 'CRISTAL':
+            return DiffractometerCRISTAL()
+        elif self.beamline == 'NANOMAX':
+            return DiffractometerNANOMAX()
+        else:
+            raise ValueError('Invalid beamline')
+
+    @property
     def direct_beam(self):
         """
         Tuple of two real numbers indicating the position of the direct beam in pixels at zero detector angles.
@@ -766,7 +1127,7 @@ class Setup(object):
         elif isinstance(value, (list, tuple, np.ndarray)):
             if len(value) == 0:
                 raise ValueError('energy should be a number or a non-empty list of numbers in eV')
-            if any(val<=0 for val in value):
+            if any(val <= 0 for val in value):
                 raise ValueError('energy should be strictly positive, in eV')
             self._energy = value
         else:
@@ -1443,8 +1804,8 @@ class Setup(object):
                                     reciprocal_space=False, is_orthogonal=False, scale='linear',
                                     title=title[idx] + ' in detector frame')
 
-                gu.multislices_plot(abs(ortho_array), sum_frames=False, width_z=width_z, width_y=width_y, width_x=width_x,
-                                    reciprocal_space=False, is_orthogonal=True, scale='linear',
+                gu.multislices_plot(abs(ortho_array), sum_frames=False, width_z=width_z, width_y=width_y,
+                                    width_x=width_x, reciprocal_space=False, is_orthogonal=True, scale='linear',
                                     title=title[idx] + ' in crystal frame')
 
         if nb_arrays == 1:
@@ -2925,4 +3286,9 @@ class SetupPreprocessing(object):
 
 
 if __name__ == "__main__":
-    print(help(Detector))
+    diff = Diffractometer()
+    print(diff._sample_circles, diff._detector_circles)
+    diff.add_circle('sample', index=0, circle='x-')
+    diff.add_circle('detector', index=0, circle='y-')
+    diff.add_circle('detector', index=0, circle='z-')
+    print(diff._sample_circles, diff._detector_circles)
