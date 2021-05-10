@@ -175,8 +175,8 @@ if debug:
 ###################
 # filter out nans #
 ###################
-data[np.isnan(data)] = 1e-20
-data[data == 0] = 1e-20
+data[np.isnan(data)] = np.nan
+data[data == 0] = np.nan
 
 #########################################
 # plot 3D isosurface (perspective view) #
@@ -194,12 +194,21 @@ else:
 # in CXI convention, z is downstream, y vertical and x outboard
 # for q: classical convention qx downstream, qz vertical and qy outboard
 myfig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=fig_size)
-mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(data), contours=contours, opacity=0.2, colormap=cmap,
-               vmin=0, vmax=np.ceil(np.log10(data.max())))
+contour3d = mlab.contour3d(grid_qx, grid_qz, grid_qy, np.log10(data), contours=contours, opacity=0.2, colormap=cmap,
+                           vmin=0, vmax=np.ceil(np.log10(data[~np.isnan(data)].max())))
 if distance:
     mlab.view(azimuth=38, elevation=63, distance=distance)
 else:
     mlab.view(azimuth=38, elevation=63, distance=np.sqrt(qx.max()**2+qz.max()**2+qy.max()**2))
+
+# Update the look up table (LUT) of the contour3d object. The lut is a 255x4 array, with the columns representing
+# RGBA (red, green, blue, alpha) coded with integers going from 255 to 0.
+
+# set the color and transparency for nans
+contour3d.module_manager.scalar_lut_manager.lut.nan_color = 0, 0, 0, 1
+
+# We need to force update of the figure now that we have changed the LUT.
+mlab.draw()
 
 # azimut is the rotation around z axis of mayavi (x)
 mlab.roll(0)
