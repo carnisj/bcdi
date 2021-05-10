@@ -525,7 +525,7 @@ class Diffractometer(object):
                              f' {list(Diffractometer.valid_circles)}')
         self.__getattribute__(Diffractometer.valid_names[stage_name]).insert(index, circle)
 
-    def flatten_sample(self, arrays, voxel_size, angles, q_com, rocking_angle, datadir, fill_value=0,
+    def flatten_sample(self, arrays, voxel_size, angles, q_com, rocking_angle, index_central_angle, fill_value=0,
                        is_orthogonal=True, reciprocal_space=False, debugging=False, **kwargs):
         """
         Rotate arrays such that all circles of the sample stage are at their zero position.
@@ -535,7 +535,8 @@ class Diffractometer(object):
         :param angles: tuple of angular values in degrees, one for each circle of the sample stage
         :param q_com: diffusion vector of the center of mass of the Bragg peak, expressed in an orthonormal frame x y z
         :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
-        :param datadir: path to the data directory, where the file of the diffraction pattern is located
+        :param index_central_angle: index of the angle of the rocking circle corresponding to the center of mass along
+        the stacking axis of the diffraction pattern (full measurement dataset, in the detector frame)
         :param fill_value: tuple of numeric values used in the RegularGridInterpolator for points outside of the
          interpolation domain. The length of the tuple should be equal to the number of input arrays.
         :param is_orthogonal: set to True is the frame is orthogonal, False otherwise. Used for plot labels.
@@ -562,7 +563,6 @@ class Diffractometer(object):
         ref_shape = arrays[0].shape
         if any(array.shape != ref_shape for array in arrays):
             raise ValueError('all arrays should be 3D ndarrays of the same shape')
-        nb_arrays = len(arrays)
 
         # check few parameters, the rest will be validated in rotate_crystal
         valid.valid_container(q_com, container_types=(tuple, list, np.ndarray), length=3, item_types=Real, name='q_com')
@@ -572,11 +572,11 @@ class Diffractometer(object):
         valid.valid_container(angles, container_types=(tuple, list), length=nb_circles, name='angles')
 
         # find the index of the circle which corresponds to the rocking angle
-        rocking_circle = self.get_rocking_circle(rocking_angle=rocking_angle, angles=angles)
+        rocking_circle = self.get_rocking_circle(rocking_angle=rocking_angle, stage_name='sample', angles=angles)
 
-        # calculate the angle of the rocking circle corresponding to the center of mass along the stacking axis
-        # of the diffraction pattern (dataset sent to phase retrieval, in the detector frame)
-        central_angle = self.get_central_angle(rocking_values=angles[rocking_circle], datadir=datadir)
+        # get the angle of the rocking circle corresponding to the center of mass along the stacking axis
+        # of the diffraction pattern
+        central_angle = angles[rocking_circle][index_central_angle]
 
         # use this angle in the calculation of the rotation matrix
         angles[rocking_circle] = central_angle
@@ -588,7 +588,7 @@ class Diffractometer(object):
         rotated_arrays = pu.rotate_crystal(arrays=arrays, rotation_matrix=rotation_matrix, voxel_size=voxel_size,
                                            fill_value=fill_value, debugging=debugging, is_orthogonal=is_orthogonal,
                                            reciprocal_space=reciprocal_space, **kwargs)
-        rotated_q = pu.rotate_vector()
+        rotated_q = pu.rotate_vector()  # TODO
         return rotated_arrays, rotated_q
     
     def get_circles(self, stage_name):
