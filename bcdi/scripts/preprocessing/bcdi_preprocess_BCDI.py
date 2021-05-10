@@ -23,6 +23,7 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import gc
+sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
@@ -46,7 +47,7 @@ data in:                                           /rootdir/S1/data/
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
-scans = 292  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
+scans = 76  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
@@ -56,11 +57,11 @@ save_dir = None  # images will be saved here, leave it to None otherwise
 data_dirname = None  # leave None to use the beamline default, '' empty string when there is no subfolder
 # (data directly in the scan folder), or a non-empty string for the subfolder name
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
-sample_name = "B10_syn_S1"  # str or list of str of sample names (string in front of the scan number in the folder name).
+sample_name = "B15_syn_S1_2"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ''  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (1, 2, 2)  # binning to apply to the data
+binning = (1, 1, 1)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
@@ -98,9 +99,9 @@ medfilt_order = 7    # for custom median filter, number of pixels with intensity
 #################################################
 # parameters used when reloading processed data #
 #################################################
-reload_previous = False  # True to resume a previous masking (load data and mask)
+reload_previous = True  # True to resume a previous masking (load data and mask)
 reload_orthogonal = False  # True if the reloaded data is already intepolated in an orthonormal frame
-preprocessing_binning = (1, 1, 1)  # binning factors in each dimension of the binned data to be reloaded
+preprocessing_binning = (1, 2, 2)  # binning factors in each dimension of the binned data to be reloaded
 ##################
 # saving options #
 ##################
@@ -143,9 +144,9 @@ linearity_func = None  # lambda array_1d: (array_1d*(7.484e-22*array_1d**4 - 3.4
 # (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 + 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
 # linearity correction for the detector, leave None otherwise.
 # You can use def instead of a lambda expression but the input array should be 1d (flattened 2D detector array).
-x_bragg = 1342  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 833   # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-roi_detector = [y_bragg - 256, y_bragg + 256, x_bragg - 300, x_bragg + 300]  #
+x_bragg = 414  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 842   # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+roi_detector = None  # [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 200]  #
 # [Vstart, Vstop, Hstart, Hstop]
 # leave None to use the full detector. Use with center_fft='skip' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
@@ -192,9 +193,9 @@ custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta":
 align_q = True  # used only when interp_method is 'linearization', if True it rotates the crystal to align q
 # along one axis of the array
 ref_axis_q = "y"  # q will be aligned along that axis
-outofplane_angle = 42.6187  # detector angle in deg (rotation around x outboard, typically delta),
+outofplane_angle = 42.6093  # detector angle in deg (rotation around x outboard, typically delta),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
-inplane_angle = -0.0058  # detector angle in deg(rotation around y vertical up, typically gamma),
+inplane_angle = -0.5783  # detector angle in deg(rotation around y vertical up, typically gamma),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
 ################################################################################
 # parameters when orthogonalizing the data before phasing  using xrayutilities #
@@ -359,9 +360,6 @@ if use_rawdata:
     print('Output will be non orthogonal, in the detector frame')
     plot_title = ['YZ', 'XZ', 'XY']
 else:
-    save_dirname = 'pynx'
-    print('Output will be orthogonalized by xrayutilities')
-    plot_title = ['QzQx', 'QyQx', 'QyQz']
     if interp_method not in {'xrayutilities', 'linearization'}:
         raise ValueError('Incorrect value for interp_method, allowed values are "xrayutilities" and "linearization"')
     if rocking_angle == 'energy':
@@ -370,6 +368,9 @@ else:
     if not reload_orthogonal and preprocessing_binning[0] != 1:
         raise ValueError('preprocessing_binning along axis 0 should be 1 when gridding reloaded data'
                          ' (angles won\'t match)')
+    save_dirname = 'pynx'
+    print(f'Output will be orthogonalized using {interp_method}')
+    plot_title = ['QzQx', 'QyQx', 'QyQz']
 
 if isinstance(sample_name, str):
     sample_name = [sample_name for idx in range(len(scans))]
