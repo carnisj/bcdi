@@ -1961,7 +1961,7 @@ def rotate_crystal(arrays, axis_to_align=None, reference_axis=None, voxel_size=N
     return output_arrays
 
 
-def rotate_vector(vectors, axis_to_align, reference_axis, rotation_matrix=None):
+def rotate_vector(vectors, axis_to_align=None, reference_axis=None, rotation_matrix=None):
     """
     Calculate the vector components (3D) in the basis where axis_to_align and reference_axis are aligned.
     axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
