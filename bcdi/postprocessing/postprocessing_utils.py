@@ -1834,7 +1834,8 @@ def rotate_crystal(arrays, axis_to_align=None, reference_axis=None, voxel_size=N
     :param voxel_size: tuple, voxel size of the 3D array in z, y, and x (CXI convention)
     :param fill_value: tuple of numeric values used in the RegularGridInterpolator for points outside of the
      interpolation domain. The length of the tuple should be equal to the number of input arrays.
-    :param rotation_matrix: optional numpy ndarray of shape (3, 3), rotation matrix to apply to arrays
+    :param rotation_matrix: optional numpy ndarray of shape (3, 3), rotation matrix to apply to arrays.
+     If it is provided, the parameters axis_to_align and reference_axis will be discarded.
     :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
     :param debugging: tuple of booleans of the same length as the number of input arrays, True to see plots before and
@@ -1970,7 +1971,8 @@ def rotate_vector(vectors, axis_to_align, reference_axis, rotation_matrix=None):
      orthonormal frame x y z
     :param axis_to_align: the axis of myobj (vector q), expressed in an orthonormal frame x y z
     :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame x y z
-    :param rotation_matrix: optional numpy ndarray of shape (3, 3), rotation matrix to apply to arrays
+    :param rotation_matrix: optional numpy ndarray of shape (3, 3), rotation matrix to apply to vectors. If it is
+     provided, the parameters axis_to_align and reference_axis will be discarded.
     :return: tuple of three ndarrays in CXI convention z y x, each of shape
      (vectors[0].size, vectors[1].size, vectors[2].size). If a single vector is provided, returns a 1D array of size 3.
     """
