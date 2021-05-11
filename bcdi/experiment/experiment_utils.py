@@ -504,14 +504,17 @@ class Diffractometer(object):
     :param sample_offsets: list or tuple of three angles in degrees, corresponding to the offsets of each of the sample
      circles (the offset for the most outer circle should be at index 0).
      Convention: the sample offsets will be subtracted to measurement the motor values.
+    :param sample_circles:
+    :param detector_circles:
     """
     valid_circles = {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}  # + counter-clockwise, - clockwise
     valid_names = {'sample': '_sample_circles', 'detector': '_detector_circles'}
 
-    def __init__(self, sample_offsets):
-        self._sample_circles = []
-        self._detector_circles = []
+    def __init__(self, sample_offsets, sample_circles=(), detector_circles=()):
+        self._sample_circles = sample_circles
+        self._detector_circles = detector_circles
         self.sample_offsets = sample_offsets
+        # TODO write properties for sample_cirles and detector_circles, write docstring
 
     @property
     def sample_offsets(self):
@@ -524,7 +527,7 @@ class Diffractometer(object):
 
     @sample_offsets.setter
     def sample_offsets(self, value):
-        nb_circles = len(self.__getattribute__(Diffractometer.valid_names['sample']))
+        nb_circles = len(self.__getattribute__(self.valid_names['sample']))
         if value is None:
             value = (0,) * nb_circles
         valid.valid_container(value, container_types=(tuple, list, np.ndarray), length=nb_circles, item_types=Real,
@@ -540,13 +543,13 @@ class Diffractometer(object):
         :param circle: valid circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}.
          + for a counter-clockwise rotation, - for a clockwise rotation.
         """
-        Diffractometer.valid_name(stage_name)
-        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[stage_name]))
+        self.valid_name(stage_name)
+        nb_circles = len(self.__getattribute__(self.valid_names[stage_name]))
         valid.valid_item(index, allowed_types=int, min_included=0, max_included=nb_circles, name='index')
-        if circle not in Diffractometer.valid_circles:
+        if circle not in self.valid_circles:
             raise ValueError(f'{circle} is not in the list of valid circles:'
-                             f' {list(Diffractometer.valid_circles)}')
-        self.__getattribute__(Diffractometer.valid_names[stage_name]).insert(index, circle)
+                             f' {list(self.valid_circles)}')
+        self.__getattribute__(self.valid_names[stage_name]).insert(index, circle)
 
     def flatten_sample(self, arrays, voxel_size, angles, q_com, rocking_angle, index_central_angle, fill_value=0,
                        is_orthogonal=True, reciprocal_space=False, debugging=False, **kwargs):
@@ -622,8 +625,8 @@ class Diffractometer(object):
 
         :param stage_name: supported stage name, 'sample' or 'detector'
         """
-        Diffractometer.valid_name(stage_name)
-        return self.__getattribute__(Diffractometer.valid_names[stage_name])
+        self.valid_name(stage_name)
+        return self.__getattribute__(self.valid_names[stage_name])
 
     def get_rocking_circle(self, rocking_angle, stage_name, angles):
         """
@@ -638,7 +641,7 @@ class Diffractometer(object):
         if rocking_angle not in {'outofplane', 'inplane'}:
             raise ValueError(f'Invalid value {rocking_angle} for rocking_angle,'
                              f' should be either "inplane" or "outofplane"')
-        Diffractometer.valid_name(stage_name)
+        self.valid_name(stage_name)
         valid.valid_container(angles, container_types=(tuple, list), name='angles')
         nb_circles = len(angles)
 
@@ -662,7 +665,7 @@ class Diffractometer(object):
             index_circle = next(iter(candidate_circles))
 
         # check that the rotation axis corresponds to the one definec by rocking_angle
-        circles = self.__getattribute__(Diffractometer.valid_names[stage_name])
+        circles = self.__getattribute__(self.valid_names[stage_name])
         if rocking_angle == 'inplane':
             if circles[index_circle][0] != 'y':
                 raise ValueError(f"The identified circle '{circles[index_circle]}' is incompatible "
@@ -680,13 +683,13 @@ class Diffractometer(object):
         :param stage_name: supported stage name, 'sample' or 'detector'
         :param index: index of the circle to be removed from the list
         """
-        if stage_name not in Diffractometer.valid_names.keys():
+        if stage_name not in self.valid_names.keys():
             raise NotImplementedError(f"'{stage_name}' is not implemented,"
-                                      f" available are {list(Diffractometer.valid_names.keys())}")
-        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[stage_name]))
+                                      f" available are {list(self.valid_names.keys())}")
+        nb_circles = len(self.__getattribute__(self.valid_names[stage_name]))
         if nb_circles > 0:
             valid.valid_item(index, allowed_types=int, min_included=0, max_included=nb_circles-1, name='index')
-            del self.__getattribute__(Diffractometer.valid_names[stage_name])[index]
+            del self.__getattribute__(self.valid_names[stage_name])[index]
 
     def rotation_matrix(self, stage_name, angles):
         """
@@ -696,8 +699,8 @@ class Diffractometer(object):
         :param angles: list of angular values in degrees for the stage circles during the measurement
         :return: the rotation matrix as a numpy ndarray of shape (3, 3)
         """
-        Diffractometer.valid_name(stage_name)
-        nb_circles = len(self.__getattribute__(Diffractometer.valid_names[stage_name]))
+        self.valid_name(stage_name)
+        nb_circles = len(self.__getattribute__(self.valid_names[stage_name]))
         if isinstance(angles, Number):
             angles = (angles,)
         valid.valid_container(angles, container_types=(list, tuple, np.ndarray), length=nb_circles, item_types=Real,
@@ -705,21 +708,20 @@ class Diffractometer(object):
 
         # create a list of rotation matrices corresponding to the circles, index 0 corresponds to the most outer circle
         rotation_matrices = [RotationMatrix(circle, angles[idx]).get_matrix() for idx, circle in
-                             enumerate(self.__getattribute__(Diffractometer.valid_names[stage_name]))]
+                             enumerate(self.__getattribute__(self.valid_names[stage_name]))]
 
         # calculate the total tranformation matrix by rotating back from outer circles to inner circles
         return np.array(reduce(lambda x, y: np.matmul(x, y), rotation_matrices))
 
-    @staticmethod
-    def valid_name(stage_name):
+    def valid_name(self, stage_name):
         """
         Check if the stage is defined.
 
         :param stage_name: supported stage name, 'sample' or 'detector'
         """
-        if stage_name not in Diffractometer.valid_names.keys():
+        if stage_name not in self.valid_names.keys():
             raise NotImplementedError(f"'{stage_name}' is not implemented,"
-                                      f" available are {list(Diffractometer.valid_names.keys())}")
+                                      f" available are {list(self.valid_names.keys())}")
 
 
 class Diffractometer34ID(Diffractometer):
@@ -728,9 +730,8 @@ class Diffractometer34ID(Diffractometer):
     The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
     """
     def __init__(self, sample_offsets):
-        super().__init__(sample_offsets)
-        self._sample_circles = ['y+', 'x+', 'z-', 'y+']
-        self._detector_circles = ['y+', 'x-']
+        super().__init__(sample_circles=['y+', 'x+', 'z-', 'y+'], detector_circles=['y+', 'x-'],
+                         sample_offsets=sample_offsets)
 
     def motor_positions(self, setup):
         """
@@ -761,9 +762,8 @@ class DiffractometerCRISTAL(Diffractometer):
     The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
     """
     def __init__(self, sample_offsets):
-        super().__init__(sample_offsets)
-        self._sample_circles = ['x-', 'y+']
-        self._detector_circles = ['y+', 'x-']
+        super().__init__(sample_circles=['x-', 'y+'], detector_circles=['y+', 'x-'],
+                         sample_offsets=sample_offsets)
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
@@ -887,9 +887,8 @@ class DiffractometerID01(Diffractometer):
     The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
     """
     def __init__(self, sample_offsets):
-        super().__init__(sample_offsets)
-        self._sample_circles = ['x-', 'z+', 'y-']
-        self._detector_circles = ['y-', 'x-']
+        super().__init__(sample_circles=['x-', 'z+', 'y-'], detector_circles=['y-', 'x-'],
+                         sample_offsets=sample_offsets)
 
     def motor_positions(self, logfile, scan_number, setup, **kwargs):
         """
@@ -1004,9 +1003,8 @@ class DiffractometerNANOMAX(Diffractometer):
     The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
     """
     def __init__(self, sample_offsets):
-        super().__init__(sample_offsets)
-        self._sample_circles = ['x-', 'y-']
-        self._detector_circles = ['y-', 'x-']
+        super().__init__(sample_circles=['x-', 'y-'], detector_circles=['y-', 'x-'],
+                         sample_offsets=sample_offsets)
 
     def motor_positions(self, logfile, setup):
         """
@@ -1060,9 +1058,8 @@ class DiffractometerP10(Diffractometer):
     The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
     """
     def __init__(self, sample_offsets):
-        super().__init__(sample_offsets)
-        self._sample_circles = ['y+', 'x-', 'z+', 'y-']
-        self._detector_circles = ['y+', 'x-']
+        super().__init__(sample_circles=['y+', 'x-', 'z+', 'y-'], detector_circles=['y+', 'x-'],
+                         sample_offsets=sample_offsets)
 
     def motor_positions(self, logfile, setup):
         """
@@ -1143,9 +1140,8 @@ class DiffractometerSIXS(Diffractometer):
     The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
     """
     def __init__(self, sample_offsets):
-        super().__init__(sample_offsets)
-        self._sample_circles = ['x-', 'y+']
-        self._detector_circles = ['x-', 'y+', 'x-']
+        super().__init__(sample_circles=['x-', 'y+'], detector_circles=['x-', 'y+', 'x-'],
+                         sample_offsets=sample_offsets)
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
