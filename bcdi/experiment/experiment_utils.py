@@ -1626,21 +1626,21 @@ class Setup(object):
     def grazing_angle(self):
         """
         Motor positions for the goniometer circles below the rocking angle. It should be a list/tuple of lenght 1 for
-         out-of-plane rocking curves (the chi motor value) and length 2 for inplane rocking curves
-         (the chi and omega/om/eta motor values).
+         out-of-plane rocking curves (the motor value for mu if it exists) and length 2 for inplane rocking curves
+         (mu and omega/om/eta motor values).
         """
         return self._grazing_angle
 
     @grazing_angle.setter
     def grazing_angle(self, value):
         if self.rocking_angle == 'outofplane':
-            # only the chi angle (rotation around z, below the rocking angle omega/om/eta) is needed
+            # only the mu angle (rotation around the vertical axis, below the rocking angle omega/om/eta) is needed
             valid.valid_container(value, container_types=(tuple, list), length=1, item_types=Real, allow_none=True,
                                   name='Setup.grazing_angle')
             self._grazing_angle = value
         elif self.rocking_angle == 'inplane':
-            # two values needed: the chi angle and the omega/om/eta angle (rotations respectively around z and x,
-            # below the rocking angle phi)
+            # two values needed: mu angle (set to 0 if it does not exist) and the omega/om/eta angle
+            # (rotations respectively around the vertical axis and outboard, below the rocking angle phi)
             valid.valid_container(value, container_types=(tuple, list), length=2, item_types=Real, allow_none=True,
                                   name='Setup.grazing_angle')
             self._grazing_angle = value
@@ -2596,6 +2596,8 @@ class Setup(object):
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
         if self.beamline == 'P10':
+
+            # TODO: correct this, mu instead of chi should be taken into account
             if verbose:
                 print('using PETRAIII P10 geometry')
             if self.rocking_angle == "outofplane":
@@ -2692,6 +2694,7 @@ class Setup(object):
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
         if self.beamline == '34ID':
+            # TODO: correct this, mu instead of chi should be taken into account
             if verbose:
                 print('using APS 34ID geometry')
             if self.rocking_angle == "outofplane":
