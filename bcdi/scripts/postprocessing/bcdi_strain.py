@@ -118,7 +118,7 @@ outofplane_angle = 39.0870  # detector angle in deg (rotation around x outboard)
 inplane_angle = -1.0270  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
 # this is the true angle, corrected for the direct beam position
 tilt_angle = 0.00783  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
-sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample for each sample circle (outer first).
+sample_offsets = (0, 0, 90, 0)  # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
 specfile_name = None  # root_folder + 'alias_dict_2021.txt'
 # template for ID01: name of the spec file without '.spec'
@@ -729,8 +729,6 @@ if save_frame == 'crystal':
                                axis_to_align=np.array([q_lab[2], q_lab[1], q_lab[0]]) / np.linalg.norm(q_lab),
                                reference_axis=axis_to_array_xyz[ref_axis_q])
 
-print(f"\nq_final = {q_final}")
-
 ##########################################################################################
 # rotates the crystal e.g. for easier slicing of the result along a particular direction #
 ##########################################################################################
@@ -745,6 +743,8 @@ if align_axis:
     q_final = pu.rotate_vector(vectors=q_final,
                                axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
                                reference_axis=axis_to_array_xyz[ref_axis])
+
+print(f"\nq_final = {q_final}")
 
 ##############################################
 # pad array to fit the output_size parameter #
