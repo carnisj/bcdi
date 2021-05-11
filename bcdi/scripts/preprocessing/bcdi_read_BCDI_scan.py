@@ -179,15 +179,16 @@ if data.ndim == 3:
                                           setup=setup)
     rocking_curve = np.zeros(numz)
 
-    z0, y0, x0 = pru.find_bragg(data, peak_method=peak_method)
-    z0 = np.rint(z0).astype(int)
-    y0 = np.rint(y0).astype(int)
-    x0 = np.rint(x0).astype(int)
+    z0, y0, x0 = tuple(map(lambda x: int(np.rint(x)), pru.find_bragg(data, peak_method=peak_method)))
 
     if x_bragg is None:  # Bragg peak position not defined by the user, use the max
         x_bragg = x0
+    else:  # calculate the new position with binning and cropping
+        x_bragg = int((x_bragg - detector.roi[2]) / (detector.preprocessing_binning[2] * detector.binning[2]))
     if y_bragg is None:  # Bragg peak position not defined by the user, use the max
         y_bragg = y0
+    else:  # calculate the new position with binning and cropping
+        y_bragg = int((y_bragg - detector.roi[0]) / (detector.preprocessing_binning[1] * detector.binning[1]))
 
     peak_int = int(data[z0, y0, x0])
     print(f"Bragg peak (indices in the eventually binned ROI) at (z, y, x): {z0}, {y0}, {x0},"
