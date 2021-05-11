@@ -579,7 +579,9 @@ class Diffractometer(object):
         central_angle = angles[rocking_circle][index_central_angle]
 
         # use this angle in the calculation of the rotation matrix
+        angles = list(angles)
         angles[rocking_circle] = central_angle
+        print(f'sample stage circles: {self._sample_circles}\nsample stage angles:  {angles}')
 
         # calculate the rotation matrix
         rotation_matrix = self.rotation_matrix(stage_name='sample', angles=angles)
@@ -625,7 +627,7 @@ class Diffractometer(object):
 
         # exclude arrays with identical values
         for idx in candidate_circles:
-            if (angles[1:]-angles[:-1]).mean() < 0.0001:  # motor not scanned, just noise in the position readings
+            if (angles[idx][1:]-angles[idx][:-1]).mean() < 0.0001:  # motor not scanned, noise in the position readings
                 candidate_circles.remove(idx)
 
         # check that there is only one candidate remaining
@@ -634,7 +636,7 @@ class Diffractometer(object):
         elif len(candidate_circles) == 0:
             raise ValueError('No circle was identified as scanned motor')
         else:  # only one circle was identified as scanned, everything ok
-            index_circle = candidate_circles[0]
+            index_circle = next(iter(candidate_circles))
 
         # check that the rotation axis corresponds to the one definec by rocking_angle
         circles = self.__getattribute__(Diffractometer.valid_names[stage_name])
