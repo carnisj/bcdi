@@ -564,8 +564,8 @@ class Diffractometer(object):
          interpolation domain. The length of the tuple should be equal to the number of input arrays.
         :param is_orthogonal: set to True is the frame is orthogonal, False otherwise. Used for plot labels.
         :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
-        :param debugging: tuple of booleans of the same length as the number of input arrays, True to see plots before and
-         after rotation
+        :param debugging: tuple of booleans of the same length as the number of input arrays, True to see plots before
+         and after rotation
         :param kwargs:
          - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
          - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging plots, same length as the
@@ -672,15 +672,6 @@ class Diffractometer(object):
                 raise ValueError(f"The identified circle '{circles[index_circle]}' is incompatible "
                                  f"with the parameter '{rocking_angle}'")
         return index_circle
-
-    def offset_sample(self, motors_values):
-        """
-        Correct the motors values with the diffractometer sample offsets.
-
-        :param motors_values: tuple or list of the motor values for each of the sample circles
-        :return: a tuple of corrected motors positions
-        """
-        pass
 
     def remove_circle(self, stage_name, index):
         """
@@ -791,7 +782,7 @@ class DiffractometerCRISTAL(Diffractometer):
                            name='preprocessing_utils.motor_positions_id01')
         frames_logical = kwargs.get('frames_logical', None)
         if frames_logical is not None:
-            assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical), \
+            assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
                 'frames_logical should be a list of values in {-1, 0, 1}'
 
         if not setup.custom_scan:
@@ -910,8 +901,8 @@ class DiffractometerID01(Diffractometer):
         :param kwargs:
          - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
            equal to the number of measured frames. In case of data padding, the length changes.
-         - 'follow_bragg': boolean, True for energy scans where the detector position is changed during the scan to follow
-           the Bragg peak.
+         - 'follow_bragg': boolean, True for energy scans where the detector position is changed during the scan to
+           follow the Bragg peak.
         :return: (eta, chi, phi, nu, delta, energy) motor positions
         """
         # check and load kwargs
@@ -921,7 +912,7 @@ class DiffractometerID01(Diffractometer):
         frames_logical = kwargs.get('frames_logical', None)
         valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.motor_positions_id01')
         if frames_logical is not None:
-            assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical), \
+            assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
                 'frames_logical should be a list of values in {-1, 0, 1}'
 
         energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
@@ -1172,7 +1163,7 @@ class DiffractometerSIXS(Diffractometer):
                            name='preprocessing_utils.motor_positions_sixs')
         frames_logical = kwargs.get('frames_logical', None)
         if frames_logical is not None:
-            assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical), \
+            assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
                 'frames_logical should be a list of values in {-1, 0, 1}'
 
         if not setup.custom_scan:
