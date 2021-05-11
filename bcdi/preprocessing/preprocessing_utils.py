@@ -1237,12 +1237,11 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
      - 'follow_bragg': boolean, True for energy scans where the detector position is changed during the scan to follow
        the Bragg peak.
     :return: a tuple of angular values in degrees, depending on stage_name:
-     - 'bcdi': (rocking angular step, grazing incidence angle, inplane detector angle, outofplane detector angle)
+     - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector angle, outofplane detector angle). The
+       grazing incidence angles are the positions of circles below the rocking circle.
      - 'sample': tuple of angular values for the sample circles, from the most outer to the most inner circle
      - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
     """
-    # TODO check grazing and transformation matrices, chi is not below eta
-
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
                        name='preprocessing_utils.goniometer_values')
@@ -1269,10 +1268,10 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
             setup.diffractometer.motor_positions(logfile=logfile, scan_number=scan_number, setup=setup,
                                                  frames_logical=frames_logical, follow_bragg=follow_bragg)
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
-            grazing = (0,)  # no chi at ID01
+            grazing = (0,)  # mu below eta but not used at ID01
             tilt, inplane, outofplane = eta, nu, delta
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing = (0, eta)  # no chi at ID01
+            grazing = (0, eta)  # mu below eta but not used at ID01
             tilt, inplane, outofplane = phi, nu, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -1283,10 +1282,10 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
     elif setup.beamline == 'P10':
         mu, om, chi, phi, gamma, delta = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
         if setup.rocking_angle == 'outofplane':  # om rocking curve
-            grazing = (chi,)
+            grazing = (mu,)
             tilt, inplane, outofplane = om, gamma, delta
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing = (chi, om)
+            grazing = (mu, om)
             tilt, inplane, outofplane = phi, gamma, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -1294,13 +1293,14 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
         # P10 goniometer, 4S+2D (sample: mu, omega, chi, phi / detector: gamma, delta)
         sample_angles = (mu, om, chi, phi)
         detector_angles = (gamma, delta)
+
     elif setup.beamline == 'CRISTAL':
         mgomega, mgphi, gamma, delta, energy = setup.diffractometer.motor_positions(logfile, setup)
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
-            grazing = (0,)  # no chi at CRISTAL
+            grazing = (0,)  # mu below mgomega but not used at CRISTAL
             tilt, inplane, outofplane = mgomega, gamma[0], delta[0]
         elif rocking_angle == 'inplane':  # phi rocking curve
-            grazing = (0, mgomega[0])  # no chi at CRISTAL
+            grazing = (0, mgomega[0])  # mu below mgomega but not used at CRISTAL
             tilt, inplane, outofplane = mgphi, gamma[0], delta[0]
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -1312,7 +1312,7 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
         beta, mu, gamma, delta, frames_logical = setup.diffractometer.motor_positions(logfile=logfile, setup=setup,
                                                                                       frames_logical=frames_logical)
         if setup.rocking_angle == 'inplane':  # mu rocking curve
-            grazing = (0, beta)  # no chi at SIXS
+            grazing = (0, beta)  # nothing below beta at SIXS
             tilt, inplane, outofplane = mu, gamma, delta
         elif rocking_angle == 'outofplane':
             raise NotImplementedError('outofplane rocking curve not implemented for SIXS')
@@ -1325,10 +1325,10 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
     elif setup.beamline == 'NANOMAX':
         theta, phi, gamma, delta, energy, radius = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
         if setup.rocking_angle == 'outofplane':  # theta rocking curve
-            grazing = (0,)  # no chi at NANOMAX
+            grazing = (0,)  # no mu at NANOMAX
             tilt, inplane, outofplane = theta, gamma, delta
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing = (0, theta)  # no chi at NANOMAX
+            grazing = (0, theta)  # no mu at NANOMAX
             tilt, inplane, outofplane = phi, gamma, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -1339,10 +1339,10 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
     elif beamline == '34ID':
         mu, phi, chi, theta, delta, gamma = setup.diffractometer.motor_positions(setup=setup)
         if rocking_angle == 'outofplane':
-            grazing = (chi,)
+            grazing = (mu,)
             tilt, inplane, outofplane = phi, delta, gamma  # phi is the incident angle at 34ID
         elif rocking_angle == 'inplane':
-            grazing = (chi, phi)  # phi is the incident angle at 34ID
+            grazing = (mu, phi)  # phi is the incident angle at 34ID
             tilt, inplane, outofplane = theta, delta, gamma  # theta is the rotation around the vertical axis
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
