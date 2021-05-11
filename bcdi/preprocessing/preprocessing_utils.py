@@ -1241,7 +1241,7 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
      - 'sample': tuple of angular values for the sample circles, from the most outer to the most inner circle
      - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
     """
-    #TODO check grazing and transformation matrices, chi is not below eta
+    # TODO check grazing and transformation matrices, chi is not below eta
 
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
@@ -1266,8 +1266,8 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
 
     if setup.beamline == 'ID01':
         eta, chi, phi, nu, delta, energy, frames_logical = \
-            motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup,
-                                 frames_logical=frames_logical, follow_bragg=follow_bragg)
+            setup.diffractometer.motor_positions(logfile=logfile, scan_number=scan_number, setup=setup,
+                                                 frames_logical=frames_logical, follow_bragg=follow_bragg)
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
             grazing = (0,)  # no chi at ID01
             tilt, inplane, outofplane = eta, nu, delta
@@ -1281,7 +1281,7 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
         detector_angles = (nu, delta)
 
     elif setup.beamline == 'P10':
-        mu, om, chi, phi, gamma, delta = motor_positions_p10(logfile=logfile, setup=setup)
+        mu, om, chi, phi, gamma, delta = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
         if setup.rocking_angle == 'outofplane':  # om rocking curve
             grazing = (chi,)
             tilt, inplane, outofplane = om, gamma, delta
@@ -1295,7 +1295,7 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
         sample_angles = (mu, om, chi, phi)
         detector_angles = (gamma, delta)
     elif setup.beamline == 'CRISTAL':
-        mgomega, mgphi, gamma, delta, energy = motor_positions_cristal(logfile, setup)
+        mgomega, mgphi, gamma, delta, energy = setup.diffractometer.motor_positions(logfile, setup)
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             grazing = (0,)  # no chi at CRISTAL
             tilt, inplane, outofplane = mgomega, gamma[0], delta[0]
@@ -1309,8 +1309,8 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
         detector_angles = (gamma, delta)
 
     elif setup.beamline in {'SIXS_2018', 'SIXS_2019'}:
-        beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile=logfile, setup=setup,
-                                                                      frames_logical=frames_logical)
+        beta, mu, gamma, delta, frames_logical = setup.diffractometer.motor_positions(logfile=logfile, setup=setup,
+                                                                                      frames_logical=frames_logical)
         if setup.rocking_angle == 'inplane':  # mu rocking curve
             grazing = (0, beta)  # no chi at SIXS
             tilt, inplane, outofplane = mu, gamma, delta
@@ -1323,7 +1323,7 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
         detector_angles = (beta, gamma, delta)
 
     elif setup.beamline == 'NANOMAX':
-        theta, phi, gamma, delta, energy, radius = motor_positions_nanomax(logfile=logfile, setup=setup)
+        theta, phi, gamma, delta, energy, radius = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
         if setup.rocking_angle == 'outofplane':  # theta rocking curve
             grazing = (0,)  # no chi at NANOMAX
             tilt, inplane, outofplane = theta, gamma, delta
@@ -1337,7 +1337,7 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
         detector_angles = (gamma, delta)
 
     elif beamline == '34ID':
-        mu, phi, chi, theta, delta, gamma = motor_positions_34id(setup=setup)
+        mu, phi, chi, theta, delta, gamma = setup.diffractometer.motor_positions(setup=setup)
         if rocking_angle == 'outofplane':
             grazing = (chi,)
             tilt, inplane, outofplane = phi, delta, gamma  # phi is the incident angle at 34ID
@@ -3171,305 +3171,6 @@ def mean_filter(data, nb_neighbours, mask=None, target_val=0, extent=1, min_coun
     return data, nb_pixels, mask
 
 
-def motor_positions_34id(setup):
-    """
-    Load the scan data and extract motor positions.
-
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: (mu, tilt, chi, theta, delta, gamma) motor positions
-    """
-    if setup.rocking_angle != 'energy':
-        raise ValueError('Only energy scan implemented for 34ID')
-
-    if not setup.custom_scan:
-        raise ValueError('Only custom_scan implemented for 34ID')
-    else:
-        mu = setup.custom_motors["mu"]
-        tilt = setup.custom_motors["phi"]
-        chi = setup.custom_motors["chi"]
-        theta = setup.custom_motors["theta"]
-        gamma = setup.custom_motors["gamma"]
-        delta = setup.custom_motors["delta"]
-
-    return mu, tilt, chi, theta, delta, gamma
-
-
-def motor_positions_cristal(logfile, setup, **kwargs):
-    """
-    Load the scan data and extract motor positions. It will look for the correct entry 'rocking_angle' in the
-     dictionary Setup.actuators, and use the default entry otherwise.
-
-    :param logfile: h5py File object of CRISTAL .nxs scan file
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param kwargs:
-     - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
-       equal to the number of measured frames. In case of data padding, the length changes.
-    :return: (mgomega, mgphi, gamma, delta) motor positions
-    """
-    # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
-                       name='preprocessing_utils.motor_positions_id01')
-    frames_logical = kwargs.get('frames_logical', None)
-    if frames_logical is not None:
-        assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
-            'frames_logical should be a list of values in {-1, 0, 1}'
-
-    if not setup.custom_scan:
-        group_key = list(logfile.keys())[0]
-        energy = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/',
-                                    actuator_name='Monochromator', field_name='energy') * 1000  # in eV
-        print(f'Overriding the defined energy of {setup.energy} by the value in the datafile {energy}')
-        setup.energy = energy
-        scanned_motor = cristal_load_motor(datafile=logfile, root='/' + group_key, actuator_name='scan_data',
-                                           field_name=setup.actuators.get('rocking_angle', 'actuator_1_1'))
-        if frames_logical is not None:
-            scanned_motor = scanned_motor[np.nonzero(frames_logical)]  # exclude positions corresponding to empty frames
-
-        if setup.rocking_angle == 'outofplane':
-            mgomega = scanned_motor  # mgomega is scanned
-            mgphi = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/',
-                                       actuator_name='i06-c-c07-ex-mg_phi', field_name='position')
-            delta = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
-                                       actuator_name='I06-C-C07-EX-DIF-DELTA', field_name='position')
-            gamma = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
-                                       actuator_name='I06-C-C07-EX-DIF-GAMMA', field_name='position')
-
-        elif setup.rocking_angle == 'inplane':
-            mgphi = scanned_motor  # mgphi is scanned
-            mgomega = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/',
-                                         actuator_name='i06-c-c07-ex-mg_omega', field_name='position')
-            delta = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
-                                       actuator_name='I06-C-C07-EX-DIF-DELTA', field_name='position')
-            gamma = cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/Diffractometer/',
-                                       actuator_name='I06-C-C07-EX-DIF-GAMMA', field_name='position')
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-    else:
-        mgomega = setup.custom_motors["mgomega"]
-        delta = setup.custom_motors["delta"]
-        gamma = setup.custom_motors["gamma"]
-        mgphi = setup.custom_motors.get("mgphi", None)
-        energy = setup.custom_motors["energy", setup.energy]
-
-    # check if mgomega needs to be divided by 1e6 (data taken before the implementation of the correction)
-    if isinstance(mgomega, Real) and abs(mgomega) > 360:
-        mgomega = mgomega / 1e6
-    elif isinstance(mgomega, (tuple, list, np.ndarray)) and any(abs(val) > 360 for val in mgomega):
-        mgomega = mgomega / 1e6
-
-    return mgomega, mgphi, gamma, delta, energy
-
-
-def motor_positions_id01(logfile, scan_number, setup, **kwargs):
-    """
-    Load the scan data and extract motor positions.
-
-    :param logfile: Silx SpecFile object containing the information about the scan and image numbers
-    :param scan_number: the scan number to load
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param kwargs:
-     - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
-       equal to the number of measured frames. In case of data padding, the length changes.
-     - 'follow_bragg': boolean, True for energy scans where the detector position is changed during the scan to follow
-       the Bragg peak.
-    :return: (eta, chi, phi, nu, delta, energy) motor positions
-    """
-    # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
-                       name='preprocessing_utils.motor_positions_id01')
-    follow_bragg = kwargs.get('follow_bragg', False)
-    frames_logical = kwargs.get('frames_logical', None)
-    valid.valid_item(follow_bragg, allowed_types=bool, name='preprocessing_utils.motor_positions_id01')
-    if frames_logical is not None:
-        assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
-            'frames_logical should be a list of values in {-1, 0, 1}'
-
-    energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
-    old_names = False
-    if not setup.custom_scan:
-        motor_names = logfile[str(scan_number) + '.1'].motor_names  # positioners
-        motor_positions = logfile[str(scan_number) + '.1'].motor_positions  # positioners
-        labels = logfile[str(scan_number) + '.1'].labels  # motor scanned
-        labels_data = logfile[str(scan_number) + '.1'].data  # motor scanned
-
-        try:
-            nu = motor_positions[motor_names.index('nu')]  # positioner
-        except ValueError:
-            print("'nu' not in the list, trying 'Nu'")
-            nu = motor_positions[motor_names.index('Nu')]  # positioner
-            print('Defaulting to old ID01 motor names')
-            old_names = True
-
-        if follow_bragg:
-            if not old_names:
-                delta = list(labels_data[labels.index('del'), :])  # scanned
-            else:
-                delta = list(labels_data[labels.index('Delta'), :])  # scanned
-        else:
-            if not old_names:
-                delta = motor_positions[motor_names.index('del')]  # positioner
-            else:
-                delta = motor_positions[motor_names.index('Delta')]  # positioner
-
-        chi = 0
-
-        if setup.rocking_angle == "outofplane":
-            if not old_names:
-                eta = labels_data[labels.index('eta'), :]
-                phi = motor_positions[motor_names.index('phi')]
-            else:
-                eta = labels_data[labels.index('Eta'), :]
-                phi = motor_positions[motor_names.index('Phi')]
-        elif setup.rocking_angle == "inplane":
-            if not old_names:
-                phi = labels_data[labels.index('phi'), :]
-                eta = motor_positions[motor_names.index('eta')]
-            else:
-                phi = labels_data[labels.index('Phi'), :]
-                eta = motor_positions[motor_names.index('Eta')]
-        elif setup.rocking_angle == "energy":
-            raw_energy = list(labels_data[labels.index('energy'), :])  # in kev, scanned
-            if not old_names:
-                phi = motor_positions[motor_names.index('phi')]  # positioner
-                eta = motor_positions[motor_names.index('eta')]  # positioner
-            else:
-                phi = motor_positions[motor_names.index('Phi')]  # positioner
-                eta = motor_positions[motor_names.index('Eta')]  # positioner
-
-            nb_overlap = 0
-            energy = raw_energy[:]
-            if frames_logical is None:
-                frames_logical = np.ones(len(energy))
-            for idx in range(len(raw_energy) - 1):
-                if raw_energy[idx + 1] == raw_energy[idx]:  # duplicated energy when undulator gap is changed
-                    frames_logical[idx + 1] = 0
-                    energy.pop(idx - nb_overlap)
-                    if follow_bragg:
-                        delta.pop(idx - nb_overlap)
-                    nb_overlap = nb_overlap + 1
-            energy = np.array(energy) * 1000.0  # switch to eV
-
-        else:
-            raise ValueError('Invalid rocking angle ', setup.rocking_angle, 'for ID01')
-
-    else:
-        eta = setup.custom_motors["eta"]
-        chi = setup.custom_motors["chi"]
-        phi = setup.custom_motors["phi"]
-        delta = setup.custom_motors["delta"]
-        nu = setup.custom_motors["nu"]
-
-    return eta, chi, phi, nu, delta, energy, frames_logical
-
-
-def motor_positions_nanomax(logfile, setup):
-    """
-    Load the scan data and extract motor positions.
-
-    :param logfile: Silx SpecFile object containing the information about the scan and image numbers
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: (theta, phi, gamma, delta, energy, radius) motor positions
-    """
-    if not setup.custom_scan:
-        # Detector positions
-        group_key = list(logfile.keys())[0]  # currently 'entry'
-
-        # positionners
-        delta = logfile['/' + group_key + '/snapshot/delta'][:]
-        gamma = logfile['/' + group_key + '/snapshot/gamma'][:]
-        radius = logfile['/' + group_key + '/snapshot/radius'][:]
-        energy = logfile['/' + group_key + '/snapshot/energy'][:]
-
-        if setup.rocking_angle == 'inplane':
-            try:
-                phi = logfile['/' + group_key + '/measurement/gonphi'][:]
-            except KeyError:
-                raise KeyError('phi not in measurement data, check the parameter "rocking_angle"')
-            theta = logfile['/' + group_key + '/snapshot/gontheta'][:]
-        else:
-            try:
-                theta = logfile['/' + group_key + '/measurement/gontheta'][:]
-            except KeyError:
-                raise KeyError('theta not in measurement data, check the parameter "rocking_angle"')
-            phi = logfile['/' + group_key + '/snapshot/gonphi'][:]
-    else:
-        theta = setup.custom_motors["theta"]
-        phi = setup.custom_motors["phi"]
-        delta = setup.custom_motors["delta"]
-        gamma = setup.custom_motors["gamma"]
-        radius = setup.custom_motors["radius"]
-        energy = setup.custom_motors["energy"]
-
-    return theta, phi, gamma, delta, energy, radius
-
-
-def motor_positions_p10(logfile, setup):
-    """
-    Load the .fio file from the scan and extract motor positions for P10 6-circle difractometer setup.
-
-    :param logfile: path of the . fio file containing the information about the scan
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: (om, phi, chi, mu, gamma, delta) motor positions
-    """
-    if not setup.custom_scan:
-        fio = open(logfile, 'r')
-        index_om = None
-        index_phi = None
-        om = []
-        phi = []
-        chi = None
-        mu = None
-        gamma = None,
-        delta = None
-
-        fio_lines = fio.readlines()
-        for line in fio_lines:
-            this_line = line.strip()
-            words = this_line.split()
-
-            if 'Col' in words and 'om' in words:  # om scanned, template = ' Col 0 om DOUBLE\n'
-                index_om = int(words[1]) - 1  # python index starts at 0
-            if 'om' in words and '=' in words and setup.rocking_angle == "inplane":  # om is a positioner
-                om = float(words[2])
-
-            if 'Col' in words and 'phi' in words:  # phi scanned, template = ' Col 0 phi DOUBLE\n'
-                index_phi = int(words[1]) - 1  # python index starts at 0
-            if 'phi' in words and '=' in words and setup.rocking_angle == "outofplane":  # phi is a positioner
-                phi = float(words[2])
-
-            if 'chi' in words and '=' in words:  # template for positioners: 'chi = 90.0\n'
-                chi = float(words[2])
-            if 'del' in words and '=' in words:  # template for positioners: 'del = 30.05\n'
-                delta = float(words[2])
-            if 'gam' in words and '=' in words:  # template for positioners: 'gam = 4.05\n'
-                gamma = float(words[2])
-            if 'mu' in words and '=' in words:  # template for positioners: 'mu = 0.0\n'
-                mu = float(words[2])
-
-            if index_om is not None and util.is_numeric(words[0]):
-                # reading data and index_om is defined (outofplane case)
-                om.append(float(words[index_om]))
-            if index_phi is not None and util.is_numeric(words[0]):
-                # reading data and index_phi is defined (inplane case)
-                phi.append(float(words[index_phi]))
-
-        if setup.rocking_angle == "outofplane":
-            om = np.asarray(om, dtype=float)
-        else:  # phi
-            phi = np.asarray(phi, dtype=float)
-
-        fio.close()
-
-    else:
-        om = setup.custom_motors["om"]
-        chi = setup.custom_motors["chi"]
-        phi = setup.custom_motors["phi"]
-        delta = setup.custom_motors["delta"]
-        gamma = setup.custom_motors["gamma"]
-        mu = setup.custom_motors["mu"]
-    return mu, om, chi, phi, gamma, delta
-
-
 def motor_positions_p10_saxs(logfile, setup):
     """
     Load the .fio file from the scan and extract motor positions for P10 SAXS setup.
@@ -3478,6 +3179,7 @@ def motor_positions_p10_saxs(logfile, setup):
     :param setup: the experimental setup: Class SetupPreprocessing()
     :return: sprz or hprz motor positions
     """
+    # TODO: create a Diffractometer child Class and move this method there
     if setup.rocking_angle != "inplane":
         raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -3504,54 +3206,6 @@ def motor_positions_p10_saxs(logfile, setup):
     else:
         phi = setup.custom_motors["phi"]
     return phi
-
-
-def motor_positions_sixs(logfile, setup, **kwargs):
-    """
-    Load the scan data and extract motor positions.
-
-    :param logfile: nxsReady Dataset object of SIXS .nxs scan file
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param kwargs:
-     - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
-       equal to the number of measured frames. In case of data padding, the length changes.
-    :return: (beta, mu, gamma, delta) motor positions and updated frames_logical
-    """
-    # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'frames_logical'},
-                       name='preprocessing_utils.motor_positions_sixs')
-    frames_logical = kwargs.get('frames_logical', None)
-    if frames_logical is not None:
-        assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
-            'frames_logical should be a list of values in {-1, 0, 1}'
-
-    if not setup.custom_scan:
-        delta = logfile.delta[0]  # not scanned
-        gamma = logfile.gamma[0]  # not scanned
-        try:
-            beta = logfile.basepitch[0]  # not scanned
-        except AttributeError:  # data recorder changed after 11/03/2019
-            try:
-                beta = logfile.beta[0]  # not scanned
-            except AttributeError:  # the alias dictionnary was probably not provided
-                beta = 0
-
-        temp_mu = logfile.mu[:]
-        if frames_logical is None:
-            frames_logical = np.ones(len(temp_mu))
-        mu = np.zeros((frames_logical != 0).sum())  # first frame is duplicated for SIXS_2018
-        nb_overlap = 0
-        for idx in range(len(frames_logical)):
-            if frames_logical[idx]:
-                mu[idx - nb_overlap] = temp_mu[idx]
-            else:
-                nb_overlap = nb_overlap + 1
-    else:
-        beta = setup.custom_motors["beta"]
-        delta = setup.custom_motors["delta"]
-        gamma = setup.custom_motors["gamma"]
-        mu = setup.custom_motors["mu"]
-    return beta, mu, gamma, delta, frames_logical
 
 
 def normalize_dataset(array, raw_monitor, frames_logical, savedir=None, norm_to_min=True, debugging=False):
@@ -3706,10 +3360,8 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     if setup.beamline == 'ID01':
         eta, chi, phi, nu, delta, energy, frames_logical = \
-            motor_positions_id01(logfile=logfile, scan_number=scan_number, setup=setup, frames_logical=frames_logical,
-                                 follow_bragg=follow_bragg)
-        # apply offsets, order for ID01 goniometer eta, chi, phi (outer to inner)
-        eta, chi, phi = setup.diffractometer.offset_sample(sample_circles=(eta, chi, phi))
+            setup.diffractometer.motor_positions(logfile=logfile, scan_number=scan_number, setup=setup,
+                                                 frames_logical=frames_logical, follow_bragg=follow_bragg)
 
         print('chi', chi)
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
@@ -3751,7 +3403,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
-        beta, mu, gamma, delta, frames_logical = motor_positions_sixs(logfile=logfile, setup=setup)
+        beta, mu, gamma, delta, frames_logical = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
         # apply offsets, order for SIXS goniometer beta, mu (outer to inner)
         beta, mu = setup.diffractometer.offset_sample(sample_circles=(beta, mu))
 
@@ -3777,7 +3429,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     elif setup.beamline == 'CRISTAL':
         mgomega, mgphi, gamma, delta, energy =\
-            motor_positions_cristal(logfile=logfile, setup=setup, frames_logical=frames_logical)
+            setup.diffractometer.motor_positions(logfile=logfile, setup=setup, frames_logical=frames_logical)
         # apply offsets, order for CRISTAL goniometer mgomega, mgphi (outer to inner)
         mgomega, mgphi = setup.diffractometer.offset_sample(sample_circles=(mgomega, mgphi))
 
@@ -3815,7 +3467,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(mgomega, mgphi, gamma, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == 'P10':
-        mu, om, chi, phi, gamma, delta = motor_positions_p10(logfile=logfile, setup=setup)
+        mu, om, chi, phi, gamma, delta = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
         # apply offsets, order for P10 goniometer mu, om, chi, phi (outer to inner)
         mu, om, chi, phi = setup.diffractometer.offset_sample(motors_values=(mu, om, chi, phi))
 
@@ -3856,7 +3508,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets)
 
     elif setup.beamline == 'NANOMAX':
-        theta, phi, gamma, delta, energy, radius = motor_positions_nanomax(logfile=logfile, setup=setup)
+        theta, phi, gamma, delta, energy, radius = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
         # apply offsets, order for NANOMAX goniometer theta, phi (outer to inner)
         theta, phi = setup.diffractometer.offset_sample(sample_circles=(theta, phi))
 
@@ -3896,7 +3548,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(theta, phi, gamma, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == '34ID':
-        mu, phi, chi, theta, delta, gamma = motor_positions_34id(setup=setup)
+        mu, phi, chi, theta, delta, gamma = setup.diffractometer.motor_positions(setup=setup)
         # apply offsets, order for 34ID goniometer mu, phi, chi, theta (inplane) (outer to inner)
         mu, phi, chi, theta = setup.diffractometer.offset_sample(sample_circles=(mu, phi, chi, theta))
 
