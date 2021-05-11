@@ -174,8 +174,8 @@ fill_value_mask = 0  # 0 (not masked) or 1 (masked). It will define how the pixe
 # processed during the interpolation. Because of the large number of masked pixels, phase retrieval converges better if
 # the pixels are not masked (0 intensity imposed). The data is by default set to 0 outside of the defined range.
 beam_direction = (1, 0, 0)  # beam direction in the laboratory frame (downstream, vertical up, outboard)
-sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
-# convention: the sample offsets will be subtracted to the motor values
+sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample for each sample circle (outer first).
+# convention: the sample offsets will be subtracted to the motor values. Leave None if no offset.
 sdd = 1.84  # in m, sample to detector distance in m
 energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}

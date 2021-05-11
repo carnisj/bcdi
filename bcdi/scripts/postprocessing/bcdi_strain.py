@@ -50,7 +50,7 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space, or data[z
 scan = 128  # spec scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 # folder of the experiment, where all scans are stored
-save_dir = root_folder + 'dataset_1_newpsf/orientation/'
+save_dir = root_folder + 'dataset_1_newpsf/test/'
 # images will be saved here, leave it to None otherwise (default to data directory's parent)
 sample_name = "PtNP1"  # "S"  # string in front of the scan number in the folder name.
 comment = ''  # comment in filenames, should start with _
@@ -80,13 +80,13 @@ data_frame = 'detector'  # 'crystal' if the data was interpolated into the cryst
 # 'detector' if the data is still in the detector frame
 ref_axis_q = "y"  # axis along which q will be aligned (data_frame= 'detector' or 'laboratory')
 # or is already aligned (data_frame='crystal')
-save_frame = 'laboratory'  # 'crystal', 'laboratory' or 'lab_flat_sample'
+save_frame = 'lab_flat_sample'  # 'crystal', 'laboratory' or 'lab_flat_sample'
 # 'crystal' to save the data with q aligned along ref_axis_q
 # 'laboratory' to save the data in the laboratory frame (experimental geometry)
 # 'lab_flat_sample' to save the data in the laboratory frame, with all sample angles rotated back to 0
 # rotations for 'laboratory' and 'lab_flat_sample' are realized after the strain calculation
 # (which is done in the crystal frame along ref_axis_q)
-index_central_angle = 40  # only used when save_frame = 'lab_flat_sample'. index of the frame of the diffraction pattern
+index_central_angle = 89  # only used when save_frame = 'lab_flat_sample'. index of the frame of the diffraction pattern
 # corresponding to the center of mass along the stacking axis. The index is for the uncropped data, otherwise angles
 # will not match anymore.
 isosurface_strain = 0.1  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
@@ -118,8 +118,8 @@ outofplane_angle = 39.0870  # detector angle in deg (rotation around x outboard)
 inplane_angle = -1.0270  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
 # this is the true angle, corrected for the direct beam position
 tilt_angle = 0.00783  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
-sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
-# the sample offsets will be subtracted to the motor values
+sample_offsets = (90, 0, 0)  # tuple of offsets in degrees of the sample for each sample circle (outer first).
+# the sample offsets will be subtracted to the motor values. Leave None if no offset.
 specfile_name = None  # root_folder + 'alias_dict_2021.txt'
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
@@ -703,7 +703,7 @@ strain = pu.get_strain(phase=phase, planar_distance=planar_dist, voxel_size=voxe
 #########################################################################################
 if save_frame in {'laboratory', 'lab_flat_sample'}:
     comment = comment + '_labframe'
-    print('Rotating back the crystal in laboratory frame')
+    print('\nRotating back the crystal in laboratory frame')
     amp, phase, strain = \
         pu.rotate_crystal(arrays=(amp, phase, strain), axis_to_align=axis_to_array_xyz[ref_axis_q],
                           voxel_size=voxel_size, is_orthogonal=True, reciprocal_space=False,
@@ -714,7 +714,7 @@ if save_frame in {'laboratory', 'lab_flat_sample'}:
 
 if save_frame == 'lab_flat_sample':
     comment = comment + '_flat'
-    print('Sending sample stage circles to 0')
+    print('\nSending sample stage circles to 0')
     sample_angles = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup, stage_name='sample')
     (amp, phase, strain), q_final =\
         setup.diffractometer.flatten_sample(arrays=(amp, phase, strain), voxel_size=voxel_size,
@@ -728,6 +728,8 @@ if save_frame == 'crystal':
     q_final = pu.rotate_vector(vectors=qlab,
                                axis_to_align=np.array([q_lab[2], q_lab[1], q_lab[0]]) / np.linalg.norm(q_lab),
                                reference_axis=axis_to_array_xyz[ref_axis_q])
+
+print(f"\nq_final = {q_final}")
 
 ##########################################################################################
 # rotates the crystal e.g. for easier slicing of the result along a particular direction #
