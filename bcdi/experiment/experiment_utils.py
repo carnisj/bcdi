@@ -616,7 +616,7 @@ class Diffractometer(object):
         rotated_arrays = pu.rotate_crystal(arrays=arrays, rotation_matrix=rotation_matrix, voxel_size=voxel_size,
                                            fill_value=fill_value, debugging=debugging, is_orthogonal=is_orthogonal,
                                            reciprocal_space=reciprocal_space, **kwargs)
-        rotated_q = pu.rotate_vector(vectors=q_com, rotation_matrix=rotation_matrix)
+        rotated_q = pu.rotate_vector(vectors=q_com, rotation_matrix=np.linalg.inv(rotation_matrix))
         return rotated_arrays, rotated_q
     
     def get_circles(self, stage_name):
