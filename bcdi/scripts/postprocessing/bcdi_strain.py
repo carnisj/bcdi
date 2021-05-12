@@ -50,7 +50,7 @@ Therefore the data structure is data[qx, qz, qy] for reciprocal space, or data[z
 scan = 128  # spec scan number
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 # folder of the experiment, where all scans are stored
-save_dir = root_folder + 'dataset_1_newpsf/test/'
+save_dir = root_folder + 'dataset_1_newpsf/crystal/'
 # images will be saved here, leave it to None otherwise (default to data directory's parent)
 sample_name = "PtNP1"  # "S"  # string in front of the scan number in the folder name.
 comment = ''  # comment in filenames, should start with _
@@ -80,7 +80,7 @@ data_frame = 'detector'  # 'crystal' if the data was interpolated into the cryst
 # 'detector' if the data is still in the detector frame
 ref_axis_q = "y"  # axis along which q will be aligned (data_frame= 'detector' or 'laboratory')
 # or is already aligned (data_frame='crystal')
-save_frame = 'lab_flat_sample'  # 'crystal', 'laboratory' or 'lab_flat_sample'
+save_frame = 'crystal'  # 'crystal', 'laboratory' or 'lab_flat_sample'
 # 'crystal' to save the data with q aligned along ref_axis_q
 # 'laboratory' to save the data in the laboratory frame (experimental geometry)
 # 'lab_flat_sample' to save the data in the laboratory frame, with all sample angles rotated back to 0
@@ -518,20 +518,22 @@ if save_raw:
 # calculate q of the Bragg peak in the laboratory frame #
 #########################################################
 q_lab = setup.q_laboratory  # (1/A), in the laboratory frame z downstream, y vertical, x outboard
-angle = simu.angle_vectors(ref_vector=np.array([q_lab[2], q_lab[1], q_lab[0]]),
+qnorm = np.linalg.norm(q_lab)
+q_lab = q_lab / qnorm
+
+angle = simu.angle_vectors(ref_vector=[q_lab[2], q_lab[1], q_lab[0]],
                            test_vector=axis_to_array_xyz[ref_axis_q])
-print(f"\nDiffusion vector in the laboratory frame (z*, y*, x*): "
+print(f"\nNormalized diffusion vector in the laboratory frame (z*, y*, x*): "
       f"({q_lab[0]:.4f} 1/A, {q_lab[1]:.4f} 1/A, {q_lab[2]:.4f} 1/A)")
+
+planar_dist = 2*np.pi/qnorm  # qnorm should be in angstroms
+print(f"Wavevector transfer: {qnorm:.4f} 1/A")
+print(f"Atomic planar distance: {planar_dist:.4f} A")
 print(f"\nAngle between q_lab and {ref_axis_q} = {angle:.2f} deg")
 if debug:
     print(f"Angle with y in zy plane = {np.arctan(q_lab[0]/q_lab[1])*180/np.pi:.2f} deg")
     print(f"Angle with y in xy plane = {np.arctan(-q_lab[2]/q_lab[1])*180/np.pi:.2f} deg")
     print(f"Angle with z in xz plane = {180+np.arctan(q_lab[2]/q_lab[0])*180/np.pi:.2f} deg\n")
-qnorm = np.linalg.norm(q_lab)
-q_lab = q_lab / qnorm
-planar_dist = 2*np.pi/qnorm  # qnorm should be in angstroms
-print(f"Wavevector transfer: {qnorm:.4f} 1/A")
-print(f"Atomic planar distance: {planar_dist:.4f} A")
 
 planar_dist = planar_dist / 10  # switch to nm
 
@@ -702,11 +704,10 @@ if save_frame in {'laboratory', 'lab_flat_sample'}:
     amp, phase, strain = \
         pu.rotate_crystal(arrays=(amp, phase, strain), axis_to_align=axis_to_array_xyz[ref_axis_q],
                           voxel_size=voxel_size, is_orthogonal=True, reciprocal_space=False,
-                          reference_axis=np.array([q_lab[2], q_lab[1], q_lab[0]])/np.linalg.norm(q_lab),
+                          reference_axis=[q_lab[2], q_lab[1], q_lab[0]],
                           debugging=(True, False, False), title=('amp', 'phase', 'strain'))
     # q_lab is already in the laboratory frame
     q_final = q_lab
-    print(f"\nq in laboratory frame = {q_final}")
 
 if save_frame == 'lab_flat_sample':
     comment = comment + '_flat'
@@ -718,10 +719,10 @@ if save_frame == 'lab_flat_sample':
                                             is_orthogonal=True, reciprocal_space=False, rocking_angle=rocking_angle,
                                             debugging=(True, False, False), title=('amp', 'phase', 'strain'))
 if save_frame == 'crystal':
-    # rotate also q_lab to have it along ref_axis_q, as a cross-check
+    # rotate also q_lab to have it along ref_axis_q, as a cross-checkm, vectors needs to be in xyz order
     comment = comment + '_crystalframe'
-    q_final = pu.rotate_vector(vectors=qlab[::-1],  # vectors needs to be in xyz order
-                               axis_to_align=qlab[::-1], reference_axis=axis_to_array_xyz[ref_axis_q])
+    q_final = pu.rotate_vector(vectors=q_lab[::-1], axis_to_align=axis_to_array_xyz[ref_axis_q],
+                               reference_axis=q_lab[::-1])
 
 ##########################################################################################
 # rotates the crystal e.g. for easier slicing of the result along a particular direction #
@@ -733,11 +734,11 @@ if align_axis:
                                            axis_to_align=axis_to_align,
                                            voxel_size=voxel_size, debugging=(True, False, False),
                                            is_orthogonal=True, reciprocal_space=False, title=('amp', 'phase', 'strain'))
-    # rotate q accordingly
-    q_final = pu.rotate_vector(vectors=q_final[::-1], axis_to_align=axis_to_align,  # vectors needs to be in xyz order
-                               reference_axis=axis_to_array_xyz[ref_axis])
+    # rotate q accordingly, vectors needs to be in xyz order
+    q_final = pu.rotate_vector(vectors=q_final[::-1], axis_to_align=axis_to_array_xyz[ref_axis],
+                               reference_axis=axis_to_align)
 
-print(f"\nq_final = {q_final}")
+print(f"\nq_final = ({q_final[0]:.4f} 1/A, {q_final[1]:.4f} 1/A, {q_final[2]:.4f} 1/A)")
 
 ##############################################
 # pad array to fit the output_size parameter #
