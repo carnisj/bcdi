@@ -586,7 +586,7 @@ class Diffractometer(object):
                              f' {list(self.valid_circles)}')
         self.__getattribute__(self.valid_names[stage_name]).insert(index, circle)
 
-    def flatten_sample(self, arrays, voxel_size, angles, q_com, rocking_angle, index_central_angle, fill_value=0,
+    def flatten_sample(self, arrays, voxel_size, angles, q_com, rocking_angle, fill_value=0,
                        is_orthogonal=True, reciprocal_space=False, debugging=False, **kwargs):
         """
         Rotate arrays such that all circles of the sample stage are at their zero position.
@@ -596,8 +596,6 @@ class Diffractometer(object):
         :param angles: tuple of angular values in degrees, one for each circle of the sample stage
         :param q_com: diffusion vector of the center of mass of the Bragg peak, expressed in an orthonormal frame x y z
         :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
-        :param index_central_angle: index of the angle of the rocking circle corresponding to the center of mass along
-        the stacking axis of the diffraction pattern (full measurement dataset, in the detector frame)
         :param fill_value: tuple of numeric values used in the RegularGridInterpolator for points outside of the
          interpolation domain. The length of the tuple should be equal to the number of input arrays.
         :param is_orthogonal: set to True is the frame is orthogonal, False otherwise. Used for plot labels.
@@ -635,9 +633,10 @@ class Diffractometer(object):
         # find the index of the circle which corresponds to the rocking angle
         rocking_circle = self.get_rocking_circle(rocking_angle=rocking_angle, stage_name='sample', angles=angles)
 
-        # get the angle of the rocking circle corresponding to the center of mass along the stacking axis
-        # of the diffraction pattern
-        central_angle = angles[rocking_circle][index_central_angle]
+        # get the relevant angle within the rocking circle. This is the first angle since we are using a stepwise
+        # rotation of -1*tilt in the calculation of the transformation matrix
+        # (everything is relative to the reference frame index which is the first one)
+        central_angle = angles[rocking_circle][0]
 
         # use this angle in the calculation of the rotation matrix
         angles = list(angles)

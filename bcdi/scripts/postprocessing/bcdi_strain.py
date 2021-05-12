@@ -86,9 +86,6 @@ save_frame = 'lab_flat_sample'  # 'crystal', 'laboratory' or 'lab_flat_sample'
 # 'lab_flat_sample' to save the data in the laboratory frame, with all sample angles rotated back to 0
 # rotations for 'laboratory' and 'lab_flat_sample' are realized after the strain calculation
 # (which is done in the crystal frame along ref_axis_q)
-index_central_angle = 89  # only used when save_frame = 'lab_flat_sample'. index of the frame of the diffraction pattern
-# corresponding to the center of mass along the stacking axis. The index is for the uncropped data, otherwise angles
-# will not match anymore.
 isosurface_strain = 0.1  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
 strain_method = 'default'  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
 # magnitude value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
@@ -242,8 +239,7 @@ if ref_axis not in {'x', 'y', 'z'}:
 
 if save_frame not in {'crystal', 'laboratory', 'lab_flat_sample'}:
     raise ValueError("save_frame should be either 'crystal', 'laboratory' or 'lab_flat_sample'")
-elif save_frame == 'lab_flat_sample':
-    valid.valid_item(index_central_angle, allowed_types=int, min_included=0, name='index_central_angle')
+
 if data_frame == 'crystal' and save_frame != 'crystal':
     print("data already in the crystal frame before phase retrieval, it is impossible to come back to the laboratory "
           "frame, parameter 'save_frame' defaulted to 'crystal'")
@@ -720,8 +716,7 @@ if save_frame == 'lab_flat_sample':
         setup.diffractometer.flatten_sample(arrays=(amp, phase, strain), voxel_size=voxel_size,
                                             angles=sample_angles, q_com=q_lab[::-1],  # q_com needs to be in xyz order
                                             is_orthogonal=True, reciprocal_space=False, rocking_angle=rocking_angle,
-                                            index_central_angle=index_central_angle, debugging=(True, False, False),
-                                            title=('amp', 'phase', 'strain'))
+                                            debugging=(True, False, False), title=('amp', 'phase', 'strain'))
 if save_frame == 'crystal':
     # rotate also q_lab to have it along ref_axis_q, as a cross-check
     comment = comment + '_crystalframe'
