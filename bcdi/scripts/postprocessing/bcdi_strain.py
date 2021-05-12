@@ -588,8 +588,7 @@ else:  # data already orthogonalized using xrayutilities or the linearized trans
 
         amp, phase = pu.rotate_crystal(arrays=(abs(obj_ortho), np.angle(obj_ortho)), is_orthogonal=True,
                                        reciprocal_space=False, voxel_size=voxel_size, debugging=(True, False),
-                                       axis_to_align=np.array([q_lab[2], q_lab[1], q_lab[0]]) / np.linalg.norm(q_lab),
-                                       reference_axis=axis_to_array_xyz[ref_axis_q],
+                                       axis_to_align=q_lab[::-1], reference_axis=axis_to_array_xyz[ref_axis_q],
                                        title=('amp', 'phase'))
 
         obj_ortho = amp * np.exp(1j * phase)  # here the phase is again wrapped in [-pi pi[
@@ -632,12 +631,12 @@ if correct_refraction:  # or correct_absorption:
     # kin and kout were calculated in the laboratory frame, but after the geometric transformation of the crystal, this
     # latter is always in the crystal frame (for simpler strain calculation). We need to transform kin and kout back
     # into the crystal frame (also, xrayutilities output is in crystal frame)
-    kin = pu.rotate_vector(vectors=np.array([kin[2], kin[1], kin[0]]),
+    kin = pu.rotate_vector(vectors=[kin[2], kin[1], kin[0]],
                            axis_to_align=axis_to_array_xyz[ref_axis_q],
-                           reference_axis=np.array([q_lab[2], q_lab[1], q_lab[0]]))
-    kout = pu.rotate_vector(vectors=np.array([kout[2], kout[1], kout[0]]),
+                           reference_axis=[q_lab[2], q_lab[1], q_lab[0]])
+    kout = pu.rotate_vector(vectors=[kout[2], kout[1], kout[0]],
                             axis_to_align=axis_to_array_xyz[ref_axis_q],
-                            reference_axis=np.array([q_lab[2], q_lab[1], q_lab[0]]))
+                            reference_axis=[q_lab[2], q_lab[1], q_lab[0]])
 
     # calculate the optical path of the incoming wavevector
     path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=debug)  # path_in already in nm
@@ -711,6 +710,7 @@ if save_frame in {'laboratory', 'lab_flat_sample'}:
                           debugging=(True, False, False), title=('amp', 'phase', 'strain'))
     # q_lab is already in the laboratory frame
     q_final = q_lab
+    print(f"\nq in laboratory frame = {q_final}")
 
 if save_frame == 'lab_flat_sample':
     comment = comment + '_flat'
@@ -718,16 +718,15 @@ if save_frame == 'lab_flat_sample':
     sample_angles = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup, stage_name='sample')
     (amp, phase, strain), q_final =\
         setup.diffractometer.flatten_sample(arrays=(amp, phase, strain), voxel_size=voxel_size,
-                                            angles=sample_angles, q_com=q_lab, is_orthogonal=True,
-                                            reciprocal_space=False, rocking_angle=rocking_angle,
+                                            angles=sample_angles, q_com=q_lab[::-1],  # q_com needs to be in xyz order
+                                            is_orthogonal=True, reciprocal_space=False, rocking_angle=rocking_angle,
                                             index_central_angle=index_central_angle, debugging=(True, False, False),
                                             title=('amp', 'phase', 'strain'))
 if save_frame == 'crystal':
     # rotate also q_lab to have it along ref_axis_q, as a cross-check
     comment = comment + '_crystalframe'
-    q_final = pu.rotate_vector(vectors=qlab,
-                               axis_to_align=np.array([q_lab[2], q_lab[1], q_lab[0]]) / np.linalg.norm(q_lab),
-                               reference_axis=axis_to_array_xyz[ref_axis_q])
+    q_final = pu.rotate_vector(vectors=qlab[::-1],  # vectors needs to be in xyz order
+                               axis_to_align=qlab[::-1], reference_axis=axis_to_array_xyz[ref_axis_q])
 
 ##########################################################################################
 # rotates the crystal e.g. for easier slicing of the result along a particular direction #
@@ -736,12 +735,11 @@ if save_frame == 'crystal':
 if align_axis:
     print('\nRotating arrays for visualization')
     amp, phase, strain = pu.rotate_crystal(arrays=(amp, phase, strain), reference_axis=axis_to_array_xyz[ref_axis],
-                                           axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
+                                           axis_to_align=axis_to_align,
                                            voxel_size=voxel_size, debugging=(True, False, False),
                                            is_orthogonal=True, reciprocal_space=False, title=('amp', 'phase', 'strain'))
     # rotate q accordingly
-    q_final = pu.rotate_vector(vectors=q_final,
-                               axis_to_align=axis_to_align/np.linalg.norm(axis_to_align),
+    q_final = pu.rotate_vector(vectors=q_final[::-1], axis_to_align=axis_to_align,  # vectors needs to be in xyz order
                                reference_axis=axis_to_array_xyz[ref_axis])
 
 print(f"\nq_final = {q_final}")
