@@ -504,17 +504,52 @@ class Diffractometer(object):
     :param sample_offsets: list or tuple of three angles in degrees, corresponding to the offsets of each of the sample
      circles (the offset for the most outer circle should be at index 0).
      Convention: the sample offsets will be subtracted to measurement the motor values.
-    :param sample_circles:
-    :param detector_circles:
+    :param sample_circles: list of sample circles from outer to inner (e.g. mu eta chi phi),
+     expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For example: ['y+' ,'x-', 'z-', 'y+']
+    :param detector_circles: list of detector circles from outer to inner (e.g. gamma delta),
+     expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For example: ['y+', 'x-']
     """
     valid_circles = {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}  # + counter-clockwise, - clockwise
     valid_names = {'sample': '_sample_circles', 'detector': '_detector_circles'}
 
     def __init__(self, sample_offsets, sample_circles=(), detector_circles=()):
-        self._sample_circles = sample_circles
-        self._detector_circles = detector_circles
+        self.sample_circles = sample_circles
+        self.detector_circles = detector_circles
         self.sample_offsets = sample_offsets
-        # TODO write properties for sample_cirles and detector_circles, write docstring
+
+    @property
+    def detector_circles(self):
+        """
+        List of detector circles from outer to inner (e.g. gamma delta), expressed using a valid pattern within
+        {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For example: ['y+' ,'x-', 'z-', 'y+']. Convention: CXI convetion
+        (z downstream, y vertical up, x outboard), + for a counter-clockwise rotation, - for a clockwise rotation.
+        """
+        return self._detector_circles
+
+    @detector_circles.setter
+    def detector_circles(self, value):
+        valid.valid_container(value, container_types=(tuple, list), min_length=1, item_types=str,
+                              name='Diffractometer.detector_circles')
+        if any(val not in self.valid_circles for val in value):
+            raise ValueError(f'Invalid circle value encountered in detector_circles, valid are {self.valid_circles}')
+        self._detector_circles = list(value)
+
+    @property
+    def sample_circles(self):
+        """
+        List of sample circles from outer to inner (e.g. mu eta chi phi), expressed using a valid pattern within
+        {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For example: ['y+' ,'x-', 'z-', 'y+']. Convention: CXI convetion
+        (z downstream, y vertical up, x outboard), + for a counter-clockwise rotation, - for a clockwise rotation.
+        """
+        return self._sample_circles
+
+    @sample_circles.setter
+    def sample_circles(self, value):
+        valid.valid_container(value, container_types=(tuple, list), min_length=1, item_types=str,
+                              name='Diffractometer.sample_circles')
+        if any(val not in self.valid_circles for val in value):
+            raise ValueError(f'Invalid circle value encountered in sample_circles, valid are {self.valid_circles}')
+        self._sample_circles = list(value)
 
     @property
     def sample_offsets(self):
