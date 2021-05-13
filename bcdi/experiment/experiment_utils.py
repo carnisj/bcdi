@@ -586,7 +586,7 @@ class Diffractometer(object):
                              f' {list(self.valid_circles)}')
         self.__getattribute__(self.valid_names[stage_name]).insert(index, circle)
 
-    def flatten_sample(self, arrays, voxel_size, angles, q_com, rocking_angle, fill_value=0,
+    def flatten_sample(self, arrays, voxel_size, angles, q_com, rocking_angle,  central_angle=None, fill_value=0,
                        is_orthogonal=True, reciprocal_space=False, debugging=False, **kwargs):
         """
         Rotate arrays such that all circles of the sample stage are at their zero position.
@@ -596,6 +596,8 @@ class Diffractometer(object):
         :param angles: tuple of angular values in degrees, one for each circle of the sample stage
         :param q_com: diffusion vector of the center of mass of the Bragg peak, expressed in an orthonormal frame x y z
         :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
+        :param central_angle: if provided, angle to be used in the calculation of the rotation matrix for the rocking
+         angle. If None, it will be defined as the angle value at the middle of the rocking curve.
         :param fill_value: tuple of numeric values used in the RegularGridInterpolator for points outside of the
          interpolation domain. The length of the tuple should be equal to the number of input arrays.
         :param is_orthogonal: set to True is the frame is orthogonal, False otherwise. Used for plot labels.
@@ -629,14 +631,17 @@ class Diffractometer(object):
             raise ValueError('the norm of q_com is zero')
         nb_circles = len(self._sample_circles)
         valid.valid_container(angles, container_types=(tuple, list), length=nb_circles, name='angles')
-
+        valid.valid_item(central_angle, allowed_types=Real, allow_none=True, name='central_angle')
         # find the index of the circle which corresponds to the rocking angle
         rocking_circle = self.get_rocking_circle(rocking_angle=rocking_angle, stage_name='sample', angles=angles)
 
-        # get the relevant angle within the rocking circle. This is the first angle since we are using a stepwise
-        # rotation of -1*tilt in the calculation of the transformation matrix
-        # (everything is relative to the reference frame index which is the first one)
-        central_angle = angles[rocking_circle][0]
+        # get the relevant angle within the rocking circle. The reference point when orthogonalizing if the center of
+        # the array, but we do not know to which angle it corresponds if the data was cropped.
+        if central_angle is None:
+            print(f'central_angle=None, using the angle at half of the rocking curve for the calculation of the '
+                  f'rotation matrix')
+            nb_steps = len(angles[rocking_circle])
+            central_angle = angles[rocking_circle][int(nb_steps//2)]
 
         # use this angle in the calculation of the rotation matrix
         angles = list(angles)
