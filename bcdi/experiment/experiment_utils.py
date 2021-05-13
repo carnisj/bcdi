@@ -2236,8 +2236,6 @@ class Setup(object):
         #########################################
         # calculate the interpolation positions #
         #########################################
-        # this assumes that the diffraction pattern is in the center of the array
-        # TODO : correct this if the diffraction pattern is not in the center of the array
         myz, myy, myx = np.meshgrid(np.arange(-nz_output // 2, nz_output // 2, 1) * voxel_size[0],
                                     np.arange(-ny_output // 2, ny_output // 2, 1) * voxel_size[1],
                                     np.arange(-nx_output // 2, nx_output // 2, 1) * voxel_size[2],
@@ -2573,7 +2571,7 @@ class Setup(object):
         lambdaz = wavelength * distance
         mymatrix = np.zeros((3, 3))
         tilt = np.radians(tilt_angle)
-        q_offset = np.zeros(3)  # TODO: calculate the q offset for all geometries
+        q_offset = np.zeros(3)
         nbz, nby, nbx = array_shape
         if self.detector_hor == 'y-':  # inboard,  as it should be in the CXI convention
             hor_coeff = 1
