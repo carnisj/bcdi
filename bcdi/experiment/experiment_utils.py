@@ -2630,7 +2630,6 @@ class Setup(object):
 
         if self.beamline == 'P10':
 
-            # TODO: correct this, mu instead of chi should be taken into account
             if verbose:
                 print('using PETRAIII P10 geometry')
             if self.rocking_angle == "outofplane":
@@ -2647,15 +2646,16 @@ class Setup(object):
                               -np.cos(outofplane),
                               np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
-                    np.array([np.sin(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
-                              np.cos(grazing_angle[0]) * (1 - np.cos(inplane) * np.cos(outofplane)),
-                              (np.sin(outofplane) * np.cos(grazing_angle[0]) -
-                               np.cos(outofplane) * np.sin(inplane) * np.sin(grazing_angle[0]))])
+                    np.array([np.sin(grazing_angle[0]) * np.sin(outofplane),
+                              np.cos(grazing_angle[0]) * (1 - np.cos(inplane) * np.cos(outofplane)) -
+                              np.sin(grazing_angle[0]) * np.cos(outofplane) * np.sin(inplane),
+                              np.sin(outofplane) * np.cos(grazing_angle[0])])
                 q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
             elif self.rocking_angle == "inplane":
+                # TODO: correct this, mu is below om, not chi. Both should be taken into account if phi is scanned
                 if verbose:
                     print(f'rocking angle is phi, omega={grazing_angle[1]*180/np.pi:.3f} deg,'
                           f' chi={grazing_angle[0]*180/np.pi:.3f} deg')
