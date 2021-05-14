@@ -1312,7 +1312,7 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
         beta, mu, gamma, delta, frames_logical = setup.diffractometer.motor_positions(logfile=logfile, setup=setup,
                                                                                       frames_logical=frames_logical)
         if setup.rocking_angle == 'inplane':  # mu rocking curve
-            grazing = (0, beta)  # nothing below beta at SIXS
+            grazing = (beta,)  # nothing below beta at SIXS
             tilt, inplane, outofplane = mu, gamma, delta
         elif rocking_angle == 'outofplane':
             raise NotImplementedError('outofplane rocking curve not implemented for SIXS')
