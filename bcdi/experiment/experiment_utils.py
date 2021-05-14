@@ -2657,6 +2657,8 @@ class Setup(object):
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
             elif self.rocking_angle == "inplane":
+                if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+                    raise NotImplementedError('Non-zero mu not implemented for inplane rocking curve at P10')
                 # TODO: correct this, mu is below om, not chi. Both should be taken into account if phi is scanned
                 if verbose:
                     print(f'rocking angle is phi,'
@@ -2757,6 +2759,8 @@ class Setup(object):
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
             elif self.rocking_angle == "inplane":
+                if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+                    raise NotImplementedError('Non-zero mu not implemented for inplane rocking curve at 34ID')
                 # TODO: correct this, mu is below phi, not chi. Both should be taken into account if theta is scanned
                 if verbose:
                     print(f'rocking angle is theta,'
