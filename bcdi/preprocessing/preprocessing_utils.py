@@ -1285,7 +1285,7 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
             grazing = (mu,)
             tilt, inplane, outofplane = om, gamma, delta
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing = (mu, om)
+            grazing = (mu, om, chi)
             tilt, inplane, outofplane = phi, gamma, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -1342,7 +1342,7 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
             grazing = (mu,)
             tilt, inplane, outofplane = phi, delta, gamma  # phi is the incident angle at 34ID
         elif rocking_angle == 'inplane':
-            grazing = (mu, phi)  # phi is the incident angle at 34ID
+            grazing = (mu, phi, chi)  # phi is the incident angle at 34ID
             tilt, inplane, outofplane = theta, delta, gamma  # theta is the rotation around the vertical axis
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
