@@ -2659,7 +2659,6 @@ class Setup(object):
             elif self.rocking_angle == "inplane":
                 if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                     raise NotImplementedError('Non-zero mu not implemented for inplane rocking curve at P10')
-                # TODO: correct this, mu is below om, not chi. Both should be taken into account if phi is scanned
                 if verbose:
                     print(f'rocking angle is phi,'
                           f' mu={grazing_angle[0]*180/np.pi:.3f} deg,'
@@ -2676,12 +2675,12 @@ class Setup(object):
                               -np.cos(outofplane),
                               np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
-                    np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) +
-                              np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
-                              (-np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane) +
-                              np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
-                              (-np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(inplane)*np.cos(outofplane) -
-                               np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(outofplane))])
+                    np.array([(np.sin(grazing_angle[1]) * np.cos(grazing_angle[2]) * np.sin(outofplane) +
+                              np.cos(grazing_angle[1])*np.cos(grazing_angle[2])*(np.cos(inplane)*np.cos(outofplane)-1)),
+                              (-np.sin(grazing_angle[1])*np.cos(grazing_angle[2])*np.sin(inplane)*np.cos(outofplane) +
+                              np.sin(grazing_angle[2])*(np.cos(inplane)*np.cos(outofplane)-1)),
+                              (-np.cos(grazing_angle[1])*np.cos(grazing_angle[2])*np.sin(inplane)*np.cos(outofplane) -
+                               np.sin(grazing_angle[2])*np.sin(outofplane))])
                 q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
