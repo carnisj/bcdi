@@ -2566,7 +2566,10 @@ class Setup(object):
         pixel_y = pixel_y * 1e9  # convert to nm
         outofplane = np.radians(self.outofplane_angle)
         inplane = np.radians(self.inplane_angle)
-        grazing_angle = [np.radians(val) for val in self.grazing_angle]
+        if self.grazing_angle is not None:
+            grazing_angle = [np.radians(val) for val in self.grazing_angle]
+        else:
+            grazing_angle = None
         lambdaz = wavelength * distance
         mymatrix = np.zeros((3, 3))
         tilt = np.radians(tilt_angle)
