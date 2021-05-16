@@ -769,7 +769,7 @@ class Diffractometer34ID(Diffractometer):
     The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
     """
     def __init__(self, sample_offsets):
-        super().__init__(sample_circles=['y+', 'x+', 'z-', 'y+'], detector_circles=['y+', 'x-'],
+        super().__init__(sample_circles=['y+', 'x+'], detector_circles=['y+', 'x-'],
                          sample_offsets=sample_offsets)
 
     def motor_positions(self, setup):
@@ -777,22 +777,17 @@ class Diffractometer34ID(Diffractometer):
         Load the scan data and extract motor positions.
 
         :param setup: the experimental setup: Class SetupPreprocessing()
-        :return: (mu, tilt, chi, theta, delta, gamma) motor positions
+        :return: (theta, phi, delta, gamma) motor positions
         """
-        if setup.rocking_angle != 'energy':
-            raise NotImplementedError('Only energy scan implemented for 34ID')
-
         if not setup.custom_scan:
             raise NotImplementedError('Only custom_scan implemented for 34ID')
         else:
-            mu = setup.custom_motors["mu"]
-            tilt = setup.custom_motors["phi"]
-            chi = setup.custom_motors["chi"]
             theta = setup.custom_motors["theta"]
+            phi = setup.custom_motors["phi"]
             gamma = setup.custom_motors["gamma"]
             delta = setup.custom_motors["delta"]
 
-        return mu, tilt, chi, theta, delta, gamma
+        return theta, phi, delta, gamma
 
 
 class DiffractometerCRISTAL(Diffractometer):
@@ -2733,40 +2728,14 @@ class Setup(object):
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
         if self.beamline == '34ID':
-            # TODO: correct this, mu instead of chi should be taken into account
             if verbose:
                 print('using APS 34ID geometry')
-            if self.rocking_angle == "outofplane":
+            if self.rocking_angle == "inplane":
+                if grazing_angle is not None:
+                    raise NotImplementedError('Circle blow theta not implemented for 34ID-C')
                 if verbose:
-                    print(f'rocking angle is phi, mu={grazing_angle[0] * 180 / np.pi:.3f} deg')
-                # rocking phi angle anti-clockwise around x (theta does not matter, above phi)
-                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
-                    np.array([-np.cos(inplane),
-                              0,
-                              np.sin(inplane)])
-                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
-                    np.array([np.sin(inplane) * np.sin(outofplane),
-                              -np.cos(outofplane),
-                              np.cos(inplane) * np.sin(outofplane)])
-                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
-                    np.array([np.sin(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
-                              np.cos(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
-                              -(np.sin(outofplane) * np.cos(grazing_angle[0]) +
-                                np.cos(outofplane) * np.sin(inplane) * np.sin(grazing_angle[0]))])
-                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
-                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
-                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
-
-            elif self.rocking_angle == "inplane":
-                if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
-                    raise NotImplementedError('Non-zero mu not implemented for inplane rocking curve at 34ID')
-                # TODO: correct this, mu is below phi, not chi. Both should be taken into account if theta is scanned
-                if verbose:
-                    print(f'rocking angle is theta,'
-                          f' mu={grazing_angle[0]*180/np.pi:.3f} deg,'
-                          f' phi={grazing_angle[1]*180/np.pi:.3f} deg,'
-                          f' chi={grazing_angle[2]*180/np.pi:.3f} deg')
-                # rocking theta angle anti-clockwise around y, incident angle is non zero (theta is above phi)
+                    print(f'rocking angle is theta, no grazing angle (phi above theta)')
+                # rocking theta angle anti-clockwise around y
                 mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff * \
                     np.array([-np.cos(inplane),
                               0,
@@ -2776,12 +2745,29 @@ class Setup(object):
                               -np.cos(outofplane),
                               np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
-                    np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) -
-                              np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
-                              (-np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane) +
-                              np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*(np.cos(inplane)*np.cos(outofplane)-1)),
-                              (np.cos(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(inplane)*np.cos(outofplane) -
-                               np.sin(grazing_angle[0])*np.cos(grazing_angle[1])*np.sin(outofplane))])
+                    np.array([1 - np.cos(inplane)*np.cos(outofplane),
+                              0,
+                              np.sin(inplane)*np.cos(outofplane)])
+                q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
+                q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
+            elif self.rocking_angle == "outofplane":
+                if verbose:
+                    print(f'rocking angle is phi, theta={grazing_angle[0] * 180 / np.pi:.3f} deg')
+                # rocking phi angle anti-clockwise around x
+                mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
+                    np.array([-np.cos(inplane),
+                              0,
+                              np.sin(inplane)])
+                mymatrix[:, 1] = 2 * np.pi / lambdaz * pixel_y * ver_coeff *\
+                    np.array([np.sin(inplane) * np.sin(outofplane),
+                              -np.cos(outofplane),
+                              np.cos(inplane) * np.sin(outofplane)])
+                mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance *\
+                    np.array([-np.sin(grazing_angle[0]) * np.sin(outofplane),
+                              np.cos(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1),
+                              - np.cos(grazing_angle[0]) * np.sin(outofplane)])
                 q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
