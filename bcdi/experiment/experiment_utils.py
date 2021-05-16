@@ -917,11 +917,11 @@ class DiffractometerCRISTAL(Diffractometer):
 
 class DiffractometerID01(Diffractometer):
     """
-    ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del).
+    ID01 goniometer, 3S+2D (sample: mu, eta, phi / detector: nu,del).
     The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
     """
     def __init__(self, sample_offsets):
-        super().__init__(sample_circles=['x-', 'z+', 'y-'], detector_circles=['y-', 'x-'],
+        super().__init__(sample_circles=['y-', 'x-', 'y-'], detector_circles=['y-', 'x-'],
                          sample_offsets=sample_offsets)
 
     def motor_positions(self, logfile, scan_number, setup, **kwargs):
@@ -936,7 +936,7 @@ class DiffractometerID01(Diffractometer):
            equal to the number of measured frames. In case of data padding, the length changes.
          - 'follow_bragg': boolean, True for energy scans where the detector position is changed during the scan to
            follow the Bragg peak.
-        :return: (eta, chi, phi, nu, delta, energy) motor positions
+        :return: (mu, eta, phi, nu, delta, energy) motor positions
         """
         # check and load kwargs
         valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
@@ -964,6 +964,11 @@ class DiffractometerID01(Diffractometer):
                 print('Defaulting to old ID01 motor names')
                 old_names = True
 
+            if not old_names:
+                mu = motor_positions[motor_names.index('mu')]  # positioner
+            else:
+                mu = motor_positions[motor_names.index('Mu')]  # positioner
+
             if follow_bragg:
                 if not old_names:
                     delta = list(labels_data[labels.index('del'), :])  # scanned
@@ -974,8 +979,6 @@ class DiffractometerID01(Diffractometer):
                     delta = motor_positions[motor_names.index('del')]  # positioner
                 else:
                     delta = motor_positions[motor_names.index('Delta')]  # positioner
-
-            chi = 0
 
             if setup.rocking_angle == "outofplane":
                 if not old_names:
@@ -1016,19 +1019,19 @@ class DiffractometerID01(Diffractometer):
             else:
                 raise ValueError('Invalid rocking angle ', setup.rocking_angle, 'for ID01')
 
-            # remove user-defined sample offsets (sample: eta, chi, phi)
-            eta = eta - self.sample_offsets[0]
-            chi = chi - self.sample_offsets[1]
+            # remove user-defined sample offsets (sample: mu, eta, phi)
+            mu = mu - self.sample_offsets[0]
+            eta = eta - self.sample_offsets[1]
             phi = phi - self.sample_offsets[2]
 
         else:  # manually defined custom scan
+            mu = setup.custom_motors["mu"]
             eta = setup.custom_motors["eta"]
-            chi = setup.custom_motors["chi"]
             phi = setup.custom_motors["phi"]
             delta = setup.custom_motors["delta"]
             nu = setup.custom_motors["nu"]
 
-        return eta, chi, phi, nu, delta, energy, frames_logical
+        return mu, eta, phi, nu, delta, energy, frames_logical
 
 
 class DiffractometerNANOMAX(Diffractometer):
@@ -1666,13 +1669,13 @@ class Setup(object):
         if self.rocking_angle == 'outofplane':
             # only the mu angle (rotation around the vertical axis, below the rocking angle omega/om/eta) is needed
             # mu is set to 0 if it does not exist
-            valid.valid_container(value, container_types=(tuple, list), length=1, item_types=Real, allow_none=True,
+            valid.valid_container(value, container_types=(tuple, list), item_types=Real, allow_none=True,
                                   name='Setup.grazing_angle')
             self._grazing_angle = value
         elif self.rocking_angle == 'inplane':
             # one or more values needed, for example: mu angle, the omega/om/eta angle, the chi angle
             # (rotations respectively around the vertical axis, outboard and downstream, below the rocking angle phi)
-            valid.valid_container(value, container_types=(tuple, list), min_length=1, item_types=Real, allow_none=True,
+            valid.valid_container(value, container_types=(tuple, list), item_types=Real, allow_none=True,
                                   name='Setup.grazing_angle')
             self._grazing_angle = value
         else:  # self.rocking_angle == 'energy'
@@ -2582,11 +2585,11 @@ class Setup(object):
             if verbose:
                 print('using ESRF ID01 PSIC geometry')
             if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
-                raise NotImplementedError('Circle below eta not implemented for ID01')
+                raise NotImplementedError('Non-zero mu not implemented for the transformation matrices at ID01')
 
-            if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+            if self.rocking_angle == "outofplane":
                 if verbose:
-                    print('rocking angle is eta')
+                    print(f'rocking angle is eta, mu={grazing_angle[0]*180/np.pi:.3f} deg')
                 # rocking eta angle clockwise around x (phi does not matter, above eta)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz * hor_coeff *\
                     np.array([-pixel_x * np.cos(inplane),
@@ -2606,7 +2609,10 @@ class Setup(object):
 
             elif self.rocking_angle == "inplane":
                 if verbose:
-                    print(f'rocking angle is phi, eta={grazing_angle[1]*180/np.pi:.3f} deg')
+                    print(f'rocking angle is phi,'
+                          f' mu={grazing_angle[0]*180/np.pi:.3f} deg,'
+                          f' eta={grazing_angle[1]*180/np.pi:.3f}deg')
+
                 # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz * hor_coeff *\
                     np.array([-pixel_x * np.cos(inplane),
@@ -2626,7 +2632,6 @@ class Setup(object):
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
         if self.beamline == 'P10':
-
             if verbose:
                 print('using PETRAIII P10 geometry')
             if self.rocking_angle == "outofplane":
@@ -2683,10 +2688,10 @@ class Setup(object):
         if self.beamline == 'NANOMAX':
             if verbose:
                 print('using NANOMAX geometry')
-            if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
-                raise NotImplementedError('Circle below theta not implemented for NANOMAX')
 
-            if self.rocking_angle == "outofplane" and isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
+            if self.rocking_angle == "outofplane":
+                if grazing_angle is not None:
+                    raise NotImplementedError('Circle below theta not implemented for NANOMAX')
                 if verbose:
                     print('rocking angle is theta')
                 # rocking theta angle clockwise around x (phi does not matter, above eta)
@@ -2708,7 +2713,7 @@ class Setup(object):
 
             elif self.rocking_angle == "inplane":
                 if verbose:
-                    print(f'rocking angle is phi, theta={grazing_angle[1]*180/np.pi:.3f} deg')
+                    print(f'rocking angle is phi, theta={grazing_angle[0]*180/np.pi:.3f} deg')
                 # rocking phi angle clockwise around y, incident angle theta is non zero (theta below phi)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
                     np.array([-np.cos(inplane),
@@ -2719,10 +2724,10 @@ class Setup(object):
                               -np.cos(outofplane),
                               np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
-                    np.array([(np.sin(grazing_angle[1]) * np.sin(outofplane) +
-                               np.cos(grazing_angle[1]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
-                              np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
-                              np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
+                    np.array([(np.sin(grazing_angle[0]) * np.sin(outofplane) +
+                               np.cos(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
+                              np.sin(grazing_angle[0]) * np.sin(inplane) * np.cos(outofplane),
+                              np.cos(grazing_angle[0]) * np.sin(inplane) * np.cos(outofplane)])
                 q_offset[0] = -2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
@@ -2808,10 +2813,10 @@ class Setup(object):
         if self.beamline == 'CRISTAL':
             if verbose:
                 print('using CRISTAL geometry')
-            if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
-                raise NotImplementedError('Circle below mgomega not implemented for CRISTAL')
 
             if self.rocking_angle == "outofplane":
+                if grazing_angle is not None:
+                    raise NotImplementedError('Circle below mgomega not implemented for CRISTAL')
                 if verbose:
                     print('rocking angle is mgomega')
                 # rocking mgomega angle clockwise around x
@@ -2830,9 +2835,10 @@ class Setup(object):
                 q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
+
             elif self.rocking_angle == "inplane":
                 if verbose:
-                    print(f'rocking angle is phi, mgomega={grazing_angle[1]*180/np.pi:.3f} deg')
+                    print(f'rocking angle is phi, mgomega={grazing_angle[0]*180/np.pi:.3f} deg')
                 # rocking phi angle anti-clockwise around y, incident angle mgomega is non zero (mgomega below phi)
                 mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff *\
                     np.array([-np.cos(inplane),
@@ -2843,10 +2849,10 @@ class Setup(object):
                               -np.cos(outofplane),
                               np.cos(inplane) * np.sin(outofplane)])
                 mymatrix[:, 2] = 2 * np.pi / lambdaz * tilt * distance * \
-                    np.array([(-np.sin(grazing_angle[1]) * np.sin(outofplane) -
-                               np.cos(grazing_angle[1]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
-                              np.sin(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane),
-                              np.cos(grazing_angle[1]) * np.sin(inplane) * np.cos(outofplane)])
+                    np.array([(-np.sin(grazing_angle[0]) * np.sin(outofplane) -
+                               np.cos(grazing_angle[0]) * (np.cos(inplane) * np.cos(outofplane) - 1)),
+                              np.sin(grazing_angle[0]) * np.sin(inplane) * np.cos(outofplane),
+                              np.cos(grazing_angle[0]) * np.sin(inplane) * np.cos(outofplane)])
                 q_offset[0] = 2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
