@@ -1264,14 +1264,14 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
     rocking_angle = setup.rocking_angle
 
     if setup.beamline == 'ID01':
-        eta, chi, phi, nu, delta, energy, frames_logical = \
+        mu, eta, chi, phi, nu, delta, energy, frames_logical = \
             setup.diffractometer.motor_positions(logfile=logfile, scan_number=scan_number, setup=setup,
                                                  frames_logical=frames_logical, follow_bragg=follow_bragg)
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
-            grazing = (0,)  # mu below eta but not used at ID01
+            grazing = (mu,)  # mu below eta but not used at ID01
             tilt, inplane, outofplane = eta, nu, delta
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing = (0, eta)  # mu below eta but not used at ID01
+            grazing = (mu, eta)  # mu below eta but not used at ID01
             tilt, inplane, outofplane = phi, nu, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -1297,10 +1297,10 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
     elif setup.beamline == 'CRISTAL':
         mgomega, mgphi, gamma, delta, energy = setup.diffractometer.motor_positions(logfile, setup)
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
-            grazing = (0,)  # mu below mgomega but not used at CRISTAL
+            grazing = None  # nothing below mgomega at CRISTAL
             tilt, inplane, outofplane = mgomega, gamma[0], delta[0]
         elif rocking_angle == 'inplane':  # phi rocking curve
-            grazing = (0, mgomega[0])  # mu below mgomega but not used at CRISTAL
+            grazing = (mgomega[0],)
             tilt, inplane, outofplane = mgphi, gamma[0], delta[0]
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -1312,7 +1312,7 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
         beta, mu, gamma, delta, frames_logical = setup.diffractometer.motor_positions(logfile=logfile, setup=setup,
                                                                                       frames_logical=frames_logical)
         if setup.rocking_angle == 'inplane':  # mu rocking curve
-            grazing = (beta,)  # nothing below beta at SIXS
+            grazing = (beta,)  # beta below the whole diffractomter at SIXS
             tilt, inplane, outofplane = mu, gamma, delta
         elif rocking_angle == 'outofplane':
             raise NotImplementedError('outofplane rocking curve not implemented for SIXS')
@@ -1325,10 +1325,10 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
     elif setup.beamline == 'NANOMAX':
         theta, phi, gamma, delta, energy, radius = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
         if setup.rocking_angle == 'outofplane':  # theta rocking curve
-            grazing = (0,)  # no mu at NANOMAX
+            grazing = None  # nothing below theta at NANOMAX
             tilt, inplane, outofplane = theta, gamma, delta
         elif setup.rocking_angle == 'inplane':  # phi rocking curve
-            grazing = (0, theta)  # no mu at NANOMAX
+            grazing = (theta,)
             tilt, inplane, outofplane = phi, gamma, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -1337,17 +1337,19 @@ def goniometer_values(logfile, scan_number, setup, stage_name='bcdi', **kwargs):
         detector_angles = (gamma, delta)
 
     elif beamline == '34ID':
-        mu, phi, chi, theta, delta, gamma = setup.diffractometer.motor_positions(setup=setup)
-        if rocking_angle == 'outofplane':
-            grazing = (mu,)
-            tilt, inplane, outofplane = phi, delta, gamma  # phi is the incident angle at 34ID
-        elif rocking_angle == 'inplane':
-            grazing = (mu, phi, chi)  # phi is the incident angle at 34ID
+        theta, phi, delta, gamma = setup.diffractometer.motor_positions(setup=setup)
+        if rocking_angle == 'inplane':
+            grazing = None  # phi is above theta at 34ID
             tilt, inplane, outofplane = theta, delta, gamma  # theta is the rotation around the vertical axis
+
+        elif rocking_angle == 'outofplane':
+            grazing = (theta,)
+            tilt, inplane, outofplane = phi, delta, gamma  # phi is the incident angle at 34ID
+
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
-        # 34ID goniometer, 4S+2D (sample: mu, phi, chi, theta (inplane)   detector: delta (inplane), gamma)
-        sample_angles = (mu, phi, chi, theta)
+        # 34ID-C goniometer, 2S+2D (sample: theta (inplane), phi (out of plane)   detector: delta (inplane), gamma)
+        sample_angles = (theta, phi)
         detector_angles = (delta, gamma)
 
     else:
