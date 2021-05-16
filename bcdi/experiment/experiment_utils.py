@@ -765,7 +765,7 @@ class Diffractometer(object):
 
 class Diffractometer34ID(Diffractometer):
     """
-    34ID goniometer, 4S+2D (sample: mu, phi, chi, theta (inplane)   detector: delta (inplane), gamma).
+    34ID goniometer, 2S+2D (sample: theta (inplane), phi (out of plane)   /   detector: delta (inplane), gamma).
     The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
     """
     def __init__(self, sample_offsets):
