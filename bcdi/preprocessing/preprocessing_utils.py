@@ -1935,9 +1935,9 @@ def init_qconversion(setup):
     beam_direction = setup.beam_direction_xrutils
 
     if beamline == 'ID01':
-        offsets = (0, 0, 0, setup.offset_inplane, 0)  # eta chi phi nu del
-        qconv = xu.experiment.QConversion(['y-', 'x+', 'z-'], ['z-', 'y-'], r_i=beam_direction)  # for ID01
-        # 3S+2D goniometer (ID01 goniometer, sample: eta, chi, phi      detector: nu,del
+        offsets = (0, 0, 0, 0, setup.offset_inplane, 0)  # mu eta chi(virtual) phi nu del
+        qconv = xu.experiment.QConversion(['z-', 'y-', 'x+', 'z-'], ['z-', 'y-'], r_i=beam_direction)  # for ID01
+        # 3S+2D goniometer (ID01 goniometer, sample: mu, eta, chi(virtual), phi      detector: nu,del
         # the vector beam_direction is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
@@ -1960,10 +1960,10 @@ def init_qconversion(setup):
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == '34ID':
-        offsets = (0, 0, 0, 0, setup.offset_inplane, 0)
-        # mu, phi (incident angle), chi, theta (inplane), delta (inplane), gamma (outofplane)
-        qconv = xu.experiment.QConversion(['z+', 'y+', 'x-', 'z+'], ['z+', 'y-'], r_i=beam_direction)  # for 34ID
-        # 4S+2D goniometer (34ID goniometer, sample: mu, phi, chi, theta (inplane)   detector: delta (inplane), gamma
+        offsets = (0, 0, setup.offset_inplane, 0)
+        # theta (inplane), phi (outofplane), delta (inplane), gamma (outofplane)
+        qconv = xu.experiment.QConversion(['z+', 'y+'], ['z+', 'y-'], r_i=beam_direction)  # for 34ID-C
+        # 2S+2D goniometer (34ID goniometer, sample: theta (inplane), phi,    detector: delta (inplane), gamma
         # the vector is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
     elif beamline == 'NANOMAX':
@@ -3361,11 +3361,10 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         raise ValueError('"follow_bragg" option implemented only for ID01 beamline')
 
     if setup.beamline == 'ID01':
-        eta, chi, phi, nu, delta, energy, frames_logical = \
+        mu, eta, phi, nu, delta, energy, frames_logical = \
             setup.diffractometer.motor_positions(logfile=logfile, scan_number=scan_number, setup=setup,
                                                  frames_logical=frames_logical, follow_bragg=follow_bragg)
-
-        print('chi', chi)
+        chi = 0  # virtual chi
         if setup.rocking_angle == 'outofplane':  # eta rocking curve
             print('phi', phi)
             nb_steps = len(eta)
@@ -3400,14 +3399,12 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        eta, chi, phi, nu, delta, energy = bin_parameters(binning=binning[0], nb_frames=nb_frames,
-                                                          params=[eta, chi, phi, nu, delta, energy])
-        qx, qy, qz = hxrd.Ang2Q.area(eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
+        mu, eta, chi, phi, nu, delta, energy = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                              params=[mu, eta, chi, phi, nu, delta, energy])
+        qx, qy, qz = hxrd.Ang2Q.area(mu, eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
         beta, mu, gamma, delta, frames_logical = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
-        # apply offsets, order for SIXS goniometer beta, mu (outer to inner)
-        beta, mu = setup.diffractometer.offset_sample(sample_circles=(beta, mu))
 
         print('beta', beta)
         if setup.rocking_angle == 'inplane':  # mu rocking curve
@@ -3432,8 +3429,6 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
     elif setup.beamline == 'CRISTAL':
         mgomega, mgphi, gamma, delta, energy =\
             setup.diffractometer.motor_positions(logfile=logfile, setup=setup, frames_logical=frames_logical)
-        # apply offsets, order for CRISTAL goniometer mgomega, mgphi (outer to inner)
-        mgomega, mgphi = setup.diffractometer.offset_sample(sample_circles=(mgomega, mgphi))
 
         if setup.rocking_angle == 'outofplane':  # mgomega rocking curve
             nb_steps = len(mgomega)
@@ -3470,8 +3465,6 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     elif setup.beamline == 'P10':
         mu, om, chi, phi, gamma, delta = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
-        # apply offsets, order for P10 goniometer mu, om, chi, phi (outer to inner)
-        mu, om, chi, phi = setup.diffractometer.offset_sample(motors_values=(mu, om, chi, phi))
 
         print('chi', chi)
         print('mu', mu)
@@ -3511,8 +3504,6 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
     elif setup.beamline == 'NANOMAX':
         theta, phi, gamma, delta, energy, radius = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
-        # apply offsets, order for NANOMAX goniometer theta, phi (outer to inner)
-        theta, phi = setup.diffractometer.offset_sample(sample_circles=(theta, phi))
 
         if setup.rocking_angle == 'outofplane':  # theta rocking curve
             nb_steps = len(theta)
@@ -3550,9 +3541,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
         qx, qy, qz = hxrd.Ang2Q.area(theta, phi, gamma, delta, en=energy, delta=detector.offsets)
 
     elif setup.beamline == '34ID':
-        mu, phi, chi, theta, delta, gamma = setup.diffractometer.motor_positions(setup=setup)
-        # apply offsets, order for 34ID goniometer mu, phi, chi, theta (inplane) (outer to inner)
-        mu, phi, chi, theta = setup.diffractometer.offset_sample(sample_circles=(mu, phi, chi, theta))
+        theta, phi, delta, gamma = setup.diffractometer.motor_positions(setup=setup)
 
         if setup.rocking_angle == 'outofplane':  # phi rocking curve
             nb_steps = len(phi)
@@ -3585,9 +3574,9 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
-        mu, phi, chi, theta, delta, gamma = bin_parameters(binning=binning[0], nb_frames=nb_frames,
-                                                           params=[mu, phi, chi, theta, delta, gamma])
-        qx, qy, qz = hxrd.Ang2Q.area(mu, phi, chi, theta, delta, gamma, en=setup.energy, delta=detector.offsets)
+        theta, phi, delta, gamma = bin_parameters(binning=binning[0], nb_frames=nb_frames,
+                                                  params=[theta, phi, delta, gamma])
+        qx, qy, qz = hxrd.Ang2Q.area(theta, phi, delta, gamma, en=setup.energy, delta=detector.offsets)
 
     else:
         raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
