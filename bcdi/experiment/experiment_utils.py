@@ -687,13 +687,16 @@ class Diffractometer(object):
         # find which angles were scanned
         candidate_circles = set()
         for idx in range(nb_circles):
-            if not isinstance(angles[idx], Real):  # not a number, hence a tuple/list/ndarray (cannot be None)
+            if not isinstance(angles[idx], Real) and len(angles[idx]) > 1:
+                # not a number, hence a tuple/list/ndarray (cannot be None)
                 candidate_circles.add(idx)
 
         # exclude arrays with identical values
+        wrong_motors = []
         for idx in candidate_circles:
             if (angles[idx][1:]-angles[idx][:-1]).mean() < 0.0001:  # motor not scanned, noise in the position readings
-                candidate_circles.remove(idx)
+                wrong_motors.append(idx)
+        candidate_circles.difference_update(wrong_motors)
 
         # check that there is only one candidate remaining
         if len(candidate_circles) > 1:
