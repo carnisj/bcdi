@@ -834,8 +834,10 @@ class DiffractometerCRISTAL(Diffractometer):
             group_key = list(logfile.keys())[0]
             energy = self.cristal_load_motor(datafile=logfile, root='/' + group_key + '/CRISTAL/',
                                              actuator_name='Monochromator', field_name='energy') * 1000  # in eV
-            print(f'Overriding the defined energy of {setup.energy} by the value in the datafile {energy}')
-            setup.energy = energy
+            if abs(energy - setup.energy) > 1:  # difference larger than 1 eV
+                print(f'\nWarning: user-defined energy = {setup.energy:.1f} eV different '
+                      f'from the energy recorded in the datafile = {energy[0]:.1f} eV\n')
+
             scanned_motor = self.cristal_load_motor(datafile=logfile, root='/' + group_key, actuator_name='scan_data',
                                                     field_name=setup.actuators.get('rocking_angle', 'actuator_1_1'))
             if frames_logical is not None:
