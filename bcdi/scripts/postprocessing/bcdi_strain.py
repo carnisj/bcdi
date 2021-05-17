@@ -21,7 +21,7 @@ import os
 import tkinter as tk
 import sys
 from tkinter import filedialog
-sys.path.append('D:/myscripts/bcdi/')
+sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -47,12 +47,12 @@ In arrays, when plotting the first parameter is the row (vertical axis), and the
 Therefore the data structure is data[qx, qz, qy] for reciprocal space, or data[z, y, x] for real space
 """
 
-scan = 128  # spec scan number
-root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
+scan = 76  # spec scan number
+root_folder = "C:/Users/Jerome/Documents/data/debug/data/"
 # folder of the experiment, where all scans are stored
-save_dir = root_folder + 'dataset_1_newpsf/crystal/'
+save_dir = None
 # images will be saved here, leave it to None otherwise (default to data directory's parent)
-sample_name = "PtNP1"  # "S"  # string in front of the scan number in the folder name.
+sample_name = "S"  # "S"  # string in front of the scan number in the folder name.
 comment = ''  # comment in filenames, should start with _
 #########################################################
 # parameters used when averaging several reconstruction #
@@ -62,13 +62,13 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [168, 1024, 800]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [252, 294, 360]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-phasing_binning = (1, 2, 2)  # binning factor applied during phase retrieval
+phasing_binning = (1, 1, 1)  # binning factor applied during phase retrieval
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension used in preprocessing (not phase retrieval)
-output_size = (50, 50, 50)  # (z, y, x) Fix the size of the output array, leave None to use the object size
+output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave None to use the object size
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
-fix_voxel = 5  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
+fix_voxel = 10  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
 # provided, the voxel size will be identical is all 3 directions. Set it to None to use the default voxel size
 # (calculated from q values, it will be different in each dimension).
 #############################################################
@@ -80,7 +80,7 @@ data_frame = 'detector'  # 'crystal' if the data was interpolated into the cryst
 # 'detector' if the data is still in the detector frame
 ref_axis_q = "y"  # axis along which q will be aligned (data_frame= 'detector' or 'laboratory')
 # or is already aligned (data_frame='crystal')
-save_frame = 'crystal'  # 'crystal', 'laboratory' or 'lab_flat_sample'
+save_frame = 'lab_flat_sample'  # 'crystal', 'laboratory' or 'lab_flat_sample'
 # 'crystal' to save the data with q aligned along ref_axis_q
 # 'laboratory' to save the data in the laboratory frame (experimental geometry)
 # 'lab_flat_sample' to save the data in the laboratory frame, with all sample angles rotated back to 0
@@ -98,24 +98,24 @@ centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max th
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = "P10"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
+beamline = "CRISTAL"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
-actuators = None  # {'rocking_angle': 'actuator_1_3'}
+actuators = {'rocking_angle': 'actuator_1_3'}
 # Optional dictionary that can be used to define the entries corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
-rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
+rocking_angle = "inplane"  # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
 # around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 1.83  # 1.26  # sample to detector distance in m
-energy = 8170  # x-ray energy in eV, 6eV offset at ID01
+sdd = 0.914  # 1.26  # sample to detector distance in m
+energy = 8530.0  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
-outofplane_angle = 39.0870  # detector angle in deg (rotation around x outboard): delta ID01, delta SIXS, gamma 34ID
+outofplane_angle = 21.4791  # detector angle in deg (rotation around x outboard): delta ID01, delta SIXS, gamma 34ID
 # this is the true angle, corrected for the direct beam position
-inplane_angle = -1.0270  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
+inplane_angle = 39.1504  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
 # this is the true angle, corrected for the direct beam position
-tilt_angle = 0.00783  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
-sample_offsets = (0, 0, 90, 0)  # tuple of offsets in degrees of the sample for each sample circle (outer first).
+tilt_angle = 1.2/256.  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+sample_offsets = None  # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
 specfile_name = None  # root_folder + 'alias_dict_2021.txt'
 # template for ID01: name of the spec file without '.spec'
@@ -124,10 +124,10 @@ specfile_name = None  # root_folder + 'alias_dict_2021.txt'
 ###############################
 # detector related parameters #
 ###############################
-detector = "Eiger4M"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
-template_imagefile = '_master.h5'
+template_imagefile = 'mgtx2-mgty2-mgphi-2021-03-25_14-35-59_%04d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -138,7 +138,7 @@ template_imagefile = '_master.h5'
 ###################################################
 # parameters related to the refraction correction #
 ###################################################
-correct_refraction = True  # True for correcting the phase shift due to refraction
+correct_refraction = False  # True for correcting the phase shift due to refraction
 optical_path_method = 'threshold'  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove only outer layers even if
 # the amplitude is lower than isosurface_strain inside the crystal
@@ -223,6 +223,9 @@ if fix_voxel:
         fix_voxel = (fix_voxel, fix_voxel, fix_voxel)
     assert isinstance(fix_voxel, (tuple, list)) and all(val > 0 for val in fix_voxel),\
         'fix_voxel should be a positive number or a tuple/list of three positive numbers'
+
+if actuators is not None and not isinstance(actuators, dict):
+    raise TypeError('actuators should be a dictionnary of actuator fieldnames')
 
 if data_frame not in {'detector', 'crystal', 'laboratory'}:
     raise ValueError('Uncorrect setting for "data_frame" parameter')
