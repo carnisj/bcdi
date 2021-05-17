@@ -648,6 +648,14 @@ class Diffractometer(object):
         angles[rocking_circle] = central_angle
         print(f'sample stage circles: {self._sample_circles}\nsample stage angles:  {angles}')
 
+        # check that all angles are Real, not encapsulated in a list or an array
+        for idx, angle in enumerate(angles):
+            if not isinstance(angle, Real):  # list/tuple or ndarray, cannot be None
+                if len(angle) != 1:
+                    raise ValueError('A list of angles was provided instead of a single value')
+                else:
+                    angles[idx] = angle[0]
+
         # calculate the rotation matrix
         rotation_matrix = self.rotation_matrix(stage_name='sample', angles=angles)
 
