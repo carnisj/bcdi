@@ -498,8 +498,8 @@ class Detector(object):
 
 class Diffractometer(object):
     """
-    Class for defining diffractometers. The frame used is the laboratory frame with the CXI convention (z downstream,
-    y vertical up, x outboard).
+    Base class for defining diffractometers. The frame used is the laboratory frame with the CXI convention
+    (z downstream, y vertical up, x outboard).
 
     :param sample_offsets: list or tuple of three angles in degrees, corresponding to the offsets of each of the sample
      circles (the offset for the most outer circle should be at index 0).
@@ -528,7 +528,7 @@ class Diffractometer(object):
 
     @detector_circles.setter
     def detector_circles(self, value):
-        valid.valid_container(value, container_types=(tuple, list), min_length=1, item_types=str,
+        valid.valid_container(value, container_types=(tuple, list), min_length=0, item_types=str,
                               name='Diffractometer.detector_circles')
         if any(val not in self.valid_circles for val in value):
             raise ValueError(f'Invalid circle value encountered in detector_circles, valid are {self.valid_circles}')
@@ -545,7 +545,7 @@ class Diffractometer(object):
 
     @sample_circles.setter
     def sample_circles(self, value):
-        valid.valid_container(value, container_types=(tuple, list), min_length=1, item_types=str,
+        valid.valid_container(value, container_types=(tuple, list), min_length=0, item_types=str,
                               name='Diffractometer.sample_circles')
         if any(val not in self.valid_circles for val in value):
             raise ValueError(f'Invalid circle value encountered in sample_circles, valid are {self.valid_circles}')
@@ -3774,7 +3774,7 @@ class SetupPreprocessing(object):
 
 
 if __name__ == "__main__":
-    diff = Diffractometer()
+    diff = Diffractometer(None)
     print(diff._sample_circles, diff._detector_circles)
     diff.add_circle('sample', index=0, circle='x-')
     diff.add_circle('detector', index=0, circle='y-')
