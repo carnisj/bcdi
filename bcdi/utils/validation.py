@@ -43,7 +43,7 @@ def valid_container(obj, container_types, length=None, min_length=None, max_leng
     if length is not None:
         if not isinstance(length, int):
             raise TypeError('length should be an integer')
-        if length <= 0:
+        if length < 0:
             raise ValueError('length should be a strictly positive integer')
 
     if min_length is not None:

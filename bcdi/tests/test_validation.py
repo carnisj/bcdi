@@ -70,7 +70,7 @@ class TestValidContainer(unittest.TestCase):
         self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=list, length=-2)
 
     def test_validcontainer_container_length_null(self):
-        self.assertRaises(ValueError, valid.valid_container, obj=list(), container_types=list, length=0)
+        self.assertTrue(valid.valid_container(obj=list(), container_types=list, length=0))
 
     def test_validcontainer_container_string_length(self):
         self.assertTrue(valid.valid_container('test', container_types=str, length=4))
