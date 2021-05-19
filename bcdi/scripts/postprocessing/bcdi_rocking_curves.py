@@ -191,8 +191,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                                                              flatfield=flatfield, hotpixels=hotpix_array,
                                                              normalize=True, debugging=debug)
 
-    tilt, grazing, inplane, outofplane = pru.goniometer_values(frames_logical=frames_logical, logfile=logfile,
-                                                               scan_number=scan_nb, setup=setup)
+    tilt, grazing, inplane, outofplane = setup.diffractometer.goniometer_values(frames_logical=frames_logical,
+                                                                                logfile=logfile, scan_number=scan_nb,
+                                                                                setup=setup)
 
     nbz, nby, nbx = data.shape
     if peak_method == 'max':

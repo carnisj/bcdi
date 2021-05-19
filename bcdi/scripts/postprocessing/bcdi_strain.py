@@ -305,7 +305,7 @@ logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, r
 ############################################################################################################
 # get the motor position of goniometer circles which are below the rocking angle (e.g., chi for eta/omega) #
 ############################################################################################################
-_, setup.grazing_angle, _, _ = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup)
+_, setup.grazing_angle, _, _ = setup.diffractometer.goniometer_values(logfile=logfile, scan_number=scan, setup=setup)
 
 ###################
 # print instances #
@@ -715,7 +715,8 @@ if save_frame in {'laboratory', 'lab_flat_sample'}:
 if save_frame == 'lab_flat_sample':
     comment = comment + '_flat'
     print('\nSending sample stage circles to 0')
-    sample_angles = pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup, stage_name='sample')
+    sample_angles = setup.diffractometer.goniometer_values(logfile=logfile, scan_number=scan, setup=setup,
+                                                           stage_name='sample')
     (amp, phase, strain), q_final =\
         setup.diffractometer.flatten_sample(arrays=(amp, phase, strain), voxel_size=voxel_size,
                                             angles=sample_angles, q_com=q_lab[::-1],  # q_com needs to be in xyz order

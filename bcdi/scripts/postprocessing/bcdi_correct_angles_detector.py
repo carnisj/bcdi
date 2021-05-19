@@ -173,7 +173,8 @@ if high_threshold != 0:
 # load releavant motor values #
 ###############################
 tilt_values, setup.grazing_angle, setup.inplane_angle, setup.outofplane_angle = \
-    pru.goniometer_values(logfile=logfile, scan_number=scan, setup=setup, frames_logical=frames_logical)
+    setup.diffractometer.goniometer_values(logfile=logfile, scan_number=scan, setup=setup,
+                                           frames_logical=frames_logical)
 setup.tilt_angle = (tilt_values[1:] - tilt_values[0:-1]).mean()
 
 nb_frames = len(tilt_values)

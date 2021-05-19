@@ -461,7 +461,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             comment += '_lin'
             # load the goniometer positions needed in the calculation of the transformation matrix
             tilt_angle, setup.grazing_angle, inplane, outofplane =\
-                pru.goniometer_values(logfile=logfile, scan_number=scan_nb, setup=setup, follow_bragg=follow_bragg)
+                setup.diffractometer.goniometer_values(logfile=logfile, scan_number=scan_nb, setup=setup,
+                                                       follow_bragg=follow_bragg)
             setup.tilt_angle = (tilt_angle[1:] - tilt_angle[0:-1]).mean()
             # override detector motor positions if the corrected values (taking into account the direct beam position)
             # are provided by the user
