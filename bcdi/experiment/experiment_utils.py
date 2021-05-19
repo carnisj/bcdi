@@ -726,6 +726,24 @@ class Diffractometer(object):
                                  f"with the parameter '{rocking_angle}'")
         return index_circle
 
+    def goniometer_values(self, **kwargs):
+        """
+        This method is beamline dependent and should be implemented in the child classes.
+
+        :param kwargs: beamline_specific parameters
+        :return: a list of motor positions
+        """
+        raise NotImplementedError("This method is beamline specific and must be implemented in the child class")
+
+    def motor_positions(self, **kwargs):
+        """
+        This method is beamline dependent and should be implemented in the child classes.
+
+        :param kwargs: beamline_specific parameters
+        :return: the diffractometer motors positions for the particular setup.
+        """
+        raise NotImplementedError("This method is beamline specific and must be implemented in the child class")
+
     def remove_circle(self, stage_name, index):
         """
         Remove the circle at index from the list of sample circles.
