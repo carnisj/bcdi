@@ -1,7 +1,7 @@
 Version 0.1.2
 -------------
 
-* Refactor: use a global context.py for managing relative imports
+* Refactor: remove circular imports from modules
 
 * Refactor: move crop_pad, bin_data and gaussian_window functions from postprocessing_utils.py to another module
   in order to avoid circular imports
