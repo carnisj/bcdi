@@ -14,7 +14,6 @@ import numpy as np
 import os
 import pathlib
 from scipy.interpolate import RegularGridInterpolator
-import sys
 import warnings
 from ..context import gu, util, valid
 
