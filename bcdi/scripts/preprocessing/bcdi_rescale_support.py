@@ -398,16 +398,16 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
             assert len(qx) >= pynx_shape[0], 'qx declared binned, its length should be >= pynx_shape[0]'
             assert len(qy) >= pynx_shape[2], 'qy declared binned, its length should be >= pynx_shape[2]'
             assert len(qz) >= pynx_shape[1], 'qz declared binned, its length should be >= pynx_shape[1]'
-            qx = pu.crop_pad_1d(qx, pynx_shape[0])  # qx along z
-            qy = pu.crop_pad_1d(qy, pynx_shape[2])  # qy along x
-            qz = pu.crop_pad_1d(qz, pynx_shape[1])  # qz along y
+            qx = util.crop_pad_1d(qx, pynx_shape[0])  # qx along z
+            qy = util.crop_pad_1d(qy, pynx_shape[2])  # qy along x
+            qz = util.crop_pad_1d(qz, pynx_shape[1])  # qz along y
         else:
             assert len(qx) >= unbinned_shape[0], 'qx declared unbinned, its length should be >= unbinned_shape[0]'
             assert len(qy) >= unbinned_shape[2], 'qy declared unbinned, its length should be >= unbinned_shape[2]'
             assert len(qz) >= unbinned_shape[1], 'qz declared unbinned, its length should be >= unbinned_shape[1]'
-            qx = pu.crop_pad_1d(qx, unbinned_shape[0])  # qx along z
-            qy = pu.crop_pad_1d(qy, unbinned_shape[2])  # qy along x
-            qz = pu.crop_pad_1d(qz, unbinned_shape[1])  # qz along y
+            qx = util.crop_pad_1d(qx, unbinned_shape[0])  # qx along z
+            qy = util.crop_pad_1d(qy, unbinned_shape[2])  # qy along x
+            qz = util.crop_pad_1d(qz, unbinned_shape[1])  # qz along y
 
         print('Length(q_original)=', len(qx), len(qz), len(qy), '(qx, qz, qy)')
         voxelsize_z = 2 * np.pi / (qx.max() - qx.min())  # qx along z
@@ -430,9 +430,9 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
             assert len(newqx) >= output_shape[0], 'newqx declared binned, its length should be >= output_shape[0]'
             assert len(newqy) >= output_shape[2], 'newqy declared binned, its length should be >= output_shape[2]'
             assert len(newqz) >= output_shape[1], 'newqz declared binned, its length should be >= output_shape[1]'
-            newqx = pu.crop_pad_1d(newqx, output_shape[0])  # qx along z
-            newqy = pu.crop_pad_1d(newqy, output_shape[2])  # qy along x
-            newqz = pu.crop_pad_1d(newqz, output_shape[1])  # qz along y
+            newqx = util.crop_pad_1d(newqx, output_shape[0])  # qx along z
+            newqy = util.crop_pad_1d(newqy, output_shape[2])  # qy along x
+            newqz = util.crop_pad_1d(newqz, output_shape[1])  # qz along y
 
         print('Length(q_output)=', len(newqx), len(newqz), len(newqy), '(qx, qz, qy)')
         newvoxelsize_z = 2 * np.pi / (newqx.max() - newqx.min())  # qx along z

@@ -189,6 +189,48 @@ def crop_pad_2d(array, output_shape, pad_value=0, pad_start=None, crop_center=No
     return newobj
 
 
+def crop_pad_1d(array, output_length, pad_value=0, pad_start=None, crop_center=None, extrapolate=False):
+    """
+    Crop or pad the 2D object depending on output_shape.
+
+    :param array: 1D complex array to be padded
+    :param output_length: int desired output length
+    :param pad_value: will pad using this value
+    :param pad_start: for padding, position in pixel where the original array should be placed.
+     If None, padding is symmetric
+    :param crop_center: for cropping, position in pixels in the original array of the center of the ourput
+     array. If None, it will be set to the center of the original array
+    :param extrapolate: set to True to extrapolate using the current spacing (supposed constant)
+    :return: myobj cropped or padded
+    """
+    if array.ndim != 1:
+        raise ValueError('array should be 1D')
+
+    nbx = array.shape[0]
+    newx = output_length
+
+    if pad_start is None:
+        pad_start = (newx - nbx) // 2
+
+    if crop_center is None:
+        crop_center = nbx//2
+
+    if newx >= nbx:  # pad
+        if not extrapolate:
+            newobj = np.ones(output_length, dtype=array.dtype) * pad_value
+            newobj[pad_start:pad_start+nbx] = array
+        else:
+            spacing = array[1] - array[0]
+            pad_start = array[0] - ((newx - nbx) // 2) * spacing
+            newobj = pad_start + np.arange(newx) * spacing
+    else:  # crop
+        assert crop_center - output_length // 2 >= 0, 'crop_center incompatible with output_length'
+        assert crop_center + output_length // 2 <= nbx, 'crop_center incompatible with output_length'
+        newobj = array[crop_center - newx//2:crop_center + newx//2 + newx % 2]
+
+    return newobj
+
+
 def decode_json(dct):
     """
     Function used as the parameter object_hook in json.load function, supporting various types

@@ -173,9 +173,9 @@ if load_qvalues:
     assert (*qx.shape, *qz.shape, *qy.shape) == data.shape, 'q values and data shape are incompatible'
 
     # crop the q values to the region of interest used in plots
-    qx = pu.crop_pad_1d(array=qx, output_length=plot_range[0] + plot_range[1], crop_center=zcom)
-    qz = pu.crop_pad_1d(array=qz, output_length=plot_range[2] + plot_range[3], crop_center=ycom)
-    qy = pu.crop_pad_1d(array=qy, output_length=plot_range[4] + plot_range[5], crop_center=xcom)
+    qx = util.crop_pad_1d(array=qx, output_length=plot_range[0] + plot_range[1], crop_center=zcom)
+    qz = util.crop_pad_1d(array=qz, output_length=plot_range[2] + plot_range[3], crop_center=ycom)
+    qy = util.crop_pad_1d(array=qy, output_length=plot_range[4] + plot_range[5], crop_center=xcom)
     print('Cropped: qx shape:', qx.shape, 'qz shape:', qz.shape, 'qy shape:', qy.shape)
 
     q_range = (qx.min(), qx.max(), qz.min(), qz.max(), qy.min(), qy.max())

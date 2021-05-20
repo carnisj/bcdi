@@ -105,9 +105,9 @@ if load_qvalues:
     qx = q_values['qx']  # 1D array
     qy = q_values['qy']  # 1D array
     qz = q_values['qz']  # 1D array
-    qx = pu.crop_pad_1d(qx, roi_size[0], crop_center=crop_center[0])  # qx along z
-    qy = pu.crop_pad_1d(qy, roi_size[2], crop_center=crop_center[2])  # qy along x
-    qz = pu.crop_pad_1d(qz, roi_size[1], crop_center=crop_center[1])  # qz along y
+    qx = util.crop_pad_1d(qx, roi_size[0], crop_center=crop_center[0])  # qx along z
+    qy = util.crop_pad_1d(qy, roi_size[2], crop_center=crop_center[2])  # qy along x
+    qz = util.crop_pad_1d(qz, roi_size[1], crop_center=crop_center[1])  # qz along y
 
     numz, numy, numx = len(qx), len(qz), len(qy)
     qx = qx[:numz - (numz % binning[0]):binning[0]]  # along z downstream

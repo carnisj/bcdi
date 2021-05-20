@@ -199,7 +199,7 @@ width_length = min(width_z.size, width_y.size, width_x.size)
 linecuts = np.empty((6, width_length))  # rows 0:3 for the widths, rows 3:6 for the corresponding cuts
 idx = 0
 for key in linecuts_dict.keys():  # order is maintained in OrderedDict
-    linecuts[idx, :] = pu.crop_pad_1d(linecuts_dict[key], output_length=width_length)  # implicit crop from the center
+    linecuts[idx, :] = util.crop_pad_1d(linecuts_dict[key], output_length=width_length)  # implicit crop from the center
     idx += 1
 
 # create nb_fit sets of parameters, one per data set
