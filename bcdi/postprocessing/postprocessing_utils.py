@@ -17,12 +17,7 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.stats import multivariate_normal
 from scipy.stats import pearsonr
 import gc
-import sys
-sys.path.append('D:/myscripts/bcdi/')
-import bcdi.graph.graph_utils as gu
-import bcdi.utils.utilities as util
-from bcdi.utils import image_registration as reg
-import bcdi.utils.validation as valid
+from ..context import gu, reg, util, valid
 
 
 def align_obj(reference_obj, obj, method='modulus', support_threshold=None, precision=1000, debugging=False):

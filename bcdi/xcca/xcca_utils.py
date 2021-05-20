@@ -7,11 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-import sys
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
-sys.path.append('D:/myscripts/bcdi/')
-import bcdi.graph.graph_utils as gu
-import bcdi.utils.utilities as util
+from ..context import gu, util
 
 
 def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debugging=False):

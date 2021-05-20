@@ -13,18 +13,14 @@ import os
 from collections import OrderedDict
 import ctypes
 import h5py
-from numbers import Number, Real
+from numbers import Real
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
 from matplotlib import pyplot as plt
-import sys
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
-sys.path.append('D:/myscripts/bcdi/')
-import bcdi.graph.graph_utils as gu
-import bcdi.utils.validation as valid
+from ..context import gu, valid
 
 
 class CustomEncoder(json.JSONEncoder):

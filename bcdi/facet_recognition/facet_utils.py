@@ -20,10 +20,7 @@ from matplotlib import pyplot as plt
 from matplotlib import patches as patches
 import gc
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
-import bcdi.graph.graph_utils as gu
-import bcdi.utils.utilities as util
-import bcdi.utils.validation as valid
+from ..context import gu, util, valid
 
 colormap = gu.Colormap()
 default_cmap = colormap.cmap

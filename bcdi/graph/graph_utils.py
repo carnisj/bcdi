@@ -21,9 +21,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
 from operator import itemgetter
-import sys
-sys.path.append('D:/myscripts/bcdi/')
-import bcdi.utils.validation as valid
+from ..context import valid
 
 # define a colormap
 color_dict = {'red':  ((0.0, 1.0, 1.0),

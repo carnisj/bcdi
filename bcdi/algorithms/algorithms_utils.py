@@ -11,10 +11,7 @@ from numbers import Real
 import numpy as np
 from scipy.signal import fftconvolve, convolve
 import sys
-sys.path.append('D:/myscripts/bcdi/')
-import bcdi.utils.utilities as util
-import bcdi.graph.graph_utils as gu
-import bcdi.utils.validation as valid
+from ..context import gu, util, valid
 
 
 def blind_deconvolution_rl(blurred_object, perfect_object, psf, nb_cycles=10, sub_iterations=10, update_psf_first=True,

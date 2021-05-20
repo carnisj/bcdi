@@ -26,13 +26,7 @@ import time
 import tkinter as tk
 from tkinter import filedialog
 import xrayutilities as xu
-sys.path.append('D:/myscripts/bcdi/')
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
-import bcdi.graph.graph_utils as gu
-import bcdi.postprocessing.postprocessing_utils as pu
-from bcdi.utils import image_registration as reg
-import bcdi.utils.utilities as util
-import bcdi.utils.validation as valid
+from ..context import gu, reg, util, valid
 
 
 def align_diffpattern(reference_data, data, mask=None, method='registration', combining_method='rgi',
