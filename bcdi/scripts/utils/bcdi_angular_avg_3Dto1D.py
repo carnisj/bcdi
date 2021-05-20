@@ -62,7 +62,7 @@ root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the diffraction pattern",
                                        filetypes=[("NPZ", "*.npz")])
 npzfile = np.load(file_path)
-diff_pattern = pu.bin_data(npzfile[list(npzfile.files)[0]], (bin_factor, bin_factor, bin_factor),
+diff_pattern = util.bin_data(npzfile[list(npzfile.files)[0]], (bin_factor, bin_factor, bin_factor),
                            debugging=False)
 diff_pattern[diff_pattern < threshold] = 0
 nz, ny, nx = diff_pattern.shape
@@ -79,7 +79,7 @@ if load_mask:
     file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the mask",
                                            filetypes=[("NPZ", "*.npz")])
     npzfile = np.load(file_path)
-    mask = pu.bin_data(npzfile[list(npzfile.files)[0]], (bin_factor, bin_factor, bin_factor), debugging=False)
+    mask = util.bin_data(npzfile[list(npzfile.files)[0]], (bin_factor, bin_factor, bin_factor), debugging=False)
 else:
     mask = None
 #######################

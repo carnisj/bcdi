@@ -199,8 +199,8 @@ elif len(crop_roi) != 0:
 # update also the detector pixel sizes to take into account the binning
 detector.binning = phasing_binning
 print('Pixel sizes after phasing_binning (vertical, horizontal): ', detector.pixelsize_y, detector.pixelsize_x, '(m)')
-slice_2D = pu.bin_data(array=slice_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False)
-mask_2D = pu.bin_data(array=mask_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False)
+slice_2D = util.bin_data(array=slice_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False)
+mask_2D = util.bin_data(array=mask_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False)
 
 slice_2D[np.nonzero(mask_2D)] = 0
 
@@ -224,7 +224,7 @@ diff_pattern = diff_pattern[:, crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
 
 # bin the diffraction pattern to compensate the "rebin" option used in PyNX.
 # the detector pixel sizes where already updated above.
-diff_pattern = pu.bin_data(array=diff_pattern, binning=phasing_binning, debugging=False)
+diff_pattern = util.bin_data(array=diff_pattern, binning=phasing_binning, debugging=False)
 
 numz, numy, numx = diff_pattern.shape
 print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())

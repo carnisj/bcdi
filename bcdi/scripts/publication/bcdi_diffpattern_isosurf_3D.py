@@ -106,7 +106,7 @@ qz = q_values['qz']  # 1D array
 qx = qx[:nz - (nz % binning[0]):binning[0]]
 qz = qz[:ny - (ny % binning[1]):binning[1]]
 qy = qy[:nx - (nx % binning[2]):binning[2]]
-data = pu.bin_data(data, (binning[0], binning[1], binning[2]), debugging=False)
+data = util.bin_data(data, (binning[0], binning[1], binning[2]), debugging=False)
 print('Diffraction data shape after binning', data.shape)
 nz, ny, nx = data.shape
 

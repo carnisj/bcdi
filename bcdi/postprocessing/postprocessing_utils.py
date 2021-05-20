@@ -285,52 +285,6 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
     return avg_obj, avg_flag
 
 
-def bin_data(array, binning, debugging=False):
-    """
-    Rebin a 1, 2 or 3-dimensional array. If its dimensions are not a multiple of binning, the array will be cropped.
-    Adapted from PyNX.
-
-    :param array: the array to resize
-    :param binning: the rebin factor - pixels will be summed by groups of binning x binning (x binning). This can
-     also be a tuple/list of rebin values along each axis, e.g. binning=(4,1,2) for a 3D array
-    :param debugging: boolean, True to see plots
-    :return: the binned array
-    """
-    ndim = array.ndim
-    if isinstance(binning, int):
-        binning = [binning] * ndim
-    else:
-        assert ndim == len(binning), "Rebin: number of dimensions does not agree with number of rebin values:" + str(
-            binning)
-
-    if ndim == 1:
-        nx = len(array)
-        array = array[:nx - (nx % binning[0])]
-        sh = nx // binning[0], binning[0]
-        newarray = array.reshape(sh).sum(axis=1)
-    elif ndim == 2:
-        ny, nx = array.shape
-        array = array[:ny - (ny % binning[0]), :nx - (nx % binning[1])]
-        sh = ny // binning[0], binning[0], nx // binning[1], binning[1]
-        newarray = array.reshape(sh).sum(axis=(1, 3))
-    elif ndim == 3:
-        nz, ny, nx = array.shape
-        array = array[:nz - (nz % binning[0]), :ny - (ny % binning[1]), :nx - (nx % binning[2])]
-        sh = nz // binning[0], binning[0], ny // binning[1], binning[1], nx // binning[2], binning[2]
-        newarray = array.reshape(sh).sum(axis=(1, 3, 5))
-    else:
-        raise ValueError('Array should be 1D, 2D, or 3D')
-
-    if debugging:
-        print('array shape after cropping but before binning:', array.shape)
-        print('array shape after binning:', newarray.shape)
-        gu.combined_plots(tuple_array=(array, newarray), tuple_sum_frames=False, tuple_sum_axis=(1, 1),
-                          tuple_colorbar=True, tuple_width_v=None, tuple_width_h=None, tuple_vmin=0,
-                          tuple_vmax=np.nan, tuple_title=('array', 'binned array'),
-                          tuple_scale='log', reciprocal_space=True)
-    return newarray
-
-
 def blackman_window(shape, normalization=1):
     """
     Create a 3d Blackman window based on shape.

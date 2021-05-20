@@ -1958,8 +1958,8 @@ def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpix
     if (detector.binning[1] != 1) or (detector.binning[2] != 1):
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        rawdata = pu.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
-        rawmask = pu.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        rawdata = util.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        rawmask = util.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
         rawmask[np.nonzero(rawmask)] = 1
 
     return rawdata, rawmask, frames_logical, monitor
@@ -2043,8 +2043,8 @@ def load_cdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixe
     if (detector.binning[1] != 1) or (detector.binning[2] != 1):
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        rawdata = pu.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
-        rawmask = pu.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        rawdata = util.bin_data(rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False)
+        rawmask = util.bin_data(rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False)
         rawmask[np.nonzero(rawmask)] = 1
 
     return rawdata, rawmask, frames_logical, monitor
@@ -2113,14 +2113,14 @@ def load_cristal_data(logfile, setup, detector, flatfield=None, hotpixels=None, 
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
         if bin_during_loading:
-            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
+            ccdraw = util.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
     mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
-        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d = util.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
@@ -2241,14 +2241,14 @@ def load_custom_data(custom_images, custom_monitor, normalize, beamline, detecto
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
         if bin_during_loading:
-            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
+            ccdraw = util.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
     mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
-        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d = util.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
@@ -2501,14 +2501,14 @@ def load_id01_data(logfile, scan_number, detector, flatfield=None, hotpixels=Non
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
         if bin_during_loading:
-            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
+            ccdraw = util.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
     mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
-        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d = util.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
@@ -2759,7 +2759,7 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
                     series_monitor.append(temp_mon)
                 ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
                 if bin_during_loading:
-                    ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
+                    ccdraw = util.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
                 series_data.append(ccdraw)
                 if not is_series:
                     sys.stdout.write('\rLoading frame {:d}'.format(start_index+idx+1))
@@ -2786,7 +2786,7 @@ def load_p10_data(logfile, detector, flatfield=None, hotpixels=None, background=
     print('')
     mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
-        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d = util.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
@@ -2900,14 +2900,14 @@ def load_sixs_data(logfile, beamline, detector, flatfield=None, hotpixels=None, 
             monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
         ccdraw = ccdraw[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
         if bin_during_loading:
-            ccdraw = pu.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
+            ccdraw = util.bin_data(ccdraw, (detector.binning[1], detector.binning[2]), debugging=False)
         data[idx, :, :] = ccdraw
         sys.stdout.write('\rLoading frame {:d}'.format(idx + 1))
         sys.stdout.flush()
 
     mask_2d = mask_2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
     if bin_during_loading:
-        mask_2d = pu.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
+        mask_2d = util.bin_data(mask_2d, (detector.binning[1], detector.binning[2]), debugging=False)
         mask_2d[np.nonzero(mask_2d)] = 1
     data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
     mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
@@ -3515,8 +3515,8 @@ def reload_bcdi_data(data, mask, logfile, scan_number, detector, setup, normaliz
     if (detector.binning[1] != 1) or (detector.binning[2] != 1):
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = pu.bin_data(data, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
-        mask = pu.bin_data(mask, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
+        data = util.bin_data(data, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
+        mask = util.bin_data(mask, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
         mask[np.nonzero(mask)] = 1
 
     return data, mask, frames_logical, monitor
@@ -3594,8 +3594,8 @@ def reload_cdi_data(data, mask, logfile, scan_number, detector, setup, normalize
     if (detector.binning[1] != 1) or (detector.binning[2] != 1):
         print('Binning the data: detector vertical axis by', detector.binning[1],
               ', detector horizontal axis by', detector.binning[2])
-        data = pu.bin_data(data, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
-        mask = pu.bin_data(mask, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
+        data = util.bin_data(data, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
+        mask = util.bin_data(mask, (1, detector.binning[1], detector.binning[2]), debugging=debugging)
         mask[np.nonzero(mask)] = 1
 
     return data, mask, frames_logical, monitor

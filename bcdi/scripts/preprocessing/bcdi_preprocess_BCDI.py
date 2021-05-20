@@ -517,8 +517,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             # bin data and mask if needed
             if (detector.binning[0] != 1) or (detector.binning[1] != 1) or (detector.binning[2] != 1):
                 print('Binning the reloaded orthogonal data by', detector.binning)
-                data = pu.bin_data(data, binning=detector.binning, debugging=False)
-                mask = pu.bin_data(mask, binning=detector.binning, debugging=False)
+                data = util.bin_data(data, binning=detector.binning, debugging=False)
+                mask = util.bin_data(mask, binning=detector.binning, debugging=False)
                 mask[np.nonzero(mask)] = 1
                 if len(q_values) != 0:
                     qx = q_values[0]
@@ -916,8 +916,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     # bin the stacking axis if needed, the detector plane was already binned when loading the data #
     ################################################################################################
     if detector.binning[0] != 1 and not reload_orthogonal:  # data was already binned for reload_orthogonal
-        data = pu.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
-        mask = pu.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
+        data = util.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
+        mask = util.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
         if not use_rawdata and len(q_values) != 0:
             numz = len(qx)

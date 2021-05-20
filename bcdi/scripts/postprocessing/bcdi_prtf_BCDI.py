@@ -277,8 +277,8 @@ if crop_roi is not None:
 # update also the detector pixel sizes to take into account the binning
 detector.binning = phasing_binning
 print('Pixel sizes after phasing_binning (vertical, horizontal): ', detector.pixelsize_y, detector.pixelsize_x, '(m)')
-diff_pattern = pu.bin_data(array=diff_pattern, binning=phasing_binning, debugging=False)
-mask = pu.bin_data(array=mask, binning=phasing_binning, debugging=False)
+diff_pattern = util.bin_data(array=diff_pattern, binning=phasing_binning, debugging=False)
+mask = util.bin_data(array=mask, binning=phasing_binning, debugging=False)
 
 numz, numy, numx = diff_pattern.shape  # this shape will be used for the calculation of q values
 print(f'\nMeasured data shape = {numz}, {numy}, {numx}, Max(measured amplitude)={np.sqrt(diff_pattern).max():.1f}')

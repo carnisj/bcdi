@@ -113,8 +113,8 @@ qy = npzfile['qy']  # outboard
 # bin data and q values if needed #
 ###################################
 if any(bin_factor != 1 for bin_factor in binning):
-    diff_pattern = pu.bin_data(array=diff_pattern, binning=binning, debugging=False)
-    mask = pu.bin_data(array=mask, binning=binning, debugging=False)
+    diff_pattern = util.bin_data(array=diff_pattern, binning=binning, debugging=False)
+    mask = util.bin_data(array=mask, binning=binning, debugging=False)
     mask[np.nonzero(mask)] = 1
     qx = qx[::binning[0]]
     qy = qy[::binning[1]]
