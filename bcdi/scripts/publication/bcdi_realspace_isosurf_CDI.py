@@ -99,11 +99,11 @@ if axis_outofplane is not None or axis_inplane is not None:
     print("Cropped/padded data size before rotating: (", numz, ',', numy, ',', numx, ')')
     print('Rotating object to have the crystallographic axes along array axes')
     if axis_outofplane is not None:
-        obj = pu.rotate_crystal(array=obj, axis_to_align=axis_outofplane, reference_axis=np.array([0, 1, 0]),
-                                debugging=True)  # out of plane alignement
+        obj = util.rotate_crystal(array=obj, axis_to_align=axis_outofplane, reference_axis=np.array([0, 1, 0]),
+                                  debugging=True)  # out of plane alignement
     if axis_inplane is not None:
-        obj = pu.rotate_crystal(array=obj, axis_to_align=axis_inplane, reference_axis=np.array([1, 0, 0]),
-                                debugging=True)  # inplane alignement
+        obj = util.rotate_crystal(array=obj, axis_to_align=axis_inplane, reference_axis=np.array([1, 0, 0]),
+                                  debugging=True)  # inplane alignement
 
 #################################################
 #  pad array to obtain the desired field of view #

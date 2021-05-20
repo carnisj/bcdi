@@ -103,8 +103,8 @@ if align_axes:
     print('Rotating object to have the crystallographic axes along array axes')
     for axis, ref_axis in zip(align_axes, ref_axes):
         print('axis to align, reference axis:', axis, ref_axis)
-        obj = pu.rotate_crystal(array=obj, axis_to_align=axis, reference_axis=ref_axis,
-                                debugging=True)  # out of plane alignement
+        obj = util.rotate_crystal(array=obj, axis_to_align=axis, reference_axis=ref_axis,
+                                  debugging=True)  # out of plane alignement
 
 ###################
 # apply threshold #

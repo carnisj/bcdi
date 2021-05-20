@@ -587,10 +587,10 @@ else:  # data already orthogonalized using xrayutilities or the linearized trans
     if data_frame == 'laboratory':  # the object must be rotated into the crystal frame before the strain calculation
         print('Rotating the object in the crystal frame for the strain calculation')
 
-        amp, phase = pu.rotate_crystal(arrays=(abs(obj_ortho), np.angle(obj_ortho)), is_orthogonal=True,
-                                       reciprocal_space=False, voxel_size=voxel_size, debugging=(True, False),
-                                       axis_to_align=q_lab[::-1], reference_axis=axis_to_array_xyz[ref_axis_q],
-                                       title=('amp', 'phase'))
+        amp, phase = util.rotate_crystal(arrays=(abs(obj_ortho), np.angle(obj_ortho)), is_orthogonal=True,
+                                         reciprocal_space=False, voxel_size=voxel_size, debugging=(True, False),
+                                         axis_to_align=q_lab[::-1], reference_axis=axis_to_array_xyz[ref_axis_q],
+                                         title=('amp', 'phase'))
 
         obj_ortho = amp * np.exp(1j * phase)  # here the phase is again wrapped in [-pi pi[
         del amp, phase
@@ -705,10 +705,10 @@ if save_frame in {'laboratory', 'lab_flat_sample'}:
     comment = comment + '_labframe'
     print('\nRotating back the crystal in laboratory frame')
     amp, phase, strain = \
-        pu.rotate_crystal(arrays=(amp, phase, strain), axis_to_align=axis_to_array_xyz[ref_axis_q],
-                          voxel_size=voxel_size, is_orthogonal=True, reciprocal_space=False,
-                          reference_axis=[q_lab[2], q_lab[1], q_lab[0]],
-                          debugging=(True, False, False), title=('amp', 'phase', 'strain'))
+        util.rotate_crystal(arrays=(amp, phase, strain), axis_to_align=axis_to_array_xyz[ref_axis_q],
+                            voxel_size=voxel_size, is_orthogonal=True, reciprocal_space=False,
+                            reference_axis=[q_lab[2], q_lab[1], q_lab[0]],
+                            debugging=(True, False, False), title=('amp', 'phase', 'strain'))
     # q_lab is already in the laboratory frame
     q_final = q_lab
 
@@ -734,10 +734,10 @@ if save_frame == 'crystal':
 # typically this is an inplane rotation, q should stay aligned with the axis along which the strain was calculated
 if align_axis:
     print('\nRotating arrays for visualization')
-    amp, phase, strain = pu.rotate_crystal(arrays=(amp, phase, strain), reference_axis=axis_to_array_xyz[ref_axis],
-                                           axis_to_align=axis_to_align,
-                                           voxel_size=voxel_size, debugging=(True, False, False),
-                                           is_orthogonal=True, reciprocal_space=False, title=('amp', 'phase', 'strain'))
+    amp, phase, strain = util.rotate_crystal(arrays=(amp, phase, strain), reference_axis=axis_to_array_xyz[ref_axis],
+                                             axis_to_align=axis_to_align,
+                                             voxel_size=voxel_size, debugging=(True, False, False),
+                                             is_orthogonal=True, reciprocal_space=False, title=('amp', 'phase', 'strain'))
     # rotate q accordingly, vectors needs to be in xyz order
     q_final = util.rotate_vector(vectors=q_final[::-1], axis_to_align=axis_to_array_xyz[ref_axis],
                                  reference_axis=axis_to_align)
