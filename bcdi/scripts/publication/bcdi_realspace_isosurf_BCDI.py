@@ -18,6 +18,7 @@ from tkinter import filedialog
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
@@ -145,9 +146,9 @@ z_pixel_FOV = int(np.rint((field_of_view[0] / voxel_size) / 2))  # half-number o
 y_pixel_FOV = int(np.rint((field_of_view[1] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 x_pixel_FOV = int(np.rint((field_of_view[2] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 new_shape = [max(numz, 2*z_pixel_FOV), max(numy, 2*y_pixel_FOV), max(numx, 2*x_pixel_FOV)]
-amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
-phase = pu.crop_pad(array=phase, output_shape=new_shape, debugging=False)
-strain = pu.crop_pad(array=strain, output_shape=new_shape, debugging=False)
+amp = util.crop_pad(array=amp, output_shape=new_shape, debugging=False)
+phase = util.crop_pad(array=phase, output_shape=new_shape, debugging=False)
+strain = util.crop_pad(array=strain, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
 print(f"Cropped/padded data size: ({numz}, {numy}, {numx})")
 

@@ -98,7 +98,7 @@ nbz, nby, nbx = obj.shape
 if align_axes:
     assert len(align_axes) == len(ref_axes), 'align_axes and ref_axes should have the same length'
     new_shape = [int(1.2*nbz), int(1.2*nby), int(1.2*nbx)]
-    obj = pu.crop_pad(array=obj, output_shape=new_shape, debugging=False)
+    obj = util.crop_pad(array=obj, output_shape=new_shape, debugging=False)
     nbz, nby, nbx = obj.shape
     print('Rotating object to have the crystallographic axes along array axes')
     for axis, ref_axis in zip(align_axes, ref_axes):
@@ -117,7 +117,7 @@ if not np.isnan(threshold):
 #############
 if len(roi) == 6:
     print('Crop/pad the reconstruction to accommodate the ROI')
-    obj = pu.crop_pad(array=obj, output_shape=[roi[1]-roi[0], roi[3]-roi[2], roi[5]-roi[4]])
+    obj = util.crop_pad(array=obj, output_shape=[roi[1]-roi[0], roi[3]-roi[2], roi[5]-roi[4]])
 
 #################
 # movie along z #

@@ -47,7 +47,7 @@ def align_obj(reference_obj, obj, method='modulus', support_threshold=None, prec
         print('reference_obj and obj do not have the same shape\n'
               ' - reference_obj is ', reference_obj.shape, ' - obj is ', obj.shape)
         print('crop/pad obj')
-        obj = crop_pad(array=obj, output_shape=reference_obj.shape)
+        obj = util.crop_pad(array=obj, output_shape=reference_obj.shape)
 
     # calculate the shift between the two arrays
     if method == 'modulus':
@@ -113,7 +113,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     # calculate the diffraction pattern of the reconstructed object
     nb_z, nb_y, nb_x = amp.shape
     nbz, nby, nbx = initial_shape
-    myobj = crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx))
+    myobj = util.crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx))
     del amp, phase
     gc.collect()
     if debugging:
@@ -172,7 +172,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     if debugging:
         gu.multislices_plot(array=abs(myobj), sum_frames=False, plot_colorbar=True, title='modulus after apodization',
                             reciprocal_space=False, is_orthogonal=is_orthogonal, scale='linear')
-    myobj = crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
+    myobj = util.crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
     return abs(myobj), np.angle(myobj)
 
 
@@ -1479,7 +1479,7 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
     if method == 'upsampling':
         nbz, nby, nbx = [mysize*ups_factor for mysize in initial_shape]
         nb_z, nb_y, nb_x = amp.shape
-        myobj = crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx))
+        myobj = util.crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx))
         if debugging:
             plt.figure()
             plt.imshow(np.log10(abs(myobj).sum(axis=0)))
@@ -1545,7 +1545,7 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
             plt.title('centered abs(myobj).sum(axis=0)')
             plt.pause(0.1)
 
-        myobj = crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
+        myobj = util.crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
         print('Upsampling: shift_z, shift_y, shift_x: (', str('{:.3f}'.format(shiftz)),
               str('{:.3f}'.format(shifty)), str('{:.3f}'.format(shiftx)), ') pixels')
         return abs(myobj)/abs(myobj).max(), np.angle(myobj), shiftz, shifty, shiftx
@@ -1642,7 +1642,7 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
     if method == 'upsampling':
         nby, nbx = [mysize * ups_factor for mysize in initial_shape]
         nb_y, nb_x = amp.shape
-        myobj = crop_pad(amp * np.exp(1j * phase), (nby, nbx))
+        myobj = util.crop_pad(amp * np.exp(1j * phase), (nby, nbx))
         if debugging:
             plt.figure()
             plt.imshow(np.log10(abs(myobj)))
@@ -1969,7 +1969,7 @@ def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method=
         print('Opening ', file_path[ii])
 
         # use the range of interest defined above
-        obj = crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
+        obj = util.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
         obj = abs(obj) / abs(obj).max()
 
         temp_support = np.zeros(obj.shape)

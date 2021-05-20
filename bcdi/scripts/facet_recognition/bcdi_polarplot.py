@@ -28,7 +28,7 @@ import bcdi.facet_recognition.facet_utils as fu
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
-
+import bcdi.utils.utilities as util
 
 helptext = """
 Stereographic projection of a measured 3D diffraction pattern or calculated from a real-space BCDI reconstruction.
@@ -287,7 +287,7 @@ else:  # load a reconstructed real space object
     ####################################################
     # pad array to improve reciprocal space resolution #
     ####################################################
-    amp = pu.crop_pad(amp, (nz1, ny1, nx1))
+    amp = util.crop_pad(amp, (nz1, ny1, nx1))
     nz, ny, nx = amp.shape
     print('CDI data shape after padding', amp.shape)
 

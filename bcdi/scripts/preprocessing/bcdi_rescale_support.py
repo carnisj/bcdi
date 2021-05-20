@@ -457,7 +457,7 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
 
     # Interpolate the support
     print('\nInterpolating the support...')
-    data = pu.crop_pad(data, pynx_shape)  # the data could be cropped near the support
+    data = util.crop_pad(data, pynx_shape)  # the data could be cropped near the support
     fig, _, _ = gu.multislices_plot(data, sum_frames=True, scale='linear', plot_colorbar=True, vmin=0,
                                     title='Support before interpolation\n', is_orthogonal=True, reciprocal_space=False)
     
@@ -478,7 +478,7 @@ if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodat
     print('Shape after interpolating the support:', new_support.shape)
 
 else:  # no need for interpolation, the data may be cropped near the support
-    new_support = pu.crop_pad(data, rebinned_shape)
+    new_support = util.crop_pad(data, rebinned_shape)
 
 if binary_support:
     new_support[np.nonzero(new_support)] = 1

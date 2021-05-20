@@ -16,6 +16,7 @@ sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.utilities as util
 
 helptext = """
 Average several BCDI or CDI scans after an optional alignement step, based on a threshold on their Pearson correlation
@@ -133,8 +134,8 @@ if not 0 <= corr_roi[0] < corr_roi[1] <= nbz\
 
 # crop the data directly to output_shape if no alignment is required, update corr_roi accordingly
 if alignement_method == 'skip':
-    refmask = pu.crop_pad(array=refmask, output_shape=output_shape, crop_center=crop_center)
-    refdata = pu.crop_pad(array=refdata, output_shape=output_shape, crop_center=crop_center)
+    refmask = util.crop_pad(array=refmask, output_shape=output_shape, crop_center=crop_center)
+    refdata = util.crop_pad(array=refdata, output_shape=output_shape, crop_center=crop_center)
     # correct for the offset due to cropping
     corr_roi = [corr_roi[0] - (crop_center[0] - output_shape[0] // 2),
                 corr_roi[1] - (crop_center[0] - output_shape[0] // 2),
@@ -211,8 +212,8 @@ for idx in range(len(scans)):
                                 title='S' + str(scans[idx]) + '\n Mask after shift', vmin=0,
                                 reciprocal_space=True, is_orthogonal=is_orthogonal)
     else:  # crop the data directly to output_shape
-        mask = pu.crop_pad(array=mask, output_shape=output_shape, crop_center=crop_center)
-        data = pu.crop_pad(array=data, output_shape=output_shape, crop_center=crop_center)
+        mask = util.crop_pad(array=mask, output_shape=output_shape, crop_center=crop_center)
+        data = util.crop_pad(array=data, output_shape=output_shape, crop_center=crop_center)
 
     gu.multislices_plot(data[corr_roi[0]:corr_roi[1], corr_roi[2]:corr_roi[3], corr_roi[4]:corr_roi[5]],
                         sum_frames=True, scale='log', plot_colorbar=True, title='data in corr_roi', vmin=0,
@@ -315,8 +316,8 @@ if alignement_method != 'skip':
         print('no process of the boundaries')
 
     # crop the combined data and mask to the desired shape, when alignment_method is 'skip' it is done beforehand
-    summask = pu.crop_pad(array=summask, output_shape=output_shape, crop_center=crop_center)
-    sumdata = pu.crop_pad(array=sumdata, output_shape=output_shape, crop_center=crop_center)
+    summask = util.crop_pad(array=summask, output_shape=output_shape, crop_center=crop_center)
+    sumdata = util.crop_pad(array=sumdata, output_shape=output_shape, crop_center=crop_center)
 
 ##################################################
 # normalize sumdata using the counter in summask #

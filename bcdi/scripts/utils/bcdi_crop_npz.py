@@ -66,7 +66,7 @@ assert crop_center[0]+roi_size[0]//2 <= nbz and crop_center[1]+roi_size[1]//2 <=
 #######################################################
 # crop the data, and optionally the mask and q values #
 #######################################################
-data = pu.crop_pad(data, output_shape=roi_size, crop_center=crop_center, debugging=debug)
+data = util.crop_pad(data, output_shape=roi_size, crop_center=crop_center, debugging=debug)
 data = pu.bin_data(data, binning=binning, debugging=debug)
 comment = f'{data.shape[0]}_{data.shape[1]}_{data.shape[2]}_{binning[0]}_{binning[1]}_{binning[2]}' + comment
 np.savez_compressed(datadir + 'S' + str(scan) + '_pynx' + comment + '.npz', data=data)
@@ -84,7 +84,7 @@ if load_mask:
                                            filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
     mask, _ = util.load_file(file_path)
     mask = mask.astype(float)
-    mask = pu.crop_pad(mask, output_shape=roi_size, crop_center=crop_center, debugging=debug)
+    mask = util.crop_pad(mask, output_shape=roi_size, crop_center=crop_center, debugging=debug)
     mask = pu.bin_data(mask, binning=binning, debugging=debug)
 
     mask[np.nonzero(mask)] = 1

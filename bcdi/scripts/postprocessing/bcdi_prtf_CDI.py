@@ -189,7 +189,7 @@ if obj.shape != original_shape:
     new_shape = (int(original_shape[0]/binning[0]),
                  int(original_shape[1]/binning[1]),
                  int(original_shape[2]/binning[2]))
-    obj = pu.crop_pad(array=obj, output_shape=new_shape, debugging=False)
+    obj = util.crop_pad(array=obj, output_shape=new_shape, debugging=False)
 
 if obj.shape != diff_pattern.shape:
     print('Reconstructed object shape = ', obj.shape, 'different from diffraction pattern shape = ', diff_pattern.shape)

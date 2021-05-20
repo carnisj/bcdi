@@ -22,6 +22,7 @@ from tkinter import filedialog
 sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
@@ -197,7 +198,7 @@ if qvalues_shape != padding_shape:
     print(f'\nThe shape defined by q_values {qvalues_shape} is different from padding_shape {padding_shape}')
     print(f"Overriding padding_shape with {qvalues_shape}")
     padding_shape = qvalues_shape
-obj = pu.crop_pad(array=obj, output_shape=padding_shape, debugging=debug)
+obj = util.crop_pad(array=obj, output_shape=padding_shape, debugging=debug)
 
 #####################################
 # calculate the diffraction pattern #

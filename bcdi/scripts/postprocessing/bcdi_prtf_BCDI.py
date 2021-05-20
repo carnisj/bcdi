@@ -360,7 +360,7 @@ if extension == '.h5':
 # the real space object may have been further cropped to a tight support, to save memory space.
 if obj.shape != diff_pattern.shape:
     print('Reconstructed object shape = ', obj.shape, 'different from the experimental diffraction pattern: crop/pad')
-    obj = pu.crop_pad(array=obj, output_shape=diff_pattern.shape, debugging=False)
+    obj = util.crop_pad(array=obj, output_shape=diff_pattern.shape, debugging=False)
 
 # calculate the retrieved diffraction amplitude
 phased_fft = fftshift(fftn(obj)) / (np.sqrt(numz)*np.sqrt(numy)*np.sqrt(numx))  # complex amplitude

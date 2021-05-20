@@ -93,7 +93,7 @@ print("Initial data size: (", numz, ',', numy, ',', numx, ')')
 #############################
 if axis_outofplane is not None or axis_inplane is not None:
     new_shape = [int(1.2*numz), int(1.2*numy), int(1.2*numx)]
-    obj = pu.crop_pad(array=obj, output_shape=new_shape, debugging=False)
+    obj = util.crop_pad(array=obj, output_shape=new_shape, debugging=False)
     numz, numy, numx = obj.shape
 
     print("Cropped/padded data size before rotating: (", numz, ',', numy, ',', numx, ')')
@@ -117,7 +117,7 @@ z_pixel_FOV = int(np.rint((field_of_view[0] / voxel_size) / 2))  # half-number o
 y_pixel_FOV = int(np.rint((field_of_view[1] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 x_pixel_FOV = int(np.rint((field_of_view[2] / voxel_size) / 2))  # half-number of pixels corresponding to the FOV
 new_shape = [max(numz, 2*z_pixel_FOV), max(numy, 2*y_pixel_FOV), max(numx, 2*x_pixel_FOV)]
-amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
+amp = util.crop_pad(array=amp, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
 print("Cropped/padded data size for 3D isosurface plot: (", numz, ',', numy, ',', numx, ')')
 
@@ -157,7 +157,7 @@ pixel_spacing = tick_spacing / voxel_size
 pixel_FOV = [int(np.rint((fov / voxel_size) / 2)) for fov in field_of_view]
 # half-number of pixels corresponding to the FOV
 new_shape = [max(numz, 2*pixel_FOV[0]), max(numy, 2*pixel_FOV[1]), max(numx, 2*pixel_FOV[2])]
-amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
+amp = util.crop_pad(array=amp, output_shape=new_shape, debugging=False)
 numz, numy, numx = amp.shape
 print("Cropped/padded data size for 2D plots: (", numz, ',', numy, ',', numx, ')')
 

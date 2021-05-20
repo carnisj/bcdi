@@ -340,7 +340,7 @@ print("FFT size before accounting for phasing_binning", original_size)
 original_size = tuple([original_size[index] // phasing_binning[index] for index in range(len(phasing_binning))])
 print("Binning used during phasing:", detector.binning)
 print("Padding back to original FFT size", original_size)
-obj = pu.crop_pad(array=obj, output_shape=original_size)
+obj = util.crop_pad(array=obj, output_shape=original_size)
 nz, ny, nx = obj.shape
 
 ###########################################################################
@@ -386,7 +386,7 @@ for counter, value in enumerate(sorted_obj):
         fig.waitforbuttonpress()
         plt.close(fig)
     # use the range of interest defined above
-    obj = pu.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
+    obj = util.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
 
     # align with average reconstruction
     if counter == 0:  # the fist array loaded will serve as reference object
@@ -748,9 +748,9 @@ print(f"\nq_final = ({q_final[0]:.4f} 1/A, {q_final[1]:.4f} 1/A, {q_final[2]:.4f
 # pad array to fit the output_size parameter #
 ##############################################
 if output_size is not None:
-    amp = pu.crop_pad(array=amp, output_shape=output_size)
-    phase = pu.crop_pad(array=phase, output_shape=output_size)
-    strain = pu.crop_pad(array=strain, output_shape=output_size)
+    amp = util.crop_pad(array=amp, output_shape=output_size)
+    phase = util.crop_pad(array=phase, output_shape=output_size)
+    strain = util.crop_pad(array=strain, output_shape=output_size)
 print(f"\nFinal data shape: {amp.shape}")
 
 ######################

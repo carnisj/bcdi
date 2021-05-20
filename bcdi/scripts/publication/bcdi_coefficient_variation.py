@@ -20,6 +20,7 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 from bcdi.utils import image_registration as reg
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 
 helptext = """
 Load several reconstructed complex objects and calculate the coefficient variation (CV = std/mean) 
@@ -112,8 +113,8 @@ for index in range(len(scans)):
 
     #  pad arrays to obtain the desired field of view
     new_shape = [max(numz, 2*pixel_FOV), max(numy, 2*pixel_FOV), max(numx, 2*pixel_FOV)]
-    amp = pu.crop_pad(array=amp, output_shape=new_shape, debugging=False)
-    phase = pu.crop_pad(array=phase, output_shape=new_shape, debugging=False)
+    amp = util.crop_pad(array=amp, output_shape=new_shape, debugging=False)
+    phase = util.crop_pad(array=phase, output_shape=new_shape, debugging=False)
     numz, numy, numx = amp.shape
 
     if debug:

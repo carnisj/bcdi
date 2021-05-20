@@ -48,12 +48,12 @@ for raw in range(nbfiles):
     reference_obj, _ = util.load_file(file_path[raw])
     reference_obj = abs(reference_obj) / abs(reference_obj).max()
     nbz, nby, nbx = reference_obj.shape
-    reference_obj = pu.crop_pad(array=reference_obj, output_shape=[nbz+10, nby+10, nbx+10])
+    reference_obj = util.crop_pad(array=reference_obj, output_shape=[nbz+10, nby+10, nbx+10])
     correlation[raw, raw] = 1
     for col in range(raw+1, nbfiles):
         test_obj, _ = util.load_file(file_path[col])  # which index?
         test_obj = abs(test_obj) / abs(test_obj).max()
-        test_obj = pu.crop_pad(array=test_obj, output_shape=[nbz + 10, nby + 10, nbx + 10])
+        test_obj = util.crop_pad(array=test_obj, output_shape=[nbz + 10, nby + 10, nbx + 10])
         # align reconstructions
         shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(test_obj), precision=100)
         test_obj = reg.subpixel_shift(test_obj, shiftz, shifty, shiftx)

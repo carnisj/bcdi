@@ -931,8 +931,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     final_shape = pru.smaller_primes(data.shape, maxprime=7, required_dividers=(2,))
     com = tuple(map(lambda x: int(np.rint(x)), center_of_mass(data)))
     crop_center = pu.find_crop_center(array_shape=data.shape, crop_shape=final_shape, pivot=com)
-    data = pu.crop_pad(data, output_shape=final_shape, crop_center=crop_center)
-    mask = pu.crop_pad(mask, output_shape=final_shape, crop_center=crop_center)
+    data = util.crop_pad(data, output_shape=final_shape, crop_center=crop_center)
+    mask = util.crop_pad(mask, output_shape=final_shape, crop_center=crop_center)
     print('\nData size after considering FFT shape requirements:', data.shape)
     nz, ny, nx = data.shape
     comment = f'{comment}_{nz}_{ny}_{nx}' + binning_comment

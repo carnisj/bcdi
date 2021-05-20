@@ -69,6 +69,72 @@ def catch_error(exception):
     print(exception)
 
 
+def crop_pad(array, output_shape, pad_value=0, pad_start=None, crop_center=None, debugging=False):
+    """
+    Crop or pad the 3D object depending on output_shape.
+
+    :param array: 3D complex array to be padded
+    :param output_shape: desired output shape (3D)
+    :param pad_value: will pad using this value
+    :param pad_start: for padding, tuple of 3 positions in pixel where the original array should be placed.
+     If None, padding is symmetric along the respective axis
+    :param crop_center: for cropping, [z, y, x] position in the original array (in pixels) of the center of the output
+     array. If None, it will be set to the center of the original array
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :return: myobj cropped or padded with zeros
+    """
+    if array.ndim != 3:
+        raise ValueError('array should be a 3D array')
+
+    nbz, nby, nbx = array.shape
+    newz, newy, newx = output_shape
+
+    if pad_start is None:
+        pad_start = [(newz - nbz) // 2, (newy - nby) // 2, (newx - nbx) // 2]
+    assert len(pad_start) == 3, 'pad_start should be a list or tuple of three indices'
+
+    if crop_center is None:
+        crop_center = [nbz//2, nby//2, nbx//2]
+    assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
+
+    if debugging:
+        print(f'array shape before crop/pad = {array.shape}')
+        gu.multislices_plot(abs(array), sum_frames=True, scale='log', title='Before crop/pad')
+
+    # crop/pad along axis 0
+    if newz >= nbz:  # pad
+        temp_z = np.ones((output_shape[0], nby, nbx), dtype=array.dtype) * pad_value
+        temp_z[pad_start[0]:pad_start[0]+nbz, :, :] = array
+    else:  # crop
+        assert (crop_center[0] - output_shape[0] // 2 >= 0) and (crop_center[0] + output_shape[0] // 2 <= nbz),\
+            'crop_center[0] incompatible with output_shape[0]'
+        temp_z = array[crop_center[0] - newz//2:crop_center[0] + newz//2 + newz % 2, :, :]
+
+    # crop/pad along axis 1
+    if newy >= nby:  # pad
+        temp_y = np.ones((newz, newy, nbx), dtype=array.dtype) * pad_value
+        temp_y[:, pad_start[1]:pad_start[1]+nby, :] = temp_z
+    else:  # crop
+        assert (crop_center[1] - output_shape[1] // 2 >= 0) and (crop_center[1] + output_shape[1] // 2 <= nby),\
+            'crop_center[1] incompatible with output_shape[1]'
+        temp_y = temp_z[:, crop_center[1] - newy//2:crop_center[1] + newy//2 + newy % 2, :]
+
+    # crop/pad along axis 2
+    if newx >= nbx:  # pad
+        newobj = np.ones((newz, newy, newx), dtype=array.dtype) * pad_value
+        newobj[:, :, pad_start[2]:pad_start[2]+nbx] = temp_y
+    else:  # crop
+        assert (crop_center[2] - output_shape[2] // 2 >= 0) and (crop_center[2] + output_shape[2] // 2 <= nbx),\
+            'crop_center[2] incompatible with output_shape[2]'
+        newobj = temp_y[:, :, crop_center[2] - newx//2:crop_center[2] + newx//2 + newx % 2]
+
+    if debugging:
+        print(f'array shape after crop/pad = {newobj.shape}')
+        gu.multislices_plot(abs(newobj), sum_frames=True, scale='log', title='After crop/pad')
+    return newobj
+
+
 def decode_json(dct):
     """
     Function used as the parameter object_hook in json.load function, supporting various types

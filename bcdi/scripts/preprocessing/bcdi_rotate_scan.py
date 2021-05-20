@@ -60,7 +60,7 @@ if crop_shape:
     assert origin[0] + crop_shape[0] // 2 <= nbz and origin[1] + crop_shape[1] // 2 <= nby \
            and origin[2] + crop_shape[2] // 2 <= nbx, 'origin incompatible with crop_shape'
 
-    data = pu.crop_pad(array=data, output_shape=crop_shape, crop_center=origin)
+    data = util.crop_pad(array=data, output_shape=crop_shape, crop_center=origin)
     gc.collect()
     nbz, nby, nbx = data.shape
     print('data shape after cropping:', data.shape)
@@ -136,7 +136,7 @@ except ValueError:
 
 if not skip_mask:
     if crop_shape:
-        mask = pu.crop_pad(array=mask, output_shape=crop_shape, crop_center=origin)
+        mask = util.crop_pad(array=mask, output_shape=crop_shape, crop_center=origin)
         gc.collect()
 
     if plots:

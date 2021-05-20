@@ -24,6 +24,7 @@ import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
+import bcdi.utils.utilities as util
 
 helptext = """
 Using a support created from a reconstructed object (real space), calculate the diffraction pattern depending on several 
@@ -121,7 +122,7 @@ print("FFT size before accounting for binning", original_size)
 original_size = tuple([original_size[index] // binning[index] for index in range(len(binning))])
 print("Binning used during phasing:", binning)
 print("Padding back to original FFT size", original_size, '\n')
-amp = pu.crop_pad(array=amp, output_shape=original_size)
+amp = util.crop_pad(array=amp, output_shape=original_size)
 nz, ny, nx = amp.shape
 
 ##########################################################
@@ -320,7 +321,7 @@ if pad_ortho:  # pad before interpolating into detector frame
     if pad_size[0] < nz or pad_size[1] < ny or pad_size[2] < nx:
         print('Pad size smaller than initial array size')
         sys.exit()
-    original_obj = pu.crop_pad(original_obj, pad_size)
+    original_obj = util.crop_pad(original_obj, pad_size)
 else:  # pad after interpolating into detector frame - saves memory
     nz_interp = nz
     ny_interp = ny
@@ -405,7 +406,7 @@ if not pad_ortho:
     if pad_size[0] < nz or pad_size[1] < ny or pad_size[2] < nx:
         print('Pad size smaller than initial array size')
         sys.exit()
-    newobj = pu.crop_pad(obj, pad_size)
+    newobj = util.crop_pad(obj, pad_size)
 else:
     newobj = obj
 
@@ -530,8 +531,8 @@ if nz < nz_crop or ny < ny_crop or nx < nx_crop:
     print('Crop size larger than initial array size')
     sys.exit()
 
-simu_data = pu.crop_pad(simu_data, crop_size)
-mask = pu.crop_pad(mask, crop_size)
+simu_data = util.crop_pad(simu_data, crop_size)
+mask = util.crop_pad(mask, crop_size)
 
 ##########################################################
 # crop arrays to fulfill FFT requirements during phasing #
@@ -539,8 +540,8 @@ mask = pu.crop_pad(mask, crop_size)
 nz, ny, nx = simu_data.shape
 nz_crop, ny_crop, nx_crop = pru.smaller_primes((nz, ny, nx), maxprime=7, required_dividers=(2,))
 
-simu_data = pu.crop_pad(simu_data, (nz_crop, ny_crop, nx_crop))
-mask = pu.crop_pad(mask, (nz_crop, ny_crop, nx_crop))
+simu_data = util.crop_pad(simu_data, (nz_crop, ny_crop, nx_crop))
+mask = util.crop_pad(mask, (nz_crop, ny_crop, nx_crop))
 
 nz, ny, nx = simu_data.shape
 print("cropped FFT data size:", simu_data.shape)
