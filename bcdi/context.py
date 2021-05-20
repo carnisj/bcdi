@@ -9,7 +9,9 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import bcdi.graph.graph_utils as gu
-from bcdi.utils import image_registration as reg
-import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
+from bcdi.utils import image_registration as reg
+
+
