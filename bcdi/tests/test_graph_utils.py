@@ -10,7 +10,7 @@ import unittest
 import numpy as np
 import os
 import pathlib
-from .context import gu
+from bcdi.context import gu
 
 
 def run_tests(test_class):

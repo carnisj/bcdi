@@ -7,7 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-from .context import util
+from bcdi.context import util
 
 
 def run_tests(test_class):
