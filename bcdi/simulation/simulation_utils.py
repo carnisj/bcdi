@@ -9,7 +9,7 @@
 
 import numpy as np
 from scipy.spatial.transform import Rotation
-from ..context import util
+from ..utils import utilities as util
 
 
 def angle_vectors(ref_vector, test_vector,

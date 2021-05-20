@@ -21,7 +21,8 @@ from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
 from matplotlib import pyplot as plt
-from ..context import gu, valid
+from ..graph import graph_utils as gu
+from ..utils import validation as valid
 
 
 class CustomEncoder(json.JSONEncoder):

@@ -28,7 +28,10 @@ import time
 import tkinter as tk
 from tkinter import filedialog
 import xrayutilities as xu
-from ..context import gu, reg, util, valid
+from ..graph import graph_utils as gu
+from ..utils import image_registration as reg
+from ..utils import utilities as util
+from ..utils import validation as valid
 
 
 def align_diffpattern(reference_data, data, mask=None, method='registration', combining_method='rgi',

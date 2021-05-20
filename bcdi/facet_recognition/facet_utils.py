@@ -21,7 +21,9 @@ from matplotlib import pyplot as plt
 from matplotlib import patches as patches
 import gc
 import sys
-from ..context import gu, util, valid
+from ..graph import graph_utils as gu
+from ..utils import utilities as util
+from ..utils import validation as valid
 
 colormap = gu.Colormap()
 default_cmap = colormap.cmap

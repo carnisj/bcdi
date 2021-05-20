@@ -18,7 +18,10 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.stats import multivariate_normal
 from scipy.stats import pearsonr
 import gc
-from ..context import gu, reg, util, valid
+from ..graph import graph_utils as gu
+from ..utils import image_registration as reg
+from ..utils import utilities as util
+from ..utils import validation as valid
 
 
 def align_obj(reference_obj, obj, method='modulus', support_threshold=None, precision=1000, debugging=False):

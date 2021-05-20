@@ -8,7 +8,8 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-from ..context import gu, util
+from ..graph import graph_utils as gu
+from ..utils import utilities as util
 
 
 def angular_avg(data, q_values, mask=None, origin=None, nb_bins=np.nan, debugging=False):

@@ -16,7 +16,9 @@ import os
 import pathlib
 from scipy.interpolate import RegularGridInterpolator
 import warnings
-from ..context import gu, util, valid
+from ..graph import graph_utils as gu
+from ..utils import utilities as util
+from ..utils import validation as valid
 
 
 class Detector(object):

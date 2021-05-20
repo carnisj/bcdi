@@ -22,7 +22,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
 from operator import itemgetter
-from ..context import valid
+from ..utils import validation as valid
 
 # define a colormap
 color_dict = {'red':  ((0.0, 1.0, 1.0),
