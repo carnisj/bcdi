@@ -1,6 +1,17 @@
 Version 0.1.2
 -------------
 
+* Refactor: use a global context.py for managing relative imports
+
+* Refactor: move crop_pad, bin_data and gaussian_window functions from postprocessing_utils.py to another module
+  in order to avoid circular imports
+
+* Feature: create a Diffractometer class with one child class for each beamline, move all functions related to
+  the goniometer positions in the class
+
+* Feature: add an option in strain.py to put back the sample in the laboratory frame with all sample circles
+  rotated back to 0 deg
+
 * Refactor: show only necessary plots and console output in strain.py
 
 * Refactor: create Setup calculated properties and transfer calculations in scripts to these properties
