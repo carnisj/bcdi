@@ -314,7 +314,7 @@ if extension == '.h5':
 # the real space object may have been further cropped to a tight support, to save memory space.
 if obj.shape != slice_2D.shape:
     print(f'Reconstructed object shape = {obj.shape}, different from the 2D diffraction slice: crop/pad')
-    obj = pu.crop_pad_2d(array=obj, output_shape=slice_2D.shape, debugging=False)
+    obj = util.crop_pad_2d(array=obj, output_shape=slice_2D.shape, debugging=False)
 
 plt.figure()
 plt.imshow(abs(obj), vmin=0, cmap=my_cmap)

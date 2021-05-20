@@ -135,6 +135,60 @@ def crop_pad(array, output_shape, pad_value=0, pad_start=None, crop_center=None,
     return newobj
 
 
+def crop_pad_2d(array, output_shape, pad_value=0, pad_start=None, crop_center=None, debugging=False):
+    """
+    Crop or pad the 2D object depending on output_shape.
+
+    :param array: 2D complex array to be padded
+    :param output_shape: list of desired output shape [y, x]
+    :param pad_value: will pad using this value
+    :param pad_start: for padding, tuple of 2 positions in pixel where the original array should be placed.
+     If None, padding is symmetric along the respective axis
+    :param crop_center: for cropping, [y, x] position in the original array (in pixels) of the center of the ourput
+     array. If None, it will be set to the center of the original array
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :return: myobj cropped or padded with zeros
+    """
+    if array.ndim != 2:
+        raise ValueError('array should be a 2D array')
+
+    nby, nbx = array.shape
+    newy, newx = output_shape
+
+    if pad_start is None:
+        pad_start = [(newy - nby) // 2, (newx - nbx) // 2]
+    assert len(pad_start) == 2, 'pad_start should be a list or tuple of two indices'
+
+    if crop_center is None:
+        crop_center = [nby//2, nbx//2]
+    assert len(crop_center) == 2, 'crop_center should be a list or tuple of two indices'
+
+    if debugging:
+        gu.imshow_plot(abs(array), sum_frames=True, scale='log', title='Before crop/pad')
+    # crop/pad along axis 0
+    if newy >= nby:  # pad
+        temp_y = np.ones((output_shape[0], nbx), dtype=array.dtype) * pad_value
+        temp_y[pad_start[0]:pad_start[0]+nby, :] = array
+    else:  # crop
+        assert (crop_center[0] - output_shape[0] // 2 >= 0) and (crop_center[0] + output_shape[0] // 2 <= nby),\
+            'crop_center[0] incompatible with output_shape[0]'
+        temp_y = array[crop_center[0] - newy//2:crop_center[0] + newy//2 + newy % 2, :]
+
+    # crop/pad along axis 1
+    if newx >= nbx:  # pad
+        newobj = np.ones((newy, newx), dtype=array.dtype) * pad_value
+        newobj[:, pad_start[1]:pad_start[1]+nbx] = temp_y
+    else:  # crop
+        assert (crop_center[1] - output_shape[1] // 2 >= 0) and (crop_center[1] + output_shape[1] // 2 <= nbx),\
+            'crop_center[1] incompatible with output_shape[1]'
+        newobj = temp_y[:, crop_center[1] - newx//2:crop_center[1] + newx//2 + newx % 2]
+
+    if debugging:
+        gu.imshow_plot(abs(array), sum_frames=True, scale='log', title='After crop/pad')
+    return newobj
+
+
 def decode_json(dct):
     """
     Function used as the parameter object_hook in json.load function, supporting various types
