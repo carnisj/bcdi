@@ -799,7 +799,7 @@ class Diffractometer34ID(Diffractometer):
         super().__init__(sample_circles=['y+', 'x+'], detector_circles=['y+', 'x-'],
                          sample_offsets=sample_offsets)
 
-    def goniometer_values(self, setup, stage_name='bcdi'):
+    def goniometer_values(self, setup, stage_name='bcdi', **kwargs):
         """
         Extract goniometer motor positions for a BCDI rocking scan.
 
@@ -868,7 +868,7 @@ class DiffractometerCRISTAL(Diffractometer):
         super().__init__(sample_circles=['x-', 'y+'], detector_circles=['y+', 'x-'],
                          sample_offsets=sample_offsets)
 
-    def goniometer_values(self, logfile, setup, stage_name='bcdi'):
+    def goniometer_values(self, logfile, setup, stage_name='bcdi', **kwargs):
         """
         Extract goniometer motor positions for a BCDI rocking scan.
 
@@ -1057,8 +1057,7 @@ class DiffractometerID01(Diffractometer):
          - 'sample': tuple of angular values for the sample circles, from the most outer to the most inner circle
          - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
         """
-        # check and load kwargs
-        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'}, name='kwargs')
+        # load kwargs
         follow_bragg = kwargs.get('follow_bragg', False)
         frames_logical = kwargs.get('frames_logical', None)
         valid.valid_item(follow_bragg, allowed_types=bool, name='follow_bragg')
@@ -1218,7 +1217,7 @@ class DiffractometerNANOMAX(Diffractometer):
         super().__init__(sample_circles=['x-', 'y-'], detector_circles=['y-', 'x-'],
                          sample_offsets=sample_offsets)
 
-    def goniometer_values(self, logfile, setup, stage_name='bcdi'):
+    def goniometer_values(self, logfile, setup, stage_name='bcdi', **kwargs):
         """
         Extract goniometer motor positions for a BCDI rocking scan.
 
@@ -1316,7 +1315,7 @@ class DiffractometerP10(Diffractometer):
         super().__init__(sample_circles=['y+', 'x-', 'z+', 'y-'], detector_circles=['y+', 'x-'],
                          sample_offsets=sample_offsets)
 
-    def goniometer_values(self, logfile, setup, stage_name='bcdi'):
+    def goniometer_values(self, logfile, setup, stage_name='bcdi', **kwargs):
         """
         Extract goniometer motor positions for a BCDI rocking scan.
 
@@ -1456,8 +1455,7 @@ class DiffractometerSIXS(Diffractometer):
          - 'sample': tuple of angular values for the sample circles, from the most outer to the most inner circle
          - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
         """
-        # check and load kwargs
-        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'frames_logical'}, name='kwargs')
+        # load kwargs
         frames_logical = kwargs.get('frames_logical', None)
         if frames_logical is not None:
             assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
