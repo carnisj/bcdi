@@ -1236,15 +1236,14 @@ def grid_bcdi_labframe(data, mask, detector, setup, align_q=False, reference_axi
     :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard).
      q values are in inverse angstroms.
     """
-    valid_name = 'preprocessing_utils.grid_bcdi_labframe'
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'fill_value', 'reference_axis'},
-                       name='preprocessing_utils.grid_bcdi_labframe')
+                       name='kwargs')
     follow_bragg = kwargs.get('follow_bragg', False)
-    valid.valid_item(follow_bragg, allowed_types=bool, name=valid_name)
+    valid.valid_item(follow_bragg, allowed_types=bool, name='follow_bragg')
     fill_value = kwargs.get('fill_value', (0, 0))
     valid.valid_container(fill_value, container_types=(tuple, list, np.ndarray), length=2, item_types=Real,
-                          name=valid_name)
+                          name='fill_value')
 
     # check some parameters
     if setup.rocking_angle == 'energy':
@@ -1253,9 +1252,9 @@ def grid_bcdi_labframe(data, mask, detector, setup, align_q=False, reference_axi
         raise ValueError('data is expected to be a 3D array')
     if mask.ndim != 3:
         raise ValueError('mask is expected to be a 3D array')
-    valid.valid_item(align_q, allowed_types=bool, name=valid_name)
+    valid.valid_item(align_q, allowed_types=bool, name='align_q')
     valid.valid_container(reference_axis, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
-                          name=valid_name)
+                          name='reference_axis')
     reference_axis = np.array(reference_axis)
 
     # grid the data

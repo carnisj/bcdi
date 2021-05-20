@@ -1805,17 +1805,16 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     """
     import vtk
     from vtk.util import numpy_support
-    valid_name = 'graph_utils.save_to_vti'
     #########################
     # check some parameters #
     #########################
     valid.valid_container(obj=voxel_size, container_types=(tuple, list), length=3, item_types=Real, min_excluded=0,
-                          name=valid_name)
+                          name='voxel_size')
 
     if isinstance(tuple_array, np.ndarray):
         tuple_array = (tuple_array,)
     valid.valid_container(obj=tuple_array, container_types=(tuple, list), item_types=np.ndarray,
-                          name=valid_name)
+                          name='tuple_array')
     nb_arrays = len(tuple_array)
     if not all(arr.ndim == 3 for arr in tuple_array):
         raise ValueError('expecting only 3D arrays')
@@ -1826,7 +1825,7 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     if isinstance(tuple_fieldnames, str):
         tuple_fieldnames = (tuple_fieldnames,)
     valid.valid_container(obj=tuple_fieldnames, container_types=(tuple, list), length=nb_arrays, item_types=str,
-                          name=valid_name)
+                          name='tuple_fieldnames')
 
     #############################
     # initialize the VTK object #

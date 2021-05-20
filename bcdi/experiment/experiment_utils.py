@@ -16,11 +16,7 @@ import pathlib
 from scipy.interpolate import RegularGridInterpolator
 import sys
 import warnings
-sys.path.append('D:/myscripts/bcdi/')
-import bcdi.graph.graph_utils as gu
-import bcdi.postprocessing.postprocessing_utils as pu
-import bcdi.utils.utilities as util
-import bcdi.utils.validation as valid
+from ..context import gu, util, valid
 
 
 class Detector(object):
@@ -2389,14 +2385,13 @@ class Setup(object):
            (same length as the number of input arrays)
          - a tuple of 3 voxels size for the interpolated arrays
         """
-        valid_name = 'Setup.ortho_directspace'
         #############################################
         # check that arrays is a tuple of 3D arrays #
         #############################################
         if isinstance(arrays, np.ndarray):
             arrays = (arrays,)
         valid.valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray, min_length=1,
-                              name=valid_name)
+                              name='arrays')
         if any(array.ndim != 3 for array in arrays):
             raise ValueError('all arrays should be 3D ndarrays of the same shape')
         ref_shape = arrays[0].shape
@@ -2409,43 +2404,38 @@ class Setup(object):
         #########################
         # check and load kwargs #
         #########################
-        valid.valid_kwargs(kwargs=kwargs,
-                           allowed_kwargs={'title', 'width_z', 'width_y', 'width_x'}, name=valid_name)
+        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'title', 'width_z', 'width_y', 'width_x'}, name='kwargs')
         title = kwargs.get('title', ('Object',)*nb_arrays)
         if isinstance(title, str):
             title = (title,) * nb_arrays
-        valid.valid_container(title, container_types=(tuple, list), length=nb_arrays, item_types=str, name=valid_name)
+        valid.valid_container(title, container_types=(tuple, list), length=nb_arrays, item_types=str, name='title')
         width_z = kwargs.get('width_z', None)
-        valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
-                         name=valid_name)
+        valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
         width_y = kwargs.get('width_y', None)
-        valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
-                         name=valid_name)
+        valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
         width_x = kwargs.get('width_x', None)
-        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
-                         name=valid_name)
+        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
         #########################
         # check some parameters #
         #########################
-        valid.valid_container(q_com, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
-                              name=valid_name)
+        valid.valid_container(q_com, container_types=(tuple, list, np.ndarray), length=3, item_types=Real, name='q_com')
         if np.linalg.norm(q_com) == 0:
             raise ValueError('q_com should be a non zero vector')
 
         if isinstance(fill_value, Real):
             fill_value = (fill_value,) * nb_arrays
         valid.valid_container(fill_value, container_types=(tuple, list, np.ndarray), length=nb_arrays, item_types=Real,
-                              name=valid_name)
+                              name='fill_value')
         if isinstance(debugging, bool):
             debugging = (debugging,) * nb_arrays
         valid.valid_container(debugging, container_types=(tuple, list), length=nb_arrays, item_types=bool,
-                              name=valid_name)
+                              name='debugging')
         valid.valid_container(q_com, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
-                              name=valid_name)
+                              name='q_com')
         q_com = np.array(q_com)
         valid.valid_container(reference_axis, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
-                              name=valid_name)
+                              name='reference_axis')
         reference_axis = np.array(reference_axis)
         if not any((reference_axis == val).all() for val in
                    (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))):
@@ -2620,14 +2610,12 @@ class Setup(object):
            (same length as the number of input arrays)
          - a tuple of three 1D vectors of q values (qx, qz, qy)
         """
-        valid_name = 'Setup.ortho_reciprocal'
         #############################################
         # check that arrays is a tuple of 3D arrays #
         #############################################
         if isinstance(arrays, np.ndarray):
             arrays = (arrays,)
-        valid.valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray, min_length=1,
-                              name=valid_name)
+        valid.valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray, min_length=1, name='arrays')
         if any(array.ndim != 3 for array in arrays):
             raise ValueError('all arrays should be 3D ndarrays of the same shape')
         ref_shape = arrays[0].shape
@@ -2639,29 +2627,25 @@ class Setup(object):
         #########################
         # check and load kwargs #
         #########################
-        valid.valid_kwargs(kwargs=kwargs,
-                           allowed_kwargs={'title', 'scale', 'width_z', 'width_y', 'width_x'},
-                           name='Setup.orthogonalize')
+        valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'title', 'scale', 'width_z', 'width_y', 'width_x'},
+                           name='kwargs')
         title = kwargs.get('title', ('Object',)*nb_arrays)
         if isinstance(title, str):
             title = (title,) * nb_arrays
-        valid.valid_container(title, container_types=(tuple, list), length=nb_arrays, item_types=str, name=valid_name)
+        valid.valid_container(title, container_types=(tuple, list), length=nb_arrays, item_types=str, name='title')
         scale = kwargs.get('scale', ('log',)*nb_arrays)
         if isinstance(scale, str):
             scale = (scale,) * nb_arrays
-        valid.valid_container(scale, container_types=(tuple, list), length=nb_arrays, name=valid_name)
+        valid.valid_container(scale, container_types=(tuple, list), length=nb_arrays, name='scale')
         if any(val not in {'log', 'linear'} for val in scale):
             raise ValueError("scale should be either 'log' or 'linear'")
 
         width_z = kwargs.get('width_z', None)
-        valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
-                         name=valid_name)
+        valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
         width_y = kwargs.get('width_y', None)
-        valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
-                         name=valid_name)
+        valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
         width_x = kwargs.get('width_x', None)
-        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
-                         name=valid_name)
+        valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
         #########################
         # check some parameters #
@@ -2669,14 +2653,14 @@ class Setup(object):
         if isinstance(fill_value, Real):
             fill_value = (fill_value,) * nb_arrays
         valid.valid_container(fill_value, container_types=(tuple, list, np.ndarray), length=nb_arrays, item_types=Real,
-                              name=valid_name)
+                              name='fill_value')
         if isinstance(debugging, bool):
             debugging = (debugging,) * nb_arrays
         valid.valid_container(debugging, container_types=(tuple, list), length=nb_arrays, item_types=bool,
-                              name=valid_name)
-        valid.valid_item(align_q, allowed_types=bool, name=valid_name)
+                              name='debugging')
+        valid.valid_item(align_q, allowed_types=bool, name='align_q')
         valid.valid_container(reference_axis, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
-                              name=valid_name)
+                              name='reference_axis')
         reference_axis = np.array(reference_axis)
 
         ##########################################################

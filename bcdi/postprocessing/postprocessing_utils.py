@@ -402,18 +402,14 @@ def center_com(array, debugging=False, **kwargs):
     #########################
     # check and load kwargs #
     #########################
-    valid_name = 'postprocessing_utils.center_com'
     valid.valid_kwargs(kwargs=kwargs,
-                       allowed_kwargs={'width_z', 'width_y', 'width_x'}, name=valid_name)
+                       allowed_kwargs={'width_z', 'width_y', 'width_x'}, name='kwargs')
     width_z = kwargs.get('width_z', None)
-    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
     width_y = kwargs.get('width_y', None)
-    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
     width_x = kwargs.get('width_x', None)
-    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
     #########################
     # check some parameters #
@@ -462,18 +458,13 @@ def center_max(array, debugging=False, **kwargs):
     #########################
     # check and load kwargs #
     #########################
-    valid_name = 'postprocessing_utils.center_max'
-    valid.valid_kwargs(kwargs=kwargs,
-                       allowed_kwargs={'width_z', 'width_y', 'width_x'}, name=valid_name)
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'width_z', 'width_y', 'width_x'}, name='kwargs')
     width_z = kwargs.get('width_z', None)
-    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
     width_y = kwargs.get('width_y', None)
-    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
     width_x = kwargs.get('width_x', None)
-    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
     #########################
     # check some parameters #
@@ -639,14 +630,13 @@ def find_crop_center(array_shape, crop_shape, pivot):
     :type pivot: tuple
     :return: the voxel position closest to pivot which allows cropping to the defined shape.
     """
-    valid_name = 'postprocessing_utils.find_crop_center'
     valid.valid_container(array_shape, container_types=(tuple, list, np.ndarray), min_length=1, item_types=int,
-                          name=valid_name)
+                          name='array_shape')
     ndim = len(array_shape)
     valid.valid_container(crop_shape, container_types=(tuple, list, np.ndarray), length=ndim, item_types=int,
-                          name=valid_name)
+                          name='crop_shape')
     valid.valid_container(pivot, container_types=(tuple, list, np.ndarray), length=ndim, item_types=int,
-                          name=valid_name)
+                          name='pivot')
     crop_center = np.empty(ndim)
     for idx, dim in enumerate(range(ndim)):
         if max(0, pivot[idx] - crop_shape[idx] // 2) == 0:
@@ -682,7 +672,6 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
     #########################
     # check some parameters #
     #########################
-    valid_name = 'postprocessing_utils.find_datarange'
     if not isinstance(array, np.ndarray):
         raise TypeError('array should be a numpy ndarray')
     if array.ndim != 3:
@@ -690,8 +679,8 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
     if isinstance(plot_margin, Number):
         plot_margin = (plot_margin,) * 3
     valid.valid_container(plot_margin, container_types=(tuple, list, np.ndarray), length=3, item_types=int,
-                          name=valid_name)
-    valid.valid_item(amplitude_threshold, allowed_types=Real, min_included=0, name=valid_name)
+                          name='plot_margin')
+    valid.valid_item(amplitude_threshold, allowed_types=Real, min_included=0, name='amplitude_threshold')
 
     #########################################################
     # find the relevant range where the support is non-zero #
@@ -835,21 +824,16 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
          - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
     :return: the optical path in nm, of the same shape as mysupport
     """
-    valid_name = 'postprocessing_utils.get_opticalpath'
     #########################
     # check and load kwargs #
     #########################
-    valid.valid_kwargs(kwargs=kwargs,
-                       allowed_kwargs={'width_z', 'width_y', 'width_x'}, name=valid_name)
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'width_z', 'width_y', 'width_x'}, name='kwargs')
     width_z = kwargs.get('width_z', None)
-    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
     width_y = kwargs.get('width_y', None)
-    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
     width_x = kwargs.get('width_x', None)
-    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
     #########################
     # check some parameters #
@@ -861,7 +845,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     if isinstance(voxel_size, Number):
         voxel_size = (voxel_size,) * 3
     valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real, min_excluded=0,
-                          name=valid_name)
+                          name='voxel_size')
 
     #####################################################################################################
     # correct k for the different voxel size in each dimension (k is expressed in an orthonormal basis) #
@@ -1017,7 +1001,6 @@ def mean_filter(array, support, half_width=0, width_z=None, width_y=None, width_
     #########################
     # check some parameters #
     #########################
-    valid_name = 'postprocessing_utils.mean_filter'
     if not isinstance(array, np.ndarray):
         raise TypeError('array should be a numpy array')
     if array.ndim != 3:
@@ -1026,17 +1009,14 @@ def mean_filter(array, support, half_width=0, width_z=None, width_y=None, width_
         raise TypeError('support should be a numpy array')
     if support.shape != array.shape:
         raise ValueError('the support should have the same shape as the array')
-    valid.valid_item(half_width, allowed_types=int, min_included=0, name=valid_name)
-    valid.valid_container(title, container_types=str, name=valid_name)
-    valid.valid_item(vmin, allowed_types=Real, name=valid_name)
-    valid.valid_item(vmax, allowed_types=Real, name=valid_name)
-    valid.valid_item(debugging, allowed_types=bool, name=valid_name)
-    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
-    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
-    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True,
-                     name=valid_name)
+    valid.valid_item(half_width, allowed_types=int, min_included=0, name='half_width')
+    valid.valid_container(title, container_types=str, name='title')
+    valid.valid_item(vmin, allowed_types=Real, name='vmin')
+    valid.valid_item(vmax, allowed_types=Real, name='vmax')
+    valid.valid_item(debugging, allowed_types=bool, name='debugging')
+    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
+    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
+    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
     #########################
     # apply the mean filter #
