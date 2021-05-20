@@ -22,7 +22,6 @@ import matplotlib.pyplot as plt
 import os
 from scipy.io import savemat
 import sys
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.experiment.experiment_utils as exp

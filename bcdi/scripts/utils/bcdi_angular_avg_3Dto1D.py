@@ -11,12 +11,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
-import sys
-sys.path.append('//')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.xcca.xcca_utils as xcca
-import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 Plot a 1D angular average of a 3D reciprocal space map, based on the position of the origin (direct beam or Bragg peak). 

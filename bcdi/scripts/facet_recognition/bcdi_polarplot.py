@@ -21,11 +21,9 @@ import tkinter as tk
 from tkinter import filedialog
 from numpy.fft import fftn, fftshift
 import gc
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.facet_recognition.facet_utils as fu
-import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util

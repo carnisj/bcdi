@@ -23,8 +23,6 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import gc
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu

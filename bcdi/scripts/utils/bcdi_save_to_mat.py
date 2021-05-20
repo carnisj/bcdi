@@ -13,7 +13,6 @@ import tkinter as tk
 from tkinter import filedialog
 from scipy.io import savemat
 import sys
-sys.path.append('//')
 import bcdi.utils.utilities as util
 
 helptext = """

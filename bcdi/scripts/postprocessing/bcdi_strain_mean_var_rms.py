@@ -11,8 +11,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
-import sys
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
 

@@ -12,12 +12,9 @@ from matplotlib import pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
 from scipy.stats import pearsonr
-import sys
-sys.path.append('//')
 import bcdi.utils.utilities as util
 from bcdi.utils import image_registration as reg
 import bcdi.graph.graph_utils as gu
-import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 Compare the correlation between several 3D objects.

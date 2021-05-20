@@ -13,9 +13,6 @@ from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
 import gc
-import sys
-sys.path.append('D:/myscripts/bcdi/')
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid

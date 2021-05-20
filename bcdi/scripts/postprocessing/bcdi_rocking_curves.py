@@ -15,8 +15,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
-import sys
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.graph.graph_utils as gu

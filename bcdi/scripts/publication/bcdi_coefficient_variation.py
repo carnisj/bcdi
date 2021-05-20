@@ -13,9 +13,6 @@ from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
 import matplotlib.ticker as ticker
-import sys
-import gc
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 from bcdi.utils import image_registration as reg

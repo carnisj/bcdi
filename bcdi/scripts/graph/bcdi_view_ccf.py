@@ -13,7 +13,6 @@ from matplotlib import pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
 import sys
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 
 helptext = """
 Load the output file of xcca_3D_polar.py or xcca_3D_rect.py and plot the cross-correlation function.

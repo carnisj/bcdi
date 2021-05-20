@@ -17,11 +17,8 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.ndimage.measurements import center_of_mass
 from traits.api import push_exception_handler
 import gc
-import sys
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.utils.utilities as util
 import bcdi.graph.graph_utils as gu
-import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 Template for 3d isosurface figures of a diffraction pattern.

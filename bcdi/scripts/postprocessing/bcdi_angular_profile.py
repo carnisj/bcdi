@@ -16,10 +16,8 @@ import os
 import pathlib
 from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
-import sys
 import tkinter as tk
 from tkinter import filedialog
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.facet_recognition.facet_utils as fu
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util

@@ -9,8 +9,6 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-import sys
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu

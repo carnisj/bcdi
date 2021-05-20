@@ -19,9 +19,7 @@ from numbers import Real
 import numpy as np
 import os
 import tkinter as tk
-import sys
 from tkinter import filedialog
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu

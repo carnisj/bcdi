@@ -7,7 +7,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import pylab as plt
+import matplotlib.pyplot as plt
 import numpy as np
 
 helptext = """

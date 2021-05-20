@@ -14,10 +14,8 @@ import numpy as np
 import os
 import pathlib
 from pprint import pprint
-import sys
 import tkinter as tk
 from tkinter import filedialog
-sys.path.append('//')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid

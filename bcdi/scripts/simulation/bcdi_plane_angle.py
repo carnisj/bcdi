@@ -8,8 +8,6 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-import sys
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.simulation.simulation_utils as simu
 
 helptext = """

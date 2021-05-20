@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """

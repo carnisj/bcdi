@@ -13,7 +13,6 @@ from tkinter import filedialog
 from scipy.interpolate import RegularGridInterpolator
 import gc
 import sys
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
 import bcdi.algorithms.algorithms_utils as algu

@@ -9,7 +9,6 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-# from pynx import scattering
 from scipy.interpolate import RegularGridInterpolator
 from matplotlib.colors import LinearSegmentedColormap
 import tkinter as tk

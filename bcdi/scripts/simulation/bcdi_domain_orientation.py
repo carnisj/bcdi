@@ -16,7 +16,6 @@ import gc
 import time
 import datetime
 import sys
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.utils.utilities as util

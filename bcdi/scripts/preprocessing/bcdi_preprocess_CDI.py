@@ -22,11 +22,9 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import gc
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.utils.utilities as util
-import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.validation as valid
 

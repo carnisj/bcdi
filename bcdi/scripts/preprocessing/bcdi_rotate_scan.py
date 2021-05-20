@@ -12,13 +12,9 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 import tkinter as tk
 from tkinter import filedialog
-import sys
 import gc
-
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
-import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 Rotate a 3D reciprocal space map around some axis. The data is expected to be in an orthonormal frame.

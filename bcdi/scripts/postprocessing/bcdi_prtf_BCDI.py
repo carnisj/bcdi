@@ -21,12 +21,9 @@ import xrayutilities as xu
 from scipy.interpolate import interp1d
 import gc
 import sys
-sys.path.append('D:/myscripts/bcdi/')
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
-import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 

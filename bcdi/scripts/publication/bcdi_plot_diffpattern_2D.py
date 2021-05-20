@@ -16,11 +16,8 @@ import pathlib
 import tkinter as tk
 from tkinter import filedialog
 from scipy.ndimage.measurements import center_of_mass
-import sys
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
-import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.validation as valid
 
 helptext = """

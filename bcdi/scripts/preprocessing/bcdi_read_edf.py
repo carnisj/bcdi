@@ -13,7 +13,6 @@ from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
 import sys
 import tkinter as tk
-from tkinter import filedialog
 from matplotlib.colors import LinearSegmentedColormap
 import os
 

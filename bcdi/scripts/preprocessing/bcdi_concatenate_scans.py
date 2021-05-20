@@ -12,10 +12,8 @@ import pathlib
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 import sys
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.preprocessing.preprocessing_utils as pru
-import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.utilities as util
 
 helptext = """

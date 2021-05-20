@@ -24,8 +24,6 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import RectangleSelector
 import matplotlib.ticker as ticker
 import os
-import sys
-sys.path.append('D:/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.experiment.experiment_utils as exp

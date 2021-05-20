@@ -13,8 +13,6 @@ import matplotlib.pyplot as plt
 plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
 import tkinter as tk
 from tkinter import filedialog
-import sys
-sys.path.append('//')
 import bcdi.utils.utilities as util
 import bcdi.graph.graph_utils as gu
 

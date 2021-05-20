@@ -11,13 +11,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.interpolate import interp1d
-from scipy.signal import medfilt
 import tkinter as tk
-import sys
 from tkinter import filedialog
 from scipy.signal import convolve
 import matplotlib.ticker as ticker
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
 from bcdi.utils import image_registration as reg
 
 helptext = """

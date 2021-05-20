@@ -17,8 +17,6 @@ from scipy.interpolate import RegularGridInterpolator
 import gc
 import os
 import sys
-sys.path.append('//win.desy.de/home/carnisj/My Documents/myscripts/bcdi/')
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu

@@ -21,10 +21,7 @@ from tkinter import filedialog
 from scipy.interpolate import interp1d
 import gc
 import sys
-sys.path.append('D:/myscripts/bcdi/')
-sys.path.append('C:/Users/Jerome/Documents/myscripts/bcdi/')
 import bcdi.graph.graph_utils as gu
-import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.utilities as util
 
 helptext = """
