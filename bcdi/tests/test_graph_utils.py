@@ -11,7 +11,7 @@ import unittest
 import numpy as np
 import os
 import pathlib
-from bcdi.context import gu
+import bcdi.graph.graph_utils as gu
 
 
 def run_tests(test_class):
