@@ -56,12 +56,12 @@ class TestSaveToVti(unittest.TestCase):
 
     def test_savetovti_array_dim(self):
         self.amp = np.ones((2, 2))
-        self.assertRaises(AssertionError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
+        self.assertRaises(ValueError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
                           tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase'))
 
     def test_savetovti_array_shape(self):
         self.amp = np.ones((2, 2, 2))
-        self.assertRaises(AssertionError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
+        self.assertRaises(ValueError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
                           tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase'))
 
     def test_savetovti_fieldnames_wrongtype(self):
