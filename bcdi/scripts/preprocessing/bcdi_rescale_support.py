@@ -58,7 +58,7 @@ gaussian_sigma = 4.0  # sigma of the gaussian filter
 ######################################################################
 psf_iterations = 0  # number of iterations of Richardson-Lucy deconvolution, leave it to 0 if unwanted
 psf_shape = (10, 10, 10)
-psf = pu.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False)
+psf = util.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False)
 ###########################
 # experimental parameters #
 ###########################

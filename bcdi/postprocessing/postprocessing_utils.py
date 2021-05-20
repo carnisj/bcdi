@@ -6,7 +6,6 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from functools import reduce
 from numbers import Number, Real
 from math import pi
 import numpy as np
@@ -1030,73 +1029,6 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
         raise ValueError('This function generates only 2D or 3D kernels')
 
     return kernel
-
-
-def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=False):
-    """
-    Create a 2D or 3D Gaussian window using scipy.stats.multivariate_normal.
-
-    :param window_shape: shape of the window
-    :param sigma: float, sigma of the distribution
-    :param mu: float, mean of the distribution
-    :param voxel_size: tuple, voxel size in each dimension corresponding to window_shape. If None, it will default to
-     1/window_shape[ii] for each dimension so that it is independent of the shape of the window
-    :param debugging: True to see plots
-    :return: the Gaussian window
-    """
-    valid_name = 'postprocessing_utils.gaussian_window'
-    # check parameters
-    valid.valid_container(window_shape, container_types=(tuple, list, np.ndarray), min_length=2, max_length=3,
-                          min_excluded=0, name=valid_name)
-    ndim = len(window_shape)
-    valid.valid_item(sigma, allowed_types=Real, min_excluded=0, name=valid_name)
-    valid.valid_item(mu, allowed_types=Real, name=valid_name)
-    valid.valid_container(voxel_size, container_types=(tuple, list, np.ndarray), length=ndim, allow_none=True,
-                          item_types=Real, min_excluded=0, name=valid_name)
-    valid.valid_item(debugging, allowed_types=bool, name=valid_name)
-
-    # define sigma and mu in ndim
-    sigma = np.repeat(sigma, ndim)
-    mu = np.repeat(mu, ndim)
-
-    # check the voxel size
-    if voxel_size is None:
-        voxel_size = [1/pixel_nb for pixel_nb in window_shape]
-
-    if ndim == 2:
-        nby, nbx = window_shape
-        grid_y, grid_x = np.meshgrid(np.linspace(-nby, nby, nby) * voxel_size[0],
-                                     np.linspace(-nbx, nbx, nbx) * voxel_size[1],
-                                     indexing='ij')
-        covariance = np.diag(sigma ** 2)
-        window = multivariate_normal.pdf(np.column_stack([grid_y.flat, grid_x.flat]), mean=mu,
-                                         cov=covariance)
-        del grid_y, grid_x
-        gc.collect()
-        window = window.reshape((nby, nbx))
-
-    else:  # 3D
-        nbz, nby, nbx = window_shape
-        grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-nbz, nbz, nbz) * voxel_size[0],
-                                             np.linspace(-nby, nby, nby) * voxel_size[1],
-                                             np.linspace(-nbx, nbx, nbx) * voxel_size[2],
-                                             indexing='ij')
-        covariance = np.diag(sigma ** 2)
-        window = multivariate_normal.pdf(np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]), mean=mu,
-                                         cov=covariance)
-        del grid_z, grid_y, grid_x
-        gc.collect()
-        window = window.reshape((nbz, nby, nbx))
-
-    # rescale the gaussian if voxel size was provided
-    if voxel_size is not None:
-        window = window * reduce((lambda x, y: x * y), window_shape)**2
-
-    if debugging:
-        gu.multislices_plot(array=window, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window',
-                            reciprocal_space=False, is_orthogonal=True)
-
-    return window
 
 
 def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **kwargs):

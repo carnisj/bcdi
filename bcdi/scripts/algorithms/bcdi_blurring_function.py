@@ -142,8 +142,8 @@ if debug:
 ###################################
 # calculate the blurring function #
 ###################################
-psf_guess = pu.gaussian_window(window_shape=obj.shape, sigma=sigma_guess, mu=0.0, voxel_size=voxel_size,
-                               debugging=debug)
+psf_guess = util.gaussian_window(window_shape=obj.shape, sigma=sigma_guess, mu=0.0, voxel_size=voxel_size,
+                                 debugging=debug)
 psf_guess = psf_guess / min_obj  # rescale to the object original min
 psf_partial_coh, error = algo.partial_coherence_rl(measured_intensity=obj, coherent_intensity=support,
                                                    iterations=rl_iterations, debugging=False, scale='linear',

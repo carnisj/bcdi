@@ -12,7 +12,7 @@ import numpy as np
 from scipy.signal import fftconvolve, convolve
 import sys
 sys.path.append('D:/myscripts/bcdi/')
-import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.utilities as util
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.validation as valid
 
@@ -139,7 +139,7 @@ def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, deb
     if psf is None:
         print('Initializing the psf using a', ndim, 'D multivariate normal window\n')
         print('sigma =', 0.3, ' mu =', 0.0)
-        psf = pu.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False)
+        psf = util.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False)
     psf = psf.astype(float)
     if debugging:
         gu.multislices_plot(array=psf, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window',
