@@ -660,10 +660,10 @@ class Diffractometer(object):
         rotation_matrix = self.rotation_matrix(stage_name='sample', angles=angles)
 
         # rotate the arrays
-        rotated_arrays = pu.rotate_crystal(arrays=arrays, rotation_matrix=rotation_matrix, voxel_size=voxel_size,
-                                           fill_value=fill_value, debugging=debugging, is_orthogonal=is_orthogonal,
-                                           reciprocal_space=reciprocal_space, **kwargs)
-        rotated_q = pu.rotate_vector(vectors=q_com, rotation_matrix=np.linalg.inv(rotation_matrix))
+        rotated_arrays = util.rotate_crystal(arrays=arrays, rotation_matrix=rotation_matrix, voxel_size=voxel_size,
+                                             fill_value=fill_value, debugging=debugging, is_orthogonal=is_orthogonal,
+                                             reciprocal_space=reciprocal_space, **kwargs)
+        rotated_q = util.rotate_vector(vectors=q_com, rotation_matrix=np.linalg.inv(rotation_matrix))
         return rotated_arrays, rotated_q
     
     def get_circles(self, stage_name):
@@ -2744,8 +2744,8 @@ class Setup(object):
 
             # calculate the new offset in the crystal frame (inverse rotation to have qz along q)
             offset_crystal = \
-                pu.rotate_vector(vectors=q_offset, axis_to_align=reference_axis,
-                                 reference_axis=np.array([q_along_x_com, q_along_y_com, q_along_z_com]) / qnorm)
+                util.rotate_vector(vectors=q_offset, axis_to_align=reference_axis,
+                                   reference_axis=np.array([q_along_x_com, q_along_y_com, q_along_z_com]) / qnorm)
             q_offset = offset_crystal[::-1]  # offset_crystal is in the order z, y, x
 
             # calculate the q coordinates of the data points in the crystal frame

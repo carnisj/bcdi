@@ -632,12 +632,12 @@ if correct_refraction:  # or correct_absorption:
     # kin and kout were calculated in the laboratory frame, but after the geometric transformation of the crystal, this
     # latter is always in the crystal frame (for simpler strain calculation). We need to transform kin and kout back
     # into the crystal frame (also, xrayutilities output is in crystal frame)
-    kin = pu.rotate_vector(vectors=[kin[2], kin[1], kin[0]],
-                           axis_to_align=axis_to_array_xyz[ref_axis_q],
-                           reference_axis=[q_lab[2], q_lab[1], q_lab[0]])
-    kout = pu.rotate_vector(vectors=[kout[2], kout[1], kout[0]],
-                            axis_to_align=axis_to_array_xyz[ref_axis_q],
-                            reference_axis=[q_lab[2], q_lab[1], q_lab[0]])
+    kin = util.rotate_vector(vectors=[kin[2], kin[1], kin[0]],
+                             axis_to_align=axis_to_array_xyz[ref_axis_q],
+                             reference_axis=[q_lab[2], q_lab[1], q_lab[0]])
+    kout = util.rotate_vector(vectors=[kout[2], kout[1], kout[0]],
+                              axis_to_align=axis_to_array_xyz[ref_axis_q],
+                              reference_axis=[q_lab[2], q_lab[1], q_lab[0]])
 
     # calculate the optical path of the incoming wavevector
     path_in = pu.get_opticalpath(support=bulk, direction="in", k=kin, debugging=debug)  # path_in already in nm
@@ -725,8 +725,8 @@ if save_frame == 'lab_flat_sample':
 if save_frame == 'crystal':
     # rotate also q_lab to have it along ref_axis_q, as a cross-checkm, vectors needs to be in xyz order
     comment = comment + '_crystalframe'
-    q_final = pu.rotate_vector(vectors=q_lab[::-1], axis_to_align=axis_to_array_xyz[ref_axis_q],
-                               reference_axis=q_lab[::-1])
+    q_final = util.rotate_vector(vectors=q_lab[::-1], axis_to_align=axis_to_array_xyz[ref_axis_q],
+                                 reference_axis=q_lab[::-1])
 
 ##########################################################################################
 # rotates the crystal e.g. for easier slicing of the result along a particular direction #
@@ -739,8 +739,8 @@ if align_axis:
                                            voxel_size=voxel_size, debugging=(True, False, False),
                                            is_orthogonal=True, reciprocal_space=False, title=('amp', 'phase', 'strain'))
     # rotate q accordingly, vectors needs to be in xyz order
-    q_final = pu.rotate_vector(vectors=q_final[::-1], axis_to_align=axis_to_array_xyz[ref_axis],
-                               reference_axis=axis_to_align)
+    q_final = util.rotate_vector(vectors=q_final[::-1], axis_to_align=axis_to_array_xyz[ref_axis],
+                                 reference_axis=axis_to_align)
 
 print(f"\nq_final = ({q_final[0]:.4f} 1/A, {q_final[1]:.4f} 1/A, {q_final[2]:.4f} 1/A)")
 
