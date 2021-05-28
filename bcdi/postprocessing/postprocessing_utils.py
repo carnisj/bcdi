@@ -319,6 +319,7 @@ def bragg_temperature(spacing, reflection, spacing_ref=None, temperature_ref=Non
     :param material: at the moment only 'Pt'
     :return: calculated temperature
     """
+    print('\n')
     if material == 'Pt':
         # reference values for Pt: temperature in K, thermal expansion x 10^6 in 1/K, lattice parameter in angstroms
         expansion_data = np.array([[100, 6.77, 3.9173], [110, 7.10, 3.9176], [120, 7.37, 3.9179], [130, 7.59, 3.9182],
