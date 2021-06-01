@@ -405,7 +405,7 @@ class maskInteraction(maskMaker):
 			self.mask[:,:,self.idx] = 0		
 		self.update_fig2mask()		
 
-	def add_threshold_pixels(self,flag_lowthresh = True):
+	def add_threshold_pixels(self, threshold, flag_lowthresh = True):
 		if flag_lowthresh:
 			self.mask[self.data<threshold] = 1
 		elif not flag_lowthresh:
