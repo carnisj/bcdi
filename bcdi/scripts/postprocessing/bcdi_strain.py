@@ -823,7 +823,7 @@ fig.text(0.60, 0.20, f'correlation threshold={correlation_threshold}', size=20)
 fig.text(0.60, 0.15, f'average over {avg_counter} reconstruction(s)', size=20)
 fig.text(0.60, 0.10, f'Planar distance={planar_dist:.5f} nm', size=20)
 if get_temperature:
-    temperature = pu.bragg_temperature(spacing=planar_dist, reflection=reflection, spacing_ref=reference_spacing,
+    temperature = pu.bragg_temperature(spacing=planar_dist*10, reflection=reflection, spacing_ref=reference_spacing,
                                        temperature_ref=reference_temperature, use_q=False, material="Pt")
     fig.text(0.60, 0.05, f'Estimated T={temperature} C', size=20)
 if save:
