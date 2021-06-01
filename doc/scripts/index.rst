@@ -470,14 +470,6 @@ bcdi_kinematic_sum_forloop.py
    :end-before: """
    :language: rst
 
-bcdi_kinematic_sum_pynx.py
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../bcdi/scripts/simulation/bcdi_kinematic_sum_pynx.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
 bcdi_plane_angle.py
 ^^^^^^^^^^^^^^^^^^^
 
