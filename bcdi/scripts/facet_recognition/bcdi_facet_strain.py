@@ -35,11 +35,11 @@ Input: a reconstruction .npz file with fields: 'amp' and 'strain'
 Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
 """
 
-scan = 11  # spec scan number
-datadir = "D:/data/Pt THH ex-situ/Data/CH4760/S" + str(scan) + '/pynxraw/gap_interp/'
-support_threshold = 0.38  # threshold for support determination
-voxel_size = [3, 3, 3]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
-upsampling_factor = 1  # integer, factor for upsampling the reconstruction in order to have a smoother surface
+scan = 1585  # spec scan number
+datadir = "C:/Users/carnisj/Documents/data/david/S" + str(scan) + '/'
+support_threshold = 0.35  # threshold for support determination
+voxel_size = [11.4, 10.4, 11.3]   # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+upsampling_factor = 2  # integer, factor for upsampling the reconstruction in order to have a smoother surface
 savedir = datadir
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 projection_axis = 1  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
@@ -57,7 +57,7 @@ corners_coord = 310  # coordination threshold for isolating corners, 310 seems t
 # parameters only used in the stereographic projection #
 ########################################################
 threshold_south = -2500  # background threshold in the stereographic projection from South of the density of normals
-threshold_north = -2500  # background threshold in the stereographic projection from North of the density of normals
+threshold_north = -500  # background threshold in the stereographic projection from North of the density of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
 stereo_scale = 'linear'  # 'linear' or 'log', scale of the colorbar in the stereographic plot
 ##########################################################
@@ -71,22 +71,22 @@ kde_threshold = -0.2  # threshold for defining the background in the density est
 planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
 # planes_south['0 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([0, 2, 0]))
 planes_south['1 1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 1]))
-# planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
-# planes_south['1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 0]))
-# planes_south['-1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, 1, 0]))
-# planes_south['1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, -1, 1]))
+planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
+planes_south['1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 0]))
+planes_south['-1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, 1, 0]))
+planes_south['1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, -1, 1]))
 # planes_south['-1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
-planes_south['2 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, 1, 0]))
-planes_south['2 -1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, -1, 0]))
+# planes_south['2 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, 1, 0]))
+# planes_south['2 -1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, -1, 0]))
 # planes_south['1 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 2, 0]))
 
 planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
 # planes_north['0 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([0, -2, 0]))
 planes_north['-1 -1 -1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, -1]))
-# planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
-# planes_north['-1 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 0]))
-# planes_north['-1 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
-# planes_north['-1 -1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 1]))
+planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
+planes_north['-1 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 0]))
+planes_north['-1 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
+planes_north['-1 -1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 1]))
 # planes_north['-1 1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
 planes_north['-2 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-2, 1, 0]))
 planes_north['-2 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-2, -1, 0]))

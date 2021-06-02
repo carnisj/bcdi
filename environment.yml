@@ -1,0 +1,7 @@
+name: bcdi
+channels:
+  - defaults
+  - anaconda
+  - menpo
+  - conda-forge
+prefix: C:\Users\carnisj\Anaconda3\envs\bcdi\envs\bcdi
