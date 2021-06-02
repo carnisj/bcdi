@@ -788,6 +788,8 @@ def stereographic_proj(normals, intensity, max_angle, savedir, voxel_size, proje
     ax1.axis('scaled')
     gu.colorbar(img1)
     ax1.set_title('KDE \nNorth pole')
+    fig.text(0.32, 0.90, "Read the threshold value in the console", size=16)
+    fig.text(0.32, 0.85, "Click on the figure to resume the execution", size=16)
     fig.tight_layout()
     cid = plt.connect('motion_notify_event', mouse_move)
     fig.waitforbuttonpress()
