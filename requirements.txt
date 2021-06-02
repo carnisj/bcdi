@@ -4,3 +4,7 @@ matplotlib
 scipy
 scikit-image
 vtk
+fabio
+xrayutilities
+silx
+vtk
