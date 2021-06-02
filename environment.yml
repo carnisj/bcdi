@@ -8,3 +8,7 @@ prefix: C:\Users\carnisj\Anaconda3\envs\bcdi\envs\bcdi
 dependencies:
   - numpy
   - h5py
+  - matplotlib
+  - scipy
+  - scikit-image
+  - vtk
