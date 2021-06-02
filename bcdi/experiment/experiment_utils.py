@@ -317,7 +317,7 @@ class Detector(object):
 
     @template_file.setter
     def template_file(self, value):
-        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.template_file')
+        valid.valid_container(value, container_types=str, min_length=0, allow_none=True, name='Detector.template_file')
         self._template_file = value
 
     @property
@@ -329,7 +329,7 @@ class Detector(object):
 
     @template_imagefile.setter
     def template_imagefile(self, value):
-        valid.valid_container(value, container_types=str, min_length=1, allow_none=True, name='Detector.imagefile')
+        valid.valid_container(value, container_types=str, min_length=0, allow_none=True, name='Detector.imagefile')
         self._template_imagefile = value
 
     @property
@@ -1762,7 +1762,7 @@ class Setup(object):
             self._custom_images = None
         else:
             valid.valid_container(value, container_types=(tuple, list), min_length=1, item_types=int,
-                                  name='Setup.custom_images')
+                                  allow_none=True, name='Setup.custom_images')
             self._custom_images = value
 
     @property
@@ -1775,7 +1775,7 @@ class Setup(object):
 
     @custom_monitor.setter
     def custom_monitor(self, value):
-        if not self._custom_scan:
+        if not self._custom_scan or not self._custom_images:
             self._custom_monitor = None
         else:
             if value is None:
@@ -1797,7 +1797,7 @@ class Setup(object):
             self._custom_motors = None
         else:
             if not isinstance(value, dict):
-                raise TypeError('custom_monitor should be a dictionnary of "motor_name": motor_positions pairs')
+                raise TypeError('custom_motors should be a dictionnary of "motor_name": motor_positions pairs')
             else:
                 self._custom_motors = value
 

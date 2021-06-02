@@ -1,6 +1,15 @@
 numpy
-h5py
-matplotlib
 scipy
 scikit-image
+matplotlib
+hdf5plugin
+h5py
+traits
 vtk
+importlib_resources
+xrayutilities
+mayavi
+fabio
+silx
+lmfit
+moviepy

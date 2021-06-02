@@ -982,9 +982,9 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
     :param filename: the file name to load, or the path of 'alias_dict.txt' for SIXS
     :return: logfile
     """
-    if setup.custom_scan:  # no log file in that case
-        logfile = ''
-    elif setup.beamline == 'CRISTAL':  # no specfile, load directly the dataset
+    logfile = ''
+
+    if setup.beamline == 'CRISTAL':  # no specfile, load directly the dataset
         ccdfiletmp = os.path.join(detector.datadir + detector.template_imagefile % scan_number)
         logfile = h5py.File(ccdfiletmp, 'r')
 
@@ -1010,9 +1010,6 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
     elif setup.beamline == 'NANOMAX':
         ccdfiletmp = os.path.join(detector.datadir + detector.template_imagefile % scan_number)
         logfile = h5py.File(ccdfiletmp, 'r')
-
-    else:
-        raise ValueError('Incorrect value for beamline parameter')
 
     return logfile
 
