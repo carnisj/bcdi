@@ -4,15 +4,19 @@ channels:
   - anaconda
   - menpo
   - conda-forge
-prefix: C:\Users\carnisj\Anaconda3\envs\bcdi\envs\bcdi
 dependencies:
   - numpy
-  - h5py
-  - matplotlib
   - scipy
   - scikit-image
+  - matplotlib
+  - hdf5plugin
+  - h5py
+  - traits
   - vtk
-  - fabio
+  - importlib_resources
   - xrayutilities
+  - mayavi
+  - fabio
   - silx
-  - vtk
+  - lmfit
+  - moviepy
