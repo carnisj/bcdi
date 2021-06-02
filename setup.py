@@ -121,7 +121,7 @@ setup(name='bcdi', version='0.1.1',
       url='https://github.com/carnisj/bcdi',
       project_urls={
           'Documentation': 'https://bcdi.readthedocs.io/en/latest/'},
-      python_requires='>=3.6',
+      python_requires='>=3.6, !=3.9.*',
       install_requires=['numpy', 'scipy', 'scikit-image', 'matplotlib', 'hdf5plugin', 'h5py', 'traits', 'vtk',
                         'importlib_resources', 'mayavi', 'xrayutilities', 'fabio', 'silx', 'lmfit', 'moviepy'],
       classifiers=[
@@ -142,5 +142,7 @@ setup(name='bcdi', version='0.1.1',
           # These classifiers are *not* checked by 'pip install'. See instead
           # 'python_requires' below.
           'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
+          'Programming Language :: Python :: 3.8',
       ],
       )
