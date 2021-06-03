@@ -1929,6 +1929,8 @@ class Setup(object):
 
         :return: kout vector
         """
+        kout = np.zeros(3)
+
         if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
             # gamma is anti-clockwise
             kout = 2 * np.pi / self.wavelength * np.array(
@@ -1965,8 +1967,7 @@ class Setup(object):
                 [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
                  np.sin(np.pi * self.outofplane_angle / 180),  # y
                  np.sin(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180)])  # x
-        else:
-            raise ValueError('setup parameter: ', self.beamline, 'not defined')
+
         return kout
 
     @property
@@ -2043,6 +2044,8 @@ class Setup(object):
 
         :return: +1 or -1
         """
+        coeff_inplane = 0
+
         if self.detector_hor == 'y+':
             hor_coeff = 1
         else:  # 'y-'
@@ -2066,8 +2069,7 @@ class Setup(object):
         elif self.beamline == 'NANOMAX':
             # gamma is clockwise, we see the detector from downstream
             coeff_inplane = -1 * hor_coeff
-        else:
-            raise ValueError('setup parameter: ', self.beamline, 'not defined')
+
         return coeff_inplane
 
     @property
@@ -2184,8 +2186,6 @@ class Setup(object):
             return DiffractometerCRISTAL(sample_offsets)
         elif self.beamline == 'NANOMAX':
             return DiffractometerNANOMAX(sample_offsets)
-        else:
-            raise ValueError('Invalid beamline')
 
     def detector_frame(self, obj, voxel_size, width_z=None, width_y=None, width_x=None,
                        debugging=False, **kwargs):
