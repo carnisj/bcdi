@@ -226,8 +226,7 @@ print(detector)
 if simulation:
     detector.datadir, detector.datadir, detector.savedir = (root_folder,) * 3
 
-logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
-                             filename=detector.specfile)
+logfile = setup.create_logfile(scan_number=scan, root_folder=root_folder,  filename=detector.specfile)
 
 #############################################
 # Initialize geometry for orthogonalization #

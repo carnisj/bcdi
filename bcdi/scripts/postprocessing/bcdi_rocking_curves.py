@@ -180,8 +180,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     # override the saving directory, we want to save results at the same place
     detector.savedir = save_dir
 
-    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan_nb,
-                                 root_folder=root_folder, filename=detector.specfile)
+    logfile = setup.create_logfile(scan_number=scan_nb, root_folder=root_folder, filename=detector.specfile)
 
     data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scan_nb,
                                                              detector=detector, setup=setup,

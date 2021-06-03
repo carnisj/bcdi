@@ -136,8 +136,7 @@ setup.init_paths(sample_name=sample_name, scan_number=scan, root_folder=root_fol
                  save_dir=save_dir, specfile_name=specfile_name, template_imagefile=template_imagefile,
                  create_savedir=True)
 
-logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
-                             filename=detector.specfile)
+logfile = setup.create_logfile(scan_number=scan, root_folder=root_folder, filename=detector.specfile)
 
 ###################
 # print instances #

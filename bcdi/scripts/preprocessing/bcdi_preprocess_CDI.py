@@ -365,8 +365,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                      save_dir=save_dir, save_dirname=save_dirname, verbose=True, create_savedir=create_savedir,
                      specfile_name=specfile_name, template_imagefile=template_imagefile)
 
-    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan_nb,
-                                 root_folder=root_folder, filename=detector.specfile)
+    logfile = setup.create_logfile(scan_number=scan_nb, root_folder=root_folder, filename=detector.specfile)
 
     if normalize_method != 'skip':
         comment = comment + '_norm'

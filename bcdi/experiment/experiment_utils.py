@@ -9,6 +9,7 @@
 
 from functools import reduce
 import gc
+import h5py
 from math import isclose
 from numbers import Number, Real
 import numpy as np
@@ -2169,6 +2170,47 @@ class Setup(object):
                 f"custom_motors={self.custom_motors},\n"
                 f"sample_inplane={self.sample_inplane}, sample_outofplane={self.sample_outofplane}, "
                 f"offset_inplane={self.offset_inplane})")
+
+    def create_logfile(self, scan_number, root_folder, filename):
+        """
+        Create the logfile used in gridmap().
+
+        :param scan_number: the scan number to load
+        :param root_folder: the root directory of the experiment, where is the specfile/.fio file
+        :param filename: the file name to load, or the path of 'alias_dict.txt' for SIXS
+        :return: logfile
+        """
+        logfile = None
+
+        if self.beamline == 'CRISTAL':  # no specfile, load directly the dataset
+            ccdfiletmp = os.path.join(self.detector.datadir + self.detector.template_imagefile % scan_number)
+            logfile = h5py.File(ccdfiletmp, 'r')
+
+        elif self.beamline == 'P10':  # load .fio file
+            logfile = root_folder + filename + '/' + filename + '.fio'
+
+        elif self.beamline == 'SIXS_2018':  # no specfile, load directly the dataset
+            import bcdi.preprocessing.nxsReady as nxsReady
+
+            logfile = nxsReady.DataSet(longname=self.detector.datadir + self.detector.template_imagefile % scan_number,
+                                       shortname=self.detector.template_imagefile % scan_number, alias_dict=filename,
+                                       scan="SBS")
+        elif self.beamline == 'SIXS_2019':  # no specfile, load directly the dataset
+            import bcdi.preprocessing.ReadNxs3 as ReadNxs3
+
+            logfile = ReadNxs3.DataSet(directory=self.detector.datadir,
+                                       filename=self.detector.template_imagefile % scan_number,
+                                       alias_dict=filename)
+
+        elif self.beamline == 'ID01':  # load spec file
+            from silx.io.specfile import SpecFile
+            logfile = SpecFile(root_folder + filename + '.spec')
+
+        elif self.beamline == 'NANOMAX':
+            ccdfiletmp = os.path.join(self.detector.datadir + self.detector.template_imagefile % scan_number)
+            logfile = h5py.File(ccdfiletmp, 'r')
+
+        return logfile
 
     def create_diffractometer(self, sample_offsets):
         """
