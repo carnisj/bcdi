@@ -106,7 +106,8 @@ class Detector(object):
         """
         Name of the counter for the image number.
         """
-        counter_dict = {'Maxipix': 'mpx4inr', 'Eiger2M': 'ei2minr', 'Eiger4M': None, 'Timepix': None, 'Merlin': 'alba2'}
+        counter_dict = {'Maxipix': 'mpx4inr', 'Eiger2M': 'ei2minr', 'Eiger4M': None, 'Timepix': None, 'Merlin': 'alba2',
+                        'Dummy': None}
         return counter_dict.get(self.name, None)
 
     @ property
@@ -138,14 +139,14 @@ class Detector(object):
     @property
     def name(self):
         """
-        Name of the detector: 'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'
+        Name of the detector: 'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M', 'Dummy'
         """
         return self._name
 
     @name.setter
     def name(self, value):
-        if value not in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}:
-            raise ValueError("Name should be in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}")
+        if value not in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M', 'Dummy'}:
+            raise ValueError("Name should be in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M', 'Dummy'}")
         else:
             self._name = value
 
@@ -204,7 +205,7 @@ class Detector(object):
         """
         Number of pixels (vertical, horizontal) of the unbinned detector.
         """
-        if self.name == 'Maxipix':
+        if self.name in {'Maxipix', 'Dummy'}:
             number = (516, 516)
         elif self.name == 'Timepix':
             number = (256, 256)
@@ -337,7 +338,7 @@ class Detector(object):
         """
         Pixel size (vertical, horizontal) of the unbinned detector in meters.
         """
-        if self.name in {'Maxipix', 'Timepix', 'Merlin'}:
+        if self.name in {'Maxipix', 'Dummy', 'Timepix', 'Merlin'}:
             pix = (55e-06, 55e-06)
         elif self.name in {'Eiger2M', 'Eiger4M'}:
             pix = (75e-06, 75e-06)
@@ -463,7 +464,7 @@ class Detector(object):
             mask[data > 4000000000 * nb_img] = 1
             data[data > 4000000000 * nb_img] = 0
 
-        elif self.name == 'Maxipix':
+        elif self.name in {'Maxipix', 'Dummy'}:
             data[:, 255:261] = 0
             data[255:261, :] = 0
 
@@ -487,9 +488,6 @@ class Detector(object):
 
         elif self.name == 'Timepix':
             pass  # no gaps
-
-        else:
-            raise NotImplementedError('Detector not implemented')
 
         return data, mask
 
