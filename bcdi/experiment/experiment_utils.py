@@ -2246,12 +2246,11 @@ class Setup(object):
 
         return detector_obj
 
-    def init_paths(self, detector, sample_name, scan_number, root_folder, save_dir, specfile_name, template_imagefile,
+    def init_paths(self, sample_name, scan_number, root_folder, save_dir, specfile_name, template_imagefile,
                    data_dirname=None, save_dirname='result', create_savedir=False, verbose=False):
         """
         Update the detector instance with initialized paths and template for filenames depending on the beamline
 
-        :param detector: instance of the Class Detector
         :param sample_name: string in front of the scan number in the data folder name.
         :param scan_number: the scan number
         :param root_folder: folder of the experiment, where all scans are stored
@@ -2274,9 +2273,6 @@ class Setup(object):
         :param create_savedir: boolean, True to create the saving folder if it does not exist
         :param verbose: True to print the paths
         """
-        if not isinstance(detector, Detector):
-            raise TypeError('detector should be an instance of the Class Detector')
-
         if not isinstance(scan_number, int):
             raise TypeError('scan_number should be an integer')
 
@@ -2287,7 +2283,8 @@ class Setup(object):
         valid.valid_container(save_dirname, container_types=str, min_length=1, name='Setup.init_paths')
         valid.valid_container(data_dirname, container_types=str, min_length=0, allow_none=True,
                               name='Setup.init_paths')
-        detector.rootdir, detector.sample_name, detector.template_file = root_folder, sample_name, template_imagefile
+        self.detector.rootdir, self.detector.sample_name, self.detector.template_file = \
+            root_folder, sample_name, template_imagefile
 
         if self.beamline == 'P10':
             specfile = sample_name + '_{:05d}'.format(scan_number)
@@ -2328,18 +2325,18 @@ class Setup(object):
         if not datadir.endswith('/'):
             datadir += '/'
 
-        detector.savedir, detector.datadir, detector.specfile, detector.template_imagefile = \
+        self.detector.savedir, self.detector.datadir, self.detector.specfile, self.detector.template_imagefile = \
             savedir, datadir, specfile, template_imagefile
 
         if create_savedir:
-            pathlib.Path(detector.savedir).mkdir(parents=True, exist_ok=True)
+            pathlib.Path(self.detector.savedir).mkdir(parents=True, exist_ok=True)
 
         if verbose:
             if not self.custom_scan:
                 print(f"datadir = '{datadir}'\nsavedir = '{savedir}'\ntemplate_imagefile = '{template_imagefile}'\n")
             else:
-                print(f"rootdir = '{root_folder}'\nsavedir = '{savedir}'\nsample_name = '{detector.sample_name}'\n"
-                      f"template_imagefile = '{detector.template_file}'\n")
+                print(f"rootdir = '{root_folder}'\nsavedir = '{savedir}'\nsample_name = '{self.detector.sample_name}'\n"
+                      f"template_imagefile = '{self.detector.template_file}'\n")
 
     def ortho_directspace(self, arrays, q_com, initial_shape=None, voxel_size=None, fill_value=0,
                           reference_axis=(0, 1, 0), verbose=True, debugging=False, **kwargs):
