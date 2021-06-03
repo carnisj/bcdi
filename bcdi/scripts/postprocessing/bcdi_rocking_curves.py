@@ -173,7 +173,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + '\n' + f'{"#" * len(tmp_str)}')
 
     # initialize the paths
-    setup.init_paths(detector=detector, sample_name=sample_name[scan_idx-1], scan_number=scan_nb,
+    setup.init_paths(sample_name=sample_name[scan_idx-1], scan_number=scan_nb,
                      root_folder=root_folder, save_dir=save_dir, verbose=True, create_savedir=True,
                      specfile_name=specfile_name, template_imagefile=template_imagefile)
 

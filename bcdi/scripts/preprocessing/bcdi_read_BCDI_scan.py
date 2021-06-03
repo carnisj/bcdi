@@ -143,7 +143,7 @@ print(detector)
 ########################
 # initialize the paths #
 ########################
-setup.init_paths(detector=detector, sample_name=sample_name, scan_number=scan, root_folder=root_folder,
+setup.init_paths(sample_name=sample_name, scan_number=scan, root_folder=root_folder,
                  save_dir=save_dir, save_dirname=save_dirname, verbose=True, create_savedir=True,
                  specfile_name=specfile_name, template_imagefile=template_imagefile)
 

@@ -127,7 +127,7 @@ setup = exp.Setup(beamline=beamline, detector=detector, energy=energy, rocking_a
 # Initialize the paths and the logfile #
 ########################################
 # initialize the paths
-setup.init_paths(detector=detector, sample_name=sample_name, scan_number=scan, root_folder=root_folder, save_dir=None,
+setup.init_paths(sample_name=sample_name, scan_number=scan, root_folder=root_folder, save_dir=None,
                  create_savedir=False, specfile_name=specfile_name, template_imagefile=template_imagefile, verbose=True)
 
 logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,

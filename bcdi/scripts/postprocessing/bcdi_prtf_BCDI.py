@@ -207,7 +207,7 @@ setup = exp.Setup(beamline=beamline, detector=detector, energy=energy, rocking_a
 ########################
 # Initialize the paths #
 ########################
-setup.init_paths(detector=detector, sample_name=sample_name, scan_number=scan, root_folder=root_folder,
+setup.init_paths(sample_name=sample_name, scan_number=scan, root_folder=root_folder,
                  save_dir=save_dir, specfile_name=specfile_name, template_imagefile=template_imagefile,
                  create_savedir=True)
 
