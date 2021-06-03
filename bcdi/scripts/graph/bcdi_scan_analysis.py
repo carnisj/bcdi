@@ -191,7 +191,7 @@ kwargs['is_series'] = is_series
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, sum_roi=sum_roi,
                         binning=[1, binning[0], binning[1]], **kwargs)
 
-setup = exp.SetupPreprocessing(beamline=beamline)
+setup = exp.Setup(beamline=beamline, detector=detector)
 
 if setup.beamline == 'P10':
     specfile_name = sample_name + '_{:05d}'.format(scan)
@@ -212,8 +212,7 @@ if savedir == '':
 detector.savedir = savedir
 print('savedir: ', savedir)
 
-logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
-                             filename=specfile_name)
+logfile = setup.create_logfile(scan_number=scan, root_folder=root_folder, filename=specfile_name)
 
 #########################
 # check some parameters #

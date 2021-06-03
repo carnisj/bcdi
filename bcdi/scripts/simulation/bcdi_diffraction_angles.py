@@ -43,9 +43,8 @@ bounds = (0, 5, 0, (-45, 45), (-2, 90), (-1, 70))  # bound values for the goniom
 ####################
 # Initialize setup #
 ####################
-setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=None, distance=None,
-                               beam_direction=beam_direction, sample_inplane=sample_inplane,
-                               sample_outofplane=sample_outofplane)
+setup = exp.Setup(beamline=beamline, energy=energy, beam_direction=beam_direction, sample_inplane=sample_inplane,
+                  sample_outofplane=sample_outofplane)
 
 qconv, _ = pru.init_qconversion(setup)
 

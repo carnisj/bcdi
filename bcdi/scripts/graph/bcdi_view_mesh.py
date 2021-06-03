@@ -199,7 +199,7 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
                         binning=[1, binning[0], binning[1]], **kwargs)
 crop_roi = crop_roi or (0, detector.nb_pixel_y, 0, detector.nb_pixel_x)
 detector.roi = crop_roi
-setup = exp.SetupPreprocessing(beamline=beamline)
+setup = exp.Setup(beamline=beamline, detector=detector)
 
 if setup.beamline == 'P10':
     specfile_name = sample_name + '_{:05d}'.format(scan)
@@ -220,8 +220,7 @@ if savedir == '':
 detector.savedir = savedir
 print('savedir: ', savedir)
 
-logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan, root_folder=root_folder,
-                             filename=specfile_name)
+logfile = setup.create_logfile(scan_number=scan, root_folder=root_folder, filename=specfile_name)
 
 #########################
 # check some parameters #

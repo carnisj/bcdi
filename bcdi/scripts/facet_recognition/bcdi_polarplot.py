@@ -47,12 +47,8 @@ reflection = np.array([0, 2, 0])  # np.array([0, 0, 2])  #   # reflection measur
 projection_axis = 1  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
 radius_mean = 0.030  # q from Bragg peak
 dq = 0.001  # width in q of the shell to be projected
-offset_eta = 0  # positive make diff pattern rotate counter-clockwise (eta rotation around Qy)
-# will shift peaks rightwards in the pole figure
-offset_phi = 0     # positive make diff pattern rotate clockwise (phi rotation around Qz)
-# will rotate peaks counterclockwise in the pole figure
-offset_chi = 0  # positive make diff pattern rotate clockwise (chi rotation around Qx)
-# will shift peaks upwards in the pole figure
+sample_offsets = None  # tuple of offsets in degrees of the sample for each sample circle (outer first).
+# the sample offsets will be subtracted to the motor values. Leave None if no offset.
 q_offset = [0, 0, 0]  # offset of the projection plane in [qx, qy, qz] (0 = equatorial plane)
 # q_offset applies only to measured diffraction pattern (not obtained from a reconstruction)
 photon_threshold = 0  # threshold applied to the measured diffraction pattern
@@ -182,12 +178,11 @@ detector = exp.Detector(name=detector, datadir='', template_imagefile=template_i
 ####################
 # Initialize setup #
 ####################
-setup = exp.SetupPreprocessing(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
-                               beam_direction=beam_direction, sample_inplane=sample_inplane,
-                               sample_outofplane=sample_outofplane, sample_offsets=(offset_chi, offset_phi, offset_eta),
-                               offset_inplane=offset_inplane, custom_scan=custom_scan, custom_images=custom_images,
-                               custom_monitor=custom_monitor, custom_motors=custom_motors, filtered_data=filtered_data,
-                               is_orthogonal=is_orthogonal)
+setup = exp.Setup(beamline=beamline, detector=detector, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+                  beam_direction=beam_direction, sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
+                  sample_offsets=sample_offsets, offset_inplane=offset_inplane, custom_scan=custom_scan,
+                  custom_images=custom_images, custom_monitor=custom_monitor,
+                  custom_motors=custom_motors, filtered_data=filtered_data, is_orthogonal=is_orthogonal)
 
 #############################################
 # Initialize geometry for orthogonalization #
@@ -224,8 +219,7 @@ detector.savedir = homedir
 if not reconstructed_data:  # load reciprocal space data
     flatfield = pru.load_flatfield(flatfield_file)
     hotpix_array = pru.load_hotpixels(hotpixels_file)
-    logfile = pru.create_logfile(setup=setup, detector=detector, scan_number=scan,
-                                 root_folder=root_folder, filename=specfile_name)
+    logfile = setup.create_logfile(scan_number=scan, root_folder=root_folder, filename=specfile_name)
 
     data, mask, frames_logical, monitor = pru.load_bcdi_data(logfile=logfile, scan_number=scan, detector=detector,
                                                              setup=setup, flatfield=flatfield, hotpixels=hotpix_array,
