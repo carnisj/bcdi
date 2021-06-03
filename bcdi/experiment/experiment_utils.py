@@ -87,7 +87,6 @@ class Detector(object):
         self.template_imagefile = template_imagefile
         self.specfile = specfile
 
-
     @property
     def binning(self):
         """
@@ -141,14 +140,15 @@ class Detector(object):
     @property
     def name(self):
         """
-        Name of the detector: 'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M', 'Dummy'
+        Name of the detector
         """
         return self._name
 
     @name.setter
     def name(self, value):
-        if value not in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M', 'Dummy'}:
-            raise ValueError("Name should be in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M', 'Dummy'}")
+        valid_names = {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M', 'Dummy'}
+        if value not in valid_names:
+            raise ValueError(f"Name should be in {valid_names}")
         else:
             self._name = value
 
@@ -1629,6 +1629,7 @@ class Setup(object):
     Class for defining the experimental geometry.
 
     :param beamline: name of the beamline, among {'ID01','SIXS_2018','SIXS_2019','34ID','P10','CRISTAL','NANOMAX'}
+    :param detector: an instance of the cass experiment_utils.Detector()
     :param beam_direction: direction of the incident X-ray beam in the frame (z downstream,y vertical up,x outboard)
     :param energy: energy setting of the beamline, in eV.
     :param distance: sample to detector distance, in m.
@@ -1639,8 +1640,6 @@ class Setup(object):
     :param grazing_angle: motor positions for the goniometer circles below the rocking angle. It should be a
      list/tuple of lenght 1 for out-of-plane rocking curves (the chi motor value) and length 2 for inplane rocking
      curves (the chi and omega/om/eta motor values).
-    :param pixel_x: detector horizontal pixel size, in meters.
-    :param pixel_y: detector vertical pixel size, in meters.
     :param kwargs:
      - 'direct_beam': tuple of two real numbers indicating the position of the direct beam in pixels at zero
        detector angles.
@@ -1662,9 +1661,9 @@ class Setup(object):
      - 'actuators': optional dictionary that can be used to define the entries corresponding to actuators in data files
        (useful at CRISTAL where the location of data keeps changing)
     """
-    def __init__(self, beamline, beam_direction=(1, 0, 0), energy=None, distance=None, outofplane_angle=None,
-                 inplane_angle=None, tilt_angle=None, rocking_angle=None, grazing_angle=None, pixel_x=None,
-                 pixel_y=None, **kwargs):
+    def __init__(self, beamline, detector=Detector('Dummy'), beam_direction=(1, 0, 0), energy=None, distance=None,
+                 outofplane_angle=None, inplane_angle=None, tilt_angle=None, rocking_angle=None, grazing_angle=None,
+                 **kwargs):
 
         valid.valid_kwargs(kwargs=kwargs,
                            allowed_kwargs={'direct_beam', 'filtered_data', 'custom_scan', 'custom_images',
@@ -1689,6 +1688,7 @@ class Setup(object):
 
         # load positional arguments corresponding to instance properties
         self.beamline = beamline
+        self.detector = detector
         self.beam_direction = beam_direction
         self.energy = energy
         self.distance = distance
@@ -1697,8 +1697,6 @@ class Setup(object):
         self.tilt_angle = tilt_angle
         self.rocking_angle = rocking_angle
         self.grazing_angle = grazing_angle
-        self.pixel_x = pixel_x
-        self.pixel_y = pixel_y
 
         # create the Diffractometer instance
         self._diffractometer = self.create_diffractometer(sample_offsets)
@@ -1821,6 +1819,19 @@ class Setup(object):
             raise TypeError('custom_scan should be a boolean')
         else:
             self._custom_scan = value
+
+    @property
+    def detector(self):
+        """
+        Detector instance
+        """
+        return self._detector
+
+    @detector.setter
+    def detector(self, value):
+        if not isinstance(value, Detector):
+            raise TypeError("value should be an instance of Detector")
+        self._detector = value
 
     @property
     def detector_hor(self):
@@ -2091,42 +2102,6 @@ class Setup(object):
         return coeff_outofplane
 
     @property
-    def pixel_x(self):
-        """
-        Detector horizontal pixel size, in meters.
-        """
-        return self._pixel_x
-
-    @pixel_x.setter
-    def pixel_x(self, value):
-        if value is None:
-            self._pixel_x = value
-        elif not isinstance(value, Real):
-            raise TypeError('pixel_x should be a number in m')
-        elif value <= 0:
-            raise ValueError('pixel_x should be a strictly positive number in m')
-        else:
-            self._pixel_x = value
-
-    @property
-    def pixel_y(self):
-        """
-        Detector vertical pixel size, in meters.
-        """
-        return self._pixel_y
-
-    @pixel_y.setter
-    def pixel_y(self, value):
-        if value is None:
-            self._pixel_y = value
-        elif not isinstance(value, Real):
-            raise TypeError('pixel_y should be a number in m')
-        elif value <= 0:
-            raise ValueError('pixel_y should be a strictly positive number in m')
-        else:
-            self._pixel_y = value
-
-    @property
     def q_laboratory(self):
         """
         Calculate the diffusion vector in the laboratory frame (z downstream, y vertical up, x outboard). The unit is
@@ -2180,11 +2155,12 @@ class Setup(object):
         """
         Representation string of the Setup instance.
         """
-        return (f"{self.__class__.__name__}(beamline='{self.beamline}', beam_direction={self.beam_direction}, "
+        return (f"{self.__class__.__name__}(beamline='{self.beamline}', detector='{self.detector.name}',"
+                f" beam_direction={self.beam_direction}, "
                 f"energy={self.energy}, distance={self.distance}, outofplane_angle={self.outofplane_angle},\n"
                 f"inplane_angle={self.inplane_angle}, tilt_angle={self.tilt_angle}, "
-                f"rocking_angle='{self.rocking_angle}', grazing_angle={self.grazing_angle}, pixel_x={self.pixel_x},\n"
-                f"pixel_y={self.pixel_y}, direct_beam={self.direct_beam}, "
+                f"rocking_angle='{self.rocking_angle}', grazing_angle={self.grazing_angle},\n"
+                f"pixel_size={self.detector.unbinned_pixel}, direct_beam={self.direct_beam}, "
                 f"sample_offsets={self.diffractometer.sample_offsets}, "
                 f"filtered_data={self.filtered_data}, custom_scan={self.custom_scan},\n"
                 f"custom_images={self.custom_images},\ncustom_monitor={self.custom_monitor},\n"
@@ -2241,7 +2217,8 @@ class Setup(object):
                                 title=title + ' before interpolation\n')
 
         ortho_matrix = self.transformation_matrix(array_shape=(nbz, nby, nbx), tilt_angle=self.tilt_angle,
-                                                  pixel_x=self.pixel_x, pixel_y=self.pixel_y)
+                                                  pixel_x=self.detector.unbinned_pixel[1],
+                                                  pixel_y=self.detector.unbinned_pixel[0])
 
         ################################################
         # interpolate the data into the detector frame #
@@ -2458,7 +2435,8 @@ class Setup(object):
         # calculate the direct space voxel sizes in nm based on the FFT window shape used in phase retrieval #
         ######################################################################################################
         dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(initial_shape, tilt_angle=abs(self.tilt_angle),
-                                                                    pixel_x=self.pixel_x, pixel_y=self.pixel_y)
+                                                                    pixel_x=self.detector.unbinned_pixel[1],
+                                                                    pixel_y=self.detector.unbinned_pixel[0])
         if verbose:
             print(f"Sampling in the laboratory frame (z, y, x): ",
                   f"({dz_realspace:.2f} nm, {dy_realspace:.2f} nm, {dx_realspace:.2f} nm)")
@@ -2466,8 +2444,8 @@ class Setup(object):
         if input_shape != initial_shape:
             # recalculate the tilt and pixel sizes to accomodate a shape change
             tilt = self.tilt_angle * initial_shape[0] / input_shape[0]
-            pixel_y = self.pixel_y * initial_shape[1] / input_shape[1]
-            pixel_x = self.pixel_x * initial_shape[2] / input_shape[2]
+            pixel_y = self.detector.unbinned_pixel[0] * initial_shape[1] / input_shape[1]
+            pixel_x = self.detector.unbinned_pixel[1] * initial_shape[2] / input_shape[2]
             if verbose:
                 print('Tilt, pixel_y, pixel_x based on the shape of the cropped array:',
                       f"({tilt:.4f} deg, {pixel_y * 1e6:.2f} um, {pixel_x * 1e6:.2f} um)")
@@ -2480,8 +2458,8 @@ class Setup(object):
                       f"({dz_realspace:.2f} nm, {dy_realspace:.2f} nm, {dx_realspace:.2f} nm)")
         else:
             tilt = self.tilt_angle
-            pixel_y = self.pixel_y
-            pixel_x = self.pixel_x
+            pixel_y = self.detector.unbinned_pixel[0]
+            pixel_x = self.detector.unbinned_pixel[1]
 
         if not voxel_size:
             voxel_size = dz_realspace, dy_realspace, dx_realspace  # in nm
@@ -2674,8 +2652,9 @@ class Setup(object):
         # calculate the transformation matrix (the unit is 1/nm) #
         ##########################################################
         transfer_matrix, q_offset = self.transformation_matrix(array_shape=ref_shape, tilt_angle=self.tilt_angle,
-                                                               direct_space=False, pixel_x=self.pixel_x,
-                                                               pixel_y=self.pixel_y, verbose=verbose)
+                                                               direct_space=False, verbose=verbose,
+                                                               pixel_x=self.detector.unbinned_pixel[1],
+                                                               pixel_y=self.detector.unbinned_pixel[0])
 
         # the voxel size in q in the laboratory frame is given by the rows of the transformation matrix
         # (the unit is 1/nm)
