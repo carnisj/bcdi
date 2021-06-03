@@ -294,10 +294,10 @@ detector = exp.Detector(name=detector, template_imagefile=template_imagefile, bi
 ####################################
 # correct the tilt_angle for binning
 tilt_angle = tilt_angle * preprocessing_binning[0] * phasing_binning[0]
-setup = exp.Setup(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle, inplane_angle=inplane_angle,
-                  tilt_angle=tilt_angle, rocking_angle=rocking_angle, distance=sdd, pixel_x=detector.pixelsize_x,
-                  pixel_y=detector.pixelsize_y, sample_offsets=sample_offsets, actuators=actuators,
-                  custom_scan=custom_scan, custom_motors=custom_motors)
+setup = exp.Setup(beamline=beamline, detector=detector, energy=energy, outofplane_angle=outofplane_angle,
+                  inplane_angle=inplane_angle, tilt_angle=tilt_angle, rocking_angle=rocking_angle, distance=sdd,
+                  sample_offsets=sample_offsets, actuators=actuators, custom_scan=custom_scan,
+                  custom_motors=custom_motors)
 
 ########################################
 # Initialize the paths and the logfile #

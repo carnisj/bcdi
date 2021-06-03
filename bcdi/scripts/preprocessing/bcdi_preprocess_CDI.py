@@ -327,9 +327,9 @@ detector = exp.Detector(name=detector, roi=roi_detector, sum_roi=normalize_roi, 
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd, direct_beam=direct_beam,
-                  custom_scan=custom_scan, custom_images=custom_images, custom_monitor=custom_monitor,
-                  custom_motors=custom_motors)
+setup = exp.Setup(beamline=beamline, detector=detector, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+                  direct_beam=direct_beam, custom_scan=custom_scan, custom_images=custom_images,
+                  custom_monitor=custom_monitor, custom_motors=custom_motors)
 
 ########################################
 # print the current setup and detector #

@@ -56,7 +56,7 @@ outofplane_angle = 35.3240  # detector delta ID01
 inplane_angle = -1.6029  # detector nu ID01
 grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01)
 tilt_angle = 0.0102  # angular step size for rocking angle, eta ID01
-pixel_size = 55e-6  # detector pixel size in m
+detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
 
 set_gap = True  # set to True if you want to use the detector gap in the simulation (updates the mask)
 gap_width = 6  # number of pixels to mask
@@ -95,9 +95,10 @@ my_cmap = colormap.cmap
 ################
 # define setup #
 ################
-setup = exp.Setup(beamline=beamline, energy=energy, outofplane_angle=outofplane_angle, inplane_angle=inplane_angle,
-                  tilt_angle=tilt_angle, rocking_angle=rocking_angle, grazing_angle=grazing_angle,
-                  distance=original_sdd, pixel_x=pixel_size, pixel_y=pixel_size)
+detector = exp.Detector(name=detector)
+setup = exp.Setup(beamline=beamline, detector=detector, energy=energy, outofplane_angle=outofplane_angle,
+                  inplane_angle=inplane_angle, tilt_angle=tilt_angle, rocking_angle=rocking_angle,
+                  grazing_angle=grazing_angle, distance=original_sdd)
 
 #########################
 # load a reconstruction #

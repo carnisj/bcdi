@@ -200,7 +200,7 @@ detector = exp.Detector(name=detector, template_imagefile=template_imagefile, bi
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+setup = exp.Setup(beamline=beamline, detector=detector, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                   beam_direction=beam_direction, sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
                   sample_offsets=sample_offsets, actuators=actuators)
 

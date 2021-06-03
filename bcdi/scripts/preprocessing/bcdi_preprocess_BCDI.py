@@ -409,12 +409,11 @@ detector = exp.Detector(name=detector, template_imagefile=template_imagefile, ro
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(beamline=beamline, energy=energy, rocking_angle=rocking_angle, distance=sdd,
+setup = exp.Setup(beamline=beamline, detector=detector, energy=energy, rocking_angle=rocking_angle, distance=sdd,
                   beam_direction=beam_direction, sample_inplane=sample_inplane,
                   sample_outofplane=sample_outofplane, offset_inplane=offset_inplane,
                   custom_scan=custom_scan, custom_images=custom_images, sample_offsets=sample_offsets,
-                  custom_monitor=custom_monitor, custom_motors=custom_motors,
-                  pixel_x=detector.pixelsize_x, pixel_y=detector.pixelsize_y, actuators=actuators)
+                  custom_monitor=custom_monitor, custom_motors=custom_motors, actuators=actuators)
 
 ########################################
 # print the current setup and detector #
