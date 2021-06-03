@@ -3202,6 +3202,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
        setup.diffractometer.sample_offsets to correct it.
      - updated frames_logical
     """
+    # TODO: refactor this function
     binning = detector.binning
 
     if frames_logical is None:  # retrieve the raw data length, then len(frames_logical) may be different from nb_frames
