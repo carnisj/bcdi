@@ -284,9 +284,9 @@ print('Multiplication factor for the real-space voxel size:  pad_size/original_s
 
 # compensate change in detector distance
 comment = comment + '_sdd_' + str('{:.2f}'.format(simulated_sdd))
-print('\nCurrent detector pixel size', pixel_size * 1e6, 'um')
+print('\nCurrent detector pixel size', detector.unbinned_pixel[0] * 1e6, 'um')
 print('Detector pixel size to compensate the change in detector distance',
-      str('{:.2f}'.format(pixel_size * 1e6 * original_sdd / simulated_sdd)), 'um')
+      str('{:.2f}'.format(detector.unbinned_pixel[0] * 1e6 * original_sdd / simulated_sdd)), 'um')
 print('Reciprocal space resolution before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz)), 'A-1,',
       str('{:.5f}'.format(dqy)), 'A-1,', str('{:.5f}'.format(dqx)), 'A-1 )')
 print('q range before detector distance change (z, y, x): (', str('{:.5f}'.format(dqz * nz)), 'A-1,',
