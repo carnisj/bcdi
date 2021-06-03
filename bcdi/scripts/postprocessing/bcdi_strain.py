@@ -64,9 +64,9 @@ original_size = [100, 256, 256]  # size of the FFT array before binning. It will
 # during phasing automatically. Leave it to () if the shape did not change.
 phasing_binning = (1, 2, 2)  # binning factor applied during phase retrieval
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension used in preprocessing (not phase retrieval)
-output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave None to use the object size
+output_size = (50, 50, 50)  # (z, y, x) Fix the size of the output array, leave None to use the object size
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
-fix_voxel = False  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
+fix_voxel = 10  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
 # provided, the voxel size will be identical is all 3 directions. Set it to None to use the default voxel size
 # (calculated from q values, it will be different in each dimension).
 #############################################################
@@ -78,7 +78,7 @@ data_frame = 'detector'  # 'crystal' if the data was interpolated into the cryst
 # 'detector' if the data is still in the detector frame
 ref_axis_q = "y"  # axis along which q will be aligned (data_frame= 'detector' or 'laboratory')
 # or is already aligned (data_frame='crystal')
-save_frame = 'crystal'  # 'crystal', 'laboratory' or 'lab_flat_sample'
+save_frame = 'laboratory'  # 'crystal', 'laboratory' or 'lab_flat_sample'
 # 'crystal' to save the data with q aligned along ref_axis_q
 # 'laboratory' to save the data in the laboratory frame (experimental geometry)
 # 'lab_flat_sample' to save the data in the laboratory frame, with all sample angles rotated back to 0
@@ -106,7 +106,7 @@ rocking_angle = "inplane"  # "outofplane" for a sample rotation around x outboar
 # around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
 sdd = 0.500  # 1.26  # sample to detector distance in m
-energy = 9.0  # x-ray energy in eV, 6eV offset at ID01
+energy = 9000  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
 outofplane_angle = 7.4751  # detector angle in deg (rotation around x outboard): delta ID01, delta SIXS, gamma 34ID
 # this is the true angle, corrected for the direct beam position
@@ -119,6 +119,12 @@ specfile_name = None  # root_folder + 'alias_dict_2021.txt'
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
 # template for all other beamlines: ''
+##########################
+# setup for custom scans #
+##########################
+custom_scan = True  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
+# there is no spec/log file available, or for 34ID
+custom_motors = {"delta": inplane_angle, "gamma": outofplane_angle, "theta": 1.0540277, "phi": -4.86}
 ###############################
 # detector related parameters #
 ###############################
@@ -133,12 +139,6 @@ template_imagefile = ''
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-##########################
-# setup for custom scans #
-##########################
-custom_scan = True  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
-# there is no spec/log file available, or for 34ID
-custom_motors = {"delta": inplane_angle, "gamma": outofplane_angle, "theta": 1.0540277, "phi": -4.86}
 ###################################################
 # parameters related to the refraction correction #
 ###################################################
@@ -160,7 +160,7 @@ threshold_unwrap_refraction = 0.05  # threshold used to calculate the optical pa
 ###########
 simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
-flip_reconstruction = False  # True if you want to get the conjugate object
+flip_reconstruction = True  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient = 1.0  # upper threshold of the gradient of the phase, use for ramp removal
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
@@ -176,8 +176,8 @@ align_axis = False  # for visualization, if True rotates the crystal to align ax
 ref_axis = "y"  # will align axis_to_align to that axis
 axis_to_align = np.array([-0.011662456997498807, 0.957321364700986, -0.28879022106682123])
 # axis to align with ref_axis in the order x y z (axis 2, axis 1, axis 0)
-strain_range = 0.002  # for plots
-phase_range = np.pi  # for plots
+strain_range = 0.003  # for plots
+phase_range = np.pi/2  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
 tick_spacing = 50  # for plots, in nm
 tick_direction = 'inout'  # 'out', 'in', 'inout'
