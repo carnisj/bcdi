@@ -128,9 +128,10 @@ custom_motors = {"delta": inplane_angle, "gamma": outofplane_angle, "theta": 1.0
 ###############################
 # detector related parameters #
 ###############################
-detector = "Timepix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+detector = "Timepix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
 nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+pixel_size = None  # use this to declare the pixel size of the "Dummy" detector if different from 55e-6
 template_imagefile = ''
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
@@ -284,7 +285,8 @@ if nb_pixel_x:
     kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 if nb_pixel_y:
     kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
-
+if pixel_size:
+    kwargs['pixel_size'] = pixel_size  # to declare the pixel size of the "Dummy" detector
 detector = exp.Detector(name=detector, template_imagefile=template_imagefile, binning=phasing_binning, **kwargs)
 
 ####################################
