@@ -428,13 +428,7 @@ circle = plt.Circle((qzCOM, qxCOM), radius_mean + dq, color='0', fill=False, lin
 ax2.add_artist(circle)
 circle = plt.Circle((qzCOM, qxCOM), radius_mean - dq, color='0', fill=False, linestyle='dotted')
 ax2.add_artist(circle)
-
 fig.text(0.60, 0.30, "Scan " + str(scan), size=20)
-if reconstructed_data == 0:
-    fig.text(0.60, 0.25, "offset_eta=" + str(offset_eta), size=20)
-    fig.text(0.60, 0.20, "offset_phi=" + str(offset_phi), size=20)
-    fig.text(0.60, 0.15, "offset_chi=" + str(offset_chi), size=20)
-    
 plt.pause(0.1)
 plt.savefig(homedir + 'diffpattern' + comment + '_S' + str(scan) + '_q=' + str(radius_mean) + '.png')
 
@@ -477,8 +471,7 @@ fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 0], euclidian_v=ste
 
 
 if not reconstructed_data:
-    fig.text(0.05, 0.02, "q=" + str(radius_mean) + " dq=" + str(dq) + " offset_eta=" + str(offset_eta) +
-             " offset_phi=" + str(offset_phi) + " offset_chi=" + str(offset_chi), size=14)
+    fig.text(0.05, 0.02, "q=" + str(radius_mean) + " dq=" + str(dq), size=14)
 else:
     fig.text(0.05, 0.92, "q=" + str(radius_mean) + " dq=" + str(dq), size=14)
 
@@ -493,8 +486,7 @@ fig, _ = gu.contour_stereographic(euclidian_u=stereo_proj[:, 2], euclidian_v=ste
                                   uv_labels=uv_labels, contour_range=contour_range)
 
 if not reconstructed_data:
-    fig.text(0.05, 0.02, "q=" + str(radius_mean) + " dq=" + str(dq) + " offset_eta=" + str(offset_eta) +
-             " offset_phi=" + str(offset_phi) + " offset_chi=" + str(offset_chi), size=14)
+    fig.text(0.05, 0.02, "q=" + str(radius_mean) + " dq=" + str(dq), size=14)
 
 else:
     fig.text(0.05, 0.92, "q=" + str(radius_mean) + " dq=" + str(dq), size=14)
