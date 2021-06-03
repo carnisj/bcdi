@@ -58,8 +58,8 @@ class Detector(object):
         self.name = name
 
         valid.valid_kwargs(kwargs=kwargs,
-                           allowed_kwargs={'is_series', 'nb_pixel_x', 'nb_pixel_y', 'preprocessing_binning', 'offsets',
-                                           'linearity_func'},
+                           allowed_kwargs={'is_series', 'nb_pixel_x', 'nb_pixel_y', 'pixel_size',
+                                           'preprocessing_binning', 'offsets', 'linearity_func'},
                            name='Detector.__init__')
 
         # load the kwargs
@@ -67,6 +67,7 @@ class Detector(object):
         self.preprocessing_binning = kwargs.get('preprocessing_binning', None) or (1, 1, 1)
         self.nb_pixel_x = kwargs.get('nb_pixel_x', None)
         self.nb_pixel_y = kwargs.get('nb_pixel_y', None)
+        self.custom_pixelsize = kwargs.get('pixel_size', None)
         self.offsets = kwargs.get('offsets', None)  # delegate the test to xrayutilities
         linearity_func = kwargs.get('linearity_func', None)
         if linearity_func is not None and not callable(linearity_func):
@@ -85,6 +86,7 @@ class Detector(object):
         self.template_file = template_file
         self.template_imagefile = template_imagefile
         self.specfile = specfile
+
 
     @property
     def binning(self):
@@ -338,10 +340,17 @@ class Detector(object):
         """
         Pixel size (vertical, horizontal) of the unbinned detector in meters.
         """
-        if self.name in {'Maxipix', 'Dummy', 'Timepix', 'Merlin'}:
+        if self.name in {'Maxipix', 'Timepix', 'Merlin'}:
             pix = (55e-06, 55e-06)
         elif self.name in {'Eiger2M', 'Eiger4M'}:
             pix = (75e-06, 75e-06)
+        elif self.name == 'Dummy':
+            if self.custom_pixelsize is not None:
+                valid.valid_item(self.custom_pixelsize, allowed_types=Real, min_excluded=0, name='custom_pixelsize')
+                pix = (self.custom_pixelsize, self.custom_pixelsize)
+            else:
+                pix = (55e-06, 55e-06)
+                print(f'Defaulting the pixel size to {pix}')
         else:
             pix = None
         return pix
@@ -464,7 +473,7 @@ class Detector(object):
             mask[data > 4000000000 * nb_img] = 1
             data[data > 4000000000 * nb_img] = 0
 
-        elif self.name in {'Maxipix', 'Dummy'}:
+        elif self.name == 'Maxipix':
             data[:, 255:261] = 0
             data[255:261, :] = 0
 
