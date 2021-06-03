@@ -743,7 +743,8 @@ if align_axis:
     amp, phase, strain = util.rotate_crystal(arrays=(amp, phase, strain), reference_axis=axis_to_array_xyz[ref_axis],
                                              axis_to_align=axis_to_align,
                                              voxel_size=voxel_size, debugging=(True, False, False),
-                                             is_orthogonal=True, reciprocal_space=False, title=('amp', 'phase', 'strain'))
+                                             is_orthogonal=True, reciprocal_space=False,
+                                             title=('amp', 'phase', 'strain'))
     # rotate q accordingly, vectors needs to be in xyz order
     q_final = util.rotate_vector(vectors=q_final[::-1], axis_to_align=axis_to_array_xyz[ref_axis],
                                  reference_axis=axis_to_align)
