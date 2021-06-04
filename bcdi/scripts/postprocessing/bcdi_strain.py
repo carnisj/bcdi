@@ -18,6 +18,7 @@ from matplotlib import pyplot as plt
 from numbers import Real
 import numpy as np
 import os
+import pprint
 import tkinter as tk
 from tkinter import filedialog
 import bcdi.graph.graph_utils as gu
@@ -45,8 +46,8 @@ In arrays, when plotting the first parameter is the row (vertical axis), and the
 Therefore the data structure is data[qx, qz, qy] for reciprocal space, or data[z, y, x] for real space
 """
 
-scan = 622  # spec scan number
-root_folder = "C:/Users/carnisj/Documents/data/dmitry/"
+scan = 76  # spec scan number
+root_folder = "C:/Users/Jerome/Documents/data/debug/data/"
 # folder of the experiment, where all scans are stored
 save_dir = None
 # images will be saved here, leave it to None otherwise (default to data directory's parent)
@@ -60,11 +61,11 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [100, 256, 256]  # size of the FFT array before binning. It will be modify to take into account binning
+original_size = [252, 294, 360]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-phasing_binning = (1, 2, 2)  # binning factor applied during phase retrieval
+phasing_binning = (1, 1, 1)  # binning factor applied during phase retrieval
 preprocessing_binning = (1, 1, 1)  # binning factors in each dimension used in preprocessing (not phase retrieval)
-output_size = (50, 50, 50)  # (z, y, x) Fix the size of the output array, leave None to use the object size
+output_size = (100, 100, 100)  # (z, y, x) Fix the size of the output array, leave None to use the object size
 keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
 fix_voxel = 10  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
 # provided, the voxel size will be identical is all 3 directions. Set it to None to use the default voxel size
@@ -96,23 +97,23 @@ centering_method = 'max_com'  # 'com' (center of mass), 'max', 'max_com' (max th
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = "34ID"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
+beamline = "CRISTAL"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
-actuators = None  # {'rocking_angle': 'actuator_1_3'}
+actuators = {'rocking_angle': 'actuator_1_3'}
 # Optional dictionary that can be used to define the entries corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 rocking_angle = "inplane"  # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
 # around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 0.500  # 1.26  # sample to detector distance in m
-energy = 9000  # x-ray energy in eV, 6eV offset at ID01
+sdd = 0.914  # 1.26  # sample to detector distance in m
+energy = 8530.0  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array([1, 0, 0])  # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
-outofplane_angle = 7.4751  # detector angle in deg (rotation around x outboard): delta ID01, delta SIXS, gamma 34ID
+outofplane_angle = 21.4791  # detector angle in deg (rotation around x outboard): delta ID01, delta SIXS, gamma 34ID
 # this is the true angle, corrected for the direct beam position
-inplane_angle = 26.69775  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
+inplane_angle = 39.1504  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
 # this is the true angle, corrected for the direct beam position
-tilt_angle = 0.006  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+tilt_angle = 1.2/256.  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
 sample_offsets = None  # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
 specfile_name = None  # root_folder + 'alias_dict_2021.txt'
@@ -122,17 +123,17 @@ specfile_name = None  # root_folder + 'alias_dict_2021.txt'
 ##########################
 # setup for custom scans #
 ##########################
-custom_scan = True  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
+custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available, or for 34ID
 custom_motors = {"delta": inplane_angle, "gamma": outofplane_angle, "theta": 1.0540277, "phi": -4.86}
 ###############################
 # detector related parameters #
 ###############################
-detector = "Timepix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
+detector = "Maxipix"    # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
 nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 pixel_size = None  # use this to declare the pixel size of the "Dummy" detector if different from 55e-6
-template_imagefile = ''
+template_imagefile = 'mgtx2-mgty2-mgphi-2021-03-25_14-35-59_%04d.nxs'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -161,7 +162,7 @@ threshold_unwrap_refraction = 0.05  # threshold used to calculate the optical pa
 ###########
 simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
 invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
-flip_reconstruction = True  # True if you want to get the conjugate object
+flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = 'gradient'  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient = 1.0  # upper threshold of the gradient of the phase, use for ramp removal
 save_raw = False  # True to save the amp-phase.vti before orthogonalization
@@ -266,6 +267,8 @@ if len(comment) != 0 and not comment.startswith('_'):
     comment = '_' + comment
 comment = comment + '_' + str(isosurface_strain)
 
+pretty = pprint.PrettyPrinter(indent=4)
+
 ###################
 # define colormap #
 ###################
@@ -318,9 +321,9 @@ _, setup.grazing_angle, _, _ = setup.diffractometer.goniometer_values(logfile=lo
 ###################
 print(f'{"#"*(5+len(str(scan)))}\nScan {scan}\n{"#"*(5+len(str(scan)))}')
 print('\n##############\nSetup instance\n##############')
-print(setup)
+pretty.pprint(setup.params)
 print('\n#################\nDetector instance\n#################')
-print(detector)
+pretty.pprint(detector.params)
 
 ################
 # preload data #
@@ -766,12 +769,16 @@ print(f"\nFinal data shape: {amp.shape}")
 print(f'\nVoxel size: ({voxel_size[0]:.2f} nm, {voxel_size[1]:.2f} nm, {voxel_size[2]:.2f} nm)')
 bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method='threshold')
 if save:
-    if invert_phase:
-        np.savez_compressed(detector.savedir + 'S' + str(scan) + "_amp" + phase_fieldname + "strain" + comment,
-                            amp=amp, displacement=phase, bulk=bulk, strain=strain, q_com=q_final)
-    else:
-        np.savez_compressed(detector.savedir + 'S' + str(scan) + "_amp" + phase_fieldname + "strain" + comment,
-                            amp=amp, phase=phase, bulk=bulk, strain=strain, q_com=q_final)
+    params = {}
+    np.savez_compressed(f"{detector.savedir}S{scan}_amp{phase_fieldname}strain{comment}",
+                        amp=amp,
+                        phase=phase,
+                        bulk=bulk,
+                        strain=strain,
+                        q_com=q_final,
+                        detector=detector.params,
+                        setup=setup.params,
+                        params=params)
 
     # save amp & phase to VTK
     # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
