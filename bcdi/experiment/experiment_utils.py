@@ -2129,7 +2129,7 @@ class Setup(object):
                 'inplane_detector_angle_deg': self.inplane_angle, 'tilt_angle_deg': self.tilt_angle,
                 'grazing_angles_deg': self.grazing_angle, 'sample_offsets_deg': self.diffractometer.sample_offsets,
                 'direct_beam_pixel': self.direct_beam, 'filtered_data': self.filtered_data,
-                'custom_scan': self.custom_scan, 'custom_images': self.custom_images,
+                'custom_scan': self.custom_scan, 'custom_images': self.custom_images, 'actuators': self.actuators,
                 'custom_monitor': self.custom_monitor, 'custom_motors': self.custom_motors,
                 'sample_inplane': self.sample_inplane, 'sample_outofplane': self.sample_outofplane,
                 'offset_inplane_deg': self.offset_inplane}
