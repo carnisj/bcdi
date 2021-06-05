@@ -8,6 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 
+from datetime import datetime
 from functools import reduce
 import gc
 try:
@@ -267,6 +268,19 @@ if len(comment) != 0 and not comment.startswith('_'):
     comment = '_' + comment
 comment = comment + '_' + str(isosurface_strain)
 
+##################################################
+# parameters that will be saved with the results #
+##################################################
+params = {'isosurface_threshold': isosurface_strain, 'strain_method': strain_method, 'phase_offset': phase_offset,
+          'phase_offset_origin': phase_offset_origin, 'centering_method': centering_method, 'data_frame': data_frame,
+          'ref_axis_q': ref_axis_q, 'save_frame': save_frame, 'fix_voxel': fix_voxel, 'original_size': original_size,
+          'sample': f"{sample_name}+{scan}", 'comment': comment, 'correct_refraction': correct_refraction,
+          'optical_path_method': optical_path_method, 'dispersion': dispersion, 'time': f"{datetime.now()}",
+          'threshold_unwrap_refraction': threshold_unwrap_refraction, 'invert_phase': invert_phase,
+          'phase_ramp_removal': phase_ramp_removal, 'threshold_gradient': threshold_gradient,
+          'tick_spacing_nm': tick_spacing, 'hwidth': hwidth, 'apodize_flag': apodize_flag,
+          'apodize_window': apodize_window, 'apod_mu': mu, 'apod_sigma': sigma, 'apod_alpha': alpha
+          }
 pretty = pprint.PrettyPrinter(indent=4)
 
 ###################
@@ -383,6 +397,7 @@ print('\nAveraging using', nbfiles, 'candidate reconstructions')
 for counter, value in enumerate(sorted_obj):
     obj, extension = util.load_file(file_path[value])
     print('\nOpening ', file_path[value])
+    params[f"from_file_{counter}"] = file_path[value]
 
     if flip_reconstruction:
         obj = pu.flip_reconstruction(obj, debugging=True)
@@ -769,13 +784,14 @@ print(f"\nFinal data shape: {amp.shape}")
 print(f'\nVoxel size: ({voxel_size[0]:.2f} nm, {voxel_size[1]:.2f} nm, {voxel_size[2]:.2f} nm)')
 bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method='threshold')
 if save:
-    params = {}
+
     np.savez_compressed(f"{detector.savedir}S{scan}_amp{phase_fieldname}strain{comment}",
                         amp=amp,
                         phase=phase,
                         bulk=bulk,
                         strain=strain,
                         q_com=q_final,
+                        voxel_sizes=voxel_size,
                         detector=detector.params,
                         setup=setup.params,
                         params=params)
