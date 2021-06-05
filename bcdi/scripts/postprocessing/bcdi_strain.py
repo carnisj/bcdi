@@ -266,7 +266,6 @@ if isinstance(save_dir, str) and not save_dir.endswith('/'):
 
 if len(comment) != 0 and not comment.startswith('_'):
     comment = '_' + comment
-comment = comment + '_' + str(isosurface_strain)
 
 ##################################################
 # parameters that will be saved with the results #
@@ -274,7 +273,7 @@ comment = comment + '_' + str(isosurface_strain)
 params = {'isosurface_threshold': isosurface_strain, 'strain_method': strain_method, 'phase_offset': phase_offset,
           'phase_offset_origin': phase_offset_origin, 'centering_method': centering_method, 'data_frame': data_frame,
           'ref_axis_q': ref_axis_q, 'save_frame': save_frame, 'fix_voxel': fix_voxel, 'original_size': original_size,
-          'sample': f"{sample_name}+{scan}", 'comment': comment, 'correct_refraction': correct_refraction,
+          'sample': f"{sample_name}+{scan}", 'correct_refraction': correct_refraction,
           'optical_path_method': optical_path_method, 'dispersion': dispersion, 'time': f"{datetime.now()}",
           'threshold_unwrap_refraction': threshold_unwrap_refraction, 'invert_phase': invert_phase,
           'phase_ramp_removal': phase_ramp_removal, 'threshold_gradient': threshold_gradient,
@@ -784,7 +783,7 @@ print(f"\nFinal data shape: {amp.shape}")
 print(f'\nVoxel size: ({voxel_size[0]:.2f} nm, {voxel_size[1]:.2f} nm, {voxel_size[2]:.2f} nm)')
 bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method='threshold')
 if save:
-
+    params['comment'] = comment
     np.savez_compressed(f"{detector.savedir}S{scan}_amp{phase_fieldname}strain{comment}",
                         amp=amp,
                         phase=phase,
