@@ -15,6 +15,7 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
+import h5py
 from matplotlib import pyplot as plt
 from numbers import Real
 import numpy as np
@@ -794,6 +795,20 @@ if save:
                         detector=detector.params,
                         setup=setup.params,
                         params=params)
+
+    # save results in hdf5 file
+    with h5py.File(f"{detector.savedir}S{scan}_amp{phase_fieldname}strain{comment}.h5", 'w') as hf:
+        out = hf.create_group('output')
+        par = hf.create_group('params')
+        out.create_dataset('amp', data=amp)
+        out.create_dataset('bulk', data=bulk)
+        out.create_dataset('phase', data=phase)
+        out.create_dataset('strain', data=strain)
+        out.create_dataset('q_com', data=q_final)
+        out.create_dataset('voxel_sizes', data=voxel_size)
+        par.create_dataset('detector', data=str(detector.params))
+        par.create_dataset('setup', data=str(setup.params))
+        par.create_dataset('parameters', data=str(params))
 
     # save amp & phase to VTK
     # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
