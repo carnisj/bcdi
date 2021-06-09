@@ -190,6 +190,19 @@ class Detector(object):
             self._nb_pixel_y = value // self.preprocessing_binning[1]
 
     @property
+    def params(self):
+        """
+        Return a dictionnary with all parameters
+        """
+        return {'Class': self.__class__.__name__, 'name': self.name, 'unbinned_pixel_m': self.unbinned_pixel,
+                'nb_pixel_x': self.nb_pixel_x, 'nb_pixel_y': self.nb_pixel_y, 'binning': self.binning,
+                'roi': self.roi, 'sum_roi': self.sum_roi, 'preprocessing_binning': self.preprocessing_binning,
+                'is_series': self.is_series, 'rootdir': self.rootdir, 'datadir': self.datadir,
+                'scandir': self.scandir, 'savedir': self.savedir, 'sample_name': self.sample_name,
+                'template_file': self.template_file, 'template_imagefile': self.template_imagefile,
+                'specfile': self.specfile}
+
+    @property
     def pixelsize_x(self):
         """
         Horizontal pixel size of the detector after taking into account binning.
@@ -2103,6 +2116,23 @@ class Setup(object):
         # the out of plane detector rotation is clockwise for all beamlines
         coeff_outofplane = -1 * ver_coeff
         return coeff_outofplane
+
+    @property
+    def params(self):
+        """
+        Return a dictionnary with all parameters
+        """
+        return {'Class': self.__class__.__name__, 'beamline': self.beamline, 'detector': self.detector.name,
+                'pixel_size_m': self.detector.unbinned_pixel, 'beam_direction': self.beam_direction,
+                'energy_eV': self.energy, 'distance_m': self.distance, 'rocking_angle': self.rocking_angle,
+                'outofplane_detector_angle_deg': self.outofplane_angle,
+                'inplane_detector_angle_deg': self.inplane_angle, 'tilt_angle_deg': self.tilt_angle,
+                'grazing_angles_deg': self.grazing_angle, 'sample_offsets_deg': self.diffractometer.sample_offsets,
+                'direct_beam_pixel': self.direct_beam, 'filtered_data': self.filtered_data,
+                'custom_scan': self.custom_scan, 'custom_images': self.custom_images, 'actuators': self.actuators,
+                'custom_monitor': self.custom_monitor, 'custom_motors': self.custom_motors,
+                'sample_inplane': self.sample_inplane, 'sample_outofplane': self.sample_outofplane,
+                'offset_inplane_deg': self.offset_inplane}
 
     @property
     def q_laboratory(self):
