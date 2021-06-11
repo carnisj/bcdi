@@ -18,7 +18,7 @@ from skimage.morphology import watershed
 from numbers import Real
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib import patches as patches
+from matplotlib import patches
 import gc
 import sys
 from ..graph import graph_utils as gu
