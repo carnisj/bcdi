@@ -458,7 +458,6 @@ class DataSet(object):
         acquisition_time ROIname is the name of the attribute that will be attached to the dataset object
         mind that there might be a shift between motors and filters in the SBS scans
         the ROI is expected as eg: [257, 126,  40,  40] """
-        
         if hasattr(self, maskname):
             mask = self.__getattribute__(maskname)
             integrals = self.roi_sum_mask( stack,roiextent, mask)

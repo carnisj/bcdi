@@ -773,7 +773,6 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     :param debugging: True to see plots
     :return: a 2D or 3D Gaussian kernel
     """
-
     from scipy.stats import norm
     if kernel_length % 2 == 0:
         raise ValueError('kernel_length should be an even number')
@@ -1075,7 +1074,6 @@ def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
       i.e. (mo[i]*mo[j].conj()).sum()=0 for i!=j
       The modes are sorted by decreasing norm. If nb_mode is not None, only modes up to nb_mode will be returned.
     """
-
     if array_stack[0].ndim != 3:
         raise ValueError('A stack of 3D arrays is expected')
 
@@ -1536,7 +1534,6 @@ def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method=
      'volume'
     :return: a list of sorted indices in 'file_path', from the best object to the worst.
     """
-
     nbfiles = len(file_path)
     zrange, yrange, xrange = data_range
 

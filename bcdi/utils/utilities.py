@@ -298,7 +298,6 @@ def dos2unix(input_file, output_file):
     :param input_file: the original filename (absolute path)
     :param output_file: the output filename (absolute path) where to save
     """
-
     with open(input_file, 'rb') as infile:
         content = infile.read()
     with open(output_file, 'wb') as output:
