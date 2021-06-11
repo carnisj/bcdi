@@ -134,7 +134,7 @@ for no in nos:
         cols_str = "#L "
 
         for i in range(len(cols.keys())):
-            for key in cols.keys():
+            for key in cols:
                 if cols[key] == i:
                     cols_str = cols_str + key + "  "
                 if cols[key] == 0:
@@ -150,7 +150,7 @@ for no in nos:
 
         mot_str = "#O0"
         pos_str = "#P0"
-        for mot in motors.keys():
+        for mot in motors:
             mot_str += "  %s" % mot
             pos_str += "  %.5f" % motors[mot]
         mot_str += "\n"
