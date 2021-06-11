@@ -9,7 +9,6 @@ Modified again the 24/06/2020
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-#from __future__ import unicode_literals
 import tables
 import os
 import numpy as np
@@ -18,7 +17,8 @@ import time
 from matplotlib import pyplot as plt
 import bcdi.utils.utilities as util
 
-class emptyO(object):
+
+class EmptyO(object):
     """Empty class used as container in the nxs2spec case. """
     pass
 
@@ -49,7 +49,7 @@ class DataSet(object):
         self.end_time = 2
         self.start_time = 1
         self.attlist = []
-        self._list2D = []
+        self._list2d = []
         self._SpecNaNs = Nxs2Spec  # Remove the NaNs if the spec file need to be generated
         attlist = []  # used for self generated file attribute list 
         aliases = []  # used for SBS imported with alias_dict file
@@ -148,9 +148,9 @@ class DataSet(object):
         
                 
         try:
-            self.det2d() # generating the list self._list2D
-            #print(self._list2D)
-            for el in self._list2D:
+            self.det2d() # generating the list self._list2d
+            #print(self._list2d)
+            for el in self._list2d:
                 detarray = self.getStack(el)
                 detsize = detarray.shape[1] # the key for the dictionary
                 #print(detsize)
@@ -164,7 +164,7 @@ class DataSet(object):
                 if detsize not in BL2D:
                     print('Detected a not standard detector: check ReadNxs3')
                     
-            self.det2d() # re-generating the list self._list2D
+            self.det2d() # re-generating the list self._list2d
                 
         except:
             print('2D issue')
@@ -176,7 +176,7 @@ class DataSet(object):
         ##################################################################################################################################
         if Nxs2Spec:
 #            import nxs2spec3 as n2s3   ideally those lines should be moved into the nxs2spec3
-            self._nxs2spec = emptyO()
+            self._nxs2spec = EmptyO()
             HKL_pre = False
             print('Nxs2Spec', self.filename)
             try: # try reading for h k l coordinates at the beginning of the scan. even without hkl transformer  UHV used in nxs2spec
@@ -342,7 +342,7 @@ class DataSet(object):
                 except:
                     print('No Mask')
             if self.start_time > 1605740000:                    # apply to file after  Wed Nov 18 23:53:20 2020
-                dets = self._list2D # the 2D detector list potentially extend here for the eiger ROIs
+                dets = self._list2d # the 2D detector list potentially extend here for the eiger ROIs
                 for el in dets:
                     if el == 'xpad70':
                         self._roi_limits_xpad70 = f.SIXS._f_get_child('i14-c-c00-ex-config-xpads70').roi_limits[:][:]
@@ -407,17 +407,17 @@ class DataSet(object):
     ########################################################################################
     ##################### down here useful function in the NxsRead #########################
     def getStack(self, Det2D_name):
-        '''For a given  2D detector name given as string it check in the 
-        attribute-list and return a stack of images'''
+        """For a given  2D detector name given as string it check in the 
+        attribute-list and return a stack of images"""
         try:
             stack = self.__getattribute__(Det2D_name)
             return stack
         except:
             print('There is no such attribute')
     
-    def make_maskFrame_xpad(self):
-        '''It generate a new attribute 'mask0_xpad' to remove the double pixels
-        it can be applied only to xpads140 for now.'''
+    def make_mask_frame_xpad(self):
+        """It generate a new attribute 'mask0_xpad' to remove the double pixels
+        it can be applied only to xpads140 for now."""
 #    f = tables.open_file(filename)
 #    scan_data = f.list_nodes('/')[0].scan_data
         detlist = self.det2d()
@@ -454,10 +454,10 @@ class DataSet(object):
         return _stack[:, roi[1]:roi[1]+roi[3], roi[0]:roi[0]+roi[2]].sum(axis=1).sum(axis=1)
     
     def calcROI(self, stack,roiextent, maskname,attcoef, filters, acqTime, ROIname):
-        '''To calculate the roi corrected by attcoef, mask, filters, 
+        """To calculate the roi corrected by attcoef, mask, filters, 
         acquisition_time ROIname is the name of the attribute that will be attached to the dataset object
         mind that there might be a shift between motors and filters in the SBS scans
-        the ROI is expected as eg: [257, 126,  40,  40] '''
+        the ROI is expected as eg: [257, 126,  40,  40] """
         
         if hasattr(self, maskname):
             mask = self.__getattribute__(maskname)
@@ -483,49 +483,57 @@ class DataSet(object):
             self.attlist.append(ROIname)
         return
 
-    def plotRoi(self, motor, roi,color='-og', detname = None,Label=None, mask = 'No'):
-        '''It integrates the desired roi and plot it
+    def plot_roi(self, motor, roi, color='-og', detname=None, label=None):
+        """It integrates the desired roi and plot it
         this plot function is simply meant as quick verification.
             Motor: motor name string
             roi: is the roi name string of the desired region measured or in the form :[257, 126,  40,  40]
-            detname: detector name;  it used first detector it finds if not differently specified  '''
+            detname: detector name;  it used first detector it finds if not differently specified  """
         if not detname:
             detname = self.det2d()[0]
             print(detname)
             
         if motor in self.attlist:
             xmot = getattr(self, motor)
+        else:
+            xmot = 0
         if detname:
-            #detname = self.det2d()[0]
             stack = self.getStack(detname)
             if isinstance(roi, str):
-                roiArr = self._roi_limits[self._roi_names.index(roi)]
-            if isinstance(roi, list):
-                roiArr = roi
-            yint = self.roi_sum(stack, roiArr)
-        #print(np.shape(xmot), np.shape(yint))   
-        plt.plot(xmot, yint, color, label=Label)
+                roi_arr = self._roi_limits[self._roi_names.index(roi)]
+                yint = self.roi_sum(stack, roi_arr)
+            elif isinstance(roi, list):
+                roi_arr = roi
+                yint = self.roi_sum(stack, roi_arr)
+            else:
+                yint = 0
+        else:
+            yint = 0
+        plt.plot(xmot, yint, color, label=label)
         
-    def plotscan(self, Xvar, Yvar,color='-og', Label=None, mask = 'No'):
-        '''It plots Xvar vs Yvar.
-        Xvar and Yvar must be in the attributes list'''
-        if Xvar in self.attlist:
-            x = getattr(self, Xvar)
+    def plotscan(self, xvar, yvar, color='-og', label=None):
+        """It plots xvar vs yvar.
+        xvar and yvar must be in the attributes list"""
+        if xvar in self.attlist:
+            x = getattr(self, xvar)
             print('x ok')
-        if Yvar in self.attlist:
-            y = getattr(self, Yvar)
+        else:
+            x = 0
+        if yvar in self.attlist:
+            y = getattr(self, yvar)
             print('y ok')
-        plt.plot(x, y, color, label=Label)
-        
-               
+        else:
+            y = 0
+        plt.plot(x, y, color, label=label)
                 
     def calcROI_new2(self):
-        '''if exist _coef, _integration_time, _roi_limits, _roi_names it can be applied
+        """if exist _coef, _integration_time, _roi_limits, _roi_names it can be applied
         to recalculate the roi on one or more 2D detectors.
         filters and motors are shifted of one points for the FLY. corrected in the self.calcROI
-        For SBS the data point when the filter is changed is collected with no constant absorber and therefore is rejected.'''
+        For SBS the data point when the filter is changed is collected with no constant absorber and therefore is
+        rejected."""
         #calcROI(self, stack,roiextent, maskname,attcoef, filters, acqTime, ROIname):
-        list2d = self._list2D
+        list2d = self._list2d
         CommonRoots = ['_roi_limits', '_roi_names', '_ifmask'] # common root names for attributes
         Commons = ['_coef', '_integration_time']               # common attributes
         possible = True
@@ -574,9 +582,9 @@ class DataSet(object):
                 if hasattr(self, '_npts'): 
                     print('Correction already applied')
                 if not hasattr(self, '_npts'): ## check if the process was alredy runned once on this object
-                    self._npts = len(self.__getattribute__(self._list2D[0]))
+                    self._npts = len(self.__getattribute__(self._list2d[0]))
                     #self._filterchanges = np.where((self.attenuation[1:]-self.attenuation[:-1])!=0)
-                    for el in self._list2D:
+                    for el in self._list2d:
                         if self.__getattribute__('_ifmask_'+el):                         
                             maskname = '_mask_' + el
                         if not self.__getattribute__('_ifmask_'+el):                         
@@ -590,101 +598,48 @@ class DataSet(object):
 #                            calcROI(self, stack,roiextent, maskname,attcoef, filters, acqTime, ROIname)
         return
 
-
-
-
-                
-    def prj(self, axe=0, mask_extra = None):
-          '''Project the 2D detector on the coosen axe of the detector and return a matrix 
-          of size:'side detector pixels' x 'number of images' 
-          axe = 0 ==> x axe detector image
-          axe = 1 ==> y axe detector image
-          specify a mask_extra variable if you like. 
-          Mask extra must be a the result of np.load(YourMask.npy)'''
-          if hasattr(self, 'mask'):
-              mask = self.__getattribute__('mask')
-          if not hasattr(self, 'mask'):
-              mask = 1
-          if np.shape(mask_extra):
-              mask = mask_extra
-              if np.shape(mask) == (240,560):
-                 self.make_maskFrame_xpad()
-                 mask= mask #& self.mask0_xpad
-          for el in self.attlist:
-              bla = self.__getattribute__(el)
-              # get the attributes from list one by one
-              if len(bla.shape) == 3: # check for image stacks Does Not work if you have more than one 2D detectors
-                  mat = []
-                  if np.shape(mask) != np.shape(bla[0]): # verify mask size
-                      print(np.shape(mask), 'different from ', np.shape(bla[0]) ,' verify mask size')
-                      mask=1
-                  for img in bla:
-                      if np.shape(mat)[0] == 0:# fill the first line element
-                          mat = np.sum(img^mask, axis = axe)
-                      if np.shape(mat)[0] > 0:    
-                          mat = np.c_[mat, np.sum(img^mask,axis = axe)]
-                  setattr(self, str(el+'_prjX'),mat) #generate the new attribute
+    def prj(self, axe=0, mask_extra=None):
+        """Project the 2D detector on the coosen axe of the detector and return a matrix 
+        of size:'side detector pixels' x 'number of images' 
+        axe = 0 ==> x axe detector image
+        axe = 1 ==> y axe detector image
+        specify a mask_extra variable if you like. 
+        Mask extra must be a the result of np.load(YourMask.npy)"""
+        if hasattr(self, 'mask'):
+            mask = self.__getattribute__('mask')
+        else:
+            mask = 1
+        if np.shape(mask_extra):
+            mask = mask_extra
+            if np.shape(mask) == (240, 560):
+                self.make_mask_frame_xpad()
+                mask = mask  # & self.mask0_xpad
+        for el in self.attlist:
+            bla = self.__getattribute__(el)
+            # get the attributes from list one by one
+            if len(bla.shape) == 3:  # check for image stacks Does Not work if you have more than one 2D detectors
+                mat = []
+                if np.shape(mask) != np.shape(bla[0]):  # verify mask size
+                    print(np.shape(mask), 'different from ', np.shape(bla[0]), ' verify mask size')
+                    mask = 1
+                for img in bla:
+                    if np.shape(mat)[0] == 0:  # fill the first line element
+                        mat = np.sum(img ^ mask, axis=axe)
+                    if np.shape(mat)[0] > 0:    
+                        mat = np.c_[mat, np.sum(img ^ mask, axis=axe)]
+                setattr(self, str(el+'_prjX'), mat)  # generate the new attribute
                   
     def det2d(self):
-        '''it retunrs the name/s of the 2D detector'''
-        list2D = []
+        """it retunrs the name/s of the 2D detector"""
+        list2d = []
         for el in self.attlist:
-              bla = self.__getattribute__(el)
-              #print(el, bla.shape)
-              # get the attributes from list one by one
-              if isinstance(bla, (np.ndarray, np.generic) ):
-                  if len(bla.shape) == 3: # check for image stacks
-                      list2D.append(el)
-        if len(list2D)>0:
-            self._list2D = list2D
-            return list2D
+            bla = self.__getattribute__(el)
+            # get the attributes from list one by one
+            if isinstance(bla, (np.ndarray, np.generic)):
+                if len(bla.shape) == 3:  # check for image stacks
+                    list2d.append(el)
+        if len(list2d) > 0:
+            self._list2d = list2d
+            return list2d
         else:
             return False
-                          
-    
-              
-          
-                
-
-
-
-
-
-
-
-
-    
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-               
