@@ -47,7 +47,7 @@ my_cmap = LinearSegmentedColormap('my_colormap', color_dict, 256)
 my_cmap.set_bad(color='0.7')
 
 
-class Colormap(object):
+class Colormap:
     """
     Class to define a colormap.
     """

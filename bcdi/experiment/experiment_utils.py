@@ -22,7 +22,7 @@ from ..utils import utilities as util
 from ..utils import validation as valid
 
 
-class Detector(object):
+class Detector:
     """
     Class to handle the configuration of the detector used for data acquisition.
 
@@ -511,7 +511,7 @@ class Detector(object):
         return data, mask
 
 
-class Diffractometer(object):
+class Diffractometer:
     """
     Base class for defining diffractometers. The frame used is the laboratory frame with the CXI convention
     (z downstream, y vertical up, x outboard).
@@ -1551,7 +1551,7 @@ class DiffractometerSIXS(Diffractometer):
         return beta, mu, gamma, delta, frames_logical
 
 
-class RotationMatrix(object):
+class RotationMatrix:
     """
     Class defining a rotation matrix given the rotation axis and the angle.
 
@@ -1625,7 +1625,7 @@ class RotationMatrix(object):
         return matrix
 
 
-class Setup(object):
+class Setup:
     """
     Class for defining the experimental geometry.
 
@@ -3353,7 +3353,7 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
     return True
 
 
-class SetupPostprocessing(object):
+class SetupPostprocessing:
     """
     Class to handle the experimental geometry for postprocessing.
     """

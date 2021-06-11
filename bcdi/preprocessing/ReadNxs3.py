@@ -18,12 +18,12 @@ from matplotlib import pyplot as plt
 import bcdi.utils.utilities as util
 
 
-class EmptyO(object):
+class EmptyO:
     """Empty class used as container in the nxs2spec case. """
     pass
 
 
-class DataSet(object):
+class DataSet:
     """Dataset read the file and store it in an object, from this object we can
     retrive the data to use it.
 
