@@ -155,7 +155,7 @@ min_error_idx = np.unravel_index(error.argmin(), shape=(rl_iterations,))[0]
 
 peaks, _ = find_peaks(-1*error)
 if peaks.size == 1 and peaks[0] == rl_iterations-1:
-    print(f"no local minimum for this number of iterations")
+    print("no local minimum for this number of iterations")
 else:
     print(f"error local minima at iterations {list(val for val in peaks)}")
 print(f"min error={error.min():.6f} at iteration {min_error_idx}\n")
