@@ -64,7 +64,7 @@ def parsefio(fio_filename):
     rows = data.readlines()
     index = rows.index("%c\n")
     ii = 0
-    myheader = dict()
+    myheader = {}
 
     for myrow in rows[index+1:]:
         if myrow.startswith('!'):
@@ -75,7 +75,7 @@ def parsefio(fio_filename):
 
     index = rows.index("%p\n")
     ii = 0
-    mymotors = dict()
+    mymotors = {}
 
     for myrow in rows[index+1:]:
         if myrow.startswith('!'):
@@ -86,7 +86,7 @@ def parsefio(fio_filename):
 
     index = rows.index("%d\n")
     ii = 0
-    mycols = dict()
+    mycols = {}
 
     for myrow in rows[index:]:
         if myrow.startswith(" Col"):

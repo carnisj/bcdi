@@ -68,7 +68,7 @@ kde_threshold = -0.2  # threshold for defining the background in the density est
 ###############################################################################################
 # define crystallographic planes of interest for the stereographic projection (cubic lattice) #
 ###############################################################################################
-planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
+planes_south = {}  # create dictionnary for the projection from the South pole, the reference is +reflection
 # planes_south['0 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([0, 2, 0]))
 planes_south['1 1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 1]))
 planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
@@ -80,7 +80,7 @@ planes_south['1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=n
 # planes_south['2 -1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, -1, 0]))
 # planes_south['1 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 2, 0]))
 
-planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
+planes_north = {}  # create dictionnary for the projection from the North pole, the reference is -reflection
 # planes_north['0 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([0, -2, 0]))
 planes_north['-1 -1 -1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, -1]))
 planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))

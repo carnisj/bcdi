@@ -494,10 +494,10 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'fix_bragg', 'fix_size', 'pad_size', 'q_values'},
                        name='preprocessing_utils.center_fft')
-    fix_bragg = kwargs.get('fix_bragg', list())
-    fix_size = kwargs.get('fix_size', list())
-    pad_size = kwargs.get('pad_size', list())
-    q_values = kwargs.get('q_values', list())
+    fix_bragg = kwargs.get('fix_bragg', [])
+    fix_size = kwargs.get('fix_size', [])
+    pad_size = kwargs.get('pad_size', [])
+    q_values = kwargs.get('q_values', [])
 
     if q_values:  # len(q_values) != 0
         qx = q_values[0]  # axis=0, z downstream, qx in reciprocal space

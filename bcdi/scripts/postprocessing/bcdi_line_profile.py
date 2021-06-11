@@ -148,7 +148,7 @@ else:
 #####################################
 # create the linecut for each point #
 #####################################
-result = dict()
+result = {}
 for point in points:
     # get the distances and the modulus values along the linecut
     distance, cut = util.linecut(array=obj, point=point, direction=direction, voxel_size=voxel_size)

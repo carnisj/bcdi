@@ -180,7 +180,7 @@ def main(user_comment):
                         (qy[np.newaxis, np.newaxis, :] - qy[origin_qspace[2]]) ** 2)
     dq = min(qx[1] - qx[0], qz[1] - qz[0], qy[1] - qy[0])
 
-    q_int = dict()  # create dictionnary
+    q_int = {}  # create dictionnary
     dict_fields = ['q1', 'q2']
     nb_points = []
 

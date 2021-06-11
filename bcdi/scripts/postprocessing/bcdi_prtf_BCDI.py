@@ -190,7 +190,7 @@ def press_key(event):
 #######################
 # Initialize detector #
 #######################
-kwargs = dict()  # create dictionnary
+kwargs = {}  # create dictionnary
 kwargs['is_series'] = is_series
 
 # phasing_binning will be taken into account after the optional data cropping (crop_roi parameter)
