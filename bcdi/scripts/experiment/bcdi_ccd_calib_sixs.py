@@ -109,7 +109,7 @@ def mask_maxipix(mydata, mymask):
 
 ###########################################################################
 scanlist = np.arange(start_scan, stop_scan + 1, 1)
-if flatfield_file != "" and flatfield_file != '':
+if flatfield_file is not None and len(flatfield_file) != 0:
     flatfield = np.load(flatfield_file)
     npz_key = flatfield.keys()
     flatfield = flatfield[npz_key[0]]

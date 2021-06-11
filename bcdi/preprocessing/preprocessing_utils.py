@@ -548,7 +548,7 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
     max_nx = abs(2 * min(ix0, nbx - ix0))
     if fft_option != 'skip':
         print("Max symmetrical box (qx, qz, qy): ", max_nz, max_ny, max_nx)
-    if max_nz == 0 or max_ny == 0 or max_nx == 0:
+    if any(val == 0 for val in (max_nz, max_ny, max_nx)):
         print('Empty images or presence of hotpixel at the border, defaulting fft_option to "skip"!')
         fft_option = 'skip'
 
@@ -2302,7 +2302,7 @@ def load_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=N
                                                                detector=detector, flatfield=flatfield,
                                                                hotpixels=hotpixels, background=background,
                                                                normalize=normalize, debugging=debugging)
-    elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
+    elif setup.beamline in {'SIXS_2018', 'SIXS_2019'}:
         data, mask3d, monitor, frames_logical = load_sixs_data(logfile=logfile, beamline=setup.beamline,
                                                                detector=detector, flatfield=flatfield,
                                                                hotpixels=hotpixels, background=background,
@@ -2558,7 +2558,7 @@ def load_monitor(scan_number, logfile, setup, **kwargs):
         monitor = setup.custom_monitor
     elif setup.beamline == 'ID01':
         monitor = load_id01_monitor(logfile=logfile, scan_number=scan_number)
-    elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
+    elif setup.beamline in {'SIXS_2018', 'SIXS_2019'}:
         monitor = load_sixs_monitor(logfile=logfile, beamline=setup.beamline)
     elif setup.beamline == 'CRISTAL':
         monitor = load_cristal_monitor(logfile=logfile, setup=setup, nb_frames=nb_frames)
@@ -3258,7 +3258,7 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
                                                               params=[mu, eta, chi, phi, nu, delta, energy])
         qx, qy, qz = hxrd.Ang2Q.area(mu, eta, chi, phi, nu, delta, en=energy, delta=detector.offsets)
 
-    elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
+    elif setup.beamline in {'SIXS_2018', 'SIXS_2019'}:
         beta, mu, gamma, delta, frames_logical = setup.diffractometer.motor_positions(logfile=logfile, setup=setup)
 
         print('beta', beta)

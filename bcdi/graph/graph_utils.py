@@ -2196,7 +2196,7 @@ def update_aliens(key, pix, piy, original_data, original_mask, updated_data, upd
                 updated_mask[starty:stopy, startx:stopx, idx] = \
                     original_mask[starty:stopy, startx:stopx, idx]
 
-    elif key == 'p' or key == 'a':  # plot full image or restart masking
+    elif key in {'p', 'a'}:  # plot full image or restart masking
         if dim == 0:
             xmin, xmax = -0.5, nbx - 0.5
             if invert_yaxis:
@@ -2466,7 +2466,7 @@ def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_
                 updated_data[starty:stopy, startx:stopx, frame_index[2]] = original_data.max()
                 updated_mask[starty:stopy, startx:stopx, frame_index[2]] = -1
 
-    elif key == 'p' or key == 'a':  # plot full image or restart masking
+    elif key in {'p', 'a'}:  # plot full image or restart masking
         xmin0, xmax0 = -0.5, nbx - 0.5
         if invert_yaxis:
             ymin0, ymax0 = -0.5, nby - 0.5  # pointing up
@@ -2628,7 +2628,7 @@ def update_aliens_2d(key, pix, piy, original_data, original_mask, updated_data, 
             updated_mask[starty:stopy, startx:stopx] = \
                 original_mask[starty:stopy, startx:stopx]
 
-    elif key == 'p' or key == 'a':  # plot full image or restart masking
+    elif key in {'p', 'a'}:  # plot full image or restart masking
         xmin, xmax = -0.5, nbx - 0.5
         if invert_yaxis:
             ymin, ymax = -0.5, nby - 0.5  # pointing up

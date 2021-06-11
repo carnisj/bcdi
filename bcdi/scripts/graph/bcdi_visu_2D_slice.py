@@ -64,7 +64,7 @@ else:
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
 
-if field == 'angle' or field == 'modulus':
+if field in {'angle', 'modulus'}:
     scale = 'linear'
 
 #############

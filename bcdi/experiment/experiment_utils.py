@@ -1945,7 +1945,7 @@ class Setup(object):
         """
         kout = np.zeros(3)
 
-        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+        if self.beamline in {'SIXS_2018', 'SIXS_2019'}:
             # gamma is anti-clockwise
             kout = 2 * np.pi / self.wavelength * np.array(
                 [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
@@ -2065,7 +2065,7 @@ class Setup(object):
         else:  # 'y-'
             hor_coeff = -1
 
-        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+        if self.beamline in {'SIXS_2018', 'SIXS_2019'}:
             # gamma is anti-clockwise, we see the detector from downstream
             coeff_inplane = 1 * hor_coeff
         elif self.beamline == 'ID01':
@@ -3133,7 +3133,7 @@ class Setup(object):
                 q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
                 q_offset[2] = 2 * np.pi / lambdaz * distance * (np.cos(inplane) * np.cos(outofplane) - 1)
 
-        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+        if self.beamline in {'SIXS_2018', 'SIXS_2019'}:
             if verbose:
                 print('using SIXS geometry')
 
@@ -3499,7 +3499,7 @@ class SetupPostprocessing(object):
 
         :return: kout vector
         """
-        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+        if self.beamline in {'SIXS_2018', 'SIXS_2019'}:
             # gamma is anti-clockwise
             kout = 2 * np.pi / self.wavelength * np.array(
                 [np.cos(np.pi * self.inplane_angle / 180) * np.cos(np.pi * self.outofplane_angle / 180),  # z
@@ -3552,7 +3552,7 @@ class SetupPostprocessing(object):
         else:  # 'y-'
             hor_coeff = -1
 
-        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+        if self.beamline in {'SIXS_2018', 'SIXS_2019'}:
             # gamma is anti-clockwise, we see the detector from downstream
             coeff_inplane = 1 * hor_coeff
         elif self.beamline == 'ID01':
@@ -3931,7 +3931,7 @@ class SetupPostprocessing(object):
                     [tilt * distance * (1 - np.cos(inplane) * np.cos(outofplane)),
                      0,
                      tilt * distance * np.sin(inplane) * np.cos(outofplane)])
-        if self.beamline == 'SIXS_2018' or self.beamline == 'SIXS_2019':
+        if self.beamline in {'SIXS_2018', 'SIXS_2019'}:
             if verbose:
                 print('using SIXS geometry')
             if self.rocking_angle == "inplane" and mygrazing_angle != 0:

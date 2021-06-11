@@ -199,7 +199,7 @@ if setup.beamline == 'P10':
     detector.datadir = homedir + 'e4m/'
     template_imagefile = specfile_name + template_imagefile
     detector.template_imagefile = template_imagefile
-elif setup.beamline == 'SIXS_2018' or setup.beamline == 'SIXS_2019':
+elif setup.beamline in {'SIXS_2018', 'SIXS_2019'}:
     homedir = root_folder
     detector.datadir = homedir + "align/"
 else:
