@@ -7,7 +7,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-
+from collections.abc import Sequence
 from datetime import datetime
 from functools import reduce
 import gc
@@ -229,8 +229,10 @@ else:
 if fix_voxel:
     if isinstance(fix_voxel, Real):
         fix_voxel = (fix_voxel, fix_voxel, fix_voxel)
-    assert isinstance(fix_voxel, (tuple, list)) and all(val > 0 for val in fix_voxel),\
-        'fix_voxel should be a positive number or a tuple/list of three positive numbers'
+    if not isinstance(fix_voxel, Sequence):
+        raise TypeError('fix_voxel should be a sequence of three positive numbers')
+    if any(val <= 0 for val in fix_voxel):
+        raise ValueError('fix_voxel should be a positive number or a sequence of three positive numbers')
 
 if actuators is not None and not isinstance(actuators, dict):
     raise TypeError('actuators should be a dictionnary of actuator fieldnames')
