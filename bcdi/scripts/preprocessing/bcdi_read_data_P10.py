@@ -158,7 +158,7 @@ def main(parameters):
     ####################
     # Initialize paths #
     ####################
-    if type(image_nb) == int:
+    if isinstance(image_nb, int):
         image_nb = [image_nb]
     if len(counterroi) == 0:
         counterroi = [0, nb_pixel_y, 0, nb_pixel_x]
