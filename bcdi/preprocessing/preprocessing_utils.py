@@ -2541,7 +2541,7 @@ def load_monitor(scan_number, logfile, setup, **kwargs):
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'nb_frames'},
                        name='preprocessing_utils.load_monitor')
-    nb_frames = kwargs.get('nb_frames', None)
+    nb_frames = kwargs.get('nb_frames')
     valid.valid_item(nb_frames, allowed_types=int, min_excluded=0, allow_none=True,
                      name='preprocessing_utils.load_monitor')
 

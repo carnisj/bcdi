@@ -98,9 +98,9 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma', 'mu', 'alpha', 'is_orthogonal'},
                        name='postprocessing_utils.apodize')
-    sigma = kwargs.get('sigma', None)
-    mu = kwargs.get('mu', None)
-    alpha = kwargs.get('alpha', None)
+    sigma = kwargs.get('sigma')
+    mu = kwargs.get('mu')
+    alpha = kwargs.get('alpha')
     is_orthogonal = kwargs.get('is_orthogonal', False)
 
     if amp.ndim != 3 or phase.ndim != 3:
@@ -409,11 +409,11 @@ def center_com(array, debugging=False, **kwargs):
     #########################
     valid.valid_kwargs(kwargs=kwargs,
                        allowed_kwargs={'width_z', 'width_y', 'width_x'}, name='kwargs')
-    width_z = kwargs.get('width_z', None)
+    width_z = kwargs.get('width_z')
     valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
-    width_y = kwargs.get('width_y', None)
+    width_y = kwargs.get('width_y')
     valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
-    width_x = kwargs.get('width_x', None)
+    width_x = kwargs.get('width_x')
     valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
     #########################
@@ -464,11 +464,11 @@ def center_max(array, debugging=False, **kwargs):
     # check and load kwargs #
     #########################
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'width_z', 'width_y', 'width_x'}, name='kwargs')
-    width_z = kwargs.get('width_z', None)
+    width_z = kwargs.get('width_z')
     valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
-    width_y = kwargs.get('width_y', None)
+    width_y = kwargs.get('width_y')
     valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
-    width_x = kwargs.get('width_x', None)
+    width_x = kwargs.get('width_x')
     valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
     #########################
@@ -519,7 +519,7 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
     # check and load kwargs
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma'},
                        name='postprocessing_utils.filter_3d')
-    sigma = kwargs.get('sigma', None)
+    sigma = kwargs.get('sigma')
 
     ndim = array.ndim
     assert ndim in {2, 3}, 'data should be a 2D or a 3D array'
@@ -830,11 +830,11 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     # check and load kwargs #
     #########################
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'width_z', 'width_y', 'width_x'}, name='kwargs')
-    width_z = kwargs.get('width_z', None)
+    width_z = kwargs.get('width_z')
     valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
-    width_y = kwargs.get('width_y', None)
+    width_y = kwargs.get('width_y')
     valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
-    width_x = kwargs.get('width_x', None)
+    width_x = kwargs.get('width_x')
     valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
     #########################

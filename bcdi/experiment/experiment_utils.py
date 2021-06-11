@@ -65,12 +65,12 @@ class Detector(object):
 
         # load the kwargs
         self.is_series = kwargs.get('is_series', False)
-        self.preprocessing_binning = kwargs.get('preprocessing_binning', None) or (1, 1, 1)
-        self.nb_pixel_x = kwargs.get('nb_pixel_x', None)
-        self.nb_pixel_y = kwargs.get('nb_pixel_y', None)
-        self.custom_pixelsize = kwargs.get('pixel_size', None)
-        self.offsets = kwargs.get('offsets', None)  # delegate the test to xrayutilities
-        linearity_func = kwargs.get('linearity_func', None)
+        self.preprocessing_binning = kwargs.get('preprocessing_binning') or (1, 1, 1)
+        self.nb_pixel_x = kwargs.get('nb_pixel_x')
+        self.nb_pixel_y = kwargs.get('nb_pixel_y')
+        self.custom_pixelsize = kwargs.get('pixel_size')
+        self.offsets = kwargs.get('offsets')  # delegate the test to xrayutilities
+        linearity_func = kwargs.get('linearity_func')
         if linearity_func is not None and not callable(linearity_func):
             raise TypeError(f'linearity_func should be a function, got {type(linearity_func)}')
         self._linearity_func = linearity_func
@@ -110,7 +110,7 @@ class Detector(object):
         """
         counter_dict = {'Maxipix': 'mpx4inr', 'Eiger2M': 'ei2minr', 'Eiger4M': None, 'Timepix': None, 'Merlin': 'alba2',
                         'Dummy': None}
-        return counter_dict.get(self.name, None)
+        return counter_dict.get(self.name)
 
     @ property
     def datadir(self):
@@ -938,7 +938,7 @@ class DiffractometerCRISTAL(Diffractometer):
         # check and load kwargs
         valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
                            name='kwargs')
-        frames_logical = kwargs.get('frames_logical', None)
+        frames_logical = kwargs.get('frames_logical')
         if frames_logical is not None:
             assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
                 'frames_logical should be a list of values in {-1, 0, 1}'
@@ -1071,7 +1071,7 @@ class DiffractometerID01(Diffractometer):
         """
         # load kwargs
         follow_bragg = kwargs.get('follow_bragg', False)
-        frames_logical = kwargs.get('frames_logical', None)
+        frames_logical = kwargs.get('frames_logical')
         valid.valid_item(follow_bragg, allowed_types=bool, name='follow_bragg')
         if frames_logical is not None:
             assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
@@ -1127,7 +1127,7 @@ class DiffractometerID01(Diffractometer):
         valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'follow_bragg', 'frames_logical'},
                            name='kwargs')
         follow_bragg = kwargs.get('follow_bragg', False)
-        frames_logical = kwargs.get('frames_logical', None)
+        frames_logical = kwargs.get('frames_logical')
         valid.valid_item(follow_bragg, allowed_types=bool, name='follow_bragg')
         if frames_logical is not None:
             assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
@@ -1465,7 +1465,7 @@ class DiffractometerSIXS(Diffractometer):
          - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
         """
         # load kwargs
-        frames_logical = kwargs.get('frames_logical', None)
+        frames_logical = kwargs.get('frames_logical')
         if frames_logical is not None:
             assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
                 'frames_logical should be a list of values in {-1, 0, 1}'
@@ -1512,7 +1512,7 @@ class DiffractometerSIXS(Diffractometer):
         # check and load kwargs
         valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'frames_logical'},
                            name='kwargs')
-        frames_logical = kwargs.get('frames_logical', None)
+        frames_logical = kwargs.get('frames_logical')
         if frames_logical is not None:
             assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
                 'frames_logical should be a list of values in {-1, 0, 1}'
@@ -1673,14 +1673,14 @@ class Setup(object):
                            name='Setup.__init__')
 
         # kwargs for preprocessing forward CDI data
-        self.direct_beam = kwargs.get('direct_beam', None)
+        self.direct_beam = kwargs.get('direct_beam')
         # kwargs for loading and preprocessing data
-        sample_offsets = kwargs.get('sample_offsets', None)
+        sample_offsets = kwargs.get('sample_offsets')
         self.filtered_data = kwargs.get('filtered_data', False)  # boolean
         self.custom_scan = kwargs.get('custom_scan', False)  # boolean
-        self.custom_images = kwargs.get('custom_images', None)  # list or tuple
-        self.custom_monitor = kwargs.get('custom_monitor', None)  # list or tuple
-        self.custom_motors = kwargs.get('custom_motors', None)  # dictionnary
+        self.custom_images = kwargs.get('custom_images')  # list or tuple
+        self.custom_monitor = kwargs.get('custom_monitor')  # list or tuple
+        self.custom_motors = kwargs.get('custom_motors')  # dictionnary
         self.actuators = kwargs.get('actuators', {})  # list or tuple
         # kwargs for xrayutilities, delegate the test on their values to xrayutilities
         self.sample_inplane = kwargs.get('sample_inplane', (1, 0, 0))
@@ -2439,11 +2439,11 @@ class Setup(object):
         if isinstance(title, str):
             title = (title,) * nb_arrays
         valid.valid_container(title, container_types=(tuple, list), length=nb_arrays, item_types=str, name='title')
-        width_z = kwargs.get('width_z', None)
+        width_z = kwargs.get('width_z')
         valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
-        width_y = kwargs.get('width_y', None)
+        width_y = kwargs.get('width_y')
         valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
-        width_x = kwargs.get('width_x', None)
+        width_x = kwargs.get('width_x')
         valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
         #########################
@@ -2671,11 +2671,11 @@ class Setup(object):
         if any(val not in {'log', 'linear'} for val in scale):
             raise ValueError("scale should be either 'log' or 'linear'")
 
-        width_z = kwargs.get('width_z', None)
+        width_z = kwargs.get('width_z')
         valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
-        width_y = kwargs.get('width_y', None)
+        width_y = kwargs.get('width_y')
         valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
-        width_x = kwargs.get('width_x', None)
+        width_x = kwargs.get('width_x')
         valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
         #########################
