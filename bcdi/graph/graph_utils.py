@@ -249,7 +249,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             print('array ', idx, ': wrong number of dimensions')
             continue
 
-        elif nb_dim == 1:
+        if nb_dim == 1:
 
             if np.isnan(vmin):
                 tmp_array = np.copy(array).astype(float)
@@ -273,7 +273,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
 
             continue
 
-        elif nb_dim == 3:  # 3D, needs to be reduced to 2D by slicing or projecting
+        if nb_dim == 3:  # 3D, needs to be reduced to 2D by slicing or projecting
             if is_orthogonal and sum_axis == 0:  # detector Y is axis 0, need to be flipped
                 invert_yaxis = True
             else:
