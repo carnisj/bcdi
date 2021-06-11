@@ -1794,7 +1794,7 @@ def init_qconversion(setup):
         # 3S+2D goniometer (ID01 goniometer, sample: mu, eta, chi(virtual), phi      detector: nu,del
         # the vector beam_direction is giving the direction of the primary beam
         # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
-    elif beamline == 'SIXS_2018' or beamline == 'SIXS_2019':
+    elif beamline in {'SIXS_2018', 'SIXS_2019'}:
         offsets = (0, 0, 0, setup.offset_inplane, 0)  # beta, mu, beta, gamma del
         qconv = xu.experiment.QConversion(['y-', 'z+'], ['y-', 'z+', 'y-'], r_i=beam_direction)  # for SIXS
         # 2S+3D goniometer (SIXS goniometer, sample: beta, mu     detector: beta, gamma, del
