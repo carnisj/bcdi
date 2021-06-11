@@ -196,7 +196,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
                        name='graph_utils.combined_plots')
     xlabel = kwargs.get('xlabel', '')
     ylabel = kwargs.get('ylabel', '')
-    position = kwargs.get('position', None)
+    position = kwargs.get('position')
     invert_y = kwargs.get('invert_y', [None for _ in range(nb_subplots)])
 
     if isinstance(xlabel, str):
@@ -764,7 +764,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     ###############
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'invert_y', 'ylabel', 'position', 'invert_y'},
                        name='graph_utils.imshow_plot')
-    invert_y = kwargs.get('invert_y', None)
+    invert_y = kwargs.get('invert_y')
 
     nb_dim = array.ndim
 
@@ -1354,7 +1354,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     # load kwargs #
     ###############
     valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'invert_y'}, name='graph_utils.multislices_plot')
-    invert_y = kwargs.get('invert_y', None)
+    invert_y = kwargs.get('invert_y')
 
     #########################
     # check some parameters #
@@ -1665,7 +1665,7 @@ def savefig(savedir, figure, axes, xlabels='', ylabels='', titles='', filename='
     left = kwargs.get('left', True)
     right = kwargs.get('right', False)
     legend = kwargs.get('legend', False)
-    text = kwargs.get('text', None)
+    text = kwargs.get('text')
 
     ####################
     # check parameters #

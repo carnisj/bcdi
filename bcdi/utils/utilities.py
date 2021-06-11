@@ -1132,11 +1132,11 @@ def rotate_crystal(arrays, axis_to_align=None, reference_axis=None, voxel_size=N
     if any(val not in {'log', 'linear'} for val in scale):
         raise ValueError("scale should be either 'log' or 'linear'")
 
-    width_z = kwargs.get('width_z', None)
+    width_z = kwargs.get('width_z')
     valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
-    width_y = kwargs.get('width_y', None)
+    width_y = kwargs.get('width_y')
     valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
-    width_x = kwargs.get('width_x', None)
+    width_x = kwargs.get('width_x')
     valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
 
     ################################################################################

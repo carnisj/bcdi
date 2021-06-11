@@ -192,7 +192,7 @@ def partial_coherence_rl(measured_intensity, coherent_intensity, iterations=20, 
     valid.valid_item(vmin, allowed_types=Real, name=validation_name)
     vmax = kwargs.get('vmax', np.nan)
     valid.valid_item(vmax, allowed_types=Real, name=validation_name)
-    guess = kwargs.get('guess', None)
+    guess = kwargs.get('guess')
     if guess is not None:
         if not isinstance(guess, np.ndarray):
             raise TypeError(f"guess should be a ndarray, got {type(guess)}")
