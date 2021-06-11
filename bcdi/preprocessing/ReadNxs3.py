@@ -73,8 +73,7 @@ class DataSet(object):
             empty """
             if any_structure:
                 return False
-            else:
-                return True
+            return True
         ## Load the file 
         fullpath = os.path.join(self.directory,self.filename)
         ff = tables.open_file(fullpath,'r') 
@@ -640,5 +639,4 @@ class DataSet(object):
         if len(list2d) > 0:
             self._list2d = list2d
             return list2d
-        else:
-            return False
+        return False
