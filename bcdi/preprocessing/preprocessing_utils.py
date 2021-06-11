@@ -346,16 +346,15 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
 
     if (binning % 1) != 0:
         raise ValueError('Invalid binning value')
-    else:
-        for idx in range(len(params)):
-            try:
-                param_length = len(params[idx])
-                if param_length != nb_frames:
-                    raise ValueError('parameter ', idx, 'length', param_length, 'different from nb_frames', nb_frames)
-            except TypeError:  # int or float
-                params[idx] = np.repeat(params[idx], nb_frames)
-            temp = params[idx]
-            params[idx] = temp[::binning]
+    for idx in range(len(params)):
+        try:
+            param_length = len(params[idx])
+            if param_length != nb_frames:
+                raise ValueError('parameter ', idx, 'length', param_length, 'different from nb_frames', nb_frames)
+        except TypeError:  # int or float
+            params[idx] = np.repeat(params[idx], nb_frames)
+        temp = params[idx]
+        params[idx] = temp[::binning]
 
     if debugging:
         print(params)
@@ -818,19 +817,18 @@ def center_fft(data, mask, detector, frames_logical, centering='max', fft_option
             if (z_span > nbz or y_span > nby or x_span > nbx
                     or fix_size[1] > nbz or fix_size[3] > nby or fix_size[5] > nbx):
                 raise ValueError("Predefined fix_size uncorrect")
-            else:
-                data = data[fix_size[0]:fix_size[1], fix_size[2]:fix_size[3], fix_size[4]:fix_size[5]]
-                mask = mask[fix_size[0]:fix_size[1], fix_size[2]:fix_size[3], fix_size[4]:fix_size[5]]
+            data = data[fix_size[0]:fix_size[1], fix_size[2]:fix_size[3], fix_size[4]:fix_size[5]]
+            mask = mask[fix_size[0]:fix_size[1], fix_size[2]:fix_size[3], fix_size[4]:fix_size[5]]
 
-                if fix_size[0] > 0:  # if 0, the first frame is used
-                    frames_logical[0:fix_size[0]] = 0
-                if fix_size[1] < nbz:  # if nbz, the last frame is used
-                    frames_logical[fix_size[1]:] = 0
+            if fix_size[0] > 0:  # if 0, the first frame is used
+                frames_logical[0:fix_size[0]] = 0
+            if fix_size[1] < nbz:  # if nbz, the last frame is used
+                frames_logical[fix_size[1]:] = 0
 
-                if len(q_values) != 0:
-                    qx = qx[fix_size[0]:fix_size[1]]
-                    qy = qy[fix_size[4]:fix_size[5]]
-                    qz = qz[fix_size[2]:fix_size[3]]
+            if len(q_values) != 0:
+                qx = qx[fix_size[0]:fix_size[1]]
+                qy = qy[fix_size[4]:fix_size[5]]
+                qz = qz[fix_size[2]:fix_size[3]]
     else:
         raise ValueError("Incorrect value for 'fft_option'")
 

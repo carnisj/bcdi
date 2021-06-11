@@ -135,8 +135,7 @@ class Detector(object):
     def is_series(self, value):
         if not isinstance(value, bool):
             raise TypeError('is_series should be a boolean')
-        else:
-            self._is_series = value
+        self._is_series = value
 
     @property
     def name(self):
@@ -150,8 +149,7 @@ class Detector(object):
         valid_names = {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M', 'Dummy'}
         if value not in valid_names:
             raise ValueError(f"Name should be in {valid_names}")
-        else:
-            self._name = value
+        self._name = value
 
     @property
     def nb_pixel_x(self):
@@ -166,10 +164,9 @@ class Detector(object):
             value = self.pix_number[1]
         if not isinstance(value, int):
             raise TypeError('nb_pixel_x should be a positive integer')
-        elif value <= 0:
+        if value <= 0:
             raise ValueError('nb_pixel_x should be a positive integer')
-        else:
-            self._nb_pixel_x = value // self.preprocessing_binning[2]
+        self._nb_pixel_x = value // self.preprocessing_binning[2]
 
     @property
     def nb_pixel_y(self):
@@ -184,10 +181,9 @@ class Detector(object):
             value = self.pix_number[0]
         if not isinstance(value, int):
             raise TypeError('nb_pixel_y should be a positive integer')
-        elif value <= 0:
+        if value <= 0:
             raise ValueError('nb_pixel_y should be a positive integer')
-        else:
-            self._nb_pixel_y = value // self.preprocessing_binning[1]
+        self._nb_pixel_y = value // self.preprocessing_binning[1]
 
     @property
     def params(self):
@@ -672,8 +668,7 @@ class Diffractometer(object):
             if not isinstance(angle, Real):  # list/tuple or ndarray, cannot be None
                 if len(angle) != 1:
                     raise ValueError('A list of angles was provided instead of a single value')
-                else:
-                    angles[idx] = angle[0]
+                angles[idx] = angle[0]
 
         # calculate the rotation matrix
         rotation_matrix = self.rotation_matrix(stage_name='sample', angles=angles)
@@ -728,10 +723,9 @@ class Diffractometer(object):
         # check that there is only one candidate remaining
         if len(candidate_circles) > 1:
             raise ValueError('Several circles were identified as scanned motors')
-        elif len(candidate_circles) == 0:
+        if len(candidate_circles) == 0:
             raise ValueError('No circle was identified as scanned motor')
-        else:  # only one circle was identified as scanned, everything ok
-            index_circle = next(iter(candidate_circles))
+        index_circle = next(iter(candidate_circles))
 
         # check that the rotation axis corresponds to the one definec by rocking_angle
         circles = self.__getattribute__(self.valid_names[stage_name])
@@ -870,11 +864,10 @@ class Diffractometer34ID(Diffractometer):
         """
         if not setup.custom_scan:
             raise NotImplementedError('Only custom_scan implemented for 34ID')
-        else:
-            theta = setup.custom_motors["theta"]
-            phi = setup.custom_motors["phi"]
-            gamma = setup.custom_motors["gamma"]
-            delta = setup.custom_motors["delta"]
+        theta = setup.custom_motors["theta"]
+        phi = setup.custom_motors["phi"]
+        gamma = setup.custom_motors["gamma"]
+        delta = setup.custom_motors["delta"]
 
         return theta, phi, delta, gamma
 
@@ -1737,8 +1730,7 @@ class Setup(object):
                               name='Setup.beam_direction')
         if np.linalg.norm(value) == 0:
             raise ValueError('At least of component of beam_direction should be non null.')
-        else:
-            self._beam_direction = value / np.linalg.norm(value)
+        self._beam_direction = value / np.linalg.norm(value)
 
     @property
     def beam_direction_xrutils(self):
@@ -1759,8 +1751,7 @@ class Setup(object):
     def beamline(self, value):
         if value not in {'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL', 'NANOMAX'}:
             raise ValueError(f'Beamline {value} not supported')
-        else:
-            self._beamline = value
+        self._beamline = value
 
     @property
     def custom_images(self):
@@ -1811,8 +1802,7 @@ class Setup(object):
         else:
             if not isinstance(value, dict):
                 raise TypeError('custom_motors should be a dictionnary of "motor_name": motor_positions pairs')
-            else:
-                self._custom_motors = value
+            self._custom_motors = value
 
     @property
     def custom_scan(self):
@@ -1825,8 +1815,7 @@ class Setup(object):
     def custom_scan(self, value):
         if not isinstance(value, bool):
             raise TypeError('custom_scan should be a boolean')
-        else:
-            self._custom_scan = value
+        self._custom_scan = value
 
     @property
     def detector(self):
@@ -1987,8 +1976,7 @@ class Setup(object):
     def filtered_data(self, value):
         if not isinstance(value, bool):
             raise TypeError('filtered_data should be a boolean')
-        else:
-            self._filtered_data = value
+        self._filtered_data = value
 
     @property
     def grazing_angle(self):
@@ -2038,8 +2026,7 @@ class Setup(object):
     def inplane_angle(self, value):
         if not isinstance(value, Real) and value is not None:
             raise TypeError('inplane_angle should be a number in degrees')
-        else:
-            self._inplane_angle = value
+        self._inplane_angle = value
 
     @property
     def inplane_coeff(self):
@@ -2089,8 +2076,7 @@ class Setup(object):
     def outofplane_angle(self, value):
         if not isinstance(value, Real) and value is not None:
             raise TypeError('outofplane_angle should be a number in degrees')
-        else:
-            self._outofplane_angle = value
+        self._outofplane_angle = value
 
     @property
     def outofplane_coeff(self):
@@ -2165,8 +2151,7 @@ class Setup(object):
     def tilt_angle(self, value):
         if not isinstance(value, Real) and value is not None:
             raise TypeError('tilt_angle should be a number in degrees')
-        else:
-            self._tilt_angle = value
+        self._tilt_angle = value
 
     @property
     def wavelength(self):

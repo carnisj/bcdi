@@ -92,13 +92,11 @@ my_cmap = colormap.cmap
 #########################
 if not isinstance(strain_range, Real) and strain_range != 'minmax':
     raise ValueError(f'Incorrect setting {strain_range} for the parameter "strain_range"')
-else:
-    strain_min, strain_max = -strain_range, strain_range
+strain_min, strain_max = -strain_range, strain_range
 
 if not isinstance(phase_range, Real)and phase_range != 'minmax':
     raise ValueError(f'Incorrect setting {phase_range} for the parameter "phase_range"')
-else:
-    phase_min, phase_max = -phase_range, phase_range
+phase_min, phase_max = -phase_range, phase_range
 
 valid.valid_item(xmin_histo, allowed_types=Real, min_included=0, name='xmin_histo')
 valid.valid_container(obj=vline_hist, container_types=(list, tuple, np.ndarray, set), min_excluded=0, allow_none=True,

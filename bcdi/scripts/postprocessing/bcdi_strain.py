@@ -237,7 +237,7 @@ if actuators is not None and not isinstance(actuators, dict):
 
 if data_frame not in {'detector', 'crystal', 'laboratory'}:
     raise ValueError('Uncorrect setting for "data_frame" parameter')
-elif data_frame == 'detector':
+if data_frame == 'detector':
     is_orthogonal = False
 else:
     is_orthogonal = True
