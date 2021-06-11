@@ -3453,7 +3453,7 @@ class SetupPostprocessing(object):
         """
         title = kwargs.get('title', 'Object')
 
-        for k in kwargs.keys():
+        for k in kwargs:
             if k not in {'title'}:
                 raise Exception("unknown keyword argument given:", k)
 
@@ -3593,7 +3593,7 @@ class SetupPostprocessing(object):
         """
         title = kwargs.get('title', 'Object')
 
-        for k in kwargs.keys():
+        for k in kwargs:
             if k not in {'title'}:
                 raise Exception("unknown keyword argument given:", k)
 

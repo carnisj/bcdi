@@ -725,7 +725,7 @@ gc.collect()
 full_indices = [list(zip(summary_dict[label]['plane_indices'][0],
                          summary_dict[label]['plane_indices'][1],
                          summary_dict[label]['plane_indices'][2]))[point]
-                for label in summary_dict.keys()
+                for label in summary_dict
                 for point in range(len(list(zip(summary_dict[label]['plane_indices'][0],
                                                 summary_dict[label]['plane_indices'][1],
                                                 summary_dict[label]['plane_indices'][2]))))]
@@ -746,7 +746,7 @@ duplicates = tuple([ind_0, ind_1, ind_2])
 ################################
 print('\nFiltering out voxels attributed to multiple facets')
 print(f'{len(duplicates[0])} points attributed to multiple facets will be removed')
-for label in summary_dict.keys():
+for label in summary_dict:
     plane = np.zeros((nz, ny, nx), dtype=int)
     plane[summary_dict[label]['plane_indices']] = 1
     number_before = (plane == 1).sum()
