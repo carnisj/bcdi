@@ -2051,7 +2051,7 @@ def update_aliens(key, pix, piy, original_data, original_mask, updated_data, upd
     stop_masking = False
     if dim not in [0, 1, 2]:
         raise ValueError('dim should be 0, 1 or 2')
-    elif dim == 0:
+    if dim == 0:
         current_nby = nby
         current_nbx = nbx
     elif dim == 1:
@@ -2272,7 +2272,7 @@ def update_aliens_combined(key, pix, piy, original_data, original_mask, updated_
     stop_masking = False
     if dim not in [0, 1, 2]:
         raise ValueError('dim should be 0, 1 or 2')
-    elif dim == 0:
+    if dim == 0:
         current_nby = nby
         current_nbx = nbx
     elif dim == 1:
@@ -2768,7 +2768,7 @@ def update_mask(key, pix, piy, original_data, original_mask, updated_data, updat
     stop_masking = False
     if dim not in [0, 1, 2]:
         raise ValueError('dim should be 0, 1 or 2')
-    elif dim == 0:
+    if dim == 0:
         current_nby = nby
         current_nbx = nbx
     elif dim == 1:
@@ -2996,7 +2996,7 @@ def update_mask_combined(key, pix, piy, original_data, original_mask, updated_da
     update_fig = False
     if dim not in [0, 1, 2]:
         raise ValueError('dim should be 0, 1 or 2')
-    elif dim == 0:
+    if dim == 0:
         current_nby = nby
         current_nbx = nbx
     elif dim == 1:

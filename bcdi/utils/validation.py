@@ -151,11 +151,10 @@ def valid_kwargs(kwargs, allowed_kwargs, name=None):
         allowed_kwargs = (allowed_kwargs,)
     if not isinstance(allowed_kwargs, (tuple, list, set)):
         raise TypeError('allowed_kwargs should be a collection of kwargs keys')
-    else:
-        if not all(isinstance(val, str) for val in allowed_kwargs):
-            raise TypeError('the keys in allowed_kwargs should be strings')
-        if not all(len(val) > 0 for val in allowed_kwargs):
-            raise ValueError('the length of all keys in allowed_kwargs should be larger than 0')
+    if not all(isinstance(val, str) for val in allowed_kwargs):
+        raise TypeError('the keys in allowed_kwargs should be strings')
+    if not all(len(val) > 0 for val in allowed_kwargs):
+        raise ValueError('the length of all keys in allowed_kwargs should be larger than 0')
 
     valid_container(obj=allowed_kwargs, container_types=(tuple, list, set), min_length=1, name='valid_kwargs')
 
