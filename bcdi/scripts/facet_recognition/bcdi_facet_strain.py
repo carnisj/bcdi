@@ -205,32 +205,31 @@ if projection_method == 'stereographic':
         label_distances = np.sqrt(label_points[:, 0]**2 + label_points[:, 1]**2)  # distance in angle from the origin
         if (label_distances <= 90).sum() == label_points.shape[0]:  # all points inside the 90deg border
             continue  # do nothing, the facet is valid
-        elif (label_distances > 90).sum() == label_points.shape[0]:  # all points outside the 90deg border
+        if (label_distances > 90).sum() == label_points.shape[0]:  # all points outside the 90deg border
             continue  # do nothing, the facet will be filtered out in next section by distance check
-        else:  # some points on the other side of the 90deg border
-            print('Label ', str(label), 'is potentially duplicated')
-            # look for the corresponding label in the bottom projection
-            for idx in range(nb_normals):
-                # calculate the corresponding index coordinates
-                # by rescaling from [-max_angle max_angle] to [0 numy] or [0 numx]
-                u_top = int(np.rint((stereo_proj[idx, 0] + max_angle) * numx / (2*max_angle)))  # u axis horizontal
-                v_top = int(np.rint((stereo_proj[idx, 1] + max_angle) * numy / (2*max_angle)))  # v axis vertical
-                u_bottom = int(np.rint((stereo_proj[idx, 2] + max_angle) * numx / (2*max_angle)))  # u axis horizontal
-                v_bottom = int(np.rint((stereo_proj[idx, 3] + max_angle) * numy / (2*max_angle)))  # v axis vertical
+        print('Label ', str(label), 'is potentially duplicated')
+        # look for the corresponding label in the bottom projection
+        for idx in range(nb_normals):
+            # calculate the corresponding index coordinates
+            # by rescaling from [-max_angle max_angle] to [0 numy] or [0 numx]
+            u_top = int(np.rint((stereo_proj[idx, 0] + max_angle) * numx / (2*max_angle)))  # u axis horizontal
+            v_top = int(np.rint((stereo_proj[idx, 1] + max_angle) * numy / (2*max_angle)))  # v axis vertical
+            u_bottom = int(np.rint((stereo_proj[idx, 2] + max_angle) * numx / (2*max_angle)))  # u axis horizontal
+            v_bottom = int(np.rint((stereo_proj[idx, 3] + max_angle) * numy / (2*max_angle)))  # v axis vertical
 
-                try:
-                    if labels_top[v_top, u_top] == label and \
-                            labels_bottom[v_bottom, u_bottom] not in duplicated_labels:
-                        # only the first duplicated point will be checked, then the whole bottom_label is changed
-                        # to label and there is no need to check anymore
-                        duplicated_labels.append(labels_bottom[v_bottom, u_bottom])
-                        duplicated_labels.append(label)
-                        print('  Corresponding label :', labels_bottom[v_bottom, u_bottom], 'changed to', label)
-                        labels_bottom[labels_bottom == labels_bottom[v_bottom, u_bottom]] = label
-                except IndexError:
-                    # the IndexError exception arises because we are spanning all normals for labels_top, even those
-                    # whose stereographic projection is farther than max_angle.
-                    continue
+            try:
+                if labels_top[v_top, u_top] == label and \
+                                    labels_bottom[v_bottom, u_bottom] not in duplicated_labels:
+                    # only the first duplicated point will be checked, then the whole bottom_label is changed
+                    # to label and there is no need to check anymore
+                    duplicated_labels.append(labels_bottom[v_bottom, u_bottom])
+                    duplicated_labels.append(label)
+                    print('  Corresponding label :', labels_bottom[v_bottom, u_bottom], 'changed to', label)
+                    labels_bottom[labels_bottom == labels_bottom[v_bottom, u_bottom]] = label
+            except IndexError:
+                # the IndexError exception arises because we are spanning all normals for labels_top, even those
+                # whose stereographic projection is farther than max_angle.
+                continue
 
     del label_points, label_distances
     gc.collect()
@@ -468,8 +467,7 @@ for label in unique_labels:
     if stop:  # no points on the plane
         print('Refined fit: no points for plane', label)
         continue
-    else:
-        print('Plane', label, ', ', str(grown_points), 'points after checking distance to plane')
+    print('Plane', label, ', ', str(grown_points), 'points after checking distance to plane')
     plane_indices = np.nonzero(plane)  # plane_indices is a tuple of 3 arrays
 
     # check that the plane normal is not flipped using the support gradient at the center of mass of the facet
@@ -758,9 +756,8 @@ for label in summary_dict:
     if nb_points == 0:  # no point belongs to the support
         print('Plane ', label, ' , no point remaining after checking for duplicates')
         continue
-    else:
-        print('Plane ', label,
-              ' : {0} points before, {1} points after checking for duplicates'.format(number_before, nb_points))
+    print('Plane ', label,
+          ' : {0} points before, {1} points after checking for duplicates'.format(number_before, nb_points))
 
     surf0, surf1, surf2 = fu.surface_indices(surface=surface, plane_indices=plane_indices, margin=3)
     gu.scatter_plot_overlaid(arrays=(np.asarray(plane_indices).T,
