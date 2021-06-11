@@ -382,7 +382,7 @@ data = np.roll(data, roll_centering, axis=(0, 1, 2))
 #################################
 # rescale the support if needed #
 #################################
-if not all([i == j for i, j in zip(output_shape, unbinned_shape)]):  # accomodate for different object types
+if not all(i == j for i, j in zip(output_shape, unbinned_shape)):  # accomodate for different object types
     print('\nCalculating voxel sizes...')
     if is_ortho:
         # load the original q values to calculate actual real space voxel sizes

@@ -313,7 +313,7 @@ if unitcell == 'bct':  # corr is 5D
     vmin = corr_lattice.min()
     vmax = 1.1 * corr_lattice.max()
     save_lattice = True
-    if all([corr_lattice.shape[idx] > 1 for idx in range(corr_lattice.ndim)]):  # 2D
+    if all(corr_lattice.shape[idx] > 1 for idx in range(corr_lattice.ndim)):  # 2D
         fig, ax = plt.subplots(nrows=1, ncols=1)
         plt0 = ax.contourf(c_values, a_values, corr_lattice, np.linspace(vmin, vmax, 20, endpoint=False),
                            cmap=my_cmap)
@@ -361,7 +361,7 @@ else:  # corr is 4D
 vmin = corr_angles.min()
 vmax = 1.1 * corr_angles.max()
 save_angles = True
-if all([corr_angles.shape[idx] > 1 for idx in range(corr_angles.ndim)]):  # 3D
+if all(corr_angles.shape[idx] > 1 for idx in range(corr_angles.ndim)):  # 3D
     fig, _, _ = gu.contour_slices(corr_angles, (angles_qx, angles_qz, angles_qy), sum_frames=False,
                                   title='Correlation map for rotation angles', slice_position=[piz, piy, pix],
                                   plot_colorbar=True, levels=np.linspace(vmin, vmax, 20, endpoint=False),
