@@ -90,15 +90,13 @@ my_cmap = colormap.cmap
 #########################
 # check some parameters #
 #########################
-if not isinstance(strain_range, Real):
-    if not strain_range == 'minmax':
-        raise ValueError(f'Incorrect setting {strain_range} for the parameter "strain_range"')
+if not isinstance(strain_range, Real) and strain_range != 'minmax':
+    raise ValueError(f'Incorrect setting {strain_range} for the parameter "strain_range"')
 else:
     strain_min, strain_max = -strain_range, strain_range
 
-if not isinstance(phase_range, Real):
-    if not phase_range == 'minmax':
-        raise ValueError(f'Incorrect setting {phase_range} for the parameter "phase_range"')
+if not isinstance(phase_range, Real)and phase_range != 'minmax':
+    raise ValueError(f'Incorrect setting {phase_range} for the parameter "phase_range"')
 else:
     phase_min, phase_max = -phase_range, phase_range
 
