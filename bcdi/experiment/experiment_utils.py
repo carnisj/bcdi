@@ -7,6 +7,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from collections.abc import Sequence
 from functools import reduce
 import gc
 import h5py
@@ -389,7 +390,8 @@ class Detector:
         :param hotpixels: a 2D array with hotpixels to be masked (1=hotpixel, 0=normal pixel)
         :return: the masked data and the updated mask
         """
-        assert isinstance(data, np.ndarray) and isinstance(mask, np.ndarray), 'data and mask should be numpy arrays'
+        if not isinstance(data, np.ndarray) or not isinstance(mask, np.ndarray):
+            raise TypeError('data and mask should be numpy arrays')
         if data.ndim != 2 or mask.ndim != 2:
             raise ValueError('data and mask should be 2D arrays')
 
@@ -940,8 +942,10 @@ class DiffractometerCRISTAL(Diffractometer):
                            name='kwargs')
         frames_logical = kwargs.get('frames_logical')
         if frames_logical is not None:
-            assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
-                'frames_logical should be a list of values in {-1, 0, 1}'
+            if not isinstance(frames_logical, (list, np.ndarray)):
+                raise TypeError('frames_logical should be a list/array')
+            if not all(val in {-1, 0, 1} for val in frames_logical):
+                raise ValueError('frames_logical should be a list of values in {-1, 0, 1}')
 
         if not setup.custom_scan:
             group_key = list(logfile.keys())[0]
@@ -1074,8 +1078,10 @@ class DiffractometerID01(Diffractometer):
         frames_logical = kwargs.get('frames_logical')
         valid.valid_item(follow_bragg, allowed_types=bool, name='follow_bragg')
         if frames_logical is not None:
-            assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
-                'frames_logical should be a list of values in {-1, 0, 1}'
+            if not isinstance(frames_logical, (list, np.ndarray)):
+                raise TypeError('frames_logical should be a list/array')
+            if not all(val in {-1, 0, 1} for val in frames_logical):
+                raise ValueError('frames_logical should be a list of values in {-1, 0, 1}')
 
         # check some parameter
         if not isinstance(setup, Setup):
@@ -1130,8 +1136,10 @@ class DiffractometerID01(Diffractometer):
         frames_logical = kwargs.get('frames_logical')
         valid.valid_item(follow_bragg, allowed_types=bool, name='follow_bragg')
         if frames_logical is not None:
-            assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
-                'frames_logical should be a list of values in {-1, 0, 1}'
+            if not isinstance(frames_logical, (list, np.ndarray)):
+                raise TypeError('frames_logical should be a list/array')
+            if not all(val in {-1, 0, 1} for val in frames_logical):
+                raise ValueError('frames_logical should be a list of values in {-1, 0, 1}')
 
         energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
         old_names = False
@@ -1467,8 +1475,10 @@ class DiffractometerSIXS(Diffractometer):
         # load kwargs
         frames_logical = kwargs.get('frames_logical')
         if frames_logical is not None:
-            assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
-                'frames_logical should be a list of values in {-1, 0, 1}'
+            if not isinstance(frames_logical, (list, np.ndarray)):
+                raise TypeError('frames_logical should be a list/array')
+            if not all(val in {-1, 0, 1} for val in frames_logical):
+                raise ValueError('frames_logical should be a list of values in {-1, 0, 1}')
 
         # check some parameter
         if not isinstance(setup, Setup):
@@ -1514,8 +1524,10 @@ class DiffractometerSIXS(Diffractometer):
                            name='kwargs')
         frames_logical = kwargs.get('frames_logical')
         if frames_logical is not None:
-            assert isinstance(frames_logical, (list, np.ndarray)) and all(val in {-1, 0, 1} for val in frames_logical),\
-                'frames_logical should be a list of values in {-1, 0, 1}'
+            if not isinstance(frames_logical, (list, np.ndarray)):
+                raise TypeError('frames_logical should be a list/array')
+            if not all(val in {-1, 0, 1} for val in frames_logical):
+                raise ValueError('frames_logical should be a list of values in {-1, 0, 1}')
 
         if not setup.custom_scan:
             delta = logfile.delta[0]  # not scanned
@@ -2512,8 +2524,10 @@ class Setup:
         else:
             if isinstance(voxel_size, Real):
                 voxel_size = (voxel_size, voxel_size, voxel_size)
-            assert isinstance(voxel_size, (tuple, list)) and len(voxel_size) == 3 and\
-                all(val > 0 for val in voxel_size), 'voxel_size should be a list/tuple of three positive numbers in nm'
+            if not isinstance(voxel_size, Sequence):
+                raise TypeError('voxel size should be a sequence of three positive numbers in nm')
+            if len(voxel_size) != 3 or any(val <= 0 for val in voxel_size):
+                raise ValueError('voxel_size should be a sequence of three positive numbers in nm')
 
         ######################################################################
         # calculate the transformation matrix based on the beamline geometry #
@@ -3264,7 +3278,8 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
         vn = []
         for i in number:
             limit = i
-            assert (i > 1 and maxprime <= i)
+            if i <= 1 or maxprime > i:
+                raise ValueError(f"Number is < {maxprime}")
             while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
                 i = i + 1
                 if i == limit:
@@ -3274,7 +3289,8 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
             return np.array(vn)
         return vn
     limit = number
-    assert (number > 1 and maxprime <= number)
+    if number <= 1 or maxprime > number:
+        raise ValueError(f"Number is < {maxprime}")
     while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
         number = number + 1
         if number == limit:
@@ -3316,7 +3332,8 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
     if isinstance(number, (list, tuple, np.ndarray)):
         vn = []
         for i in number:
-            assert (i > 1 and maxprime <= i), "Number is < " + str(maxprime)
+            if i <= 1 or maxprime > i:
+                raise ValueError(f"Number is < {maxprime}")
             while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
                 i = i - 1
                 if i == 0:
@@ -3325,7 +3342,8 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
         if isinstance(number, np.ndarray):
             return np.array(vn)
         return vn
-    assert (number > 1 and maxprime <= number), "Number is < " + str(maxprime)
+    if number <= 1 or maxprime > number:
+        raise ValueError(f"Number is < {maxprime}")
     while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
         number = number - 1
         if number == 0:
