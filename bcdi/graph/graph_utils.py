@@ -274,10 +274,7 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
             continue
 
         if nb_dim == 3:  # 3D, needs to be reduced to 2D by slicing or projecting
-            if is_orthogonal and sum_axis == 0:  # detector Y is axis 0, need to be flipped
-                invert_yaxis = True
-            else:
-                invert_yaxis = False
+            invert_yaxis = bool(is_orthogonal and sum_axis == 0)
 
             slice_names, ver_labels, hor_labels = define_labels(reciprocal_space=reciprocal_space,
                                                                 is_orthogonal=is_orthogonal, sum_frames=sum_frames)
@@ -781,10 +778,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     plt.ion()
 
     if nb_dim == 3:
-        if is_orthogonal:
-            invert_yaxis = True
-        else:
-            invert_yaxis = False
+        invert_yaxis = bool(is_orthogonal)
 
         slice_names, ver_labels, hor_labels = define_labels(reciprocal_space=reciprocal_space, labels=labels,
                                                             is_orthogonal=is_orthogonal, sum_frames=sum_frames)
@@ -1394,10 +1388,7 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     width_y = width_y or nby
     width_x = width_x or nbx
 
-    if is_orthogonal:
-        invert_yaxis = True
-    else:
-        invert_yaxis = False
+    invert_yaxis = bool(is_orthogonal)
     if invert_y is not None:  # override the default behavior for invert_yaxis
         invert_yaxis = invert_y
 

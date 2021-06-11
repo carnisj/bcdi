@@ -110,10 +110,7 @@ def main(user_comment):
     assert len(q_xcca) == 2, "Two q values should be provided (it can be the same value)"
     assert len(origin_qspace) == 3, "origin_qspace should be a tuple of 3 integer pixel values"
     q_xcca.sort()
-    if q_xcca[0] == q_xcca[1]:
-        same_q = True
-    else:
-        same_q = False
+    same_q = q_xcca[0] == q_xcca[1]
     warnings.filterwarnings("ignore")
 
     ###################
