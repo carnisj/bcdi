@@ -269,7 +269,7 @@ fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 for idx, thres in enumerate(threshold):
     # print(result[f'ang_width_threshold'][idx].min(), result[f'ang_width_threshold'][idx].max())
-    line, = ax.plot(angles, result[f'ang_width_threshold'][idx], color=colors[idx % len(colors)],
+    line, = ax.plot(angles, result['ang_width_threshold'][idx], color=colors[idx % len(colors)],
                     marker=markers[(idx // len(colors)) % len(markers)], fillstyle='none', markersize=6,
                     linestyle='-', linewidth=1)
     line.set_label(f'threshold {thres}')

@@ -653,7 +653,7 @@ class Diffractometer(object):
         # get the relevant angle within the rocking circle. The reference point when orthogonalizing if the center of
         # the array, but we do not know to which angle it corresponds if the data was cropped.
         if central_angle is None:
-            print(f'central_angle=None, using the angle at half of the rocking curve for the calculation of the '
+            print('central_angle=None, using the angle at half of the rocking curve for the calculation of the '
                   f'rotation matrix')
             nb_steps = len(angles[rocking_circle])
             central_angle = angles[rocking_circle][int(nb_steps//2)]
@@ -2484,7 +2484,7 @@ class Setup(object):
                                                                     pixel_x=self.detector.unbinned_pixel[1],
                                                                     pixel_y=self.detector.unbinned_pixel[0])
         if verbose:
-            print(f"Sampling in the laboratory frame (z, y, x): ",
+            print("Sampling in the laboratory frame (z, y, x): ",
                   f"({dz_realspace:.2f} nm, {dy_realspace:.2f} nm, {dx_realspace:.2f} nm)")
 
         if input_shape != initial_shape:
@@ -3072,7 +3072,7 @@ class Setup(object):
                 if grazing_angle is not None:
                     raise NotImplementedError('Circle blow theta not implemented for 34ID-C')
                 if verbose:
-                    print(f'rocking angle is theta, no grazing angle (phi above theta)')
+                    print('rocking angle is theta, no grazing angle (phi above theta)')
                 # rocking theta angle anti-clockwise around y
                 mymatrix[:, 0] = 2 * np.pi / lambdaz * pixel_x * hor_coeff * \
                     np.array([-np.cos(inplane),
