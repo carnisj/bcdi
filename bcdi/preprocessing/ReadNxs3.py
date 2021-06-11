@@ -436,7 +436,6 @@ class DataSet:
             mask[:, 80:560:80] = True
             self.mask0_xpad70 = mask
             self.attlist.append('mask0_xpad70')
-        return   
 
     @staticmethod
     def roi_sum(stack, roi):
@@ -479,7 +478,6 @@ class DataSet:
             roiC = (integrals[:]*(attcoef**f_shi[:]))/acqTime
             setattr(self, ROIname, roiC)
             self.attlist.append(ROIname)
-        return
 
     def plot_roi(self, motor, roi, color='-og', detname=None, label=None):
         """It integrates the desired roi and plot it
@@ -593,8 +591,6 @@ class DataSet:
                             stack = self.__getattribute__(el)
                             attenuators = self.attenuation[:]  #filters and motors are shifted of one points
                             self.calcROI(stack, roi, maskname, self._coef, attenuators, self._integration_time, roiname)
-#                            calcROI(self, stack,roiextent, maskname,attcoef, filters, acqTime, ROIname)
-        return
 
     def prj(self, axe=0, mask_extra=None):
         """Project the 2D detector on the coosen axe of the detector and return a matrix 

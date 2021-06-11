@@ -1866,7 +1866,6 @@ def save_to_vti(filename, voxel_size, tuple_array, tuple_fieldnames, origin=(0, 
     writer.SetFileName(filename)
     writer.SetInputData(image_data)
     writer.Write()
-    return
 
 
 def scatter_plot(array, labels, markersize=4, markercolor='b', title=''):
