@@ -759,7 +759,7 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     ###############
     # load kwargs #
     ###############
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'invert_y', 'ylabel', 'position', 'invert_y'},
+    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'invert_y'},
                        name='graph_utils.imshow_plot')
     invert_y = kwargs.get('invert_y')
 
