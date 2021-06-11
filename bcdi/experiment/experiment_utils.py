@@ -1394,7 +1394,7 @@ class DiffractometerP10(Diffractometer):
             phi = []
             chi = None
             mu = None
-            gamma = None,
+            gamma = None
             delta = None
 
             fio_lines = fio.readlines()
