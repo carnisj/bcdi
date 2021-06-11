@@ -2492,7 +2492,7 @@ class Setup(object):
         reference_axis = np.array(reference_axis)
         if not any((reference_axis == val).all() for val in
                    (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))):
-            raise NotImplemented('strain calculation along directions other than array axes is not implemented')
+            raise NotImplementedError('strain calculation along directions other than array axes is not implemented')
 
         if not initial_shape:
             initial_shape = input_shape
