@@ -438,18 +438,20 @@ class DataSet(object):
             self.mask0_xpad70 = mask
             self.attlist.append('mask0_xpad70')
         return   
-        
-    def roi_sum(self, stack,roi):
-        '''given a stack of images it returns the integals over the ROI  
-        roi is expected as eg: [257, 126,  40,  40] '''
-        return stack[:,roi[1]:roi[1]+roi[3],roi[0]:roi[0]+roi[2]].sum(axis=1).sum(axis=1).copy()
 
-    def roi_sum_mask(self, stack,roi,mask):
-        '''given a stack of images it returns the integals over the ROI minus 
+    @staticmethod
+    def roi_sum(stack, roi):
+        """given a stack of images it returns the integals over the ROI
+        roi is expected as eg: [257, 126,  40,  40] """
+        return stack[:, roi[1]:roi[1]+roi[3], roi[0]:roi[0]+roi[2]].sum(axis=1).sum(axis=1).copy()
+
+    @staticmethod
+    def roi_sum_mask(stack, roi, mask):
+        """given a stack of images it returns the integals over the ROI minus
         the masked pixels  
-        the ROI is expected as eg: [257, 126,  40,  40] '''
+        the ROI is expected as eg: [257, 126,  40,  40] """
         _stack = stack[:]*(1-mask.astype('uint16'))
-        return _stack[:,roi[1]:roi[1]+roi[3],roi[0]:roi[0]+roi[2]].sum(axis=1).sum(axis=1)
+        return _stack[:, roi[1]:roi[1]+roi[3], roi[0]:roi[0]+roi[2]].sum(axis=1).sum(axis=1)
     
     def calcROI(self, stack,roiextent, maskname,attcoef, filters, acqTime, ROIname):
         '''To calculate the roi corrected by attcoef, mask, filters, 
