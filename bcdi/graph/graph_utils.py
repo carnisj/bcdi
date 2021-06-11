@@ -1586,11 +1586,10 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.5)
     plt.ioff()
-    
+
     if ipynb_layout:
         return fig, (ax0, ax1, ax2), (plt0, plt1, plt2)
-    else:
-        return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
+    return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
 
 
 def plot_3dmesh(vertices, faces, data_shape, title='Mesh - z axis flipped because of CXI convention'):

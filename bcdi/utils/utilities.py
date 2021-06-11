@@ -36,9 +36,9 @@ class CustomEncoder(json.JSONEncoder):
         if isinstance(obj, np.ndarray):
             return CustomEncoder.ndarray_to_list(obj)
             # Let the base class default method raise the TypeError
-        elif isinstance(obj, set):
+        if isinstance(obj, set):
             return list(obj)
-        elif isinstance(obj, (np.int32, np.int64)):
+        if isinstance(obj, (np.int32, np.int64)):
             return int(obj)
         return json.JSONEncoder.default(self, obj)
 
@@ -51,11 +51,10 @@ class CustomEncoder(json.JSONEncoder):
             raise TypeError('a numpy ndarray is expected')
         if obj.ndim == 1:
             return list(obj)
-        else:
-            output = []
-            for idx in range(obj.shape[0]):
-                output.append(CustomEncoder.ndarray_to_list(obj[idx]))
-            return output
+        output = []
+        for idx in range(obj.shape[0]):
+            output.append(CustomEncoder.ndarray_to_list(obj[idx]))
+        return output
 
 
 def bin_data(array, binning, debugging=False):

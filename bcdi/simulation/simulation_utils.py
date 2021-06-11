@@ -132,13 +132,12 @@ def bcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
     if offset_indices:
         # non rotated lattice, the origin of indices will correspond to the length of padded q values
         return (leftpad_z, leftpad_y, leftpad_x), lattice_list, peaks_list
-    else:
-        # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
-        lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
-                                            original_shape=(numz, numy, numx),
-                                            pad_offset=(leftpad_z, leftpad_y, leftpad_x),
-                                            pivot=pivot, euler_angles=euler_angles)
-        return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
+    # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
+    lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
+                                        original_shape=(numz, numy, numx),
+                                        pad_offset=(leftpad_z, leftpad_y, leftpad_x),
+                                        pivot=pivot, euler_angles=euler_angles)
+    return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
 
 def bct_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_indices=False, verbose=False):
@@ -206,13 +205,12 @@ def bct_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
     if offset_indices:
         # non rotated lattice, the origin of indices will correspond to the length of padded q values
         return (leftpad_z, leftpad_y, leftpad_x), lattice_list, peaks_list
-    else:
-        # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
-        lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
-                                            original_shape=(numz, numy, numx),
-                                            pad_offset=(leftpad_z, leftpad_y, leftpad_x),
-                                            pivot=pivot, euler_angles=euler_angles)
-        return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
+    # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
+    lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
+                                        original_shape=(numz, numy, numx),
+                                        pad_offset=(leftpad_z, leftpad_y, leftpad_x),
+                                        pivot=pivot, euler_angles=euler_angles)
+    return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
 
 def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_indices=False, verbose=False):
@@ -268,13 +266,12 @@ def cubic_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offse
     if offset_indices:
         # non rotated lattice, the origin of indices will correspond to the length of padded q values
         return (leftpad_z, leftpad_y, leftpad_x), lattice_list, peaks_list
-    else:
-        # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
-        lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
-                                            original_shape=(numz, numy, numx),
-                                            pad_offset=(leftpad_z, leftpad_y, leftpad_x),
-                                            pivot=pivot, euler_angles=euler_angles)
-        return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
+    # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
+    lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
+                                        original_shape=(numz, numy, numx),
+                                        pad_offset=(leftpad_z, leftpad_y, leftpad_x),
+                                        pivot=pivot, euler_angles=euler_angles)
+    return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
 
 def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_indices=False, verbose=False):
@@ -332,13 +329,12 @@ def fcc_lattice(q_values, unitcell_param, pivot, euler_angles=(0, 0, 0), offset_
     if offset_indices:
         # non rotated lattice, the origin of indices will correspond to the length of padded q values
         return (leftpad_z, leftpad_y, leftpad_x), lattice_list, peaks_list
-    else:
-        # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
-        lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
-                                            original_shape=(numz, numy, numx),
-                                            pad_offset=(leftpad_z, leftpad_y, leftpad_x),
-                                            pivot=pivot, euler_angles=euler_angles)
-        return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
+    # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
+    lattice_pos, peaks = rotate_lattice(lattice_list=lattice_list, peaks_list=peaks_list,
+                                        original_shape=(numz, numy, numx),
+                                        pad_offset=(leftpad_z, leftpad_y, leftpad_x),
+                                        pivot=pivot, euler_angles=euler_angles)
+    return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
 
 
 def lattice(energy, sdd, direct_beam, detector, unitcell, unitcell_param, euler_angles=(0, 0, 0), offset_indices=False):

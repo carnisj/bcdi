@@ -85,8 +85,7 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
         if all(val == 0 for val in (shiftz, shifty, shiftx)):
             if not return_shift:
                 return data, mask
-            else:
-                return data, mask, (shiftz, shifty, shiftx)
+            return data, mask, (shiftz, shifty, shiftx)
 
         if combining_method == 'rgi':
             # re-sample data on a new grid based on the shift
@@ -133,8 +132,7 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
         if all(val == 0 for val in (shifty, shiftx)):
             if not return_shift:
                 return data, mask
-            else:
-                return data, mask, (shifty, shiftx)
+            return data, mask, (shifty, shiftx)
 
         if combining_method == 'rgi':
             # re-sample data on a new grid based on the shift
@@ -169,8 +167,7 @@ def align_diffpattern(reference_data, data, mask=None, method='registration', co
     ###########################
     if not return_shift:
         return data, mask
-    else:
-        return data, mask, shift
+    return data, mask, shift
 
 
 def beamstop_correction(data, detector, setup, debugging=False):
