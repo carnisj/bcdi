@@ -448,7 +448,7 @@ def gridmap(specfile, scan_nb, mydetector, region=None, myflatfield=None, myhotp
         mygridder(myqx, myqz, myqy, rawdata)
         return mygridder.xaxis, mygridder.yaxis, mygridder.zaxis, rawdata, mygridder.data, rawmask3d, mymask3d
 
-    elif mysetup == 'SIXS':
+    if mysetup == 'SIXS':
         if myenergy is None:
             print('Defaulting energy to 8.5keV')
             myenergy = 8500
@@ -461,17 +461,16 @@ def gridmap(specfile, scan_nb, mydetector, region=None, myflatfield=None, myhotp
         mygridder(myqx, myqz, myqy, rawdata)
         return mygridder.xaxis, mygridder.yaxis, mygridder.zaxis, rawdata, mygridder.data, rawmask3d, mymask3d
 
-    elif mysetup == 'CRISTAL':
+    if mysetup == 'CRISTAL':
         # TODO: implement this for CRISTAL
         print('Gridder not yet implemented for CRISTAL setup')
         return 0, 0, 0, rawdata, 0, rawmask3d, 0
-    elif mysetup == 'P10':
+    if mysetup == 'P10':
         # TODO: implement this for P10
         print('Gridder not yet implemented for P10 setup')
         return 0, 0, 0, rawdata, 0, rawmask3d, 0
-    else:
-        print('Wrong setup')
-        sys.exit()
+    print('Wrong setup')
+    sys.exit()
 
 
 #########################################################

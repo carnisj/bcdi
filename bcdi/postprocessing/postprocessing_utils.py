@@ -528,12 +528,11 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
         sigma = sigma or 3
         kernel = gaussian_kernel(ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging)
         return array - convolve(array, kernel, mode='same')
-    elif filter_name == 'gaussian':
+    if filter_name == 'gaussian':
         sigma = sigma or 0.5
         kernel = gaussian_kernel(ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging)
         return convolve(array, kernel, mode='same')
-    else:
-        raise ValueError('Only the gaussian_kernel is implemented up to now.')
+    raise ValueError('Only the gaussian_kernel is implemented up to now.')
 
 
 def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=None, width_x=None,
@@ -692,31 +691,30 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
     #########################################################
     if keep_size:
         return nbz // 2, nby // 2, nbx // 2
-    else:
-        support = np.zeros((nbz, nby, nbx))
-        support[abs(array) > amplitude_threshold * abs(array).max()] = 1
+    support = np.zeros((nbz, nby, nbx))
+    support[abs(array) > amplitude_threshold * abs(array).max()] = 1
 
-        z, y, x = np.meshgrid(np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1),
-                              indexing='ij')
-        z = z * support
-        min_z = min(int(np.min(z[np.nonzero(z)])), nbz - int(np.max(z[np.nonzero(z)])))
+    z, y, x = np.meshgrid(np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1),
+                          indexing='ij')
+    z = z * support
+    min_z = min(int(np.min(z[np.nonzero(z)])), nbz - int(np.max(z[np.nonzero(z)])))
 
-        y = y * support
-        min_y = min(int(np.min(y[np.nonzero(y)])), nby - int(np.max(y[np.nonzero(y)])))
+    y = y * support
+    min_y = min(int(np.min(y[np.nonzero(y)])), nby - int(np.max(y[np.nonzero(y)])))
 
-        x = x * support
-        min_x = min(int(np.min(x[np.nonzero(x)])), nbx - int(np.max(x[np.nonzero(x)])))
+    x = x * support
+    min_x = min(int(np.min(x[np.nonzero(x)])), nbx - int(np.max(x[np.nonzero(x)])))
 
-        zrange = (nbz // 2 - min_z)
-        yrange = (nby // 2 - min_y)
-        xrange = (nbx // 2 - min_x)
+    zrange = (nbz // 2 - min_z)
+    yrange = (nby // 2 - min_y)
+    xrange = (nbx // 2 - min_x)
 
-        if plot_margin is not None:
-            zrange += plot_margin[0]
-            yrange += plot_margin[1]
-            xrange += plot_margin[2]
+    if plot_margin is not None:
+        zrange += plot_margin[0]
+        yrange += plot_margin[1]
+        xrange += plot_margin[2]
 
-        return zrange, yrange, xrange
+    return zrange, yrange, xrange
 
 
 def flip_reconstruction(obj, debugging=False):

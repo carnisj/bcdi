@@ -111,7 +111,7 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
 
     # Whole-pixel shift - Compute cross-correlation by an IFFT and locate the
     # peak
-    elif ups_factor == 1:
+    if ups_factor == 1:
         row_nb = buf1ft.shape[0]
         column_nb = buf1ft.shape[1]
         crosscorr = ifftn(buf1ft*np.conj(buf2ft))
@@ -137,103 +137,100 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
             col_shift = column_max
 
         return error, diff_phase, row_shift, col_shift
+    # First upsample by a factor of 2 to obtain initial estimate
+    # Embed Fourier data in a 2x larger array
+    row_nb = buf1ft.shape[0]
+    column_nb = buf1ft.shape[1]
+    mlarge = row_nb*2
+    nlarge = column_nb*2
+    crosscorr = np.zeros([mlarge, nlarge], dtype=np.complex128)
 
-    # Partial-pixel shift
+    crosscorr[int(row_nb-np.fix(row_nb/2)):int(row_nb+1+np.fix((row_nb-1)/2)),
+              int(column_nb-np.fix(column_nb/2)):int(column_nb+1+np.fix((column_nb-1)/2))] = \
+                (fftshift(buf1ft)*np.conj(fftshift(buf2ft)))[:, :]
+
+    # Compute cross-correlation and locate the peak
+    crosscorr = ifftn(ifftshift(crosscorr))  # Calculate cross-correlation
+    _, indices = index_max(np.abs(crosscorr))
+    row_max = indices[0]
+    column_max = indices[1]
+    crosscorr_max = crosscorr[row_max, column_max]
+
+    # Obtain shift in original pixel grid from the position of the
+    # cross-correlation peak
+    row_nb = crosscorr.shape[0]
+    column_nb = crosscorr.shape[1]
+
+    md2 = np.fix(row_nb/2)
+    nd2 = np.fix(column_nb/2)
+    if row_max > md2:
+        row_shift = row_max - row_nb
     else:
-        # First upsample by a factor of 2 to obtain initial estimate
-        # Embed Fourier data in a 2x larger array
-        row_nb = buf1ft.shape[0]
-        column_nb = buf1ft.shape[1]
-        mlarge = row_nb*2
-        nlarge = column_nb*2
-        crosscorr = np.zeros([mlarge, nlarge], dtype=np.complex128)
+        row_shift = row_max
 
-        crosscorr[int(row_nb-np.fix(row_nb/2)):int(row_nb+1+np.fix((row_nb-1)/2)),
-                  int(column_nb-np.fix(column_nb/2)):int(column_nb+1+np.fix((column_nb-1)/2))] = \
-            (fftshift(buf1ft)*np.conj(fftshift(buf2ft)))[:, :]
+    if column_max > nd2:
+        col_shift = column_max - column_nb
+    else:
+        col_shift = column_max
 
-        # Compute cross-correlation and locate the peak
-        crosscorr = ifftn(ifftshift(crosscorr))  # Calculate cross-correlation
+    row_shift = row_shift/2
+    col_shift = col_shift/2
+
+    # If upsampling > 2, then refine estimate with matrix multiply DFT
+    if ups_factor > 2:
+        # DFT computation
+        # Initial shift estimate in upsampled grid
+        row_shift = 1.*np.round(row_shift*ups_factor)/ups_factor
+        col_shift = 1.*np.round(col_shift*ups_factor)/ups_factor
+        dftshift = np.fix(np.ceil(ups_factor*1.5)/2)  # Center of output array at dftshift+1
+        # Matrix multiply DFT around the current shift estimate
+        crosscorr = np.conj(dftups(buf2ft*np.conj(buf1ft), np.ceil(ups_factor*1.5), np.ceil(ups_factor*1.5),
+                                   ups_factor, dftshift-row_shift*ups_factor,
+                                   dftshift-col_shift*ups_factor))/(md2*nd2*ups_factor**2)
+        # Locate maximum and map back to original pixel grid
         _, indices = index_max(np.abs(crosscorr))
         row_max = indices[0]
         column_max = indices[1]
+
         crosscorr_max = crosscorr[row_max, column_max]
+        rg00 = dftups(buf1ft*np.conj(buf1ft), 1, 1, ups_factor)/(md2*nd2*ups_factor**2)
+        rf00 = dftups(buf2ft*np.conj(buf2ft), 1, 1, ups_factor)/(md2*nd2*ups_factor**2)
+        row_max = row_max - dftshift
+        column_max = column_max - dftshift
+        row_shift = 1.*row_shift + 1.*row_max/ups_factor
+        col_shift = 1.*col_shift + 1.*column_max/ups_factor
 
-        # Obtain shift in original pixel grid from the position of the
-        # cross-correlation peak
-        row_nb = crosscorr.shape[0]
-        column_nb = crosscorr.shape[1]
+    # If upsampling = 2, no additional pixel shift refinement
+    else:
+        rg00 = np.sum(buf1ft*np.conj(buf1ft))/row_nb/column_nb
+        rf00 = np.sum(buf2ft*np.conj(buf2ft))/row_nb/column_nb
 
-        md2 = np.fix(row_nb/2)
-        nd2 = np.fix(column_nb/2)
-        if row_max > md2:
-            row_shift = row_max - row_nb
-        else:
-            row_shift = row_max
+    error = 1.0 - crosscorr_max*np.conj(crosscorr_max)/(rg00*rf00)
+    error = np.sqrt(np.abs(error))
+    diff_phase = np.arctan2(np.imag(crosscorr_max), np.real(crosscorr_max))
+    # If its only one row or column the shift along that dimension has no
+    # effect. We set to zero.
+    if md2 == 1:
+        row_shift = 0
 
-        if column_max > nd2:
-            col_shift = column_max - column_nb
-        else:
-            col_shift = column_max
+    if nd2 == 1:
+        col_shift = 0
 
-        row_shift = row_shift/2
-        col_shift = col_shift/2
+    # Compute registered version of buf2ft
+    #        if (usfac > 0):
+    #            ndim = np.shape(buf2ft)
+    #            nr = ndim[0]
+    #            nc = ndim[1]
+    #            Nr = sf.ifftshift(np.arange(-np.fix(1.*nr/2),np.ceil(1.*nr/2)))
+    #            Nc = sf.ifftshift(np.arange(-np.fix(1.*nc/2),np.ceil(1.*nc/2)))
+    #            Nc,Nr = np.meshgrid(Nc,Nr)
+    #            Greg = buf2ft*np.exp(1j*2*np.pi*(-1.*row_shift*Nr/nr-1.*col_shift*Nc/nc))
+    #            Greg = Greg*np.exp(1j*diff_phase)
+    #        elif (nargout > 1)&(usfac == 0):
+    #            Greg = np.dot(buf2ft,exp(1j*diff_phase))
 
-        # If upsampling > 2, then refine estimate with matrix multiply DFT
-        if ups_factor > 2:
-            # DFT computation
-            # Initial shift estimate in upsampled grid
-            row_shift = 1.*np.round(row_shift*ups_factor)/ups_factor
-            col_shift = 1.*np.round(col_shift*ups_factor)/ups_factor
-            dftshift = np.fix(np.ceil(ups_factor*1.5)/2)  # Center of output array at dftshift+1
-            # Matrix multiply DFT around the current shift estimate
-            crosscorr = np.conj(dftups(buf2ft*np.conj(buf1ft), np.ceil(ups_factor*1.5), np.ceil(ups_factor*1.5),
-                                       ups_factor, dftshift-row_shift*ups_factor,
-                                       dftshift-col_shift*ups_factor))/(md2*nd2*ups_factor**2)
-            # Locate maximum and map back to original pixel grid
-            _, indices = index_max(np.abs(crosscorr))
-            row_max = indices[0]
-            column_max = indices[1]
-
-            crosscorr_max = crosscorr[row_max, column_max]
-            rg00 = dftups(buf1ft*np.conj(buf1ft), 1, 1, ups_factor)/(md2*nd2*ups_factor**2)
-            rf00 = dftups(buf2ft*np.conj(buf2ft), 1, 1, ups_factor)/(md2*nd2*ups_factor**2)
-            row_max = row_max - dftshift
-            column_max = column_max - dftshift
-            row_shift = 1.*row_shift + 1.*row_max/ups_factor
-            col_shift = 1.*col_shift + 1.*column_max/ups_factor
-
-        # If upsampling = 2, no additional pixel shift refinement
-        else:
-            rg00 = np.sum(buf1ft*np.conj(buf1ft))/row_nb/column_nb
-            rf00 = np.sum(buf2ft*np.conj(buf2ft))/row_nb/column_nb
-
-        error = 1.0 - crosscorr_max*np.conj(crosscorr_max)/(rg00*rf00)
-        error = np.sqrt(np.abs(error))
-        diff_phase = np.arctan2(np.imag(crosscorr_max), np.real(crosscorr_max))
-        # If its only one row or column the shift along that dimension has no
-        # effect. We set to zero.
-        if md2 == 1:
-            row_shift = 0
-
-        if nd2 == 1:
-            col_shift = 0
-
-        # Compute registered version of buf2ft
-#        if (usfac > 0):
-#            ndim = np.shape(buf2ft)
-#            nr = ndim[0]
-#            nc = ndim[1]
-#            Nr = sf.ifftshift(np.arange(-np.fix(1.*nr/2),np.ceil(1.*nr/2)))
-#            Nc = sf.ifftshift(np.arange(-np.fix(1.*nc/2),np.ceil(1.*nc/2)))
-#            Nc,Nr = np.meshgrid(Nc,Nr)
-#            Greg = buf2ft*np.exp(1j*2*np.pi*(-1.*row_shift*Nr/nr-1.*col_shift*Nc/nc))
-#            Greg = Greg*np.exp(1j*diff_phase)
-#        elif (nargout > 1)&(usfac == 0):
-#            Greg = np.dot(buf2ft,exp(1j*diff_phase))
-
-        # return error,diff_phase,row_shift,col_shift,Greg
-        return error, diff_phase, row_shift, col_shift
+    # return error,diff_phase,row_shift,col_shift,Greg
+    return error, diff_phase, row_shift, col_shift
 
 
 def dftups(myarray, output_row_nb, output_column_nb, ups_factor=1, row_offset=0, column_offset=0):

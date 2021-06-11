@@ -857,10 +857,9 @@ class Diffractometer34ID(Diffractometer):
 
         if stage_name == 'sample':
             return sample_angles
-        elif stage_name == 'detector':
+        if stage_name == 'detector':
             return detector_angles
-        else:  # default case 'bcdi'
-            return tilt, grazing, inplane, outofplane
+        return tilt, grazing, inplane, outofplane
 
     def motor_positions(self, setup):
         """
@@ -927,10 +926,9 @@ class DiffractometerCRISTAL(Diffractometer):
 
         if stage_name == 'sample':
             return sample_angles
-        elif stage_name == 'detector':
+        if stage_name == 'detector':
             return detector_angles
-        else:  # default case 'bcdi'
-            return tilt, grazing, inplane, outofplane
+        return tilt, grazing, inplane, outofplane
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
@@ -1114,10 +1112,9 @@ class DiffractometerID01(Diffractometer):
 
         if stage_name == 'sample':
             return sample_angles
-        elif stage_name == 'detector':
+        if stage_name == 'detector':
             return detector_angles
-        else:  # default case 'bcdi'
-            return tilt, grazing, inplane, outofplane
+        return tilt, grazing, inplane, outofplane
 
     def motor_positions(self, logfile, scan_number, setup, **kwargs):
         """
@@ -1276,10 +1273,9 @@ class DiffractometerNANOMAX(Diffractometer):
 
         if stage_name == 'sample':
             return sample_angles
-        elif stage_name == 'detector':
+        if stage_name == 'detector':
             return detector_angles
-        else:  # default case 'bcdi'
-            return tilt, grazing, inplane, outofplane
+        return tilt, grazing, inplane, outofplane
 
     def motor_positions(self, logfile, setup):
         """
@@ -1373,10 +1369,9 @@ class DiffractometerP10(Diffractometer):
         detector_angles = (gamma, delta)
         if stage_name == 'sample':
             return sample_angles
-        elif stage_name == 'detector':
+        if stage_name == 'detector':
             return detector_angles
-        else:  # default case 'bcdi'
-            return tilt, grazing, inplane, outofplane
+        return tilt, grazing, inplane, outofplane
 
     def motor_positions(self, logfile, setup):
         """
@@ -1506,10 +1501,9 @@ class DiffractometerSIXS(Diffractometer):
 
         if stage_name == 'sample':
             return sample_angles
-        elif stage_name == 'detector':
+        if stage_name == 'detector':
             return detector_angles
-        else:  # default case 'bcdi'
-            return tilt, grazing, inplane, outofplane
+        return tilt, grazing, inplane, outofplane
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
@@ -1856,9 +1850,8 @@ class Setup(object):
         if self.beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX'}:
             # we look at the detector from downstream, detector X along the outboard direction
             return 'y+'
-        else:  # 'P10', '34ID'
-            # we look at the detector from upstream, detector X opposite to the outboard direction
-            return 'y-'
+        # we look at the detector from upstream, detector X opposite to the outboard direction
+        return 'y-'
 
     @property
     def detector_ver(self):
@@ -1869,8 +1862,7 @@ class Setup(object):
         if self.beamline in {'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'NANOMAX', 'P10', '34ID'}:
             # origin is at the top, detector Y along vertical down
             return 'z-'
-        else:
-            return 'z+'
+        return 'z+'
 
     @property
     def diffractometer(self):
@@ -2248,15 +2240,15 @@ class Setup(object):
         """
         if self.beamline == 'ID01':
             return DiffractometerID01(sample_offsets)
-        elif self.beamline in {'SIXS_2018', 'SIXS_2019'}:
+        if self.beamline in {'SIXS_2018', 'SIXS_2019'}:
             return DiffractometerSIXS(sample_offsets)
-        elif self.beamline == '34ID':
+        if self.beamline == '34ID':
             return Diffractometer34ID(sample_offsets)
-        elif self.beamline == 'P10':
+        if self.beamline == 'P10':
             return DiffractometerP10(sample_offsets)
-        elif self.beamline == 'CRISTAL':
+        if self.beamline == 'CRISTAL':
             return DiffractometerCRISTAL(sample_offsets)
-        elif self.beamline == 'NANOMAX':
+        if self.beamline == 'NANOMAX':
             return DiffractometerNANOMAX(sample_offsets)
 
     def detector_frame(self, obj, voxel_size, width_z=None, width_y=None, width_x=None,
@@ -3220,9 +3212,8 @@ class Setup(object):
             mymatrix[:, 1] = nby * mymatrix[:, 1]
             mymatrix[:, 2] = nbz * mymatrix[:, 2]
             return 2 * np.pi * np.linalg.inv(mymatrix).transpose()
-        else:
-            # reciprocal length scale in  1/nm
-            return mymatrix, q_offset
+        # reciprocal length scale in  1/nm
+        return mymatrix, q_offset
 
     def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
@@ -3297,14 +3288,13 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
         if isinstance(number, np.ndarray):
             return np.array(vn)
         return vn
-    else:
-        limit = number
-        assert (number > 1 and maxprime <= number)
-        while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
-            number = number + 1
-            if number == limit:
-                return limit
-        return number
+    limit = number
+    assert (number > 1 and maxprime <= number)
+    while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
+        number = number + 1
+        if number == limit:
+            return limit
+    return number
 
 
 def primes(number):
@@ -3350,13 +3340,12 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
         if isinstance(number, np.ndarray):
             return np.array(vn)
         return vn
-    else:
-        assert (number > 1 and maxprime <= number), "Number is < " + str(maxprime)
-        while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
-            number = number - 1
-            if number == 0:
-                return 0
-        return number
+    assert (number > 1 and maxprime <= number), "Number is < " + str(maxprime)
+    while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
+        number = number - 1
+        if number == 0:
+            return 0
+    return number
 
 
 def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
