@@ -428,7 +428,6 @@ def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
     :param debugging: True to see more plots
     :return: the corresponding 1D array of angular coordinates, 1D array of radial coordinates
     """
-
     z_interp, x_interp = np.meshgrid(np.linspace(-pivot, -pivot + nb_pixels, num=nb_pixels, endpoint=False),
                                      np.linspace(pivot - nb_pixels, pivot, num=nb_pixels, endpoint=False),
                                      indexing='ij')  # z_interp changes along rows, x_interp along columns
@@ -1462,7 +1461,6 @@ def grid_cdi(data, mask, logfile, detector, setup, frames_logical, correct_curva
     :param debugging: set to True to see plots
     :return: the data and mask interpolated in the laboratory frame, q values (downstream, vertical up, outboard)
     """
-
     if data.ndim != 3:
         raise ValueError('data is expected to be a 3D array')
     if mask.ndim != 3:
@@ -1680,7 +1678,6 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
     :param multiprocessing: True to use multiprocessing
     :return: the 3D array interpolated onto the 3D cartesian grid
     """
-
     assert array.ndim == 3, 'a 3D array is expected'
 
     def collect_result(result):
@@ -2523,7 +2520,6 @@ def load_id01_monitor(logfile, scan_number):
     :param scan_number: the scan number to load
     :return: the default monitor values
     """
-
     labels = logfile[str(scan_number) + '.1'].labels  # motor scanned
     labels_data = logfile[str(scan_number) + '.1'].data  # motor scanned
     try:
@@ -2839,7 +2835,6 @@ def load_sixs_data(logfile, beamline, detector, flatfield=None, hotpixels=None, 
      - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
        A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
     """
-
     if detector.name == 'Merlin':
         tmp_data = logfile.merlin[:]
     else:  # Maxipix

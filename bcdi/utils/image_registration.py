@@ -100,8 +100,6 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
         # Greg      (Optional) Fourier transform of registered version of buf2ft,
         #           the global phase difference is compensated for.
     """
-
-    # Compute error for no pixel shift
     if ups_factor == 0:
         crosscorr_max = np.sum(buf1ft*np.conj(buf2ft))
         rfzero = np.sum(abs(buf1ft)**2)/buf1ft.size
