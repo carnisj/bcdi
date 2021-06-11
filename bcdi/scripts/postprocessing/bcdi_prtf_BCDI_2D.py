@@ -116,7 +116,7 @@ debug = False  # True to show more plots
 #######################
 # Initialize detector #
 #######################
-kwargs = dict()  # create dictionnary
+kwargs = {}  # create dictionnary
 kwargs['is_series'] = is_series
 
 detector = exp.Detector(name=detector, template_imagefile=template_imagefile, binning=(1, 1, 1),

@@ -42,16 +42,16 @@ class DataSet:
             shift = 1
         try:
             fichier = tables.open_file(longname, 'r')
-            self.nodedatasizes = list()  # list of data array lengths
+            self.nodedatasizes = []  # list of data array lengths
             for leaf in fichier.list_nodes('/')[0].scan_data:
                 self.nodedatasizes.append(leaf.shape[0])
             self.npts = max(self.nodedatasizes)
 
             # we select only nodes of the same size, smaller arrays (e.g. of size 1) are let aside
             # here it generate the attributes of the DataSet class by defining their type
-            self.nodenames = list()     # node names (ex data_01)
-            self.nodelongnames = list()  # node comprehensible name AKA complete( ex: i14-c-cx2/ex/diff-uhv-k/position)
-            self.nodenicknames = list()  # shortening of the long name AKA the last part of longname
+            self.nodenames = []     # node names (ex data_01)
+            self.nodelongnames = []  # node comprehensible name AKA complete( ex: i14-c-cx2/ex/diff-uhv-k/position)
+            self.nodenicknames = []  # shortening of the long name AKA the last part of longname
             self.alias = []
             self.data = numpy.empty(0)   # empty table creation
             self.waveL = fichier.list_nodes('/')[0].SIXS.Monochromator.wavelength[0]

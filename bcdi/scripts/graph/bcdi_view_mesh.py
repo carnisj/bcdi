@@ -192,7 +192,7 @@ plt.ion()
 #################################################
 # initialize detector, setup, paths and logfile #
 #################################################
-kwargs = dict()  # create dictionnary
+kwargs = {}  # create dictionnary
 kwargs['is_series'] = is_series
 
 detector = exp.Detector(name=detector, datadir='', template_imagefile=template_imagefile, sum_roi=sum_roi,

@@ -164,7 +164,7 @@ gu.savefig(savedir=savedir, figure=fig, axes=axs, tick_width=tick_width, tick_le
            filename=f'roi{roi}' + comment)
 
 comment = comment + f'_{angular_step}deg'
-result = dict()
+result = {}
 
 ####################################################################################################
 # 3D case (BCDI): loop over thresholds first (the threshold needs to be applied before projecting) #

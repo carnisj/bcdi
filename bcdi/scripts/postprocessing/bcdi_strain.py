@@ -296,7 +296,7 @@ my_cmap = colormap.cmap
 #######################
 # Initialize detector #
 #######################
-kwargs = dict()  # create dictionnary
+kwargs = {}  # create dictionnary
 kwargs['preprocessing_binning'] = preprocessing_binning
 if nb_pixel_x:
     kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)

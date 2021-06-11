@@ -58,7 +58,7 @@ max_angle = 100  # maximum angle in degrees of the stereographic projection (sho
 medianfilter_kernel = 3  # size in each dimension of the 3D kernel for median filtering, leave None otherwise
 plot_planes = True  # if True, plot dotted circles corresponding to planes_south and planes_north indices
 hide_axis = False  # if True, the default axis frame, ticks and ticks labels will be hidden
-planes_south = dict()  # create dictionnary for the projection from the South pole, the reference is +reflection
+planes_south = {}  # create dictionnary for the projection from the South pole, the reference is +reflection
 planes_south['0 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([0, 2, 0]))
 planes_south['1 1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 1]))
 # planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
@@ -71,7 +71,7 @@ planes_south['1 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np
 planes_south['2 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, 1, 0]))
 planes_south['2 0 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, 0, 1]))
 
-planes_north = dict()  # create dictionnary for the projection from the North pole, the reference is -reflection
+planes_north = {}  # create dictionnary for the projection from the North pole, the reference is -reflection
 planes_north['0 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([0, -2, 0]))
 planes_north['-1 -1 -1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, -1]))
 # planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))

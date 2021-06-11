@@ -117,7 +117,7 @@ if normalize not in {'skip', 'monitor'}:
 #######################
 # Initialize detector #
 #######################
-kwargs = dict()  # create dictionnary
+kwargs = {}  # create dictionnary
 kwargs['is_series'] = is_series
 kwargs['nb_pixel_x'] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 kwargs['nb_pixel_y'] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
