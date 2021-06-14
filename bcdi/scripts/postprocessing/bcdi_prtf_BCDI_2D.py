@@ -43,18 +43,27 @@ Path structure:
 """
 
 scan = 279
-root_folder = 'D:/data/DATA_exp/'  # folder of the experiment, where all scans are stored
+root_folder = (
+    "D:/data/DATA_exp/"  # folder of the experiment, where all scans are stored
+)
 save_dir = None  # PRTF will be saved here, leave None otherwise
 sample_name = "S"  # "SN"  #
 comment = ""  # should start with _
-crop_roi = [3, 255, 3, 387]  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
+crop_roi = [
+    3,
+    255,
+    3,
+    387,
+]  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
 # in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
 align_pattern = False  # if True, will align the retrieved diffraction amplitude with the measured one
 slicing_axis = 1  # 0 for first axis, 1 for second, 2 for third
 #######################
 # beamline parameters #
 #######################
-beamline = 'ID01'  # name of the beamline, used for data loading and normalization by monitor
+beamline = (
+    "ID01"  # name of the beamline, used for data loading and normalization by monitor
+)
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 actuators = {}
 # Optional dictionary that can be used to define the entries corresponding to actuators in data files
@@ -63,7 +72,7 @@ actuators = {}
 is_series = False  # specific to series measurement at P10
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
-specfile_name = 'alignment'
+specfile_name = "alignment"
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
@@ -71,8 +80,8 @@ specfile_name = 'alignment'
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Maxipix"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-template_imagefile = 'alignment_12_%04d.edf.gz'
+detector = "Maxipix"  # "Eiger2M" or "Maxipix" or "Eiger4M"
+template_imagefile = "alignment_12_%04d.edf.gz"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -84,17 +93,33 @@ template_imagefile = 'alignment_12_%04d.edf.gz'
 # parameters for calculating q values #
 #######################################
 sdd = 1.3  # sample to detector distance in m
-energy = 9000   # x-ray energy in eV, 6eV offset at ID01
+energy = 9000  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = (1, 0, 0)  # beam along x
-sample_inplane = (1, 0, 0)  # sample inplane reference direction along the beam at 0 angles
+sample_inplane = (
+    1,
+    0,
+    0,
+)  # sample inplane reference direction along the beam at 0 angles
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
-pre_binning = (1, 3, 1)  # binning factor applied during preprocessing: rocking curve axis, detector vertical and
+pre_binning = (
+    1,
+    3,
+    1,
+)  # binning factor applied during preprocessing: rocking curve axis, detector vertical and
 # horizontal axis. This is necessary to calculate correctly q values. Use (1, binning_Y, binning_X) for 2D data.
-phasing_binning = (1, 2, 2)  # binning factor applied during phasing: rocking curve axis, detector vertical and
+phasing_binning = (
+    1,
+    2,
+    2,
+)  # binning factor applied during phasing: rocking curve axis, detector vertical and
 # horizontal axis. Use (1, binning_Y, binning_X) for 2D data.
 # If the reconstructed object was further cropped after phasing, it will be automatically padded back to the FFT window
 # shape used during phasing (after binning) before calculating the Fourier transform.
-sample_offsets = (0, 0, 0)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+sample_offsets = (
+    0,
+    0,
+    0,
+)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
 ###############################
 # only needed for simulations #
@@ -117,34 +142,55 @@ debug = False  # True to show more plots
 # Initialize detector #
 #######################
 kwargs = {}  # create dictionnary
-kwargs['is_series'] = is_series
+kwargs["is_series"] = is_series
 
-detector = exp.Detector(name=detector, template_imagefile=template_imagefile, binning=(1, 1, 1),
-                        preprocessing_binning=pre_binning)
+detector = exp.Detector(
+    name=detector,
+    template_imagefile=template_imagefile,
+    binning=(1, 1, 1),
+    preprocessing_binning=pre_binning,
+)
 
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(beamline=beamline, detector=detector, energy=energy, rocking_angle=rocking_angle, distance=sdd,
-                  beam_direction=beam_direction, sample_inplane=sample_inplane, sample_outofplane=sample_outofplane,
-                  sample_offsets=sample_offsets, actuators=actuators)
+setup = exp.Setup(
+    beamline=beamline,
+    detector=detector,
+    energy=energy,
+    rocking_angle=rocking_angle,
+    distance=sdd,
+    beam_direction=beam_direction,
+    sample_inplane=sample_inplane,
+    sample_outofplane=sample_outofplane,
+    sample_offsets=sample_offsets,
+    actuators=actuators,
+)
 
 ########################################
 # Initialize the paths and the logfile #
 ########################################
-setup.init_paths(sample_name=sample_name, scan_number=scan, root_folder=root_folder,
-                 save_dir=save_dir, specfile_name=specfile_name, template_imagefile=template_imagefile,
-                 create_savedir=True)
+setup.init_paths(
+    sample_name=sample_name,
+    scan_number=scan,
+    root_folder=root_folder,
+    save_dir=save_dir,
+    specfile_name=specfile_name,
+    template_imagefile=template_imagefile,
+    create_savedir=True,
+)
 
-logfile = setup.create_logfile(scan_number=scan, root_folder=root_folder, filename=detector.specfile)
+logfile = setup.create_logfile(
+    scan_number=scan, root_folder=root_folder, filename=detector.specfile
+)
 
 ###################
 # print instances #
 ###################
 print(f'{"#"*(5+len(str(scan)))}\nScan {scan}\n{"#"*(5+len(str(scan)))}')
-print('\n##############\nSetup instance\n##############')
+print("\n##############\nSetup instance\n##############")
 print(setup)
-print('\n#################\nDetector instance\n#################')
+print("\n#################\nDetector instance\n#################")
 print(detector)
 
 #############################################
@@ -152,7 +198,9 @@ print(detector)
 #############################################
 qconv, offsets = pru.init_qconversion(setup)
 detector.offsets = offsets
-hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)  # x downstream, y outboard, z vertical
+hxrd = xu.experiment.HXRD(
+    sample_inplane, sample_outofplane, qconv=qconv
+)  # x downstream, y outboard, z vertical
 # first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
 
 ###################
@@ -168,13 +216,19 @@ plt.ion()
 root = tk.Tk()
 root.withdraw()
 
-file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select 2D slice",
-                                       filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
+file_path = filedialog.askopenfilename(
+    initialdir=detector.savedir,
+    title="Select 2D slice",
+    filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")],
+)
 slice_2D, _ = util.load_file(file_path)
 slice_2D = slice_2D.astype(float)
 
-file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select 2D mask",
-                                       filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
+file_path = filedialog.askopenfilename(
+    initialdir=detector.savedir,
+    title="Select 2D mask",
+    filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")],
+)
 mask_2D, _ = util.load_file(file_path)
 
 ########################################################################################################
@@ -182,10 +236,10 @@ mask_2D, _ = util.load_file(file_path)
 ########################################################################################################
 # The shape will be equal to 'roi_final' parameter of the .cxi file
 if len(crop_roi) == 4:
-    slice_2D = slice_2D[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
-    mask_2D = mask_2D[crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
+    slice_2D = slice_2D[crop_roi[0] : crop_roi[1], crop_roi[2] : crop_roi[3]]
+    mask_2D = mask_2D[crop_roi[0] : crop_roi[1], crop_roi[2] : crop_roi[3]]
 elif len(crop_roi) != 0:
-    print('Crop_roi should be a list of 6 integers or a blank list!')
+    print("Crop_roi should be a list of 6 integers or a blank list!")
     sys.exit()
 
 ##########################################################################################
@@ -193,82 +247,163 @@ elif len(crop_roi) != 0:
 ##########################################################################################
 # update also the detector pixel sizes to take into account the binning
 detector.binning = phasing_binning
-print('Pixel sizes after phasing_binning (vertical, horizontal): ', detector.pixelsize_y, detector.pixelsize_x, '(m)')
-slice_2D = util.bin_data(array=slice_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False)
-mask_2D = util.bin_data(array=mask_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False)
+print(
+    "Pixel sizes after phasing_binning (vertical, horizontal): ",
+    detector.pixelsize_y,
+    detector.pixelsize_x,
+    "(m)",
+)
+slice_2D = util.bin_data(
+    array=slice_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False
+)
+mask_2D = util.bin_data(
+    array=mask_2D, binning=(phasing_binning[1], phasing_binning[2]), debugging=False
+)
 
 slice_2D[np.nonzero(mask_2D)] = 0
 
 plt.figure()
 plt.imshow(np.log10(np.sqrt(slice_2D)), cmap=my_cmap, vmin=0, vmax=3.5)
-plt.title('2D diffraction amplitude')
+plt.title("2D diffraction amplitude")
 plt.colorbar()
 plt.pause(0.1)
 
 ##########################################################
 # load the 3D dataset in order to calculate the q values #
 ##########################################################
-file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select the 3D diffraction pattern",
-                                       filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")])
+file_path = filedialog.askopenfilename(
+    initialdir=detector.savedir,
+    title="Select the 3D diffraction pattern",
+    filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")],
+)
 diff_pattern, _ = util.load_file(file_path)
 diff_pattern = diff_pattern.astype(float)
 
 # crop the diffraction pattern to compensate the "auto_center_resize" option used in PyNX.
 # The shape will be equal to 'roi_final' parameter of the .cxi file
-diff_pattern = diff_pattern[:, crop_roi[0]:crop_roi[1], crop_roi[2]:crop_roi[3]]
+diff_pattern = diff_pattern[:, crop_roi[0] : crop_roi[1], crop_roi[2] : crop_roi[3]]
 
 # bin the diffraction pattern to compensate the "rebin" option used in PyNX.
 # the detector pixel sizes where already updated above.
-diff_pattern = util.bin_data(array=diff_pattern, binning=phasing_binning, debugging=False)
+diff_pattern = util.bin_data(
+    array=diff_pattern, binning=phasing_binning, debugging=False
+)
 
 numz, numy, numx = diff_pattern.shape
-print('\nMeasured data shape =', numz, numy, numx, ' Max(measured amplitude)=', np.sqrt(diff_pattern).max())
+print(
+    "\nMeasured data shape =",
+    numz,
+    numy,
+    numx,
+    " Max(measured amplitude)=",
+    np.sqrt(diff_pattern).max(),
+)
 z0, y0, x0 = center_of_mass(diff_pattern)
-print(f'COM of measured pattern after masking: {z0:.2f}, {y0:.2f}, {x0:.2f}')
+print(f"COM of measured pattern after masking: {z0:.2f}, {y0:.2f}, {x0:.2f}")
 # refine the COM in a small ROI centered on the approximate COM, to avoid detector gaps
-fine_com = center_of_mass(diff_pattern[int(z0)-20:int(z0)+21, int(y0)-20:int(y0)+21, int(x0)-20:int(x0)+21])
-z0, y0, x0 = [int(np.rint(z0-20+fine_com[0])), int(np.rint(y0-20+fine_com[1])), int(np.rint(x0-20+fine_com[2]))]
-print(f'refined COM: {z0}, {y0}, {x0}, Number of unmasked photons = {diff_pattern.sum():.0f}\n')
+fine_com = center_of_mass(
+    diff_pattern[
+        int(z0) - 20 : int(z0) + 21,
+        int(y0) - 20 : int(y0) + 21,
+        int(x0) - 20 : int(x0) + 21,
+    ]
+)
+z0, y0, x0 = [
+    int(np.rint(z0 - 20 + fine_com[0])),
+    int(np.rint(y0 - 20 + fine_com[1])),
+    int(np.rint(x0 - 20 + fine_com[2])),
+]
+print(
+    f"refined COM: {z0}, {y0}, {x0}, Number of unmasked photons = {diff_pattern.sum():.0f}\n"
+)
 
-fig, _, _ = gu.multislices_plot(np.sqrt(diff_pattern), sum_frames=False, title='3D diffraction amplitude', vmin=0,
-                                vmax=3.5, is_orthogonal=False, reciprocal_space=True, slice_position=[z0, y0, x0],
-                                scale='log', plot_colorbar=True)
+fig, _, _ = gu.multislices_plot(
+    np.sqrt(diff_pattern),
+    sum_frames=False,
+    title="3D diffraction amplitude",
+    vmin=0,
+    vmax=3.5,
+    is_orthogonal=False,
+    reciprocal_space=True,
+    slice_position=[z0, y0, x0],
+    scale="log",
+    plot_colorbar=True,
+)
 
 ################################################
 # calculate the q matrix respective to the COM #
 ################################################
-hxrd.Ang2Q.init_area('z-', 'y+', cch1=int(y0), cch2=int(x0), Nch1=numy, Nch2=numx,
-                     pwidth1=detector.pixelsize_y, pwidth2=detector.pixelsize_x, distance=setup.distance)
+hxrd.Ang2Q.init_area(
+    "z-",
+    "y+",
+    cch1=int(y0),
+    cch2=int(x0),
+    Nch1=numy,
+    Nch2=numx,
+    pwidth1=detector.pixelsize_y,
+    pwidth2=detector.pixelsize_x,
+    distance=setup.distance,
+)
 # first two arguments in init_area are the direction of the detector
 if simulation:
     eta = bragg_angle_simu + tilt_simu * (np.arange(0, numz, 1) - int(z0))
-    qx, qy, qz = hxrd.Ang2Q.area(eta, 0, 0, inplane_simu, outofplane_simu, delta=(0, 0, 0, 0, 0))
+    qx, qy, qz = hxrd.Ang2Q.area(
+        eta, 0, 0, inplane_simu, outofplane_simu, delta=(0, 0, 0, 0, 0)
+    )
 else:
-    qx, qz, qy, _ = pru.regrid(logfile=logfile, nb_frames=numz, scan_number=scan, detector=detector,
-                               setup=setup, hxrd=hxrd, follow_bragg=follow_bragg)
+    qx, qz, qy, _ = pru.regrid(
+        logfile=logfile,
+        nb_frames=numz,
+        scan_number=scan,
+        detector=detector,
+        setup=setup,
+        hxrd=hxrd,
+        follow_bragg=follow_bragg,
+    )
 
 if debug:
-    gu.combined_plots(tuple_array=(qz, qy, qx), tuple_sum_frames=False, tuple_sum_axis=(0, 1, 2),
-                      tuple_width_v=None, tuple_width_h=None, tuple_colorbar=True, tuple_vmin=np.nan,
-                      tuple_vmax=np.nan, tuple_title=('qz', 'qy', 'qx'), tuple_scale='linear')
+    gu.combined_plots(
+        tuple_array=(qz, qy, qx),
+        tuple_sum_frames=False,
+        tuple_sum_axis=(0, 1, 2),
+        tuple_width_v=None,
+        tuple_width_h=None,
+        tuple_colorbar=True,
+        tuple_vmin=np.nan,
+        tuple_vmax=np.nan,
+        tuple_title=("qz", "qy", "qx"),
+        tuple_scale="linear",
+    )
 
 qxCOM = qx[z0, y0, x0]
 qyCOM = qy[z0, y0, x0]
 qzCOM = qz[z0, y0, x0]
-print(f'COM[qx, qz, qy] = {qxCOM:.2f}, {qzCOM:.2f}, {qyCOM:.2f}')
-distances_q = np.sqrt((qx - qxCOM)**2 + (qy - qyCOM)**2 + (qz - qzCOM)**2)  # if reconstructions are centered
+print(f"COM[qx, qz, qy] = {qxCOM:.2f}, {qzCOM:.2f}, {qyCOM:.2f}")
+distances_q = np.sqrt(
+    (qx - qxCOM) ** 2 + (qy - qyCOM) ** 2 + (qz - qzCOM) ** 2
+)  # if reconstructions are centered
 #  and of the same shape q values will be identical
 del qx, qy, qz
 gc.collect()
 
 if distances_q.shape != diff_pattern.shape:
-    print('\nThe shape of q values and the shape of the diffraction pattern are different: check binning parameter')
+    print(
+        "\nThe shape of q values and the shape of the diffraction pattern are different: check binning parameter"
+    )
     sys.exit()
 
 if debug:
-    gu.multislices_plot(distances_q, sum_frames=False, plot_colorbar=True, cmap=my_cmap,
-                        title='distances_q', scale='linear', vmin=np.nan, vmax=np.nan,
-                        reciprocal_space=True)
+    gu.multislices_plot(
+        distances_q,
+        sum_frames=False,
+        plot_colorbar=True,
+        cmap=my_cmap,
+        title="distances_q",
+        scale="linear",
+        vmin=np.nan,
+        vmax=np.nan,
+        reciprocal_space=True,
+    )
 
 ################################
 # select the relevant 2D slice #
@@ -284,42 +419,48 @@ else:
     sys.exit()
 
 if distances_q.shape != slice_2D.shape:
-    print('\nThe shape of 2D q values and the shape of the 2D diffraction pattern are different!')
+    print(
+        "\nThe shape of 2D q values and the shape of the 2D diffraction pattern are different!"
+    )
     sys.exit()
 
 plt.figure()
 plt.imshow(distances_q, cmap=my_cmap)
-plt.title('2D distances_q')
+plt.title("2D distances_q")
 plt.colorbar()
 plt.pause(0.1)
 
 #############################
 # load reconstructed object #
 #############################
-file_path = filedialog.askopenfilename(initialdir=detector.savedir, title="Select a 2D reconstruction (prtf)",
-                                       filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
-                                                  ("CXI", "*.cxi"), ("HDF5", "*.h5")])
+file_path = filedialog.askopenfilename(
+    initialdir=detector.savedir,
+    title="Select a 2D reconstruction (prtf)",
+    filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"), ("CXI", "*.cxi"), ("HDF5", "*.h5")],
+)
 obj, extension = util.load_file(file_path)
-print('Opening ', file_path)
+print("Opening ", file_path)
 
-if extension == '.h5':
-    comment = comment + '_mode'
+if extension == ".h5":
+    comment = comment + "_mode"
 
 # check if the shape of the real space object is the same as the measured 2D diffraction pattern
 # the real space object may have been further cropped to a tight support, to save memory space.
 if obj.shape != slice_2D.shape:
-    print(f'Reconstructed object shape = {obj.shape}, different from the 2D diffraction slice: crop/pad')
+    print(
+        f"Reconstructed object shape = {obj.shape}, different from the 2D diffraction slice: crop/pad"
+    )
     obj = util.crop_pad_2d(array=obj, output_shape=slice_2D.shape, debugging=False)
 
 plt.figure()
 plt.imshow(abs(obj), vmin=0, cmap=my_cmap)
 plt.colorbar()
-plt.title('abs(reconstructed object')
+plt.title("abs(reconstructed object")
 plt.pause(0.1)
 
 # calculate the retrieved diffraction amplitude
 numy, numx = slice_2D.shape
-phased_fft = fftshift(fftn(obj)) / (np.sqrt(numy)*np.sqrt(numx))  # complex amplitude
+phased_fft = fftshift(fftn(obj)) / (np.sqrt(numy) * np.sqrt(numx))  # complex amplitude
 del obj
 gc.collect()
 
@@ -327,30 +468,45 @@ if debug:
     plt.figure()
     plt.imshow(np.log10(abs(phased_fft)), vmin=0, vmax=3.5, cmap=my_cmap)
     plt.colorbar()
-    plt.title('abs(retrieved amplitude) before alignement')
+    plt.title("abs(retrieved amplitude) before alignement")
     plt.pause(0.1)
 
 if align_pattern:
     # align the reconstruction with the initial diffraction data
-    phased_fft, _ = pru.align_diffpattern(reference_data=slice_2D, data=phased_fft, method='registration',
-                                          combining_method='subpixel')
+    phased_fft, _ = pru.align_diffpattern(
+        reference_data=slice_2D,
+        data=phased_fft,
+        method="registration",
+        combining_method="subpixel",
+    )
 
 plt.figure()
 plt.imshow(np.log10(abs(phased_fft)), cmap=my_cmap, vmin=0, vmax=3.5)
-plt.title('abs(retrieved amplitude)')
+plt.title("abs(retrieved amplitude)")
 plt.colorbar()
 plt.pause(0.1)
 
 phased_fft[np.nonzero(mask_2D)] = 0  # do not take mask voxels into account
-print(f'Max(retrieved amplitude) = {abs(phased_fft).max():.1f}')
+print(f"Max(retrieved amplitude) = {abs(phased_fft).max():.1f}")
 phased_com_y, phased_com_x = center_of_mass(abs(phased_fft))
-print(f'COM of the retrieved diffraction pattern after masking: {phased_com_y:.2f}, {phased_com_x:.2f}\n')
+print(
+    f"COM of the retrieved diffraction pattern after masking: {phased_com_y:.2f}, {phased_com_x:.2f}\n"
+)
 del mask_2D
 gc.collect()
 
-gu.combined_plots(tuple_array=(slice_2D, phased_fft), tuple_sum_frames=False, tuple_sum_axis=(0, 0),
-                  tuple_width_v=None, tuple_width_h=None, tuple_colorbar=False, tuple_vmin=(-1, -1),
-                  tuple_vmax=np.nan, tuple_title=('measurement', 'phased_fft'), tuple_scale='log')
+gu.combined_plots(
+    tuple_array=(slice_2D, phased_fft),
+    tuple_sum_frames=False,
+    tuple_sum_axis=(0, 0),
+    tuple_width_v=None,
+    tuple_width_h=None,
+    tuple_colorbar=False,
+    tuple_vmin=(-1, -1),
+    tuple_vmax=np.nan,
+    tuple_title=("measurement", "phased_fft"),
+    tuple_scale="log",
+)
 
 #########################
 # calculate the 2D PRTF #
@@ -359,28 +515,32 @@ slice_2D[slice_2D == 0] = np.nan  # discard zero valued pixels
 prtf_matrix = abs(phased_fft) / np.sqrt(slice_2D)
 plt.figure()
 plt.imshow(prtf_matrix, cmap=my_cmap, vmin=0, vmax=1.1)
-plt.title('prtf_matrix')
+plt.title("prtf_matrix")
 plt.colorbar()
 plt.pause(0.1)
 
 #######################
 # average over shells #
 #######################
-print(f'Distance max: {distances_q.max():.6f}  (1/A) '
-      f'at: {np.unravel_index(abs(distances_q).argmax(), distances_q.shape)}')
+print(
+    f"Distance max: {distances_q.max():.6f}  (1/A) "
+    f"at: {np.unravel_index(abs(distances_q).argmax(), distances_q.shape)}"
+)
 nb_bins = numy // 3
 prtf_avg = np.zeros(nb_bins)
 dq = distances_q.max() / nb_bins  # in 1/A
-q_axis = np.linspace(0, distances_q.max(), endpoint=True, num=nb_bins+1)  # in 1/A
+q_axis = np.linspace(0, distances_q.max(), endpoint=True, num=nb_bins + 1)  # in 1/A
 
 for index in range(nb_bins):
-    logical_array = np.logical_and((distances_q < q_axis[index+1]), (distances_q >= q_axis[index]))
+    logical_array = np.logical_and(
+        (distances_q < q_axis[index + 1]), (distances_q >= q_axis[index])
+    )
     temp = prtf_matrix[logical_array]
     prtf_avg[index] = temp[~np.isnan(temp)].mean()
 q_axis = q_axis[:-1]
 
 if normalize_prtf:
-    print('Normalizing the PRTF to 1 ...')
+    print("Normalizing the PRTF to 1 ...")
     prtf_avg = prtf_avg / prtf_avg[~np.isnan(prtf_avg)].max()  # normalize to 1
 
 #############################
@@ -389,38 +549,68 @@ if normalize_prtf:
 defined_q = 10 * q_axis[~np.isnan(prtf_avg)]  # switch to 1/nm
 
 # create a new variable 'arc_length' to predict q and prtf parametrically (because prtf is not monotonic)
-arc_length = np.concatenate((np.zeros(1),
-                             np.cumsum(np.diff(prtf_avg[~np.isnan(prtf_avg)])**2 + np.diff(defined_q)**2)),
-                            axis=0)  # cumulative linear arc length, used as the parameter
+arc_length = np.concatenate(
+    (
+        np.zeros(1),
+        np.cumsum(
+            np.diff(prtf_avg[~np.isnan(prtf_avg)]) ** 2 + np.diff(defined_q) ** 2
+        ),
+    ),
+    axis=0,
+)  # cumulative linear arc length, used as the parameter
 
-fit_prtf = interp1d(prtf_avg[~np.isnan(prtf_avg)], arc_length, kind='linear')
+fit_prtf = interp1d(prtf_avg[~np.isnan(prtf_avg)], arc_length, kind="linear")
 try:
-    arc_length_res = fit_prtf(1/np.e)
-    fit_q = interp1d(arc_length, defined_q, kind='linear')
+    arc_length_res = fit_prtf(1 / np.e)
+    fit_q = interp1d(arc_length, defined_q, kind="linear")
     q_resolution = fit_q(arc_length_res)
 except ValueError:
-    if (prtf_avg[~np.isnan(prtf_avg)] > 1/np.e).all():
-        print('Resolution limited by the 1 photon counts only (min(prtf)>1/e)')
-        print(f'min(PRTF) = {prtf_avg[~np.isnan(prtf_avg)].min()}')
+    if (prtf_avg[~np.isnan(prtf_avg)] > 1 / np.e).all():
+        print("Resolution limited by the 1 photon counts only (min(prtf)>1/e)")
+        print(f"min(PRTF) = {prtf_avg[~np.isnan(prtf_avg)].min()}")
         q_resolution = defined_q.max()
     else:  # PRTF always below 1/e
-        print('PRTF < 1/e for all q values, problem of normalization')
+        print("PRTF < 1/e for all q values, problem of normalization")
         q_resolution = np.nan
 
-print(f'q resolution = {q_resolution:.5f} (1/nm)')
-print(f'resolution d = {2*np.pi / q_resolution:.1f} nm')
+print(f"q resolution = {q_resolution:.5f} (1/nm)")
+print(f"resolution d = {2*np.pi / q_resolution:.1f} nm")
 
 fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
-ax.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], 'or')  # q_axis in 1/nm
-ax.axhline(y=1/np.e, linestyle='dashed', color='k', linewidth=1)  # horizontal line at PRTF=1/e
+ax.plot(defined_q, prtf_avg[~np.isnan(prtf_avg)], "or")  # q_axis in 1/nm
+ax.axhline(
+    y=1 / np.e, linestyle="dashed", color="k", linewidth=1
+)  # horizontal line at PRTF=1/e
 ax.set_xlim(defined_q.min(), defined_q.max())
 ax.set_ylim(0, 1.1)
 
-gu.savefig(savedir=detector.savedir, figure=fig, axes=ax, tick_width=2, tick_length=10, tick_labelsize=14,
-           label_size=16, xlabels='q (1/nm)', ylabels='PRTF', filename=f'S{scan}_prtf' + comment,
-           text={0: {'x': 0.15, 'y': 0.30, 's': "Scan " + str(scan) + comment, 'fontsize': 16},
-                 1: {'x': 0.15, 'y': 0.25, 's': f"q at PRTF=1/e: {q_resolution:.5f} (1/nm)", 'fontsize': 16},
-                 2: {'x': 0.15, 'y': 0.20, 's': f"resolution d = {2*np.pi / q_resolution:.3f} nm", 'fontsize': 16}})
+gu.savefig(
+    savedir=detector.savedir,
+    figure=fig,
+    axes=ax,
+    tick_width=2,
+    tick_length=10,
+    tick_labelsize=14,
+    label_size=16,
+    xlabels="q (1/nm)",
+    ylabels="PRTF",
+    filename=f"S{scan}_prtf" + comment,
+    text={
+        0: {"x": 0.15, "y": 0.30, "s": "Scan " + str(scan) + comment, "fontsize": 16},
+        1: {
+            "x": 0.15,
+            "y": 0.25,
+            "s": f"q at PRTF=1/e: {q_resolution:.5f} (1/nm)",
+            "fontsize": 16,
+        },
+        2: {
+            "x": 0.15,
+            "y": 0.20,
+            "s": f"resolution d = {2*np.pi / q_resolution:.3f} nm",
+            "fontsize": 16,
+        },
+    },
+)
 
 plt.ioff()
 plt.show()

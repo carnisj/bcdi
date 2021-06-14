@@ -21,7 +21,7 @@ def primes(n):
     """ Returns the prime decomposition of n as a list
     """
     v = [1]
-    assert (n > 0)
+    assert n > 0
     i = 2
     while i * i <= n:
         while n % i == 0:
@@ -70,8 +70,13 @@ def smaller_primes(n, maxprime=13, required_dividers=(4,)):
     if (type(n) is list) or (type(n) is tuple) or (type(n) is np.ndarray):
         vn = []
         for i in n:
-            assert (i > 1 and maxprime <= i)
-            while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
+            assert i > 1 and maxprime <= i
+            while (
+                try_smaller_primes(
+                    i, maxprime=maxprime, required_dividers=required_dividers
+                )
+                is False
+            ):
                 i = i - 1
                 if i == 0:
                     return 0
@@ -79,8 +84,11 @@ def smaller_primes(n, maxprime=13, required_dividers=(4,)):
         if type(n) is np.ndarray:
             return np.array(vn)
         return vn
-    assert (n > 1 and maxprime <= n)
-    while try_smaller_primes(n, maxprime=maxprime, required_dividers=required_dividers) is False:
+    assert n > 1 and maxprime <= n
+    while (
+        try_smaller_primes(n, maxprime=maxprime, required_dividers=required_dividers)
+        is False
+    ):
         n = n - 1
         if n == 0:
             return 0
@@ -102,8 +110,13 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
         vn = []
         for i in number:
             limit = i
-            assert (i > 1 and maxprime <= i)
-            while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
+            assert i > 1 and maxprime <= i
+            while (
+                try_smaller_primes(
+                    i, maxprime=maxprime, required_dividers=required_dividers
+                )
+                is False
+            ):
                 i = i + 1
                 if i == limit:
                     return limit
@@ -112,8 +125,13 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
             return np.array(vn)
         return vn
     limit = number
-    assert (number > 1 and maxprime <= number)
-    while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
+    assert number > 1 and maxprime <= number
+    while (
+        try_smaller_primes(
+            number, maxprime=maxprime, required_dividers=required_dividers
+        )
+        is False
+    ):
         number = number + 1
         if number == limit:
             return limit

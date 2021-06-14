@@ -35,7 +35,7 @@ debug = True  # True to see data plots
 ###################
 # define colormap #
 ###################
-bad_color = '1.0'  # white background
+bad_color = "1.0"  # white background
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
 
@@ -46,7 +46,7 @@ plt.ion()
 root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename(initialdir=datadir, filetypes=[("NPZ", "*.npz")])
-print('Opening ', file_path)
+print("Opening ", file_path)
 npzfile = np.load(file_path)
 
 ######################
@@ -54,49 +54,88 @@ npzfile = np.load(file_path)
 ######################
 if use_bulk:
     try:
-        bulk = npzfile['bulk']
+        bulk = npzfile["bulk"]
     except KeyError:
-        print('Bulk is not of key of the npz file')
-        print('Using the modulus and support_threshold to define the bulk')
-        amp = npzfile['amp']
-        bulk = pu.find_bulk(amp=amp, support_threshold=support_threshold, method='threshold')
+        print("Bulk is not of key of the npz file")
+        print("Using the modulus and support_threshold to define the bulk")
+        amp = npzfile["amp"]
+        bulk = pu.find_bulk(
+            amp=amp, support_threshold=support_threshold, method="threshold"
+        )
         if debug:
-            gu.multislices_plot(amp, sum_frames=False, title='Amplitude', plot_colorbar=True, cmap=my_cmap,
-                                is_orthogonal=True, reciprocal_space=False)
+            gu.multislices_plot(
+                amp,
+                sum_frames=False,
+                title="Amplitude",
+                plot_colorbar=True,
+                cmap=my_cmap,
+                is_orthogonal=True,
+                reciprocal_space=False,
+            )
         del amp
     nz, ny, nx = bulk.shape
     support = bulk
 else:  # use amplitude
-    print('Using the modulus and support_threshold to define the support')
-    amp = npzfile['amp']
+    print("Using the modulus and support_threshold to define the support")
+    amp = npzfile["amp"]
     nz, ny, nx = amp.shape
     support = np.ones((nz, ny, nx))
     support[abs(amp) < support_threshold * abs(amp).max()] = 0
     if debug:
-        gu.multislices_plot(amp, sum_frames=False, title='Amplitude', plot_colorbar=True, cmap=my_cmap,
-                            is_orthogonal=True, reciprocal_space=False)
+        gu.multislices_plot(
+            amp,
+            sum_frames=False,
+            title="Amplitude",
+            plot_colorbar=True,
+            cmap=my_cmap,
+            is_orthogonal=True,
+            reciprocal_space=False,
+        )
     del amp
 
-strain = npzfile['strain']
+strain = npzfile["strain"]
 strain[support == 0] = 0
-print('Data size: ({:d},{:d},{:d})'.format(nz, ny, nx))
+print("Data size: ({:d},{:d},{:d})".format(nz, ny, nx))
 
 if debug:
-    gu.multislices_plot(strain, sum_frames=False, title='Strain', plot_colorbar=True,
-                        vmin=-strain_range, vmax=strain_range, cmap=my_cmap, is_orthogonal=True, reciprocal_space=False)
+    gu.multislices_plot(
+        strain,
+        sum_frames=False,
+        title="Strain",
+        plot_colorbar=True,
+        vmin=-strain_range,
+        vmax=strain_range,
+        cmap=my_cmap,
+        is_orthogonal=True,
+        reciprocal_space=False,
+    )
 
-    gu.multislices_plot(support, sum_frames=False, title='Support', plot_colorbar=True,
-                        vmin=0, vmax=1, cmap=my_cmap, is_orthogonal=True, reciprocal_space=False)
+    gu.multislices_plot(
+        support,
+        sum_frames=False,
+        title="Support",
+        plot_colorbar=True,
+        vmin=0,
+        vmax=1,
+        cmap=my_cmap,
+        is_orthogonal=True,
+        reciprocal_space=False,
+    )
 
 #####################################################################
 # calculate the mean, variance and RMS of the strain on the support #
 #####################################################################
 mean_strain = strain[np.nonzero(support)].mean()
 var_strain = strain[np.nonzero(support)].var()
-rms_strain = np.sqrt(np.mean(np.ndarray.flatten(strain[np.nonzero(support)])**2))
-print('Mean strain = ', str('{:.4e}'.format(mean_strain)).replace('.', ','),
-      '\nVariance strain = ', str('{:.4e}'.format(var_strain)).replace('.', ','),
-      '\nRMS strain = ', str('{:.4e}'.format(rms_strain)).replace('.', ','))
+rms_strain = np.sqrt(np.mean(np.ndarray.flatten(strain[np.nonzero(support)]) ** 2))
+print(
+    "Mean strain = ",
+    str("{:.4e}".format(mean_strain)).replace(".", ","),
+    "\nVariance strain = ",
+    str("{:.4e}".format(var_strain)).replace(".", ","),
+    "\nRMS strain = ",
+    str("{:.4e}".format(rms_strain)).replace(".", ","),
+)
 
 plt.ioff()
 plt.show()

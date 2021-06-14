@@ -9,13 +9,17 @@ import gc
 
 
 def getimageregistration(myarray1, myarray2, precision=10):
-    assert myarray1.shape == myarray2.shape, "Arrays are different shape in registration"
+    assert (
+        myarray1.shape == myarray2.shape
+    ), "Arrays are different shape in registration"
     # 3D arrays
     if len(myarray1.shape) == 3:
         abs_array1 = np.abs(myarray1)
         abs_array2 = np.abs(myarray2)
         # compress array (sum) in each dimension, i.e. a bunch of 2D arrays
-        ft_array1_0 = fftn(fftshift(np.sum(abs_array1, 0)))  # need fftshift for wrap around
+        ft_array1_0 = fftn(
+            fftshift(np.sum(abs_array1, 0))
+        )  # need fftshift for wrap around
         ft_array2_0 = fftn(fftshift(np.sum(abs_array2, 0)))
         ft_array1_1 = fftn(fftshift(np.sum(abs_array1, 1)))
         ft_array2_1 = fftn(fftshift(np.sum(abs_array2, 1)))
@@ -101,10 +105,10 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
         #           the global phase difference is compensated for.
     """
     if ups_factor == 0:
-        crosscorr_max = np.sum(buf1ft*np.conj(buf2ft))
-        rfzero = np.sum(abs(buf1ft)**2)/buf1ft.size
-        rgzero = np.sum(abs(buf2ft)**2)/buf2ft.size
-        error = 1.0 - crosscorr_max*np.conj(crosscorr_max)/(rgzero*rfzero)
+        crosscorr_max = np.sum(buf1ft * np.conj(buf2ft))
+        rfzero = np.sum(abs(buf1ft) ** 2) / buf1ft.size
+        rgzero = np.sum(abs(buf2ft) ** 2) / buf2ft.size
+        error = 1.0 - crosscorr_max * np.conj(crosscorr_max) / (rgzero * rfzero)
         error = np.sqrt(np.abs(error))
         diff_phase = np.arctan2(np.imag(crosscorr_max), np.real(crosscorr_max))
         return error, diff_phase
@@ -114,18 +118,18 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
     elif ups_factor == 1:
         row_nb = buf1ft.shape[0]
         column_nb = buf1ft.shape[1]
-        crosscorr = ifftn(buf1ft*np.conj(buf2ft))
+        crosscorr = ifftn(buf1ft * np.conj(buf2ft))
         _, indices = index_max(crosscorr)
         row_max = indices[0]
         column_max = indices[1]
         crosscorr_max = crosscorr[row_max, column_max]
-        rfzero = np.sum(np.abs(buf1ft)**2)/(row_nb*column_nb)
-        rgzero = np.sum(np.abs(buf2ft)**2)/(row_nb*column_nb)
-        error = 1.0 - crosscorr_max*np.conj(crosscorr_max)/(rgzero*rfzero)
+        rfzero = np.sum(np.abs(buf1ft) ** 2) / (row_nb * column_nb)
+        rgzero = np.sum(np.abs(buf2ft) ** 2) / (row_nb * column_nb)
+        error = 1.0 - crosscorr_max * np.conj(crosscorr_max) / (rgzero * rfzero)
         error = np.sqrt(np.abs(error))
         diff_phase = np.arctan2(np.imag(crosscorr_max), np.real(crosscorr_max))
-        md2 = np.fix(row_nb/2)
-        nd2 = np.fix(column_nb/2)
+        md2 = np.fix(row_nb / 2)
+        nd2 = np.fix(column_nb / 2)
         if row_max > md2:
             row_shift = row_max - row_nb
         else:
@@ -144,13 +148,18 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
         # Embed Fourier data in a 2x larger array
         row_nb = buf1ft.shape[0]
         column_nb = buf1ft.shape[1]
-        mlarge = row_nb*2
-        nlarge = column_nb*2
+        mlarge = row_nb * 2
+        nlarge = column_nb * 2
         crosscorr = np.zeros([mlarge, nlarge], dtype=np.complex128)
 
-        crosscorr[int(row_nb-np.fix(row_nb/2)):int(row_nb+1+np.fix((row_nb-1)/2)),
-                  int(column_nb-np.fix(column_nb/2)):int(column_nb+1+np.fix((column_nb-1)/2))] = \
-            (fftshift(buf1ft)*np.conj(fftshift(buf2ft)))[:, :]
+        crosscorr[
+            int(row_nb - np.fix(row_nb / 2)) : int(
+                row_nb + 1 + np.fix((row_nb - 1) / 2)
+            ),
+            int(column_nb - np.fix(column_nb / 2)) : int(
+                column_nb + 1 + np.fix((column_nb - 1) / 2)
+            ),
+        ] = (fftshift(buf1ft) * np.conj(fftshift(buf2ft)))[:, :]
 
         # Compute cross-correlation and locate the peak
         crosscorr = ifftn(ifftshift(crosscorr))  # Calculate cross-correlation
@@ -164,8 +173,8 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
         row_nb = crosscorr.shape[0]
         column_nb = crosscorr.shape[1]
 
-        md2 = np.fix(row_nb/2)
-        nd2 = np.fix(column_nb/2)
+        md2 = np.fix(row_nb / 2)
+        nd2 = np.fix(column_nb / 2)
         if row_max > md2:
             row_shift = row_max - row_nb
         else:
@@ -176,39 +185,52 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
         else:
             col_shift = column_max
 
-        row_shift = row_shift/2
-        col_shift = col_shift/2
+        row_shift = row_shift / 2
+        col_shift = col_shift / 2
 
         # If upsampling > 2, then refine estimate with matrix multiply DFT
         if ups_factor > 2:
             # DFT computation
             # Initial shift estimate in upsampled grid
-            row_shift = 1.*np.round(row_shift*ups_factor)/ups_factor
-            col_shift = 1.*np.round(col_shift*ups_factor)/ups_factor
-            dftshift = np.fix(np.ceil(ups_factor*1.5)/2)  # Center of output array at dftshift+1
+            row_shift = 1.0 * np.round(row_shift * ups_factor) / ups_factor
+            col_shift = 1.0 * np.round(col_shift * ups_factor) / ups_factor
+            dftshift = np.fix(
+                np.ceil(ups_factor * 1.5) / 2
+            )  # Center of output array at dftshift+1
             # Matrix multiply DFT around the current shift estimate
-            crosscorr = np.conj(dftups(buf2ft*np.conj(buf1ft), np.ceil(ups_factor*1.5), np.ceil(ups_factor*1.5),
-                                       ups_factor, dftshift-row_shift*ups_factor,
-                                       dftshift-col_shift*ups_factor))/(md2*nd2*ups_factor**2)
+            crosscorr = np.conj(
+                dftups(
+                    buf2ft * np.conj(buf1ft),
+                    np.ceil(ups_factor * 1.5),
+                    np.ceil(ups_factor * 1.5),
+                    ups_factor,
+                    dftshift - row_shift * ups_factor,
+                    dftshift - col_shift * ups_factor,
+                )
+            ) / (md2 * nd2 * ups_factor ** 2)
             # Locate maximum and map back to original pixel grid
             _, indices = index_max(np.abs(crosscorr))
             row_max = indices[0]
             column_max = indices[1]
 
             crosscorr_max = crosscorr[row_max, column_max]
-            rg00 = dftups(buf1ft*np.conj(buf1ft), 1, 1, ups_factor)/(md2*nd2*ups_factor**2)
-            rf00 = dftups(buf2ft*np.conj(buf2ft), 1, 1, ups_factor)/(md2*nd2*ups_factor**2)
+            rg00 = dftups(buf1ft * np.conj(buf1ft), 1, 1, ups_factor) / (
+                md2 * nd2 * ups_factor ** 2
+            )
+            rf00 = dftups(buf2ft * np.conj(buf2ft), 1, 1, ups_factor) / (
+                md2 * nd2 * ups_factor ** 2
+            )
             row_max = row_max - dftshift
             column_max = column_max - dftshift
-            row_shift = 1.*row_shift + 1.*row_max/ups_factor
-            col_shift = 1.*col_shift + 1.*column_max/ups_factor
+            row_shift = 1.0 * row_shift + 1.0 * row_max / ups_factor
+            col_shift = 1.0 * col_shift + 1.0 * column_max / ups_factor
 
         # If upsampling = 2, no additional pixel shift refinement
         else:
-            rg00 = np.sum(buf1ft*np.conj(buf1ft))/row_nb/column_nb
-            rf00 = np.sum(buf2ft*np.conj(buf2ft))/row_nb/column_nb
+            rg00 = np.sum(buf1ft * np.conj(buf1ft)) / row_nb / column_nb
+            rf00 = np.sum(buf2ft * np.conj(buf2ft)) / row_nb / column_nb
 
-        error = 1.0 - crosscorr_max*np.conj(crosscorr_max)/(rg00*rf00)
+        error = 1.0 - crosscorr_max * np.conj(crosscorr_max) / (rg00 * rf00)
         error = np.sqrt(np.abs(error))
         diff_phase = np.arctan2(np.imag(crosscorr_max), np.real(crosscorr_max))
         # If its only one row or column the shift along that dimension has no
@@ -220,23 +242,30 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
             col_shift = 0
 
         # Compute registered version of buf2ft
-#        if (usfac > 0):
-#            ndim = np.shape(buf2ft)
-#            nr = ndim[0]
-#            nc = ndim[1]
-#            Nr = sf.ifftshift(np.arange(-np.fix(1.*nr/2),np.ceil(1.*nr/2)))
-#            Nc = sf.ifftshift(np.arange(-np.fix(1.*nc/2),np.ceil(1.*nc/2)))
-#            Nc,Nr = np.meshgrid(Nc,Nr)
-#            Greg = buf2ft*np.exp(1j*2*np.pi*(-1.*row_shift*Nr/nr-1.*col_shift*Nc/nc))
-#            Greg = Greg*np.exp(1j*diff_phase)
-#        elif (nargout > 1)&(usfac == 0):
-#            Greg = np.dot(buf2ft,exp(1j*diff_phase))
+        #        if (usfac > 0):
+        #            ndim = np.shape(buf2ft)
+        #            nr = ndim[0]
+        #            nc = ndim[1]
+        #            Nr = sf.ifftshift(np.arange(-np.fix(1.*nr/2),np.ceil(1.*nr/2)))
+        #            Nc = sf.ifftshift(np.arange(-np.fix(1.*nc/2),np.ceil(1.*nc/2)))
+        #            Nc,Nr = np.meshgrid(Nc,Nr)
+        #            Greg = buf2ft*np.exp(1j*2*np.pi*(-1.*row_shift*Nr/nr-1.*col_shift*Nc/nc))
+        #            Greg = Greg*np.exp(1j*diff_phase)
+        #        elif (nargout > 1)&(usfac == 0):
+        #            Greg = np.dot(buf2ft,exp(1j*diff_phase))
 
         # return error,diff_phase,row_shift,col_shift,Greg
         return error, diff_phase, row_shift, col_shift
 
 
-def dftups(myarray, output_row_nb, output_column_nb, ups_factor=1, row_offset=0, column_offset=0):
+def dftups(
+    myarray,
+    output_row_nb,
+    output_column_nb,
+    ups_factor=1,
+    row_offset=0,
+    column_offset=0,
+):
     """
         # function out=dftups(input,nor,noc,usfac,row_offset,column_offset);
         # Upsampled DFT by matrix multiplies, can compute an upsampled DFT in just
@@ -267,16 +296,25 @@ def dftups(myarray, output_row_nb, output_column_nb, ups_factor=1, row_offset=0,
 
     # Compute kernels and obtain DFT by matrix products
     temp_column = np.zeros([input_column_nb, 1])
-    temp_column[:, 0] = ((ifftshift(np.arange(input_column_nb)))-np.floor(1.*input_column_nb/2))[:]
+    temp_column[:, 0] = (
+        (ifftshift(np.arange(input_column_nb))) - np.floor(1.0 * input_column_nb / 2)
+    )[:]
     temp_row = np.zeros([1, int(output_column_nb)])
-    temp_row[0, :] = (np.arange(output_column_nb)-column_offset)[:]
-    kernel_column = np.exp((-1j*2*np.pi/(input_column_nb*ups_factor))*np.dot(temp_column, temp_row))
+    temp_row[0, :] = (np.arange(output_column_nb) - column_offset)[:]
+    kernel_column = np.exp(
+        (-1j * 2 * np.pi / (input_column_nb * ups_factor))
+        * np.dot(temp_column, temp_row)
+    )
 
     temp_column = np.zeros([int(output_row_nb), 1])
-    temp_column[:, 0] = (np.arange(output_row_nb)-row_offset)[:]
+    temp_column[:, 0] = (np.arange(output_row_nb) - row_offset)[:]
     temp_row = np.zeros([1, input_row_nb])
-    temp_row[0, :] = (ifftshift(np.arange(input_row_nb))-np.floor(1.*input_row_nb/2))[:]
-    kernel_row = np.exp((-1j*2*np.pi/(input_row_nb*ups_factor))*np.dot(temp_column, temp_row))
+    temp_row[0, :] = (
+        ifftshift(np.arange(input_row_nb)) - np.floor(1.0 * input_row_nb / 2)
+    )[:]
+    kernel_row = np.exp(
+        (-1j * 2 * np.pi / (input_row_nb * ups_factor)) * np.dot(temp_column, temp_row)
+    )
 
     return np.dot(np.dot(kernel_row, myarray), kernel_column)
 
@@ -296,23 +334,41 @@ def subpixel_shift(myarray, z_shift, y_shift, x_shift=0):
         buf2ft = fftn(myarray)
         del myarray
         gc.collect()
-        temp_z = ifftshift(np.arange(-np.fix(numz / 2), np.ceil(numz / 2)))  # python does not include the end point
-        temp_y = ifftshift(np.arange(-np.fix(numy / 2), np.ceil(numy / 2)))  # python does not include the end point
-        temp_x = ifftshift(np.arange(-np.fix(numx / 2), np.ceil(numx / 2)))  # python does not include the end point
-        myz, myy, myx = np.meshgrid(temp_z, temp_y, temp_x, indexing='ij')
-        greg = buf2ft*np.exp(-1j*2*np.pi*(z_shift*myz/numz+y_shift*myy/numy+x_shift*myx/numx))
+        temp_z = ifftshift(
+            np.arange(-np.fix(numz / 2), np.ceil(numz / 2))
+        )  # python does not include the end point
+        temp_y = ifftshift(
+            np.arange(-np.fix(numy / 2), np.ceil(numy / 2))
+        )  # python does not include the end point
+        temp_x = ifftshift(
+            np.arange(-np.fix(numx / 2), np.ceil(numx / 2))
+        )  # python does not include the end point
+        myz, myy, myx = np.meshgrid(temp_z, temp_y, temp_x, indexing="ij")
+        greg = buf2ft * np.exp(
+            -1j
+            * 2
+            * np.pi
+            * (z_shift * myz / numz + y_shift * myy / numy + x_shift * myx / numx)
+        )
         del buf2ft, myz, myy, myx
         gc.collect()
         shifted_array = ifftn(greg)
     else:
         buf2ft = fftn(myarray)
         numz, numy = myarray.shape
-        temp_z = ifftshift(np.arange(-np.fix(numz / 2), np.ceil(numz / 2)))  # python does not include the end point
-        temp_y = ifftshift(np.arange(-np.fix(numy / 2), np.ceil(numy / 2)))  # python does not include the end point
-        myz, myy = np.meshgrid(temp_z, temp_y, indexing='ij')
-        greg = buf2ft*np.exp(-1j*2*np.pi*(z_shift*myz/numz+y_shift*myy/numy))
+        temp_z = ifftshift(
+            np.arange(-np.fix(numz / 2), np.ceil(numz / 2))
+        )  # python does not include the end point
+        temp_y = ifftshift(
+            np.arange(-np.fix(numy / 2), np.ceil(numy / 2))
+        )  # python does not include the end point
+        myz, myy = np.meshgrid(temp_z, temp_y, indexing="ij")
+        greg = buf2ft * np.exp(
+            -1j * 2 * np.pi * (z_shift * myz / numz + y_shift * myy / numy)
+        )
         shifted_array = ifftn(greg)
     return shifted_array
+
 
 # uncomment below to test the code
 

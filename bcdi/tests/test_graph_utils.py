@@ -26,7 +26,7 @@ class TestSaveToVti(unittest.TestCase):
     ########################
     def __init__(self, *args, **kwargs):
         super(TestSaveToVti, self).__init__(*args, **kwargs)
-        self.saving_dir = os.getcwd() + '/test_output/'
+        self.saving_dir = os.getcwd() + "/test_output/"
         pathlib.Path(self.saving_dir).mkdir(parents=True, exist_ok=True)
 
     def setUp(self):
@@ -40,35 +40,77 @@ class TestSaveToVti(unittest.TestCase):
     #     executed after each test
 
     def test_savetovti_amp(self):
-        self.assertIsNone(gu.save_to_vti(filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
-                                         tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase')))
+        self.assertIsNone(
+            gu.save_to_vti(
+                filename=self.saving_dir + "test.vti",
+                voxel_size=(1, 1, 1),
+                tuple_array=(self.amp, self.phase),
+                tuple_fieldnames=("amp", "phase"),
+            )
+        )
 
     def test_savetovti_no_amp(self):
-        self.assertIsNone(gu.save_to_vti(filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
-                                         tuple_array=(self.amp, self.phase), tuple_fieldnames=('other', 'phase')))
+        self.assertIsNone(
+            gu.save_to_vti(
+                filename=self.saving_dir + "test.vti",
+                voxel_size=(1, 1, 1),
+                tuple_array=(self.amp, self.phase),
+                tuple_fieldnames=("other", "phase"),
+            )
+        )
 
     def test_savetovti_voxelsize_wrong_shape(self):
-        self.assertRaises(ValueError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1),
-                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase'))
+        self.assertRaises(
+            ValueError,
+            gu.save_to_vti,
+            filename=self.saving_dir + "test.vti",
+            voxel_size=(1, 1),
+            tuple_array=(self.amp, self.phase),
+            tuple_fieldnames=("amp", "phase"),
+        )
 
     def test_savetovti_voxelsize_negative(self):
-        self.assertRaises(ValueError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, -1),
-                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase'))
+        self.assertRaises(
+            ValueError,
+            gu.save_to_vti,
+            filename=self.saving_dir + "test.vti",
+            voxel_size=(1, 1, -1),
+            tuple_array=(self.amp, self.phase),
+            tuple_fieldnames=("amp", "phase"),
+        )
 
     def test_savetovti_array_dim(self):
         self.amp = np.ones((2, 2))
-        self.assertRaises(ValueError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
-                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase'))
+        self.assertRaises(
+            ValueError,
+            gu.save_to_vti,
+            filename=self.saving_dir + "test.vti",
+            voxel_size=(1, 1, 1),
+            tuple_array=(self.amp, self.phase),
+            tuple_fieldnames=("amp", "phase"),
+        )
 
     def test_savetovti_array_shape(self):
         self.amp = np.ones((2, 2, 2))
-        self.assertRaises(ValueError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
-                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 'phase'))
+        self.assertRaises(
+            ValueError,
+            gu.save_to_vti,
+            filename=self.saving_dir + "test.vti",
+            voxel_size=(1, 1, 1),
+            tuple_array=(self.amp, self.phase),
+            tuple_fieldnames=("amp", "phase"),
+        )
 
     def test_savetovti_fieldnames_wrongtype(self):
-        self.assertRaises(TypeError, gu.save_to_vti, filename=self.saving_dir + 'test.vti', voxel_size=(1, 1, 1),
-                          tuple_array=(self.amp, self.phase), tuple_fieldnames=('amp', 0))
+        self.assertRaises(
+            TypeError,
+            gu.save_to_vti,
+            filename=self.saving_dir + "test.vti",
+            voxel_size=(1, 1, 1),
+            tuple_array=(self.amp, self.phase),
+            tuple_fieldnames=("amp", 0),
+        )
 
 
-if __name__ == 'main':
+if __name__ == "main":
     run_tests(TestSaveToVti)

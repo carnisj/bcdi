@@ -23,18 +23,22 @@ or ffmpeg (http://ffmpeg.zeranoe.com/builds/).
 """
 
 scan = 22
-root_folder = 'D:/data/P10_August2019_CDI/data/'  # location of the .spec or log file
+root_folder = "D:/data/P10_August2019_CDI/data/"  # location of the .spec or log file
 sample_name = "gold_2_2_2_000"  # "SN"  #
-datadir = root_folder + sample_name + str(scan) + '/pynx/1000_1000_1000_1_1_1/current_paper/'
-comment = ''  # should start with _
+datadir = (
+    root_folder + sample_name + str(scan) + "/pynx/1000_1000_1000_1_1_1/current_paper/"
+)
+comment = ""  # should start with _
 movie_z = False  # save movie along z axis (downstream)
 movie_y = True  # save movie along y axis (vertical up)
 movie_x = False  # save movie along x axis (outboard)
 frame_spacing = 1  # spacing between consecutive slices in voxel
 frame_per_second = 2  # number of frames per second, 5 is a good default
 vmin_vmax = [0, 1]  # scale for plotting the data
-roi = []  # ROI to be plotted, leave it as [] to use all the reconstruction [zstart, ztop, ystart, ystop, xstart, xstop]
-field_name = ''  # name or ''
+roi = (
+    []
+)  # ROI to be plotted, leave it as [] to use all the reconstruction [zstart, ztop, ystart, ystop, xstart, xstop]
+field_name = ""  # name or ''
 # load the field name in a .npz file, if '' load the complex object and plot the normalized modulus
 align_axes = ((0.2, 1, 0.02), (1, 0, -0.1))
 # sequence of vectors of 3 elements each in the order xyz, e.g. ((x1,y1,z1), ...). None otherwise.
@@ -42,7 +46,7 @@ ref_axes = ((0, 1, 0), (1, 0, 0))
 # sequence of reference vectors, same length as align_axes. Each vector in align_axes will be aligned to the
 # corresponding reference axis of ref_axes
 threshold = 0.05  # threshold apply on the object, if np.nan nothing happens
-output_format = 'gif'  # 'gif', 'mp4'
+output_format = "gif"  # 'gif', 'mp4'
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -56,11 +60,11 @@ my_cmap = colormap.cmap
 ###############
 # load FFMpeg #
 ###############
-if output_format == 'gif':
-    plt.rcParams['animation.convert_path'] = 'D:/Python/imagemagick/magick.exe'
+if output_format == "gif":
+    plt.rcParams["animation.convert_path"] = "D:/Python/imagemagick/magick.exe"
 else:
     try:
-        FFMpegWriter = manimation.writers['ffmpeg']
+        FFMpegWriter = manimation.writers["ffmpeg"]
     except KeyError:
         print("KeyError: 'ffmpeg'")
         sys.exit()
@@ -76,17 +80,27 @@ root = tk.Tk()
 root.withdraw()
 
 if len(field_name) == 0:
-    file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the reconstructed object",
-                                           filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"),
-                                                      ("CXI", "*.cxi"), ("HDF5", "*.h5")])
+    file_path = filedialog.askopenfilename(
+        initialdir=datadir,
+        title="Select the reconstructed object",
+        filetypes=[
+            ("NPZ", "*.npz"),
+            ("NPY", "*.npy"),
+            ("CXI", "*.cxi"),
+            ("HDF5", "*.h5"),
+        ],
+    )
     obj, extension = util.load_file(file_path)
     obj = abs(obj)
     obj = obj / obj.max()
-    if extension == '.h5':
-        comment = comment + '_mode'
+    if extension == ".h5":
+        comment = comment + "_mode"
 else:
-    file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the reconstructed object",
-                                           filetypes=[("NPZ", "*.npz")])
+    file_path = filedialog.askopenfilename(
+        initialdir=datadir,
+        title="Select the reconstructed object",
+        filetypes=[("NPZ", "*.npz")],
+    )
     obj = np.load(file_path)[field_name]
 nbz, nby, nbx = obj.shape
 
@@ -94,15 +108,18 @@ nbz, nby, nbx = obj.shape
 # rotate object #
 #################
 if align_axes:
-    assert len(align_axes) == len(ref_axes), 'align_axes and ref_axes should have the same length'
-    new_shape = [int(1.2*nbz), int(1.2*nby), int(1.2*nbx)]
+    assert len(align_axes) == len(
+        ref_axes
+    ), "align_axes and ref_axes should have the same length"
+    new_shape = [int(1.2 * nbz), int(1.2 * nby), int(1.2 * nbx)]
     obj = util.crop_pad(array=obj, output_shape=new_shape, debugging=False)
     nbz, nby, nbx = obj.shape
-    print('Rotating object to have the crystallographic axes along array axes')
+    print("Rotating object to have the crystallographic axes along array axes")
     for axis, ref_axis in zip(align_axes, ref_axes):
-        print('axis to align, reference axis:', axis, ref_axis)
-        obj = util.rotate_crystal(array=obj, axis_to_align=axis, reference_axis=ref_axis,
-                                  debugging=True)  # out of plane alignement
+        print("axis to align, reference axis:", axis, ref_axis)
+        obj = util.rotate_crystal(
+            array=obj, axis_to_align=axis, reference_axis=ref_axis, debugging=True
+        )  # out of plane alignement
 
 ###################
 # apply threshold #
@@ -114,24 +131,30 @@ if not np.isnan(threshold):
 # check ROI #
 #############
 if len(roi) == 6:
-    print('Crop/pad the reconstruction to accommodate the ROI')
-    obj = util.crop_pad(array=obj, output_shape=[roi[1]-roi[0], roi[3]-roi[2], roi[5]-roi[4]])
+    print("Crop/pad the reconstruction to accommodate the ROI")
+    obj = util.crop_pad(
+        array=obj, output_shape=[roi[1] - roi[0], roi[3] - roi[2], roi[5] - roi[4]]
+    )
 
 #################
 # movie along z #
 #################
 if movie_z:
-    metadata = dict(title='S'+str(scan)+comment)
-    if output_format == 'gif':
-        writer = matplotlib.animation.ImageMagickFileWriter(fps=frame_per_second, metadata=metadata)
+    metadata = dict(title="S" + str(scan) + comment)
+    if output_format == "gif":
+        writer = matplotlib.animation.ImageMagickFileWriter(
+            fps=frame_per_second, metadata=metadata
+        )
     else:
         writer = FFMpegWriter(fps=frame_per_second, metadata=metadata)
     fontsize = 10
 
     fig = plt.figure()
-    with writer.saving(fig, datadir+"S"+str(scan)+"_z_movie."+output_format, dpi=100):
+    with writer.saving(
+        fig, datadir + "S" + str(scan) + "_z_movie." + output_format, dpi=100
+    ):
         for index in range(nbz // frame_spacing):
-            img = obj[index*frame_spacing, :, :]
+            img = obj[index * frame_spacing, :, :]
             plt.clf()
             plt.imshow(img, vmin=vmin_vmax[0], vmax=vmin_vmax[1], cmap=my_cmap)
             ax = plt.gca()
@@ -143,17 +166,21 @@ if movie_z:
 # movie along y #
 #################
 if movie_y:
-    metadata = dict(title='S'+str(scan)+comment)
-    if output_format == 'gif':
-        writer = matplotlib.animation.ImageMagickFileWriter(fps=frame_per_second, metadata=metadata)
+    metadata = dict(title="S" + str(scan) + comment)
+    if output_format == "gif":
+        writer = matplotlib.animation.ImageMagickFileWriter(
+            fps=frame_per_second, metadata=metadata
+        )
     else:
         writer = FFMpegWriter(fps=frame_per_second, metadata=metadata)
     fontsize = 10
 
     fig = plt.figure()
-    with writer.saving(fig, datadir+"S"+str(scan)+"_y_movie."+output_format, dpi=100):
+    with writer.saving(
+        fig, datadir + "S" + str(scan) + "_y_movie." + output_format, dpi=100
+    ):
         for index in range(nby // frame_spacing):
-            img = obj[:, index*frame_spacing, :]
+            img = obj[:, index * frame_spacing, :]
             plt.clf()
             plt.imshow(img, vmin=vmin_vmax[0], vmax=vmin_vmax[1], cmap=my_cmap)
             ax = plt.gca()
@@ -165,17 +192,21 @@ if movie_y:
 # movie along x #
 #################
 if movie_x:
-    metadata = dict(title='S'+str(scan)+comment)
-    if output_format == 'gif':
-        writer = matplotlib.animation.ImageMagickFileWriter(fps=frame_per_second, metadata=metadata)
+    metadata = dict(title="S" + str(scan) + comment)
+    if output_format == "gif":
+        writer = matplotlib.animation.ImageMagickFileWriter(
+            fps=frame_per_second, metadata=metadata
+        )
     else:
         writer = FFMpegWriter(fps=frame_per_second, metadata=metadata)
     fontsize = 10
 
     fig = plt.figure()
-    with writer.saving(fig, datadir+"S"+str(scan)+"_x_movie."+output_format, dpi=100):
+    with writer.saving(
+        fig, datadir + "S" + str(scan) + "_x_movie." + output_format, dpi=100
+    ):
         for index in range(nbx // frame_spacing):
-            img = obj[:, :, index*frame_spacing]
+            img = obj[:, :, index * frame_spacing]
             plt.clf()
             plt.imshow(img, vmin=vmin_vmax[0], vmax=vmin_vmax[1], cmap=my_cmap)
             ax = plt.gca()

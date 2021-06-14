@@ -24,7 +24,14 @@ from ..utils import utilities as util
 from ..utils import validation as valid
 
 
-def align_obj(reference_obj, obj, method='modulus', support_threshold=None, precision=1000, debugging=False):
+def align_obj(
+    reference_obj,
+    obj,
+    method="modulus",
+    support_threshold=None,
+    precision=1000,
+    debugging=False,
+):
     """
     Align two arrays using dft registration and subpixel shift.
 
@@ -41,41 +48,74 @@ def align_obj(reference_obj, obj, method='modulus', support_threshold=None, prec
     :return: the aligned array
     """
     if obj.ndim != 3 or reference_obj.ndim != 3:
-        raise ValueError('reference_obj and obj should be 3D arrays')
+        raise ValueError("reference_obj and obj should be 3D arrays")
     if obj.shape != reference_obj.shape:
-        print('reference_obj and obj do not have the same shape\n'
-              ' - reference_obj is ', reference_obj.shape, ' - obj is ', obj.shape)
-        print('crop/pad obj')
+        print(
+            "reference_obj and obj do not have the same shape\n" " - reference_obj is ",
+            reference_obj.shape,
+            " - obj is ",
+            obj.shape,
+        )
+        print("crop/pad obj")
         obj = util.crop_pad(array=obj, output_shape=reference_obj.shape)
 
     # calculate the shift between the two arrays
-    if method == 'modulus':
-        shiftz, shifty, shiftx = reg.getimageregistration(abs(reference_obj), abs(obj), precision=precision)
-    elif method == 'support':
+    if method == "modulus":
+        shiftz, shifty, shiftx = reg.getimageregistration(
+            abs(reference_obj), abs(obj), precision=precision
+        )
+    elif method == "support":
         ref_support = np.zeros(reference_obj.shape)
-        ref_support[abs(reference_obj) > support_threshold * abs(reference_obj).max()] = 1
+        ref_support[
+            abs(reference_obj) > support_threshold * abs(reference_obj).max()
+        ] = 1
         support = np.zeros(reference_obj.shape)
         support[abs(obj) > support_threshold * abs(obj).max()] = 1
-        shiftz, shifty, shiftx = reg.getimageregistration(ref_support, support, precision=precision)
+        shiftz, shifty, shiftx = reg.getimageregistration(
+            ref_support, support, precision=precision
+        )
         if debugging:
-            gu.multislices_plot(abs(ref_support), sum_frames=False, title='Reference support')
-            gu.multislices_plot(abs(support), sum_frames=False, title='Support before alignement')
+            gu.multislices_plot(
+                abs(ref_support), sum_frames=False, title="Reference support"
+            )
+            gu.multislices_plot(
+                abs(support), sum_frames=False, title="Support before alignement"
+            )
         del ref_support, support
     else:  # 'skip'
-        print('\nSkipping alignment')
-        print('\tPearson correlation coefficient = {0:.3f}'.format(pearsonr(np.ndarray.flatten(abs(reference_obj)),
-                                                                            np.ndarray.flatten(abs(obj)))[0]))
+        print("\nSkipping alignment")
+        print(
+            "\tPearson correlation coefficient = {0:.3f}".format(
+                pearsonr(
+                    np.ndarray.flatten(abs(reference_obj)), np.ndarray.flatten(abs(obj))
+                )[0]
+            )
+        )
         return obj
 
     # align obj using subpixel shift
     new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output
-    print("\tShift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
-          str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
-    print('\tPearson correlation coefficient = {0:.3f}'.format(pearsonr(np.ndarray.flatten(abs(reference_obj)),
-                                                                        np.ndarray.flatten(abs(new_obj)))[0]))
+    print(
+        "\tShift calculated from dft registration: (",
+        str("{:.2f}".format(shiftz)),
+        ",",
+        str("{:.2f}".format(shifty)),
+        ",",
+        str("{:.2f}".format(shiftx)),
+        ") pixels",
+    )
+    print(
+        "\tPearson correlation coefficient = {0:.3f}".format(
+            pearsonr(
+                np.ndarray.flatten(abs(reference_obj)), np.ndarray.flatten(abs(new_obj))
+            )[0]
+        )
+    )
     if debugging:
-        gu.multislices_plot(abs(reference_obj), sum_frames=True, title='Reference object')
-        gu.multislices_plot(abs(new_obj), sum_frames=True, title='Aligned object')
+        gu.multislices_plot(
+            abs(reference_obj), sum_frames=True, title="Reference object"
+        )
+        gu.multislices_plot(abs(new_obj), sum_frames=True, title="Aligned object")
     return new_obj
 
 
@@ -96,18 +136,25 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     :return: filtered amplitude, phase of the same shape as myamp
     """
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma', 'mu', 'alpha', 'is_orthogonal'},
-                       name='postprocessing_utils.apodize')
-    sigma = kwargs.get('sigma')
-    mu = kwargs.get('mu')
-    alpha = kwargs.get('alpha')
-    is_orthogonal = kwargs.get('is_orthogonal', False)
+    valid.valid_kwargs(
+        kwargs=kwargs,
+        allowed_kwargs={"sigma", "mu", "alpha", "is_orthogonal"},
+        name="postprocessing_utils.apodize",
+    )
+    sigma = kwargs.get("sigma")
+    mu = kwargs.get("mu")
+    alpha = kwargs.get("alpha")
+    is_orthogonal = kwargs.get("is_orthogonal", False)
 
     if amp.ndim != 3 or phase.ndim != 3:
-        raise ValueError('amp and phase should be 3D arrays')
+        raise ValueError("amp and phase should be 3D arrays")
     if amp.shape != phase.shape:
-        raise ValueError('amp and phase must have the same shape\n'
-                         'amp is ', amp.shape, ' while phase is ', phase.shape)
+        raise ValueError(
+            "amp and phase must have the same shape\n" "amp is ",
+            amp.shape,
+            " while phase is ",
+            phase.shape,
+        )
 
     # calculate the diffraction pattern of the reconstructed object
     nb_z, nb_y, nb_x = amp.shape
@@ -116,67 +163,114 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     del amp, phase
     gc.collect()
     if debugging:
-        gu.multislices_plot(array=abs(myobj), sum_frames=False, plot_colorbar=True, title='modulus before apodization',
-                            reciprocal_space=False, is_orthogonal=is_orthogonal, scale='linear')
+        gu.multislices_plot(
+            array=abs(myobj),
+            sum_frames=False,
+            plot_colorbar=True,
+            title="modulus before apodization",
+            reciprocal_space=False,
+            is_orthogonal=is_orthogonal,
+            scale="linear",
+        )
 
     my_fft = fftshift(fftn(myobj))
     del myobj
     gc.collect()
     fftmax = abs(my_fft).max()
-    print('Max FFT=', fftmax)
+    print("Max FFT=", fftmax)
     if debugging:
-        gu.multislices_plot(array=abs(my_fft), sum_frames=False, plot_colorbar=True,
-                            title='diffraction amplitude before apodization',
-                            reciprocal_space=True, is_orthogonal=is_orthogonal, scale='log')
+        gu.multislices_plot(
+            array=abs(my_fft),
+            sum_frames=False,
+            plot_colorbar=True,
+            title="diffraction amplitude before apodization",
+            reciprocal_space=True,
+            is_orthogonal=is_orthogonal,
+            scale="log",
+        )
 
-    if window_type == 'normal':
-        print('Apodization using a 3d multivariate normal window')
+    if window_type == "normal":
+        print("Apodization using a 3d multivariate normal window")
         sigma = sigma or np.array([0.3, 0.3, 0.3])
         mu = mu or np.array([0.0, 0.0, 0.0])
 
-        grid_z, grid_y, grid_x = np.meshgrid(np.linspace(-1, 1, nbz), np.linspace(-1, 1, nby), np.linspace(-1, 1, nbx),
-                                             indexing='ij')
+        grid_z, grid_y, grid_x = np.meshgrid(
+            np.linspace(-1, 1, nbz),
+            np.linspace(-1, 1, nby),
+            np.linspace(-1, 1, nbx),
+            indexing="ij",
+        )
         covariance = np.diag(sigma ** 2)
-        window = multivariate_normal.pdf(np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]), mean=mu,
-                                         cov=covariance)
+        window = multivariate_normal.pdf(
+            np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]),
+            mean=mu,
+            cov=covariance,
+        )
         del grid_z, grid_y, grid_x
         gc.collect()
         window = window.reshape((nbz, nby, nbx))
 
-    elif window_type == 'tukey':
-        print('Apodization using a 3d Tukey window')
+    elif window_type == "tukey":
+        print("Apodization using a 3d Tukey window")
         alpha = alpha or np.array([0.5, 0.5, 0.5])
         window = tukey_window(initial_shape, alpha=alpha)
 
-    elif window_type == 'blackman':
-        print('Apodization using a 3d Blackman window')
+    elif window_type == "blackman":
+        print("Apodization using a 3d Blackman window")
         window = blackman_window(initial_shape)
 
     else:
-        raise ValueError('Invalid window type')
+        raise ValueError("Invalid window type")
 
     my_fft = np.multiply(my_fft, window)
     del window
     gc.collect()
     my_fft = my_fft * fftmax / abs(my_fft).max()
-    print('Max apodized FFT after normalization =', abs(my_fft).max())
+    print("Max apodized FFT after normalization =", abs(my_fft).max())
     if debugging:
-        gu.multislices_plot(array=abs(my_fft), sum_frames=False, plot_colorbar=True,
-                            title='diffraction amplitude after apodization',
-                            reciprocal_space=True, is_orthogonal=is_orthogonal, scale='log')
+        gu.multislices_plot(
+            array=abs(my_fft),
+            sum_frames=False,
+            plot_colorbar=True,
+            title="diffraction amplitude after apodization",
+            reciprocal_space=True,
+            is_orthogonal=is_orthogonal,
+            scale="log",
+        )
 
     myobj = ifftn(ifftshift(my_fft))
     del my_fft
     gc.collect()
     if debugging:
-        gu.multislices_plot(array=abs(myobj), sum_frames=False, plot_colorbar=True, title='modulus after apodization',
-                            reciprocal_space=False, is_orthogonal=is_orthogonal, scale='linear')
-    myobj = util.crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
+        gu.multislices_plot(
+            array=abs(myobj),
+            sum_frames=False,
+            plot_colorbar=True,
+            title="modulus after apodization",
+            reciprocal_space=False,
+            is_orthogonal=is_orthogonal,
+            scale="linear",
+        )
+    myobj = util.crop_pad(
+        myobj, (nb_z, nb_y, nb_x)
+    )  # return to the initial shape of myamp
     return abs(myobj), np.angle(myobj)
 
 
-def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_threshold=0.90, aligning_option='dft',
-                width_z=None, width_y=None, width_x=None, method='reciprocal_space', debugging=False, **kwargs):
+def average_obj(
+    avg_obj,
+    ref_obj,
+    obj,
+    support_threshold=0.25,
+    correlation_threshold=0.90,
+    aligning_option="dft",
+    width_z=None,
+    width_y=None,
+    width_x=None,
+    method="reciprocal_space",
+    debugging=False,
+    **kwargs,
+):
     """
     Average two reconstructions after aligning it, if their cross-correlation is larger than
     correlation_threshold.
@@ -199,28 +293,45 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
     :return: the average complex density
     """
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'reciprocal_space', 'is_orthogonal'},
-                       name='postprocessing_utils.average_obj')
-    reciprocal_space = kwargs.get('reciprocal_space', False)
-    is_orthogonal = kwargs.get('is_orthogonal', False)
+    valid.valid_kwargs(
+        kwargs=kwargs,
+        allowed_kwargs={"reciprocal_space", "is_orthogonal"},
+        name="postprocessing_utils.average_obj",
+    )
+    reciprocal_space = kwargs.get("reciprocal_space", False)
+    is_orthogonal = kwargs.get("is_orthogonal", False)
 
     if obj.ndim != 3 or avg_obj.ndim != 3 or ref_obj.ndim != 3:
-        raise ValueError('avg_obj, ref_obj and obj should be 3D arrays')
+        raise ValueError("avg_obj, ref_obj and obj should be 3D arrays")
     if obj.shape != avg_obj.shape or obj.shape != ref_obj.shape:
-        raise ValueError('avg_obj, ref_obj and obj must have the same shape\n'
-                         'avg_obj is ', avg_obj.shape, ' - ref_obj is ', ref_obj.shape, ' - obj is ', obj.shape)
+        raise ValueError(
+            "avg_obj, ref_obj and obj must have the same shape\n" "avg_obj is ",
+            avg_obj.shape,
+            " - ref_obj is ",
+            ref_obj.shape,
+            " - obj is ",
+            obj.shape,
+        )
 
     nbz, nby, nbx = obj.shape
     avg_flag = 0
     if avg_obj.sum() == 0:
         avg_obj = ref_obj
         if debugging:
-            gu.multislices_plot(abs(avg_obj), width_z=width_z, width_y=width_y, width_x=width_x, plot_colorbar=True,
-                                sum_frames=True, title='Reference object', reciprocal_space=reciprocal_space,
-                                is_orthogonal=is_orthogonal)
+            gu.multislices_plot(
+                abs(avg_obj),
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                plot_colorbar=True,
+                sum_frames=True,
+                title="Reference object",
+                reciprocal_space=reciprocal_space,
+                is_orthogonal=is_orthogonal,
+            )
     else:
         myref_support = np.zeros((nbz, nby, nbx))
-        myref_support[abs(ref_obj) > support_threshold*abs(ref_obj).max()] = 1
+        myref_support[abs(ref_obj) > support_threshold * abs(ref_obj).max()] = 1
         my_support = np.zeros((nbz, nby, nbx))
         my_support[abs(obj) > support_threshold * abs(obj).max()] = 1
         avg_piz, avg_piy, avg_pix = center_of_mass(abs(myref_support))
@@ -228,58 +339,119 @@ def average_obj(avg_obj, ref_obj, obj, support_threshold=0.25, correlation_thres
         offset_z = avg_piz - piz
         offset_y = avg_piy - piy
         offset_x = avg_pix - pix
-        print("center of mass offset with reference object: (", str('{:.2f}'.format(offset_z)), ',',
-              str('{:.2f}'.format(offset_y)), ',', str('{:.2f}'.format(offset_x)), ') pixels')
-        if aligning_option == 'com':
+        print(
+            "center of mass offset with reference object: (",
+            str("{:.2f}".format(offset_z)),
+            ",",
+            str("{:.2f}".format(offset_y)),
+            ",",
+            str("{:.2f}".format(offset_x)),
+            ") pixels",
+        )
+        if aligning_option == "com":
             # re-sample data on a new grid based on COM shift of support
             old_z = np.arange(-nbz // 2, nbz // 2)
             old_y = np.arange(-nby // 2, nby // 2)
             old_x = np.arange(-nbx // 2, nbx // 2)
-            myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing='ij')
+            myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
             new_z = myz + offset_z
             new_y = myy + offset_y
             new_x = myx + offset_x
             del myx, myy, myz
-            rgi = RegularGridInterpolator((old_z, old_y, old_x), obj, method='linear', bounds_error=False,
-                                          fill_value=0)
-            new_obj = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_z.size)),
-                                          new_x.reshape((1, new_z.size)))).transpose())
+            rgi = RegularGridInterpolator(
+                (old_z, old_y, old_x),
+                obj,
+                method="linear",
+                bounds_error=False,
+                fill_value=0,
+            )
+            new_obj = rgi(
+                np.concatenate(
+                    (
+                        new_z.reshape((1, new_z.size)),
+                        new_y.reshape((1, new_z.size)),
+                        new_x.reshape((1, new_z.size)),
+                    )
+                ).transpose()
+            )
             new_obj = new_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
         else:
             # dft registration and subpixel shift (see Matlab code)
-            shiftz, shifty, shiftx = reg.getimageregistration(abs(ref_obj), abs(obj), precision=1000)
-            new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output here
-            print("Shift calculated from dft registration: (", str('{:.2f}'.format(shiftz)), ',',
-                  str('{:.2f}'.format(shifty)), ',', str('{:.2f}'.format(shiftx)), ') pixels')
+            shiftz, shifty, shiftx = reg.getimageregistration(
+                abs(ref_obj), abs(obj), precision=1000
+            )
+            new_obj = reg.subpixel_shift(
+                obj, shiftz, shifty, shiftx
+            )  # keep the complex output here
+            print(
+                "Shift calculated from dft registration: (",
+                str("{:.2f}".format(shiftz)),
+                ",",
+                str("{:.2f}".format(shifty)),
+                ",",
+                str("{:.2f}".format(shiftx)),
+                ") pixels",
+            )
 
         new_obj = new_obj / abs(new_obj).max()  # renormalize
 
-        correlation = pearsonr(np.ndarray.flatten(abs(ref_obj[np.nonzero(myref_support)])),
-                               np.ndarray.flatten(abs(new_obj[np.nonzero(myref_support)])))[0]
+        correlation = pearsonr(
+            np.ndarray.flatten(abs(ref_obj[np.nonzero(myref_support)])),
+            np.ndarray.flatten(abs(new_obj[np.nonzero(myref_support)])),
+        )[0]
 
         if correlation < correlation_threshold:
-            print('pearson cross-correlation=', correlation, 'too low, skip this reconstruction')
+            print(
+                "pearson cross-correlation=",
+                correlation,
+                "too low, skip this reconstruction",
+            )
         else:
-            print('pearson-correlation=', correlation, ', average with this reconstruction')
+            print(
+                "pearson-correlation=",
+                correlation,
+                ", average with this reconstruction",
+            )
 
             if debugging:
-                myfig, _, _ = gu.multislices_plot(abs(new_obj), width_z=width_z, width_y=width_y, width_x=width_x,
-                                                  sum_frames=True, plot_colorbar=True, title='Aligned object',
-                                                  reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
-                myfig.text(0.60, 0.30, "pearson-correlation = " + str('{:.4f}'.format(correlation)), size=20)
+                myfig, _, _ = gu.multislices_plot(
+                    abs(new_obj),
+                    width_z=width_z,
+                    width_y=width_y,
+                    width_x=width_x,
+                    sum_frames=True,
+                    plot_colorbar=True,
+                    title="Aligned object",
+                    reciprocal_space=reciprocal_space,
+                    is_orthogonal=is_orthogonal,
+                )
+                myfig.text(
+                    0.60,
+                    0.30,
+                    "pearson-correlation = " + str("{:.4f}".format(correlation)),
+                    size=20,
+                )
 
-            if method == 'real_space':
+            if method == "real_space":
                 avg_obj = avg_obj + new_obj
-            elif method == 'reciprocal_space':
+            elif method == "reciprocal_space":
                 avg_obj = ifftn(fftn(avg_obj) + fftn(obj))
             else:
                 raise ValueError('method should be "real_space" or "reciprocal_space"')
             avg_flag = 1
 
         if debugging:
-            gu.multislices_plot(abs(avg_obj), plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                sum_frames=True, title='New averaged object', reciprocal_space=reciprocal_space,
-                                is_orthogonal=is_orthogonal)
+            gu.multislices_plot(
+                abs(avg_obj),
+                plot_colorbar=True,
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                sum_frames=True,
+                title="New averaged object",
+                reciprocal_space=reciprocal_space,
+                is_orthogonal=is_orthogonal,
+            )
 
     return avg_obj, avg_flag
 
@@ -306,7 +478,14 @@ def blackman_window(shape, normalization=1):
     return blackman3
 
 
-def bragg_temperature(spacing, reflection, spacing_ref=None, temperature_ref=None, use_q=False, material=None):
+def bragg_temperature(
+    spacing,
+    reflection,
+    spacing_ref=None,
+    temperature_ref=None,
+    use_q=False,
+    material=None,
+):
     """
     Calculate the temperature from Bragg peak position.
 
@@ -319,18 +498,39 @@ def bragg_temperature(spacing, reflection, spacing_ref=None, temperature_ref=Non
     :param material: at the moment only 'Pt'
     :return: calculated temperature
     """
-    print('\n')
-    if material == 'Pt':
+    print("\n")
+    if material == "Pt":
         # reference values for Pt: temperature in K, thermal expansion x 10^6 in 1/K, lattice parameter in angstroms
-        expansion_data = np.array([[100, 6.77, 3.9173], [110, 7.10, 3.9176], [120, 7.37, 3.9179], [130, 7.59, 3.9182],
-                                  [140, 7.78, 3.9185], [150, 7.93, 3.9188], [160, 8.07, 3.9191], [180, 8.29, 3.9198],
-                                  [200, 8.46, 3.9204], [220, 8.59, 3.9211], [240, 8.70, 3.9218], [260, 8.80, 3.9224],
-                                  [280, 8.89, 3.9231], [293.15, 8.93, 3.9236], [300, 8.95, 3.9238], [400, 9.25, 3.9274],
-                                  [500, 9.48, 3.9311], [600, 9.71, 3.9349], [700, 9.94, 3.9387], [800, 10.19, 3.9427],
-                                  [900, 10.47, 3.9468], [1000, 10.77, 3.9510], [1100, 11.10, 3.9553],
-                                  [1200, 11.43, 3.9597]])
+        expansion_data = np.array(
+            [
+                [100, 6.77, 3.9173],
+                [110, 7.10, 3.9176],
+                [120, 7.37, 3.9179],
+                [130, 7.59, 3.9182],
+                [140, 7.78, 3.9185],
+                [150, 7.93, 3.9188],
+                [160, 8.07, 3.9191],
+                [180, 8.29, 3.9198],
+                [200, 8.46, 3.9204],
+                [220, 8.59, 3.9211],
+                [240, 8.70, 3.9218],
+                [260, 8.80, 3.9224],
+                [280, 8.89, 3.9231],
+                [293.15, 8.93, 3.9236],
+                [300, 8.95, 3.9238],
+                [400, 9.25, 3.9274],
+                [500, 9.48, 3.9311],
+                [600, 9.71, 3.9349],
+                [700, 9.94, 3.9387],
+                [800, 10.19, 3.9427],
+                [900, 10.47, 3.9468],
+                [1000, 10.77, 3.9510],
+                [1100, 11.10, 3.9553],
+                [1200, 11.43, 3.9597],
+            ]
+        )
         if spacing_ref is None:
-            print('Using the reference spacing of Platinum')
+            print("Using the reference spacing of Platinum")
             spacing_ref = 3.9236 / np.linalg.norm(reflection)  # angstroms
         if temperature_ref is None:
             temperature_ref = 293.15  # K
@@ -340,30 +540,51 @@ def bragg_temperature(spacing, reflection, spacing_ref=None, temperature_ref=Non
         spacing = 2 * np.pi / spacing  # go back to distance
         spacing_ref = 2 * np.pi / spacing_ref  # go back to distance
     spacing = spacing * np.linalg.norm(reflection)  # go back to lattice constant
-    spacing_ref = spacing_ref * np.linalg.norm(reflection)  # go back to lattice constant
-    print('Reference spacing at', temperature_ref, 'K   =', str('{:.4f}'.format(spacing_ref)), 'angstroms')
-    print('Spacing =', str('{:.4f}'.format(spacing)), 'angstroms using reflection', reflection)
+    spacing_ref = spacing_ref * np.linalg.norm(
+        reflection
+    )  # go back to lattice constant
+    print(
+        "Reference spacing at",
+        temperature_ref,
+        "K   =",
+        str("{:.4f}".format(spacing_ref)),
+        "angstroms",
+    )
+    print(
+        "Spacing =",
+        str("{:.4f}".format(spacing)),
+        "angstroms using reflection",
+        reflection,
+    )
 
     # fit the experimental spacing with non corrected platinum curve
     myfit = np.poly1d(np.polyfit(expansion_data[:, 2], expansion_data[:, 0], 3))
-    print('Temperature without offset correction=', int(myfit(spacing) - 273.15), 'C')
+    print("Temperature without offset correction=", int(myfit(spacing) - 273.15), "C")
 
     # find offset for platinum reference curve
     myfit = np.poly1d(np.polyfit(expansion_data[:, 0], expansion_data[:, 2], 3))
-    spacing_offset = myfit(temperature_ref) - spacing_ref  # T in K, spacing in angstroms
-    print('Spacing offset =', str('{:.4f}'.format(spacing_offset)), 'angstroms')
+    spacing_offset = (
+        myfit(temperature_ref) - spacing_ref
+    )  # T in K, spacing in angstroms
+    print("Spacing offset =", str("{:.4f}".format(spacing_offset)), "angstroms")
 
     # correct the platinum reference curve for the offset
     platinum_offset = np.copy(expansion_data)
     platinum_offset[:, 2] = platinum_offset[:, 2] - spacing_offset
     myfit = np.poly1d(np.polyfit(platinum_offset[:, 2], platinum_offset[:, 0], 3))
     mytemp = int(myfit(spacing) - 273.15)
-    print('Temperature with offset correction=', mytemp, 'C')
+    print("Temperature with offset correction=", mytemp, "C")
     return mytemp
 
 
-def calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=None, width_y=None, width_x=None,
-                      debugging=False):
+def calc_coordination(
+    support,
+    kernel=np.ones((3, 3, 3)),
+    width_z=None,
+    width_y=None,
+    width_x=None,
+    debugging=False,
+):
     """
     Calculate the coordination number of voxels in a support (numbe of neighbours).
 
@@ -379,16 +600,33 @@ def calc_coordination(support, kernel=np.ones((3, 3, 3)), width_z=None, width_y=
     from scipy.signal import convolve
 
     if support.ndim != 3:
-        raise ValueError('Support should be a 3D array')
+        raise ValueError("Support should be a 3D array")
 
-    mycoord = np.rint(convolve(support, kernel, mode='same'))
+    mycoord = np.rint(convolve(support, kernel, mode="same"))
     mycoord = mycoord.astype(int)
 
     if debugging:
-        gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x,
-                            vmin=0, is_orthogonal=True, reciprocal_space=False, title='Input support')
-        gu.multislices_plot(mycoord, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                            vmin=0, is_orthogonal=True, reciprocal_space=False, title='Coordination matrix')
+        gu.multislices_plot(
+            support,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            vmin=0,
+            is_orthogonal=True,
+            reciprocal_space=False,
+            title="Input support",
+        )
+        gu.multislices_plot(
+            mycoord,
+            plot_colorbar=True,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            vmin=0,
+            is_orthogonal=True,
+            reciprocal_space=False,
+            title="Coordination matrix",
+        )
     return mycoord
 
 
@@ -407,20 +645,39 @@ def center_com(array, debugging=False, **kwargs):
     #########################
     # check and load kwargs #
     #########################
-    valid.valid_kwargs(kwargs=kwargs,
-                       allowed_kwargs={'width_z', 'width_y', 'width_x'}, name='kwargs')
-    width_z = kwargs.get('width_z')
-    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
-    width_y = kwargs.get('width_y')
-    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
-    width_x = kwargs.get('width_x')
-    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
+    valid.valid_kwargs(
+        kwargs=kwargs, allowed_kwargs={"width_z", "width_y", "width_x"}, name="kwargs"
+    )
+    width_z = kwargs.get("width_z")
+    valid.valid_item(
+        value=width_z,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_z",
+    )
+    width_y = kwargs.get("width_y")
+    valid.valid_item(
+        value=width_y,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_y",
+    )
+    width_x = kwargs.get("width_x")
+    valid.valid_item(
+        value=width_x,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_x",
+    )
 
     #########################
     # check some parameters #
     #########################
     if array.ndim != 3:
-        raise ValueError('array should be a 3D array')
+        raise ValueError("array should be a 3D array")
 
     #########################################
     # find the offset of the center of mass #
@@ -432,11 +689,32 @@ def center_com(array, debugging=False, **kwargs):
     offset_x = int(np.rint(nbx / 2.0 - pix))
 
     if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before COM centering')
+        gu.multislices_plot(
+            abs(array),
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            title="Before COM centering",
+        )
 
-        print("center of mass at (z, y, x): (", str('{:.2f}'.format(piz)), ',',
-              str('{:.2f}'.format(piy)), ',', str('{:.2f}'.format(pix)), ')')
-        print("center of mass offset: (", offset_z, ',', offset_y, ',', offset_x, ') pixels')
+        print(
+            "center of mass at (z, y, x): (",
+            str("{:.2f}".format(piz)),
+            ",",
+            str("{:.2f}".format(piy)),
+            ",",
+            str("{:.2f}".format(pix)),
+            ")",
+        )
+        print(
+            "center of mass offset: (",
+            offset_z,
+            ",",
+            offset_y,
+            ",",
+            offset_x,
+            ") pixels",
+        )
 
     #####################
     # center the object #
@@ -444,7 +722,13 @@ def center_com(array, debugging=False, **kwargs):
     array = np.roll(array, (offset_z, offset_y, offset_x), axis=(0, 1, 2))
 
     if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='After COM centering')
+        gu.multislices_plot(
+            abs(array),
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            title="After COM centering",
+        )
     return array
 
 
@@ -463,19 +747,39 @@ def center_max(array, debugging=False, **kwargs):
     #########################
     # check and load kwargs #
     #########################
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'width_z', 'width_y', 'width_x'}, name='kwargs')
-    width_z = kwargs.get('width_z')
-    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
-    width_y = kwargs.get('width_y')
-    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
-    width_x = kwargs.get('width_x')
-    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
+    valid.valid_kwargs(
+        kwargs=kwargs, allowed_kwargs={"width_z", "width_y", "width_x"}, name="kwargs"
+    )
+    width_z = kwargs.get("width_z")
+    valid.valid_item(
+        value=width_z,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_z",
+    )
+    width_y = kwargs.get("width_y")
+    valid.valid_item(
+        value=width_y,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_y",
+    )
+    width_x = kwargs.get("width_x")
+    valid.valid_item(
+        value=width_x,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_x",
+    )
 
     #########################
     # check some parameters #
     #########################
     if array.ndim != 3:
-        raise ValueError('array should be a 3D array')
+        raise ValueError("array should be a 3D array")
 
     ##################################################################
     # find the offset of the max relative to the center of the array #
@@ -487,10 +791,16 @@ def center_max(array, debugging=False, **kwargs):
     offset_x = int(np.rint(nbx / 2.0 - pix))
 
     if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='Before max centering')
-        print("Max at (z, y, x): (", piz, ',', piy, ',', pix, ')')
+        gu.multislices_plot(
+            abs(array),
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            title="Before max centering",
+        )
+        print("Max at (z, y, x): (", piz, ",", piy, ",", pix, ")")
 
-        print("Max offset: (", offset_z, ',', offset_y, ',', offset_x, ') pixels')
+        print("Max offset: (", offset_z, ",", offset_y, ",", offset_x, ") pixels")
 
     #####################
     # center the object #
@@ -498,11 +808,19 @@ def center_max(array, debugging=False, **kwargs):
     array = np.roll(array, (offset_z, offset_y, offset_x), axis=(0, 1, 2))
 
     if debugging:
-        gu.multislices_plot(abs(array), width_z=width_z, width_y=width_y, width_x=width_x, title='After max centering')
+        gu.multislices_plot(
+            abs(array),
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            title="After max centering",
+        )
     return array
 
 
-def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debugging=False, **kwargs):
+def filter_3d(
+    array, filter_name="gaussian_highpass", kernel_length=21, debugging=False, **kwargs
+):
     """
     Apply a filter to the array by convoluting with a filtering kernel.
 
@@ -517,26 +835,38 @@ def filter_3d(array, filter_name='gaussian_highpass', kernel_length=21, debuggin
     from scipy.signal import convolve
 
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'sigma'},
-                       name='postprocessing_utils.filter_3d')
-    sigma = kwargs.get('sigma')
+    valid.valid_kwargs(
+        kwargs=kwargs, allowed_kwargs={"sigma"}, name="postprocessing_utils.filter_3d"
+    )
+    sigma = kwargs.get("sigma")
 
     ndim = array.ndim
-    assert ndim in {2, 3}, 'data should be a 2D or a 3D array'
+    assert ndim in {2, 3}, "data should be a 2D or a 3D array"
 
-    if filter_name == 'gaussian_highpass':
+    if filter_name == "gaussian_highpass":
         sigma = sigma or 3
-        kernel = gaussian_kernel(ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging)
-        return array - convolve(array, kernel, mode='same')
-    if filter_name == 'gaussian':
+        kernel = gaussian_kernel(
+            ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging
+        )
+        return array - convolve(array, kernel, mode="same")
+    if filter_name == "gaussian":
         sigma = sigma or 0.5
-        kernel = gaussian_kernel(ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging)
-        return convolve(array, kernel, mode='same')
-    raise ValueError('Only the gaussian_kernel is implemented up to now.')
+        kernel = gaussian_kernel(
+            ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging
+        )
+        return convolve(array, kernel, mode="same")
+    raise ValueError("Only the gaussian_kernel is implemented up to now.")
 
 
-def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=None, width_x=None,
-              debugging=False):
+def find_bulk(
+    amp,
+    support_threshold,
+    method="threshold",
+    width_z=None,
+    width_y=None,
+    width_x=None,
+    debugging=False,
+):
     """
     Isolate the inner part of the crystal from the non-physical surface.
 
@@ -551,29 +881,40 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=
     :return: the support corresponding to the bulk
     """
     if amp.ndim != 3:
-        raise ValueError('amp should be a 3D array')
+        raise ValueError("amp should be a 3D array")
 
     nbz, nby, nbx = amp.shape
     max_amp = abs(amp).max()
     support = np.ones((nbz, nby, nbx))
 
-    if method == 'threshold':
+    if method == "threshold":
         support[abs(amp) < support_threshold * max_amp] = 0
     else:
         support[abs(amp) < 0.05 * max_amp] = 0  # predefine a larger support
         mykernel = np.ones((9, 9, 9))
-        mycoordination_matrix = calc_coordination(support, kernel=mykernel, debugging=debugging)
+        mycoordination_matrix = calc_coordination(
+            support, kernel=mykernel, debugging=debugging
+        )
         outer = np.copy(mycoordination_matrix)
         outer[np.nonzero(outer)] = 1
         if mykernel.shape == np.ones((9, 9, 9)).shape:
-            outer[mycoordination_matrix > 300] = 0  # start with a larger object, the mean surface amplitude is ~ 5%
+            outer[
+                mycoordination_matrix > 300
+            ] = 0  # start with a larger object, the mean surface amplitude is ~ 5%
         else:
-            raise ValueError('Kernel not yet implemented')
+            raise ValueError("Kernel not yet implemented")
 
         outer[mycoordination_matrix == 0] = 1  # corresponds to outside of the crystal
         if debugging:
-            gu.multislices_plot(outer, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=0, vmax=1, title='Outer matrix')
+            gu.multislices_plot(
+                outer,
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                vmin=0,
+                vmax=1,
+                title="Outer matrix",
+            )
 
         ############################################################################
         # remove layer by layer until the correct isosurface is reached on average #
@@ -583,36 +924,54 @@ def find_bulk(amp, support_threshold, method='threshold', width_z=None, width_y=
         # is larger than mythreshold
         while nb_voxels > 0:  # nb of voxels not included in outer
             # first step: find the first underlayer
-            mycoordination_matrix = calc_coordination(outer, kernel=mykernel, debugging=debugging)
+            mycoordination_matrix = calc_coordination(
+                outer, kernel=mykernel, debugging=debugging
+            )
             surface = np.copy(mycoordination_matrix)
             surface[np.nonzero(surface)] = 1
             surface[mycoordination_matrix > 389] = 0  # remove part from outer  389
-            outer[mycoordination_matrix > 389] = 1  # include points left over by the coordination number selection
+            outer[
+                mycoordination_matrix > 389
+            ] = 1  # include points left over by the coordination number selection
             surface[mycoordination_matrix < 362] = 0  # remove part from bulk   311
             # below is to exclude from surface the frame outer part
             surface[0:5, :, :] = 0
             surface[:, 0:5, :] = 0
             surface[:, :, 0:5] = 0
-            surface[nbz - 6:nbz, :, :] = 0
-            surface[:, nby - 6:nby, :] = 0
-            surface[:, :, nbx - 6:nbx] = 0
+            surface[nbz - 6 : nbz, :, :] = 0
+            surface[:, nby - 6 : nby, :] = 0
+            surface[:, :, nbx - 6 : nbx] = 0
             if debugging:
-                gu.multislices_plot(surface, width_z=width_z, width_y=width_y, width_x=width_x,
-                                    vmin=0, vmax=1, title='Surface matrix')
+                gu.multislices_plot(
+                    surface,
+                    width_z=width_z,
+                    width_y=width_y,
+                    width_x=width_x,
+                    vmin=0,
+                    vmax=1,
+                    title="Surface matrix",
+                )
 
             # second step: calculate the % of voxels from that layer whose amplitude is lower than support_threshold
             nb_voxels = surface[np.nonzero(surface)].sum()
             keep_voxels = surface[abs(amp) >= support_threshold * max_amp].sum()
-            voxels_counter = keep_voxels / nb_voxels  # % of voxels whose amplitude is larger than support_threshold
+            voxels_counter = (
+                keep_voxels / nb_voxels
+            )  # % of voxels whose amplitude is larger than support_threshold
             mean_amp = np.mean(amp[np.nonzero(surface)].flatten()) / max_amp
-            print('number of surface voxels =', nb_voxels,
-                  '  , % of surface voxels above threshold =', str('{:.2f}'.format(100 * voxels_counter)),
-                  '%    , mean surface amplitude =', mean_amp)
+            print(
+                "number of surface voxels =",
+                nb_voxels,
+                "  , % of surface voxels above threshold =",
+                str("{:.2f}".format(100 * voxels_counter)),
+                "%    , mean surface amplitude =",
+                mean_amp,
+            )
             if mean_amp < support_threshold:
                 outer[np.nonzero(surface)] = 1
                 idx = idx + 1
             else:
-                print('Surface of object reached after', idx, 'iterations')
+                print("Surface of object reached after", idx, "iterations")
                 break
         support_defect = np.ones((nbz, nby, nbx)) - outer
         support = np.ones((nbz, nby, nbx))
@@ -634,20 +993,38 @@ def find_crop_center(array_shape, crop_shape, pivot):
     :type pivot: tuple
     :return: the voxel position closest to pivot which allows cropping to the defined shape.
     """
-    valid.valid_container(array_shape, container_types=(tuple, list, np.ndarray), min_length=1, item_types=int,
-                          name='array_shape')
+    valid.valid_container(
+        array_shape,
+        container_types=(tuple, list, np.ndarray),
+        min_length=1,
+        item_types=int,
+        name="array_shape",
+    )
     ndim = len(array_shape)
-    valid.valid_container(crop_shape, container_types=(tuple, list, np.ndarray), length=ndim, item_types=int,
-                          name='crop_shape')
-    valid.valid_container(pivot, container_types=(tuple, list, np.ndarray), length=ndim, item_types=int,
-                          name='pivot')
+    valid.valid_container(
+        crop_shape,
+        container_types=(tuple, list, np.ndarray),
+        length=ndim,
+        item_types=int,
+        name="crop_shape",
+    )
+    valid.valid_container(
+        pivot,
+        container_types=(tuple, list, np.ndarray),
+        length=ndim,
+        item_types=int,
+        name="pivot",
+    )
     crop_center = np.empty(ndim)
     for idx, dim in enumerate(range(ndim)):
         if max(0, pivot[idx] - crop_shape[idx] // 2) == 0:
             # not enough range on this side of the com
             crop_center[idx] = crop_shape[idx] // 2
         else:
-            if min(array_shape[idx], pivot[idx] + crop_shape[idx] // 2) == array_shape[idx]:
+            if (
+                min(array_shape[idx], pivot[idx] + crop_shape[idx] // 2)
+                == array_shape[idx]
+            ):
                 # not enough range on this side of the com
                 crop_center[idx] = array_shape[idx] - crop_shape[idx] // 2
             else:
@@ -677,14 +1054,24 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
     # check some parameters #
     #########################
     if not isinstance(array, np.ndarray):
-        raise TypeError('array should be a numpy ndarray')
+        raise TypeError("array should be a numpy ndarray")
     if array.ndim != 3:
-        raise ValueError('array should be 3D')
+        raise ValueError("array should be 3D")
     if isinstance(plot_margin, Number):
         plot_margin = (plot_margin,) * 3
-    valid.valid_container(plot_margin, container_types=(tuple, list, np.ndarray), length=3, item_types=int,
-                          name='plot_margin')
-    valid.valid_item(amplitude_threshold, allowed_types=Real, min_included=0, name='amplitude_threshold')
+    valid.valid_container(
+        plot_margin,
+        container_types=(tuple, list, np.ndarray),
+        length=3,
+        item_types=int,
+        name="plot_margin",
+    )
+    valid.valid_item(
+        amplitude_threshold,
+        allowed_types=Real,
+        min_included=0,
+        name="amplitude_threshold",
+    )
 
     #########################################################
     # find the relevant range where the support is non-zero #
@@ -694,8 +1081,9 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
     support = np.zeros((nbz, nby, nbx))
     support[abs(array) > amplitude_threshold * abs(array).max()] = 1
 
-    z, y, x = np.meshgrid(np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1),
-                          indexing='ij')
+    z, y, x = np.meshgrid(
+        np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij"
+    )
     z = z * support
     min_z = min(int(np.min(z[np.nonzero(z)])), nbz - int(np.max(z[np.nonzero(z)])))
 
@@ -705,9 +1093,9 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
     x = x * support
     min_x = min(int(np.min(x[np.nonzero(x)])), nbx - int(np.max(x[np.nonzero(x)])))
 
-    zrange = (nbz // 2 - min_z)
-    yrange = (nby // 2 - min_y)
-    xrange = (nbx // 2 - min_x)
+    zrange = nbz // 2 - min_z
+    yrange = nby // 2 - min_y
+    xrange = nbx // 2 - min_x
 
     if plot_margin is not None:
         zrange += plot_margin[0]
@@ -727,14 +1115,24 @@ def flip_reconstruction(obj, debugging=False):
     :return: the flipped complex object
     """
     if obj.ndim != 3:
-        raise ValueError('obj should be a 3D array')
+        raise ValueError("obj should be a 3D array")
 
     flipped_obj = ifftn(ifftshift(np.conj(fftshift(fftn(obj)))))
     if debugging:
-        gu.multislices_plot(abs(obj), vmin=0, sum_frames=False, plot_colorbar=True,
-                            title='Initial object')
-        gu.multislices_plot(abs(flipped_obj), vmin=0, sum_frames=False, plot_colorbar=True,
-                            title='Flipped object')
+        gu.multislices_plot(
+            abs(obj),
+            vmin=0,
+            sum_frames=False,
+            plot_colorbar=True,
+            title="Initial object",
+        )
+        gu.multislices_plot(
+            abs(flipped_obj),
+            vmin=0,
+            sum_frames=False,
+            plot_colorbar=True,
+            title="Flipped object",
+        )
     return flipped_obj
 
 
@@ -749,15 +1147,15 @@ def gap_detector(data, mask, start_pixel, width_gap):
     :return: data and mask array with a gap
     """
     if data.ndim != 3 or mask.ndim != 3:
-        raise ValueError('data and mask should be 3d arrays')
+        raise ValueError("data and mask should be 3d arrays")
     if data.shape != mask.shape:
-        raise ValueError('data and mask should have the same shape')
+        raise ValueError("data and mask should have the same shape")
 
-    data[:, :, start_pixel:start_pixel + width_gap] = 0
-    data[:, start_pixel:start_pixel + width_gap, :] = 0
+    data[:, :, start_pixel : start_pixel + width_gap] = 0
+    data[:, start_pixel : start_pixel + width_gap, :] = 0
 
-    mask[:, :, start_pixel:start_pixel + width_gap] = 1
-    mask[:, start_pixel:start_pixel + width_gap, :] = 1
+    mask[:, :, start_pixel : start_pixel + width_gap] = 1
+    mask[:, start_pixel : start_pixel + width_gap, :] = 1
     return data, mask
 
 
@@ -772,8 +1170,9 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     :return: a 2D or 3D Gaussian kernel
     """
     from scipy.stats import norm
+
     if kernel_length % 2 == 0:
-        raise ValueError('kernel_length should be an even number')
+        raise ValueError("kernel_length should be an even number")
     half_range = kernel_length // 2
     kernel_1d = norm.pdf(np.arange(-half_range, half_range + 1, 1), 0, sigma)
 
@@ -786,7 +1185,7 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
             plt.figure()
             plt.imshow(kernel)
             plt.colorbar()
-            plt.title('Gaussian kernel')
+            plt.title("Gaussian kernel")
             plt.pause(0.1)
 
     elif ndim == 3:
@@ -801,10 +1200,10 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
             plt.figure()
             plt.imshow(kernel[half_range, :, :])
             plt.colorbar()
-            plt.title('Central slice of the Gaussian kernel')
+            plt.title("Central slice of the Gaussian kernel")
             plt.pause(0.1)
     else:
-        raise ValueError('This function generates only 2D or 3D kernels')
+        raise ValueError("This function generates only 2D or 3D kernels")
 
     return kernel
 
@@ -829,25 +1228,51 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     #########################
     # check and load kwargs #
     #########################
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'width_z', 'width_y', 'width_x'}, name='kwargs')
-    width_z = kwargs.get('width_z')
-    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
-    width_y = kwargs.get('width_y')
-    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
-    width_x = kwargs.get('width_x')
-    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
+    valid.valid_kwargs(
+        kwargs=kwargs, allowed_kwargs={"width_z", "width_y", "width_x"}, name="kwargs"
+    )
+    width_z = kwargs.get("width_z")
+    valid.valid_item(
+        value=width_z,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_z",
+    )
+    width_y = kwargs.get("width_y")
+    valid.valid_item(
+        value=width_y,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_y",
+    )
+    width_x = kwargs.get("width_x")
+    valid.valid_item(
+        value=width_x,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_x",
+    )
 
     #########################
     # check some parameters #
     #########################
     if support.ndim != 3:
-        raise ValueError('support should be a 3D array')
+        raise ValueError("support should be a 3D array")
 
     voxel_size = voxel_size or (1, 1, 1)
     if isinstance(voxel_size, Number):
         voxel_size = (voxel_size,) * 3
-    valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real, min_excluded=0,
-                          name='voxel_size')
+    valid.valid_container(
+        voxel_size,
+        container_types=(tuple, list),
+        length=3,
+        item_types=Real,
+        min_excluded=0,
+        name="voxel_size",
+    )
 
     #####################################################################################################
     # correct k for the different voxel size in each dimension (k is expressed in an orthonormal basis) #
@@ -882,47 +1307,85 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
         for idy in range(min_y, max_y, 1):
             for idx in range(min_x, max_x, 1):
                 stop_flag = False
-                counter = support[idz, idy, idx]  # include also the pixel if it belongs to the support
-                pixel = np.array([idz, idy, idx])  # pixel for which the optical path is calculated
+                counter = support[
+                    idz, idy, idx
+                ]  # include also the pixel if it belongs to the support
+                pixel = np.array(
+                    [idz, idy, idx]
+                )  # pixel for which the optical path is calculated
                 # beware, the support could be 0 at some voxel inside the object also, but the loop should
                 # continue until it reaches the end of the box (min_z, max_z, min_y, max_y, min_x, max_x)
                 while not stop_flag:
                     pixel = pixel + k_norm  # add unitary translation in -k_in direction
                     coords = np.rint(pixel)
                     stop_flag = True
-                    if (min_z <= coords[0] <= max_z) and (min_y <= coords[1] <= max_y) and\
-                            (min_x <= coords[2] <= max_x):
-                        counter = counter + support[int(coords[0]), int(coords[1]), int(coords[2])]
+                    if (
+                        (min_z <= coords[0] <= max_z)
+                        and (min_y <= coords[1] <= max_y)
+                        and (min_x <= coords[2] <= max_x)
+                    ):
+                        counter = (
+                            counter
+                            + support[int(coords[0]), int(coords[1]), int(coords[2])]
+                        )
                         stop_flag = False
 
                 # For each voxel, counter is the number of steps along the unitary k vector where the support is
                 # non zero. Now we need to convert this into nm using the voxel size, different in each dimension
-                endpoint = np.array([idz, idy, idx]) + counter * k_norm  # indices of the final voxel
-                path[idz, idy, idx] = np.sqrt(((np.rint(endpoint[0])-idz) * voxel_size[0])**2 +
-                                              ((np.rint(endpoint[1])-idy) * voxel_size[1])**2 +
-                                              ((np.rint(endpoint[2])-idx) * voxel_size[2])**2)
+                endpoint = (
+                    np.array([idz, idy, idx]) + counter * k_norm
+                )  # indices of the final voxel
+                path[idz, idy, idx] = np.sqrt(
+                    ((np.rint(endpoint[0]) - idz) * voxel_size[0]) ** 2
+                    + ((np.rint(endpoint[1]) - idy) * voxel_size[1]) ** 2
+                    + ((np.rint(endpoint[2]) - idx) * voxel_size[2]) ** 2
+                )
 
     ##################
     # debugging plot #
     ##################
     if debugging:
-        print(f"Optical path calculation, support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):"
-              f"{min_z}, {max_z}, {min_y}, {max_y}, {min_x}, {max_x}")
-        gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x, vmin=0, vmax=1,
-                            sum_frames=False, title='Support for optical path', is_orthogonal=True,
-                            reciprocal_space=False)
+        print(
+            f"Optical path calculation, support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):"
+            f"{min_z}, {max_z}, {min_y}, {max_y}, {min_x}, {max_x}"
+        )
+        gu.multislices_plot(
+            support,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            vmin=0,
+            vmax=1,
+            sum_frames=False,
+            title="Support for optical path",
+            is_orthogonal=True,
+            reciprocal_space=False,
+        )
 
     ###########################################
     # apply a mean filter to reduce artefacts #
     ###########################################
     # the path should be averaged only in the support defined by the isosurface
-    path = mean_filter(array=path, support=support, half_width=1, title='Optical path', debugging=debugging)
+    path = mean_filter(
+        array=path,
+        support=support,
+        half_width=1,
+        title="Optical path",
+        debugging=debugging,
+    )
 
     return path
 
 
-def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_phase=2*pi,
-               method='default', debugging=False):
+def get_strain(
+    phase,
+    planar_distance,
+    voxel_size,
+    reference_axis="y",
+    extent_phase=2 * pi,
+    method="default",
+    debugging=False,
+):
     """
     Calculate the 3D strain array.
 
@@ -938,53 +1401,97 @@ def get_strain(phase, planar_distance, voxel_size, reference_axis='y', extent_ph
     """
     from bcdi.preprocessing.preprocessing_utils import wrap
 
-    assert phase.ndim == 3, 'phase should be a 3D array'
-    assert reference_axis in ('x', 'y', 'z'), "The reference axis should be 'x', 'y' or 'z'"
+    assert phase.ndim == 3, "phase should be a 3D array"
+    assert reference_axis in (
+        "x",
+        "y",
+        "z",
+    ), "The reference axis should be 'x', 'y' or 'z'"
     if isinstance(voxel_size, Number):
         voxel_size = (voxel_size,) * 3
-    valid.valid_container(voxel_size, container_types=(tuple, list), length=3, item_types=Real,
-                          name='postprocessing_utils.get_strain', min_excluded=0)
+    valid.valid_container(
+        voxel_size,
+        container_types=(tuple, list),
+        length=3,
+        item_types=Real,
+        name="postprocessing_utils.get_strain",
+        min_excluded=0,
+    )
 
     strain = np.inf * np.ones(phase.shape)
-    if method == 'defect':
-        offsets = 2*np.pi / 10 * np.linspace(-10, 10, num=11)
-        print('Strain method = defect, the following phase offsets will be processed:', offsets)
+    if method == "defect":
+        offsets = 2 * np.pi / 10 * np.linspace(-10, 10, num=11)
+        print(
+            "Strain method = defect, the following phase offsets will be processed:",
+            offsets,
+        )
     else:  # 'default'
         offsets = (0,)
 
     for offset in offsets:
         # offset the phase
-        if method == 'defect':
+        if method == "defect":
             temp_phase = np.copy(phase)
             temp_phase = temp_phase + offset
             # wrap again the offseted phase
-            temp_phase = wrap(obj=temp_phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+            temp_phase = wrap(
+                obj=temp_phase, start_angle=-extent_phase / 2, range_angle=extent_phase
+            )
         else:  # no need to copy the phase, offset = 0
             temp_phase = phase
 
         # calculate the strain for this offset
         if reference_axis == "x":
-            _, _, temp_strain = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
-                                            voxel_size[2])  # q is along x after rotating the crystal
+            _, _, temp_strain = np.gradient(
+                planar_distance / (2 * np.pi) * temp_phase, voxel_size[2]
+            )  # q is along x after rotating the crystal
         elif reference_axis == "y":
-            _, temp_strain, _ = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
-                                            voxel_size[1])  # q is along y after rotating the crystal
+            _, temp_strain, _ = np.gradient(
+                planar_distance / (2 * np.pi) * temp_phase, voxel_size[1]
+            )  # q is along y after rotating the crystal
         else:  # "z"
-            temp_strain, _, _ = np.gradient(planar_distance / (2 * np.pi) * temp_phase,
-                                            voxel_size[0])  # q is along z after rotating the crystal
+            temp_strain, _, _ = np.gradient(
+                planar_distance / (2 * np.pi) * temp_phase, voxel_size[0]
+            )  # q is along z after rotating the crystal
 
         # update the strain values
         strain = np.where(abs(strain) < abs(temp_strain), strain, temp_strain)
         if debugging:
-            gu.multislices_plot(temp_phase, sum_frames=False, title='Offseted phase', vmin=-np.pi, vmax=np.pi,
-                                plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
-            gu.multislices_plot(strain, sum_frames=False, title='strain', vmin=-0.002, vmax=0.002,
-                                plot_colorbar=True, is_orthogonal=True, reciprocal_space=False)
+            gu.multislices_plot(
+                temp_phase,
+                sum_frames=False,
+                title="Offseted phase",
+                vmin=-np.pi,
+                vmax=np.pi,
+                plot_colorbar=True,
+                is_orthogonal=True,
+                reciprocal_space=False,
+            )
+            gu.multislices_plot(
+                strain,
+                sum_frames=False,
+                title="strain",
+                vmin=-0.002,
+                vmax=0.002,
+                plot_colorbar=True,
+                is_orthogonal=True,
+                reciprocal_space=False,
+            )
     return strain
 
 
-def mean_filter(array, support, half_width=0, width_z=None, width_y=None, width_x=None,
-                vmin=np.nan, vmax=np.nan, title='Object', debugging=False):
+def mean_filter(
+    array,
+    support,
+    half_width=0,
+    width_z=None,
+    width_y=None,
+    width_x=None,
+    vmin=np.nan,
+    vmax=np.nan,
+    title="Object",
+    debugging=False,
+):
     """
     Apply a mean filter to an object defined by a support, taking care of the object's surface.
 
@@ -1004,31 +1511,64 @@ def mean_filter(array, support, half_width=0, width_z=None, width_y=None, width_
     # check some parameters #
     #########################
     if not isinstance(array, np.ndarray):
-        raise TypeError('array should be a numpy array')
+        raise TypeError("array should be a numpy array")
     if array.ndim != 3:
-        raise ValueError('array should be 3D')
+        raise ValueError("array should be 3D")
     if not isinstance(support, np.ndarray):
-        raise TypeError('support should be a numpy array')
+        raise TypeError("support should be a numpy array")
     if support.shape != array.shape:
-        raise ValueError('the support should have the same shape as the array')
-    valid.valid_item(half_width, allowed_types=int, min_included=0, name='half_width')
-    valid.valid_container(title, container_types=str, name='title')
-    valid.valid_item(vmin, allowed_types=Real, name='vmin')
-    valid.valid_item(vmax, allowed_types=Real, name='vmax')
-    valid.valid_item(debugging, allowed_types=bool, name='debugging')
-    valid.valid_item(value=width_z, allowed_types=int, min_excluded=0, allow_none=True, name='width_z')
-    valid.valid_item(value=width_y, allowed_types=int, min_excluded=0, allow_none=True, name='width_y')
-    valid.valid_item(value=width_x, allowed_types=int, min_excluded=0, allow_none=True, name='width_x')
+        raise ValueError("the support should have the same shape as the array")
+    valid.valid_item(half_width, allowed_types=int, min_included=0, name="half_width")
+    valid.valid_container(title, container_types=str, name="title")
+    valid.valid_item(vmin, allowed_types=Real, name="vmin")
+    valid.valid_item(vmax, allowed_types=Real, name="vmax")
+    valid.valid_item(debugging, allowed_types=bool, name="debugging")
+    valid.valid_item(
+        value=width_z,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_z",
+    )
+    valid.valid_item(
+        value=width_y,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_y",
+    )
+    valid.valid_item(
+        value=width_x,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="width_x",
+    )
 
     #########################
     # apply the mean filter #
     #########################
     if half_width != 0:
         if debugging:
-            gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, vmin=vmin, vmax=vmax,
-                                title=title + ' before averaging', plot_colorbar=True)
-            gu.multislices_plot(support, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=0, vmax=1, title='Support for averaging')
+            gu.multislices_plot(
+                array,
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                vmin=vmin,
+                vmax=vmax,
+                title=title + " before averaging",
+                plot_colorbar=True,
+            )
+            gu.multislices_plot(
+                support,
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                vmin=0,
+                vmax=1,
+                title="Support for averaging",
+            )
 
         nonzero_pixels = np.argwhere(support != 0)
         new_values = np.zeros((nonzero_pixels.shape[0], 1), dtype=array.dtype)
@@ -1037,27 +1577,45 @@ def mean_filter(array, support, half_width=0, width_z=None, width_y=None, width_
             piz = nonzero_pixels[indx, 0]
             piy = nonzero_pixels[indx, 1]
             pix = nonzero_pixels[indx, 2]
-            tempo_support = support[piz-half_width:piz+half_width+1, piy-half_width:piy+half_width+1,
-                                    pix-half_width:pix+half_width+1]
+            tempo_support = support[
+                piz - half_width : piz + half_width + 1,
+                piy - half_width : piy + half_width + 1,
+                pix - half_width : pix + half_width + 1,
+            ]
             nb_points = tempo_support.sum()
-            temp_phase = array[piz-half_width:piz+half_width+1, piy-half_width:piy+half_width+1,
-                               pix-half_width:pix+half_width+1]
+            temp_phase = array[
+                piz - half_width : piz + half_width + 1,
+                piy - half_width : piy + half_width + 1,
+                pix - half_width : pix + half_width + 1,
+            ]
             if temp_phase.size != 0:
-                value = temp_phase[np.nonzero(tempo_support)].sum()/nb_points
+                value = temp_phase[np.nonzero(tempo_support)].sum() / nb_points
                 new_values[indx] = value
             else:
                 counter = counter + 1
         for indx in range(nonzero_pixels.shape[0]):
-            array[nonzero_pixels[indx, 0], nonzero_pixels[indx, 1], nonzero_pixels[indx, 2]] = new_values[indx]
+            array[
+                nonzero_pixels[indx, 0],
+                nonzero_pixels[indx, 1],
+                nonzero_pixels[indx, 2],
+            ] = new_values[indx]
         if debugging:
-            gu.multislices_plot(array, width_z=width_z, width_y=width_y, width_x=width_x, vmin=vmin, vmax=vmax,
-                                title=title + ' after averaging', plot_colorbar=True)
+            gu.multislices_plot(
+                array,
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                vmin=vmin,
+                vmax=vmax,
+                title=title + " after averaging",
+                plot_colorbar=True,
+            )
         if counter != 0:
             print("There were", counter, "voxels for which phase could not be averaged")
     return array
 
 
-def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
+def ortho_modes(array_stack, nb_mode=None, method="eig", verbose=False):
     """
     Orthogonalize modes from a N+1 dimensional array or a list/tuple of N-dimensional arrays.
      The decomposition is such that the total intensity (i.e. (abs(m)**2).sum()) is conserved.
@@ -1073,34 +1631,52 @@ def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
       The modes are sorted by decreasing norm. If nb_mode is not None, only modes up to nb_mode will be returned.
     """
     if array_stack[0].ndim != 3:
-        raise ValueError('A stack of 3D arrays is expected')
+        raise ValueError("A stack of 3D arrays is expected")
 
     # array stack has the shape: (nb_arrays, L, M, N)
     nb_arrays = array_stack.shape[0]
     array_size = array_stack[0].size  # the size of individual arrays is L x M x N
 
-    if method == 'eig':
-        my_matrix = np.array([[np.vdot(array2, array1) for array1 in array_stack] for array2 in array_stack])
+    if method == "eig":
+        my_matrix = np.array(
+            [
+                [np.vdot(array2, array1) for array1 in array_stack]
+                for array2 in array_stack
+            ]
+        )
         # array of shape (nb_arrays,nb_arrays)
-        eigenvalues, eigenvectors = np.linalg.eig(my_matrix)  # the number of eigenvalues is nb_arrays
-    elif method == 'svd':  # Singular value decomposition
+        eigenvalues, eigenvectors = np.linalg.eig(
+            my_matrix
+        )  # the number of eigenvalues is nb_arrays
+    elif method == "svd":  # Singular value decomposition
         my_matrix = np.reshape(array_stack, (nb_arrays, array_size))
-        eigenvectors, eigenvalues, vh = scipy.linalg.svd(my_matrix, full_matrices=False, compute_uv=True)
+        eigenvectors, eigenvalues, vh = scipy.linalg.svd(
+            my_matrix, full_matrices=False, compute_uv=True
+        )
         # my_matrix = eigenvectors x S x Vh, where S is a suitably shaped matrix of zeros with main diagonal s
         # The shapes are (M, K) for the eigenvectors and (K, N) for the unitary matrix Vh where K = min(M, N)
         # Here, M is the number of reconstructions nb_arrays, N is the size of a reconstruction array_size
     else:
         raise ValueError('Incorrect value for parameter "method"')
 
-    sort_indices = (-eigenvalues).argsort()  # returns the indices that would sort eigenvalues in descending order
+    sort_indices = (
+        -eigenvalues
+    ).argsort()  # returns the indices that would sort eigenvalues in descending order
     print("\neigenvalues", eigenvalues)
-    eigenvectors = eigenvectors[:, sort_indices]  # sort eigenvectors using sort_indices, same shape as my_matrix
+    eigenvectors = eigenvectors[
+        :, sort_indices
+    ]  # sort eigenvectors using sort_indices, same shape as my_matrix
 
     for idx in range(len(sort_indices)):
         if eigenvectors[abs(eigenvectors[:, idx]).argmax(), idx].real < 0:
             eigenvectors[:, idx] *= -1
 
-    modes = np.array([sum(array_stack[i] * eigenvectors[i, j] for i in range(nb_arrays)) for j in range(nb_arrays)])
+    modes = np.array(
+        [
+            sum(array_stack[i] * eigenvectors[i, j] for i in range(nb_arrays))
+            for j in range(nb_arrays)
+        ]
+    )
     # # the double nested comprehension list above is equivalent to the following code:
     # modes = np.zeros(array_stack.shape, dtype=complex)
     # for j in range(nb_arrays):
@@ -1111,15 +1687,25 @@ def ortho_modes(array_stack, nb_mode=None, method='eig', verbose=False):
 
     if verbose:
         print("Orthonormal decomposition coefficients (rows)")
-        print(np.array2string((eigenvectors.transpose()), threshold=10, precision=3, floatmode='fixed',
-                              suppress_small=True))
+        print(
+            np.array2string(
+                (eigenvectors.transpose()),
+                threshold=10,
+                precision=3,
+                floatmode="fixed",
+                suppress_small=True,
+            )
+        )
 
     if nb_mode is not None:
         nb_mode = min(nb_arrays, nb_mode)
     else:
         nb_mode = nb_arrays
 
-    weights = np.array([(abs(modes[i]) ** 2).sum() for i in range(nb_arrays)]) / (abs(modes) ** 2).sum()
+    weights = (
+        np.array([(abs(modes[i]) ** 2).sum() for i in range(nb_arrays)])
+        / (abs(modes) ** 2).sum()
+    )
 
     return modes[:nb_mode], eigenvectors, weights
 
@@ -1134,17 +1720,29 @@ def regrid(array, old_voxelsize, new_voxelsize):
     :return: obj interpolated using the new voxel sizes
     """
     if array.ndim != 3:
-        raise ValueError('array should be a 3D array')
+        raise ValueError("array should be a 3D array")
 
     if isinstance(old_voxelsize, Number):
         old_voxelsize = (old_voxelsize,) * 3
-    valid.valid_container(old_voxelsize, container_types=(tuple, list), length=3, item_types=Real,
-                          name='postprocessing_utils.regrid', min_excluded=0)
+    valid.valid_container(
+        old_voxelsize,
+        container_types=(tuple, list),
+        length=3,
+        item_types=Real,
+        name="postprocessing_utils.regrid",
+        min_excluded=0,
+    )
 
     if isinstance(new_voxelsize, Number):
         new_voxelsize = (new_voxelsize,) * 3
-    valid.valid_container(new_voxelsize, container_types=(tuple, list), length=3, item_types=Real,
-                          name='postprocessing_utils.regrid', min_excluded=0)
+    valid.valid_container(
+        new_voxelsize,
+        container_types=(tuple, list),
+        length=3,
+        item_types=Real,
+        name="postprocessing_utils.regrid",
+        min_excluded=0,
+    )
 
     nbz, nby, nbx = array.shape
 
@@ -1152,21 +1750,40 @@ def regrid(array, old_voxelsize, new_voxelsize):
     old_y = np.arange(-nby // 2, nby // 2, 1) * old_voxelsize[1]
     old_x = np.arange(-nbx // 2, nbx // 2, 1) * old_voxelsize[2]
 
-    new_z, new_y, new_x = np.meshgrid(old_z * new_voxelsize[0] / old_voxelsize[0],
-                                      old_y * new_voxelsize[1] / old_voxelsize[1],
-                                      old_x * new_voxelsize[2] / old_voxelsize[2],
-                                      indexing='ij')
+    new_z, new_y, new_x = np.meshgrid(
+        old_z * new_voxelsize[0] / old_voxelsize[0],
+        old_y * new_voxelsize[1] / old_voxelsize[1],
+        old_x * new_voxelsize[2] / old_voxelsize[2],
+        indexing="ij",
+    )
 
-    rgi = RegularGridInterpolator((old_z, old_y, old_x), array, method='linear', bounds_error=False, fill_value=0)
+    rgi = RegularGridInterpolator(
+        (old_z, old_y, old_x), array, method="linear", bounds_error=False, fill_value=0
+    )
 
-    new_array = rgi(np.concatenate((new_z.reshape((1, new_z.size)), new_y.reshape((1, new_y.size)),
-                                   new_x.reshape((1, new_x.size)))).transpose())
+    new_array = rgi(
+        np.concatenate(
+            (
+                new_z.reshape((1, new_z.size)),
+                new_y.reshape((1, new_y.size)),
+                new_x.reshape((1, new_x.size)),
+            )
+        ).transpose()
+    )
     new_array = new_array.reshape((nbz, nby, nbx)).astype(array.dtype)
     return new_array
 
 
-def remove_offset(array, support, offset_method='COM', user_offset=0, offset_origin=None, title='',
-                  debugging=False, **kwargs):
+def remove_offset(
+    array,
+    support,
+    offset_method="COM",
+    user_offset=0,
+    offset_origin=None,
+    title="",
+    debugging=False,
+    **kwargs,
+):
     """
     Remove the offset in a 3D array based on a 3D support.
 
@@ -1183,44 +1800,98 @@ def remove_offset(array, support, offset_method='COM', user_offset=0, offset_ori
      - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
     :return: the processed array
     """
-    assert array.ndim == 3 and support.ndim == 3, 'array and support should be 3D arrayse'
-    assert array.shape == support.shape, 'array and support should have the same shape'
+    assert (
+        array.ndim == 3 and support.ndim == 3
+    ), "array and support should be 3D arrayse"
+    assert array.shape == support.shape, "array and support should have the same shape"
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'reciprocal_space', 'is_orthogonal'},
-                       name='postprocessing_utils.average_obj')
-    reciprocal_space = kwargs.get('reciprocal_space', False)
-    is_orthogonal = kwargs.get('is_orthogonal', False)
+    valid.valid_kwargs(
+        kwargs=kwargs,
+        allowed_kwargs={"reciprocal_space", "is_orthogonal"},
+        name="postprocessing_utils.average_obj",
+    )
+    reciprocal_space = kwargs.get("reciprocal_space", False)
+    is_orthogonal = kwargs.get("is_orthogonal", False)
 
     if debugging:
-        gu.multislices_plot(array, sum_frames=False, plot_colorbar=True, title=title + ' before offset removal',
-                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
+        gu.multislices_plot(
+            array,
+            sum_frames=False,
+            plot_colorbar=True,
+            title=title + " before offset removal",
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+        )
 
     if offset_origin is None:  # use offset_method to remove the offset
-        if offset_method == 'COM':
+        if offset_method == "COM":
             zcom, ycom, xcom = center_of_mass(support)
-            zcom, ycom, xcom = int(np.rint(zcom)), int(np.rint(ycom)), int(np.rint(xcom))
+            zcom, ycom, xcom = (
+                int(np.rint(zcom)),
+                int(np.rint(ycom)),
+                int(np.rint(xcom)),
+            )
             print("\nCOM at pixels (z, y, x): ", zcom, ycom, xcom)
-            print("Offset at COM(support) of:", str('{:.2f}'.format(array[zcom, ycom, xcom])), "rad")
+            print(
+                "Offset at COM(support) of:",
+                str("{:.2f}".format(array[zcom, ycom, xcom])),
+                "rad",
+            )
             array = array - array[zcom, ycom, xcom] + user_offset
-        elif offset_method == 'mean':
+        elif offset_method == "mean":
             array = array - array[support == 1].mean() + user_offset
         else:
             raise ValueError('Invalid setting for parameter "offset_method"')
     else:
-        assert len(offset_origin) == 3, 'offset_origin should be a tuple of three pixel positions'
-        print("\nOrigin for offset removal at pixels (z, y, x): ", offset_origin[0], offset_origin[1], offset_origin[2])
-        print("Offset of ",
-              str('{:.2f}'.format(array[offset_origin[0], offset_origin[1], offset_origin[2]])), "rad")
-        array = array - array[offset_origin[0], offset_origin[1], offset_origin[2]] + user_offset
+        assert (
+            len(offset_origin) == 3
+        ), "offset_origin should be a tuple of three pixel positions"
+        print(
+            "\nOrigin for offset removal at pixels (z, y, x): ",
+            offset_origin[0],
+            offset_origin[1],
+            offset_origin[2],
+        )
+        print(
+            "Offset of ",
+            str(
+                "{:.2f}".format(
+                    array[offset_origin[0], offset_origin[1], offset_origin[2]]
+                )
+            ),
+            "rad",
+        )
+        array = (
+            array
+            - array[offset_origin[0], offset_origin[1], offset_origin[2]]
+            + user_offset
+        )
 
     if debugging:
-        gu.multislices_plot(array, sum_frames=False, plot_colorbar=True, title=title + ' after offset removal',
-                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
+        gu.multislices_plot(
+            array,
+            sum_frames=False,
+            plot_colorbar=True,
+            title=title + " after offset removal",
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+        )
     return array
 
 
-def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=None,
-                amplitude_threshold=0.25, gradient_threshold=0.2, method='gradient', ups_factor=2, debugging=False):
+def remove_ramp(
+    amp,
+    phase,
+    initial_shape,
+    width_z=None,
+    width_y=None,
+    width_x=None,
+    amplitude_threshold=0.25,
+    gradient_threshold=0.2,
+    method="gradient",
+    ups_factor=2,
+    debugging=False,
+):
     """
     Remove the linear trend in the ramp using its gradient and a threshold n 3D dataset.
 
@@ -1239,19 +1910,23 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
     :return: normalized amplitude, detrended phase, ramp along z, ramp along y, ramp along x
     """
     if amp.ndim != 3 or phase.ndim != 3:
-        raise ValueError('amp and phase should be 3D arrays')
+        raise ValueError("amp and phase should be 3D arrays")
     if amp.shape != phase.shape:
-        raise ValueError('amp and phase must have the same shape\n'
-                         'amp is ', amp.shape, ' while phase is ', phase.shape)
+        raise ValueError(
+            "amp and phase must have the same shape\n" "amp is ",
+            amp.shape,
+            " while phase is ",
+            phase.shape,
+        )
 
-    if method == 'upsampling':
-        nbz, nby, nbx = [mysize*ups_factor for mysize in initial_shape]
+    if method == "upsampling":
+        nbz, nby, nbx = [mysize * ups_factor for mysize in initial_shape]
         nb_z, nb_y, nb_x = amp.shape
         myobj = util.crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx))
         if debugging:
             plt.figure()
             plt.imshow(np.log10(abs(myobj).sum(axis=0)))
-            plt.title('np.log10(abs(myobj).sum(axis=0))')
+            plt.title("np.log10(abs(myobj).sum(axis=0))")
             plt.pause(0.1)
         my_fft = fftshift(fftn(ifftshift(myobj)))
         del myobj, amp, phase
@@ -1260,11 +1935,11 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
             plt.figure()
             # plt.imshow(np.log10(abs(my_fft[nbz//2, :, :])))
             plt.imshow(np.log10(abs(my_fft).sum(axis=0)))
-            plt.title('np.log10(abs(my_fft).sum(axis=0))')
+            plt.title("np.log10(abs(my_fft).sum(axis=0))")
             plt.pause(0.1)
-        zcom, ycom, xcom = center_of_mass(abs(my_fft)**4)
-        print('FFT shape for subpixel shift:', nbz, nby, nbx)
-        print('COM before subpixel shift', zcom, ',', ycom, ',', xcom)
+        zcom, ycom, xcom = center_of_mass(abs(my_fft) ** 4)
+        print("FFT shape for subpixel shift:", nbz, nby, nbx)
+        print("COM before subpixel shift", zcom, ",", ycom, ",", xcom)
         shiftz = zcom - (nbz / 2)
         shifty = ycom - (nby / 2)
         shiftx = xcom - (nbx / 2)
@@ -1276,20 +1951,25 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         if debugging:
             plt.figure()
             plt.imshow(abs(buf2ft).sum(axis=0))
-            plt.title('abs(buf2ft).sum(axis=0)')
+            plt.title("abs(buf2ft).sum(axis=0)")
             plt.pause(0.1)
 
-        z_axis = ifftshift(np.arange(-np.fix(nbz/2), np.ceil(nbz/2), 1))
-        y_axis = ifftshift(np.arange(-np.fix(nby/2), np.ceil(nby/2), 1))
-        x_axis = ifftshift(np.arange(-np.fix(nbx/2), np.ceil(nbx/2), 1))
-        z_axis, y_axis, x_axis = np.meshgrid(z_axis, y_axis, x_axis, indexing='ij')
-        greg = buf2ft * np.exp(1j * 2 * np.pi * (shiftz * z_axis / nbz + shifty * y_axis / nby + shiftx * x_axis / nbx))
+        z_axis = ifftshift(np.arange(-np.fix(nbz / 2), np.ceil(nbz / 2), 1))
+        y_axis = ifftshift(np.arange(-np.fix(nby / 2), np.ceil(nby / 2), 1))
+        x_axis = ifftshift(np.arange(-np.fix(nbx / 2), np.ceil(nbx / 2), 1))
+        z_axis, y_axis, x_axis = np.meshgrid(z_axis, y_axis, x_axis, indexing="ij")
+        greg = buf2ft * np.exp(
+            1j
+            * 2
+            * np.pi
+            * (shiftz * z_axis / nbz + shifty * y_axis / nby + shiftx * x_axis / nbx)
+        )
         del buf2ft, z_axis, y_axis, x_axis
         gc.collect()
         if debugging:
             plt.figure()
             plt.imshow(abs(greg).sum(axis=0))
-            plt.title('abs(greg).sum(axis=0)')
+            plt.title("abs(greg).sum(axis=0)")
             plt.pause(0.1)
 
         my_fft = ifftn(greg)
@@ -1300,30 +1980,37 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         if debugging:
             plt.figure()
             plt.imshow(np.log10(abs(my_fft).sum(axis=0)))
-            plt.title('centered np.log10(abs(my_fft).sum(axis=0))')
+            plt.title("centered np.log10(abs(my_fft).sum(axis=0))")
             plt.pause(0.1)
 
-        print('COM after subpixel shift', center_of_mass(abs(my_fft) ** 4))
+        print("COM after subpixel shift", center_of_mass(abs(my_fft) ** 4))
         myobj = fftshift(ifftn(ifftshift(my_fft)))
         del my_fft
         gc.collect()
         if debugging:
             plt.figure()
             plt.imshow(abs(myobj).sum(axis=0))
-            plt.title('centered abs(myobj).sum(axis=0)')
+            plt.title("centered abs(myobj).sum(axis=0)")
             plt.pause(0.1)
 
-        myobj = util.crop_pad(myobj, (nb_z, nb_y, nb_x))  # return to the initial shape of myamp
-        print('Upsampling: shift_z, shift_y, shift_x: (', str('{:.3f}'.format(shiftz)),
-              str('{:.3f}'.format(shifty)), str('{:.3f}'.format(shiftx)), ') pixels')
-        return abs(myobj)/abs(myobj).max(), np.angle(myobj), shiftz, shifty, shiftx
+        myobj = util.crop_pad(
+            myobj, (nb_z, nb_y, nb_x)
+        )  # return to the initial shape of myamp
+        print(
+            "Upsampling: shift_z, shift_y, shift_x: (",
+            str("{:.3f}".format(shiftz)),
+            str("{:.3f}".format(shifty)),
+            str("{:.3f}".format(shiftx)),
+            ") pixels",
+        )
+        return abs(myobj) / abs(myobj).max(), np.angle(myobj), shiftz, shifty, shiftx
 
     else:  # method='gradient'
 
         # define the support from the amplitude
         nbz, nby, nbx = amp.shape
         mysupport = np.zeros((nbz, nby, nbx))
-        mysupport[amp > amplitude_threshold*abs(amp).max()] = 1
+        mysupport[amp > amplitude_threshold * abs(amp).max()] = 1
 
         # axis 0 (Z)
         mygradz, _, _ = np.gradient(phase, 1)
@@ -1332,13 +2019,30 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupportz[abs(mygradz) < gradient_threshold] = 1
         mysupportz = mysupportz * mysupport
         if mysupportz.sum(initial=None) == 0:
-            raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
+            raise ValueError(
+                "No voxel below the threshold, raise the parameter threshold_gradient"
+            )
         myrampz = mygradz[mysupportz == 1].mean()
         if debugging:
-            gu.multislices_plot(mygradz, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along Z')
-            gu.multislices_plot(mysupportz, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=0, vmax=1, title='Thresholded support along Z')
+            gu.multislices_plot(
+                mygradz,
+                plot_colorbar=True,
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                vmin=-gradient_threshold,
+                vmax=gradient_threshold,
+                title="Phase gradient along Z",
+            )
+            gu.multislices_plot(
+                mysupportz,
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                vmin=0,
+                vmax=1,
+                title="Thresholded support along Z",
+            )
         del mysupportz, mygradz
         gc.collect()
 
@@ -1348,13 +2052,30 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupporty[abs(mygrady) < gradient_threshold] = 1
         mysupporty = mysupporty * mysupport
         if mysupporty.sum(initial=None) == 0:
-            raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
+            raise ValueError(
+                "No voxel below the threshold, raise the parameter threshold_gradient"
+            )
         myrampy = mygrady[mysupporty == 1].mean()
         if debugging:
-            gu.multislices_plot(mygrady, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along Y')
-            gu.multislices_plot(mysupporty, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=0, vmax=1, title='Thresholded support along Y')
+            gu.multislices_plot(
+                mygrady,
+                plot_colorbar=True,
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                vmin=-gradient_threshold,
+                vmax=gradient_threshold,
+                title="Phase gradient along Y",
+            )
+            gu.multislices_plot(
+                mysupporty,
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                vmin=0,
+                vmax=1,
+                title="Thresholded support along Y",
+            )
         del mysupporty, mygrady
         gc.collect()
 
@@ -1364,27 +2085,60 @@ def remove_ramp(amp, phase, initial_shape, width_z=None, width_y=None, width_x=N
         mysupportx[abs(mygradx) < gradient_threshold] = 1
         mysupportx = mysupportx * mysupport
         if mysupportx.sum(initial=None) == 0:
-            raise ValueError('No voxel below the threshold, raise the parameter threshold_gradient')
+            raise ValueError(
+                "No voxel below the threshold, raise the parameter threshold_gradient"
+            )
         myrampx = mygradx[mysupportx == 1].mean()
         if debugging:
-            gu.multislices_plot(mygradx, plot_colorbar=True, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=-gradient_threshold, vmax=gradient_threshold, title='Phase gradient along X')
-            gu.multislices_plot(mysupportx, width_z=width_z, width_y=width_y, width_x=width_x,
-                                vmin=0, vmax=1, title='Thresholded support along X')
+            gu.multislices_plot(
+                mygradx,
+                plot_colorbar=True,
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                vmin=-gradient_threshold,
+                vmax=gradient_threshold,
+                title="Phase gradient along X",
+            )
+            gu.multislices_plot(
+                mysupportx,
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                vmin=0,
+                vmax=1,
+                title="Thresholded support along X",
+            )
         del mysupportx, mygradx, mysupport
         gc.collect()
 
-        myz, myy, myx = np.meshgrid(np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1),
-                                    indexing='ij')
+        myz, myy, myx = np.meshgrid(
+            np.arange(0, nbz, 1),
+            np.arange(0, nby, 1),
+            np.arange(0, nbx, 1),
+            indexing="ij",
+        )
 
-        print('Gradient: phase_ramp_z, phase_ramp_y, phase_ramp_x: ',
-              f"({myrampz:.3f} rad, {myrampy:.3f} rad, {myrampx:.3f} rad)")
+        print(
+            "Gradient: phase_ramp_z, phase_ramp_y, phase_ramp_x: ",
+            f"({myrampz:.3f} rad, {myrampy:.3f} rad, {myrampx:.3f} rad)",
+        )
         phase = phase - myz * myrampz - myy * myrampy - myx * myrampx
         return amp, phase, myrampz, myrampy, myrampx
 
 
-def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplitude_threshold=0.25,
-                   gradient_threshold=0.2, method='gradient', ups_factor=2, debugging=False):
+def remove_ramp_2d(
+    amp,
+    phase,
+    initial_shape,
+    width_y=None,
+    width_x=None,
+    amplitude_threshold=0.25,
+    gradient_threshold=0.2,
+    method="gradient",
+    ups_factor=2,
+    debugging=False,
+):
     """
     Remove the linear trend in the ramp using its gradient and a threshold in 2D dataset.
 
@@ -1402,19 +2156,23 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
     :return: normalized amplitude, detrended phase, ramp along y, ramp along x
     """
     if amp.ndim != 2 or phase.ndim != 2:
-        raise ValueError('amp and phase should be 2D arrays')
+        raise ValueError("amp and phase should be 2D arrays")
     if amp.shape != phase.shape:
-        raise ValueError('amp and phase must have the same shape\n'
-                         'amp is ', amp.shape, ' while phase is ', phase.shape)
+        raise ValueError(
+            "amp and phase must have the same shape\n" "amp is ",
+            amp.shape,
+            " while phase is ",
+            phase.shape,
+        )
 
-    if method == 'upsampling':
+    if method == "upsampling":
         nby, nbx = [mysize * ups_factor for mysize in initial_shape]
         nb_y, nb_x = amp.shape
         myobj = util.crop_pad(amp * np.exp(1j * phase), (nby, nbx))
         if debugging:
             plt.figure()
             plt.imshow(np.log10(abs(myobj)))
-            plt.title('np.log10(abs(myobj))')
+            plt.title("np.log10(abs(myobj))")
             plt.pause(0.1)
         my_fft = fftshift(fftn(ifftshift(myobj)))
         del myobj, amp, phase
@@ -1423,11 +2181,11 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
             plt.figure()
             # plt.imshow(np.log10(abs(my_fft[nbz//2, :, :])))
             plt.imshow(np.log10(abs(my_fft)))
-            plt.title('np.log10(abs(my_fft))')
+            plt.title("np.log10(abs(my_fft))")
             plt.pause(0.1)
         ycom, xcom = center_of_mass(abs(my_fft) ** 4)
-        print('FFT shape for subpixel shift:', nby, nbx)
-        print('COM before subpixel shift', ycom, ',', xcom)
+        print("FFT shape for subpixel shift:", nby, nbx)
+        print("COM before subpixel shift", ycom, ",", xcom)
         shifty = ycom - (nby / 2)
         shiftx = xcom - (nbx / 2)
 
@@ -1438,19 +2196,21 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
         if debugging:
             plt.figure()
             plt.imshow(abs(buf2ft))
-            plt.title('abs(buf2ft)')
+            plt.title("abs(buf2ft)")
             plt.pause(0.1)
 
         y_axis = ifftshift(np.arange(-np.fix(nby / 2), np.ceil(nby / 2), 1))
         x_axis = ifftshift(np.arange(-np.fix(nbx / 2), np.ceil(nbx / 2), 1))
-        y_axis, x_axis = np.meshgrid(y_axis, x_axis, indexing='ij')
-        greg = buf2ft * np.exp(1j * 2 * np.pi * (shifty * y_axis / nby + shiftx * x_axis / nbx))
+        y_axis, x_axis = np.meshgrid(y_axis, x_axis, indexing="ij")
+        greg = buf2ft * np.exp(
+            1j * 2 * np.pi * (shifty * y_axis / nby + shiftx * x_axis / nbx)
+        )
         del buf2ft, y_axis, x_axis
         gc.collect()
         if debugging:
             plt.figure()
             plt.imshow(abs(greg))
-            plt.title('abs(greg)')
+            plt.title("abs(greg)")
             plt.pause(0.1)
 
         my_fft = ifftn(greg)
@@ -1461,21 +2221,28 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
         if debugging:
             plt.figure()
             plt.imshow(np.log10(abs(my_fft)))
-            plt.title('centered np.log10(abs(my_fft))')
+            plt.title("centered np.log10(abs(my_fft))")
             plt.pause(0.1)
 
-        print('COM after subpixel shift', center_of_mass(abs(my_fft) ** 4))
+        print("COM after subpixel shift", center_of_mass(abs(my_fft) ** 4))
         myobj = fftshift(ifftn(ifftshift(my_fft)))
         del my_fft
         gc.collect()
         if debugging:
             plt.figure()
             plt.imshow(abs(myobj))
-            plt.title('centered abs(myobj)')
+            plt.title("centered abs(myobj)")
             plt.pause(0.1)
 
-        myobj = util.crop_pad_2d(myobj, (nb_y, nb_x))  # return to the initial shape of myamp
-        print('Upsampling: shift_y, shift_x: (', str('{:.3f}'.format(shifty)), str('{:.3f}'.format(shiftx)), ') pixels')
+        myobj = util.crop_pad_2d(
+            myobj, (nb_y, nb_x)
+        )  # return to the initial shape of myamp
+        print(
+            "Upsampling: shift_y, shift_x: (",
+            str("{:.3f}".format(shifty)),
+            str("{:.3f}".format(shiftx)),
+            ") pixels",
+        )
         return abs(myobj) / abs(myobj).max(), np.angle(myobj)
 
     else:  # method='gradient'
@@ -1492,10 +2259,22 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
         mysupporty = mysupporty * mysupport
         myrampy = mygrady[mysupporty == 1].mean()
         if debugging:
-            gu.imshow_plot(array=mygrady, width_v=width_y, width_h=width_x, vmin=-0.2, vmax=0.2,
-                           title='Phase gradient along Y')
-            gu.imshow_plot(array=mysupporty, width_v=width_y, width_h=width_x, vmin=0, vmax=1,
-                           title='Thresholded support along Y')
+            gu.imshow_plot(
+                array=mygrady,
+                width_v=width_y,
+                width_h=width_x,
+                vmin=-0.2,
+                vmax=0.2,
+                title="Phase gradient along Y",
+            )
+            gu.imshow_plot(
+                array=mysupporty,
+                width_v=width_y,
+                width_h=width_x,
+                vmin=0,
+                vmax=1,
+                title="Thresholded support along Y",
+            )
         del mysupporty, mygrady
         gc.collect()
 
@@ -1506,22 +2285,42 @@ def remove_ramp_2d(amp, phase, initial_shape, width_y=None, width_x=None, amplit
         mysupportx = mysupportx * mysupport
         myrampx = mygradx[mysupportx == 1].mean()
         if debugging:
-            gu.imshow_plot(array=mygradx, width_v=width_y, width_h=width_x, vmin=-0.2, vmax=0.2,
-                           title='Phase gradient along X')
-            gu.imshow_plot(array=mysupportx, width_v=width_y, width_h=width_x, vmin=0, vmax=1,
-                           title='Thresholded support along X')
+            gu.imshow_plot(
+                array=mygradx,
+                width_v=width_y,
+                width_h=width_x,
+                vmin=-0.2,
+                vmax=0.2,
+                title="Phase gradient along X",
+            )
+            gu.imshow_plot(
+                array=mysupportx,
+                width_v=width_y,
+                width_h=width_x,
+                vmin=0,
+                vmax=1,
+                title="Thresholded support along X",
+            )
         del mysupportx, mygradx, mysupport
         gc.collect()
 
-        myy, myx = np.meshgrid(np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing='ij')
+        myy, myx = np.meshgrid(
+            np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij"
+        )
 
-        print('Gradient: Phase_ramp_z, Phase_ramp_y, Phase_ramp_x: (', str('{:.3f}'.format(myrampy)),
-              str('{:.3f}'.format(myrampx)), ') rad')
+        print(
+            "Gradient: Phase_ramp_z, Phase_ramp_y, Phase_ramp_x: (",
+            str("{:.3f}".format(myrampy)),
+            str("{:.3f}".format(myrampx)),
+            ") rad",
+        )
         phase = phase - myy * myrampy - myx * myrampx
         return amp, phase, myrampy, myrampx
 
 
-def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method='variance/mean'):
+def sort_reconstruction(
+    file_path, data_range, amplitude_threshold, sort_method="variance/mean"
+):
     """
     Sort out reconstructions based on the metric 'sort_method'.
 
@@ -1535,10 +2334,12 @@ def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method=
     nbfiles = len(file_path)
     zrange, yrange, xrange = data_range
 
-    quality_array = np.ones((nbfiles, 4))  # 1/mean_amp, variance(amp), variance(amp)/mean_amp, 1/volume
+    quality_array = np.ones(
+        (nbfiles, 4)
+    )  # 1/mean_amp, variance(amp), variance(amp)/mean_amp, 1/volume
     for ii in range(nbfiles):
         obj, _ = util.load_file(file_path[ii])
-        print('Opening ', file_path[ii])
+        print("Opening ", file_path[ii])
 
         # use the range of interest defined above
         obj = util.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
@@ -1546,30 +2347,67 @@ def sort_reconstruction(file_path, data_range, amplitude_threshold, sort_method=
 
         temp_support = np.zeros(obj.shape)
         temp_support[obj > amplitude_threshold] = 1  # only for plotting
-        quality_array[ii, 0] = 1 / obj[obj > amplitude_threshold].mean()     # 1/mean(amp)
-        quality_array[ii, 1] = np.var(obj[obj > amplitude_threshold])        # var(amp)
-        quality_array[ii, 2] = quality_array[ii, 0] * quality_array[ii, 1]   # var(amp)/mean(amp) index of dispersion
-        quality_array[ii, 3] = 1 / temp_support.sum()                        # 1/volume(support)
+        quality_array[ii, 0] = 1 / obj[obj > amplitude_threshold].mean()  # 1/mean(amp)
+        quality_array[ii, 1] = np.var(obj[obj > amplitude_threshold])  # var(amp)
+        quality_array[ii, 2] = (
+            quality_array[ii, 0] * quality_array[ii, 1]
+        )  # var(amp)/mean(amp) index of dispersion
+        quality_array[ii, 3] = 1 / temp_support.sum()  # 1/volume(support)
         del temp_support
         gc.collect()
 
         # order reconstructions by minimizing the quality factor
-    if sort_method == 'mean_amplitude':    # sort by quality_array[:, 0] first
-        sorted_obj = np.lexsort((quality_array[:, 3], quality_array[:, 2], quality_array[:, 1], quality_array[:, 0]))
+    if sort_method == "mean_amplitude":  # sort by quality_array[:, 0] first
+        sorted_obj = np.lexsort(
+            (
+                quality_array[:, 3],
+                quality_array[:, 2],
+                quality_array[:, 1],
+                quality_array[:, 0],
+            )
+        )
 
-    elif sort_method == 'variance':        # sort by quality_array[:, 1] first
-        sorted_obj = np.lexsort((quality_array[:, 0], quality_array[:, 3], quality_array[:, 2], quality_array[:, 1]))
+    elif sort_method == "variance":  # sort by quality_array[:, 1] first
+        sorted_obj = np.lexsort(
+            (
+                quality_array[:, 0],
+                quality_array[:, 3],
+                quality_array[:, 2],
+                quality_array[:, 1],
+            )
+        )
 
-    elif sort_method == 'variance/mean':   # sort by quality_array[:, 2] first
-        sorted_obj = np.lexsort((quality_array[:, 1], quality_array[:, 0], quality_array[:, 3], quality_array[:, 2]))
+    elif sort_method == "variance/mean":  # sort by quality_array[:, 2] first
+        sorted_obj = np.lexsort(
+            (
+                quality_array[:, 1],
+                quality_array[:, 0],
+                quality_array[:, 3],
+                quality_array[:, 2],
+            )
+        )
 
-    elif sort_method == 'volume':          # sort by quality_array[:, 3] first
-        sorted_obj = np.lexsort((quality_array[:, 2], quality_array[:, 1], quality_array[:, 0], quality_array[:, 3]))
+    elif sort_method == "volume":  # sort by quality_array[:, 3] first
+        sorted_obj = np.lexsort(
+            (
+                quality_array[:, 2],
+                quality_array[:, 1],
+                quality_array[:, 0],
+                quality_array[:, 3],
+            )
+        )
 
     else:  # default case, use the index of dispersion
-        sorted_obj = np.lexsort((quality_array[:, 1], quality_array[:, 0], quality_array[:, 3], quality_array[:, 2]))
+        sorted_obj = np.lexsort(
+            (
+                quality_array[:, 1],
+                quality_array[:, 0],
+                quality_array[:, 3],
+                quality_array[:, 2],
+            )
+        )
 
-    print('quality_array')
+    print("quality_array")
     print(quality_array)
     print("sorted list", sorted_obj)
 
@@ -1585,6 +2423,7 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
     :return: the 3d Tukey window
     """
     from scipy.signal.windows import tukey
+
     nbz, nby, nbx = shape
     array_z = tukey(nbz, alpha[0])
     array_y = tukey(nby, alpha[1])
@@ -1614,29 +2453,47 @@ def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
     """
     from skimage.restoration import unwrap_phase
     import numpy.ma as ma
-    assert 0 <= support_threshold <= 1, 'support_threshold is a relative threshold, expected value between 0 and 1'
+
+    assert (
+        0 <= support_threshold <= 1
+    ), "support_threshold is a relative threshold, expected value between 0 and 1"
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'reciprocal_space', 'is_orthogonal'},
-                       name='postprocessing_utils.average_obj')
-    reciprocal_space = kwargs.get('reciprocal_space', False)
-    is_orthogonal = kwargs.get('is_orthogonal', False)
+    valid.valid_kwargs(
+        kwargs=kwargs,
+        allowed_kwargs={"reciprocal_space", "is_orthogonal"},
+        name="postprocessing_utils.average_obj",
+    )
+    reciprocal_space = kwargs.get("reciprocal_space", False)
+    is_orthogonal = kwargs.get("is_orthogonal", False)
 
     ndim = obj.ndim
     unwrap_support = np.ones(obj.shape, dtype=int)
-    unwrap_support[abs(obj) > support_threshold * abs(obj).max()] = 0  # 0 is a valid entry for ma.masked_array
+    unwrap_support[
+        abs(obj) > support_threshold * abs(obj).max()
+    ] = 0  # 0 is a valid entry for ma.masked_array
     phase_wrapped = ma.masked_array(np.angle(obj), mask=unwrap_support)
 
     if debugging:
         if ndim == 3:
-            gu.multislices_plot(phase_wrapped.data, plot_colorbar=True, title='Object before unwrapping',
-                                reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
+            gu.multislices_plot(
+                phase_wrapped.data,
+                plot_colorbar=True,
+                title="Object before unwrapping",
+                reciprocal_space=reciprocal_space,
+                is_orthogonal=is_orthogonal,
+            )
 
     phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=seed).data
     phase_unwrapped[np.nonzero(unwrap_support)] = 0
     if debugging:
         if ndim == 3:
-            gu.multislices_plot(phase_unwrapped, plot_colorbar=True, title='Object after unwrapping',
-                                reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal)
+            gu.multislices_plot(
+                phase_unwrapped,
+                plot_colorbar=True,
+                title="Object after unwrapping",
+                reciprocal_space=reciprocal_space,
+                is_orthogonal=is_orthogonal,
+            )
 
     extent_phase = np.ceil(phase_unwrapped.max() - phase_unwrapped.min())
 

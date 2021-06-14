@@ -17,7 +17,7 @@ helptext = """
 Calculate the cross-correlation of 2D detector images in live.
 """
 
-start_image = 41233    # starting image number
+start_image = 41233  # starting image number
 detector = 1  # 0 for eiger, 1 for maxipix
 exposure_time = 0.5
 datadir = "/data/visitor/ch5309/id01/images/align/"
@@ -41,7 +41,7 @@ def load_file(start_img, current_img, mydetector, region=None):
             region = [0, 2164, 0, 1030]
         elif mydetector == 1:
             region = [0, 516, 0, 516]
-    frame_nb = current_img-start_img
+    frame_nb = current_img - start_img
     rawdata = np.zeros((frame_nb, region[1] - region[0], region[3] - region[2]))
     for idx in range(frame_nb):
         i = start_img + idx
@@ -62,13 +62,13 @@ def calc_corr(array, previous_array, is_stable=0):
     for idx in range(starting_index, nb_frames, 1):
         for idy in range(nb_frames):
             if is_stable == 0:
-                corr[idx, idy] = (np.multiply(array[idx], array[idy]).sum()) / \
-                                 (np.sqrt(np.square(array[idx]).sum()
-                                          * np.square(array[idy]).sum()))
+                corr[idx, idy] = (np.multiply(array[idx], array[idy]).sum()) / (
+                    np.sqrt(np.square(array[idx]).sum() * np.square(array[idy]).sum())
+                )
             else:
-                corr[idx, idy] = 1-(np.multiply(array[idx], array[idy]).sum()) / \
-                                 (np.sqrt(np.square(array[idx]).sum()
-                                          * np.square(array[idy]).sum()))
+                corr[idx, idy] = 1 - (np.multiply(array[idx], array[idy]).sum()) / (
+                    np.sqrt(np.square(array[idx]).sum() * np.square(array[idy]).sum())
+                )
         corr[:, idx] = corr[idx, :]
         # since plot is symmetric, do not need to compute this again
     return corr
@@ -80,14 +80,14 @@ def press_key(event):
         key = event.key
     except AttributeError:  # mouse pointer out of axes
         return
-    if key == 'q':
+    if key == "q":
         stop_flag = 1
 
 
 ##############################################################################
 plt.ion()
 fig, ax = plt.subplots(1, 1)
-plt.connect('key_press_event', press_key)
+plt.connect("key_press_event", press_key)
 index = 1
 previous = np.array([])
 stop_counter = 0
@@ -111,15 +111,21 @@ while stop_flag != 1:
     data = load_file(start_image, stop_image_new, detector, roi)
     stop_counter = 0
     cross_corr = calc_corr(data, previous, is_stable=stable_sample)
-    if stable_sample == 0:        
-        plt.title('Running, iteration: ' + str(index) +
-                  '\n Press q to stop (mouse on the plot)')
-        index = index+1
+    if stable_sample == 0:
+        plt.title(
+            "Running, iteration: "
+            + str(index)
+            + "\n Press q to stop (mouse on the plot)"
+        )
+        index = index + 1
         plt.imshow(cross_corr, vmin=0, vmax=1)
     else:
-        plt.title('Running, iteration: ' + str(index) +
-                  '\n Press q to stop (mouse on the plot)')
-        index = index+1
+        plt.title(
+            "Running, iteration: "
+            + str(index)
+            + "\n Press q to stop (mouse on the plot)"
+        )
+        index = index + 1
         plt.imshow(np.log10(abs(cross_corr)), vmin=-4, vmax=0)
     stop_image_old = stop_image_new
     plt.gca().invert_yaxis()
@@ -129,7 +135,7 @@ while stop_flag != 1:
     plt.pause(exposure_time)
 
 plt.ioff()
-plt.title('Stopped at iteration: ' + str(index))
+plt.title("Stopped at iteration: " + str(index))
 plt.colorbar()
-plt.savefig(savedir+'crosscorr.png')
+plt.savefig(savedir + "crosscorr.png")
 plt.show()

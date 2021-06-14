@@ -27,19 +27,40 @@ stop_scan = 314
 rough_sdd = 1.25  # in m
 window_hor = 2  # horizontal half-width of the window drawn around the max of each image
 window_ver = 3  # vertical half-width of the window drawn around the max of each image
-frames_to_exclude = [7, 24, 39, 56, 71, 88, 103, 120, 135, 152, 167, 184, 199, 216, 231, 248]
+frames_to_exclude = [
+    7,
+    24,
+    39,
+    56,
+    71,
+    88,
+    103,
+    120,
+    135,
+    152,
+    167,
+    184,
+    199,
+    216,
+    231,
+    248,
+]
 # frames in the gap etc..., leave it as [] otherwise
-use_rawdata = 0  # 0 to draw a 3*3 square around the COM and mask the rest, 1 to use the raw data
+use_rawdata = (
+    0  # 0 to draw a 3*3 square around the COM and mask the rest, 1 to use the raw data
+)
 specdir = "E:/backup_data/SIXS/exp/"
-savedir = specdir + "S"+str(start_scan)+"det/"
-datadir = specdir + "S"+str(start_scan)+"det/data/"
+savedir = specdir + "S" + str(start_scan) + "det/"
+datadir = specdir + "S" + str(start_scan) + "det/data/"
 sys.path.append(specdir)
 import nxsReady
 
 hotpixels_file = specdir + "hotpixels.npz"
 flatfield_file = specdir + "flatfield_8.5kev.npz"
 spec_prefix = "align.spec"
-ccdfiletmp = os.path.join(spec_prefix + "_ascan_gamma_%05d.nxs")  # template for the CCD file names
+ccdfiletmp = os.path.join(
+    spec_prefix + "_ascan_gamma_%05d.nxs"
+)  # template for the CCD file names
 nav = [1, 1]  # reduce data: number of pixels to average in each detector direction
 detector = 1  # 0 for eiger, 1 for maxipix
 if detector == 0:  # eiger
@@ -74,19 +95,19 @@ def remove_hotpixels_maxipix(mydata, mymask, hot_file):
 
 
 def mask_eiger(mydata):
-    mydata[:, 255: 259] = 0
-    mydata[:, 513: 517] = 0
-    mydata[:, 771: 775] = 0
-    mydata[:, 255: 259] = 0
-    mydata[0: 257, 72: 80] = 0
-    mydata[1650: 1905, 620: 628] = 0
-    mydata[255: 259, :] = 0
-    mydata[511: 552, :0] = 0
-    mydata[804: 809, :] = 0
-    mydata[1061: 1102, :] = 0
-    mydata[1355: 1359, :] = 0
-    mydata[1611: 1652, :] = 0
-    mydata[1905: 1909, :] = 0
+    mydata[:, 255:259] = 0
+    mydata[:, 513:517] = 0
+    mydata[:, 771:775] = 0
+    mydata[:, 255:259] = 0
+    mydata[0:257, 72:80] = 0
+    mydata[1650:1905, 620:628] = 0
+    mydata[255:259, :] = 0
+    mydata[511:552, :0] = 0
+    mydata[804:809, :] = 0
+    mydata[1061:1102, :] = 0
+    mydata[1355:1359, :] = 0
+    mydata[1611:1652, :] = 0
+    mydata[1905:1909, :] = 0
     return mydata
 
 
@@ -118,34 +139,48 @@ else:
 mask = np.zeros((516, 516))
 
 # load first scan to get the data size
-dataset = nxsReady.DataSet(datadir + ccdfiletmp % start_scan, ccdfiletmp % start_scan, scan="SBS")
+dataset = nxsReady.DataSet(
+    datadir + ccdfiletmp % start_scan, ccdfiletmp % start_scan, scan="SBS"
+)
 img_per_scan = dataset.mfilm[1:, :, :].shape[0]  # first image is repeated
 nb_img = img_per_scan * len(scanlist)
 raw_gamma = np.zeros(nb_img)
 raw_delta = np.zeros(nb_img)
 
 rawdata = np.zeros((nb_img, roi[1] - roi[0], roi[3] - roi[2]))
-data = np.zeros((nb_img-len(frames_to_exclude), roi[1] - roi[0], roi[3] - roi[2]))
-eta = np.zeros(nb_img-len(frames_to_exclude))
-delta = np.zeros(nb_img-len(frames_to_exclude))
-gamma = np.zeros(nb_img-len(frames_to_exclude))
+data = np.zeros((nb_img - len(frames_to_exclude), roi[1] - roi[0], roi[3] - roi[2]))
+eta = np.zeros(nb_img - len(frames_to_exclude))
+delta = np.zeros(nb_img - len(frames_to_exclude))
+gamma = np.zeros(nb_img - len(frames_to_exclude))
 sum_data = np.zeros((roi[1] - roi[0], roi[3] - roi[2]))
 
 for index in range(len(scanlist)):
     scan = scanlist[index]
-    dataset = nxsReady.DataSet(datadir + ccdfiletmp % scan, ccdfiletmp % scan, scan="SBS")
-    rawdata[index*img_per_scan:(index+1)*img_per_scan, :, :] = dataset.mfilm[1:, :, :]  # first image is repeated
-    raw_delta[index*img_per_scan:(index+1)*img_per_scan] = dataset.delta[1:]  # first image is repeated
-    raw_gamma[index*img_per_scan:(index+1)*img_per_scan] = dataset.gamma[1:]  # first image is repeated
+    dataset = nxsReady.DataSet(
+        datadir + ccdfiletmp % scan, ccdfiletmp % scan, scan="SBS"
+    )
+    rawdata[index * img_per_scan : (index + 1) * img_per_scan, :, :] = dataset.mfilm[
+        1:, :, :
+    ]  # first image is repeated
+    raw_delta[index * img_per_scan : (index + 1) * img_per_scan] = dataset.delta[
+        1:
+    ]  # first image is repeated
+    raw_gamma[index * img_per_scan : (index + 1) * img_per_scan] = dataset.gamma[
+        1:
+    ]  # first image is repeated
 
 index_offset = 0
 for index in range(nb_img):
     if detector == 1:
-        rawdata[index, :, :], mask = remove_hotpixels_maxipix(rawdata[index, :, :], mask, hotpixels_file)
+        rawdata[index, :, :], mask = remove_hotpixels_maxipix(
+            rawdata[index, :, :], mask, hotpixels_file
+        )
         rawdata[index, :, :], mask = mask_maxipix(rawdata[index, :, :], mask)
         flatfield[mask == 1] = 0
         rawdata[index, :, :] = rawdata[index, :, :] * flatfield
-        piy, pix = np.unravel_index(rawdata[index, :, :].argmax(), rawdata[index, :, :].shape)
+        piy, pix = np.unravel_index(
+            rawdata[index, :, :].argmax(), rawdata[index, :, :].shape
+        )
 
     sum_data = sum_data + rawdata[index, :, :]
     if index not in frames_to_exclude:
@@ -153,8 +188,15 @@ for index in range(nb_img):
             y0, x0 = center_of_mass(rawdata[index, :, :])
             # data[index - index_offset, int(np.rint(y0))-1:int(np.rint(y0))+2, int(np.rint(x0))-1:int(np.rint(x0))+2]\
             #     = 1000
-            data[index - index_offset, piy - window_ver:piy + window_ver + 1, pix - window_hor:pix + window_hor + 1] = \
-                rawdata[index, piy - window_ver:piy + window_ver + 1, pix - window_hor:pix + window_hor + 1]
+            data[
+                index - index_offset,
+                piy - window_ver : piy + window_ver + 1,
+                pix - window_hor : pix + window_hor + 1,
+            ] = rawdata[
+                index,
+                piy - window_ver : piy + window_ver + 1,
+                pix - window_hor : pix + window_hor + 1,
+            ]
         else:
             data[index - index_offset, :, :] = rawdata[index, :, :]
         delta[index - index_offset] = raw_delta[index]
@@ -166,13 +208,13 @@ plt.ion()
 plt.figure()
 plt.imshow(np.log10(sum_data))
 plt.title("Sum of all frames")
-plt.savefig(savedir + 'sum.png')
+plt.savefig(savedir + "sum.png")
 plt.pause(0.1)
 
 plt.figure()
 plt.imshow(np.log10(data.sum(axis=0)))
 plt.title("Sum of all frames: COM")
-plt.savefig(savedir + 'COM.png')
+plt.savefig(savedir + "COM.png")
 plt.pause(0.1)
 # call the fit for the detector parameters
 # detector arm rotations and primary beam direction need to be given.
@@ -180,6 +222,15 @@ plt.pause(0.1)
 # be fixed they are the detector tilt azimuth, the detector tilt angle, the
 # detector rotation around the primary beam and the outer angle offset
 param, eps = xu.analysis.sample_align.area_detector_calib(
-    gamma, delta, data, ['z-', 'y-'], 'x+', plot=True, start=(pixelsize, pixelsize, rough_sdd, 0, 0, 0, 0),
-    fix=(True, True, False, False, False, False, False), plotlog=True, debug=False)
+    gamma,
+    delta,
+    data,
+    ["z-", "y-"],
+    "x+",
+    plot=True,
+    start=(pixelsize, pixelsize, rough_sdd, 0, 0, 0, 0),
+    fix=(True, True, False, False, False, False, False),
+    plotlog=True,
+    debug=False,
+)
 plt.show()

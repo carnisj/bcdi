@@ -17,6 +17,7 @@ import datetime
 import numpy as np
 import multiprocessing as mp
 import matplotlib
+
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import os
@@ -33,10 +34,12 @@ Open images or series data at P10 beamline.
 scan_nb = 370  # scan number as it appears in the folder name
 sample_name = "gold2_2"  # without _ at the end
 root_directory = "D:/data/P10_August2019_CDI/data/"  # parent directory of the scan
-file_list = np.arange(1, 25+1)
+file_list = np.arange(1, 25 + 1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
-detector_name = "Eiger4M"    # "Eiger2M" or "Maxipix" or "Eiger4M"
-counter_roi = []  # plot the integrated intensity in this region of interest. Leave it to [] to use the full detector
+detector_name = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
+counter_roi = (
+    []
+)  # plot the integrated intensity in this region of interest. Leave it to [] to use the full detector
 # [Vstart, Vstop, Hstart, Hstop]
 # if data is a series, the condition becomes log10(data.sum(axis=0)) > high_threshold * nb_frames
 save_directory = None
@@ -60,17 +63,30 @@ vmax = 5  # vmax for the plots, should be larger than vmin, None for default
 ##############################################
 # create the dictionnary of input parameters #
 ##############################################
-params = {'scan': scan_nb, 'sample_name': sample_name, 'rootdir': root_directory, 'file_list': file_list,
-          'detector': detector_name, 'counter_roi': counter_roi, 'savedir': save_directory, 'is_scan': is_scan,
-          'compare_ends': compare_ends, 'save_mask': save_mask, 'threshold': photon_threshold, 'cb_min': vmin,
-          'cb_max': vmax, 'multiprocessing': multiprocessing, 'grey_bckg': grey_background}
+params = {
+    "scan": scan_nb,
+    "sample_name": sample_name,
+    "rootdir": root_directory,
+    "file_list": file_list,
+    "detector": detector_name,
+    "counter_roi": counter_roi,
+    "savedir": save_directory,
+    "is_scan": is_scan,
+    "compare_ends": compare_ends,
+    "save_mask": save_mask,
+    "threshold": photon_threshold,
+    "cb_min": vmin,
+    "cb_max": vmax,
+    "multiprocessing": multiprocessing,
+    "grey_bckg": grey_background,
+}
 
 #########################
 # check some parameters #
 #########################
 if vmin and vmax:
     if vmax <= vmin:
-        raise ValueError('vmax should be larger than vmin')
+        raise ValueError("vmax should be larger than vmin")
 
 
 def load_p10_file(my_detector, my_file, file_index, roi, threshold):
@@ -85,14 +101,18 @@ def load_p10_file(my_detector, my_file, file_index, roi, threshold):
     :return: the 2D data, 2D mask, counter and file index
     """
     roi_sum = []
-    file = h5py.File(my_file, 'r')
-    dataset = file['entry']['data']['data'][:]
+    file = h5py.File(my_file, "r")
+    dataset = file["entry"]["data"]["data"][:]
     mask_2d = np.zeros((dataset.shape[1], dataset.shape[2]))
     dataset[dataset <= threshold] = 0
-    [roi_sum.append(dataset[frame, roi[0]:roi[1], roi[2]:roi[3]].sum())
-     for frame in range(dataset.shape[0])]
+    [
+        roi_sum.append(dataset[frame, roi[0] : roi[1], roi[2] : roi[3]].sum())
+        for frame in range(dataset.shape[0])
+    ]
     nb_img = dataset.shape[0]  # collect the number of frames in the eventual series
-    dataset, mask_2d = my_detector.mask_detector(data=dataset.sum(axis=0), mask=mask_2d, nb_img=nb_img)
+    dataset, mask_2d = my_detector.mask_detector(
+        data=dataset.sum(axis=0), mask=mask_2d, nb_img=nb_img
+    )
     return dataset, mask_2d, [roi_sum, file_index]
 
 
@@ -117,40 +137,40 @@ def main(parameters):
         mask[np.nonzero(result[1])] = 1
         counter.append(result[2])
 
-        sys.stdout.write('\rFile {:d} / {:d}'.format(current_point, nb_files))
+        sys.stdout.write("\rFile {:d} / {:d}".format(current_point, nb_files))
         sys.stdout.flush()
 
     ######################################
     # load the dictionnary of parameters #
     ######################################
-    scan = parameters['scan']
-    samplename = parameters['sample_name']
-    rootdir = parameters['rootdir']
-    image_nb = parameters['file_list']
-    counterroi = parameters['counter_roi']
-    savedir = parameters['savedir']
-    load_scan = parameters['is_scan']
-    compare_end = parameters['compare_ends']
-    savemask = parameters['save_mask']
-    multiproc = parameters['multiprocessing']
-    threshold = parameters['threshold']
-    cb_min = parameters['cb_min']
-    cb_max = parameters['cb_max']
-    grey_bckg = parameters['grey_bckg']
+    scan = parameters["scan"]
+    samplename = parameters["sample_name"]
+    rootdir = parameters["rootdir"]
+    image_nb = parameters["file_list"]
+    counterroi = parameters["counter_roi"]
+    savedir = parameters["savedir"]
+    load_scan = parameters["is_scan"]
+    compare_end = parameters["compare_ends"]
+    savemask = parameters["save_mask"]
+    multiproc = parameters["multiprocessing"]
+    threshold = parameters["threshold"]
+    cb_min = parameters["cb_min"]
+    cb_max = parameters["cb_max"]
+    grey_bckg = parameters["grey_bckg"]
     ###################
     # define colormap #
     ###################
     if grey_bckg:
-        bad_color = '0.7'
+        bad_color = "0.7"
     else:
-        bad_color = '1.0'  # white background
+        bad_color = "1.0"  # white background
     colormap = gu.Colormap(bad_color=bad_color)
     my_cmap = colormap.cmap
 
     #######################
     # Initialize detector #
     #######################
-    detector = exp.Detector(name=parameters['detector'])
+    detector = exp.Detector(name=parameters["detector"])
     nb_pixel_y, nb_pixel_x = detector.nb_pixel_y, detector.nb_pixel_x
     sumdata = np.zeros((nb_pixel_y, nb_pixel_x))
     mask = np.zeros((nb_pixel_y, nb_pixel_x))
@@ -164,33 +184,49 @@ def main(parameters):
     if len(counterroi) == 0:
         counterroi = [0, nb_pixel_y, 0, nb_pixel_x]
 
-    if not (counterroi[0] >= 0
-            and counterroi[1] <= nb_pixel_y
-            and counterroi[2] >= 0
-            and counterroi[3] <= nb_pixel_x):
-        raise ValueError('counter_roi setting does not match the detector size')
+    if not (
+        counterroi[0] >= 0
+        and counterroi[1] <= nb_pixel_y
+        and counterroi[2] >= 0
+        and counterroi[3] <= nb_pixel_x
+    ):
+        raise ValueError("counter_roi setting does not match the detector size")
 
     nb_files = len(image_nb)
     if nb_files == 1:
         multiproc = False
 
     if load_scan:  # scan or time series
-        detector.datadir = rootdir + samplename + '_' + str('{:05d}'.format(scan)) + '/e4m/'
-        template_file = detector.datadir + samplename + '_' + str('{:05d}'.format(scan)) + "_data_"
+        detector.datadir = (
+            rootdir + samplename + "_" + str("{:05d}".format(scan)) + "/e4m/"
+        )
+        template_file = (
+            detector.datadir + samplename + "_" + str("{:05d}".format(scan)) + "_data_"
+        )
     else:  # single image
-        detector.datadir = rootdir + samplename + '/e4m/'
-        template_file = detector.datadir + samplename + '_take_' + str('{:05d}'.format(scan)) + "_data_"
+        detector.datadir = rootdir + samplename + "/e4m/"
+        template_file = (
+            detector.datadir
+            + samplename
+            + "_take_"
+            + str("{:05d}".format(scan))
+            + "_data_"
+        )
         compare_end = False
 
-    detector.savedir = savedir or os.path.abspath(os.path.join(detector.datadir, os.pardir)) + '/'
-    print(f'datadir: {detector.datadir}')
-    print(f'savedir: {detector.savedir}')
+    detector.savedir = (
+        savedir or os.path.abspath(os.path.join(detector.datadir, os.pardir)) + "/"
+    )
+    print(f"datadir: {detector.datadir}")
+    print(f"savedir: {detector.savedir}")
 
     #############
     # Load data #
     #############
     plt.ion()
-    filenames = [template_file + '{:06d}.h5'.format(image_nb[idx]) for idx in range(nb_files)]
+    filenames = [
+        template_file + "{:06d}.h5".format(image_nb[idx]) for idx in range(nb_files)
+    ]
     roi_counter = None
     current_point = 0
     start = time.time()
@@ -198,11 +234,17 @@ def main(parameters):
     if multiproc:
         print("\nNumber of processors used: ", min(mp.cpu_count(), len(filenames)))
         mp.freeze_support()
-        pool = mp.Pool(processes=min(mp.cpu_count(), len(filenames)))  # use this number of processes
+        pool = mp.Pool(
+            processes=min(mp.cpu_count(), len(filenames))
+        )  # use this number of processes
 
         for file in range(nb_files):
-            pool.apply_async(load_p10_file, args=(detector, filenames[file], file, counterroi, threshold),
-                             callback=collect_result, error_callback=util.catch_error)
+            pool.apply_async(
+                load_p10_file,
+                args=(detector, filenames[file], file, counterroi, threshold),
+                callback=collect_result,
+                error_callback=util.catch_error,
+            )
 
         pool.close()
         pool.join()  # postpones the execution of next line of code until all processes in the queue are done.
@@ -212,70 +254,112 @@ def main(parameters):
 
     else:
         for idx in range(nb_files):
-            sys.stdout.write('\rLoading file {:d}'.format(idx + 1) + ' / {:d}'.format(nb_files))
+            sys.stdout.write(
+                "\rLoading file {:d}".format(idx + 1) + " / {:d}".format(nb_files)
+            )
             sys.stdout.flush()
-            h5file = h5py.File(filenames[idx], 'r')
-            data = h5file['entry']['data']['data'][:]
+            h5file = h5py.File(filenames[idx], "r")
+            data = h5file["entry"]["data"]["data"][:]
             data[data <= threshold] = 0
             nbz, nby, nbx = data.shape
-            [counter.append(data[index, counterroi[0]:counterroi[1], counterroi[2]:counterroi[3]].sum())
-                for index in range(nbz)]
+            [
+                counter.append(
+                    data[
+                        index,
+                        counterroi[0] : counterroi[1],
+                        counterroi[2] : counterroi[3],
+                    ].sum()
+                )
+                for index in range(nbz)
+            ]
             if compare_end and nb_files == 1:
                 data_start, _ = detector.mask_detector(data=data[0, :, :], mask=mask)
                 data_start = data_start.astype(float)
                 data_stop, _ = detector.mask_detector(data=data[-1, :, :], mask=mask)
                 data_stop = data_stop.astype(float)
 
-                fig, _, _ = gu.imshow_plot(data_stop - data_start, plot_colorbar=True, scale='log',
-                                           title='difference between the last frame and the first frame of the series')
-            nb_frames = data.shape[0]  # collect the number of frames in the eventual series
-            data, mask = detector.mask_detector(data=data.sum(axis=0), mask=mask, nb_img=nb_frames)
+                fig, _, _ = gu.imshow_plot(
+                    data_stop - data_start,
+                    plot_colorbar=True,
+                    scale="log",
+                    title="difference between the last frame and the first frame of the series",
+                )
+            nb_frames = data.shape[
+                0
+            ]  # collect the number of frames in the eventual series
+            data, mask = detector.mask_detector(
+                data=data.sum(axis=0), mask=mask, nb_img=nb_frames
+            )
             sumdata = sumdata + data
             roi_counter = [[counter, idx]]
 
     end = time.time()
-    print('\nTime ellapsed for loading data:', str(datetime.timedelta(seconds=int(end - start))))
+    print(
+        "\nTime ellapsed for loading data:",
+        str(datetime.timedelta(seconds=int(end - start))),
+    )
 
     frame_per_series = int(len(counter) / nb_files)
 
-    print('')
+    print("")
     if load_scan:
         if nb_files > 1:
-            plot_title = 'masked data - sum of ' + str(nb_files)\
-                         + ' points with {:d} frames each'.format(frame_per_series)
+            plot_title = (
+                "masked data - sum of "
+                + str(nb_files)
+                + " points with {:d} frames each".format(frame_per_series)
+            )
         else:
-            plot_title = 'masked data - sum of ' + str(frame_per_series) + ' frames'
-        filename = 'S' + str(scan) + '_scan.png'
+            plot_title = "masked data - sum of " + str(frame_per_series) + " frames"
+        filename = "S" + str(scan) + "_scan.png"
     else:  # single image
-        plot_title = 'masked data'
-        filename = 'S' + str(scan) + '_image_' + str(image_nb[0]) + '.png'
+        plot_title = "masked data"
+        filename = "S" + str(scan) + "_image_" + str(image_nb[0]) + ".png"
 
     if savemask:
-        fig, _, _ = gu.imshow_plot(mask, plot_colorbar=False, title='mask')
-        np.savez_compressed(detector.savedir+'hotpixels.npz', mask=mask)
-        fig.savefig(detector.savedir + 'mask.png')
+        fig, _, _ = gu.imshow_plot(mask, plot_colorbar=False, title="mask")
+        np.savez_compressed(detector.savedir + "hotpixels.npz", mask=mask)
+        fig.savefig(detector.savedir + "mask.png")
 
     y0, x0 = np.unravel_index(abs(sumdata).argmax(), sumdata.shape)
-    print("Max at (y, x): ", y0, x0, ' Max = ', int(sumdata[y0, x0]))
+    print("Max at (y, x): ", y0, x0, " Max = ", int(sumdata[y0, x0]))
 
-    np.savez_compressed(detector.savedir + f'{sample_name}_{scan_nb:05d}_sumdata.npz', data=sumdata)
+    np.savez_compressed(
+        detector.savedir + f"{sample_name}_{scan_nb:05d}_sumdata.npz", data=sumdata
+    )
     if save_to_mat:
-        savemat(detector.savedir + f'{sample_name}_{scan_nb:05d}_sumdata.mat', {'data': sumdata})
+        savemat(
+            detector.savedir + f"{sample_name}_{scan_nb:05d}_sumdata.mat",
+            {"data": sumdata},
+        )
 
-    if len(roi_counter[0][0]) > 1:  # roi_counter[0][0] is the list of counter intensities in a series
+    if (
+        len(roi_counter[0][0]) > 1
+    ):  # roi_counter[0][0] is the list of counter intensities in a series
         int_roi = []
-        [int_roi.append(val[0][idx]) for val in roi_counter for idx in range(frame_per_series)]
+        [
+            int_roi.append(val[0][idx])
+            for val in roi_counter
+            for idx in range(frame_per_series)
+        ]
         plt.figure()
         plt.plot(np.asarray(int_roi))
-        plt.title('Integrated intensity in counter_roi')
+        plt.title("Integrated intensity in counter_roi")
         plt.pause(0.1)
 
     cb_min = cb_min or sumdata.min()
     cb_max = cb_max or sumdata.max()
 
-    fig, _, _ = gu.imshow_plot(sumdata, plot_colorbar=True, title=plot_title, vmin=cb_min, vmax=cb_max, scale='log',
-                               cmap=my_cmap)
-    np.savez_compressed(detector.savedir + 'hotpixels.npz', mask=mask)
+    fig, _, _ = gu.imshow_plot(
+        sumdata,
+        plot_colorbar=True,
+        title=plot_title,
+        vmin=cb_min,
+        vmax=cb_max,
+        scale="log",
+        cmap=my_cmap,
+    )
+    np.savez_compressed(detector.savedir + "hotpixels.npz", mask=mask)
     fig.savefig(detector.savedir + filename)
     plt.show()
 

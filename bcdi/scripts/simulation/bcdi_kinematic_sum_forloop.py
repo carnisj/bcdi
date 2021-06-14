@@ -19,21 +19,21 @@ Modif: Jerome Carnis
 
 support = np.ones((32, 32))
 x, y = np.indices((32, 32))
-sample = support*(x-16-2*y) < 0
+sample = support * (x - 16 - 2 * y) < 0
 plt.imshow(sample)
 plt.show()
 
 x0 = 24
 y0 = 1
 # displ = np.sin(2*pi*(x-20)/40)*((x-x0)**2+(y-y0)**2)/2000
-displacement = ((x-x0)**2+(y-y0)**2)/3000-0.2
+displacement = ((x - x0) ** 2 + (y - y0) ** 2) / 3000 - 0.2
 
 plt.imshow(sample)
 plt.colorbar()
 plt.show()
 
 repres = np.zeros((40, 40))
-repres[4:36, 4:36] = displacement*sample
+repres[4:36, 4:36] = displacement * sample
 
 plt.imshow(repres)
 plt.colorbar()
@@ -45,7 +45,17 @@ qy = 12
 # amp=sum(obj*exp(1j*(qx*(x+displ)+qy*y)))
 # amp=sum(samp*exp(1j*(qx*(x+displ)+qy*y)))
 # amplit=sum(samp*np.exp(1j*2*np.pi*(qx*(x+displ)/tay[0]+qy*y/tay[1])))
-intensite = abs(sum(sample*np.exp(-1j*2*np.pi*(qx*(x/tay[0]+displacement)+qy*y/tay[1]))))**2
+intensite = (
+    abs(
+        sum(
+            sample
+            * np.exp(
+                -1j * 2 * np.pi * (qx * (x / tay[0] + displacement) + qy * y / tay[1])
+            )
+        )
+    )
+    ** 2
+)
 
 h = 1
 k = 1
@@ -53,8 +63,23 @@ tay = np.array([256, 256])
 intensity = np.zeros(tay)
 for qx in range(tay[0]):
     for qy in range(tay[1]):
-        intensity[qx, qy] = abs(sum(sample*np.exp(-1j*2*np.pi *
-                                                  ((qx/tay[0]+h-1/2)*(x+displacement)+(qy/tay[1]+k-1/2)*y))))**2
+        intensity[qx, qy] = (
+            abs(
+                sum(
+                    sample
+                    * np.exp(
+                        -1j
+                        * 2
+                        * np.pi
+                        * (
+                            (qx / tay[0] + h - 1 / 2) * (x + displacement)
+                            + (qy / tay[1] + k - 1 / 2) * y
+                        )
+                    )
+                )
+            )
+            ** 2
+        )
 plt.imshow(np.log10(intensity), vmax=6, vmin=1)
 plt.show()
 

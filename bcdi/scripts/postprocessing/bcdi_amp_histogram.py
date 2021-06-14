@@ -21,16 +21,16 @@ helptext = """
 Plot the modulus histogram of a complex object reconstructed by phase retrieval.
 """
 
-scan = 11    # spec scan number
+scan = 11  # spec scan number
 root_folder = "D:/data/Pt THH ex-situ/Data/CH4760/"
 sample_name = "S"
 homedir = root_folder + sample_name + str(scan) + "/pynxraw/"
 # + '_' + str('{:05d}'.format(scan)) + '/pynx/1000_1000_1000_1_1_1/v1/'
 comment = ""  # should start with _
 fit = True  # if True, fit the histogram with lineshape
-lineshape = 'pseudovoigt'
+lineshape = "pseudovoigt"
 fit_range = [0.5, 1.0]
-histogram_Yaxis = 'linear'  # 'log' or 'linear'
+histogram_Yaxis = "linear"  # 'log' or 'linear'
 cutoff_amp = 0.05  # use only points with a modulus larger than this value to calculate mean, std and the histogram
 save = False  # True to save the histogram plot
 ##########################
@@ -44,12 +44,15 @@ plt.ion()
 root = tk.Tk()
 root.withdraw()
 
-file_path = filedialog.askopenfilename(initialdir=homedir, title="Select reconstruction file",
-                                       filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")])
+file_path = filedialog.askopenfilename(
+    initialdir=homedir,
+    title="Select reconstruction file",
+    filetypes=[("NPZ", "*.npz"), ("CXI", "*.cxi"), ("HDF5", "*.h5")],
+)
 obj, _ = util.load_file(file_path)
 
 if obj.ndim != 3:
-    print('a 3D reconstruction array is expected')
+    print("a 3D reconstruction array is expected")
     sys.exit()
 
 nbz, nby, nbx = obj.shape
@@ -58,21 +61,29 @@ print("Initial data size:", nbz, nby, nbx)
 amp = abs(obj)
 amp = amp / amp.max()
 
-gu.multislices_plot(amp, sum_frames=False, title='Normalized modulus', vmin=0, vmax=1, plot_colorbar=True,
-                    is_orthogonal=True, reciprocal_space=False)
+gu.multislices_plot(
+    amp,
+    sum_frames=False,
+    title="Normalized modulus",
+    vmin=0,
+    vmax=1,
+    plot_colorbar=True,
+    is_orthogonal=True,
+    reciprocal_space=False,
+)
 
 mean_amp = amp[amp > cutoff_amp].mean()
 std_amp = amp[amp > cutoff_amp].std()
 print("Mean amp=", mean_amp)
 print("Std amp=", std_amp)
 hist, bin_edges = np.histogram(amp[amp > cutoff_amp].flatten(), bins=50)
-bin_step = (bin_edges[1]-bin_edges[0])/2
+bin_step = (bin_edges[1] - bin_edges[0]) / 2
 bin_axis = bin_edges + bin_step
-bin_axis = bin_axis[0:len(hist)]
+bin_axis = bin_axis[0 : len(hist)]
 
 # interpolate the histogram
 newbin_axis = np.linspace(bin_axis.min(), bin_axis.max(), 500)
-interp_hist = interp1d(bin_axis, hist, kind='cubic')
+interp_hist = interp1d(bin_axis, hist, kind="cubic")
 newhist = interp_hist(newbin_axis)
 
 ##############################################
@@ -87,43 +98,62 @@ if fit:
 
     # define the initial parameters
     fit_params = Parameters()
-    if lineshape == 'pseudovoigt':
+    if lineshape == "pseudovoigt":
         cen = newbin_axis[np.unravel_index(newhist.argmax(), newhist.shape)]
-        fit_params.add('amp_1', value=50000, min=100, max=1000000)
-        fit_params.add('cen_1', value=cen, min=cen - 0.2, max=cen + 0.2)
-        fit_params.add('sig_1', value=0.1, min=0.01, max=0.5)
-        fit_params.add('ratio_1', value=0.5, min=0, max=1)
+        fit_params.add("amp_1", value=50000, min=100, max=1000000)
+        fit_params.add("cen_1", value=cen, min=cen - 0.2, max=cen + 0.2)
+        fit_params.add("sig_1", value=0.1, min=0.01, max=0.5)
+        fit_params.add("ratio_1", value=0.5, min=0, max=1)
 
     # run the fit
-    result = minimize(util.objective_lmfit, fit_params, args=(fit_axis, fit_hist, lineshape))
+    result = minimize(
+        util.objective_lmfit, fit_params, args=(fit_axis, fit_hist, lineshape)
+    )
     report_fit(result.params)
-    y_fit = util.function_lmfit(params=result.params, iterator=0, x_axis=newbin_axis, distribution=lineshape)
+    y_fit = util.function_lmfit(
+        params=result.params, iterator=0, x_axis=newbin_axis, distribution=lineshape
+    )
 else:
     y_fit = None
     result = None
-    
+
 ##################################
 # plot the histogram and the fit #
 ##################################
 fig, ax = plt.subplots(1, 1)
-plt.plot(bin_axis, hist, 'o', newbin_axis, newhist, '-')
-if histogram_Yaxis == 'log':
-    ax.set_yscale('log')
+plt.plot(bin_axis, hist, "o", newbin_axis, newhist, "-")
+if histogram_Yaxis == "log":
+    ax.set_yscale("log")
 if fit:
-    if histogram_Yaxis == 'linear':
-        ax.plot(newbin_axis, y_fit, '-')
+    if histogram_Yaxis == "linear":
+        ax.plot(newbin_axis, y_fit, "-")
     else:
-        ax.plot(newbin_axis, np.log10(y_fit), '-')
+        ax.plot(newbin_axis, np.log10(y_fit), "-")
     try:
-        fig.text(0.15, 0.95, 'cen_1 = ' + str('{:.5f}'.format(result.params['cen_1'].value)) + '+/-' +
-                 str('{:.5f}'.format(result.params['cen_1'].stderr)) +
-                 '   sig_1 = ' + str('{:.5f}'.format(result.params['sig_1'].value)) + '+/-' +
-                 str('{:.5f}'.format(result.params['sig_1'].stderr)), size=12)
+        fig.text(
+            0.15,
+            0.95,
+            "cen_1 = "
+            + str("{:.5f}".format(result.params["cen_1"].value))
+            + "+/-"
+            + str("{:.5f}".format(result.params["cen_1"].stderr))
+            + "   sig_1 = "
+            + str("{:.5f}".format(result.params["sig_1"].value))
+            + "+/-"
+            + str("{:.5f}".format(result.params["sig_1"].stderr)),
+            size=12,
+        )
     except TypeError:  # one output is None
-        fig.text(0.15, 0.95, 'at least one output is None', size=12)
-    fig.text(0.15, 0.80, lineshape + ' fit', size=12)
-plt.title('<amp>='+str('{:.2f}'.format(mean_amp))+', std='+str('{:.2f}'.format(std_amp))+comment)
+        fig.text(0.15, 0.95, "at least one output is None", size=12)
+    fig.text(0.15, 0.80, lineshape + " fit", size=12)
+plt.title(
+    "<amp>="
+    + str("{:.2f}".format(mean_amp))
+    + ", std="
+    + str("{:.2f}".format(std_amp))
+    + comment
+)
 if save:
-    fig.savefig(homedir + 'amp_histogram' + comment + '.png')
+    fig.savefig(homedir + "amp_histogram" + comment + ".png")
 plt.ioff()
 plt.show()

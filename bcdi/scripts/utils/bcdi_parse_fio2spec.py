@@ -31,7 +31,7 @@ def open_log(fn="SPOCK/spock_output_e1.log"):
     my_regions = {}
     region_temp = [0, 0, 0, 0]
     for myrow in rows[:]:
-        if myrow.count('senv ROI') > 0 and myrow.count('p10/door/haspp10e1.01') > 0:
+        if myrow.count("senv ROI") > 0 and myrow.count("p10/door/haspp10e1.01") > 0:
             try:
                 # print(myrow)
                 roi_tmp1 = myrow.split()[-4:]
@@ -43,9 +43,9 @@ def open_log(fn="SPOCK/spock_output_e1.log"):
             except IndexError:
                 pass
 
-        if myrow.count('Scan #') > 0:
+        if myrow.count("Scan #") > 0:
             print(myrow)
-            scanno = re.findall(r"Scan #\d+", myrow)[0].split('#')[1]
+            scanno = re.findall(r"Scan #\d+", myrow)[0].split("#")[1]
             print(scanno)
             try:
                 print(int(scanno))
@@ -66,10 +66,10 @@ def parsefio(fio_filename):
     ii = 0
     myheader = {}
 
-    for myrow in rows[index+1:]:
-        if myrow.startswith('!'):
+    for myrow in rows[index + 1 :]:
+        if myrow.startswith("!"):
             break
-        myrow = myrow.split('\n')[0]
+        myrow = myrow.split("\n")[0]
         myheader[ii] = myrow
         ii += 1
 
@@ -77,11 +77,11 @@ def parsefio(fio_filename):
     ii = 0
     mymotors = {}
 
-    for myrow in rows[index+1:]:
-        if myrow.startswith('!'):
+    for myrow in rows[index + 1 :]:
+        if myrow.startswith("!"):
             break
-        myrow = myrow.split('\n')[0]
-        mymotors[myrow.split(" = ")[0]] = float(myrow.split(" = ")[1])-1
+        myrow = myrow.split("\n")[0]
+        mymotors[myrow.split(" = ")[0]] = float(myrow.split(" = ")[1]) - 1
         ii += 1
 
     index = rows.index("%d\n")
@@ -90,9 +90,9 @@ def parsefio(fio_filename):
 
     for myrow in rows[index:]:
         if myrow.startswith(" Col"):
-            mycols[myrow.split()[2]] = int(myrow.split()[1])-1
+            mycols[myrow.split()[2]] = int(myrow.split()[1]) - 1
             ii += 1
-    scan_data = rows[index+ii+1:-1]
+    scan_data = rows[index + ii + 1 : -1]
 
     out = []
     for myrow in scan_data:
@@ -118,15 +118,26 @@ for no in nos:
         # lookup table for ROI values
         ROIs = open_log(logfilename)
         # add fio file
-        fio_fn = basepath+sampleid % no + '/'+sampleid % no + ".fio"
+        fio_fn = basepath + sampleid % no + "/" + sampleid % no + ".fio"
         header, motors, cols, scandataarr, scandata = parsefio(fio_fn)
         # add scans file
-        h5_fn = basepath + sampleid % no + '/' + "e4m/" + sampleid % no+"_data_%06i.h5" % 1
-        with h5py.File(h5_fn,  "r") as f:
-            Mydataset = f['/entry/data/data'].value
+        h5_fn = (
+            basepath
+            + sampleid % no
+            + "/"
+            + "e4m/"
+            + sampleid % no
+            + "_data_%06i.h5" % 1
+        )
+        with h5py.File(h5_fn, "r") as f:
+            Mydataset = f["/entry/data/data"].value
             Mydataset[Mydataset > 10000] = 0
         ROI = ROIs[str(no)]
-        sumData = Mydataset[:, 2167-ROI[3]:2167-ROI[2], ROI[0]:ROI[1]].sum(axis=1).sum(axis=1)
+        sumData = (
+            Mydataset[:, 2167 - ROI[3] : 2167 - ROI[2], ROI[0] : ROI[1]]
+            .sum(axis=1)
+            .sum(axis=1)
+        )
         # find the maxima
         # maxVal = np.argmax(sumData)
         # cen_index=int(scind.center_of_mass(sumData)[0])
@@ -158,9 +169,16 @@ for no in nos:
         logfileName = basepath + "testdelete.spec"
 
         with open(logfileName, "a") as logfile:
-            logfile.write("#S %i %s %s %f %f \n"
-                          % (no, header[0].split(' ')[0], motor_name,
-                             scandataarr[:, 0][0], scandataarr[:, 0][1]))
+            logfile.write(
+                "#S %i %s %s %f %f \n"
+                % (
+                    no,
+                    header[0].split(" ")[0],
+                    motor_name,
+                    scandataarr[:, 0][0],
+                    scandataarr[:, 0][1],
+                )
+            )
 
             logfile.write(mot_str)
             logfile.write(pos_str)
@@ -168,5 +186,5 @@ for no in nos:
             out_str = cols_str
             logfile.write(out_str)
             for jj, row in enumerate(scandata):
-                out_str = row.split("\n")[0]+" %i\n" % sumData[jj]
+                out_str = row.split("\n")[0] + " %i\n" % sumData[jj]
                 logfile.write(out_str)

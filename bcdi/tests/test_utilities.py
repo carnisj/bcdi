@@ -21,6 +21,7 @@ class TestInRange(unittest.TestCase):
     """
     Tests on the function utilities.in_range
     """
+
     def setUp(self):
         # executed before each test
         self.extent = (-10, 99, -20, 89, 10, 119)
@@ -68,6 +69,5 @@ class TestInRange(unittest.TestCase):
         self.assertTrue(util.in_range(point=(0, 0, 119), extent=self.extent))
 
 
-if __name__ == 'main':
+if __name__ == "main":
     run_tests(TestInRange)
-

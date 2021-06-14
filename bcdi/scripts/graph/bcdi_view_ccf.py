@@ -25,8 +25,10 @@ Input: a NPZ file with the fields 'angles', 'ccf', 'points':
 
 datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
 savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
-comment = ''  # comment for the title and the saving filename, should start with _
-ylim = None  # [0, 60]  # limits used for the vertical axis of plots, leave None otherwise
+comment = ""  # comment for the title and the saving filename, should start with _
+ylim = (
+    None  # [0, 60]  # limits used for the vertical axis of plots, leave None otherwise
+)
 save = False  # True to save the figure
 ##########################
 # end of user parameters #
@@ -38,44 +40,53 @@ save = False  # True to save the figure
 plt.ion()
 root = tk.Tk()
 root.withdraw()
-file_path = filedialog.askopenfilename(initialdir=datadir, title="Select the CCF file",
-                                       filetypes=[("NPZ", "*.npz")])
-filename = os.path.splitext(os.path.basename(file_path))[0]  # the extension .npz is removed
+file_path = filedialog.askopenfilename(
+    initialdir=datadir, title="Select the CCF file", filetypes=[("NPZ", "*.npz")]
+)
+filename = os.path.splitext(os.path.basename(file_path))[
+    0
+]  # the extension .npz is removed
 npzfile = np.load(file_path)
 
 try:
-    ccf = npzfile['ccf']
-    angles = npzfile['angles']
-    points = npzfile['points']
+    ccf = npzfile["ccf"]
+    angles = npzfile["angles"]
+    points = npzfile["points"]
 except KeyError:
-    print('Keys in the NPZ file:', list(npzfile.keys()))
+    print("Keys in the NPZ file:", list(npzfile.keys()))
     sys.exit()
 
 #######################################
 # plot the cross-correlation function #
 #######################################
 fig, ax = plt.subplots(1, 1)
-ax.plot(angles, ccf, linestyle='None', marker='.', markerfacecolor='blue')
+ax.plot(angles, ccf, linestyle="None", marker=".", markerfacecolor="blue")
 if ylim is not None:
     ymin, ymax = ylim
 else:
     ymin, ymax = np.floor(ax.get_ylim())
 ax.set_xlim(0, 180)
 ax.set_ylim(ymin, ymax)
-ax.set_xlabel('Angle (deg)')
-ax.set_ylabel('Cross-correlation')
+ax.set_xlabel("Angle (deg)")
+ax.set_ylabel("Cross-correlation")
 ax.set_xticks(np.arange(0, 181, 30))
-ax.set_title('CCF' + comment)
+ax.set_title("CCF" + comment)
 if save:
-    fig.savefig(savedir + filename + comment + '_ylim[{:.1f},{:.1f}]'.format(ymin, ymax)+'.png')
+    fig.savefig(
+        savedir
+        + filename
+        + comment
+        + "_ylim[{:.1f},{:.1f}]".format(ymin, ymax)
+        + ".png"
+    )
 
 _, ax = plt.subplots()
-ax.plot(angles, points, linestyle='None', marker='.', markerfacecolor='blue')
+ax.plot(angles, points, linestyle="None", marker=".", markerfacecolor="blue")
 ax.set_xlim(0, 180)
-ax.set_xlabel('Angle (deg)')
-ax.set_ylabel('Number of points')
+ax.set_xlabel("Angle (deg)")
+ax.set_ylabel("Number of points")
 ax.set_xticks(np.arange(0, 181, 30))
-ax.set_title('Points per angular bin')
+ax.set_title("Points per angular bin")
 
 plt.ioff()
 plt.show()

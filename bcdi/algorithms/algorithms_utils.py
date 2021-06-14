@@ -17,8 +17,16 @@ from ..utils import utilities as util
 from ..utils import validation as valid
 
 
-def blind_deconvolution_rl(blurred_object, perfect_object, psf, nb_cycles=10, sub_iterations=10, update_psf_first=True,
-                           debugging=False, **kwargs):
+def blind_deconvolution_rl(
+    blurred_object,
+    perfect_object,
+    psf,
+    nb_cycles=10,
+    sub_iterations=10,
+    update_psf_first=True,
+    debugging=False,
+    **kwargs,
+):
     """
     Blind deconvolution using Richardson-Lucy algorithm. Estimates of the perfect object and psf have to be provided.
     See Figure 1 and equations (4) & (5) in  D. A. Fish et al. J. Opt. Soc. Am. A, 12, 58 (1995).
@@ -39,50 +47,84 @@ def blind_deconvolution_rl(blurred_object, perfect_object, psf, nb_cycles=10, su
      - 'vmax' = tuple of two floats (np.nan to use default), higher boundary for the colorbars
     :return:
     """
-    validation_name = 'algorithms_utils.psf_rl'
+    validation_name = "algorithms_utils.psf_rl"
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'scale', 'reciprocal_space', 'is_orthogonal', 'vmin', 'vmax'},
-                       name=validation_name)
-    scale = kwargs.get('scale', ('linear', 'log'))
-    valid.valid_container(scale, container_types=(tuple, list), length=2, name=validation_name)
-    if not all(val in {'log', 'linear'} for val in scale):
+    valid.valid_kwargs(
+        kwargs=kwargs,
+        allowed_kwargs={"scale", "reciprocal_space", "is_orthogonal", "vmin", "vmax"},
+        name=validation_name,
+    )
+    scale = kwargs.get("scale", ("linear", "log"))
+    valid.valid_container(
+        scale, container_types=(tuple, list), length=2, name=validation_name
+    )
+    if not all(val in {"log", "linear"} for val in scale):
         raise ValueError('"scale" should be either "log" or "linear"')
-    reciprocal_space = kwargs.get('reciprocal_space', True)
+    reciprocal_space = kwargs.get("reciprocal_space", True)
     if not isinstance(reciprocal_space, bool):
         raise TypeError('"reciprocal_space" should be a boolean')
-    is_orthogonal = kwargs.get('is_orthogonal', True)
+    is_orthogonal = kwargs.get("is_orthogonal", True)
     if not isinstance(is_orthogonal, bool):
         raise TypeError('"is_orthogonal" should be a boolean')
-    vmin = kwargs.get('vmin', (np.nan, np.nan))
-    valid.valid_container(vmin, container_types=(tuple, list), item_types=Real, name=validation_name)
-    vmax = kwargs.get('vmax', (np.nan, np.nan))
-    valid.valid_container(vmax, container_types=(tuple, list), item_types=Real, name=validation_name)
+    vmin = kwargs.get("vmin", (np.nan, np.nan))
+    valid.valid_container(
+        vmin, container_types=(tuple, list), item_types=Real, name=validation_name
+    )
+    vmax = kwargs.get("vmax", (np.nan, np.nan))
+    valid.valid_container(
+        vmax, container_types=(tuple, list), item_types=Real, name=validation_name
+    )
 
     # check parameters
     if not isinstance(blurred_object, np.ndarray):
-        raise TypeError(f"blurred_object should be a ndarray, got {type(blurred_object)}")
+        raise TypeError(
+            f"blurred_object should be a ndarray, got {type(blurred_object)}"
+        )
     if not isinstance(perfect_object, np.ndarray):
-        raise TypeError(f"perfect_object should be a ndarray, got {type(perfect_object)}")
+        raise TypeError(
+            f"perfect_object should be a ndarray, got {type(perfect_object)}"
+        )
     if not isinstance(psf, np.ndarray):
         raise TypeError(f"psf should be a ndarray, got {type(psf)}")
     if not isinstance(debugging, bool):
         raise TypeError('"debugging" should be a boolean')
     if not isinstance(update_psf_first, bool):
         raise TypeError('"update_psf_first" should be a boolean')
-    if perfect_object.shape != blurred_object.shape or psf.shape != blurred_object.shape:
-        raise ValueError('blurred_object, perfect_object and psf should have the same shape')
+    if (
+        perfect_object.shape != blurred_object.shape
+        or psf.shape != blurred_object.shape
+    ):
+        raise ValueError(
+            "blurred_object, perfect_object and psf should have the same shape"
+        )
 
     ########################
     # plot initial guesses #
     ########################
     if debugging:
-        gu.multislices_plot(perfect_object, scale=scale[0], sum_frames=False, title='guessed perfect object',
-                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal, vmin=vmin[0], vmax=vmax[0],
-                            plot_colorbar=True)
+        gu.multislices_plot(
+            perfect_object,
+            scale=scale[0],
+            sum_frames=False,
+            title="guessed perfect object",
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+            vmin=vmin[0],
+            vmax=vmax[0],
+            plot_colorbar=True,
+        )
 
-        gu.multislices_plot(psf, scale=scale[1], sum_frames=False, title='guessed psf', vmin=vmin[1], vmax=vmax[1],
-                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal,
-                            plot_colorbar=True)
+        gu.multislices_plot(
+            psf,
+            scale=scale[1],
+            sum_frames=False,
+            title="guessed psf",
+            vmin=vmin[1],
+            vmax=vmax[1],
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+            plot_colorbar=True,
+        )
 
     ###########################################
     # loop over the blind deconvolution steps #
@@ -90,35 +132,73 @@ def blind_deconvolution_rl(blurred_object, perfect_object, psf, nb_cycles=10, su
     for cycle in range(nb_cycles):
         if update_psf_first:
             # update the estimate of the psf
-            psf, _ = richardson_lucy(image=blurred_object, psf=perfect_object, iterations=sub_iterations, clip=False,
-                                     guess=psf)
+            psf, _ = richardson_lucy(
+                image=blurred_object,
+                psf=perfect_object,
+                iterations=sub_iterations,
+                clip=False,
+                guess=psf,
+            )
             # udpate the estimate of the perfect object
-            perfect_object, _ = richardson_lucy(image=blurred_object, psf=psf, iterations=sub_iterations, clip=True,
-                                                guess=perfect_object)
+            perfect_object, _ = richardson_lucy(
+                image=blurred_object,
+                psf=psf,
+                iterations=sub_iterations,
+                clip=True,
+                guess=perfect_object,
+            )
         else:
             # udpate the estimate of the perfect object
-            perfect_object, _ = richardson_lucy(image=blurred_object, psf=psf, iterations=sub_iterations, clip=True,
-                                                guess=perfect_object)
+            perfect_object, _ = richardson_lucy(
+                image=blurred_object,
+                psf=psf,
+                iterations=sub_iterations,
+                clip=True,
+                guess=perfect_object,
+            )
             # update the estimate of the psf
-            psf, _ = richardson_lucy(image=blurred_object, psf=perfect_object, iterations=sub_iterations, clip=False,
-                                     guess=psf)
+            psf, _ = richardson_lucy(
+                image=blurred_object,
+                psf=perfect_object,
+                iterations=sub_iterations,
+                clip=False,
+                guess=psf,
+            )
     psf = (np.abs(psf) / np.abs(psf).sum()).astype(np.float)
 
     ###############
     # plot result #
     ###############
     if debugging:
-        gu.multislices_plot(perfect_object, scale=scale[0], sum_frames=False, title='retrieved perfect object',
-                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal, vmin=vmin[0], vmax=vmax[0],
-                            plot_colorbar=True)
+        gu.multislices_plot(
+            perfect_object,
+            scale=scale[0],
+            sum_frames=False,
+            title="retrieved perfect object",
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+            vmin=vmin[0],
+            vmax=vmax[0],
+            plot_colorbar=True,
+        )
 
-        gu.multislices_plot(psf, scale=scale[1], sum_frames=False, title='retrieved psf', vmin=vmin[1], vmax=vmax[1],
-                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal,
-                            plot_colorbar=True)
+        gu.multislices_plot(
+            psf,
+            scale=scale[1],
+            sum_frames=False,
+            title="retrieved psf",
+            vmin=vmin[1],
+            vmax=vmax[1],
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+            plot_colorbar=True,
+        )
     return psf
 
 
-def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, debugging=False):
+def deconvolution_rl(
+    image, psf=None, psf_shape=(10, 10, 10), iterations=20, debugging=False
+):
     """
     Image deconvolution using Richardson-Lucy algorithm. The algorithm is based on a PSF (Point Spread Function),
     where PSF is described as the impulse response of the optical system.
@@ -137,27 +217,51 @@ def deconvolution_rl(image, psf=None, psf_shape=(10, 10, 10), iterations=20, deb
 
     ndim = image.ndim
     if psf is None:
-        print('Initializing the psf using a', ndim, 'D multivariate normal window\n')
-        print('sigma =', 0.3, ' mu =', 0.0)
-        psf = util.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False)
+        print("Initializing the psf using a", ndim, "D multivariate normal window\n")
+        print("sigma =", 0.3, " mu =", 0.0)
+        psf = util.gaussian_window(
+            window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False
+        )
     psf = psf.astype(float)
     if debugging:
-        gu.multislices_plot(array=psf, sum_frames=False, plot_colorbar=True, scale='linear', title='Gaussian window',
-                            reciprocal_space=False, is_orthogonal=True)
+        gu.multislices_plot(
+            array=psf,
+            sum_frames=False,
+            plot_colorbar=True,
+            scale="linear",
+            title="Gaussian window",
+            reciprocal_space=False,
+            is_orthogonal=True,
+        )
 
-    im_deconv, _ = np.abs(richardson_lucy(image=image, psf=psf, iterations=iterations, clip=False))
-    im_deconv = abs(im_deconv) / abs(im_deconv).max(initial=None) * max_img  # normalize back to max_img
+    im_deconv, _ = np.abs(
+        richardson_lucy(image=image, psf=psf, iterations=iterations, clip=False)
+    )
+    im_deconv = (
+        abs(im_deconv) / abs(im_deconv).max(initial=None) * max_img
+    )  # normalize back to max_img
 
     if debugging:
         image = abs(image) / abs(image).max()
         im_deconv = abs(im_deconv) / abs(im_deconv).max()
-        gu.combined_plots(tuple_array=(image, im_deconv), tuple_sum_frames=False, tuple_colorbar=True,
-                          tuple_title=('Before RL', 'After '+str(iterations)+' iterations of RL (normalized)'),
-                          tuple_scale='linear', tuple_vmin=0, tuple_vmax=1)
+        gu.combined_plots(
+            tuple_array=(image, im_deconv),
+            tuple_sum_frames=False,
+            tuple_colorbar=True,
+            tuple_title=(
+                "Before RL",
+                "After " + str(iterations) + " iterations of RL (normalized)",
+            ),
+            tuple_scale="linear",
+            tuple_vmin=0,
+            tuple_vmax=1,
+        )
     return im_deconv
 
 
-def partial_coherence_rl(measured_intensity, coherent_intensity, iterations=20, debugging=False, **kwargs):
+def partial_coherence_rl(
+    measured_intensity, coherent_intensity, iterations=20, debugging=False, **kwargs
+):
     """
     Partial coherence deconvolution using Richardson-Lucy algorithm. See J.N. Clark et al., Nat. Comm. 3, 993 (2012).
 
@@ -174,44 +278,69 @@ def partial_coherence_rl(measured_intensity, coherent_intensity, iterations=20, 
      - 'guess': ndarray, initial guess for the psf, of the same shape as measured_intensity
     :return: the retrieved psf (ndarray), the error metric (1D ndarray of len=iterations)
     """
-    validation_name = 'algorithms_utils.psf_rl'
+    validation_name = "algorithms_utils.psf_rl"
     # check and load kwargs
-    valid.valid_kwargs(kwargs=kwargs, allowed_kwargs={'scale', 'reciprocal_space', 'is_orthogonal', 'vmin', 'vmax',
-                                                      'guess'},
-                       name=validation_name)
-    scale = kwargs.get('scale', 'log')
-    if scale not in {'log', 'linear'}:
+    valid.valid_kwargs(
+        kwargs=kwargs,
+        allowed_kwargs={
+            "scale",
+            "reciprocal_space",
+            "is_orthogonal",
+            "vmin",
+            "vmax",
+            "guess",
+        },
+        name=validation_name,
+    )
+    scale = kwargs.get("scale", "log")
+    if scale not in {"log", "linear"}:
         raise ValueError('"scale" should be either "log" or "linear"')
-    reciprocal_space = kwargs.get('reciprocal_space', True)
+    reciprocal_space = kwargs.get("reciprocal_space", True)
     if not isinstance(reciprocal_space, bool):
         raise TypeError('"reciprocal_space" should be a boolean')
-    is_orthogonal = kwargs.get('is_orthogonal', True)
+    is_orthogonal = kwargs.get("is_orthogonal", True)
     if not isinstance(is_orthogonal, bool):
         raise TypeError('"is_orthogonal" should be a boolean')
-    vmin = kwargs.get('vmin', np.nan)
+    vmin = kwargs.get("vmin", np.nan)
     valid.valid_item(vmin, allowed_types=Real, name=validation_name)
-    vmax = kwargs.get('vmax', np.nan)
+    vmax = kwargs.get("vmax", np.nan)
     valid.valid_item(vmax, allowed_types=Real, name=validation_name)
-    guess = kwargs.get('guess')
+    guess = kwargs.get("guess")
     if guess is not None:
         if not isinstance(guess, np.ndarray):
             raise TypeError(f"guess should be a ndarray, got {type(guess)}")
         if guess.shape != measured_intensity.shape:
-            raise ValueError('the guess array should have the same shape as measured_intensity')
+            raise ValueError(
+                "the guess array should have the same shape as measured_intensity"
+            )
 
     # calculate the psf
-    psf, error = richardson_lucy(image=measured_intensity, psf=coherent_intensity, iterations=iterations,
-                                 clip=False, guess=guess)
+    psf, error = richardson_lucy(
+        image=measured_intensity,
+        psf=coherent_intensity,
+        iterations=iterations,
+        clip=False,
+        guess=guess,
+    )
 
     # optional plot
     if debugging:
-        gu.multislices_plot(psf, scale=scale, sum_frames=False, title='psf', vmin=vmin, vmax=vmax,
-                            reciprocal_space=reciprocal_space, is_orthogonal=is_orthogonal, plot_colorbar=True)
+        gu.multislices_plot(
+            psf,
+            scale=scale,
+            sum_frames=False,
+            title="psf",
+            vmin=vmin,
+            vmax=vmax,
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+            plot_colorbar=True,
+        )
         _, ax = plt.subplots(figsize=(12, 9))
-        ax.plot(error, 'r.')
-        ax.set_yscale('log')
-        ax.set_xlabel('iteration number')
-        ax.set_ylabel('difference between consecutive iterates')
+        ax.plot(error, "r.")
+        ax.set_yscale("log")
+        ax.set_xlabel("iteration number")
+        ax.set_ylabel("difference between consecutive iterates")
     return psf, error
 
 
@@ -234,7 +363,7 @@ def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
     # complexity O(N log(N)) for each dimension and the direct method does
     # straight arithmetic (and is O(n*k) to add n elements k times)
     direct_time = np.prod(image.shape + psf.shape)
-    fft_time = np.sum([n*np.log(n) for n in image.shape + psf.shape])
+    fft_time = np.sum([n * np.log(n) for n in image.shape + psf.shape])
 
     # see whether the fourier transform convolution method or the direct
     # convolution method is faster (discussed in scikit-image PR #1792)
@@ -252,7 +381,7 @@ def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
         if not isinstance(guess, np.ndarray):
             raise TypeError(f"guess should be a ndarray, got {type(guess)}")
         if guess.shape != image.shape:
-            raise ValueError('the guess array should have the same shape as the image')
+            raise ValueError("the guess array should have the same shape as the image")
         im_deconv = guess
     else:
         im_deconv = np.full(image.shape, 0.5)
@@ -262,13 +391,15 @@ def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
     error = np.empty(iterations)
     for idx in range(iterations):
         if (idx % 10) == 0:
-            sys.stdout.write(f'\rRL iteration {idx}')
+            sys.stdout.write(f"\rRL iteration {idx}")
             sys.stdout.flush()
         previous_deconv = np.copy(im_deconv)
-        relative_blur = image / convolve_method(im_deconv, psf, 'same')
-        im_deconv *= convolve_method(relative_blur, psf_mirror, 'same')
-        error[idx] = np.linalg.norm(previous_deconv-im_deconv) / np.linalg.norm(previous_deconv)
-    print('\n')
+        relative_blur = image / convolve_method(im_deconv, psf, "same")
+        im_deconv *= convolve_method(relative_blur, psf_mirror, "same")
+        error[idx] = np.linalg.norm(previous_deconv - im_deconv) / np.linalg.norm(
+            previous_deconv
+        )
+    print("\n")
     if clip:
         im_deconv[im_deconv > 1] = 1
         im_deconv[im_deconv < -1] = -1

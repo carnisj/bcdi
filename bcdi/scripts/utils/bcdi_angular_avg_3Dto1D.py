@@ -24,14 +24,23 @@ expected for q values is 1/nm.
 If q values are not provided, the data is supposed to be in an orthonormal frame.
 """
 
-root_folder = 'D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/current_paper/test/'
+root_folder = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/current_paper/test/"
 savedir = root_folder
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
-origin = [np.nan, np.nan, np.nan]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
+origin = [
+    np.nan,
+    np.nan,
+    np.nan,
+]  # [np.nan, np.nan, np.nan] #  # if np.nan, the origin is set at the center
 bin_factor = 1  # the data will be binned by bin_factor is the three directions
 nb_bins = 200  # number of bins for the q axis in the angular average
-vertical_lines = [0.104, 0.144, 0.172, 0.208]  # plot vertical dashed lines at these q values, leave [] otherwise
+vertical_lines = [
+    0.104,
+    0.144,
+    0.172,
+    0.208,
+]  # plot vertical dashed lines at these q values, leave [] otherwise
 # position in pixels of the origin of the angular average in the array.
 # if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
 threshold = 0  # data < threshold will be set to 0
@@ -56,27 +65,47 @@ my_cmap = colormap.cmap
 plt.ion()
 root = tk.Tk()
 root.withdraw()
-file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the diffraction pattern",
-                                       filetypes=[("NPZ", "*.npz")])
+file_path = filedialog.askopenfilename(
+    initialdir=root_folder,
+    title="Select the diffraction pattern",
+    filetypes=[("NPZ", "*.npz")],
+)
 npzfile = np.load(file_path)
-diff_pattern = util.bin_data(npzfile[list(npzfile.files)[0]], (bin_factor, bin_factor, bin_factor),
-                           debugging=False)
+diff_pattern = util.bin_data(
+    npzfile[list(npzfile.files)[0]],
+    (bin_factor, bin_factor, bin_factor),
+    debugging=False,
+)
 diff_pattern[diff_pattern < threshold] = 0
 nz, ny, nx = diff_pattern.shape
-print('Data shape after binning:', nz, ny, nx)
-print('Data type:', diff_pattern.dtype)
+print("Data shape after binning:", nz, ny, nx)
+print("Data type:", diff_pattern.dtype)
 
-gu.multislices_plot(diff_pattern, sum_frames=True, plot_colorbar=True, cmap=my_cmap,
-                    title='diffraction pattern', scale='log', vmin=np.nan, vmax=np.nan,
-                    reciprocal_space=True, is_orthogonal=True)
+gu.multislices_plot(
+    diff_pattern,
+    sum_frames=True,
+    plot_colorbar=True,
+    cmap=my_cmap,
+    title="diffraction pattern",
+    scale="log",
+    vmin=np.nan,
+    vmax=np.nan,
+    reciprocal_space=True,
+    is_orthogonal=True,
+)
 #############
 # load mask #
 #############
 if load_mask:
-    file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select the mask",
-                                           filetypes=[("NPZ", "*.npz")])
+    file_path = filedialog.askopenfilename(
+        initialdir=root_folder, title="Select the mask", filetypes=[("NPZ", "*.npz")]
+    )
     npzfile = np.load(file_path)
-    mask = util.bin_data(npzfile[list(npzfile.files)[0]], (bin_factor, bin_factor, bin_factor), debugging=False)
+    mask = util.bin_data(
+        npzfile[list(npzfile.files)[0]],
+        (bin_factor, bin_factor, bin_factor),
+        debugging=False,
+    )
 else:
     mask = None
 #######################
@@ -91,21 +120,22 @@ if np.isnan(origin[2]):
 
 for idx in range(len(origin)):
     origin[idx] = origin[idx] // bin_factor
-print('origin after binning: ', origin)
+print("origin after binning: ", origin)
 #################
 # load q values #
 #################
 if load_qvalues:
-    file_path = filedialog.askopenfilename(initialdir=root_folder, title="Select q values",
-                                           filetypes=[("NPZ", "*.npz")])
+    file_path = filedialog.askopenfilename(
+        initialdir=root_folder, title="Select q values", filetypes=[("NPZ", "*.npz")]
+    )
     npzfile = np.load(file_path)
-    qx = npzfile['qx']  # downstream
-    qz = npzfile['qz']  # vertical up
-    qy = npzfile['qy']  # outboard
+    qx = npzfile["qx"]  # downstream
+    qz = npzfile["qz"]  # vertical up
+    qy = npzfile["qy"]  # outboard
     numz, numy, numx = len(qx), len(qz), len(qy)
-    qx = qx[:numz - (numz % bin_factor):bin_factor]
-    qz = qz[:numy - (numy % bin_factor):bin_factor]
-    qy = qy[:numx - (numx % bin_factor):bin_factor]
+    qx = qx[: numz - (numz % bin_factor) : bin_factor]
+    qz = qz[: numy - (numy % bin_factor) : bin_factor]
+    qy = qy[: numx - (numx % bin_factor) : bin_factor]
     del numz, numy, numx
 
 else:  # work with pixels, supposing that the data is in an orthonormal frame
@@ -113,30 +143,48 @@ else:  # work with pixels, supposing that the data is in an orthonormal frame
     qz = np.arange(ny) - origin[1]
     qy = np.arange(nx) - origin[2]
 
-q_axis, y_mean_masked, y_median_masked = xcca.angular_avg(data=diff_pattern, q_values=(qx, qz, qy), origin=origin,
-                                                          mask=mask, nb_bins=nb_bins, debugging=debug)
+q_axis, y_mean_masked, y_median_masked = xcca.angular_avg(
+    data=diff_pattern,
+    q_values=(qx, qz, qy),
+    origin=origin,
+    mask=mask,
+    nb_bins=nb_bins,
+    debugging=debug,
+)
 #############
 # save data #
 #############
-np.savez_compressed(savedir + 'q+angular_avg.npz', q=q_axis, avg=y_mean_masked, median=y_median_masked)
+np.savez_compressed(
+    savedir + "q+angular_avg.npz", q=q_axis, avg=y_mean_masked, median=y_median_masked
+)
 if save_txt:
-    with open(savedir + 'q+angular_avg.txt', "w") as file:
-        file.write('{:8s}'.format('q') + '\t' +
-                   '{:10s}'.format('mean') + '\t' +
-                   '{:10s}'.format('median') + '\n')
+    with open(savedir + "q+angular_avg.txt", "w") as file:
+        file.write(
+            "{:8s}".format("q")
+            + "\t"
+            + "{:10s}".format("mean")
+            + "\t"
+            + "{:10s}".format("median")
+            + "\n"
+        )
         for idx in range(len(q_axis)):
-            file.write('{:8.6f}'.format(q_axis[idx]) + '\t' +
-                       '{:10.1f}'.format(y_mean_masked[idx]) + '\t' +
-                       '{:10.1f}'.format(y_median_masked[idx]) + '\n')
+            file.write(
+                "{:8.6f}".format(q_axis[idx])
+                + "\t"
+                + "{:10.1f}".format(y_mean_masked[idx])
+                + "\t"
+                + "{:10.1f}".format(y_median_masked[idx])
+                + "\n"
+            )
 
 #############
 # plot data #
 #############
 _, ax = plt.subplots(1, 1)
-ax.plot(q_axis, np.log10(y_mean_masked), 'r', label='mean')
-ax.plot(q_axis, np.log10(y_median_masked), 'b', label='median')
-ax.set_xlabel('q (1/nm)')
-ax.set_ylabel('Angular average (A.U.)')
+ax.plot(q_axis, np.log10(y_mean_masked), "r", label="mean")
+ax.plot(q_axis, np.log10(y_median_masked), "b", label="median")
+ax.set_xlabel("q (1/nm)")
+ax.set_ylabel("Angular average (A.U.)")
 ax.legend()
 plt.pause(0.1)
 
@@ -144,32 +192,37 @@ q_vline = util.find_nearest(q_axis, vertical_lines)
 
 if subtract_median:
     y_mean_masked = y_mean_masked - y_median_masked
-    comment = 'mean-median'
+    comment = "mean-median"
 else:
-    comment = 'mean'
+    comment = "mean"
 
 fig, ax0 = plt.subplots(1, 1)
-ax0.plot(q_axis, np.log10(y_mean_masked), 'r', label=comment)
-ax0.plot(q_axis, np.log10(y_median_masked), 'b', linestyle='dashed', label='median')
-ax0.set_xlabel('q (1/nm)')
-ax0.set_ylabel('Angular average (A.U.)')
+ax0.plot(q_axis, np.log10(y_mean_masked), "r", label=comment)
+ax0.plot(q_axis, np.log10(y_median_masked), "b", linestyle="dashed", label="median")
+ax0.set_xlabel("q (1/nm)")
+ax0.set_ylabel("Angular average (A.U.)")
 if xlim is None:
     xlim = ax0.get_xlim()
 if ylim is None:
     ylim = ax0.get_ylim()
 for counter, value in enumerate(vertical_lines):
-    ax0.vlines(x=value, ymin=ylim[0], ymax=np.log10(y_mean_masked[q_vline[counter]]),
-               colors='k', linestyle='dotted')
+    ax0.vlines(
+        x=value,
+        ymin=ylim[0],
+        ymax=np.log10(y_mean_masked[q_vline[counter]]),
+        colors="k",
+        linestyle="dotted",
+    )
 legend = ax0.legend()
 ax0.set_xlim(xlim[0], xlim[1])
 ax0.set_ylim(ylim[0], ylim[1])
-fig.savefig(savedir + 'angular_' + comment + '_labels.png')
+fig.savefig(savedir + "angular_" + comment + "_labels.png")
 ax0.tick_params(labelbottom=False, labelleft=False)
-plt.xlabel('')
-plt.ylabel('')
+plt.xlabel("")
+plt.ylabel("")
 legend.remove()
 plt.draw()
-plt.savefig(savedir + 'angular_' + comment + '.png')
+plt.savefig(savedir + "angular_" + comment + ".png")
 
 plt.ioff()
 plt.show()

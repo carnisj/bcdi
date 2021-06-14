@@ -24,37 +24,54 @@ img = 8758
 centering = 1  # 0 max, 1 center of mass
 savedir = "D:/data/PtRh/detector_calibration/"
 datadir = "D:/data/PtRh/detector_calibration/"
-ccdfiletmp = os.path.join(datadir, "BCDI_eiger2M_%05d.edf.gz")   # template for the CCD file names
+ccdfiletmp = os.path.join(
+    datadir, "BCDI_eiger2M_%05d.edf.gz"
+)  # template for the CCD file names
 save = 1  # 1 to save image
 photon_threshold = 0
 comment = str(img)
-region = [0, 2164, 0, 1030]  # [130, 200, 278, 347]  # Maxipix [0, 516, 0, 516]  # Eiger2M [0, 2164, 0, 1030]
-normalize_method = 0  # 1 to normalize using max, 2 to normalize the data using filter, 0 otherwise
+region = [
+    0,
+    2164,
+    0,
+    1030,
+]  # [130, 200, 278, 347]  # Maxipix [0, 516, 0, 516]  # Eiger2M [0, 2164, 0, 1030]
+normalize_method = (
+    0  # 1 to normalize using max, 2 to normalize the data using filter, 0 otherwise
+)
 logscale = 1  # 1 for log scale
 # ####### below is useful only if you want to normalize with filter (normalize_method = 2) ############
 filter_nb = 1
 filter_factor = 3.8  # 3.8 at 8keV, 2.5 at 9keV
 ##################################################################################
 # define a colormap
-cdict = {'red':  ((0.0, 1.0, 1.0),
-                  (0.11, 0.0, 0.0),
-                  (0.36, 0.0, 0.0),
-                  (0.62, 1.0, 1.0),
-                  (0.87, 1.0, 1.0),
-                  (1.0, 0.0, 0.0)),
-         'green': ((0.0, 1.0, 1.0),
-                   (0.11, 0.0, 0.0),
-                   (0.36, 1.0, 1.0),
-                   (0.62, 1.0, 1.0),
-                   (0.87, 0.0, 0.0),
-                   (1.0, 0.0, 0.0)),
-         'blue': ((0.0, 1.0, 1.0),
-                  (0.11, 1.0, 1.0),
-                  (0.36, 1.0, 1.0),
-                  (0.62, 0.0, 0.0),
-                  (0.87, 0.0, 0.0),
-                  (1.0, 0.0, 0.0))}
-my_cmap = LinearSegmentedColormap('my_colormap', cdict, 256)
+cdict = {
+    "red": (
+        (0.0, 1.0, 1.0),
+        (0.11, 0.0, 0.0),
+        (0.36, 0.0, 0.0),
+        (0.62, 1.0, 1.0),
+        (0.87, 1.0, 1.0),
+        (1.0, 0.0, 0.0),
+    ),
+    "green": (
+        (0.0, 1.0, 1.0),
+        (0.11, 0.0, 0.0),
+        (0.36, 1.0, 1.0),
+        (0.62, 1.0, 1.0),
+        (0.87, 0.0, 0.0),
+        (1.0, 0.0, 0.0),
+    ),
+    "blue": (
+        (0.0, 1.0, 1.0),
+        (0.11, 1.0, 1.0),
+        (0.36, 1.0, 1.0),
+        (0.62, 0.0, 0.0),
+        (0.87, 0.0, 0.0),
+        (1.0, 0.0, 0.0),
+    ),
+}
+my_cmap = LinearSegmentedColormap("my_colormap", cdict, 256)
 ##################################################################################
 root = tk.Tk()
 root.withdraw()
@@ -92,22 +109,43 @@ if centering == 0:
     print("Max at (y, x): ", y0, x0)
 elif centering == 1:
     y0, x0 = center_of_mass(data)
-    print("Center of mass at (y, x): ", str('{:.2f}'.format(y0)), " , ", str('{:.2f}'.format(x0)))
+    print(
+        "Center of mass at (y, x): ",
+        str("{:.2f}".format(y0)),
+        " , ",
+        str("{:.2f}".format(x0)),
+    )
 else:
     sys.exit("Incorrect value for 'centering' parameter")
 print("Max = ", str(abs(data).max()))
 fig = plt.figure()
 if logscale == 1:
-    plt.imshow(np.log10(data[region[0]:region[1], region[2]:region[3]]), cmap=my_cmap,
-               vmin=colorscale_min, vmax=colorscale_max)
+    plt.imshow(
+        np.log10(data[region[0] : region[1], region[2] : region[3]]),
+        cmap=my_cmap,
+        vmin=colorscale_min,
+        vmax=colorscale_max,
+    )
 else:
-    plt.imshow(data[region[0]:region[1], region[2]:region[3]], cmap=my_cmap,
-               vmin=colorscale_min, vmax=colorscale_max)
+    plt.imshow(
+        data[region[0] : region[1], region[2] : region[3]],
+        cmap=my_cmap,
+        vmin=colorscale_min,
+        vmax=colorscale_max,
+    )
 # plt.title(str(region))
-plt.title("Img "+str(img)+" Max=" + str('{:.2f}'.format(abs(data).max())) +
-          " @ H=" + str('{:.2f}'.format(x0)) + "/V=" + str('{:.2f}'.format(y0)))
+plt.title(
+    "Img "
+    + str(img)
+    + " Max="
+    + str("{:.2f}".format(abs(data).max()))
+    + " @ H="
+    + str("{:.2f}".format(x0))
+    + "/V="
+    + str("{:.2f}".format(y0))
+)
 plt.colorbar()
 if save == 1:
-    fig.savefig(savedir+'img'+comment+'.png')
+    fig.savefig(savedir + "img" + comment + ".png")
     # np.save(savedir+'img'+comment+'.npy', data)
 plt.show()
