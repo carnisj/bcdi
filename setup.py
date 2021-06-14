@@ -123,7 +123,8 @@ setup(name='bcdi', version='0.1.1',
           'Documentation': 'https://bcdi.readthedocs.io/en/latest/'},
       python_requires='>=3.6, !=3.9.*',
       install_requires=['numpy', 'scipy', 'scikit-image', 'matplotlib', 'hdf5plugin', 'h5py', 'traits', 'vtk',
-                        'importlib_resources', 'mayavi', 'xrayutilities', 'fabio', 'silx', 'lmfit', 'moviepy'],
+                        'importlib_resources', 'mayavi', 'xrayutilities', 'fabio', 'silx'],
+      extra_requires=['tables', 'lmfit', 'moviepy'],
       classifiers=[
           # How mature is this project? Common values are
           #   3 - Alpha

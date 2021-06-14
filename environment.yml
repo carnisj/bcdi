@@ -19,5 +19,6 @@ dependencies:
   - mayavi
   - fabio
   - silx
+  - tables
   - lmfit
   - moviepy
