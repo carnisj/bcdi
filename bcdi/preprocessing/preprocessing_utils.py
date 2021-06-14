@@ -794,35 +794,35 @@ def center_fft(
      kwarg 'fix_bragg' is provided.
     :param fft_option:
      - 'crop_sym_ZYX': crop the array for FFT requirements, Bragg peak centered
-     - 'crop_asym_ZYX': crop the array for FFT requirements without centering the Brag
-      peak
-     - 'pad_sym_Z_crop_sym_YX': crop detector images (Bragg peak centered) and pad the
-      rocking angle based on 'pad_size' (Bragg peak centered)
+     - 'crop_asym_ZYX': crop the array for FFT requirements without centering the
+     Brag peak
+     - 'pad_sym_Z_crop_sym_YX': crop detector images (Bragg peak centered) and pad
+     the rocking angle based on 'pad_size' (Bragg peak centered)
      - 'pad_sym_Z_crop_asym_YX': pad rocking angle based on 'pad_size'
-      (Bragg peak centered) and crop detector (Bragg peak non-centered)
+     (Bragg peak centered) and crop detector (Bragg peak non-centered)
      - 'pad_asym_Z_crop_sym_YX': crop detector images (Bragg peak centered),
-      pad the rocking angle without centering the Brag peak
+     pad the rocking angle without centering the Brag peak
      - 'pad_asym_Z_crop_asym_YX': pad rocking angle and crop detector without centering
-      the Bragg peak
+     the Bragg peak
      - 'pad_sym_Z': keep detector size and pad/center the rocking angle based on
-      'pad_size', Bragg peak centered
+     'pad_size', Bragg peak centered
      - 'pad_asym_Z': keep detector size and pad the rocking angle without centering
-      the Brag peak
+     the Brag peak
      - 'pad_sym_ZYX': pad all dimensions based on 'pad_size', Brag peak centered
      - 'pad_asym_ZYX': pad all dimensions based on 'pad_size' without centering
-      the Brag peak
+     the Brag peak
      - 'skip': keep the full dataset or crop it to the size defined by fix_size
     :param kwargs:
      - 'fix_bragg' = user-defined position in pixels of the Bragg peak
-      [z_bragg, y_bragg, x_bragg]
+     [z_bragg, y_bragg, x_bragg]
      - 'fix_size' = user defined output array size
-      [zstart, zstop, ystart, ystop, xstart, xstop]
+     [zstart, zstop, ystart, ystop, xstart, xstop]
      - 'pad_size' = user defined output array size [nbz, nby, nbx]
      - 'q_values' = [qx, qz, qy], each component being a 1D array
     :return:
      - updated data, mask (and q_values if provided, [] otherwise)
      - pad_width = [z0, z1, y0, y1, x0, x1] number of pixels added at each end of the
-       original data
+     original data
      - updated frames_logical
     """
     # check and load kwargs
@@ -1730,9 +1730,9 @@ def cristal_load_motor(datafile, root, actuator_name, field_name):
 def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     """
     Correct the data for the curvature of Ewald sphere. Based on the CXI detector
-    geometry convention: Laboratory frame: z downstream, y vertical up, x outboard
-     Detector axes: Y vertical and X horizontal (detector Y is vertical down at
-     out-of-plane angle=0, detector X is opposite to x at inplane angle=0)
+    geometry convention: Laboratory frame: z downstream, y vertical up, x outboard.
+    Detector axes: Y vertical and X horizontal (detector Y is vertical down at
+    out-of-plane angle=0, detector X is opposite to x at inplane angle=0)
 
     :param cdi_angle: 1D array of measurement angles in degrees
     :param detector: the detector object: Class experiment_utils.Detector()
@@ -1936,7 +1936,7 @@ def grid_bcdi_labframe(
      of the interpolation range. The first value is for the data, the second for the
      mask. Default is (0, 0)
     :return: the data and mask interpolated in the laboratory frame, q values
-    (downstream, vertical up, outboard). q values are in inverse angstroms.
+     (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
     # check and load kwargs
     valid.valid_kwargs(
@@ -3955,9 +3955,8 @@ def load_id01_data(
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
-     return a monitor based on the
-     integrated intensity in the region of interest defined by detector.sum_roi, 'skip'
-      to do nothing
+     return a monitor based on the integrated intensity in the region of interest
+     defined by detector.sum_roi, 'skip' to do nothing
     :param bin_during_loading: if True, the data will be binned in the detector frame
      while loading. It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
@@ -4117,7 +4116,7 @@ def load_monitor(scan_number, logfile, setup, **kwargs):
     :param logfile: path of the . fio file containing the information about the scan
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param kwargs:
-     - 'nb_frames' = int, number of detector frames in the stacked dataset
+     - 'nb_frames': int, number of detector frames in the stacked dataset
     :return: the default monitor values
     """
     # check and load kwargs
