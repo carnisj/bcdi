@@ -1008,41 +1008,53 @@ def create_logfile(setup, detector, scan_number, root_folder, filename):
     return logfile
 
 
-def cristal_find_detector(datafile, setup, root, detector_shape, data_path='scan_data', pattern='^data_[0-9][0-9]$'):
+def cristal_find_detector(datafile, setup, root, detector_shape, data_path='scan_data',
+                          pattern='^data_[0-9][0-9]$'):
     """
-    Look for the entry corresponding to the detector data in the file and return the corresponding dataset.
+    Look for the entry corresponding to the detector data in the file and return the
+    corresponding dataset.
 
     :param datafile: h5py File object of CRISTAL .nxs scan file
     :param setup: the experimental setup: Class experiment_utils.Setup()
     :param root: root folder name in the data file
-    :param detector_shape: tuple or list of two integer (nb_pixels_vertical, nb_pixels_horizontal)
+    :param detector_shape: tuple or list of two integer (nb_pixels_vertical,
+     nb_pixels_horizontal)
     :param data_path: string, name of the subfolder when the scan data is located
-    :param pattern: string, pattern corresponding to the entries where the detector data could be located
+    :param pattern: string, pattern corresponding to the entries where the detector
+     data could be located
     :return: numpy array of the shape of the detector dataset
     """
     # check input arguments
-    valid.valid_container(root, container_types=str, min_length=1, name='cristal_find_data')
+    valid.valid_container(root, container_types=str, min_length=1,
+                          name='cristal_find_data')
     if not root.startswith('/'):
         root = '/' + root
-    valid.valid_container(detector_shape, container_types=(tuple, list), item_types=int, length=2,
+    valid.valid_container(detector_shape, container_types=(tuple, list),
+                          item_types=int, length=2,
                           name='cristal_find_data')
-    valid.valid_container(data_path, container_types=str, min_length=1, name='cristal_find_data')
+    valid.valid_container(data_path, container_types=str, min_length=1,
+                          name='cristal_find_data')
     if not data_path.startswith('/'):
         data_path = '/' + data_path
-    valid.valid_container(pattern, container_types=str, min_length=1, name='cristal_find_data')
+    valid.valid_container(pattern, container_types=str, min_length=1,
+                          name='cristal_find_data')
 
     if 'detector' in setup.actuators:
         return datafile[root + data_path + '/' + setup.actuators['detector']][:]
-    else:
-        # loop over the available keys at the defined path in the file and check the shape of the corresponding dataset
-        nb_pix_ver, nb_pix_hor = detector_shape
-        for key in list(datafile[root + data_path]):
-            if bool(re.match(pattern, key)):
-                obj_shape = datafile[root + data_path + '/' + key][:].shape
-                if nb_pix_ver in obj_shape and nb_pix_hor in obj_shape:  # founc the key corresponding to the detector
-                    print(f"subdirectory '{key}' contains the detector images, shape={obj_shape}")
-                    return datafile[root + data_path + '/' + key][:]
-        raise ValueError(f"Could not find detector data using data_path={data_path} and pattern={pattern}")
+    # loop over the available keys at the defined path in the file
+    # and check the shape of the corresponding dataset
+
+    nb_pix_ver, nb_pix_hor = detector_shape
+    for key in list(datafile[root + data_path]):
+        if bool(re.match(pattern, key)):
+            obj_shape = datafile[root + data_path + '/' + key][:].shape
+            if nb_pix_ver in obj_shape and nb_pix_hor in obj_shape:
+                # founc the key corresponding to the detector
+                print(f"subdirectory '{key}' contains the detector images,"
+                      f" shape={obj_shape}")
+                return datafile[root + data_path + '/' + key][:]
+    raise ValueError(f"Could not find detector data using data_path={data_path} "
+                     f"and pattern={pattern}")
 
 
 def cristal_load_motor(datafile, root, actuator_name, field_name):
@@ -1738,9 +1750,10 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
 
 def higher_primes(number, maxprime=13, required_dividers=(4,)):
     """
-    Find the closest integer >=n (or list/array of integers), for which the largest prime divider is <=maxprime,
-    and has to include some dividers. The default values for maxprime is the largest integer accepted
-    by the clFFT library for OpenCL GPU FFT. Adapted from PyNX.
+    Find the closest integer >=n (or list/array of integers), for which the largest
+    prime divider is <=maxprime, and has to include some dividers. The default values
+    for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
+    FFT. Adapted from PyNX.
 
     :param number: the integer number
     :param maxprime: the largest prime factor acceptable
@@ -1753,7 +1766,8 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
             limit = i
             if i <= 1 or maxprime > i:
                 raise ValueError(f"Number is < {maxprime}")
-            while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
+            while try_smaller_primes(i, maxprime=maxprime,
+                                     required_dividers=required_dividers) is False:
                 i = i + 1
                 if i == limit:
                     return limit
@@ -1761,23 +1775,25 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
         if isinstance(number, np.ndarray):
             return np.array(vn)
         return vn
-    else:
-        limit = number
-        if number <= 1 or maxprime > number:
-            raise ValueError(f"Number is < {maxprime}")
-        while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
-            number = number + 1
-            if number == limit:
-                return limit
-        return number
+
+    limit = number
+    if number <= 1 or maxprime > number:
+        raise ValueError(f"Number is < {maxprime}")
+    while try_smaller_primes(number, maxprime=maxprime,
+                             required_dividers=required_dividers) is False:
+        number = number + 1
+        if number == limit:
+            return limit
+    return number
 
 
 def init_qconversion(setup):
     """
-    Initialize the qconv object from xrayutilities depending on the setup parameters. The convention in xrayutilities is
-     x downstream, z vertical up, y outboard. Note: the user-defined motor offsets are applied directly when reading
-     motor positions, therefore do not need to be taken into account in xrayutilities apart from the detector inplane
-     offset determined by the area detector calibration.
+    Initialize the qconv object from xrayutilities depending on the setup parameters.
+    The convention in xrayutilities is x downstream, z vertical up, y outboard.
+    Note: the user-defined motor offsets are applied directly when reading motor
+    positions, therefore do not need to be taken into account in xrayutilities apart
+    from the detector inplane offset determined by the area detector calibration.
 
     :param setup: the experimental setup: Class SetupPreprocessing()
     :return: qconv object and the motor offsets used later for q calculation
@@ -1829,27 +1845,35 @@ def init_qconversion(setup):
     return qconv, offsets
 
 
-def interp_2dslice(array, slice_index, rotation_angle, direct_beam, interp_angle, interp_radius):
+def interp_2dslice(array, slice_index, rotation_angle, direct_beam, interp_angle,
+                   interp_radius):
     """
-    Interpolate a 2D slice of a 3D array in cylindrical coordinated (tomographic dataset) onto cartesian coordinates.
+    Interpolate a 2D slice of a 3D array in cylindrical coordinated
+    (tomographic dataset) onto cartesian coordinates.
 
     :param array: 3D array of intensities measured in the detector frame
-    :param slice_index: the index along the rotation axis of the 2D slice in array to interpolate
+    :param slice_index: the index along the rotation axis of the 2D slice in array to
+     interpolate
     :param rotation_angle: array, rotation angle values for the rocking scan
-    :param direct_beam: position in pixels of the rotation pivot in the direction perpendicular to the rotation axis
-    :param interp_angle: 2D array, polar angles for the interpolation in a plane perpendicular to the rotation axis
-    :param interp_radius: 2D array, polar radii for the interpolation in a plane perpendicular to the rotation axis
+    :param direct_beam: position in pixels of the rotation pivot in the direction
+     perpendicular to the rotation axis
+    :param interp_angle: 2D array, polar angles for the interpolation in a plane
+     perpendicular to the rotation axis
+    :param interp_radius: 2D array, polar radii for the interpolation in a plane
+     perpendicular to the rotation axis
     :return: the interpolated slice, the slice index
     """
     # position of the experimental data points
     number_x = array.shape[1]
-    rgi = RegularGridInterpolator((rotation_angle * np.pi / 180, np.arange(-direct_beam, -direct_beam + number_x, 1)),
+    rgi = RegularGridInterpolator((rotation_angle * np.pi / 180,
+                                   np.arange(-direct_beam, -direct_beam + number_x, 1)),
                                   array, method='linear', bounds_error=False,
                                   fill_value=np.nan)
 
     # interpolate the data onto the new points
-    tmp_array = rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
-                                    interp_radius.reshape((1, interp_angle.size)))).transpose())
+    tmp_array = \
+        rgi(np.concatenate((interp_angle.reshape((1, interp_angle.size)),
+                            interp_radius.reshape((1, interp_angle.size)))).transpose())
     tmp_array = tmp_array.reshape(interp_angle.shape)
 
     return tmp_array, slice_index
@@ -1874,27 +1898,31 @@ def load_background(background_file):
     return background
 
 
-def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None, hotpixels=None, background=None,
-                   normalize='skip', debugging=False, **kwargs):
+def load_bcdi_data(logfile, scan_number, detector, setup, flatfield=None,
+                   hotpixels=None, background=None, normalize='skip',
+                   debugging=False, **kwargs):
     """
     Load Bragg CDI data, apply optional threshold, normalization and binning.
 
-    :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+    :param logfile: file containing the information about the scan and image numbers
+     (specfile, .fio...)
     :param scan_number: the scan number to load
     :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
-    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to return a monitor based on the
-     integrated intensity in the region of interest defined by detector.sum_roi, 'skip' to do nothing
+    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
+     return a monitor based on the integrated intensity in the region of interest
+     defined by detector.sum_roi, 'skip' to do nothing
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
     :return:
      - the 3D data and mask arrays
-     - frames_logical: array of initial length the number of measured frames. In case of padding the length changes.
-       A frame whose index is set to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
+     - frames_logical: array of initial length the number of measured frames.
+     In case of padding the length changes. A frame whose index is set to 1 means
+     that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values used for the intensity normalization
     """
     # check and load kwargs
@@ -3717,9 +3745,10 @@ def scan_motor_sixs(logfile, motor_name):
 
 def smaller_primes(number, maxprime=13, required_dividers=(4,)):
     """
-    Find the closest integer <=n (or list/array of integers), for which the largest prime divider is <=maxprime,
-    and has to include some dividers. The default values for maxprime is the largest integer accepted
-    by the clFFT library for OpenCL GPU FFT. Adapted from PyNX.
+    Find the closest integer <=n (or list/array of integers), for which the largest
+    prime divider is <=maxprime, and has to include some dividers. The default values
+    for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
+    FFT. Adapted from PyNX.
 
     :param number: the integer number
     :param maxprime: the largest prime factor acceptable
@@ -3731,7 +3760,8 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
         for i in number:
             if i <= 1 or maxprime > i:
                 raise ValueError(f"Number is < {maxprime}")
-            while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
+            while try_smaller_primes(i, maxprime=maxprime,
+                                     required_dividers=required_dividers) is False:
                 i = i - 1
                 if i == 0:
                     return 0
@@ -3739,14 +3769,15 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
         if isinstance(number, np.ndarray):
             return np.array(vn)
         return vn
-    else:
-        if number <= 1 or maxprime > number:
-            raise ValueError(f"Number is < {maxprime}")
-        while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
-            number = number - 1
-            if number == 0:
-                return 0
-        return number
+
+    if number <= 1 or maxprime > number:
+        raise ValueError(f"Number is < {maxprime}")
+    while try_smaller_primes(number, maxprime=maxprime,
+                             required_dividers=required_dividers) is False:
+        number = number - 1
+        if number == 0:
+            return 0
+    return number
 
 
 def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
