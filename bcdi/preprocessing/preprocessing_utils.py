@@ -1937,6 +1937,7 @@ def grid_bcdi_labframe(
      - 'fill_value': tuple of two real numbers, fill values to use for pixels outside
        of the interpolation range. The first value is for the data, the second for the
        mask. Default is (0, 0)
+
     :return: the data and mask interpolated in the laboratory frame, q values
      (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
@@ -2130,6 +2131,7 @@ def grid_bcdi_xrayutil(
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to
        follow the Bragg peak
+
     :return: the data and mask interpolated in the crystal frame, q values
      (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
@@ -3117,6 +3119,7 @@ def load_bcdi_data(
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
+
     :return:
      - the 3D data and mask arrays
      - frames_logical: array of initial length the number of measured frames.
@@ -3262,6 +3265,7 @@ def load_cdi_data(
     :param debugging:  set to True to see plots
     :param kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
+
     :return:
      - the 3D data and mask arrays
      - frames_logical: array of initial length the number of measured frames.
@@ -4119,6 +4123,7 @@ def load_monitor(scan_number, logfile, setup, **kwargs):
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param kwargs:
      - 'nb_frames': int, number of detector frames in the stacked dataset
+
     :return: the default monitor values
     """
     # check and load kwargs
@@ -5458,6 +5463,7 @@ def reload_bcdi_data(
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
+
     :return:
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
@@ -5592,6 +5598,7 @@ def reload_cdi_data(
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
+
     :return:
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
