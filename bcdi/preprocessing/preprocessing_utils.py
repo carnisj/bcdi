@@ -3272,9 +3272,12 @@ def regrid(logfile, nb_frames, scan_number, detector, setup, hxrd, frames_logica
 
         else:
             raise ValueError('Out-of-plane rocking curve not implemented for SIXS')
-        beta, mu, beta, gamma, delta = bin_parameters(binning=binning[0], nb_frames=nb_frames,
-                                                      params=[beta, mu, beta, gamma, delta])
-        qx, qy, qz = hxrd.Ang2Q.area(beta, mu, beta, gamma, delta, en=setup.energy, delta=detector.offsets)
+        beta, mu, gamma, delta = bin_parameters(binning=binning[0],
+                                                nb_frames=nb_frames,
+                                                params=[beta, mu, gamma, delta])
+        qx, qy, qz = hxrd.Ang2Q.area(
+            beta, mu, beta, gamma, delta, en=setup.energy, delta=detector.offsets
+        )
 
     elif setup.beamline == 'CRISTAL':
         mgomega, mgphi, gamma, delta, energy =\
