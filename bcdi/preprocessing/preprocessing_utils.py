@@ -812,6 +812,7 @@ def center_fft(
      - 'pad_asym_ZYX': pad all dimensions based on 'pad_size' without centering
        the Brag peak
      - 'skip': keep the full dataset or crop it to the size defined by fix_size
+
     :param kwargs:
      - 'fix_bragg' = user-defined position in pixels of the Bragg peak
        [z_bragg, y_bragg, x_bragg]
@@ -819,6 +820,7 @@ def center_fft(
        [zstart, zstop, ystart, ystop, xstart, xstop]
      - 'pad_size' = user defined output array size [nbz, nby, nbx]
      - 'q_values' = [qx, qz, qy], each component being a 1D array
+
     :return:
      - updated data, mask (and q_values if provided, [] otherwise)
      - pad_width = [z0, z1, y0, y1, x0, x1] number of pixels added at each end of the
