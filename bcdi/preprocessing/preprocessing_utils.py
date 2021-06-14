@@ -625,7 +625,7 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
 def cartesian2cylind(grid_shape, pivot, offset_angle, debugging=False):
     """
     Find the corresponding cylindrical coordinates of a cartesian 3D, including the
-    correction for te Ewald sphere
+    correction for the Ewald sphere
     curvature. The longitudinal axis of the cylindrical frame (rotation axis) is axis 1.
 
     :param grid_shape: tuple, shape of the 3D cartesion grid
@@ -795,36 +795,34 @@ def center_fft(
     :param fft_option:
      - 'crop_sym_ZYX': crop the array for FFT requirements, Bragg peak centered
      - 'crop_asym_ZYX': crop the array for FFT requirements without centering the Brag
-     peak
+       peak
      - 'pad_sym_Z_crop_sym_YX': crop detector images (Bragg peak centered) and pad the
-     rocking angle based on
-       'pad_size' (Bragg peak centered)
+       rocking angle based on 'pad_size' (Bragg peak centered)
      - 'pad_sym_Z_crop_asym_YX': pad rocking angle based on 'pad_size'
-     (Bragg peak centered) and crop detector
-       (Bragg peak non-centered)
+       (Bragg peak centered) and crop detector (Bragg peak non-centered)
      - 'pad_asym_Z_crop_sym_YX': crop detector images (Bragg peak centered),
-     pad the rocking angle without centering the Brag peak
+       pad the rocking angle without centering the Brag peak
      - 'pad_asym_Z_crop_asym_YX': pad rocking angle and crop detector without centering
-     the Bragg peak
+       the Bragg peak
      - 'pad_sym_Z': keep detector size and pad/center the rocking angle based on
-     'pad_size', Bragg peak centered
+       'pad_size', Bragg peak centered
      - 'pad_asym_Z': keep detector size and pad the rocking angle without centering
-     the Brag peak
+       the Brag peak
      - 'pad_sym_ZYX': pad all dimensions based on 'pad_size', Brag peak centered
      - 'pad_asym_ZYX': pad all dimensions based on 'pad_size' without centering
-     the Brag peak
+       the Brag peak
      - 'skip': keep the full dataset or crop it to the size defined by fix_size
     :param kwargs:
      - 'fix_bragg' = user-defined position in pixels of the Bragg peak
-     [z_bragg, y_bragg, x_bragg]
+       [z_bragg, y_bragg, x_bragg]
      - 'fix_size' = user defined output array size
-     [zstart, zstop, ystart, ystop, xstart, xstop]
+       [zstart, zstop, ystart, ystop, xstart, xstop]
      - 'pad_size' = user defined output array size [nbz, nby, nbx]
      - 'q_values' = [qx, qz, qy], each component being a 1D array
     :return:
      - updated data, mask (and q_values if provided, [] otherwise)
      - pad_width = [z0, z1, y0, y1, x0, x1] number of pixels added at each end of the
-     original data
+       original data
      - updated frames_logical
     """
     # check and load kwargs
