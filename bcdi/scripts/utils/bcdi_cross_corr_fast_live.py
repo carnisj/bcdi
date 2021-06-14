@@ -22,11 +22,12 @@ detector = 1  # 0 for eiger, 1 for maxipix
 exposure_time = 0.5
 datadir = "/data/visitor/ch5309/id01/images/align/"
 savedir = "/data/visitor/ch5309/id01/analysis/"
-ccdfiletmp = os.path.join(datadir, "data_mpx4_%05d.edf.gz")   # template for the CCD file names
+ccdfiletmp = os.path.join(datadir, "data_mpx4_%05d.edf.gz")
+# template for the CCD file names
 nav = [1, 1]  # reduce data: number of pixels to average in each detector direction
 if detector == 0:
     roi = [1320, 1470, 810, 920]
-elif detector == 1:
+else:
     roi = [0, 516, 0, 516]
 stop_flag = 0  # flag to exit the while loop
 stable_sample = 1  # 0 if a lot of change expected, 1 if very stable
@@ -62,11 +63,14 @@ def calc_corr(array, previous_array, is_stable=0):
         for idy in range(nb_frames):
             if is_stable == 0:
                 corr[idx, idy] = (np.multiply(array[idx], array[idy]).sum()) / \
-                                 (np.sqrt(np.square(array[idx]).sum() * np.square(array[idy]).sum()))
+                                 (np.sqrt(np.square(array[idx]).sum()
+                                          * np.square(array[idy]).sum()))
             else:
                 corr[idx, idy] = 1-(np.multiply(array[idx], array[idy]).sum()) / \
-                                 (np.sqrt(np.square(array[idx]).sum() * np.square(array[idy]).sum()))
-        corr[:, idx] = corr[idx, :]  # since plot is symmetric, do not need to compute this again
+                                 (np.sqrt(np.square(array[idx]).sum()
+                                          * np.square(array[idy]).sum()))
+        corr[:, idx] = corr[idx, :]
+        # since plot is symmetric, do not need to compute this again
     return corr
 
 
@@ -89,7 +93,6 @@ previous = np.array([])
 stop_counter = 0
 stop_image_old = start_image
 while stop_flag != 1:
-    # start = timer()
     # get the range of the dataset
     no_error = 1
     index = 0
@@ -103,20 +106,18 @@ while stop_flag != 1:
     stop_image_new = start_image + index
     if stop_image_new == stop_image_old:
         stop_counter = stop_counter + 1
-        # if stop_counter == 10:
-        #    break
         plt.pause(1)
         continue
     data = load_file(start_image, stop_image_new, detector, roi)
     stop_counter = 0
     cross_corr = calc_corr(data, previous, is_stable=stable_sample)
     if stable_sample == 0:        
-        plt.title('Running, iteration: ' + str(index) +\
+        plt.title('Running, iteration: ' + str(index) +
                   '\n Press q to stop (mouse on the plot)')
         index = index+1
         plt.imshow(cross_corr, vmin=0, vmax=1)
     else:
-        plt.title('Running, iteration: ' + str(index) +\
+        plt.title('Running, iteration: ' + str(index) +
                   '\n Press q to stop (mouse on the plot)')
         index = index+1
         plt.imshow(np.log10(abs(cross_corr)), vmin=-4, vmax=0)
@@ -126,8 +127,7 @@ while stop_flag != 1:
     previous = cross_corr
     del data, cross_corr
     plt.pause(exposure_time)
-    # end = timer()
-    # print(end - start)
+
 plt.ioff()
 plt.title('Stopped at iteration: ' + str(index))
 plt.colorbar()
