@@ -795,34 +795,34 @@ def center_fft(
     :param fft_option:
      - 'crop_sym_ZYX': crop the array for FFT requirements, Bragg peak centered
      - 'crop_asym_ZYX': crop the array for FFT requirements without centering the
-     Brag peak
+       Brag peak
      - 'pad_sym_Z_crop_sym_YX': crop detector images (Bragg peak centered) and pad
-     the rocking angle based on 'pad_size' (Bragg peak centered)
+       the rocking angle based on 'pad_size' (Bragg peak centered)
      - 'pad_sym_Z_crop_asym_YX': pad rocking angle based on 'pad_size'
-     (Bragg peak centered) and crop detector (Bragg peak non-centered)
+       (Bragg peak centered) and crop detector (Bragg peak non-centered)
      - 'pad_asym_Z_crop_sym_YX': crop detector images (Bragg peak centered),
-     pad the rocking angle without centering the Brag peak
+       pad the rocking angle without centering the Brag peak
      - 'pad_asym_Z_crop_asym_YX': pad rocking angle and crop detector without centering
-     the Bragg peak
+       the Bragg peak
      - 'pad_sym_Z': keep detector size and pad/center the rocking angle based on
-     'pad_size', Bragg peak centered
+       'pad_size', Bragg peak centered
      - 'pad_asym_Z': keep detector size and pad the rocking angle without centering
-     the Brag peak
+       the Brag peak
      - 'pad_sym_ZYX': pad all dimensions based on 'pad_size', Brag peak centered
      - 'pad_asym_ZYX': pad all dimensions based on 'pad_size' without centering
-     the Brag peak
+       the Brag peak
      - 'skip': keep the full dataset or crop it to the size defined by fix_size
     :param kwargs:
      - 'fix_bragg' = user-defined position in pixels of the Bragg peak
-     [z_bragg, y_bragg, x_bragg]
+       [z_bragg, y_bragg, x_bragg]
      - 'fix_size' = user defined output array size
-     [zstart, zstop, ystart, ystop, xstart, xstop]
+       [zstart, zstop, ystart, ystop, xstart, xstop]
      - 'pad_size' = user defined output array size [nbz, nby, nbx]
      - 'q_values' = [qx, qz, qy], each component being a 1D array
     :return:
      - updated data, mask (and q_values if provided, [] otherwise)
      - pad_width = [z0, z1, y0, y1, x0, x1] number of pixels added at each end of the
-     original data
+       original data
      - updated frames_logical
     """
     # check and load kwargs
@@ -1931,10 +1931,10 @@ def grid_bcdi_labframe(
     :param debugging: set to True to see plots
     :param kwargs:
      - 'follow_bragg': bool, True when for energy scans the detector was also scanned
-     to follow the Bragg peak
+       to follow the Bragg peak
      - 'fill_value': tuple of two real numbers, fill values to use for pixels outside
-     of the interpolation range. The first value is for the data, the second for the
-     mask. Default is (0, 0)
+       of the interpolation range. The first value is for the data, the second for the
+       mask. Default is (0, 0)
     :return: the data and mask interpolated in the laboratory frame, q values
      (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
@@ -2127,7 +2127,7 @@ def grid_bcdi_xrayutil(
     :param debugging: set to True to see plots
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to
-     follow the Bragg peak
+       follow the Bragg peak
     :return: the data and mask interpolated in the crystal frame, q values
      (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
@@ -3118,8 +3118,8 @@ def load_bcdi_data(
     :return:
      - the 3D data and mask arrays
      - frames_logical: array of initial length the number of measured frames.
-     In case of padding the length changes. A frame whose index is set to 1 means
-     that it is used, 0 means not used, -1 means padded (added) frame.
+       In case of padding the length changes. A frame whose index is set to 1 means
+       that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values used for the intensity normalization
     """
     # check and load kwargs
@@ -3263,8 +3263,8 @@ def load_cdi_data(
     :return:
      - the 3D data and mask arrays
      - frames_logical: array of initial length the number of measured frames.
-     In case of padding the length changes. A frame whose index is set to 1 means
-     that it is used, 0 means not used, -1 means padded (added) frame.
+       In case of padding the length changes. A frame whose index is set to 1 means
+       that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values used for the intensity normalization
     """
     # check and load kwargs
@@ -3410,7 +3410,7 @@ def load_cristal_data(
     :return:
      - the 3D data array in the detector frame and the 3D mask array
      - a logical array of length = initial frames number. A frame used will be set to
-     True, a frame unused to False.
+       True, a frame unused to False.
      - the monitor values for normalization
     """
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
@@ -3741,8 +3741,8 @@ def load_data(
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
      - frames_logical: array of initial length the number of measured frames.
-     In case of padding the length changes. A frame whose index is set to 1 means
-     that it is used, 0 means not used, -1 means padded (added) frame.
+       In case of padding the length changes. A frame whose index is set to 1 means
+       that it is used, 0 means not used, -1 means padded (added) frame.
     """
     if setup.beamline != "P10":
         bin_during_loading = False
@@ -3964,8 +3964,8 @@ def load_id01_data(
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
      - frames_logical: array of initial length the number of measured frames.
-     In case of padding the length changes. A frame whose index is set to 1 means
-     that it is used, 0 means not used, -1 means padded (added) frame.
+       In case of padding the length changes. A frame whose index is set to 1 means
+       that it is used, 0 means not used, -1 means padded (added) frame.
     """
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
@@ -4178,8 +4178,8 @@ def load_nanomax_data(
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
      - frames_logical: array of initial length the number of measured frames.
-     In case of padding the length changes. A frame whose index is set to 1 means
-     that it is used, 0 means not used, -1 means padded (added) frame.
+       In case of padding the length changes. A frame whose index is set to 1 means
+       that it is used, 0 means not used, -1 means padded (added) frame.
     """
     if debugging:
         print(
@@ -4300,8 +4300,8 @@ def load_p10_data(
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
      - frames_logical: array of initial length the number of measured frames.
-     In case of padding the length changes. A frame whose index is set to 1 means
-     that it is used, 0 means not used, -1 means padded (added) frame.
+       In case of padding the length changes. A frame whose index is set to 1 means
+       that it is used, 0 means not used, -1 means padded (added) frame.
     """
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
@@ -4524,8 +4524,8 @@ def load_sixs_data(
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
      - frames_logical: array of initial length the number of measured frames.
-     In case of padding the length changes. A frame whose index is set to 1 means
-     that it is used, 0 means not used, -1 means padded (added) frame.
+       In case of padding the length changes. A frame whose index is set to 1 means
+       that it is used, 0 means not used, -1 means padded (added) frame.
     """
     if detector.name == "Merlin":
         tmp_data = logfile.merlin[:]
@@ -5018,10 +5018,10 @@ def regrid(
      follow the Bragg peak
     :return:
      - qx, qz, qy components for the dataset. xrayutilities uses the xyz crystal frame:
-     for incident angle = 0, x is downstream, y outboard, and z vertical up. The
-     output of hxrd.Ang2Q.area is qx, qy, qz is this order. If q values seem wrong,
-     check if diffractometer angles have default values set at 0, otherwise use the
-     parameter setup.diffractometer.sample_offsets to correct it.
+       for incident angle = 0, x is downstream, y outboard, and z vertical up. The
+       output of hxrd.Ang2Q.area is qx, qy, qz is this order. If q values seem wrong,
+       check if diffractometer angles have default values set at 0, otherwise use the
+       parameter setup.diffractometer.sample_offsets to correct it.
      - updated frames_logical
     """
     # TODO: refactor this function
