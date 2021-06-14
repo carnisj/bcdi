@@ -567,7 +567,7 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes=N
     :param debugging: True to see the scatter plot of euclidian coordinates
     :return: figure and axe instances
     """
-    if scale notin {'linear', 'log'}:
+    if scale not in {'linear', 'log'}:
         raise ValueError('scale should be either "linear" or "log"')
     if contour_range is None:
         if scale == 'linear':
