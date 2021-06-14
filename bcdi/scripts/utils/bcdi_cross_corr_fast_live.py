@@ -74,7 +74,7 @@ def press_key(event):
     global stop_flag
     try:
         key = event.key
-    except:
+    except AttributeError:  # mouse pointer out of axes
         return
     if key == 'q':
         stop_flag = 1
