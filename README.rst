@@ -1,4 +1,4 @@
-![python-packages](https://github.com/carnisj/bcdi/actions/workflows/python-packages/badge.svg)
+https://github.com/carnisj/bcdi/actions/workflows/python-packages/badge.svg
 .. image:: https://readthedocs.org/projects/bcdi/badge/?version=latest
 [![DeepSource](https://deepsource.io/gh/carnisj/bcdi.svg/?label=active+issues&show_trend=true&token=N3Z0cklmQrG8kzZOVwGJhLd9)](https://deepsource.io/gh/carnisj/bcdi/?ref=repository-badge)
 
