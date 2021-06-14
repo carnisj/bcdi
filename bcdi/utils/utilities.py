@@ -72,8 +72,9 @@ def bin_data(array, binning, debugging=False):
     if isinstance(binning, int):
         binning = [binning] * ndim
     else:
-        assert ndim == len(binning), "Rebin: number of dimensions does not agree with number of rebin values:" + str(
-            binning)
+        if ndim != len(binning):
+            raise ValueError("Rebin: number of dimensions does not agree with number "
+                             f"of rebin values: {binning}")
 
     if ndim == 1:
         nx = len(array)
@@ -119,10 +120,11 @@ def crop_pad(array, output_shape, pad_value=0, pad_start=None, crop_center=None,
     :param array: 3D complex array to be padded
     :param output_shape: desired output shape (3D)
     :param pad_value: will pad using this value
-    :param pad_start: for padding, tuple of 3 positions in pixel where the original array should be placed.
-     If None, padding is symmetric along the respective axis
-    :param crop_center: for cropping, [z, y, x] position in the original array (in pixels) of the center of the output
-     array. If None, it will be set to the center of the original array
+    :param pad_start: for padding, tuple of 3 positions in pixel where the original
+     array should be placed. If None, padding is symmetric along the respective axis
+    :param crop_center: for cropping, [z, y, x] position in the original array
+     (in pixels) of the center of the output array. If None, it will be set to the
+     center of the original array
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: myobj cropped or padded with zeros
@@ -135,60 +137,75 @@ def crop_pad(array, output_shape, pad_value=0, pad_start=None, crop_center=None,
 
     if pad_start is None:
         pad_start = [(newz - nbz) // 2, (newy - nby) // 2, (newx - nbx) // 2]
-    assert len(pad_start) == 3, 'pad_start should be a list or tuple of three indices'
+    if len(pad_start) != 3:
+        raise ValueError('pad_start should be a list or tuple of three indices')
 
     if crop_center is None:
         crop_center = [nbz//2, nby//2, nbx//2]
-    assert len(crop_center) == 3, 'crop_center should be a list or tuple of three indices'
+    if len(crop_center) != 3:
+        raise ValueError('crop_center should be a list or tuple of three indices')
 
     if debugging:
         print(f'array shape before crop/pad = {array.shape}')
-        gu.multislices_plot(abs(array), sum_frames=True, scale='log', title='Before crop/pad')
+        gu.multislices_plot(abs(array), sum_frames=True, scale='log',
+                            title='Before crop/pad')
 
     # crop/pad along axis 0
     if newz >= nbz:  # pad
         temp_z = np.ones((output_shape[0], nby, nbx), dtype=array.dtype) * pad_value
         temp_z[pad_start[0]:pad_start[0]+nbz, :, :] = array
     else:  # crop
-        assert (crop_center[0] - output_shape[0] // 2 >= 0) and (crop_center[0] + output_shape[0] // 2 <= nbz),\
-            'crop_center[0] incompatible with output_shape[0]'
-        temp_z = array[crop_center[0] - newz//2:crop_center[0] + newz//2 + newz % 2, :, :]
+        if ((crop_center[0] - output_shape[0] // 2 < 0)
+                or (crop_center[0] + output_shape[0] // 2 > nbz)):
+            raise ValueError('crop_center[0] incompatible with output_shape[0]')
+        temp_z = array[crop_center[0] - newz//2:crop_center[0] + newz//2 + newz % 2,
+                       :,
+                       :]
 
     # crop/pad along axis 1
     if newy >= nby:  # pad
         temp_y = np.ones((newz, newy, nbx), dtype=array.dtype) * pad_value
         temp_y[:, pad_start[1]:pad_start[1]+nby, :] = temp_z
     else:  # crop
-        assert (crop_center[1] - output_shape[1] // 2 >= 0) and (crop_center[1] + output_shape[1] // 2 <= nby),\
-            'crop_center[1] incompatible with output_shape[1]'
-        temp_y = temp_z[:, crop_center[1] - newy//2:crop_center[1] + newy//2 + newy % 2, :]
+        if ((crop_center[1] - output_shape[1] // 2 < 0)
+                or (crop_center[1] + output_shape[1] // 2 > nby)):
+            raise ValueError('crop_center[1] incompatible with output_shape[1]')
+        temp_y = temp_z[:,
+                        crop_center[1] - newy//2:crop_center[1] + newy//2 + newy % 2,
+                        :]
 
     # crop/pad along axis 2
     if newx >= nbx:  # pad
         newobj = np.ones((newz, newy, newx), dtype=array.dtype) * pad_value
         newobj[:, :, pad_start[2]:pad_start[2]+nbx] = temp_y
     else:  # crop
-        assert (crop_center[2] - output_shape[2] // 2 >= 0) and (crop_center[2] + output_shape[2] // 2 <= nbx),\
-            'crop_center[2] incompatible with output_shape[2]'
-        newobj = temp_y[:, :, crop_center[2] - newx//2:crop_center[2] + newx//2 + newx % 2]
+        if ((crop_center[2] - output_shape[2] // 2 < 0)
+                or (crop_center[2] + output_shape[2] // 2 > nbx)):
+            raise ValueError('crop_center[2] incompatible with output_shape[2]')
+        newobj = temp_y[:,
+                        :,
+                        crop_center[2] - newx//2:crop_center[2] + newx//2 + newx % 2]
 
     if debugging:
         print(f'array shape after crop/pad = {newobj.shape}')
-        gu.multislices_plot(abs(newobj), sum_frames=True, scale='log', title='After crop/pad')
+        gu.multislices_plot(abs(newobj), sum_frames=True, scale='log',
+                            title='After crop/pad')
     return newobj
 
 
-def crop_pad_2d(array, output_shape, pad_value=0, pad_start=None, crop_center=None, debugging=False):
+def crop_pad_2d(array, output_shape, pad_value=0, pad_start=None, crop_center=None,
+                debugging=False):
     """
     Crop or pad the 2D object depending on output_shape.
 
     :param array: 2D complex array to be padded
     :param output_shape: list of desired output shape [y, x]
     :param pad_value: will pad using this value
-    :param pad_start: for padding, tuple of 2 positions in pixel where the original array should be placed.
-     If None, padding is symmetric along the respective axis
-    :param crop_center: for cropping, [y, x] position in the original array (in pixels) of the center of the ourput
-     array. If None, it will be set to the center of the original array
+    :param pad_start: for padding, tuple of 2 positions in pixel where the original
+     array should be placed. If None, padding is symmetric along the respective axis
+    :param crop_center: for cropping, [y, x] position in the original array (in pixels)
+     of the center of the ourput array. If None, it will be set to the center of the
+     original array
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: myobj cropped or padded with zeros
@@ -201,21 +218,25 @@ def crop_pad_2d(array, output_shape, pad_value=0, pad_start=None, crop_center=No
 
     if pad_start is None:
         pad_start = [(newy - nby) // 2, (newx - nbx) // 2]
-    assert len(pad_start) == 2, 'pad_start should be a list or tuple of two indices'
+    if len(pad_start) != 2:
+        raise ValueError('pad_start should be a list or tuple of two indices')
 
     if crop_center is None:
         crop_center = [nby//2, nbx//2]
-    assert len(crop_center) == 2, 'crop_center should be a list or tuple of two indices'
+    if len(crop_center) != 2:
+        raise ValueError('crop_center should be a list or tuple of two indices')
 
     if debugging:
-        gu.imshow_plot(abs(array), sum_frames=True, scale='log', title='Before crop/pad')
+        gu.imshow_plot(abs(array), sum_frames=True, scale='log',
+                       title='Before crop/pad')
     # crop/pad along axis 0
     if newy >= nby:  # pad
         temp_y = np.ones((output_shape[0], nbx), dtype=array.dtype) * pad_value
         temp_y[pad_start[0]:pad_start[0]+nby, :] = array
     else:  # crop
-        assert (crop_center[0] - output_shape[0] // 2 >= 0) and (crop_center[0] + output_shape[0] // 2 <= nby),\
-            'crop_center[0] incompatible with output_shape[0]'
+        if ((crop_center[0] - output_shape[0] // 2 < 0)
+                or (crop_center[0] + output_shape[0] // 2 > nby)):
+            raise ValueError('crop_center[0] incompatible with output_shape[0]')
         temp_y = array[crop_center[0] - newy//2:crop_center[0] + newy//2 + newy % 2, :]
 
     # crop/pad along axis 1
@@ -223,8 +244,9 @@ def crop_pad_2d(array, output_shape, pad_value=0, pad_start=None, crop_center=No
         newobj = np.ones((newy, newx), dtype=array.dtype) * pad_value
         newobj[:, pad_start[1]:pad_start[1]+nbx] = temp_y
     else:  # crop
-        assert (crop_center[1] - output_shape[1] // 2 >= 0) and (crop_center[1] + output_shape[1] // 2 <= nbx),\
-            'crop_center[1] incompatible with output_shape[1]'
+        if ((crop_center[1] - output_shape[1] // 2 < 0)
+                or (crop_center[1] + output_shape[1] // 2 > nbx)):
+            raise ValueError('crop_center[1] incompatible with output_shape[1]')
         newobj = temp_y[:, crop_center[1] - newx//2:crop_center[1] + newx//2 + newx % 2]
 
     if debugging:
@@ -232,18 +254,21 @@ def crop_pad_2d(array, output_shape, pad_value=0, pad_start=None, crop_center=No
     return newobj
 
 
-def crop_pad_1d(array, output_length, pad_value=0, pad_start=None, crop_center=None, extrapolate=False):
+def crop_pad_1d(array, output_length, pad_value=0, pad_start=None, crop_center=None,
+                extrapolate=False):
     """
     Crop or pad the 2D object depending on output_shape.
 
     :param array: 1D complex array to be padded
     :param output_length: int desired output length
     :param pad_value: will pad using this value
-    :param pad_start: for padding, position in pixel where the original array should be placed.
-     If None, padding is symmetric
-    :param crop_center: for cropping, position in pixels in the original array of the center of the ourput
-     array. If None, it will be set to the center of the original array
-    :param extrapolate: set to True to extrapolate using the current spacing (supposed constant)
+    :param pad_start: for padding, position in pixel where the original array should be
+     placed. If None, padding is symmetric
+    :param crop_center: for cropping, position in pixels in the original array of the
+     center of the ourput array. If None, it will be set to the center of the
+     original array
+    :param extrapolate: set to True to extrapolate using the current spacing
+     (supposed constant)
     :return: myobj cropped or padded
     """
     if array.ndim != 1:
@@ -267,8 +292,9 @@ def crop_pad_1d(array, output_length, pad_value=0, pad_start=None, crop_center=N
             pad_start = array[0] - ((newx - nbx) // 2) * spacing
             newobj = pad_start + np.arange(newx) * spacing
     else:  # crop
-        assert crop_center - output_length // 2 >= 0, 'crop_center incompatible with output_length'
-        assert crop_center + output_length // 2 <= nbx, 'crop_center incompatible with output_length'
+        if ((crop_center - output_length // 2 < 0)
+                or (crop_center + output_length // 2 > nbx)):
+            raise ValueError('crop_center incompatible with output_length')
         newobj = array[crop_center - newx//2:crop_center + newx//2 + newx % 2]
 
     return newobj
