@@ -1,5 +1,5 @@
 [![Python versions Actions Status](https://github.com/carnisj/bcdi/actions/workflows/python-package/badge.svg)](https://github.com/carnisj/bcdi/actions)
-.. image:: https://readthedocs.org/projects/bcdi/badge/?version=latest
+[![Documentation Status](https://readthedocs.org/projects/bcdi/badge/?version=latest)](https://bcdi.readthedocs.io/en/latest/?badge=latest)
 [![DeepSource](https://deepsource.io/gh/carnisj/bcdi.svg/?label=active+issues&show_trend=true&token=N3Z0cklmQrG8kzZOVwGJhLd9)](https://deepsource.io/gh/carnisj/bcdi/?ref=repository-badge)
 
 BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data
