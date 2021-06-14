@@ -1,3 +1,6 @@
+.. image:: https://readthedocs.org/projects/bcdi/badge/?version=latest
+:target: https://bcdi.readthedocs.io/en/latest/?badge=latest
+:alt: Documentation Status
 
 BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data
 ==============================================================================================
