@@ -225,7 +225,8 @@ logfile = setup.create_logfile(scan_number=scan, root_folder=root_folder, filena
 #########################
 # check some parameters #
 #########################
-assert fast_axis in ['vertical', 'horizontal'], print('fast_axis parameter value not supported')
+if fast_axis not in {'vertical', 'horizontal'}:
+    raise ValueError('fast_axis parameter value not supported')
 if len(sum_roi) == 0:
     sum_roi = [0, detector.nb_pixel_y, 0, detector.nb_pixel_x]
 
@@ -238,9 +239,11 @@ sum_roi = ((sum_roi[0]-crop_roi[0]) // binning[0],
            (sum_roi[3]-crop_roi[2]) // binning[1])
 print(f'sum_roi after binning and offset correction = {sum_roi}')
 
-assert (sum_roi[0] >= 0 and sum_roi[1] <= (crop_roi[1]-crop_roi[0]) // binning[0]
-        and sum_roi[2] >= 0 and sum_roi[3] <= (crop_roi[3]-crop_roi[2]) // binning[1]),\
-    'sum_roi setting does not match the binned detector size'
+if not (sum_roi[0] >= 0
+        and sum_roi[1] <= (crop_roi[1]-crop_roi[0]) // binning[0]
+        and sum_roi[2] >= 0
+        and sum_roi[3] <= (crop_roi[3]-crop_roi[2]) // binning[1]):
+    raise ValueError('sum_roi setting does not match the binned detector size')
 
 #############
 # load data #
@@ -273,10 +276,10 @@ slow_positions = pru.get_motor_pos(logfile=logfile, scan_number=scan, setup=setu
 min_fast, max_fast = fast_positions[0], fast_positions[-1]
 min_slow, max_slow = slow_positions[0], slow_positions[-1]
 
-assert len(fast_positions) == nz, print('Number of fast scanning motor steps:', nb_fast,
-                                        'incompatible with data shape:', nz)
-assert len(slow_positions) == nz, print('Number of slow scanning motor steps:', nb_slow,
-                                        'incompatible with data shape:', nz)
+if len(fast_positions) != nz:
+    raise ValueError(f"Number of fast scanning motor steps: {nb_fast} incompatible with data shape: {nz}")
+if len(slow_positions) != nz:
+    raise ValueError(f"Number of slow scanning motor steps: {nb_slow} incompatible with data shape: {nz}")
 
 ####################
 # interactive plot #

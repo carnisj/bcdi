@@ -1673,7 +1673,10 @@ def grid_cylindrical(array, rotation_angle, direct_beam, interp_angle, interp_ra
     :param multiprocessing: True to use multiprocessing
     :return: the 3D array interpolated onto the 3D cartesian grid
     """
-    assert array.ndim == 3, 'a 3D array is expected'
+    if not isinstance(array, np.ndarray):
+        raise TypeError("a numpy array is expected")
+    if array.ndim != 3:
+        raise ValueError('a 3D array is expected')
 
     def collect_result(result):
         """
@@ -1748,7 +1751,8 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
         vn = []
         for i in number:
             limit = i
-            assert (i > 1 and maxprime <= i)
+            if i <= 1 or maxprime > i:
+                raise ValueError(f"Number is < {maxprime}")
             while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
                 i = i + 1
                 if i == limit:
@@ -1759,7 +1763,8 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
         return vn
     else:
         limit = number
-        assert (number > 1 and maxprime <= number)
+        if number <= 1 or maxprime > number:
+            raise ValueError(f"Number is < {maxprime}")
         while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
             number = number + 1
             if number == limit:
@@ -3721,7 +3726,8 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
     if isinstance(number, (list, tuple, np.ndarray)):
         vn = []
         for i in number:
-            assert (i > 1 and maxprime <= i), "Number is < " + str(maxprime)
+            if i <= 1 or maxprime > i:
+                raise ValueError(f"Number is < {maxprime}")
             while try_smaller_primes(i, maxprime=maxprime, required_dividers=required_dividers) is False:
                 i = i - 1
                 if i == 0:
@@ -3731,7 +3737,8 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
             return np.array(vn)
         return vn
     else:
-        assert (number > 1 and maxprime <= number), "Number is < " + str(maxprime)
+        if number <= 1 or maxprime > number:
+            raise ValueError(f"Number is < {maxprime}")
         while try_smaller_primes(number, maxprime=maxprime, required_dividers=required_dividers) is False:
             number = number - 1
             if number == 0:

@@ -69,7 +69,8 @@ params = {'scan': scan_nb, 'sample_name': sample_name, 'rootdir': root_directory
 # check some parameters #
 #########################
 if vmin and vmax:
-    assert vmax > vmin, 'vmax should be larger than vmin'
+    if vmax <= vmin:
+        raise ValueError('vmax should be larger than vmin')
 
 
 def load_p10_file(my_detector, my_file, file_index, roi, threshold):
@@ -163,10 +164,12 @@ def main(parameters):
     if len(counterroi) == 0:
         counterroi = [0, nb_pixel_y, 0, nb_pixel_x]
 
-    assert (counterroi[0] >= 0
+    if not (counterroi[0] >= 0
             and counterroi[1] <= nb_pixel_y
             and counterroi[2] >= 0
-            and counterroi[3] <= nb_pixel_x), 'counter_roi setting does not match the detector size'
+            and counterroi[3] <= nb_pixel_x):
+        raise ValueError('counter_roi setting does not match the detector size')
+
     nb_files = len(image_nb)
     if nb_files == 1:
         multiproc = False

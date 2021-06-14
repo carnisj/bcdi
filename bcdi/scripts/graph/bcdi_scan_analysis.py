@@ -220,11 +220,14 @@ logfile = setup.create_logfile(scan_number=scan, root_folder=root_folder, filena
 if len(sum_roi) == 0:
     sum_roi = [0, detector.nb_pixel_y, 0, detector.nb_pixel_x]
 
-assert (sum_roi[0] >= 0 and sum_roi[1] <= detector.nb_pixel_y // binning[0]
-        and sum_roi[2] >= 0 and sum_roi[3] <= detector.nb_pixel_x // binning[1]),\
-    'sum_roi setting does not match the binned detector size'
+if not (sum_roi[0] >= 0
+        and sum_roi[1] <= detector.nb_pixel_y // binning[0]
+        and sum_roi[2] >= 0
+        and sum_roi[3] <= detector.nb_pixel_x // binning[1]):
+    raise ValueError('sum_roi setting does not match the binned detector size')
 
-assert scale in ['linear', 'log'], 'Incorrect value for scale parameter'
+if scale not in {'linear', 'log'}:
+    raise ValueError('Incorrect value for scale parameter')
 
 #############
 # load data #
@@ -250,8 +253,8 @@ motor_positions = pru.get_motor_pos(logfile=logfile, scan_number=scan, setup=set
 
 min_fast, max_fast = motor_positions[0], motor_positions[-1]
 
-assert len(motor_positions) == nz, print('Number of fast scanning motor steps:', len(motor_positions),
-                                         'incompatible with data shape:', nz)
+if len(motor_positions) != nz:
+    raise ValueError(f"Number of fast scanning motor steps: {len(motor_positions)} incompatible with data shape: {nz}")
 
 ####################
 # interactive plot #

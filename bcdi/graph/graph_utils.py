@@ -154,7 +154,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         tuple_sum_axis = (tuple_sum_axis,) * nb_subplots
     valid.valid_container(obj=tuple_sum_axis, container_types=(tuple, list), length=nb_subplots, item_types=int,
                           allow_none=True, min_included=0, name='graph_utils.combined_plots')
-    assert all(sum_axis in {0, 1, 2} for sum_axis in tuple_sum_axis), 'sum_axis should be either 0, 1 or 2'
+    if any(sum_axis not in {0, 1, 2} for sum_axis in tuple_sum_axis):
+        raise ValueError('sum_axis should be either 0, 1 or 2')
 
     if isinstance(tuple_width_v, int) or tuple_width_v is None:
         tuple_width_v = (tuple_width_v,) * nb_subplots
@@ -176,8 +177,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         tuple_vmax = (tuple_vmax,) * nb_subplots
     valid.valid_container(obj=tuple_vmax, container_types=(tuple, list), length=nb_subplots, item_types=Real,
                           name='graph_utils.combined_plots')
-    assert all(vmin < vmax for vmin, vmax in zip(tuple_vmin, tuple_vmax) if not np.isnan(vmin) and not np.isnan(vmax)),\
-        'vmin should be strictly smaller than vmax'
+    if any(vmin >= vmax for vmin, vmax in zip(tuple_vmin, tuple_vmax) if not np.isnan(vmin) and not np.isnan(vmax)):
+        raise ValueError('vmin should be strictly smaller than vmax')
 
     if isinstance(tuple_title, str):
         tuple_title = (tuple_title,) * nb_subplots
@@ -187,7 +188,8 @@ def combined_plots(tuple_array, tuple_sum_frames, tuple_colorbar, tuple_title, t
         tuple_scale = (tuple_scale,) * nb_subplots
     valid.valid_container(obj=tuple_scale, container_types=(tuple, list), length=nb_subplots, item_types=str,
                           name='graph_utils.combined_plots')
-    assert all(scale in {'linear', 'log'} for scale in tuple_scale), 'scale should be either "linear" or "log"'
+    if any(scale not in {'linear', 'log'} for scale in tuple_scale):
+        raise ValueError('scale should be either "linear" or "log"')
 
     #########################
     # load and check kwargs #
@@ -425,10 +427,14 @@ def contour_slices(array, q_coordinates, sum_frames=False, slice_position=None, 
     # check some parameters #
     #########################
     nb_dim = array.ndim
-    assert nb_dim == 3, 'array should be 3D'
-    assert scale in {'linear', 'log'}, 'scale should be either "linear" or "log"'
-    assert all(len(qval) == shape for qval, shape in zip(q_coordinates, array.shape)), \
-        'Coordinates shape is not compatible with data shape'
+    if not isinstance(array, np.ndarray):
+        raise TypeError('a numpy array is expected')
+    if nb_dim != 3:
+        raise ValueError('a 3D array is expected')
+    if scale not in {'linear', 'log'}:
+        raise ValueError('scale should be either "linear" or "log"')
+    if any(len(qval) != shape for qval, shape in zip(q_coordinates, array.shape)):
+        raise ValueError('Coordinates shape is not compatible with data shape')
 
     nbz, nby, nbx = array.shape
     qx, qz, qy = q_coordinates
@@ -561,7 +567,8 @@ def contour_stereographic(euclidian_u, euclidian_v, color, radius_mean, planes=N
     :param debugging: True to see the scatter plot of euclidian coordinates
     :return: figure and axe instances
     """
-    assert scale in {'linear', 'log'}, 'scale should be either "linear" or "log"'
+    if scale notin {'linear', 'log'}:
+        raise ValueError('scale should be either "linear" or "log"')
     if contour_range is None:
         if scale == 'linear':
             contour_range = range(0, 10001, 250)
@@ -755,7 +762,8 @@ def imshow_plot(array, sum_frames=False, sum_axis=0, width_v=None, width_h=None,
     if scale not in {'linear', 'log'}:
         raise ValueError('scale should be either "linear" or "log"')
     if not np.isnan(vmin) and not np.isnan(vmax):
-        assert vmin < vmax, 'vmin should be strictly smaller than vmax'
+        if vmin >= vmax:
+            raise ValueError('vmin should be strictly smaller than vmax')
     ###############
     # load kwargs #
     ###############
@@ -903,16 +911,16 @@ def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False)
     :return: a 1D array interpolated between the start and stop indices
     """
     if array.ndim == 2:
-        assert len(start_indices) == 2 and len(stop_indices) == 2,\
-            'ndim=2, start_indices and stop_indices should be of length 2'
+        if len(start_indices) != 2 or len(stop_indices) != 2:
+            raise ValueError('ndim=2, start_indices and stop_indices should be of length 2')
 
         num_points = 2*int(np.sqrt((stop_indices[0]-start_indices[0])**2 +
                                    (stop_indices[1]-start_indices[1])**2))
         cut = map_coordinates(array, np.vstack((np.linspace(start_indices[0], stop_indices[0], num_points),
                                                 np.linspace(start_indices[1], stop_indices[1], num_points))))
     elif array.ndim == 3:
-        assert len(start_indices) == 3 and len(stop_indices) == 3,\
-            'ndim=3, start_indices and stop_indices should be of length 3'
+        if len(start_indices) != 3 or len(stop_indices) != 3:
+            raise ValueError('ndim=3, start_indices and stop_indices should be of length 3')
 
         num_points = int(np.sqrt((stop_indices[0]-start_indices[0])**2 +
                                  (stop_indices[1]-start_indices[1])**2 +
@@ -1353,8 +1361,10 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     #########################
     # check some parameters #
     #########################
-    assert isinstance(sum_frames, bool), 'sum_frames should be a boolean'
-    assert scale in {'linear', 'log'}, 'scale should be either "linear" or "log"'
+    if not isinstance(sum_frames, bool):
+        raise TypeError('sum_frames should be a boolean')
+    if scale not in {'linear', 'log'}:
+        raise ValueError('scale should be either "linear" or "log"')
     nb_dim = array.ndim
     if nb_dim != 3:
         raise ValueError('multislices_plot() expects a 3D array')
@@ -1372,8 +1382,9 @@ def multislices_plot(array, sum_frames=False, slice_position=None, width_z=None,
     valid.valid_container(obj=vmax, container_types=(tuple, list), length=3, item_types=Real,
                           name='graph_utils.multislices_plot')
     max_value = vmax
-    assert all(v_min < v_max for v_min, v_max in zip(min_value, max_value)
-               if not np.isnan(v_min) and not np.isnan(v_max)), 'vmin should be strictly smaller than vmax'
+    if any(v_min >= v_max for v_min, v_max in zip(min_value, max_value)
+               if not np.isnan(v_min) and not np.isnan(v_max)):
+        raise ValueError('vmin should be strictly smaller than vmax')
 
     if not sum_frames:
         slice_position = slice_position or (int(nbz//2), int(nby//2), int(nbx//2))
@@ -1883,7 +1894,8 @@ def scatter_plot(array, labels, markersize=4, markercolor='b', title=''):
         raise ValueError('array should be 2D')
     ndim = array.shape[1]
     if isinstance(labels, tuple):
-        assert len(labels) == ndim, 'len(labels) is different from the number of columns in the array'
+        if len(labels) != ndim:
+            raise ValueError('len(labels) is different from the number of columns in the array')
     else:  # it is a string or a number
         labels = (labels,) * ndim
 
@@ -1936,15 +1948,18 @@ def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=''):
     nb_arrays = len(arrays)
 
     if isinstance(labels, tuple):
-        assert len(labels) == ndim, 'len(labels) is different from the number of columns in the array'
+        if len(labels) != ndim:
+            raise ValueError('len(labels) is different from the number of columns in the array')
     else:  # it is a string or a number
         labels = (labels,) * ndim
     try:
-        assert len(markersizes) == nb_arrays, 'len(markersizes) is different from the number of arrays'
+        if len(markersizes) != nb_arrays:
+            raise ValueError('len(markersizes) is different from the number of arrays')
     except TypeError:  # it is a number
         markersizes = (markersizes,) * nb_arrays
     if isinstance(markercolors, tuple):
-        assert len(markercolors) == nb_arrays, 'len(markercolors) is different from the number of arrays'
+        if len(markercolors) != nb_arrays:
+            raise ValueError('len(markercolors) is different from the number of arrays')
     else:  # it is a string or a number
         markercolors = (markercolors,) * nb_arrays
 
