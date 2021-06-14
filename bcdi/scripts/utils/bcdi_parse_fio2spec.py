@@ -40,7 +40,7 @@ def open_log(fn="SPOCK/spock_output_e1.log"):
                 region_temp = map(int, roi_tmp1)
                 print(region_temp)
                 # print(myrow)
-            except:
+            except IndexError:
                 pass
 
         if myrow.count('Scan #') > 0:
@@ -54,7 +54,7 @@ def open_log(fn="SPOCK/spock_output_e1.log"):
                 print(region_temp)
                 my_regions[str(scanno)] = region_temp
                 # print(myrow)
-            except:
+            except TypeError:
                 pass
     return my_regions
 
@@ -158,18 +158,15 @@ for no in nos:
         logfileName = basepath + "testdelete.spec"
 
         with open(logfileName, "a") as logfile:
-            # self.output("#S %i %s %s %f %f \n"% (scanid,scan_type,motor_name,scandataarr[:,0][0],scandataarr[:,0][1]))
-            logfile.write("#S %i %s %s %f %f \n" % (no, header[0].split(' ')[0],
-                                                    motor_name, scandataarr[:, 0][0], scandataarr[:, 0][1]))
-            # self.output(time.strftime("%a %b %d %H:%M:%S %Y",time.localtime(scanhistory["startts"])))
-            # logfile.write("#D %s\n"%(time.strftime("%a %b %d %H:%M:%S %Y",time.localtime(scanhistory["startts"]))))
+            logfile.write("#S %i %s %s %f %f \n"
+                          % (no, header[0].split(' ')[0], motor_name,
+                             scandataarr[:, 0][0], scandataarr[:, 0][1]))
+
             logfile.write(mot_str)
             logfile.write(pos_str)
 
             out_str = cols_str
-            # self.output(out_str)
             logfile.write(out_str)
             for jj, row in enumerate(scandata):
                 out_str = row.split("\n")[0]+" %i\n" % sumData[jj]
-                # self.output(out_str)
                 logfile.write(out_str)
