@@ -18,12 +18,15 @@ def angle_vectors(
     basis_vectors=(np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])),
 ):
     """
-    Calculate the angle between two vectors expressed in a defined basis, using the Gram matrix.
+    Calculate the angle between two vectors expressed in a defined basis, using the
+    Gram matrix.
 
     :param ref_vector: reference vector
-    :param test_vector: vector for which the angle relative to the reference vector should be calculated
-    :param basis_vectors: tuple of the three components of the basis vectors expressed in the orthonormal basis.
-     The convention used for the orthonormal basis is ([1, 0, 0], [0, 1, 0], [0, 0, 1]).
+    :param test_vector: vector for which the angle relative to the reference vector
+     should be calculated
+    :param basis_vectors: tuple of the three components of the basis vectors expressed
+     in the orthonormal basis. The convention used for the orthonormal basis is ([1,
+     0, 0], [0, 1, 0], [0, 0, 1]).
     :return: the angle in degrees
     """
     ref_vector = np.asarray(ref_vector)
@@ -65,8 +68,8 @@ def assign_peakshape(array_shape, lattice_list, peak_shape, pivot):
     """
     array = np.zeros(array_shape)
     kernel_length = peak_shape.shape[0]
-    # since we have a small list of peaks, do not use convolution (too slow) but for loop
-    # 1 is related to indices for array, 2 is related to indices for peak_shape
+    # since we have a small list of peaks, do not use convolution (too slow) but for
+    # loop 1 is related to indices for array, 2 is related to indices for peak_shape
     for [piz, piy, pix] in lattice_list:
         startz1, startz2 = (
             max(0, int(piz - kernel_length // 2)),
@@ -120,14 +123,16 @@ def bcc_lattice(
     """
     Calculate Bragg peaks positions using experimental parameters for a BCC unit cell.
 
-    :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look for Bragg peaks
+    :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look for
+     Bragg peaks
     :param unitcell_param: the unit cell parameter of the BCC lattice in nm
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
-    :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
-     length of padded q values
+    :param offset_indices: if True, return the non rotated lattice with the origin of
+     indices corresponding to the length of padded q values
     :param verbose: True to have printed comments
-    :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
+    :return: offsets after padding, the list of Bragg peaks positions in pixels, and
+     the corresponding list of hlk.
     """
     lattice_list = []  # position of the pixels corresponding to hkl reflections
     peaks_list = []  # list of hkl fitting the data range
@@ -154,7 +159,8 @@ def bcc_lattice(
     hkl = np.arange(start=-h_max, stop=h_max + 1, step=1)
 
     # pad q arrays in order to find the position in pixels of each hkl within the array
-    # otherwise it finds the first or last index but this can be far from the real peak position
+    # otherwise it finds the first or last index but this can be far from
+    # the real peak position
     leftpad_z, leftpad_y, leftpad_x = numz, numy, numx  # offset of indices to the left
     pad_qx = qx[0] - leftpad_z * (qx[1] - qx[0]) + np.arange(3 * numz) * (qx[1] - qx[0])
     pad_qz = qz[0] - leftpad_y * (qz[1] - qz[0]) + np.arange(3 * numy) * (qz[1] - qz[0])
@@ -163,9 +169,9 @@ def bcc_lattice(
     # calculate peaks position for the non rotated lattice
     for h in hkl:  # h downstream along qx
         for k in hkl:  # k outboard along qy
-            for l in hkl:  # l vertical up along qz
+            for ll in hkl:  # l vertical up along qz
                 # simple cubic unit cell with two point basis (0,0,0), (0.5,0.5,0.5)
-                struct_factor = np.real(1 + np.exp(1j * np.pi * (h + k + l)))
+                struct_factor = np.real(1 + np.exp(1j * np.pi * (h + k + ll)))
                 if (
                     struct_factor != 0
                 ):  # find the position of the pixel nearest to q_bragg
@@ -176,16 +182,18 @@ def bcc_lattice(
                         reference_array=pad_qy, test_values=k * recipr_param
                     )
                     pix_l = util.find_nearest(
-                        reference_array=pad_qz, test_values=l * recipr_param
+                        reference_array=pad_qz, test_values=ll * recipr_param
                     )
 
                     lattice_list.append([pix_h, pix_l, pix_k])
-                    peaks_list.append([h, l, k])
+                    peaks_list.append([h, ll, k])
 
     if offset_indices:
-        # non rotated lattice, the origin of indices will correspond to the length of padded q values
+        # non rotated lattice, the origin of indices will correspond to the length
+        # of padded q values
         return (leftpad_z, leftpad_y, leftpad_x), lattice_list, peaks_list
-    # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
+    # rotate previously calculated peaks, the origin of indices will correspond
+    # to the length of original q values
     lattice_pos, peaks = rotate_lattice(
         lattice_list=lattice_list,
         peaks_list=peaks_list,
@@ -206,17 +214,20 @@ def bct_lattice(
     verbose=False,
 ):
     """
-    Calculate Bragg peaks positions using experimental parameters for a BCT unit cell. The long axis is by default along
-    qz (vertical up).
+    Calculate Bragg peaks positions using experimental parameters for a BCT unit cell.
+    The long axis is by default along qz (vertical up).
 
-    :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look for Bragg peaks
-    :param unitcell_param: tuple, the unit cell parameters of the BCT lattice in nm (square side, long axis)
+    :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look for
+     Bragg peaks
+    :param unitcell_param: tuple, the unit cell parameters of the BCT lattice in nm
+     (square side, long axis)
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
-    :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
-     length of padded q values
+    :param offset_indices: if True, return the non rotated lattice with the origin of
+     indices corresponding to the length of padded q values
     :param verbose: True to have printed comments
-    :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
+    :return: offsets after padding, the list of Bragg peaks positions in pixels, and
+     the corresponding list of hlk.
     """
     lattice_list = []  # position of the pixels corresponding to hkl reflections
     peaks_list = []  # list of hkl fitting the data range
@@ -252,12 +263,14 @@ def bct_lattice(
     q_max = np.sqrt(abs(qx).max() ** 2 + abs(qz).max() ** 2 + abs(qy).max() ** 2)
     numz, numy, numx = len(qx), len(qz), len(qy)
 
-    # calculate the maximum Miller indices which fit into q_max using the long axis parameter
+    # calculate the maximum Miller indices which fit into q_max using
+    # the long axis parameter
     h_max = int(np.floor(q_max * unitcell_param[1] / (2 * np.pi)))
     hkl = np.arange(start=-h_max, stop=h_max + 1, step=1)
 
     # pad q arrays in order to find the position in pixels of each hkl within the array
-    # otherwise it finds the first or last index but this can be far from the real peak position
+    # otherwise it finds the first or last index but this can be far from the
+    # real peak position
     leftpad_z, leftpad_y, leftpad_x = numz, numy, numx  # offset of indices to the left
     pad_qx = qx[0] - leftpad_z * (qx[1] - qx[0]) + np.arange(3 * numz) * (qx[1] - qx[0])
     pad_qz = qz[0] - leftpad_y * (qz[1] - qz[0]) + np.arange(3 * numy) * (qz[1] - qz[0])
@@ -266,9 +279,10 @@ def bct_lattice(
     # calculate peaks position for the non rotated lattice
     for h in hkl:  # h downstream along qx
         for k in hkl:  # k outboard along qy
-            for l in hkl:  # l vertical up along qz
-                # unit cell with two point basis (0,0,0), (0.5,0.5,0.5), same structure factor as BCC
-                struct_factor = np.real(1 + np.exp(1j * np.pi * (h + k + l)))
+            for ll in hkl:  # l vertical up along qz
+                # unit cell with two point basis (0,0,0), (0.5,0.5,0.5),
+                # same structure factor as BCC
+                struct_factor = np.real(1 + np.exp(1j * np.pi * (h + k + ll)))
                 if (
                     struct_factor != 0
                 ):  # find the position of the pixel nearest to q_bragg
@@ -279,16 +293,18 @@ def bct_lattice(
                         reference_array=pad_qy, test_values=k * recipr_param[0]
                     )
                     pix_l = util.find_nearest(
-                        reference_array=pad_qz, test_values=l * recipr_param[1]
+                        reference_array=pad_qz, test_values=ll * recipr_param[1]
                     )
 
                     lattice_list.append([pix_h, pix_l, pix_k])
-                    peaks_list.append([h, l, k])
+                    peaks_list.append([h, ll, k])
 
     if offset_indices:
-        # non rotated lattice, the origin of indices will correspond to the length of padded q values
+        # non rotated lattice, the origin of indices will correspond to the length
+        # of padded q values
         return (leftpad_z, leftpad_y, leftpad_x), lattice_list, peaks_list
-    # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
+    # rotate previously calculated peaks, the origin of indices will correspond
+    # to the length of original q values
     lattice_pos, peaks = rotate_lattice(
         lattice_list=lattice_list,
         peaks_list=peaks_list,
@@ -309,16 +325,19 @@ def cubic_lattice(
     verbose=False,
 ):
     """
-    Calculate Bragg peaks positions using experimental parameters for a simple cubic unit cell.
+    Calculate Bragg peaks positions using experimental parameters for a simple cubic
+    unit cell.
 
-    :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look for Bragg peaks
+    :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look
+     for Bragg peaks
     :param unitcell_param: the unit cell parameter of the simple cubic lattice in nm
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
-    :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
-     length of padded q values
+    :param offset_indices: if True, return the non rotated lattice with the origin
+     of indices corresponding to the length of padded q values
     :param verbose: True to have printed comments
-    :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
+    :return: offsets after padding, the list of Bragg peaks positions in pixels,
+     and the corresponding list of hlk.
     """
     lattice_list = []  # position of the pixels corresponding to hkl reflections
     peaks_list = []  # list of hkl fitting the data range
@@ -345,7 +364,8 @@ def cubic_lattice(
     hkl = np.arange(start=-h_max, stop=h_max + 1, step=1)
 
     # pad q arrays in order to find the position in pixels of each hkl within the array
-    # otherwise it finds the first or last index but this can be far from the real peak position
+    # otherwise it finds the first or last index but this can be far from
+    # the real peak position
     leftpad_z, leftpad_y, leftpad_x = numz, numy, numx  # offset of indices to the left
     pad_qx = qx[0] - leftpad_z * (qx[1] - qx[0]) + np.arange(3 * numz) * (qx[1] - qx[0])
     pad_qz = qz[0] - leftpad_y * (qz[1] - qz[0]) + np.arange(3 * numy) * (qz[1] - qz[0])
@@ -354,7 +374,7 @@ def cubic_lattice(
     # calculate peaks position for the non rotated lattice
     for h in hkl:  # h downstream along qx
         for k in hkl:  # k outboard along qy
-            for l in hkl:  # l vertical up along qz
+            for ll in hkl:  # l vertical up along qz
                 # one atom basis (0,0,0): struct_factor = 1, all peaks are allowed
                 pix_h = util.find_nearest(
                     reference_array=pad_qx, test_values=h * recipr_param
@@ -363,16 +383,18 @@ def cubic_lattice(
                     reference_array=pad_qy, test_values=k * recipr_param
                 )
                 pix_l = util.find_nearest(
-                    reference_array=pad_qz, test_values=l * recipr_param
+                    reference_array=pad_qz, test_values=ll * recipr_param
                 )
 
                 lattice_list.append([pix_h, pix_l, pix_k])
-                peaks_list.append([h, l, k])
+                peaks_list.append([h, ll, k])
 
     if offset_indices:
-        # non rotated lattice, the origin of indices will correspond to the length of padded q values
+        # non rotated lattice, the origin of indices will correspond to the length
+        # of padded q values
         return (leftpad_z, leftpad_y, leftpad_x), lattice_list, peaks_list
-    # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
+    # rotate previously calculated peaks, the origin of indices will correspond
+    # to the length of original q values
     lattice_pos, peaks = rotate_lattice(
         lattice_list=lattice_list,
         peaks_list=peaks_list,
@@ -395,14 +417,16 @@ def fcc_lattice(
     """
     Calculate Bragg peaks positions using experimental parameters for a FCC unit cell.
 
-    :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look for Bragg peaks
+    :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look
+     for Bragg peaks
     :param unitcell_param: the unit cell parameter of the FCC lattice in nm
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
-    :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
-     length of padded q values
+    :param offset_indices: if True, return the non rotated lattice with the origin of
+     indices corresponding to the length of padded q values
     :param verbose: True to have printed comments
-    :return: offsets after padding, the list of Bragg peaks positions in pixels, and the corresponding list of hlk.
+    :return: offsets after padding, the list of Bragg peaks positions in pixels,
+     and the corresponding list of hlk.
     """
     lattice_list = []  # position of the pixels corresponding to hkl reflections
     peaks_list = []  # list of hkl fitting the data range
@@ -429,7 +453,8 @@ def fcc_lattice(
     hkl = np.arange(start=-h_max, stop=h_max + 1, step=1)
 
     # pad q arrays in order to find the position in pixels of each hkl within the array
-    # otherwise it finds the first or last index but this can be far from the real peak position
+    # otherwise it finds the first or last index but this can be far from
+    # the real peak position
     leftpad_z, leftpad_y, leftpad_x = numz, numy, numx  # offset of indices to the left
     pad_qx = qx[0] - leftpad_z * (qx[1] - qx[0]) + np.arange(3 * numz) * (qx[1] - qx[0])
     pad_qz = qz[0] - leftpad_y * (qz[1] - qz[0]) + np.arange(3 * numy) * (qz[1] - qz[0])
@@ -438,13 +463,14 @@ def fcc_lattice(
     # calculate peaks position for the non rotated lattice
     for h in hkl:  # h downstream along qx
         for k in hkl:  # k outboard along qy
-            for l in hkl:  # l vertical up along qz
-                # simple cubic unit cell with four point basis (0,0,0), (0.5,0.5,0), (0,0.5,0.5), (0.5,0,0.5)
+            for ll in hkl:  # l vertical up along qz
+                # simple cubic unit cell with four point basis
+                # (0,0,0), (0.5,0.5,0), (0,0.5,0.5), (0.5,0,0.5)
                 struct_factor = np.real(
                     1
                     + np.exp(1j * np.pi * (h + k))
-                    + np.exp(1j * np.pi * (h + l))
-                    + np.exp(1j * np.pi * (k + l))
+                    + np.exp(1j * np.pi * (h + ll))
+                    + np.exp(1j * np.pi * (k + ll))
                 )
                 if (
                     struct_factor != 0
@@ -456,16 +482,18 @@ def fcc_lattice(
                         reference_array=pad_qy, test_values=k * recipr_param
                     )
                     pix_l = util.find_nearest(
-                        reference_array=pad_qz, test_values=l * recipr_param
+                        reference_array=pad_qz, test_values=ll * recipr_param
                     )
 
                     lattice_list.append([pix_h, pix_l, pix_k])
-                    peaks_list.append([h, l, k])
+                    peaks_list.append([h, ll, k])
 
     if offset_indices:
-        # non rotated lattice, the origin of indices will correspond to the length of padded q values
+        # non rotated lattice, the origin of indices will correspond to the length
+        # of padded q values
         return (leftpad_z, leftpad_y, leftpad_x), lattice_list, peaks_list
-    # rotate previously calculated peaks, the origin of indices will correspond to the length of original q values
+    # rotate previously calculated peaks, the origin of indices will correspond
+    # to the length of original q values
     lattice_pos, peaks = rotate_lattice(
         lattice_list=lattice_list,
         peaks_list=peaks_list,
@@ -492,14 +520,16 @@ def lattice(
 
     :param energy: X-ray energy in eV
     :param sdd: sample to detector distance in m
-    :param direct_beam: direct beam position on the detector in pixels (vertical, horizontal)
+    :param direct_beam: direct beam position on the detector in pixels
+     (vertical, horizontal)
     :param detector: the detector object: Class experiment_utils.Detector()
     :param unitcell: 'cubic', 'bcc', 'fcc', 'bct'
     :param unitcell_param: number or tuple for unit cell parameters
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
-    :param offset_indices: if True, return the non rotated lattice with the origin of indices corresponding to the
-     length of padded q values
-    :return: pivot position, q values, a list of pixels positions for each Bragg peak, Miller indices.
+    :param offset_indices: if True, return the non rotated lattice with the origin of
+     indices corresponding to the length of padded q values
+    :return: pivot position, q values, a list of pixels positions for each Bragg peak,
+     Miller indices.
     """
     pixel_x = (
         detector.pixelsize_x * 1e9
@@ -524,7 +554,8 @@ def lattice(
         np.floor((detector.roi[1] - detector.roi[0]) / detector.binning[1]),
         np.floor((detector.roi[3] - detector.roi[2]) / detector.binning[2]),
     )
-    # for P10 data the rotation is around y vertical, hence gridded data range & binning in z and x are identical
+    # for P10 data the rotation is around y vertical,
+    # hence gridded data range & binning in z and x are identical
 
     ######################
     # calculate q values #
@@ -595,7 +626,8 @@ def reciprocal_lattice(
     alpha, beta, gamma, a1, a2, a3, input_lattice="direct", verbose=False
 ):
     """
-    Calculate the reciprocal lattice given the direct space lattice parameters for the most general triclinic lattice.
+    Calculate the reciprocal lattice given the direct space lattice parameters for
+    the most general triclinic lattice.
 
     :param alpha: in degrees, angle between a2 and a3
     :param beta: in degrees, angle between a1 and a3
@@ -603,9 +635,11 @@ def reciprocal_lattice(
     :param a1: length of the first direct lattice basis vector in nm
     :param a2: length of the second direct lattice basis vector in nm
     :param a3: length of the third direct lattice basis vector in nm
-    :param input_lattice: 'direct' or 'reciprocal', used to define the unit for the volume of the unit cell
+    :param input_lattice: 'direct' or 'reciprocal', used to define the unit for
+     the volume of the unit cell
     :param verbose: True to print comments
-    :return: the triclinic reciprocal lattice componenets (alpha_r, beta_r, gamma_r, b1, b2, b3)
+    :return: the triclinic reciprocal lattice componenets
+     (alpha_r, beta_r, gamma_r, b1, b2, b3)
     """
     v1, v2, v3 = triclinic_to_basis(alpha, beta, gamma, a1, a2, a3)
 
@@ -642,15 +676,18 @@ def rotate_lattice(
     lattice_list, peaks_list, original_shape, pad_offset, pivot, euler_angles=(0, 0, 0)
 ):
     """
-    Rotate lattice points given Euler angles, the pivot position and an eventual offset of the origin.
+    Rotate lattice points given Euler angles, the pivot position and an eventual
+    offset of the origin.
 
-    :param lattice_list: list of Bragg peaks positions in pixels to be rotated [[z1,y1,x1],[z2,y2,x2],...]
+    :param lattice_list: list of Bragg peaks positions in pixels to be rotated
+     [[z1,y1,x1],[z2,y2,x2],...]
     :param peaks_list: corresponding list of [[h1,l1,k1],[h2,l2,k2]...]
     :param original_shape: shape of q values before padding
     :param pad_offset: index shift of the origin for the padded q values
     :param pivot:  tuple, the pivot point position in pixels for the rotation
     :param euler_angles: tuple of angles for rotating the unit cell around (qx, qz, qy)
-    :return: list of Bragg peaks positions fitting into the range, and the corresponding list of hlk
+    :return: list of Bragg peaks positions fitting into the range,
+     and the corresponding list of hlk
     """
     lattice_pos = []  # position of the pixels corresponding to hkl reflections
     peaks = []  # list of hkl fitting the data range
@@ -662,14 +699,16 @@ def rotate_lattice(
         leftpad_x,
     ) = pad_offset  # offset of the 0 index in padded q values: see fcc_lattice()
 
-    # define the rotation using Euler angles with the direct beam as origin (extrinsic rotations)
-    # the frame is x colinear to qx downstream, y colinear to qy outboard, z colinear to qz vertical up
-    # the rotation is applied starting from the left axis
+    # define the rotation using Euler angles with the direct beam as origin
+    # (extrinsic rotations). The frame is : x colinear to qx downstream, y colinear
+    # to y outboard, z colinear to qz vertical up. The rotation is applied starting
+    # from the left axis
     rotation = Rotation.from_euler("xzy", euler_angles, degrees=True)
 
     for idx, point in enumerate(lattice_list):
         pix_h, pix_l, pix_k = point
-        # rotate the vector using Euler angles and the pivot point while compensating padding
+        # rotate the vector using Euler angles and the pivot point
+        # while compensating padding
         offset_h, offset_l, offset_k = (
             pix_h - (pivot_z + leftpad_z),
             pix_l - (pivot_y + leftpad_y),
@@ -700,8 +739,8 @@ def rotate_lattice(
 
 def triclinic_to_basis(alpha, beta, gamma, a1, a2, a3):
     """
-    Calculate the basis vector components in the orthonormal basis [[1, 0, 0], [0, 1, 0], [0, 0, 1]] for the most
-     general triclinic lattice.
+    Calculate the basis vector components in the orthonormal basis
+    [[1, 0, 0], [0, 1, 0], [0, 0, 1]] for the most general triclinic lattice.
 
     :param alpha: in degrees, angle between a2 and a3
     :param beta: in degrees, angle between a1 and a3
@@ -709,7 +748,8 @@ def triclinic_to_basis(alpha, beta, gamma, a1, a2, a3):
     :param a1: length of the first basis vector
     :param a2: length of the second basis vector
     :param a3: length of the third basis vector
-    :return: the basis vector components expressed in the orthonormal basis as (v1, v2, v3)
+    :return: the basis vector components expressed in the orthonormal basis as
+     (v1, v2, v3)
     """
     v1 = a1 * np.array([1, 0, 0])  # the convention here is to align b1 along [1, 0, 0]
     v2 = a2 * np.cos(gamma * np.pi / 180) * np.array([1, 0, 0]) + a2 * np.sin(
@@ -728,18 +768,3 @@ def triclinic_to_basis(alpha, beta, gamma, a1, a2, a3):
     cz = np.sqrt(a3 ** 2 - cx ** 2 - cy ** 2)
     v3 = cx * np.array([1, 0, 0]) + cy * np.array([0, 1, 0]) + cz * np.array([0, 0, 1])
     return v1, v2, v3
-
-
-# if __name__ == "__main__":
-#     alpha_r, beta_r, gamma_r, b1, b2, b3 = reciprocal_lattice(alpha=75, beta=75, gamma=90, a1=63.2, a2=63.2, a3=61.2,
-#                                                               input_lattice='direct', verbose=True)
-#     print(alpha_r, beta_r, gamma_r, b1, b2, b3)
-#
-#     alpha, beta, gamma, a1, a2, a3 = reciprocal_lattice(alpha=alpha_r, beta=beta_r, gamma=gamma_r, a1=b1, a2=b2, a3=b3,
-#                                                         input_lattice='reciprocal', verbose=True)
-#     print(alpha, beta, gamma, a1, a2, a3)
-
-#     euler_angles = (-8.75, 33.75, -24.75)
-#     rot = Rotation.from_euler('xzy', euler_angles, degrees=True)
-#     vector = [0, 0, 1]  # in the frame (x, y, z) or (qx, qy, qz)
-#     print(rot.apply(vector))
