@@ -812,6 +812,7 @@ def center_fft(
      - 'pad_asym_ZYX': pad all dimensions based on 'pad_size' without centering
        the Brag peak
      - 'skip': keep the full dataset or crop it to the size defined by fix_size
+
     :param kwargs:
      - 'fix_bragg' = user-defined position in pixels of the Bragg peak
        [z_bragg, y_bragg, x_bragg]
@@ -819,6 +820,7 @@ def center_fft(
        [zstart, zstop, ystart, ystop, xstart, xstop]
      - 'pad_size' = user defined output array size [nbz, nby, nbx]
      - 'q_values' = [qx, qz, qy], each component being a 1D array
+
     :return:
      - updated data, mask (and q_values if provided, [] otherwise)
      - pad_width = [z0, z1, y0, y1, x0, x1] number of pixels added at each end of the
@@ -1935,6 +1937,7 @@ def grid_bcdi_labframe(
      - 'fill_value': tuple of two real numbers, fill values to use for pixels outside
        of the interpolation range. The first value is for the data, the second for the
        mask. Default is (0, 0)
+
     :return: the data and mask interpolated in the laboratory frame, q values
      (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
@@ -2128,6 +2131,7 @@ def grid_bcdi_xrayutil(
     :param kwargs:
      - follow_bragg (bool): True when for energy scans the detector was also scanned to
        follow the Bragg peak
+
     :return: the data and mask interpolated in the crystal frame, q values
      (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
@@ -3115,6 +3119,7 @@ def load_bcdi_data(
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
+
     :return:
      - the 3D data and mask arrays
      - frames_logical: array of initial length the number of measured frames.
@@ -3260,6 +3265,7 @@ def load_cdi_data(
     :param debugging:  set to True to see plots
     :param kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
+
     :return:
      - the 3D data and mask arrays
      - frames_logical: array of initial length the number of measured frames.
@@ -4117,6 +4123,7 @@ def load_monitor(scan_number, logfile, setup, **kwargs):
     :param setup: the experimental setup: Class SetupPreprocessing()
     :param kwargs:
      - 'nb_frames': int, number of detector frames in the stacked dataset
+
     :return: the default monitor values
     """
     # check and load kwargs
@@ -5456,6 +5463,7 @@ def reload_bcdi_data(
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
+
     :return:
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
@@ -5590,6 +5598,7 @@ def reload_cdi_data(
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
+
     :return:
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
