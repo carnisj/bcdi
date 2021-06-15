@@ -22,3 +22,4 @@ dependencies:
   - pytables
   - lmfit
   - moviepy
+  - pillow

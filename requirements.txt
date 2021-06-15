@@ -14,3 +14,4 @@ silx
 tables
 lmfit
 moviepy
+pillow

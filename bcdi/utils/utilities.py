@@ -60,12 +60,13 @@ class CustomEncoder(json.JSONEncoder):
 
 def bin_data(array, binning, debugging=False):
     """
-    Rebin a 1, 2 or 3-dimensional array. If its dimensions are not a multiple of binning, the array will be cropped.
-    Adapted from PyNX.
+    Rebin a 1D, 2D or 3D array. If its dimensions are not a multiple of binning,
+    the array will be cropped. Adapted from PyNX.
 
     :param array: the array to resize
-    :param binning: the rebin factor - pixels will be summed by groups of binning x binning (x binning). This can
-     also be a tuple/list of rebin values along each axis, e.g. binning=(4,1,2) for a 3D array
+    :param binning: the rebin factor - pixels will be summed by groups of
+     binning (x binning (x binning)). This can also be a tuple/list of rebin values
+     along each axis, e.g. binning=(4,1,2) for a 3D array
     :param debugging: boolean, True to see plots
     :return: the binned array
     """
@@ -345,7 +346,8 @@ def crop_pad_1d(
 
 def decode_json(dct):
     """
-    Function used as the parameter object_hook in json.load function, supporting various types
+    Function used as the parameter object_hook in json.load function,
+    supporting various types
 
     :param dct: the input dictionary of strings
     :return: a dictionary
@@ -369,8 +371,8 @@ def dos2unix(input_file, output_file):
     with open(input_file, "rb") as infile:
         content = infile.read()
     with open(output_file, "wb") as output:
-        for line in content.splitlines():
-            output.write(line + str.encode("\n"))
+        for row in content.splitlines():
+            output.write(row + str.encode("\n"))
 
 
 def find_nearest(reference_array, test_values, width=None):
@@ -379,9 +381,11 @@ def find_nearest(reference_array, test_values, width=None):
 
     :param reference_array: a 1D array where to look for the nearest values
     :param test_values: a number or a 1D array of numbers to be tested
-    :param width: if not None, it will look for the nearest element within the range [x-width/2, x+width/2[
-    :return: index or indices from original_array nearest to values of length len(test_values). Returns the index -1
-     if there is no nearest neighbour in the range defined by width.
+    :param width: if not None, it will look for the nearest element within the range
+     [x-width/2, x+width/2[
+    :return: index or indices from original_array nearest to values of length
+     len(test_values). Returns (index - 1). If there is no nearest neighbour in the
+     range defined by width.
     """
     original_array, test_values = np.asarray(reference_array), np.asarray(test_values)
 
@@ -411,7 +415,8 @@ def find_nearest(reference_array, test_values, width=None):
 
 def fit3d_poly1(x_axis, a, b, c, d):
     """
-    Calculate the 1st order polynomial function on points in a 3D gridgiven the polynomial parameters.
+    Calculate the 1st order polynomial function on points in a 3D gridgiven the
+    polynomial parameters.
 
     :param x_axis: (3xN) tuple or array of 3D coordinates
     :param a: offset
@@ -425,7 +430,8 @@ def fit3d_poly1(x_axis, a, b, c, d):
 
 def fit3d_poly2(x_axis, a, b, c, d, e, f, g):
     """
-    Calculate the 2nd order polynomial function on points in a 3D gridgiven the polynomial parameters.
+    Calculate the 2nd order polynomial function on points in a 3D gridgiven the
+    polynomial parameters.
 
     :param x_axis: (3xN) tuple or array of 3D coordinates
     :param a: offset
@@ -450,7 +456,8 @@ def fit3d_poly2(x_axis, a, b, c, d, e, f, g):
 
 def fit3d_poly3(x_axis, a, b, c, d, e, f, g, h, i, j):
     """
-    Calculate the 3rd order polynomial function on points in a 3D gridgiven the polynomial parameters.
+    Calculate the 3rd order polynomial function on points in a 3D gridgiven the
+    polynomial parameters.
 
     :param x_axis: (3xN) tuple or array of 3D coordinates
     :param a: offset
@@ -479,9 +486,10 @@ def fit3d_poly3(x_axis, a, b, c, d, e, f, g, h, i, j):
     )
 
 
-def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, l, m):
+def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, m, n):
     """
-    Calculate the 4th order polynomial function on points in a 3D grid given the polynomial parameters.
+    Calculate the 4th order polynomial function on points in a 3D grid given the
+    polynomial parameters.
 
     :param x_axis: (3xN) tuple or array of 3D coordinates
     :param a: offset
@@ -495,8 +503,8 @@ def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, l, m):
     :param i: 3th order parameter for the 2nd coordinate
     :param j: 3th order parameter for the 3rd coordinate
     :param k: 4th order parameter for the 1st coordinate
-    :param l: 4th order parameter for the 2nd coordinate
-    :param m: 4th order parameter for the 3rd coordinate
+    :param m: 4th order parameter for the 2nd coordinate
+    :param n: 4th order parameter for the 3rd coordinate
     :return: the 4th order polynomial calculated on x_axis
     """
     return (
@@ -511,8 +519,8 @@ def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, l, m):
         + i * x_axis[1] ** 3
         + j * x_axis[2] ** 3
         + k * x_axis[0] ** 4
-        + l * x_axis[1] ** 4
-        + m * x_axis[2] ** 4
+        + m * x_axis[1] ** 4
+        + n * x_axis[2] ** 4
     )
 
 
@@ -572,8 +580,9 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
     :param window_shape: shape of the window
     :param sigma: float, sigma of the distribution
     :param mu: float, mean of the distribution
-    :param voxel_size: tuple, voxel size in each dimension corresponding to window_shape. If None, it will default to
-     1/window_shape[ii] for each dimension so that it is independent of the shape of the window
+    :param voxel_size: tuple, voxel size in each dimension corresponding to
+     window_shape. If None, it will default to 1/window_shape[ii] for each dimension
+     so that it is independent of the shape of the window
     :param debugging: True to see plots
     :return: the Gaussian window
     """
@@ -661,10 +670,12 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
 
 def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
     """
-    Convert an image to a numpy array using pillow (matplotlib only supports the PNG format).
+    Convert an image to a numpy array using pillow (matplotlib only supports the PNG
+    format).
 
     :param filename: absolute path of the image to open
-    :param convert_grey: if True and the number of layers is 3, it will be converted to a single layer of grey
+    :param convert_grey: if True and the number of layers is 3, it will be converted
+     to a single layer of grey
     :param cmap: colormap for the plots
     :param debug: True to see plots
     :return:
@@ -691,12 +702,16 @@ def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
 
 def in_range(point, extent):
     """
-    Return a boolean depending on whether point is in the indices range defined by extent or not.
+    Return a boolean depending on whether point is in the indices range defined by
+    extent or not.
 
-    :param point: tuple of two real numbers (2D case) (y, x) or three real numbers (3D case) (z, y, x) representing
+    :param point: tuple of two real numbers (2D case) (y, x) or three real numbers
+     (3D case) (z, y, x) representing
      the voxel indices to be tested
-    :param extent: tuple of four integers (2D case) (y_start, y_stop, x_tart, x_stop) or six integers (3D case)
-     (z_start, z_stop, y_start, y_stop, x_tart, x_stop) representing the range of valid indices
+    :param extent: tuple of four integers (2D case) (y_start, y_stop, x_tart, x_stop)
+     or six integers (3D case)
+     (z_start, z_stop, y_start, y_stop, x_tart, x_stop) representing the range of
+      valid indices
     :return: True if point belongs to extent, False otherwise
     """
     # check parameters
@@ -753,14 +768,17 @@ def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
 
     :param array: 2D or 3D numpy array from which the linecut will be extracted
     :param point: tuple of three integral indices, point by which the linecut pass.
-    :param direction: list of 2 (for 2D) or 3 (for 3D) vector components, direction of the linecut in units of pixels
-    :param direction_basis: 'orthonormal' if the vector direction is expressed in an orthonormal basis. In that case it
-     will be corrected for the different voxel sizes in each direction. 'voxel' if direction is expressed in the
-     non-orthonormal basis defined by the voxel sizes in each direction.
-    :param voxel_size: real positive number or tuple of 2 (for 2D) or 3 (for 3D) real positive numbers representing
-     the voxel size in each dimension.
-    :return: distances (1D array, distance along the linecut in the unit given by voxel_size) and cut (1D array,
-     linecut through array in direction passing by point)
+    :param direction: list of 2 (for 2D) or 3 (for 3D) vector components,
+     direction of the linecut in units of pixels
+    :param direction_basis: 'orthonormal' if the vector direction is expressed in
+     an orthonormal basis. In that case it
+     will be corrected for the different voxel sizes in each direction. 'voxel' if
+      direction is expressed in the non-orthonormal basis defined by the voxel sizes
+      in each direction.
+    :param voxel_size: real positive number or tuple of 2 (for 2D) or 3 (for 3D)
+     real positive numbers representing the voxel size in each dimension.
+    :return: distances (1D array, distance along the linecut in the unit given by
+     voxel_size) and cut (1D array, linecut through array in direction passing by point)
     """
     # check parameters
     ndim = array.ndim
@@ -768,6 +786,7 @@ def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
         raise ValueError(f"Number of dimensions = {ndim}, expected 2 or 3")
     if ndim == 2:
         nby, nbx = array.shape
+        nbz = 0
     else:
         nbz, nby, nbx = array.shape
     direction = list(direction)
@@ -789,7 +808,8 @@ def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
     point = tuple(point)  # point needs to be hashable
     if direction_basis not in {"orthonormal", "voxel"}:
         raise ValueError(
-            f'unknown value {direction_basis} for direction_basis, allowed are "voxel" and "orthonormal"'
+            f'unknown value {direction_basis} for direction_basis,'
+            ' allowed are "voxel" and "orthonormal"'
         )
     if isinstance(voxel_size, Real):
         voxel_size = (voxel_size,) * ndim
@@ -829,7 +849,8 @@ def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
         if go_on:
             cut_points.append(next_point)
             n += 1
-    # flip the indices so that the increasing direction is consistent with the second half of the linecut
+    # flip the indices so that the increasing direction is consistent with
+    # the second half of the linecut
     cut_points = cut_points[::-1]
     # append the point by which the linecut pass
     cut_points.append(point)
@@ -892,7 +913,8 @@ def load_file(file_path, fieldname=None):
     Load a file. In case of .cxi or .h5 file, it will use a default path to the data.
     'fieldname' is used only for .npz files.
 
-    :param file_path: the path of the reconstruction to load. Format supported: .npy .npz .cxi .h5
+    :param file_path: the path of the reconstruction to load.
+     Format supported: .npy .npz .cxi .h5
     :param fieldname: the name of the field to be loaded
     :return: the loaded data and the extension of the file
     """
@@ -928,7 +950,8 @@ def load_file(file_path, fieldname=None):
             ]  # select only first mode
     else:
         raise ValueError(
-            "File format not supported: can load only '.npy', '.npz', '.cxi' or '.h5' files"
+            "File format not supported: "
+            "can load only '.npy', '.npz', '.cxi' or '.h5' files"
         )
 
     if fieldname == "modulus":
@@ -957,7 +980,8 @@ def lorentzian(x_axis, amp, cen, sig):
 
 def objective_lmfit(params, x_axis, data, distribution):
     """
-    Calculate total residual for fits to several data sets held in a 2-D array (1 row per dataset).
+    Calculate total residual for fits to several data sets held in a 2-D array
+    (1 row per dataset).
 
     :param params: a lmfit Parameters object
     :param x_axis: where to calculate the distribution
@@ -1000,7 +1024,8 @@ def plane(xy_array, a, b, c):
     """
     Return z values such that z = a*x + b*y + c
 
-    :param xy_array: a (2xN) numpy array, x values being the first row and y values the second row
+    :param xy_array: a (2xN) numpy array, x values being the first row and
+     y values the second row
     :param a: coefficient for x values
     :param b:  coefficient for y values
     :param c: constant offset
@@ -1013,7 +1038,8 @@ def plane_dist(indices, params):
     """
     Calculate the distance of an ensemble of voxels to a plane given by its parameters.
 
-    :param indices: a (3xN) numpy array, x values being the 1st row, y values the 2nd row and z values the 3rd row
+    :param indices: a (3xN) numpy array, x values being the 1st row,
+     y values the 2nd row and z values the 3rd row
     :param params: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0
     :return: a array of shape (N,) containing the distance to the plane for each voxel
     """
@@ -1035,12 +1061,14 @@ def plane_fit(indices, label="", threshold=1, debugging=False):
     """
     Fit a plane to the voxels defined by indices.
 
-    :param indices: a (3xN) numpy array, x values being the 1st row, y values the 2nd row and z values the 3rd row
+    :param indices: a (3xN) numpy array, x values being the 1st row,
+     y values the 2nd row and z values the 3rd row
     :param label: int, label of the plane used for the title in the debugging plot
-    :param threshold: the fit will be considered as good if the mean distance of the voxels to the plane is smaller than
-     this value
+    :param threshold: the fit will be considered as good if the mean distance
+     of the voxels to the plane is smaller than this value
     :param debugging: True to see plots
-    :return: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0, the matrix of covariant values
+    :return: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0,
+     the matrix of covariant values
     """
     valid_plane = True
     indices = np.asarray(indices)
@@ -1073,7 +1101,8 @@ def plane_fit(indices, label="", threshold=1, debugging=False):
     # calculate the mean distance to the fitted plane
     distance = plane_dist(indices=indices, params=params)
     print(
-        f"plane fit using z=a*x+b*y+c: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}"
+        f"plane fit using z=a*x+b*y+c: dist.mean()={distance.mean():.2f},"
+        f"  dist.std()={distance.std():.2f}"
     )
 
     if distance.mean() > threshold and distance.mean() / distance.std() > 1:
@@ -1102,7 +1131,8 @@ def plane_fit(indices, label="", threshold=1, debugging=False):
         # calculate the mean distance to the fitted plane
         distance = plane_dist(indices=indices, params=params)
         print(
-            f"plane fit using y=a*x+b: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}"
+            f"plane fit using y=a*x+b: dist.mean()={distance.mean():.2f},"
+            f"  dist.std()={distance.std():.2f}"
         )
 
         if distance.mean() > threshold and distance.mean() / distance.std() > 1:
@@ -1129,7 +1159,8 @@ def plane_fit(indices, label="", threshold=1, debugging=False):
             # calculate the mean distance to the fitted plane
             distance = plane_dist(indices=indices, params=params)
             print(
-                f"plane fit using x=constant: dist.mean()={distance.mean():.2f},  dist.std()={distance.std():.2f}"
+                f"plane fit using x=constant: dist.mean()={distance.mean():.2f},"
+                f"  dist.std()={distance.std():.2f}"
             )
 
     if distance.mean() > threshold and distance.mean() / distance.std() > 1:
@@ -1242,7 +1273,8 @@ def remove_background(array, q_values, avg_background, avg_qvalues, method="norm
 
 def remove_nan(data, mask=None):
     """
-    Remove nan values from data and optionally update the mask (masked data = 1 in the mask, 0 otherwise).
+    Remove nan values from data and optionally update the mask
+    (masked data = 1 in the mask, 0 otherwise).
 
     :param data: numpy ndarray
     :param mask: if provided, numpy ndarray of the same shape as the data
@@ -1280,8 +1312,10 @@ def rotation_matrix_3d(axis_to_align, reference_axis):
     """
     Calculate the rotation matrix which aligns axis_to_align onto reference_axis in 3D.
 
-    :param axis_to_align: the 3D vector to be aligned (e.g. vector q), expressed in an orthonormal frame x y z
-    :param reference_axis: will align axis_to_align onto this 3D vector, expressed in an orthonormal frame  x y z
+    :param axis_to_align: the 3D vector to be aligned (e.g. vector q),
+     expressed in an orthonormal frame x y z
+    :param reference_axis: will align axis_to_align onto this 3D vector,
+     expressed in an orthonormal frame  x y z
     :return: the rotation matrix as a np.array of shape (3, 3)
     """
     # check parameters
@@ -1330,31 +1364,42 @@ def rotate_crystal(
     **kwargs,
 ):
     """
-    Rotate arrays to align axis_to_align onto reference_axis. The pivot of the rotation is in the center of the arrays.
-    axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
-    (CXI convention).
+    Rotate arrays to align axis_to_align onto reference_axis. The pivot of the rotation
+    is in the center of the arrays. axis_to_align and reference_axis should be in the
+    order X Y Z, where Z is downstream, Y vertical and X outboard (CXI convention).
 
     :param arrays: tuple of 3D real arrays of the same shape.
-    :param axis_to_align: the axis to be aligned (e.g. vector q), expressed in an orthonormal frame x y z
-    :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame  x y z
+    :param axis_to_align: the axis to be aligned (e.g. vector q),
+     expressed in an orthonormal frame x y z
+    :param reference_axis: will align axis_to_align onto this vector,
+     expressed in an orthonormal frame  x y z
     :param voxel_size: tuple, voxel size of the 3D array in z, y, and x (CXI convention)
-    :param fill_value: tuple of numeric values used in the RegularGridInterpolator for points outside of the
-     interpolation domain. The length of the tuple should be equal to the number of input arrays.
-    :param rotation_matrix: optional numpy ndarray of shape (3, 3), rotation matrix to apply to arrays.
-     If it is provided, the parameters axis_to_align and reference_axis will be discarded.
-    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
-    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
-    :param debugging: tuple of booleans of the same length as the number of input arrays, True to see plots before and
-     after rotation
+    :param fill_value: tuple of numeric values used in the RegularGridInterpolator
+     for points outside of the interpolation domain. The length of the tuple should
+     be equal to the number of input arrays.
+    :param rotation_matrix: optional numpy ndarray of shape (3, 3),
+     rotation matrix to apply to arrays. If it is provided, the parameters
+     axis_to_align and reference_axis will be discarded.
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise
+     (detector frame) Used for plot labels.
+    :param reciprocal_space: True if the data is in reciprocal space, False otherwise.
+     Used for plot labels.
+    :param debugging: tuple of booleans of the same length as the number of
+     input arrays, True to see plots before and after rotation
     :param kwargs:
-     - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
-     - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging plots, same length as the
+     - 'title': tuple of strings, titles for the debugging plots, same length as the
        number of arrays
-     - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-     - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-     - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :return: a rotated array (if a single array was provided) or a tuple of rotated arrays (same length as the number
-     of input arrays)
+     - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging
+       plots, same length as the number of arrays
+     - width_z: size of the area to plot in z (axis 0), centered on the middle of
+       the initial array
+     - width_y: size of the area to plot in y (axis 1), centered on the middle of
+       the initial array
+     - width_x: size of the area to plot in x (axis 2), centered on the middle of
+       the initial array
+
+    :return: a rotated array (if a single array was provided) or a tuple of rotated
+     arrays (same length as the number of input arrays)
     """
     # check that arrays is a tuple of 3D arrays
     if isinstance(arrays, np.ndarray):
@@ -1405,7 +1450,8 @@ def rotate_crystal(
         name="debugging",
     )
     if rotation_matrix is None:
-        # 'axis_to_align' and 'reference_axis' need to be declared in order to calculate the rotation matrix
+        # 'axis_to_align' and 'reference_axis' need to be declared
+        # in order to calculate the rotation matrix
         valid.valid_container(
             axis_to_align,
             container_types=(tuple, list, np.ndarray),
@@ -1422,15 +1468,18 @@ def rotate_crystal(
         )
     else:
         print(
-            'The rotation matrix is provided, parameters "axis_to_align" and "reference_axis" will be discarded'
+            'The rotation matrix is provided, parameters "axis_to_align" and '
+            '"reference_axis" will be discarded'
         )
         if not isinstance(rotation_matrix, np.ndarray):
             raise TypeError(
-                f"rotation_matrix should be a numpy ndarray, got {type(rotation_matrix)}"
+                "rotation_matrix should be a numpy ndarray,"
+                f" got {type(rotation_matrix)}"
             )
         if rotation_matrix.shape != (3, 3):
             raise ValueError(
-                f"rotation_matrix should be of shape (3, 3), got {rotation_matrix.shape}"
+                "rotation_matrix should be of shape (3, 3),"
+                f" got {rotation_matrix.shape}"
             )
 
     # check and load kwargs
@@ -1517,7 +1566,7 @@ def rotate_crystal(
     ######################
     output_arrays = []
     for idx, array in enumerate(arrays):
-        # convert array type to float, for integers the interpolation can lead to artefacts
+        # convert array to float, for integers the interpolation can lead to artefacts
         array = array.astype(float)
 
         # interpolate array onto the new positions
@@ -1571,18 +1620,22 @@ def rotate_vector(
     vectors, axis_to_align=None, reference_axis=None, rotation_matrix=None
 ):
     """
-    Calculate the vector components (3D) in the basis where axis_to_align and reference_axis are aligned.
-    axis_to_align and reference_axis should be in the order X Y Z, where Z is downstream, Y vertical and X outboard
-    (CXI convention).
+    Calculate the vector components (3D) in the basis where axis_to_align and
+    reference_axis are aligned. axis_to_align and reference_axis should be in the
+    order X Y Z, where Z is downstream, Y vertical and X outboard (CXI convention).
 
-    :param vectors: the vectors to be rotated, tuple of three components (values or 1D-arrays) expressed in an
+    :param vectors: the vectors to be rotated, tuple of three components
+     (values or 1D-arrays) expressed in an orthonormal frame x y z
+    :param axis_to_align: the axis of myobj (vector q), expressed in an orthonormal
+     frame x y z
+    :param reference_axis: will align axis_to_align onto this vector, expressed in an
      orthonormal frame x y z
-    :param axis_to_align: the axis of myobj (vector q), expressed in an orthonormal frame x y z
-    :param reference_axis: will align axis_to_align onto this vector, expressed in an orthonormal frame x y z
-    :param rotation_matrix: optional numpy ndarray of shape (3, 3), rotation matrix to apply to vectors. If it is
-     provided, the parameters axis_to_align and reference_axis will be discarded.
+    :param rotation_matrix: optional numpy ndarray of shape (3, 3), rotation matrix to
+     apply to vectors. If it is provided, the parameters axis_to_align and
+     reference_axis will be discarded.
     :return: tuple of three ndarrays in CXI convention z y x, each of shape
-     (vectors[0].size, vectors[1].size, vectors[2].size). If a single vector is provided, returns a 1D array of size 3.
+     (vectors[0].size, vectors[1].size, vectors[2].size). If a single vector is
+      provided, returns a 1D array of size 3.
     """
     # check parameters
     if isinstance(vectors, np.ndarray):
@@ -1598,7 +1651,8 @@ def rotate_vector(
         name="vectors",
     )
     if rotation_matrix is None:
-        # 'axis_to_align' and 'reference_axis' need to be declared in order to calculate the rotation matrix
+        # 'axis_to_align' and 'reference_axis' need to be declared in order to
+        # calculate the rotation matrix
         valid.valid_container(
             axis_to_align,
             container_types=(tuple, list, np.ndarray),
@@ -1615,15 +1669,18 @@ def rotate_vector(
         )
     else:
         print(
-            'The rotation matrix is provided, parameters "axis_to_align" and "reference_axis" will be discarded'
+            'The rotation matrix is provided, '
+            'parameters "axis_to_align" and "reference_axis" will be discarded'
         )
         if not isinstance(rotation_matrix, np.ndarray):
             raise TypeError(
-                f"rotation_matrix should be a numpy ndarray, got {type(rotation_matrix)}"
+                "rotation_matrix should be a numpy ndarray,"
+                f" got {type(rotation_matrix)}"
             )
         if rotation_matrix.shape != (3, 3):
             raise ValueError(
-                f"rotation_matrix should be of shape (3, 3), got {rotation_matrix.shape}"
+                "rotation_matrix should be of shape (3, 3),"
+                f" got {rotation_matrix.shape}"
             )
 
     ################################################################################
@@ -1680,11 +1737,12 @@ def sum_roi(array, roi, debugging=False):
     """
     Sum the array intensities in the defined region of interest.
 
-    :param array: 2D or 3D array. If ndim=3, the region of interest is applied sequentially to each 2D
-     frame, the iteration being peformed over the first axis.
+    :param array: 2D or 3D array. If ndim=3, the region of interest is applied
+     sequentially to each 2D frame, the iteration being peformed over the first axis.
     :param roi: [Vstart, Vstop, Hstart, Hstop] region of interest for the sum
     :param debugging: True to see plots
-    :return: a number (if array.ndim=2) or a 1D array of length array.shape[0] (if array.ndim=3) of summed intensities
+    :return: a number (if array.ndim=2) or a 1D array of length array.shape[0]
+     (if array.ndim=3) of summed intensities
     """
     ndim = array.ndim
     if ndim == 2:
