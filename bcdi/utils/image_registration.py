@@ -2,7 +2,8 @@
 # Original code from Xianhui Xiao APS Sector 2
 # Updated by Ross Harder
 # Updated by Steven Leake 30/07/2014
-# Changed variable names to make it clearer and put it in CXI convention (z y x) J.Carnis 27/04/2018
+# Changed variable names to make it clearer and put it in CXI convention (z y x)
+# J.Carnis 27/04/2018
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 import gc
@@ -92,8 +93,8 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
         # buf2ft    Fourier transform of image to register,
         #           DC in (1,1) [DO NOT FFTSHIFT]
         # ups_factor Upsampling factor (integer). Images will be registered to
-        #           within 1/ups_factor of a pixel. For example ups_factor = 20 means the
-        #           images will be registered within 1/20 of a pixel. (default = 1)
+        #           within 1/ups_factor of a pixel. For example ups_factor = 20 means
+        #           the images will be registered within 1/20 of a pixel. (default = 1)
 
         # Outputs
         # output =  [error,diff_phase,net_row_shift,net_col_shift]
@@ -240,21 +241,6 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
 
         if nd2 == 1:
             col_shift = 0
-
-        # Compute registered version of buf2ft
-        #        if (usfac > 0):
-        #            ndim = np.shape(buf2ft)
-        #            nr = ndim[0]
-        #            nc = ndim[1]
-        #            Nr = sf.ifftshift(np.arange(-np.fix(1.*nr/2),np.ceil(1.*nr/2)))
-        #            Nc = sf.ifftshift(np.arange(-np.fix(1.*nc/2),np.ceil(1.*nc/2)))
-        #            Nc,Nr = np.meshgrid(Nc,Nr)
-        #            Greg = buf2ft*np.exp(1j*2*np.pi*(-1.*row_shift*Nr/nr-1.*col_shift*Nc/nc))
-        #            Greg = Greg*np.exp(1j*diff_phase)
-        #        elif (nargout > 1)&(usfac == 0):
-        #            Greg = np.dot(buf2ft,exp(1j*diff_phase))
-
-        # return error,diff_phase,row_shift,col_shift,Greg
         return error, diff_phase, row_shift, col_shift
 
 
@@ -271,10 +257,10 @@ def dftups(
         # Upsampled DFT by matrix multiplies, can compute an upsampled DFT in just
         # a small region.
         # ups_factor         Upsampling factor (default ups_factor = 1)
-        # [output_row_nb,output_column_nb]     Number of pixels in the output upsampled DFT, in
-        #               units of upsampled pixels (default = size(in))
-        # row_offset, column_offset    Row and column offsets, allow to shift the output array to
-        #               a region of interest on the DFT (default = 0)
+        # [output_row_nb,output_column_nb]     Number of pixels in the output upsampled
+        #               DFT, in units of upsampled pixels (default = size(in))
+        # row_offset, column_offset    Row and column offsets, allow to shift the output
+        #               array to a region of interest on the DFT (default = 0)
         # Receives DC in upper left corner, image center must be in (1,1)
         # Manuel Guizar - Dec 13, 2007
         # Modified from dftups, by J.R. Fienup 7/31/06
@@ -284,12 +270,13 @@ def dftups(
         #   - Embed the array "in" in an array that is usfac times larger in each
         #     dimension. ifftshift to bring the center of the image to (1,1).
         #   - Take the FFT of the larger array
-        #   - Extract an [output_row_nb, output_column_nb] region of the result. Starting with the
-        #     [row_offset+1 column_offset+1] element.
+        #   - Extract an [output_row_nb, output_column_nb] region of the result.
+        #     Starting with the [row_offset+1 column_offset+1] element.
 
         # It achieves this result by computing the DFT in the output array without
         # the need to zero pad. Much faster and memory efficient than the
-        # zero-padded FFT approach if [nor noc] are much smaller than [nr*usfac nc*usfac]
+        # zero-padded FFT approach if [nor noc] are much smaller than
+        # [nr*usfac nc*usfac]
     """
     input_row_nb = myarray.shape[0]
     input_column_nb = myarray.shape[1]
