@@ -868,7 +868,8 @@ def filter_3d(
     sigma = kwargs.get("sigma")
 
     ndim = array.ndim
-    assert ndim in {2, 3}, "data should be a 2D or a 3D array"
+    if ndim not in {2, 3}:
+        raise ValueError("data should be a 2D or a 3D array")
 
     if filter_name == "gaussian_highpass":
         sigma = sigma or 3
@@ -1452,12 +1453,10 @@ def get_strain(
     """
     from bcdi.preprocessing.preprocessing_utils import wrap
 
-    assert phase.ndim == 3, "phase should be a 3D array"
-    assert reference_axis in (
-        "x",
-        "y",
-        "z",
-    ), "The reference axis should be 'x', 'y' or 'z'"
+    if phase.ndim != 3:
+        raise ValueError("phase should be a 3D array")
+    if reference_axis not in {"x", "y", "z"}:
+        raise ValueError("The reference axis should be 'x', 'y' or 'z'")
     if isinstance(voxel_size, Number):
         voxel_size = (voxel_size,) * 3
     valid.valid_container(
@@ -1867,10 +1866,12 @@ def remove_offset(
 
     :return: the processed array
     """
-    assert (
-        array.ndim == 3 and support.ndim == 3
-    ), "array and support should be 3D arrayse"
-    assert array.shape == support.shape, "array and support should have the same shape"
+    if not isinstance(array, np.ndarray) or not isinstance(support, np.ndarray):
+        raise TypeError("array and support should be numpy arrays")
+    if array.ndim != 3 or support.ndim != 3:
+        raise ValueError("array and support should be 3D arrays")
+    if array.shape != support.shape:
+        raise ValueError("array and support should have the same shape")
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
@@ -1910,9 +1911,8 @@ def remove_offset(
         else:
             raise ValueError('Invalid setting for parameter "offset_method"')
     else:
-        assert (
-            len(offset_origin) == 3
-        ), "offset_origin should be a tuple of three pixel positions"
+        if len(offset_origin) != 3:
+            raise ValueError("offset_origin should be a tuple of three pixel positions")
         print(
             "\nOrigin for offset removal at pixels (z, y, x): ",
             offset_origin[0],
@@ -2535,9 +2535,9 @@ def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
     from skimage.restoration import unwrap_phase
     import numpy.ma as ma
 
-    assert (
-        0 <= support_threshold <= 1
-    ), "support_threshold is a relative threshold, expected value between 0 and 1"
+    if support_threshold < 0 or support_threshold > 1:
+        raise ValueError("support_threshold is a relative threshold, expected value "
+                         "between 0 and 1")
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
