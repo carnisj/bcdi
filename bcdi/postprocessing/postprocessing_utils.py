@@ -37,11 +37,12 @@ def align_obj(
 
     :param reference_obj: 3D array, reference complex object
     :param obj: 3D array, complex density to average with
-    :param method: 'modulus', 'support' or 'skip'. Object to use for the determination of the shift.
-     If 'support', the parameter 'support_threshold' must also be provided since the binary support is defined by
-     thresholding the normalized modulus.
-    :param support_threshold: all points where the normalized modulus is larger than this value will be set to 1 in the
-     support.
+    :param method: 'modulus', 'support' or 'skip'. Object to use for the determination
+     of the shift. If 'support', the parameter 'support_threshold' must also be
+     provided since the binary support is defined by thresholding the normalized
+     modulus.
+    :param support_threshold: all points where the normalized modulus is larger than
+     this value will be set to 1 in the support.
     :param precision: precision for the DFT registration in 1/pixel
     :param debugging: set to True to see plots
     :type debugging: bool
@@ -130,9 +131,13 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     :param debugging: set to True to see plots
     :type debugging: bool
     :param kwargs:
-     - for the normal distribution: 'sigma' and 'mu' of the 3d multivariate normal distribution, tuples of 3 floats
-     - for the Tuckey window: 'alpha' (shape parameter) of the 3d Tukey window, tuple of 3 floats
-     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
+     - for the normal distribution: 'sigma' and 'mu' of the 3d multivariate normal
+       distribution, tuples of 3 floats
+     - for the Tuckey window: 'alpha' (shape parameter) of the 3d Tukey window,
+       tuple of 3 floats
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining
+       default plot labels.
+
     :return: filtered amplitude, phase of the same shape as myamp
     """
     # check and load kwargs
@@ -272,24 +277,32 @@ def average_obj(
     **kwargs,
 ):
     """
-    Average two reconstructions after aligning it, if their cross-correlation is larger than
-    correlation_threshold.
+    Average two reconstructions after aligning it, if their cross-correlation is larger
+    than correlation_threshold.
 
     :param avg_obj: 3D array, average complex density
     :param ref_obj: 3D array, reference complex object
     :param obj: 3D array, complex density to average with
     :param support_threshold: for support definition
-    :param correlation_threshold: minimum correlation between two dataset to average them
-    :param aligning_option: 'com' for center of mass, 'dft' for dft registration and subpixel shift
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param method: 'real_space' or 'reciprocal_space', in which space the average will be performed
+    :param correlation_threshold: minimum correlation between two dataset to average
+     them
+    :param aligning_option: 'com' for center of mass, 'dft' for dft registration and
+     subpixel shift
+    :param width_z: size of the area to plot in z (axis 0), centered on the middle of
+     the initial array
+    :param width_y: size of the area to plot in y (axis 1), centered on the middle of
+     the initial array
+    :param width_x: size of the area to plot in x (axis 2), centered on the middle of
+     the initial array
+    :param method: 'real_space' or 'reciprocal_space', in which space the average will
+     be performed
     :param debugging: set to True to see plots
     :type debugging: bool
     :param kwargs:
      - 'reciprocal_space': True if the object is in reciprocal space
-     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining
+       default plot labels.
+
     :return: the average complex density
     """
     # check and load kwargs
@@ -491,7 +504,8 @@ def bragg_temperature(
 
     :param spacing: q or planar distance, in inverse angstroms or angstroms
     :param reflection: measured reflection, e.g. np.array([1, 1, 1])
-    :param spacing_ref: reference spacing at known temperature (include substrate-induced strain)
+    :param spacing_ref: reference spacing at known temperature
+     (include substrate-induced strain)
     :param temperature_ref: in K, known temperature for the reference spacing
     :param use_q: set to True to use q, False to use planar distance
     :type use_q: bool
@@ -500,7 +514,8 @@ def bragg_temperature(
     """
     print("\n")
     if material == "Pt":
-        # reference values for Pt: temperature in K, thermal expansion x 10^6 in 1/K, lattice parameter in angstroms
+        # reference values for Pt: temperature in K, thermal expansion x 10^6 in 1/K,
+        # lattice parameter in angstroms
         expansion_data = np.array(
             [
                 [100, 6.77, 3.9173],
@@ -590,9 +605,12 @@ def calc_coordination(
 
     :param support: 3D support array
     :param kernel: kernel used for convolution with the support
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :param width_z: size of the area to plot in z (axis 0), centered on the middle
+     of the initial array
+    :param width_y: size of the area to plot in y (axis 1), centered on the middle
+     of the initial array
+    :param width_x: size of the area to plot in x (axis 2), centered on the middle
+     of the initial array
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: the coordination matrix
@@ -637,9 +655,13 @@ def center_com(array, debugging=False, **kwargs):
     :param array: 3D array to be centered based on the center of mass of abs(array)
     :param debugging: boolean, True to see plots
     :param kwargs:
-     - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-     - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-     - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+     - width_z: size of the area to plot in z (axis 0), centered on the middle
+       of the initial array
+     - width_y: size of the area to plot in y (axis 1), centered on the middle
+       of the initial array
+     - width_x: size of the area to plot in x (axis 2), centered on the middle
+       of the initial array
+
     :return: array centered by pixel shift
     """
     #########################
@@ -739,9 +761,13 @@ def center_max(array, debugging=False, **kwargs):
     :param array: 3D array to be centered based on max(abs(array))
     :param debugging: boolean, True to see plots
     :param kwargs:
-     - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-     - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-     - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+     - width_z: size of the area to plot in z (axis 0), centered on the middle
+       of the initial array
+     - width_y: size of the area to plot in y (axis 1), centered on the middle
+       of the initial array
+     - width_x: size of the area to plot in x (axis 2), centered on the middle
+       of the initial array
+
     :return: array centered by pixel shift
     """
     #########################
@@ -830,6 +856,7 @@ def filter_3d(
     :param debugging: True to see a plot of the kernel
     :param kwargs:
      - 'sigma': sigma of the gaussian kernel
+
     :return:
     """
     from scipy.signal import convolve
@@ -872,10 +899,14 @@ def find_bulk(
 
     :param amp: 3D array, reconstructed object amplitude
     :param support_threshold:  threshold for isosurface determination
-    :param method: 'threshold' or 'defect'. If 'defect', removes layer by layer using the coordination number.
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :param method: 'threshold' or 'defect'. If 'defect', removes layer by layer using
+     the coordination number.
+    :param width_z: size of the area to plot in z (axis 0), centered on the middle
+     of the initial array
+    :param width_y: size of the area to plot in y (axis 1), centered on the middle
+     of the initial array
+    :param width_x: size of the area to plot in x (axis 2), centered on the middle
+     of the initial array
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: the support corresponding to the bulk
@@ -919,7 +950,8 @@ def find_bulk(
         ############################################################################
         # remove layer by layer until the correct isosurface is reached on average #
         ############################################################################
-        nb_voxels = 1  # initialize this counter which corresponds to the nb of voxels not included in outer
+        nb_voxels = 1  # initialize this counter which corresponds to
+        # the number of voxels not included in outer
         idx = 0
         # is larger than mythreshold
         while nb_voxels > 0:  # nb of voxels not included in outer
@@ -952,7 +984,8 @@ def find_bulk(
                     title="Surface matrix",
                 )
 
-            # second step: calculate the % of voxels from that layer whose amplitude is lower than support_threshold
+            # second step: calculate the % of voxels from that layer whose amplitude
+            # is lower than support_threshold
             nb_voxels = surface[np.nonzero(surface)].sum()
             keep_voxels = surface[abs(amp) >= support_threshold * max_amp].sum()
             voxels_counter = (
@@ -983,15 +1016,18 @@ def find_bulk(
 
 def find_crop_center(array_shape, crop_shape, pivot):
     """
-    Find the closest voxel to pivot which allows to crop an array of array_shape to crop_shape.
+    Find the closest voxel to pivot which allows to crop an array of array_shape to
+    crop_shape.
 
     :param array_shape: initial shape of the array
     :type array_shape: tuple
     :param crop_shape: final shape of the array
     :type crop_shape: tuple
-    :param pivot: position on which the final region of interest dhould be centered (center of mass of the Bragg peak)
+    :param pivot: position on which the final region of interest dhould be centered
+     (center of mass of the Bragg peak)
     :type pivot: tuple
-    :return: the voxel position closest to pivot which allows cropping to the defined shape.
+    :return: the voxel position closest to pivot which allows cropping to the defined
+     shape.
     """
     valid.valid_container(
         array_shape,
@@ -1036,9 +1072,9 @@ def find_crop_center(array_shape, crop_shape, pivot):
 
 def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=False):
     """
-    Find the meaningful range of the array where it is larger than the threshold, in order to reduce the memory
-    consumption in latter processing. The range can be larger than the initial data size, which then will need to be
-    padded.
+    Find the meaningful range of the array where it is larger than the threshold, in
+    order to reduce the memory consumption in latter processing. The range can be
+    larger than the initial data size, which then will need to be padded.
 
     :param array: the complex 3D reconstruction
     :param plot_margin: user-defined margin to add to the minimum range of the data
@@ -1210,19 +1246,25 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
 
 def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **kwargs):
     """
-    Calculate the optical path for refraction/absorption corrections in the crystal. 'k' should be in the same basis
-    (crystal or laboratory frame) as the data. For xrayutilities, the data is orthogonalized in crystal frame.
+    Calculate the optical path for refraction/absorption corrections in the crystal.
+    'k' should be in the same basis (crystal or laboratory frame) as the data. For
+    xrayutilities, the data is orthogonalized in crystal frame.
 
     :param support: 3D array, support used for defining the object
     :param direction: "in" or "out" , incident or diffracted wave
-    :param k: vector for the incident or diffracted wave depending on direction, expressed in an orthonormal frame
-     (without taking in to account the different voxel size in each dimension)
+    :param k: vector for the incident or diffracted wave depending on direction,
+     expressed in an orthonormal frame (without taking in to account the different
+     voxel size in each dimension)
     :param voxel_size: tuple, actual voxel size in z, y, and x (CXI convention)
     :param debugging: boolena, True to see plots
     :param kwargs:
-         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+     - width_z: size of the area to plot in z (axis 0), centered on the middle
+       of the initial array
+     - width_y: size of the area to plot in y (axis 1), centered on the middle
+       of the initial array
+     - width_x: size of the area to plot in x (axis 2), centered on the middle
+       of the initial array
+
     :return: the optical path in nm, of the same shape as mysupport
     """
     #########################
@@ -1274,9 +1316,10 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
         name="voxel_size",
     )
 
-    #####################################################################################################
-    # correct k for the different voxel size in each dimension (k is expressed in an orthonormal basis) #
-    #####################################################################################################
+    ############################################################
+    # correct k for the different voxel size in each dimension #
+    # (k is expressed in an orthonormal basis)                 #
+    ############################################################
     k = [k[i] * voxel_size[i] for i in range(3)]
 
     ###################################################################
@@ -1313,8 +1356,9 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
                 pixel = np.array(
                     [idz, idy, idx]
                 )  # pixel for which the optical path is calculated
-                # beware, the support could be 0 at some voxel inside the object also, but the loop should
-                # continue until it reaches the end of the box (min_z, max_z, min_y, max_y, min_x, max_x)
+                # beware, the support could be 0 at some voxel inside the object also,
+                # but the loop should continue until it reaches the end of the box
+                # (min_z, max_z, min_y, max_y, min_x, max_x)
                 while not stop_flag:
                     pixel = pixel + k_norm  # add unitary translation in -k_in direction
                     coords = np.rint(pixel)
@@ -1330,8 +1374,9 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
                         )
                         stop_flag = False
 
-                # For each voxel, counter is the number of steps along the unitary k vector where the support is
-                # non zero. Now we need to convert this into nm using the voxel size, different in each dimension
+                # For each voxel, counter is the number of steps along the unitary
+                # k vector where the support is non zero. Now we need to convert this
+                # into nm using the voxel size, different in each dimension
                 endpoint = (
                     np.array([idz, idy, idx]) + counter * k_norm
                 )  # indices of the final voxel
@@ -1346,7 +1391,8 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     ##################
     if debugging:
         print(
-            f"Optical path calculation, support limits (start_z, stop_z, start_y, stop_y, start_x, stop_x):"
+            "Optical path calculation, support limits "
+            "(start_z, stop_z, start_y, stop_y, start_x, stop_x):"
             f"{min_z}, {max_z}, {min_y}, {max_y}, {min_x}, {max_x}"
         )
         gu.multislices_plot(
@@ -1389,13 +1435,18 @@ def get_strain(
     """
     Calculate the 3D strain array.
 
-    :param phase: 3D phase array (do not forget the -1 sign if the phasing algorithm is python or matlab-based)
-    :param planar_distance: the planar distance of the material corresponding to the measured Bragg peak
-    :param voxel_size: float or tuple of three floats, the voxel size of the phase array in nm
-    :param reference_axis: the axis of the array along which q is aligned: 'x', 'y' or 'z' (CXI convention)
-    :param extent_phase: range for phase wrapping, specify it when the phase spans over more than 2*pi
-    :param method: 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
-     value for the strain (Felix Hofmann's method 2019).
+    :param phase: 3D phase array (do not forget the -1 sign if the phasing algorithm
+     is python or matlab-based)
+    :param planar_distance: the planar distance of the material corresponding to
+     the measured Bragg peak
+    :param voxel_size: float or tuple of three floats, the voxel size of the
+     phase array in nm
+    :param reference_axis: the axis of the array along which q is aligned:
+     'x', 'y' or 'z' (CXI convention)
+    :param extent_phase: range for phase wrapping, specify it when the phase spans
+     over more than 2*pi
+    :param method: 'default' or 'defect'. If 'defect', will offset the phase
+     in a loop and keep the smallest value for the strain (Felix Hofmann's method 2019).
     :param debugging: True to see plots
     :return: the strain 3D array
     """
@@ -1493,14 +1544,19 @@ def mean_filter(
     debugging=False,
 ):
     """
-    Apply a mean filter to an object defined by a support, taking care of the object's surface.
+    Apply a mean filter to an object defined by a support, taking care of the object's
+    surface.
 
     :param array: 3D array to be averaged
     :param support: support used for averaging
-    :param half_width: half_width of the 2D square averaging window, 0 means no averaging, 1 is one pixel away...
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+    :param half_width: half_width of the 2D square averaging window,
+     0 means no averaging, 1 is one pixel away...
+    :param width_z: size of the area to plot in z (axis 0), centered on the middle
+     of the initial array
+    :param width_y: size of the area to plot in y (axis 1), centered on the middle
+     of the initial array
+    :param width_x: size of the area to plot in x (axis 2), centered on the middle
+     of the initial array
     :param vmin: real number, lower boundary for the colorbar of the plots
     :param vmax: real number, higher boundary for the colorbar of the plots
     :param title: str, title for the plots
@@ -1617,18 +1673,21 @@ def mean_filter(
 
 def ortho_modes(array_stack, nb_mode=None, method="eig", verbose=False):
     """
-    Orthogonalize modes from a N+1 dimensional array or a list/tuple of N-dimensional arrays.
-     The decomposition is such that the total intensity (i.e. (abs(m)**2).sum()) is conserved.
-     Adapted from PyNX.
+    Orthogonalize modes from a N+1 dimensional array or a list/tuple of N-dimensional
+    arrays. The decomposition is such that the total intensity (i.e. (abs(m)**2).sum(
+    )) is conserved. Adapted from PyNX.
 
      :param array_stack: the stack of modes to orthogonalize along the first dimension.
-     :param nb_mode: the maximum number of modes to be returned. If None, all are returned.
-      This is useful if nb_mode is used, and only a partial list of modes is returned.
-     :param method: either 'eig' to use eigenvalue decomposition or 'svd' to use singular value decomposition.
+     :param nb_mode: the maximum number of modes to be returned. If None,
+      all are returned. This is useful if nb_mode is used, and only a partial list
+       of modes is returned.
+     :param method: either 'eig' to use eigenvalue decomposition or 'svd' to use
+      singular value decomposition.
      :param verbose: set it to True to have more printed comments
-     :return: an array (modes) with the same shape as given in input, but with orthogonal modes,
-      i.e. (mo[i]*mo[j].conj()).sum()=0 for i!=j
-      The modes are sorted by decreasing norm. If nb_mode is not None, only modes up to nb_mode will be returned.
+     :return: an array (modes) with the same shape as given in input, but with
+      orthogonal modes, i.e. (mo[i]*mo[j].conj()).sum()=0 for i!=j. The modes are
+      sorted by decreasing norm. If nb_mode is not None, only modes up
+      to nb_mode will be returned.
     """
     if array_stack[0].ndim != 3:
         raise ValueError("A stack of 3D arrays is expected")
@@ -1653,9 +1712,12 @@ def ortho_modes(array_stack, nb_mode=None, method="eig", verbose=False):
         eigenvectors, eigenvalues, vh = scipy.linalg.svd(
             my_matrix, full_matrices=False, compute_uv=True
         )
-        # my_matrix = eigenvectors x S x Vh, where S is a suitably shaped matrix of zeros with main diagonal s
-        # The shapes are (M, K) for the eigenvectors and (K, N) for the unitary matrix Vh where K = min(M, N)
-        # Here, M is the number of reconstructions nb_arrays, N is the size of a reconstruction array_size
+        # my_matrix = eigenvectors x S x Vh,
+        # where S is a suitably shaped matrix of zeros with main diagonal s
+        # The shapes are (M, K) for the eigenvectors and (K, N)
+        # for the unitary matrix Vh where K = min(M, N)
+        # Here, M is the number of reconstructions nb_arrays,
+        # N is the size of a reconstruction array_size
     else:
         raise ValueError('Incorrect value for parameter "method"')
 
@@ -1716,7 +1778,8 @@ def regrid(array, old_voxelsize, new_voxelsize):
 
     :param array: 3D array, the object to be interpolated
     :param old_voxelsize: tuple, actual voxel size in z, y, and x (CXI convention)
-    :param new_voxelsize: tuple, desired voxel size for the interpolation in z, y, and x (CXI convention)
+    :param new_voxelsize: tuple, desired voxel size for the interpolation in
+     z, y, and x (CXI convention)
     :return: obj interpolated using the new voxel sizes
     """
     if array.ndim != 3:
@@ -1789,15 +1852,19 @@ def remove_offset(
 
     :param array: a 3D array
     :param support: A 3D support of the same shape as array, defining the object
-    :param offset_method: 'COM' or 'mean'. If 'COM', the value of array at the center of mass of the support will be
-     subtracted to the array. If 'mean', the mean value of array on the support will be subtracted to the array.
+    :param offset_method: 'COM' or 'mean'. If 'COM', the value of array at the center
+     of mass of the support will be subtracted to the array. If 'mean', the mean
+     value of array on the support will be subtracted to the array.
     :param user_offset: value to add to the array
-    :param offset_origin: If provided, the value of array at this voxel will be subtracted to the array.
+    :param offset_origin: If provided, the value of array at this voxel will be
+     subtracted to the array.
     :param title: string, used in plot title
     :param debugging: True to see plots
     :param kwargs:
      - 'reciprocal_space': True if the object is in reciprocal space
-     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining
+       default plot labels.
+
     :return: the processed array
     """
     assert (
@@ -1898,16 +1965,23 @@ def remove_ramp(
     :param amp: 3D array, amplitude of the object
     :param phase: 3D array, phase of the object to be detrended
     :param initial_shape: shape of the FFT used for phasing
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-    :param amplitude_threshold: threshold used to define the support of the object from the amplitude
-    :param gradient_threshold: higher threshold used to select valid voxels in the gradient array
+    :param width_z: size of the area to plot in z (axis 0), centered on the middle
+     of the initial array
+    :param width_y: size of the area to plot in y (axis 1), centered on the middle
+     of the initial array
+    :param width_x: size of the area to plot in x (axis 2), centered on the middle
+     of the initial array
+    :param amplitude_threshold: threshold used to define the support of the object
+     from the amplitude
+    :param gradient_threshold: higher threshold used to select valid voxels in
+     the gradient array
     :param method: 'gradient' or 'upsampling'
-    :param ups_factor: upsampling factor (the original shape will be multiplied by this value)
+    :param ups_factor: upsampling factor (the original shape will be multiplied by
+     this value)
     :param debugging: set to True to see plots
     :type debugging: bool
-    :return: normalized amplitude, detrended phase, ramp along z, ramp along y, ramp along x
+    :return: normalized amplitude, detrended phase, ramp along z, ramp along y,
+     ramp along x
     """
     if amp.ndim != 3 or phase.ndim != 3:
         raise ValueError("amp and phase should be 3D arrays")
@@ -2139,17 +2213,23 @@ def remove_ramp_2d(
     debugging=False,
 ):
     """
-    Remove the linear trend in the ramp using its gradient and a threshold in 2D dataset.
+    Remove the linear trend in the ramp using its gradient and a threshold in
+    a 2D dataset.
 
     :param amp: 2D array, amplitude of the object
     :param phase: 2D array, phase of the object to be detrended
     :param initial_shape: shape of the FFT used for phasing
-    :param width_y: size of the area to plot in y (vertical axis), centered on the middle of the initial array
-    :param width_x: size of the area to plot in x (horizontal axis), centered on the middle of the initial array
-    :param amplitude_threshold: threshold used to define the support of the object from the amplitude
-    :param gradient_threshold: higher threshold used to select valid voxels in the gradient array
+    :param width_y: size of the area to plot in y (vertical axis), centered on
+     the middle of the initial array
+    :param width_x: size of the area to plot in x (horizontal axis), centered on
+     the middle of the initial array
+    :param amplitude_threshold: threshold used to define the support of the object
+     from the amplitude
+    :param gradient_threshold: higher threshold used to select valid voxels in
+     the gradient array
     :param method: 'gradient' or 'upsampling'
-    :param ups_factor: upsampling factor (the original shape will be multiplied by this value)
+    :param ups_factor: upsampling factor (the original shape will be multiplied
+     by this value)
     :param debugging: set to True to see plots
     :type debugging: bool
     :return: normalized amplitude, detrended phase, ramp along y, ramp along x
@@ -2325,8 +2405,8 @@ def sort_reconstruction(
     :param file_path: path of the reconstructions to sort out
     :param data_range: data will be cropped or padded to this range
     :param amplitude_threshold: threshold used to define a support from the amplitude
-    :param sort_method: method for sorting the reconstructions: 'variance/mean', 'mean_amplitude', 'variance' or
-     'volume'
+    :param sort_method: method for sorting the reconstructions: 'variance/mean',
+     'mean_amplitude', 'variance' or 'volume'
     :return: a list of sorted indices in 'file_path', from the best object to the worst.
     """
     nbfiles = len(file_path)
@@ -2437,16 +2517,19 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
 
 def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
     """
-    Unwrap the phase of a complex object, based on skimage.restoration.unwrap_phase. A mask can be applied by
-     thresholding the modulus of the object.
+    Unwrap the phase of a complex object, based on skimage.restoration.unwrap_phase.
+    A mask can be applied by thresholding the modulus of the object.
 
     :param obj: number or array to be wrapped
     :param support_threshold: relative threshold used to define a support from abs(obj)
-    :param seed: int, random seed. Use always the same value if you want a deterministic behavior.
+    :param seed: int, random seed. Use always the same value if you want a
+     deterministic behavior.
     :param debugging: set to True to see plots
     :param kwargs:
      - 'reciprocal_space': True if the object is in reciprocal space
-     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining default plot labels.
+     - 'is_orthogonal': True if the data is in an orthonormal frame.
+       Used for defining default plot labels.
+
     :return: unwrapped phase, unwrapped phase range
     """
     from skimage.restoration import unwrap_phase
@@ -2496,13 +2579,3 @@ def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
     extent_phase = np.ceil(phase_unwrapped.max() - phase_unwrapped.min())
 
     return phase_unwrapped, extent_phase
-
-
-# if __name__ == "__main__":
-#     siz = 100
-#     obj = np.zeros((siz, siz, siz))
-#     obj[siz//2-10:siz//2+11, siz//2-10:siz//2+11, siz//2-10:siz//2+11] = 1
-#     # gu.multislices_plot(obj)
-#     obj_rot = rotate_crystal(array=obj, axis_to_align=(2,2,0), reference_axis=(0,1,0), voxel_size=(10,10,10),
-#                              debugging=True)
-#     plt.show()
