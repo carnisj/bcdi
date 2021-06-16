@@ -2005,126 +2005,125 @@ def remove_ramp(
         )
         return abs(myobj) / abs(myobj).max(), np.angle(myobj), shiftz, shifty, shiftx
 
-    else:  # method='gradient'
+    # method='gradient'
+    # define the support from the amplitude
+    nbz, nby, nbx = amp.shape
+    mysupport = np.zeros((nbz, nby, nbx))
+    mysupport[amp > amplitude_threshold * abs(amp).max()] = 1
 
-        # define the support from the amplitude
-        nbz, nby, nbx = amp.shape
-        mysupport = np.zeros((nbz, nby, nbx))
-        mysupport[amp > amplitude_threshold * abs(amp).max()] = 1
+    # axis 0 (Z)
+    mygradz, _, _ = np.gradient(phase, 1)
 
-        # axis 0 (Z)
-        mygradz, _, _ = np.gradient(phase, 1)
-
-        mysupportz = np.zeros((nbz, nby, nbx))
-        mysupportz[abs(mygradz) < gradient_threshold] = 1
-        mysupportz = mysupportz * mysupport
-        if mysupportz.sum(initial=None) == 0:
-            raise ValueError(
-                "No voxel below the threshold, raise the parameter threshold_gradient"
-            )
-        myrampz = mygradz[mysupportz == 1].mean()
-        if debugging:
-            gu.multislices_plot(
-                mygradz,
-                plot_colorbar=True,
-                width_z=width_z,
-                width_y=width_y,
-                width_x=width_x,
-                vmin=-gradient_threshold,
-                vmax=gradient_threshold,
-                title="Phase gradient along Z",
-            )
-            gu.multislices_plot(
-                mysupportz,
-                width_z=width_z,
-                width_y=width_y,
-                width_x=width_x,
-                vmin=0,
-                vmax=1,
-                title="Thresholded support along Z",
-            )
-        del mysupportz, mygradz
-        gc.collect()
-
-        # axis 1 (Y)
-        _, mygrady, _ = np.gradient(phase, 1)
-        mysupporty = np.zeros((nbz, nby, nbx))
-        mysupporty[abs(mygrady) < gradient_threshold] = 1
-        mysupporty = mysupporty * mysupport
-        if mysupporty.sum(initial=None) == 0:
-            raise ValueError(
-                "No voxel below the threshold, raise the parameter threshold_gradient"
-            )
-        myrampy = mygrady[mysupporty == 1].mean()
-        if debugging:
-            gu.multislices_plot(
-                mygrady,
-                plot_colorbar=True,
-                width_z=width_z,
-                width_y=width_y,
-                width_x=width_x,
-                vmin=-gradient_threshold,
-                vmax=gradient_threshold,
-                title="Phase gradient along Y",
-            )
-            gu.multislices_plot(
-                mysupporty,
-                width_z=width_z,
-                width_y=width_y,
-                width_x=width_x,
-                vmin=0,
-                vmax=1,
-                title="Thresholded support along Y",
-            )
-        del mysupporty, mygrady
-        gc.collect()
-
-        # axis 2 (X)
-        _, _, mygradx = np.gradient(phase, 1)
-        mysupportx = np.zeros((nbz, nby, nbx))
-        mysupportx[abs(mygradx) < gradient_threshold] = 1
-        mysupportx = mysupportx * mysupport
-        if mysupportx.sum(initial=None) == 0:
-            raise ValueError(
-                "No voxel below the threshold, raise the parameter threshold_gradient"
-            )
-        myrampx = mygradx[mysupportx == 1].mean()
-        if debugging:
-            gu.multislices_plot(
-                mygradx,
-                plot_colorbar=True,
-                width_z=width_z,
-                width_y=width_y,
-                width_x=width_x,
-                vmin=-gradient_threshold,
-                vmax=gradient_threshold,
-                title="Phase gradient along X",
-            )
-            gu.multislices_plot(
-                mysupportx,
-                width_z=width_z,
-                width_y=width_y,
-                width_x=width_x,
-                vmin=0,
-                vmax=1,
-                title="Thresholded support along X",
-            )
-        del mysupportx, mygradx, mysupport
-        gc.collect()
-
-        myz, myy, myx = np.meshgrid(
-            np.arange(0, nbz, 1),
-            np.arange(0, nby, 1),
-            np.arange(0, nbx, 1),
-            indexing="ij",
+    mysupportz = np.zeros((nbz, nby, nbx))
+    mysupportz[abs(mygradz) < gradient_threshold] = 1
+    mysupportz = mysupportz * mysupport
+    if mysupportz.sum(initial=None) == 0:
+        raise ValueError(
+            "No voxel below the threshold, raise the parameter threshold_gradient"
         )
-
-        print(
-            "Gradient: phase_ramp_z, phase_ramp_y, phase_ramp_x: ",
-            f"({myrampz:.3f} rad, {myrampy:.3f} rad, {myrampx:.3f} rad)",
+    myrampz = mygradz[mysupportz == 1].mean()
+    if debugging:
+        gu.multislices_plot(
+            mygradz,
+            plot_colorbar=True,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            vmin=-gradient_threshold,
+            vmax=gradient_threshold,
+            title="Phase gradient along Z",
         )
-        phase = phase - myz * myrampz - myy * myrampy - myx * myrampx
-        return amp, phase, myrampz, myrampy, myrampx
+        gu.multislices_plot(
+            mysupportz,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            vmin=0,
+            vmax=1,
+            title="Thresholded support along Z",
+        )
+    del mysupportz, mygradz
+    gc.collect()
+
+    # axis 1 (Y)
+    _, mygrady, _ = np.gradient(phase, 1)
+    mysupporty = np.zeros((nbz, nby, nbx))
+    mysupporty[abs(mygrady) < gradient_threshold] = 1
+    mysupporty = mysupporty * mysupport
+    if mysupporty.sum(initial=None) == 0:
+        raise ValueError(
+            "No voxel below the threshold, raise the parameter threshold_gradient"
+        )
+    myrampy = mygrady[mysupporty == 1].mean()
+    if debugging:
+        gu.multislices_plot(
+            mygrady,
+            plot_colorbar=True,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            vmin=-gradient_threshold,
+            vmax=gradient_threshold,
+            title="Phase gradient along Y",
+        )
+        gu.multislices_plot(
+            mysupporty,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            vmin=0,
+            vmax=1,
+            title="Thresholded support along Y",
+        )
+    del mysupporty, mygrady
+    gc.collect()
+
+    # axis 2 (X)
+    _, _, mygradx = np.gradient(phase, 1)
+    mysupportx = np.zeros((nbz, nby, nbx))
+    mysupportx[abs(mygradx) < gradient_threshold] = 1
+    mysupportx = mysupportx * mysupport
+    if mysupportx.sum(initial=None) == 0:
+        raise ValueError(
+            "No voxel below the threshold, raise the parameter threshold_gradient"
+        )
+    myrampx = mygradx[mysupportx == 1].mean()
+    if debugging:
+        gu.multislices_plot(
+            mygradx,
+            plot_colorbar=True,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            vmin=-gradient_threshold,
+            vmax=gradient_threshold,
+            title="Phase gradient along X",
+        )
+        gu.multislices_plot(
+            mysupportx,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            vmin=0,
+            vmax=1,
+            title="Thresholded support along X",
+        )
+    del mysupportx, mygradx, mysupport
+    gc.collect()
+
+    myz, myy, myx = np.meshgrid(
+        np.arange(0, nbz, 1),
+        np.arange(0, nby, 1),
+        np.arange(0, nbx, 1),
+        indexing="ij",
+    )
+
+    print(
+        "Gradient: phase_ramp_z, phase_ramp_y, phase_ramp_x: ",
+        f"({myrampz:.3f} rad, {myrampy:.3f} rad, {myrampx:.3f} rad)",
+    )
+    phase = phase - myz * myrampz - myy * myrampy - myx * myrampx
+    return amp, phase, myrampz, myrampy, myrampx
 
 
 def remove_ramp_2d(
@@ -2245,77 +2244,76 @@ def remove_ramp_2d(
         )
         return abs(myobj) / abs(myobj).max(), np.angle(myobj)
 
-    else:  # method='gradient'
+    # method='gradient'
+    # define the support from the amplitude
+    nby, nbx = amp.shape
+    mysupport = np.zeros((nby, nbx))
+    mysupport[amp > amplitude_threshold * abs(amp).max()] = 1
 
-        # define the support from the amplitude
-        nby, nbx = amp.shape
-        mysupport = np.zeros((nby, nbx))
-        mysupport[amp > amplitude_threshold * abs(amp).max()] = 1
-
-        # axis 0 (Y)
-        mygrady, _ = np.gradient(phase, 1)
-        mysupporty = np.zeros((nby, nbx))
-        mysupporty[abs(mygrady) < gradient_threshold] = 1
-        mysupporty = mysupporty * mysupport
-        myrampy = mygrady[mysupporty == 1].mean()
-        if debugging:
-            gu.imshow_plot(
-                array=mygrady,
-                width_v=width_y,
-                width_h=width_x,
-                vmin=-0.2,
-                vmax=0.2,
-                title="Phase gradient along Y",
-            )
-            gu.imshow_plot(
-                array=mysupporty,
-                width_v=width_y,
-                width_h=width_x,
-                vmin=0,
-                vmax=1,
-                title="Thresholded support along Y",
-            )
-        del mysupporty, mygrady
-        gc.collect()
-
-        # axis 1 (X)
-        _, mygradx = np.gradient(phase, 1)
-        mysupportx = np.zeros((nby, nbx))
-        mysupportx[abs(mygradx) < gradient_threshold] = 1
-        mysupportx = mysupportx * mysupport
-        myrampx = mygradx[mysupportx == 1].mean()
-        if debugging:
-            gu.imshow_plot(
-                array=mygradx,
-                width_v=width_y,
-                width_h=width_x,
-                vmin=-0.2,
-                vmax=0.2,
-                title="Phase gradient along X",
-            )
-            gu.imshow_plot(
-                array=mysupportx,
-                width_v=width_y,
-                width_h=width_x,
-                vmin=0,
-                vmax=1,
-                title="Thresholded support along X",
-            )
-        del mysupportx, mygradx, mysupport
-        gc.collect()
-
-        myy, myx = np.meshgrid(
-            np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij"
+    # axis 0 (Y)
+    mygrady, _ = np.gradient(phase, 1)
+    mysupporty = np.zeros((nby, nbx))
+    mysupporty[abs(mygrady) < gradient_threshold] = 1
+    mysupporty = mysupporty * mysupport
+    myrampy = mygrady[mysupporty == 1].mean()
+    if debugging:
+        gu.imshow_plot(
+            array=mygrady,
+            width_v=width_y,
+            width_h=width_x,
+            vmin=-0.2,
+            vmax=0.2,
+            title="Phase gradient along Y",
         )
-
-        print(
-            "Gradient: Phase_ramp_z, Phase_ramp_y, Phase_ramp_x: (",
-            str("{:.3f}".format(myrampy)),
-            str("{:.3f}".format(myrampx)),
-            ") rad",
+        gu.imshow_plot(
+            array=mysupporty,
+            width_v=width_y,
+            width_h=width_x,
+            vmin=0,
+            vmax=1,
+            title="Thresholded support along Y",
         )
-        phase = phase - myy * myrampy - myx * myrampx
-        return amp, phase, myrampy, myrampx
+    del mysupporty, mygrady
+    gc.collect()
+
+    # axis 1 (X)
+    _, mygradx = np.gradient(phase, 1)
+    mysupportx = np.zeros((nby, nbx))
+    mysupportx[abs(mygradx) < gradient_threshold] = 1
+    mysupportx = mysupportx * mysupport
+    myrampx = mygradx[mysupportx == 1].mean()
+    if debugging:
+        gu.imshow_plot(
+            array=mygradx,
+            width_v=width_y,
+            width_h=width_x,
+            vmin=-0.2,
+            vmax=0.2,
+            title="Phase gradient along X",
+        )
+        gu.imshow_plot(
+            array=mysupportx,
+            width_v=width_y,
+            width_h=width_x,
+            vmin=0,
+            vmax=1,
+            title="Thresholded support along X",
+        )
+    del mysupportx, mygradx, mysupport
+    gc.collect()
+
+    myy, myx = np.meshgrid(
+        np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij"
+    )
+
+    print(
+        "Gradient: Phase_ramp_z, Phase_ramp_y, Phase_ramp_x: (",
+        str("{:.3f}".format(myrampy)),
+        str("{:.3f}".format(myrampx)),
+        ") rad",
+    )
+    phase = phase - myy * myrampy - myx * myrampx
+    return amp, phase, myrampy, myrampx
 
 
 def sort_reconstruction(

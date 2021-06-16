@@ -5719,50 +5719,50 @@ def remove_hotpixels(data, mask, hotpixels=None):
     """
     if hotpixels is None:
         return data, mask
-    else:
-        if hotpixels.ndim == 3:  # 3D array
-            print("Hotpixels is a 3D array, summing along the first axis")
-            hotpixels = hotpixels.sum(axis=0)
-            hotpixels[np.nonzero(hotpixels)] = 1  # hotpixels should be a binary array
 
-        if data.shape != mask.shape:
+    if hotpixels.ndim == 3:  # 3D array
+        print("Hotpixels is a 3D array, summing along the first axis")
+        hotpixels = hotpixels.sum(axis=0)
+        hotpixels[np.nonzero(hotpixels)] = 1  # hotpixels should be a binary array
+
+    if data.shape != mask.shape:
+        raise ValueError(
+            "Data and mask must have the same shape\n data is ",
+            data.shape,
+            " while mask is ",
+            mask.shape,
+        )
+
+    if data.ndim == 3:  # 3D array
+        if data[0, :, :].shape != hotpixels.shape:
             raise ValueError(
-                "Data and mask must have the same shape\n data is ",
+                "Data and hotpixels must have the same shape\n data is ",
                 data.shape,
-                " while mask is ",
-                mask.shape,
+                " while hotpixels is ",
+                hotpixels.shape,
             )
-
-        if data.ndim == 3:  # 3D array
-            if data[0, :, :].shape != hotpixels.shape:
-                raise ValueError(
-                    "Data and hotpixels must have the same shape\n data is ",
-                    data.shape,
-                    " while hotpixels is ",
-                    hotpixels.shape,
-                )
-            for idx in range(data.shape[0]):
-                temp_data = data[idx, :, :]
-                temp_mask = mask[idx, :, :]
-                temp_data[
-                    hotpixels == 1
-                ] = 0  # numpy array is mutable hence data will be modified
-                temp_mask[
-                    hotpixels == 1
-                ] = 1  # numpy array is mutable hence mask will be modified
-        elif data.ndim == 2:  # 2D array
-            if data.shape != hotpixels.shape:
-                raise ValueError(
-                    "Data and hotpixels must have the same shape\n data is ",
-                    data.shape,
-                    " while hotpixels is ",
-                    hotpixels.shape,
-                )
-            data[hotpixels == 1] = 0
-            mask[hotpixels == 1] = 1
-        else:
-            raise ValueError("2D or 3D data array expected, got ", data.ndim, "D")
-        return data, mask
+        for idx in range(data.shape[0]):
+            temp_data = data[idx, :, :]
+            temp_mask = mask[idx, :, :]
+            temp_data[
+                hotpixels == 1
+            ] = 0  # numpy array is mutable hence data will be modified
+            temp_mask[
+                hotpixels == 1
+            ] = 1  # numpy array is mutable hence mask will be modified
+    elif data.ndim == 2:  # 2D array
+        if data.shape != hotpixels.shape:
+            raise ValueError(
+                "Data and hotpixels must have the same shape\n data is ",
+                data.shape,
+                " while hotpixels is ",
+                hotpixels.shape,
+            )
+        data[hotpixels == 1] = 0
+        mask[hotpixels == 1] = 1
+    else:
+        raise ValueError("2D or 3D data array expected, got ", data.ndim, "D")
+    return data, mask
 
 
 def scan_motor_cristal(logfile, motor_name):

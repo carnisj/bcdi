@@ -396,20 +396,20 @@ def find_nearest(reference_array, test_values, width=None):
     if test_values.ndim == 0:
         nearest_index = (np.abs(original_array - test_values)).argmin()
         return nearest_index
-    else:
-        nb_values = len(test_values)
-        nearest_index = np.zeros(nb_values, dtype=int)
+
+    nb_values = len(test_values)
+    nearest_index = np.zeros(nb_values, dtype=int)
+    for idx in range(nb_values):
+        nearest_index[idx] = (np.abs(original_array - test_values[idx])).argmin()
+    if width is not None:
         for idx in range(nb_values):
-            nearest_index[idx] = (np.abs(original_array - test_values[idx])).argmin()
-        if width is not None:
-            for idx in range(nb_values):
-                if (
-                    reference_array[nearest_index[idx]] >= test_values[idx] + width / 2
-                ) or (
-                    reference_array[nearest_index[idx]] < test_values[idx] - width / 2
-                ):
-                    # no neighbour in the range defined by width
-                    nearest_index[idx] = -1
+            if (
+                reference_array[nearest_index[idx]] >= test_values[idx] + width / 2
+            ) or (
+                reference_array[nearest_index[idx]] < test_values[idx] - width / 2
+            ):
+                # no neighbour in the range defined by width
+                nearest_index[idx] = -1
     return nearest_index
 
 
@@ -539,25 +539,24 @@ def function_lmfit(params, x_axis, distribution, iterator=0):
         cen = params["cen_%i" % (iterator + 1)].value
         sig = params["sig_%i" % (iterator + 1)].value
         return gaussian(x_axis=x_axis, amp=amp, cen=cen, sig=sig)
-    elif distribution == "skewed_gaussian":
+    if distribution == "skewed_gaussian":
         amp = params["amp_%i" % (iterator + 1)].value
         loc = params["loc_%i" % (iterator + 1)].value
         sig = params["sig_%i" % (iterator + 1)].value
         alpha = params["alpha_%i" % (iterator + 1)].value
         return skewed_gaussian(x_axis=x_axis, amp=amp, loc=loc, sig=sig, alpha=alpha)
-    elif distribution == "lorentzian":
+    if distribution == "lorentzian":
         amp = params["amp_%i" % (iterator + 1)].value
         cen = params["cen_%i" % (iterator + 1)].value
         sig = params["sig_%i" % (iterator + 1)].value
         return lorentzian(x_axis=x_axis, amp=amp, cen=cen, sig=sig)
-    elif distribution == "pseudovoigt":
+    if distribution == "pseudovoigt":
         amp = params["amp_%i" % (iterator + 1)].value
         cen = params["cen_%i" % (iterator + 1)].value
         sig = params["sig_%i" % (iterator + 1)].value
         ratio = params["ratio_%i" % (iterator + 1)].value
         return pseudovoigt(x_axis, amp=amp, cen=cen, sig=sig, ratio=ratio)
-    else:
-        raise ValueError(distribution + " not implemented")
+    raise ValueError(distribution + " not implemented")
 
 
 def gaussian(x_axis, amp, cen, sig):
