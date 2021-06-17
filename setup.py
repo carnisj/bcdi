@@ -22,9 +22,10 @@ setup(
     version="0.1.1",
     packages=find_packages(),
     include_package_data=True,
-    # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},  # the file needs to be in a package
-    # data_files=[('bcdi/data', ['bcdi/data/S978_LLKf000.460.cxi'])], # data files will be installed
-    # outtside of the package, which is not ideal
+    # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},
+    # the file needs to be in a package
+    # data_files=[('bcdi/data', ['bcdi/data/S978_LLKf000.460.cxi'])],
+    # data files will be installed outside of the package, which is not ideal
     scripts=[
         "bcdi/scripts/algorithms/bcdi_flatten_intensity.py",
         "bcdi/scripts/algorithms/bcdi_blurring_function.py",
@@ -104,23 +105,28 @@ setup(
     # metadata
     author="Jerome Carnis",
     author_email="carnis_jerome@yahoo.fr",
-    description="BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data",
+    description="""BCDI: tools for pre(post)-processing Bragg and
+     forward coherent X-ray diffraction imaging data""",
     license="CeCILL-B",
     keywords="BCDI Bragg coherent X-rays diffraction imaging",
     long_description_content_type="text/x-rst",
-    long_description="BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data.\
-                       \n\
-                        BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:\n\n\
-                        1. Pre-processing BCDI and forward CDI data (masking aliens, detector gaps...)\
-                         before phase retrieval.\n\
-                        2. Post-processing phased data (phase offset and phase ramp removal, averaging,\
-                         apodization...).\n\
-                        3. Data analysis on diffraction data (stereographic projection, angular cross correlation\
-                         analysis, domain orientation fitting ...).\n\
-                        4. Data analysis on phased data (resolution calculation, statistics on the\
-                         retrieved strain...).\n\
-                        5. Simulation of diffraction intensity (including noise, detector gaps, displacement...).\n\
-                        6. Making figures for publication using templates.\n\n",
+    long_description="""
+        BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray 
+        diffraction imaging data.
+        
+        BCDI stands for *Bragg coherent X-ray diffraction imaging*.
+        It can be used for:
+            1. Pre-processing BCDI and forward CDI data (masking aliens, detector gaps)
+               before phase retrieval.
+            2. Post-processing phased data (phase offset and phase ramp removal,
+               averaging, apodization...).
+            3. Data analysis on diffraction data (stereographic projection,
+               angular cross correlation analysis, domain orientation fitting ...).
+            4. Data analysis on phased data (resolution calculation, statistics on the
+               retrieved strain...).
+            5. Simulation of diffraction intensity (including noise, detector gaps,
+               displacement...).
+            6. Creating figures for publication using templates.""",
     url="https://github.com/carnisj/bcdi",
     project_urls={"Documentation": "https://bcdi.readthedocs.io/en/latest/"},
     python_requires=">=3.6, !=3.9.*",
