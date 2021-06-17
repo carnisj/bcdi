@@ -8,18 +8,16 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 helptext = """
-Open mesh scans and plot interactively the integrated intensity vs. motor positions for a user-defined
-region of interest.
+Open mesh scans and plot interactively the integrated intensity vs. motor positions for 
+a user-defined region of interest.
 """
 
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import h5py
 import numpy as np
 import matplotlib
-
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.widgets import RectangleSelector
@@ -32,7 +30,8 @@ import bcdi.preprocessing.preprocessing_utils as pru
 scan = 26  # scan number as it appears in the folder name
 sample_name = "B10_syn_S5"  # without _ at the end
 root_folder = "D:/data/P10_Longfei/"
-savedir = ""  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
+savedir = ""  # images will be saved here, leave it to ''
+# otherwise (default to data directory's parent)
 crop_roi = [
     550,
     1050,
@@ -41,7 +40,8 @@ crop_roi = [
 ]  # only this region of interest of the detector will be considered (unbinned indices).
 # Leave [] to use the full detector. [ystart, ystop, xstart, xstop]
 sum_roi = [550, 1050, 0, 2070]  # region of interest for integrating the intensity.
-# [ystart, ystop, xstart, xstop], in the unbinned detector indices. Leave it to [] to use the full detector
+# [ystart, ystop, xstart, xstop], in the unbinned detector indices.
+# Leave it to [] to use the full detector
 normalize_flux = False  # will normalize the intensity by the default monitor
 threshold = 2  # data <= threshold will be set to 0
 ###########################
@@ -55,7 +55,8 @@ nb_slow = 51  # number of steps for the slow scanning motor
 # plot related parameters #
 ###########################
 background_plot = "0.7"  # in level of grey in [0,1], 0 being dark. For visual comfort
-fast_axis = "horizontal"  # 'vertical' to plot the fast scanning motor vertically, 'horizontal' otherwise
+fast_axis = "horizontal"  # 'vertical' to plot the fast scanning motor vertically,
+# 'horizontal' otherwise
 invert_xaxis = False  # True to inverse the horizontal axis
 invert_yaxis = True  # True to inverse the vertical axis
 ###############################
@@ -67,9 +68,11 @@ beamline = (
 # supported beamlines: 'P10' only for now, see preprocessing_utils.get_motor_pos()
 is_series = False  # specific to series measurement at P10
 specfile_name = ""
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
+# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018,
+# not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
+# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt',
+# typically: root_folder + 'alias_dict.txt'
 # template for SIXS_2019: ''
 # template for P10: ''
 # template for CRISTAL: ''
@@ -80,7 +83,8 @@ detector = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
 binning = [
     4,
     4,
-]  # binning (detector vertical axis, detector horizontal axis) applied during data loading
+]  # binning (detector vertical axis, detector horizontal axis)
+# applied during data loading
 template_imagefile = "_master.h5"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
@@ -132,8 +136,9 @@ def onselect(click, release):
     :param click: position of the mouse click event
     :param release: position of the mouse release event
     """
-    global ax1, data, nb_slow, nb_fast, my_cmap, min_fast, min_slow, max_fast, max_slow, fast_motor, binning
-    global slow_motor, ny, nx, invert_xaxis, invert_yaxis, motor_text, sum_int, figure, rectangle
+    global ax1, data, nb_slow, nb_fast, my_cmap, min_fast, min_slow, max_fast, max_slow
+    global fast_motor, binning, rectangle
+    global slow_motor, ny, nx, invert_xaxis, invert_yaxis, motor_text, sum_int, figure
 
     y_start, y_stop, x_start, x_stop = (
         int(click.ydata),
@@ -255,7 +260,7 @@ plt.ion()
 #################################################
 # initialize detector, setup, paths and logfile #
 #################################################
-kwargs = {}  # create dictionnary
+kwargs = dict()  # create dictionnary
 kwargs["is_series"] = is_series
 
 detector = exp.Detector(
@@ -369,11 +374,13 @@ min_slow, max_slow = slow_positions[0], slow_positions[-1]
 
 if len(fast_positions) != nz:
     raise ValueError(
-        f"Number of fast scanning motor steps: {nb_fast} incompatible with data shape: {nz}"
+        f"Number of fast scanning motor steps: {nb_fast}"
+        f" incompatible with data shape: {nz}"
     )
 if len(slow_positions) != nz:
     raise ValueError(
-        f"Number of slow scanning motor steps: {nb_slow} incompatible with data shape: {nz}"
+        f"Number of slow scanning motor steps: {nb_slow}"
+        f" incompatible with data shape: {nz}"
     )
 
 ####################

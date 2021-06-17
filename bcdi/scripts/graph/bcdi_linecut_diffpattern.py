@@ -20,26 +20,31 @@ import bcdi.utils.validation as valid
 helptext = """
 Graphical user interface for plotting linecuts along particular direction of a 3D array.
 
-For the laboratory frame, the CXI convention is used: z downstream, y vertical, x outboard
-For q, the usual convention is used: qx downstream, qz vertical, qy outboard
+For the laboratory frame, the CXI convention is used: z downstream, y vertical, 
+x outboard. For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 """
 
 scan = 54
 sample_name = "p21"
-datadir = f"D:/data/P10_1st_test_isosurface/data/{sample_name}_{scan:05d}/pynx/"  # data directory
+datadir = f"D:/data/P10_1st_test_isosurface/data/{sample_name}_{scan:05d}/pynx/"
+# data directory
 savedir = datadir + "linecut/"  # if None, it will default to the data directory
-load_qvalues = True  # True to load the q values (a NPZ file with the fields 'qx', 'qy', 'qz', each one containing
+load_qvalues = True  # True to load the q values (a NPZ file with the fields
+# 'qx', 'qy', 'qz', each one containing
 # a 1D or 3D array)
 load_mask = False  # True to load a mask (same shape than the diffraction pattern)
 #######################################
 # parameters related to visualization #
 #######################################
-starting_point = None  # list of three indices (integers) for the starting point of the linecut. Leave None for default
-endpoint = None  # list of three indices (integers) for the endpoint point of the linecut. Leave None for default
+starting_point = None  # list of three indices (integers) for the starting point
+# of the linecut. Leave None for default
+endpoint = None  # list of three indices (integers) for the endpoint point
+# of the linecut. Leave None for default
 threshold = 0  # every voxel <= threshold will be set to 0
 vmin = 0  # vmin for the plots, None for default
 vmax = 5  # vmax for the plots, should be larger than vmin, None for default
-background_plot = "0.5"  # in level of grey in [0,1], 0 being dark. For visual comfort when using the GUI
+background_plot = "0.5"  # in level of grey in [0,1], 0 being dark.
+# For visual comfort when using the GUI
 ##########################
 # end of user parameters #
 ##########################
@@ -47,13 +52,13 @@ background_plot = "0.5"  # in level of grey in [0,1], 0 being dark. For visual c
 
 def on_click(event):
     """
-    Function to interact with a plot, return the position of clicked pixel. If flag_pause==1 or
-    if the mouse is out of plot axes, it will not register the click
+    Function to interact with a plot, return the position of clicked pixel.
+    If flag_pause==1 or if the mouse is out of plot axes, it will not register the click
 
     :param event: mouse click event
     """
-    global diff_pattern, starting_point, endpoint, distance, fig_diff, ax0, ax1, ax2, ax3, plt0, plt1, plt2, cut
-    global q_text, load_qvalues, vmin, vmax, qx, qy, qz
+    global diff_pattern, starting_point, endpoint, distance, fig_diff, ax0, ax1, ax2
+    global q_text, load_qvalues, vmin, vmax, qx, qy, qz, ax3, plt0, plt1, plt2, cut
     global plt0_start, plt1_start, plt2_start, plt0_stop, plt1_stop, plt2_stop
 
     if event.inaxes == ax3:  # print the distance value at the mouse position
@@ -206,7 +211,8 @@ def press_key(event):
             if event.key == "s":
                 template = (
                     savedir
-                    + f"{sample_name}_{scan}_linecut_start={starting_point}_stop={endpoint}"
+                    + f"{sample_name}_{scan}_"
+                      f"linecut_start={starting_point}_stop={endpoint}"
                 )
                 fig_diff.savefig(template + ".png")
                 np.savez_compressed(template + ".npz", linecut=cut, distance=distance)
@@ -325,7 +331,8 @@ z0, y0, x0 = [
     int(np.rint(x0 - 20 + fine_com[2])),
 ]
 print(
-    f"refined COM: {z0}, {y0}, {x0}, Number of unmasked photons = {diff_pattern.sum():.0f}\n"
+    f"refined COM: {z0}, {y0}, {x0}, "
+    f"Number of unmasked photons = {diff_pattern.sum():.0f}\n"
 )
 
 ##################################################
