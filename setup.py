@@ -113,11 +113,11 @@ setup(
     long_description="""
         BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray 
         diffraction imaging data.
-        
+
         BCDI stands for *Bragg coherent X-ray diffraction imaging*.
 
         It can be used for:
-        
+
          1. Pre-processing BCDI and forward CDI data (masking aliens, detector gaps)
             before phase retrieval.
          2. Post-processing phased data (phase offset and phase ramp removal,
