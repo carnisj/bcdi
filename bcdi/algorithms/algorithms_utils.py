@@ -28,24 +28,32 @@ def blind_deconvolution_rl(
     **kwargs,
 ):
     """
-    Blind deconvolution using Richardson-Lucy algorithm. Estimates of the perfect object and psf have to be provided.
-    See Figure 1 and equations (4) & (5) in  D. A. Fish et al. J. Opt. Soc. Am. A, 12, 58 (1995).
+    Blind deconvolution using Richardson-Lucy algorithm. Estimates of the perfect
+    object and psf have to be provided. See Figure 1 and equations (4) & (5) in  D.
+    A. Fish et al. J. Opt. Soc. Am. A, 12, 58 (1995).
 
     :param blurred_object: ndarray, measured object with partial coherent illumination
-    :param perfect_object: ndarray, estimate of the object measured by a fully coherent illumination,
-     same shape as blurred_object
+    :param perfect_object: ndarray, estimate of the object measured by a fully coherent
+     illumination, same shape as blurred_object
     :param psf: ndarray, estimate of the psf, same shape as blurred_object
     :param nb_cycles: number of blind deconvolution interations
-    :param sub_iterations: number of iterations of the Richardson-Lucy algorithm during a single blind iteration
-    :param update_psf_first: bool, if True the psf estimate is updated first and then the perfect object estimate
+    :param sub_iterations: number of iterations of the Richardson-Lucy algorithm during
+     a single blind iteration
+    :param update_psf_first: bool, if True the psf estimate is updated first and then
+     the perfect object estimate
     :param debugging: True to see plots
     :param kwargs:
      - 'scale': tuple, scale for the plots, 'linear' or 'log'
-     - 'reciprocal_space': bool, True if the data is in reciprocal space, False otherwise.
-     - 'is_orthogonal': bool, True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
-     - 'vmin' = tuple of two floats (np.nan to use default), lower boundary for the colorbars
-     - 'vmax' = tuple of two floats (np.nan to use default), higher boundary for the colorbars
-    :return:
+     - 'reciprocal_space': bool, True if the data is in reciprocal space,
+       False otherwise.
+     - 'is_orthogonal': bool, True is the frame is orthogonal, False otherwise
+       (detector frame) Used for plot labels.
+     - 'vmin' = tuple of two floats (np.nan to use default), lower boundary for the
+       colorbars
+     - 'vmax' = tuple of two floats (np.nan to use default), higher boundary for the
+       colorbars
+
+    :return: the psf
     """
     validation_name = "algorithms_utils.psf_rl"
     # check and load kwargs
@@ -200,15 +208,17 @@ def deconvolution_rl(
     image, psf=None, psf_shape=(10, 10, 10), iterations=20, debugging=False
 ):
     """
-    Image deconvolution using Richardson-Lucy algorithm. The algorithm is based on a PSF (Point Spread Function),
-    where PSF is described as the impulse response of the optical system.
+    Image deconvolution using Richardson-Lucy algorithm. The algorithm is based on a
+    PSF (Point Spread Function), where PSF is described as the impulse response of
+    the optical system.
 
     :param image: image to be deconvoluted
-    :param psf: ndarray, psf if known. Leave None to use a Gaussian kernel of shape psf_shape.
+    :param psf: ndarray, psf if known. Leave None to use a Gaussian kernel of shape
+     psf_shape.
     :param psf_shape: shape of the kernel used for deconvolution
     :param iterations: number of iterations for the Richardson-Lucy algorithm
     :param debugging: True to see plots
-    :return:
+    :return: the deconvoluted image
     """
     image = image.astype(np.float)
     max_img = image.max(initial=None)
@@ -263,20 +273,26 @@ def partial_coherence_rl(
     measured_intensity, coherent_intensity, iterations=20, debugging=False, **kwargs
 ):
     """
-    Partial coherence deconvolution using Richardson-Lucy algorithm. See J.N. Clark et al., Nat. Comm. 3, 993 (2012).
+    Partial coherence deconvolution using Richardson-Lucy algorithm.
+    See J.N. Clark et al., Nat. Comm. 3, 993 (2012).
 
     :param measured_intensity: measured object with partial coherent illumination
-    :param coherent_intensity: estimate of the object measured by a fully coherent illumination
+    :param coherent_intensity: estimate of the object measured by a fully coherent
+     illumination
     :param iterations: number of iterations for the Richardson-Lucy algorithm
     :param debugging: True to see plots
     :param kwargs:
      - 'scale': scale for the plot, 'linear' or 'log'
      - 'reciprocal_space': True if the data is in reciprocal space, False otherwise.
-     - 'is_orthogonal': set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
+     - 'is_orthogonal': set to True is the frame is orthogonal, False otherwise
+       (detector frame) Used for plot labels.
      - 'vmin' = lower boundary for the colorbar. Float or tuple of 3 floats
      - 'vmax' = [higher boundary for the colorbar. Float or tuple of 3 floats
-     - 'guess': ndarray, initial guess for the psf, of the same shape as measured_intensity
-    :return: the retrieved psf (ndarray), the error metric (1D ndarray of len=iterations)
+     - 'guess': ndarray, initial guess for the psf, of the same shape as
+       measured_intensity
+
+    :return: the retrieved psf (ndarray), the error metric
+     (1D ndarray of len=iterations)
     """
     validation_name = "algorithms_utils.psf_rl"
     # check and load kwargs
@@ -346,17 +362,19 @@ def partial_coherence_rl(
 
 def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
     """
-    Richardson-Lucy algorithm as implemented in scikit-image.restoration.deconvolution with an additional parameter for
-    the initial guess of the psf.
+    Richardson-Lucy algorithm as implemented in scikit-image.restoration.deconvolution
+    with an additional parameter for the initial guess of the psf.
 
     :param image: ndarray, input degraded image (can be N dimensional).
     :param psf: ndarray, the point spread function.
-    :param iterations: int, number of iterations. This parameter plays the role of regularisation.
-    :param clip: boolean. If true, pixel values of the result above 1 or under -1 are thresholded for skimage
-     pipeline compatibility.
-    :param guess: ndarray, the initial guess for the deconvoluted image. Leave None to use the default
-     (flat array of 0.5)
-    :return: the deconvolved image (ndarray) and the error metric (1D ndarray, len = iterations). The error is given by
+    :param iterations: int, number of iterations. This parameter plays the role of
+     regularisation.
+    :param clip: boolean. If true, pixel values of the result above 1 or under -1 are
+     thresholded for skimage pipeline compatibility.
+    :param guess: ndarray, the initial guess for the deconvoluted image.
+     Leave None to use the default (flat array of 0.5)
+    :return: the deconvolved image (ndarray) and the error metric (1D ndarray,
+     len = iterations). The error is given by
      np.linalg.norm(previous_deconv-new_deconv) / np.linalg.norm(previous_deconv)
     """
     # compute the times for direct convolution and the fft method. The fft is of
@@ -405,6 +423,3 @@ def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
         im_deconv[im_deconv < -1] = -1
 
     return im_deconv, error
-
-
-# if __name__ == "__main__":
