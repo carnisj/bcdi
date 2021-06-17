@@ -31,16 +31,19 @@ default_cmap = colormap.cmap
 
 def calc_stereoproj_facet(projection_axis, vectors, radius_mean, stereo_center):
     """
-    Calculate the coordinates of normals in the stereographic projection depending on the reference axis
-     see Nanoscale 10, 4833 (2018).
+    Calculate the coordinates of normals in the stereographic projection depending on
+    the reference axis. See: Nanoscale 10, 4833 (2018).
 
-    :param projection_axis: the projection is performed on q plane perpendicular to that axis (0, 1 or 2)
+    :param projection_axis: the projection is performed on q plane perpendicular to
+     that axis (0, 1 or 2)
     :param vectors: array of vectors to be projected (nb_vectors rows x 3 columns)
     :param radius_mean: q radius from which the projection will be done
-    :param stereo_center: offset of the projection plane along the reflection axis, in the same unit as radius_mean
-     If stereo_center = 0, the projection plane will be the equator.
-    :return: the coordinates of the stereographic projection for the projection from the South pole(1st and 2nd columns)
-      and from the North pole (3rd and 4th columns) projection, rescaled from radius_mean to 90 degrees
+    :param stereo_center: offset of the projection plane along the reflection axis,
+     in the same unit as radius_mean. If stereo_center = 0, the projection plane will
+     be the equator.
+    :return: the coordinates of the stereographic projection for the projection from
+     the South pole(1st and 2nd columns) and from the North pole (3rd and 4th
+     columns) projection, rescaled from radius_mean to 90 degrees
     """
     if projection_axis not in [0, 1, 2]:
         raise ValueError(
@@ -49,8 +52,10 @@ def calc_stereoproj_facet(projection_axis, vectors, radius_mean, stereo_center):
 
     # calculate u and v from xyz
     stereo_proj = np.zeros((vectors.shape[0], 4), dtype=vectors.dtype)
-    # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
-    # stereo_proj[:, 2] is the euclidian u_north, stereo_proj[:, 3] is the euclidian v_north
+    # stereo_proj[:, 0] is the euclidian u_south,
+    # stereo_proj[:, 1] is the euclidian v_south
+    # stereo_proj[:, 2] is the euclidian u_north,
+    # stereo_proj[:, 3] is the euclidian v_north
 
     if (
         projection_axis == 0
@@ -173,8 +178,9 @@ def distance_threshold(fit, indices, plane_shape, max_distance=0.90):
     Filter out pixels depending on their distance to a fit plane
 
     :param fit: coefficients of the plane (a, b, c, d) such that a*x + b*y + c*z + d = 0
-    :param indices: tuple or array of plane indices, x being the 1st tuple element or array row,
-     y the 2nd tuple element or array row and z the third tuple element or array row
+    :param indices: tuple or array of plane indices, x being the 1st tuple element or
+     array row, y the 2nd tuple element or array row and z the third tuple element or
+     array row
     :param plane_shape: shape of the initial plane array
     :param max_distance: max distance allowed from the fit plane in pixels
     :return: the updated plane, a stop flag
@@ -216,15 +222,16 @@ def equirectangular_proj(
     debugging=False,
 ):
     """
-    Detect facets in an object using an equirectangular projection of normals to mesh triangles
-     and watershed segmentation.
+    Detect facets in an object using an equirectangular projection of normals
+    to mesh triangles and watershed segmentation.
 
     :param normals: normals array
     :param intensity: intensity array
     :param cmap: colormap used for plotting
     :param bw_method: bw_method of gaussian_kde
     :param min_distance: min_distance of corner_peaks()
-    :param background_threshold: threshold for background determination (depth of the KDE)
+    :param background_threshold: threshold for background determination
+     (depth of the KDE)
     :param debugging: if True, show plots for debugging
     :return: ndarray of labelled regions
     """
@@ -233,7 +240,8 @@ def equirectangular_proj(
     normals = np.delete(normals, list_nan[::3, 0], axis=0)
     intensity = np.delete(intensity, list_nan[::3, 0], axis=0)
 
-    # calculate latitude and longitude from xyz, this is equal to the equirectangular flat square projection
+    # calculate latitude and longitude from xyz,
+    # this is equal to the equirectangular flat square projection
     long_lat = np.zeros((normals.shape[0], 2), dtype=normals.dtype)
     for i in range(normals.shape[0]):
         if normals[i, 1] == 0 and normals[i, 0] == 0:
@@ -355,20 +363,23 @@ def find_facet(
     """
     Shift a fit plane along its normal until it reaches the surface of a faceted object.
 
-    :param refplane_indices: a tuple of 3 arrays (1D, length N) describing the coordinates of the plane voxels
-     x values being the 1st tuple element, y values the 2nd tuple element and z values the 3rd tuple element
-     (output of np.nonzero)
-    :param surf_indices: a tuple of 3 arrays (1D, length N) describing the coordinates of the surface voxels
-     x values being the 1st tuple element, y values the 2nd tuple element and z values the 3rd tuple element
-     (output of np.nonzero)
-    :param original_shape: the shape of the full dataset (amplitude object, eventually upsampled)
-    :param step_shift: the amplitude of the shift to be applied to the plane along its normal
+    :param refplane_indices: a tuple of 3 arrays (1D, length N) describing the
+     coordinates of the plane voxels, x values being the 1st tuple element, y values
+     the 2nd tuple element and z values the 3rd tuple element (output of np.nonzero)
+    :param surf_indices: a tuple of 3 arrays (1D, length N) describing the coordinates
+     of the surface voxels, x values being the 1st tuple element, y values the 2nd
+     tuple element and z values the 3rd tuple element (output of np.nonzero)
+    :param original_shape: the shape of the full dataset (amplitude object,
+     eventually upsampled)
+    :param step_shift: the amplitude of the shift to be applied to the plane
+     along its normal
     :param plane_label: the label of the plane, used in comments
     :param plane_coeffs: a tuple of coefficient (a, b, c, d) such that ax+by+cz+d=0
-    :param min_points: threshold, minimum number of points that should coincide between the fit plane and the object
-     surface
+    :param min_points: threshold, minimum number of points that should coincide
+     between the fit plane and the object surface
     :param debugging: True to see debugging plots
-    :return: the shift that needs to be applied to the fit plane in order to best match with the object surface
+    :return: the shift that needs to be applied to the fit plane in order to best
+     match with the object surface
     """
     if not isinstance(refplane_indices, tuple):
         raise ValueError("refplane_indices should be a tuple of 3 1D ndarrays")
@@ -473,7 +484,8 @@ def find_facet(
             ):  # try to keep enough points for statistics, half step back
                 found_plane = 1
                 print(
-                    "(while, common_points != 0), exiting while loop after threshold reached - ",
+                    "(while, common_points != 0), "
+                    "exiting while loop after threshold reached - ",
                     common_previous,
                     "points belonging to the facet for plane ",
                     plane_label,
@@ -533,7 +545,8 @@ def find_facet(
                     nbloop = nbloop + 1
                 else:  # we were already unsuccessfull in the other direction, give up
                     print(
-                        "(while, common_points = 0), no point from support is intersecting the plane ",
+                        "(while, common_points = 0),"
+                        " no point from support is intersecting the plane ",
                         plane_label,
                     )
                     break
@@ -583,10 +596,12 @@ def fit_plane(plane, label, debugging=False):
     """
     Fit a plane to labelled indices using the equation a*x+ b*y + c*z + d = 0.
 
-    :param plane: 3D binary array, where the voxels belonging to the plane are set to 1 and others are set to 0.
+    :param plane: 3D binary array, where the voxels belonging to the plane are set
+     to 1 and others are set to 0.
     :param label: int, label of the plane used for the title in plots
     :param debugging: show plots for debugging
-    :return: fit parameters (a, b, c, d), plane indices after filtering, errors associated, a stop flag
+    :return: fit parameters (a, b, c, d), plane indices after filtering,
+     errors associated, a stop flag
     """
     indices = np.asarray(np.nonzero(plane))
     no_points = False
@@ -697,13 +712,16 @@ def fit_plane(plane, label, debugging=False):
 
 def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     """
-    Find voxels of the object which belong to a facet using the facet plane equation and the distance to the plane.
+    Find voxels of the object which belong to a facet using the facet plane equation
+     and the distance to the plane.
 
     :param fit: coefficients of the plane (a, b, c, d) such that a*x + b*y + c*z + d = 0
     :param plane: 3D binary support of the plane, with shape of the full dataset
     :param label: the label of the plane processed
-    :param support: 3D binary support of the reconstructed object, with shape of the full dataset
-    :param max_distance: in pixels, maximum allowed distance to the facet plane of a voxel
+    :param support: 3D binary support of the reconstructed object,
+     with shape of the full dataset
+    :param max_distance: in pixels, maximum allowed distance to the facet plane
+     of a voxel
     :param debugging: set to True to see plots
     :return: the updated plane, a stop flag
     """
@@ -751,7 +769,8 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
 
     plane_normal = fit[:-1]  # normal is [a, b, c] if ax+by+cz+d=0
 
-    # calculate the local gradient for each point of the plane, gradients is a list of arrays of 3 vector components
+    # calculate the local gradient for each point of the plane,
+    # gradients is a list of arrays of 3 vector components
     indices = np.nonzero(plane)
     gradients = surface_gradient(
         list(zip(indices[0], indices[1], indices[2])), support=support
@@ -808,11 +827,13 @@ def offset_plane(indices, offset, plane_normal):
 
 def remove_duplicates(vertices, faces, debugging=False):
     """
-    Remove duplicates in a list of vertices and faces (a face is atriangle made of tree vertices).
+    Remove duplicates in a list of vertices and faces (a face is a triangle made of
+     three vertices).
 
     :param vertices: a ndarray of vertices, shape (N, 3)
     :param faces: a ndarray of vertex indices, shape (M, 3)
-    :param debugging: True to see which vertices are duplicated and how lists are modified
+    :param debugging: True to see which vertices are duplicated and how lists are
+     modified
     :return: the updated vertices and faces with duplicates removed in place
     """
     # find indices which are duplicated
@@ -826,7 +847,8 @@ def remove_duplicates(vertices, faces, debugging=False):
         same_vertices = np.argwhere(
             vertices == uniq_vertices[duplicated_indices[idx], :]
         )
-        # same_vertices is a ndarray of the form [[ind0, 0], [ind0, 1], [ind0, 2], [ind1, 0], [ind1, 1], [ind1, 2],...]
+        # same_vertices is a ndarray of the form
+        # [[ind0, 0], [ind0, 1], [ind0, 2], [ind1, 0], [ind1, 1], [ind1, 2],...]
         list_duplicated.append(list(same_vertices[::3, 0]))
 
     # remove duplicates in vertices
@@ -843,7 +865,8 @@ def remove_duplicates(vertices, faces, debugging=False):
                 0
             ]  # temp_array[0] is the unique value, others are duplicates
 
-            # all indices above duplicated_value have to be decreased by 1 to keep the match with the number of vertices
+            # all indices above duplicated_value have to be decreased by 1
+            # to keep the match with the number of vertices
             faces[faces > duplicated_value] = faces[faces > duplicated_value] - 1
 
             # update accordingly all indices above temp_array[idy]
@@ -865,7 +888,8 @@ def remove_duplicates(vertices, faces, debugging=False):
                 print("temp_array after", temp_array)
                 print("list_duplicated after", list_duplicated)
 
-    # look for faces with 2 identical vertices (cannot define later a normal to these faces)
+    # look for faces with 2 identical vertices
+    # (cannot define later a normal to these faces)
     remove_faces = []
     for idx in range(faces.shape[0]):
         if np.unique(faces[idx, :], axis=0).shape[0] != faces[idx, :].shape[0]:
@@ -878,7 +902,8 @@ def remove_duplicates(vertices, faces, debugging=False):
 
 def surface_indices(surface, plane_indices, margin=3):
     """
-    Crop surface around the plane with a certain margin, and find corresponding surface indices.
+    Crop surface around the plane with a certain margin, and find corresponding
+    surface indices.
 
     :param surface: the 3D surface binary array
     :param plane_indices: tuple of 3 1D-arrays of plane indices
@@ -929,31 +954,40 @@ def stereographic_proj(
     debugging=False,
 ):
     """
-    Detect facets in an object using a stereographic projection of normals to mesh triangles
-     and watershed segmentation.
+    Detect facets in an object using a stereographic projection of normals to mesh
+    triangles and watershed segmentation.
 
     :param normals: array of normals to mesh triangles (nb_normals rows x 3 columns)
     :param intensity: array of intensities (nb_normals rows x 1 column)
-    :param max_angle: maximum angle in degree of the stereographic projection (should be larger than 90)
+    :param max_angle: maximum angle in degree of the stereographic projection
+     (should be larger than 90)
     :param savedir: directory for saving figures
-    :param voxel_size: tuple of three numbers corresponding to the real-space voxel size in each dimension
-    :param projection_axis: the projection is performed on a plane perpendicular to that axis (0, 1 or 2)
+    :param voxel_size: tuple of three numbers corresponding to the real-space
+     voxel size in each dimension
+    :param projection_axis: the projection is performed on a plane perpendicular to
+     that axis (0, 1 or 2)
     :param min_distance: min_distance of corner_peaks()
-    :param background_south: threshold for background determination in the projection from South
-    :param background_north: threshold for background determination in the projection from North
+    :param background_south: threshold for background determination in the projection
+     from South
+    :param background_north: threshold for background determination in the projection
+     from North
     :param save_txt: if True, will save coordinates in a .txt file
     :param cmap: colormap used for plotting pole figures
-    :param planes_south: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
-    :param planes_north: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
-    :param plot_planes: if True, will draw circles corresponding to crystallographic planes in the pole figure
+    :param planes_south: dictionnary of crystallographic planes, e.g.
+     {'111':angle_with_reflection}
+    :param planes_north: dictionnary of crystallographic planes, e.g.
+     {'111':angle_with_reflection}
+    :param plot_planes: if True, will draw circles corresponding to crystallographic
+     planes in the pole figure
     :param scale: 'linear' or 'log', scale for the colorbar of the plot
     :param comment_fig: string, comment for the filename when saving figures
     :param debugging: show plots for debugging
     :return:
-
-     - labels_south and labels_north as 2D arrays for each projection from South and North
-     - a (Nx4) array: projected coordinates of normals from South (u column 0, v column 1)
-       and North (u column2 , v column 3). The coordinates are in degrees, not indices.
+     - labels_south and labels_north as 2D arrays for each projection from South and
+       North
+     - a (Nx4) array: projected coordinates of normals from South (u column 0,
+       v column 1) and North (u column2 , v column 3). The coordinates are in
+       degrees, not indices.
      - the list of rows to remove
     """
 
@@ -979,16 +1013,20 @@ def stereographic_proj(
     if comment_fig and comment_fig[-1] != "_":
         comment_fig = comment_fig + "_"
     radius_mean = 1  # normals are normalized
-    stereo_center = 0  # COM of the weighted point density, where the projection plane intersects the reference axis
-    # since the normals have their origin at 0, the projection plane is the equator and stereo_center=0
+    stereo_center = 0  # COM of the weighted point density,
+    # where the projection plane intersects the reference axis
+    # since the normals have their origin at 0,
+    # the projection plane is the equator and stereo_center=0
 
     # check normals for nan
     list_nan = np.argwhere(np.isnan(normals))
     normals = np.delete(normals, list_nan[::3, 0], axis=0)
     intensity = np.delete(intensity, list_nan[::3, 0], axis=0)
 
-    # recalculate normals considering the anisotropy of voxel sizes (otherwise angles are wrong)
-    # the stereographic projection is in reciprocal space, therefore we need to use the reciprocal voxel sizes
+    # recalculate normals considering the anisotropy of voxel sizes
+    # (otherwise angles are wrong)
+    # the stereographic projection is in reciprocal space,
+    # therefore we need to use the reciprocal voxel sizes
     iso_normals = np.copy(normals)
     iso_normals[:, 0] = iso_normals[:, 0] * 2 * np.pi / voxel_size[0]
     iso_normals[:, 1] = iso_normals[:, 1] * 2 * np.pi / voxel_size[1]
@@ -1006,8 +1044,10 @@ def stereographic_proj(
         radius_mean=radius_mean,
         stereo_center=stereo_center,
     )
-    # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
-    # stereo_proj[:, 2] is the euclidian u_north, stereo_proj[:, 3] is the euclidian v_north
+    # stereo_proj[:, 0] is the euclidian u_south,
+    # stereo_proj[:, 1] is the euclidian v_south
+    # stereo_proj[:, 2] is the euclidian u_north,
+    # stereo_proj[:, 3] is the euclidian v_north
 
     # remove intensity where stereo_proj is infinite
     list_bad = np.argwhere(
@@ -1052,8 +1092,10 @@ def stereographic_proj(
     fig.savefig(savedir + comment_fig + "North pole_" + scale + ".png")
 
     # regrid stereo_proj
-    # stereo_proj[:, 0] is the euclidian u_south, stereo_proj[:, 1] is the euclidian v_south
-    # stereo_proj[:, 2] is the euclidian u_north, stereo_proj[:, 3] is the euclidian v_north
+    # stereo_proj[:, 0] is the euclidian u_south,
+    # stereo_proj[:, 1] is the euclidian v_south
+    # stereo_proj[:, 2] is the euclidian u_north,
+    # stereo_proj[:, 3] is the euclidian v_north
     nb_points = 4 * max_angle + 1
     v_grid, u_grid = np.mgrid[
         -max_angle : max_angle : (nb_points * 1j),
@@ -1214,7 +1256,8 @@ def stereographic_proj(
 
     # define the marker for each peak
     markers_south = ndimage.label(local_maxi_south)[0]  # range from 0 to nb_peaks
-    # define non overlaping markers for the North projection: the first marker value is (markers_south.max()+1)
+    # define non overlaping markers for the North projection:
+    # the first marker value is (markers_south.max()+1)
     markers_north = ndimage.label(local_maxi_north)[0] + markers_south.max(initial=None)
     # markers_north.min() is 0 since it is the background
     markers_north[markers_north == markers_south.max(initial=None)] = 0
@@ -1274,11 +1317,13 @@ def surface_gradient(points, support, width=2):
     """
     Calculate the support gradient at point.
 
-    :param points: tuple or list of tuples of 3 integers (z, y, x), position where to calculate the gradient vector
+    :param points: tuple or list of tuples of 3 integers (z, y, x), position where
+     to calculate the gradient vector
     :param support: 3D numpy binary array, being 1 in the crystal and 0 outside
-    :param width: half-width of the window where the gradient will be calculated (the support gradient is nonzero on a
-     single layer, it avoids missing it)
-    :return: a list of normalized vector(s) (array(s) of 3 numbers) oriented towards the exterior of the cristal
+    :param width: half-width of the window where the gradient will be calculated
+     (the support gradient is nonzero on a single layer, it avoids missing it)
+    :return: a list of normalized vector(s) (array(s) of 3 numbers) oriented
+     towards the exterior of the cristal
     """
     gradz, grady, gradx = np.gradient(support, 1)  # support
     vectors = []
@@ -1290,7 +1335,8 @@ def surface_gradient(points, support, width=2):
         # round the point to integer numbers
         point = [int(np.rint(point[idx])) for idx in range(3)]
 
-        # calculate the gradient in a small window around point (gradient will be nonzero on a single layer)
+        # calculate the gradient in a small window around point
+        # (gradient will be nonzero on a single layer)
         gradz_slice = gradz[
             point[0] - width : point[0] + width + 1,
             point[1] - width : point[1] + width + 1,
@@ -1324,7 +1370,8 @@ def surface_gradient(points, support, width=2):
         else:
             vector_x = gradx_slice.sum() / val
 
-        # support was 1 inside, 0 outside, the vector needs to be flipped to point towards the outside
+        # support was 1 inside, 0 outside,
+        # the vector needs to be flipped to point towards the outside
         vectors.append(
             [-vector_z, -vector_y, -vector_x]
             / np.linalg.norm([-vector_z, -vector_y, -vector_x])
@@ -1343,8 +1390,8 @@ def taubin_smooth(
     debugging=False,
 ):
     """
-    Performs a back and forward Laplacian smoothing "without shrinking" of a triangulated mesh,
-     as described by Gabriel Taubin (ICCV '95)
+    Performs a back and forward Laplacian smoothing "without shrinking" of a
+    triangulated mesh, as described by Gabriel Taubin (ICCV '95)
 
     :param faces: m*3 ndarray of m faces defined by 3 indices of vertices
     :param vertices: n*3 ndarray of n vertices defined by 3 positions
@@ -1352,10 +1399,11 @@ def taubin_smooth(
     :param iterations: number of iterations for smoothing
     :param lamda: smoothing variable 0 < lambda < mu < 1
     :param mu: smoothing variable 0 < lambda < mu < 1
-    :param radius: radius around which the normals are integrated in the calculation of the density of normals
+    :param radius: radius around which the normals are integrated in the calculation
+     of the density of normals
     :param debugging: show plots for debugging
-    :return: smoothened vertices (ndarray n*3), normals to triangle (ndarray m*3), weighted density of normals,
-     updated faces, errors
+    :return: smoothened vertices (ndarray n*3), normals to triangle (ndarray m*3),
+     weighted density of normals, updated faces, errors
     """
     from mpl_toolkits.mplot3d import Axes3D
 
@@ -1434,9 +1482,11 @@ def taubin_smooth(
         new_vertices.shape[0],
     )
 
-    # Create an indexed view into the vertex array using the array of three indices for triangles
+    # Create an indexed view into the vertex array using
+    # the array of three indices for triangles
     tris = new_vertices[faces]
-    # Calculate the normal for all the triangles, by taking the cross product of the vectors v1-v0,
+    # Calculate the normal for all the triangles,
+    # by taking the cross product of the vectors v1-v0,
     # and v2-v0 in each triangle
     normals = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[::, 0])
     areas = np.array([1 / 2 * np.linalg.norm(normal) for normal in normals])
@@ -1446,7 +1496,8 @@ def taubin_smooth(
     normals = -1 * normals / normals_length[:, np.newaxis]  # flip and normalize normals
     # n is now an array of normalized normals, one per triangle.
 
-    # calculate the colormap for plotting the weighted point density of normals on a sphere
+    # calculate the colormap for plotting
+    # the weighted point density of normals on a sphere
     intensity = np.zeros(normals.shape[0], dtype=normals.dtype)
     for i in range(normals.shape[0]):
         distances = np.sqrt(
@@ -1498,10 +1549,12 @@ def update_logfile(
     :param support: the 3D binary support defining voxels to be saved in the logfile
     :param strain_array: the 3D strain array
     :param summary_file: the handle for the file summarizing strain statistics per facet
-    :param allpoints_file: the handle for the file giving the strain and the label for each voxel
+    :param allpoints_file: the handle for the file giving the strain and the label
+     for each voxel
     :param label: the label of the plane
     :param angle_plane: the angle of the plane with the measurement direction
-    :param plane_coeffs: the fit coefficients (a,b,c,d) of the plane such that ax+by+cz+d=0
+    :param plane_coeffs: the fit coefficients (a,b,c,d) of the plane such
+     that ax+by+cz+d=0
     :param plane_normal: the normal to the plane
     :return: nothing
     """
@@ -1727,6 +1780,3 @@ def upsample(array, upsampling_factor, voxelsizes=None, title="", debugging=Fals
             )
 
     return obj, newvoxelsizes
-
-
-# if __name__ == "__main__":
