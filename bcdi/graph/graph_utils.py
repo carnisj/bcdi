@@ -65,7 +65,8 @@ class Colormap:
         Initialize parameters of the experiment.
 
         :param colormap: a colormap string. Available choices at the moment: 'default'
-        :param bad_color: a string which defines the grey level for nan pixels. example: '0.7'
+        :param bad_color: a string which defines the grey level for nan pixels.
+         example: '0.7'
         """
         if colormap == "default":
             cdict = color_dict
@@ -85,7 +86,8 @@ def colorbar(mappable, scale="linear", numticks=10, label=None, pad=0.05):
     :param scale: 'linear' or 'log', used for tick location
     :param numticks: number of ticks for the colorbar
     :param label: label for the colorbar
-    :param pad: float (default 0.05). Fraction of original axes between colorbar and new image axes.
+    :param pad: float (default 0.05). Fraction of original axes between colorbar and
+     new image axes.
     :return: the colorbar instance
     """
     last_axes = plt.gca()
@@ -134,30 +136,40 @@ def combined_plots(
     Subplots of a 1D, 2D or 3D datasets using user-defined parameters.
 
     :param tuple_array: tuple of 1D, 2D or 3D arrays of real numbers
-    :param tuple_sum_frames: boolean or tuple of boolean values. If True, will sum the data along sum_axis
+    :param tuple_sum_frames: boolean or tuple of boolean values. If True, will sum the
+     data along sum_axis
     :param tuple_sum_axis: tuple of axis along which to sum or to take the middle slice
-    :param tuple_width_v: int or tuple of user-defined zoom vertical width, should be smaller than the actual data
-     size. Set it to None if you do not need it.
-    :param tuple_width_h: int or tuple of user-defined zoom horizontal width, should be smaller than the actual data
-     size. Set it to None if you do not need it.
-    :param tuple_colorbar: boolean or tuple of boolean values. Set it to True in order to plot the colorbar
-    :param tuple_vmin: float or tuple of lower boundaries for the colorbar, set to np.nan if you do not need it
-    :param tuple_vmax: float or tuple of higher boundaries for the colorbar, set to np.nan if you do not need it
+    :param tuple_width_v: int or tuple of user-defined zoom vertical width, should be
+     smaller than the actual data size. Set it to None if you do not need it.
+    :param tuple_width_h: int or tuple of user-defined zoom horizontal width, should be
+     smaller than the actual data size. Set it to None if you do not need it.
+    :param tuple_colorbar: boolean or tuple of boolean values. Set it to True in order
+     to plot the colorbar
+    :param tuple_vmin: float or tuple of lower boundaries for the colorbar,
+     set to np.nan if you do not need it
+    :param tuple_vmax: float or tuple of higher boundaries for the colorbar,
+     set to np.nan if you do not need it
     :param tuple_title: string or tuple of strings, set to '' if you do not need it
     :param tuple_scale:  string ot tuple of strings with value 'linear' or 'log'
     :param cmap: colormap to be used
     :param tick_direction: 'out', 'in', 'inout'
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
-    :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm). It can
-     be  a positive number or a tuple of array.ndim positive numbers
-    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
-    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
+    :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size
+     of the reconstruction(in nm). It can be  a positive number or a tuple of
+     array.ndim positive numbers
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise
+     (detector frame) Used for plot labels.
+    :param reciprocal_space: True if the data is in reciprocal space, False otherwise.
+     Used for plot labels.
     :param kwargs:
      - 'xlabel' , label of the horizontal axis for plots: string or tuple of strings
      - 'ylabel' , label of the vertical axis for plots: string or tuple of strings
-     - 'position' , tuple of subplot positions in the format 231 (2 rows, 3 columns, first subplot)
-     - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
+     - 'position' , tuple of subplot positions in the format 231 (2 rows, 3 columns,
+       first subplot)
+     - 'invert_y': boolean, True to invert the vertical axis of the plot.
+       Will overwrite the default behavior.
+
     :return:  the figure instance
     """
     mpl.rcParams["axes.linewidth"] = tick_width  # set the linewidth globally
@@ -567,19 +579,25 @@ def contour_slices(
     Create a figure with three 2D contour plots from a 3D dataset.
 
     :param array: 3D array of real numbers
-    :param q_coordinates: a tuple of (qx, qz, qy) 1D-coordinates corresponding to the (Z, Y, X) of the cxi convention
+    :param q_coordinates: a tuple of (qx, qz, qy) 1D-coordinates corresponding to the
+     (Z, Y, X) of the cxi convention
     :param sum_frames: if True, will sum the data along the 3rd axis
     :param slice_position: tuple of three integers where to slice the 3D array
     :param levels: int n, will use n data intervals and draw n+1 contour lines
-    :param width_z: user-defined zoom width along axis 0 (rocking angle), should be smaller than the actual data size
-    :param width_y: user-defined zoom width along axis 1 (vertical), should be smaller than the actual data size
-    :param width_x: user-defined zoom width along axis 2 (horizontal), should be smaller than the actual data size
+    :param width_z: user-defined zoom width along axis 0 (rocking angle), should be
+     smaller than the actual data size
+    :param width_y: user-defined zoom width along axis 1 (vertical), should be smaller
+     than the actual data size
+    :param width_x: user-defined zoom width along axis 2 (horizontal), should be
+     smaller than the actual data size
     :param plot_colorbar: set it to True in order to plot the colorbar
     :param cmap: colormap to be used
     :param title: string to include in the plot
     :param scale: 'linear' or 'log'
-    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
-    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise
+     (detector frame) Used for plot labels.
+    :param reciprocal_space: True if the data is in reciprocal space, False otherwise.
+     Used for plot labels.
     :return: fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) instances
     """
     #########################
@@ -750,17 +768,24 @@ def contour_stereographic(
     """
     Plot the stereographic projection with some cosmetics.
 
-    :param euclidian_u: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
-    :param euclidian_v: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
+    :param euclidian_u: flattened array, normalized Euclidian metric coordinates
+     (points can be not on a regular grid)
+    :param euclidian_v: flattened array, normalized Euclidian metric coordinates
+     (points can be not on a regular grid)
     :param color: flattened array, intensity of density kernel estimation at radius_mean
-    :param radius_mean: radius of the sphere in reciprocal space from which the projection is done
-    :param planes: dictionnary of crystallographic planes, e.g. {'111':angle_with_reflection}
+    :param radius_mean: radius of the sphere in reciprocal space from which the
+     projection is done
+    :param planes: dictionnary of crystallographic planes, e.g.
+     {'111':angle_with_reflection}
     :param title: title for the stereographic plot
-    :param plot_planes: if True, will draw circle corresponding to crystallographic planes in the pole figure
+    :param plot_planes: if True, will draw circle corresponding to crystallographic
+     planes in the pole figure
     :param contour_range: range for the plot contours
-    :param max_angle: maximum angle in degrees of the stereographic projection (should be larger than 90)
+    :param max_angle: maximum angle in degrees of the stereographic projection
+     (should be larger than 90)
     :param cmap: colormap to be used
-    :param uv_labels: tuple of strings, labels for the u axis and the v axis, respectively
+    :param uv_labels: tuple of strings, labels for the u axis and the v axis,
+     respectively
     :param hide_axis: hide the axis frame, ticks and ticks labels
     :param scale: 'linear' or 'log', scale for the colorbar of the plot
     :param debugging: True to see the scatter plot of euclidian coordinates
@@ -804,7 +829,8 @@ def contour_stereographic(
         -max_angle : max_angle : (nb_points * 1j),
         -max_angle : max_angle : (nb_points * 1j),
     ]
-    # v_grid is changing along the vertical axis, u_grid is changing along the horizontal axis
+    # v_grid is changing along the vertical axis,
+    # u_grid is changing along the horizontal axis
     intensity_grid = griddata(
         (euclidian_v, euclidian_u), color, (v_grid, u_grid), method="linear"
     )
@@ -955,11 +981,13 @@ def define_labels(reciprocal_space, is_orthogonal, sum_frames, labels=None):
     Define default labels for plots.
 
     :param reciprocal_space: True if the data is in reciprocal space, False otherwise
-    :param is_orthogonal: True is the frame is orthogonal, False otherwise (detector frame)
+    :param is_orthogonal: True is the frame is orthogonal, False otherwise
+     (detector frame)
     :param sum_frames: True if the the data is summed along some axis
     :param labels: tuple of two strings (vertical label, horizontal label)
-    :return: three tuples of three elements: slice_names, vertical labels, horizontal labels. The first element in the
-     tuple corresponds to the first subplot and so on.
+    :return: three tuples of three elements: slice_names, vertical labels,
+     horizontal labels. The first element in the tuple corresponds to the first
+     subplot and so on.
     """
     labels = labels or ("",) * 2
 
@@ -1044,8 +1072,10 @@ def imshow_plot(
     :param array: 2D or 3D array of real numbers
     :param sum_frames: if True, will sum the data along sum_axis
     :param sum_axis: axis along which to sum
-    :param width_v: user-defined zoom vertical width, should be smaller than the actual data size
-    :param width_h: user-defined zoom horizontal width, should be smaller than the actual data size
+    :param width_v: user-defined zoom vertical width, should be smaller than the
+     actual data size
+    :param width_h: user-defined zoom horizontal width, should be smaller than the
+     actual data size
     :param plot_colorbar: set it to True in order to plot the colorbar
     :param vmin: lower boundary for the colorbar
     :param vmax: higher boundary for the colorbar
@@ -1056,13 +1086,17 @@ def imshow_plot(
     :param tick_direction: 'out', 'in', 'inout'
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
-    :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size of the reconstruction(in nm). It can
+    :param pixel_spacing: pixel_spacing = desired tick_spacing (in nm) / voxel_size
+     of the reconstruction(in nm). It can
      be  a positive number or a tuple of array.ndim positive numbers
-    :param is_orthogonal: True is the array is in an orthogonal basis, False otherwise (detector frame).
-     Used for plot labels.
-    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
+    :param is_orthogonal: True is the array is in an orthogonal basis,
+     False otherwise (detector frame). Used for plot labels.
+    :param reciprocal_space: True if the data is in reciprocal space,
+     False otherwise. Used for plot labels.
     :param kwargs:
-     - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
+     - 'invert_y': boolean, True to invert the vertical axis of the plot.
+       Will overwrite the default behavior.
+
     :return:  fig, axis, plot instances
     """
     mpl.rcParams["axes.linewidth"] = tick_width  # set the linewidth globally
@@ -1251,12 +1285,16 @@ def imshow_plot(
 
 def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False):
     """
-    Linecut through a 2D or 3D array given the indices of the starting voxel and of the end voxel.
+    Linecut through a 2D or 3D array given the indices of the starting voxel and of
+    the end voxel.
 
     :param array: a 2D or 3D array
-    :param start_indices: tuple of indices, of the same length as the number of dimension of array
-    :param stop_indices: tuple of indices, of the same length as the number of dimension of array
-    :param interp_order: order of the spline interpolation, default is 3. The order has to be in the range 0-5.
+    :param start_indices: tuple of indices, of the same length as the number of
+     dimension of array
+    :param stop_indices: tuple of indices, of the same length as the number of
+     dimension of array
+    :param interp_order: order of the spline interpolation, default is 3.
+     The order has to be in the range 0-5.
     :param debugging: True to see plots
     :return: a 1D array interpolated between the start and stop indices
     """
@@ -1343,21 +1381,6 @@ def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False)
             plt.draw()
 
     return cut
-
-
-def load_check_kwargs(nb_plots, **kwargs):
-    """
-    Load and check parameters related to plots from the kwargs dictionnary. If these parameters are going to be
-    provided to several plots, there are trasnformed to tuple of the corresponding length.
-
-    :param nb_plots: number of plots to which these parameters should be provided
-    :param kwargs: a dictionnary of kwargs
-    :return:
-    """
-    if not isinstance(kwargs, dict):
-        raise TypeError(f"kwargs should be a dictionnary, got {type(kwargs)}")
-    # TODO
-    pass
 
 
 def loop_thru_scan(
@@ -1538,27 +1561,36 @@ def mlab_contour3d(
     :param y: y position of voxels (numpy.mgrid)
     :param z: z position of voxels (numpy.mgrid)
     :param scalars: scalar field at each voxel.
-    :param contours: integer/list specifying number/list of contours. Specifying a list of values will only give the
-     requested contours asked for.
-    :param extent: [xmin, xmax, ymin, ymax, zmin, zmax] Default is the x, y, z arrays extent. Use this to change
-     the extent of the object created.
+    :param contours: integer/list specifying number/list of contours. Specifying
+     a list of values will only give the requested contours asked for.
+    :param extent: [xmin, xmax, ymin, ymax, zmin, zmax] Default is the x, y, z arrays
+     extent. Use this to change the extent of the object created.
     :param nb_labels: the number of labels along each direction.
     :param fig_size: the size of the scene created, in pixels.
-    :param azimuth: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended by the position vector on a sphere
-     projected on to the x-y plane with the x-axis. It can be a list of angles for several plots.
-    :param elevation: the zenith angle (in degrees, 0-180), i.e. the angle subtended by the position vector
-     and the z-axis. It can be a list of angles for several plots.
-    :param distance: a positive floating point number representing the distance from the focal point to place the
-     camera. It can be a list of the same length as aimut. If ‘auto’ is passed, the distance is computed to have a best
+    :param azimuth: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended
+     by the position vector on a sphere projected on to the x-y plane with the
+     x-axis. It can be a list of angles for several plots.
+    :param elevation: the zenith angle (in degrees, 0-180), i.e. the angle subtended
+     by the position vector and the z-axis. It can be a list of angles for several
+     plots.
+    :param distance: a positive floating point number representing the distance
+     from the focal point to place the camera. It can be a list of the same
+     length as aimut. If ‘auto’ is passed, the distance is computed to have a best
      fit of objects in the frame.
-    :param roll: absolute roll angle of the camera. It can be a list of angles for several plots.
-    :param vmin: vmin is used to scale the colormap. If None, the min of the data will be used.
-    :param vmax: vmax is used to scale the colormap. If None, the max of the data will be used.
-    :param opacity:	the overall opacity of the vtk object. Must be a float. Default: 1.0.
-    :param color: the color of the vtk object. Overides the colormap, if any, when specified. This is specified as a
-     triplet of float ranging from 0 to 1, eg (1, 1, 1) for white.
+    :param roll: absolute roll angle of the camera. It can be a list of angles for
+     several plots.
+    :param vmin: vmin is used to scale the colormap. If None, the min of the data
+     will be used.
+    :param vmax: vmax is used to scale the colormap. If None, the max of the data
+     will be used.
+    :param opacity:	the overall opacity of the vtk object. Must be a float.
+     Default: 1.0.
+    :param color: the color of the vtk object. Overides the colormap, if any,
+     when specified. This is specified as a triplet of float ranging from 0 to 1,
+     eg (1, 1, 1) for white.
     :param colormap: type of colormap to use.
-    :param title: title to be included in the filename of the saved image. It can be a list of length len(azimuth).
+    :param title: title to be included in the filename of the saved image.
+     It can be a list of length len(azimuth).
     :param savedir: path of the saving directory.
     :return: figure, axes and colorbar instances.
     """
@@ -1660,7 +1692,8 @@ def mlab_contour3d(
             color=color,
         )
 
-    # Update the look up table (LUT) of the contour3d object. The lut is a 255x4 array, with the columns representing
+    # Update the look up table (LUT) of the contour3d object.
+    # The lut is a 255x4 array, with the columns representing
     # RGBA (red, green, blue, alpha) coded with integers going from 255 to 0.
 
     # set the color and transparency for nans
@@ -1724,26 +1757,34 @@ def mlab_points3d(
     :param y: y position of voxels (numpy.mgrid)
     :param z: z position of voxels (numpy.mgrid)
     :param scalars: scalar field at each voxel.
-    :param extent: [xmin, xmax, ymin, ymax, zmin, zmax] Default is the x, y, z arrays extent. Use this to change the
-     extent of the object created.
+    :param extent: [xmin, xmax, ymin, ymax, zmin, zmax] Default is the x, y, z
+     arrays extent. Use this to change the extent of the object created.
     :param nb_labels: the number of labels along each direction.
     :param fig_size: the size of the scene created, in pixels.
-    :param azimuth: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended by the position vector on a sphere
-     projected on to the x-y plane with the x-axis. It can be a list of angles for several plots.
-    :param elevation: the zenith angle (in degrees, 0-180), i.e. the angle subtended by the position vector
-     and the z-axis. It can be a list of angles for several plots.
-    :param roll: absolute roll angle of the camera. It can be a list of angles for several plots.
-    :param distance: a positive floating point number representing the distance from the focal point to place the
-     camera. It can be a list of the same length as aimut. If ‘auto’ is passed, the distance is computed to have a best
-     fit of objects in the frame.
-    :param mode: the mode of the glyphs. Available modes are: ‘2darrow’, ‘2dcircle’, ‘2dcross’, ‘2ddash’, ‘2ddiamond’,
-     ‘2dhooked_arrow’, ‘2dsquare’, ‘2dthick_arrow’, ‘2dthick_cross’, ‘2dtriangle’, ‘2dvertex’, ‘arrow’, ‘axes’, ‘cone’,
-     ‘cube’, ‘cylinder’, ‘point’, ‘sphere’
-    :param vmin: vmin is used to scale the colormap. If None, the min of the data will be used.
-    :param vmax: vmax is used to scale the colormap. If None, the max of the data will be used.
+    :param azimuth: the azimuthal angle (in degrees, 0-360), i.e. the angle subtended
+     by the position vector on a sphere projected on to the x-y plane with the
+     x-axis. It can be a list of angles for several plots.
+    :param elevation: the zenith angle (in degrees, 0-180), i.e. the angle subtended
+     by the position vector and the z-axis. It can be a list of angles for several
+     plots.
+    :param roll: absolute roll angle of the camera. It can be a list of angles for
+     several plots.
+    :param distance: a positive floating point number representing the distance
+     from the focal point to place the camera. It can be a list of the same length
+     as azimut. If ‘auto’ is passed, the distance is computed to have a best fit of
+     objects in the frame.
+    :param mode: the mode of the glyphs. Available modes are: ‘2darrow’, ‘2dcircle’,
+     ‘2dcross’, ‘2ddash’, ‘2ddiamond’, ‘2dhooked_arrow’, ‘2dsquare’, ‘2dthick_arrow’,
+     ‘2dthick_cross’, ‘2dtriangle’, ‘2dvertex’, ‘arrow’, ‘axes’, ‘cone’, ‘cube’,
+     ‘cylinder’, ‘point’, ‘sphere’
+    :param vmin: vmin is used to scale the colormap. If None, the min of the data
+     will be used.
+    :param vmax: vmax is used to scale the colormap. If None, the max of the data
+     will be used.
     :param opacity:	the overall opacity of the vtk object. Must be a float. Default: 1.0
     :param colormap: type of colormap to use.
-    :param title: title to be included in the filename of the saved image. It can be a list of length len(azimuth).
+    :param title: title to be included in the filename of the saved image. It can be
+     a list of length len(azimuth).
     :param savedir: path of the saving directory.
     :return: figure, axes and colorbar instances
     """
@@ -1892,9 +1933,12 @@ def multislices_plot(
     :param array: 3D array of real numbers
     :param sum_frames: if True, will sum the data along the 3rd axis
     :param slice_position: tuple of three integers where to slice the 3D array
-    :param width_z: zoom width along axis 0 (rocking angle), should be smaller than the actual data size
-    :param width_y: zoom width along axis 1 (vertical), should be smaller than the actual data size
-    :param width_x: zoom width along axis 2 (horizontal), should be smaller than the actual data size
+    :param width_z: zoom width along axis 0 (rocking angle), should be smaller
+     than the actual data size
+    :param width_y: zoom width along axis 1 (vertical), should be smaller
+     than the actual data size
+    :param width_x: zoom width along axis 2 (horizontal), should be smaller
+     than the actual data size
     :param plot_colorbar: set it to True in,der to plot the colorbar
     :param cmap: colormap to be used
     :param title: string to include in the plot
@@ -1902,15 +1946,20 @@ def multislices_plot(
     :param tick_direction: 'out', 'in', 'inout'
     :param tick_width: width of tickes in plots
     :param tick_length: length of tickes in plots
-    :param pixel_spacing: pixel_spacing=desired tick_spacing (in nm)/voxel_size of the reconstruction(in nm). It can be
-     a positive number or a tuple of 3 positive numbers
-    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise (detector frame) Used for plot labels.
-    :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
+    :param pixel_spacing: pixel_spacing=desired tick_spacing (in nm)/voxel_size of
+     the reconstruction(in nm). It can be a positive number or a tuple of 3 positive
+     numbers
+    :param is_orthogonal: set to True is the frame is orthogonal, False otherwise
+     (detector frame) Used for plot labels.
+    :param reciprocal_space: True if the data is in reciprocal space,
+     False otherwise. Used for plot labels.
     :param vmin: lower boundary for the colorbar. Float or tuple of 3 floats
     :param vmax: higher boundary for the colorbar. Float or tuple of 3 floats
     :param ipynb_layout: toggle for 3 plots in a row, cleaner in an Jupyter Notebook
     :param kwargs:
-     - 'invert_y': boolean, True to invert the vertical axis of the plot. Will overwrite the default behavior.
+     - 'invert_y': boolean, True to invert the vertical axis of the plot.
+       Will overwrite the default behavior.
+
     :return: fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2) instances
     """
     mpl.rcParams["axes.linewidth"] = tick_width  # set the linewidth globally
@@ -2261,7 +2310,8 @@ def savefig(
     **kwargs,
 ):
     """
-    This function can be used to plot template figures for publications, without and with labels.
+    This function can be used to plot template figures for publications,
+     without and with labels.
 
     :param savedir: str, the directory where to save the figures
     :param figure: a matplotlib figure instance
@@ -2280,11 +2330,12 @@ def savefig(
     :param only_labels: bool, if True only the figure with all labels will be saved
     :param kwargs:
      - 'bottom', 'top', 'left', 'right': bool, whether to draw the respective ticks.
-     - 'labelbottom', 'labeltop', 'labelleft', 'labelright': bool, whether to draw the respective tick labels.
+     - 'labelbottom', 'labeltop', 'labelleft', 'labelright': bool, whether to draw
+       the respective tick labels.
      - 'legend': bool, wheter to show the legend or not
-     - 'text': dict, a dictionnary of dictionnaries containing the parameters for matplotlib.pyplot.text function
-       e.g. {0: {'x': 0.4, 'y': 0.4, 's': 'test', 'fontsize': 12}, 1:{'x': 0.4, 'y': 0.5, 's': 'res', 'fontsize': 12}}
-    :return:
+     - 'text': dict, a dictionnary of dictionnaries containing the parameters for
+       matplotlib.pyplot.text function e.g. {0: {'x': 0.4, 'y': 0.4, 's': 'test',
+       'fontsize': 12}, 1:{'x': 0.4, 'y': 0.5, 's': 'res', 'fontsize': 12}}
     """
     #########################
     # check and load kwargs #
@@ -2436,7 +2487,8 @@ def savefig(
     )  # in case the user put the extension in the filename
     if tick_direction not in {"in", "out", "inout"}:
         raise ValueError(
-            "Invalid value {tick_direction} for tick_direction, allowed are 'in', 'out', 'inout'"
+            "Invalid value {tick_direction} for tick_direction,"
+            " allowed are 'in', 'out', 'inout'"
         )
     valid.valid_item(tick_width, allowed_types=int, min_excluded=0, name=fname)
     valid.valid_item(tick_length, allowed_types=int, min_excluded=0, name=fname)
@@ -2544,17 +2596,20 @@ def save_to_vti(
     amplitude_threshold=0.01,
 ):
     """
-    Save arrays defined by their name in a single vti file. Paraview expects data in an orthonormal basis (x,y,z). For
-    BCDI data in the .cxi convention (hence: z,y,x) it is necessary to flip the last axis. The data sent to Paraview
-    will be in the orthonormal frame (z,y,-x), therefore Paraview_x is z (downstream), Paraview_y is y (vertical up),
-    Paraview_z is -x (inboard) of the .cxi convention.
+    Save arrays defined by their name in a single vti file. Paraview expects data
+    in an orthonormal basis (x,y,z). For BCDI data in the .cxi convention (hence: z,
+    y,x) it is necessary to flip the last axis. The data sent to Paraview will be in
+    the orthonormal frame (z,y,-x), therefore Paraview_x is z (downstream),
+    Paraview_y is y (vertical up), Paraview_z is -x (inboard) of the .cxi convention.
 
     :param filename: the file name of the vti file
     :param voxel_size: tuple (voxel_size_axis0, voxel_size_axis1, voxel_size_axis2)
     :param tuple_array: tuple of arrays of the same dimension
-    :param tuple_fieldnames: tuple of strings for the field names, same number of elements as tuple_array
+    :param tuple_fieldnames: tuple of strings for the field names, same number of
+     elements as tuple_array
     :param origin: tuple of points for vtk SetOrigin()
-    :param amplitude_threshold: lower threshold for saving the reconstruction modulus (save memory space)
+    :param amplitude_threshold: lower threshold for saving the reconstruction
+     modulus (save memory space)
     :return: nothing
     """
     import vtk
@@ -2608,7 +2663,8 @@ def save_to_vti(
     #######################################
     # check if one of the fields in 'amp' #
     #######################################
-    # it will use the thresholded normalized 'amp' as support when saving other fields, in order to save disk space
+    # it will use the thresholded normalized 'amp' as support
+    # when saving other fields, in order to save disk space
     try:
         index_first = tuple_fieldnames.index("amp")
         first_array = tuple_array[index_first]
@@ -2636,7 +2692,8 @@ def save_to_vti(
         if is_amp:
             temp_array[
                 first_array == 0
-            ] = 0  # use the thresholded amplitude as a support in order to save disk space
+            ] = 0  # use the thresholded amplitude as a support
+            # in order to save disk space
         temp_array = np.transpose(np.flip(temp_array, 2)).reshape(temp_array.size)
         temp_array = numpy_support.numpy_to_vtk(temp_array)
         pd.AddArray(temp_array)
@@ -2655,7 +2712,8 @@ def scatter_plot(array, labels, markersize=4, markercolor="b", title=""):
     """
     2D or 3D Scatter plot of a 2D ndarray.
 
-    :param array: 2D ndarray, the number of columns is the number of dimensions of the scatter plot (2 or 3)
+    :param array: 2D ndarray, the number of columns is the number of dimensions
+     of the scatter plot (2 or 3)
     :param labels: tuple of string labels (length = number of columns in array)
     :param markersize: number corresponding to the marker size
     :param markercolor: string corresponding to the marker color
@@ -2709,9 +2767,12 @@ def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=""):
     """
     Overlaid scatter plot of 2D ndarrays having the same number of columns.
 
-    :param arrays: tuple of 2D ndarrays, the number of columns is the number of dimensions of the scatter plot (2 or 3)
-    :param markersizes: tuple of numbers corresponding to the marker sizes (length = number of arrays)
-    :param markercolors: tuple of strings corresponding to the marker color (length = number of arrays)
+    :param arrays: tuple of 2D ndarrays, the number of columns is the number
+     of dimensions of the scatter plot (2 or 3)
+    :param markersizes: tuple of numbers corresponding to the marker sizes
+     (length = number of arrays)
+    :param markercolors: tuple of strings corresponding to the marker color
+     (length = number of arrays)
     :param labels: tuple of string labels (length = number of columns in arrays)
     :param title: string, title for the scatter plot
     :return: figure, axes instances
@@ -2808,13 +2869,17 @@ def scatter_stereographic(
     """
     Plot the stereographic projection of the real scattered positions of data points.
 
-    :param euclidian_u: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
-    :param euclidian_v: flattened array, normalized Euclidian metric coordinates (points can be not on a regular grid)
+    :param euclidian_u: flattened array, normalized Euclidian metric coordinates
+     (points can be not on a regular grid)
+    :param euclidian_v: flattened array, normalized Euclidian metric coordinates
+     (points can be not on a regular grid)
     :param color: flattened array, intensity of density kernel estimation at radius_mean
     :param title: title for the stereographic plot
-    :param max_angle: maximum angle in degrees of the stereographic projection (should be larger than 90)
+    :param max_angle: maximum angle in degrees of the stereographic projection
+     (should be larger than 90)
     :param cmap: colormap to be used
-    :param uv_labels: tuple of strings, labels for the u axis and the v axis, respectively
+    :param uv_labels: tuple of strings, labels for the u axis and the v axis,
+     respectively
     :return: figure and axe instances
     """
     fig, ax0 = plt.subplots(nrows=1, ncols=1)
@@ -2885,7 +2950,8 @@ def update_aliens(
         or updated_mask.ndim != 3
     ):
         raise ValueError(
-            "original_data, original_mask, updated_data and updated_mask should be 3D arrays"
+            "original_data, original_mask, updated_data"
+            " and updated_mask should be 3D arrays"
         )
 
     nbz, nby, nbx = original_data.shape
@@ -2948,7 +3014,8 @@ def update_aliens(
     elif key == "m":  # mask intensities
         skip = False
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -2962,7 +3029,8 @@ def update_aliens(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -2990,7 +3058,8 @@ def update_aliens(
     elif key == "b":  # back to measured intensities
         skip = False
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -3004,7 +3073,8 @@ def update_aliens(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -3067,7 +3137,7 @@ def update_aliens(
 
     axs.cla()
     if dim == 0:
-        axs.imshow(updated_data[idx, :,], vmin=vmin, vmax=vmax)
+        axs.imshow(updated_data[idx, :, :], vmin=vmin, vmax=vmax)
         axs.set_title(
             "XY - Frame " + str(idx + 1) + "/" + str(nbz) + "\n"
             "m mask ; b unmask ; q quit ; u next frame ; d previous frame\n"
@@ -3211,7 +3281,8 @@ def update_aliens_combined(
     elif key == "m":  # mask intensities
         skip = False
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -3225,7 +3296,8 @@ def update_aliens_combined(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -3253,7 +3325,8 @@ def update_aliens_combined(
     elif key == "b":  # back to measured intensities
         skip = False
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -3267,7 +3340,8 @@ def update_aliens_combined(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -3307,7 +3381,8 @@ def update_aliens_combined(
     elif key == "f":  # fill empty voxels
         skip = False
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -3321,7 +3396,8 @@ def update_aliens_combined(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -3464,7 +3540,8 @@ def update_aliens_2d(
     elif key == "m":
         skip = False
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -3478,7 +3555,8 @@ def update_aliens_2d(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -3499,7 +3577,8 @@ def update_aliens_2d(
     elif key == "b":
         skip = False
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -3513,7 +3592,8 @@ def update_aliens_2d(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -3674,7 +3754,8 @@ def update_mask(
     invert_yaxis=False,
 ):
     """
-    Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
+    Update the mask to remove parasitic diffraction intensity and hotpixels in
+    3D dataset.
 
     :param key: the keyboard key which was pressed
     :param pix: the x value of the mouse pointer
@@ -3685,8 +3766,9 @@ def update_mask(
     :param updated_mask: the temporary 2D mask array with updated points
     :param figure: the figure instance
     :param flag_pause: set to 1 to stop registering vertices using mouse clicks
-    :param points: list of all point coordinates: points=np.stack((x, y), axis=0).T with x=x.flatten() , y = y.flatten()
-     given x,y=np.meshgrid(np.arange(nx), np.arange(ny))
+    :param points: list of all point coordinates: points=np.stack((x, y), axis=0).T
+     with x=x.flatten() , y = y.flatten() given x,y=np.meshgrid(np.arange(nx),
+     np.arange(ny))
     :param xy: the list of vertices which defines a polygon to be masked
     :param width: the half_width of the masking window
     :param dim: the axis currently under review (axis 0, 1 or 2)
@@ -3740,7 +3822,8 @@ def update_mask(
     elif key == "m":
         skip = False
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -3754,7 +3837,8 @@ def update_mask(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -3774,7 +3858,8 @@ def update_mask(
     elif key == "b":
         skip = False
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -3788,7 +3873,8 @@ def update_mask(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -3930,7 +4016,8 @@ def update_mask_combined(
     invert_yaxis=False,
 ):
     """
-    Update the mask to remove parasitic diffraction intensity and hotpixels in 3D dataset.
+    Update the mask to remove parasitic diffraction intensity and hotpixels in 3D
+    dataset.
 
     :param key: the keyboard key which was pressed
     :param pix: the x value of the mouse pointer
@@ -3941,12 +4028,14 @@ def update_mask_combined(
     :param updated_mask: the temporary 3D mask array with updated points
     :param axes: tuple of the 4 axes instances in a plt.subplots(nrows=2, ncols=2)
     :param flag_pause: set to 1 to stop registering vertices using mouse clicks
-    :param points: list of all point coordinates: points=np.stack((x, y), axis=0).T with x=x.flatten() , y = y.flatten()
-     given x,y=np.meshgrid(np.arange(nx), np.arange(ny))
+    :param points: list of all point coordinates: points=np.stack((x, y), axis=0).T
+     with x=x.flatten() , y = y.flatten() given x,y=np.meshgrid(np.arange(nx),
+     np.arange(ny))
     :param xy: the list of vertices which defines a polygon to be masked
     :param width: the half_width of the masking window
     :param dim: the axis currently under review (axis 0, 1 or 2)
-    :param click_dim: the dimension (0, 1 or 2) where the selection of mask polygon vertices by clicking was performed
+    :param click_dim: the dimension (0, 1 or 2) where the selection of mask polygon
+     vertices by clicking was performed
     :param info_text: text instance in the figure
     :param vmax: the higher boundary for the colorbar
     :param vmin: the lower boundary for the colorbar
@@ -4008,7 +4097,8 @@ def update_mask_combined(
         skip = False
         update_fig = True
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -4022,7 +4112,8 @@ def update_mask_combined(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -4048,7 +4139,8 @@ def update_mask_combined(
         skip = False
         update_fig = True
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -4062,7 +4154,8 @@ def update_mask_combined(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -4097,7 +4190,8 @@ def update_mask_combined(
         skip = False
         update_fig = True
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -4111,7 +4205,8 @@ def update_mask_combined(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -4290,7 +4385,8 @@ def update_mask_2d(
     invert_yaxis=False,
 ):
     """
-    Update the mask to remove parasitic diffraction intensity and hotpixels for 2d dataset.
+    Update the mask to remove parasitic diffraction intensity and hotpixels for 2d
+    dataset.
 
     :param key: the keyboard key which was pressed
     :param pix: the x value of the mouse pointer
@@ -4301,8 +4397,9 @@ def update_mask_2d(
     :param updated_mask: the temporary 2D mask array with updated points
     :param figure: the figure instance
     :param flag_pause: set to 1 to stop registering vertices using mouse clicks
-    :param points: list of all point coordinates: points=np.stack((x, y), axis=0).T with x=x.flatten() , y = y.flatten()
-     given x,y=np.meshgrid(np.arange(nx), np.arange(ny))
+    :param points: list of all point coordinates: points=np.stack((x, y), axis=0).T
+     with x=x.flatten() , y = y.flatten() given x,y=np.meshgrid(np.arange(nx),
+     np.arange(ny))
     :param xy: the list of vertices which defines a polygon to be masked
     :param width: the half_width of the masking window
     :param vmax: the higher boundary for the colorbar
@@ -4318,7 +4415,8 @@ def update_mask_2d(
         or updated_mask.ndim != 2
     ):
         raise ValueError(
-            "original_data, updated_data, original_mask and updated_mask should be 2D arrays"
+            "original_data, updated_data, original_mask and "
+            "updated_mask should be 2D arrays"
         )
 
     nby, nbx = original_data.shape
@@ -4349,7 +4447,8 @@ def update_mask_2d(
     elif key == "m":
         skip = False
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -4363,7 +4462,8 @@ def update_mask_2d(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -4384,7 +4484,8 @@ def update_mask_2d(
     elif key == "b":
         skip = False
 
-        # check if the masking window fit in the data range (vertical axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (vertical axis of the 2D plot)
         if (piy - width) < 0:
             starty = min(0, piy + width)
             if starty < 0:
@@ -4398,7 +4499,8 @@ def update_mask_2d(
         else:
             stopy = piy + width + 1
 
-        # check if the masking window fit in the data range (horizontal axis of the 2D plot)
+        # check if the masking window fit in the data range
+        # (horizontal axis of the 2D plot)
         if (pix - width) < 0:
             startx = min(0, pix + width)
             if startx < 0:
@@ -4477,26 +4579,3 @@ def update_mask_2d(
     plt.draw()
 
     return updated_data, updated_mask, flag_pause, xy, width, vmax, stop_masking
-
-    # if __name__ == "__main__":
-    # #
-    #     datadir = 'D:/data/P10_isosurface/data/p21_00054/'
-    #     prtf = np.load(datadir + 'prtf_3d.npz')['prtf']
-    #     print(prtf.shape)
-    #     start = (96, 256, 256)
-    #     stop = (198, 510, 510)
-    #     cut = linecut(prtf, start_indices=start, stop_indices=stop, debugging=True)
-    #     strain = np.load(datadir +
-    #                      'S2227_ampphasestrain_1_gaussianthreshold_iso_0.68_avg1_apodize_crystal-frame.npz')['strain']
-    #     voxel_size = 4.0
-    #     tick_spacing = 50  # for plots, in nm
-    #     pixel_spacing = tick_spacing / voxel_size
-    #     tick_direction = 'inout'  # 'out', 'in', 'inout'
-    #     tick_length = 3  # 10  # in plots
-    #     tick_width = 1  # 2  # in plots
-    #     multislices_plot(strain, sum_frames=False, invert_yaxis=True, title='Orthogonal strain',
-    #                      vmin=-0.0002, vmax=0.0002, tick_direction=tick_direction,
-    #                      tick_width=tick_width, tick_length=tick_length, plot_colorbar=True,
-    #                      pixel_spacing=pixel_spacing)
-    plt.ioff()
-    plt.show()
